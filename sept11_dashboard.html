@@ -122,6 +122,11 @@ td.ans.right{color:#1c5c37}td.ans.wrong{color:#b3261e}td.ans.none{color:#b6bebb}
 
 <div id="bar">
   <span class="brand">September 11 &mdash; Responses</span>
+  <select id="fGuide">
+    <option value="">Both versions</option>
+    <option value="sept11_rg1">Full version</option>
+    <option value="sept11_rg2">Easy version</option>
+  </select>
   <select id="fPeriod"><option value="">All periods</option></select>
   <select id="fStatus">
     <option value="">All students</option>
@@ -196,7 +201,7 @@ document.getElementById("pw").addEventListener("keydown", function(e){
 function load(){
   document.getElementById("count").textContent = "Loading\u2026";
   var url = SUPA_URL + "/rest/v1/" + TABLE +
-            "?select=*&guide_key=eq.sept11_rg1&order=period.asc,student_name.asc";
+            "?select=*&order=period.asc,student_name.asc";
   fetch(url, { headers: H() })
     .then(function(r){
       if(!r.ok) throw new Error("HTTP " + r.status);
@@ -232,12 +237,14 @@ function buildPeriodFilter(){
 }
 
 function filtered(){
+  var g = document.getElementById("fGuide").value;
   var p = document.getElementById("fPeriod").value;
   var st = document.getElementById("fStatus").value;
   var q = document.getElementById("fSearch").value.trim().toLowerCase();
   var out = [];
   for(var i = 0; i < rows.length; i++){
     var r = rows[i];
+    if(g && r.guide_key !== g) continue;
     if(p && r.period !== p) continue;
     if(st === "in" && !r.submitted) continue;
     if(st === "wip" && r.submitted) continue;
@@ -273,6 +280,7 @@ function draw(){
          '<span class="bar"><i style="width:' + pct + '%"></i></span>' +
          '<span>' + (r.answered || 0) + '/' + tot + '</span>' +
          '<span>P' + esc(r.period) + '</span>' +
+         '<span>' + (r.guide_key === "sept11_rg2" ? "Easy" : "Full") + '</span>' +
          '<span>' + when(r.updated_at) + '</span>' +
          '</div></li>';
   }
@@ -288,6 +296,7 @@ document.getElementById("roster").addEventListener("click", function(e){
   draw();
   showDetail(selected);
 });
+document.getElementById("fGuide").addEventListener("change", draw);
 document.getElementById("fPeriod").addEventListener("change", draw);
 document.getElementById("fStatus").addEventListener("change", draw);
 document.getElementById("fSearch").addEventListener("input", draw);
@@ -304,10 +313,12 @@ function showDetail(id){
   var box = document.getElementById("detail");
   if(!r){ box.innerHTML = '<div class="empty">Not found.</div>'; return; }
   var p = r.payload || {};
+  var K = (p.meta && p.meta.keys) ? p.meta.keys : { tf: TF_KEY, order: ORDER_KEY, cloze: CLOZE_KEY };
 
   var h = '<div class="dhead">' +
     '<h3>' + esc(r.student_name) + '</h3>' +
     '<div class="sub">' + esc(r.email) + ' \u00b7 Period ' + esc(r.period) +
+    ' \u00b7 ' + (r.guide_key === "sept11_rg2" ? "Easy version" : "Full version") +
     ' \u00b7 last saved ' + when(r.updated_at) +
     (r.submitted ? ' \u00b7 turned in ' + when(r.submitted_at) : ' \u00b7 not turned in') +
     '</div>' +
@@ -323,7 +334,7 @@ function showDetail(id){
     h += '<h4 class="sec">True or false</h4><table class="mini">';
     for(var i = 0; i < p.tf.length; i++){
       var got = p.tf[i].a || "";
-      var key = TF_KEY[i] || "";
+      var key = K.tf[i] || "";
       var cls = got ? (got === key ? "right" : "wrong") : "none";
       if(got && got === key) tfRight++;
       h += '<tr><td>' + esc(p.tf[i].s) + '</td>' +
@@ -337,7 +348,7 @@ function showDetail(id){
     h += '<h4 class="sec">Timeline order</h4><table class="mini">';
     for(var o = 0; o < p.order.length; o++){
       var g = p.order[o].a || "";
-      var k = ORDER_KEY[o] || "";
+      var k = K.order[o] || "";
       var c = g ? (g === k ? "right" : "wrong") : "none";
       if(g && g === k) ordRight++;
       h += '<tr><td class="ans ' + c + '">' + (g ? esc(g) : "\u2014") + '</td>' +
@@ -351,7 +362,7 @@ function showDetail(id){
     h += '<h4 class="sec">Summary cloze</h4><table class="mini">';
     for(var c2 = 0; c2 < p.cloze.length; c2++){
       var gv = (p.cloze[c2].a || "").trim();
-      var kv = CLOZE_KEY[c2] || "";
+      var kv = K.cloze[c2] || "";
       var ok = gv && gv.toLowerCase() === kv.toLowerCase();
       if(ok) czRight++;
       h += '<tr><td class="ans none">' + (c2 + 1) + '</td>' +
