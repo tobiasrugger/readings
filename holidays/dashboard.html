@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Holidays Unit — Teacher Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--pine:#1f4d3d;--pine-dk:#143528;--pine-lt:#e8f0ec;--ink:#1b1b1b;--rule:#c9ccc8;--marigold:#d98a1f}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Nunito',-apple-system,Segoe UI,Roboto,sans-serif;background:#f2f4f2;color:var(--ink);font-size:16px}
+#bar{position:sticky;top:0;z-index:50;background:var(--pine);color:#fff;padding:9px 16px;display:flex;gap:9px;align-items:center;flex-wrap:wrap;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+#bar .brand{font-weight:800;margin-right:8px}
+#bar button,#bar select{font-family:inherit;font-size:14px;font-weight:700;border:1px solid rgba(255,255,255,.45);background:rgba(255,255,255,.10);color:#fff;border-radius:7px;padding:6px 10px;cursor:pointer}
+#bar button:hover,#bar select:hover{background:rgba(255,255,255,.22)}
+#bar select option{color:#111;background:#fff}
+#bar .spacer{flex:1}
+#bar .stat{font-size:13px;font-weight:700;opacity:.92}
+.wrap{max-width:1180px;margin:18px auto 70px;padding:0 16px}
+h1{font-size:1.8rem;color:var(--pine);margin:10px 0 2px}
+.sub{color:#5a6660;font-weight:700;margin:0 0 16px;font-size:.95rem}
+table.roster{width:100%;border-collapse:collapse;background:#fff;box-shadow:0 1px 8px rgba(0,0,0,.08)}
+table.roster th,table.roster td{border-bottom:1px solid var(--rule);padding:9px 11px;text-align:left;font-size:.95rem}
+table.roster th{background:var(--pine);color:#fff;font-weight:800;font-size:.85rem;cursor:pointer;white-space:nowrap}
+table.roster tr:hover td{background:#f7faf8}
+table.roster td.nm{font-weight:800;color:var(--pine-dk);cursor:pointer}
+table.roster td.nm:hover{text-decoration:underline}
+.prog{background:#e2e7e4;border-radius:4px;height:13px;width:120px;overflow:hidden;display:inline-block;vertical-align:middle}
+.prog i{display:block;height:100%;background:var(--pine)}
+.pill{font-size:.72rem;font-weight:800;border-radius:20px;padding:2px 9px;color:#fff;background:#9aa49f}
+.pill.in{background:#2f6f4f}
+.pill.easy{background:var(--marigold);color:#1b1b1b}
+.sc{font-weight:800}
+.sc.low{color:#b3261e}.sc.mid{color:#8a6d1f}.sc.hi{color:#2f6f4f}
+#panel{position:fixed;inset:0;background:rgba(20,53,40,.55);display:none;z-index:80;padding:20px;overflow:auto}
+#panel .inner{background:#fff;max-width:900px;margin:0 auto;border-radius:12px;padding:24px 28px 34px;box-shadow:0 18px 50px rgba(0,0,0,.35)}
+#panel h2{margin:0 0 2px;color:var(--pine)}
+#panel .meta{color:#5a6660;font-weight:700;margin:0 0 14px;font-size:.92rem}
+#panel .close{float:right;font-family:inherit;font-weight:800;border:2px solid var(--pine);background:#fff;color:var(--pine);border-radius:8px;padding:6px 12px;cursor:pointer}
+.ans{border-left:5px solid var(--pine-lt);padding:6px 0 6px 12px;margin:10px 0}
+.ans .q{font-weight:800;font-size:.9rem;color:var(--pine-dk)}
+.ans .a{white-space:pre-wrap;margin-top:3px}
+.ans .a.empty{color:#a3ada8;font-style:italic}
+.ans.wrongk{border-left-color:#b3261e}
+.ans.rightk{border-left-color:#2f6f4f}
+h3.sec{margin:22px 0 6px;font-size:1.05rem;color:var(--pine-dk);border-bottom:2px solid var(--pine-lt);padding-bottom:4px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.gate{max-width:380px;margin:80px auto;background:#fff;padding:26px 28px;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.18)}
+.gate h2{margin:0 0 12px;color:var(--pine)}
+.gate input{width:100%;font-family:inherit;font-size:1rem;padding:10px;border:2px solid var(--rule);border-radius:8px}
+.gate button{width:100%;margin-top:14px;font-family:inherit;font-weight:800;font-size:1rem;background:var(--pine);color:#fff;border:none;border-radius:9px;padding:11px;cursor:pointer}
+.gate .err{color:#b3261e;font-weight:700;min-height:1.2em;margin-top:8px;font-size:.9rem}
+#classview{display:none;background:#fff;padding:20px 24px;border-radius:12px;box-shadow:0 1px 8px rgba(0,0,0,.08)}
+.chartrow{margin:8px 0}
+.chartrow .cl{font-weight:800;font-size:.9rem;display:flex;justify-content:space-between}
+.barout{background:#e2e7e4;border-radius:5px;height:18px;overflow:hidden}
+.barin{background:var(--pine);height:100%}
+.barin.alt{background:var(--marigold)}
+.quotes{columns:2;column-gap:20px}
+.quotes p{break-inside:avoid;background:#f7faf8;border-left:4px solid var(--marigold);padding:8px 11px;margin:0 0 10px;font-size:.92rem}
+.quotes p b{display:block;font-size:.78rem;color:#5a6660}
+@media print{#bar,.close,button{display:none!important}body{background:#fff}#panel{position:static;background:#fff;display:block}}
+@media (max-width:760px){.grid2,.quotes{grid-template-columns:1fr;columns:1}}
+</style>
+</head>
+<body>
+
+<div id="gateWrap" class="gate">
+  <h2>Teacher dashboard</h2>
+  <p style="margin:0 0 12px;color:#5a6660;font-weight:700;font-size:.92rem">Ghosts, Candy, and Remembering</p>
+  <input id="pw" type="password" placeholder="Password" autocomplete="off">
+  <button id="pwGo" type="button">Open</button>
+  <div class="err" id="pwErr"></div>
+</div>
+
+<div id="app" style="display:none">
+<div id="bar">
+  <span class="brand">Holidays unit — dashboard</span>
+  <select id="period"><option value="">All periods</option></select>
+  <select id="sortBy">
+    <option value="name">Sort: name</option>
+    <option value="score">Sort: score</option>
+    <option value="progress">Sort: progress</option>
+    <option value="updated">Sort: last saved</option>
+  </select>
+  <button id="refresh" type="button">Refresh</button>
+  <button id="toggleClass" type="button">Class survey</button>
+  <button id="csv" type="button">Download CSV</button>
+  <span class="spacer"></span>
+  <span class="stat" id="stat"></span>
+</div>
+
+<div class="wrap">
+  <h1>Ghosts, Candy, and Remembering</h1>
+  <p class="sub">Mr. Toby · Galileo Academy · 71 auto-scored points · written answers below each student</p>
+  <div id="rosterWrap"></div>
+  <div id="classview"></div>
+</div>
+</div>
+
+<div id="panel"><div class="inner" id="panelInner"></div></div>
+
+<script>
+var SUPA_URL="https://lhmwtfyceilgndpygivj.supabase.co";
+var SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU";
+var TABLE="unit_responses", GUIDE_KEY="holidays_v1", PW="galileo2026";
+var ROWS=[];
+
+function headers(){return{apikey:SUPA_KEY,Authorization:"Bearer "+SUPA_KEY,"Content-Type":"application/json"};}
+
+/* ---------- answer key ---------- */
+var KEY={
+ v1:"cemetery",v2:"immigrant",v3:"ancestor",v4:"carve",v5:"marigold",v6:"costume",v7:"tradition",v8:"ofrenda / altar",v9:"superstition",v10:"mourn",
+ w1:"Nepal",w2:"Guatemala",w3:"China",w4:"Japan",w5:"Qatar / the Gulf",w6:"Vietnam",w7:"Thailand",w8:"Philippines",
+ g1:"build",g2:"puts",g3:"burn",g4:"walks",g5:"say",g6:"cooks",g7:"cleans",g8:"smell",g9:"stays",g10:"remember",
+ u1:"burn",u2:"visit",u3:"eat",u4:"be",u5:"sing",
+ p1a:"on",p2a:"in",p3a:"at",p4a:"at",p5a:"in",p6a:"in",p7a:"in",p8a:"on",
+ d1:"both",d2:"but",d3:"similar to",d4:"different from",d5:"while",d6:"however",
+ tfa1:"F",tfa2:"T",tfa3:"F",tfa4:"T",tfa5:"F",tfb1:"F",tfb2:"T",tfb3:"T",tfb4:"F",tfb5:"T",
+ m1:"b",m2:"c",m3:"b",m4:"c",m5:"b",m6:"a",m7:"b",m8:"c",m9:"b",m10:"a",m11:"d",m12:"b",m13:"c",m14:"b"
+};
+var WRITTEN=[
+ ["q_person","Part 1 · A person my family remembers"],
+ ["qa1","A1 · Why masks on Samhain?"],["qa2","A2 · Where the word Halloween comes from"],
+ ["qa3","A3 · What changed from guising to trick-or-treat"],["qa4","A4 · Laughing so you are not afraid"],
+ ["qa5","A5 · What my family carried here"],["qa6","A6 · The suitcase metaphor"],
+ ["qb1","B1 · Four things on an ofrenda"],["qb2","B2 · November 1 vs November 2"],
+ ["qb3","B3 · The third death"],["qb4","B4 · Embarrassing stories"],
+ ["qb5","B5 · My own ofrenda"],["qb6","B6 · A sentence for my country's holiday"],
+ ["q_notmexhall","Part 5 · Why it is not 'Mexican Halloween'"],
+ ["qw1","W1 · Three things the same everywhere"],["qw2","W2 · Why laugh around death"],
+ ["qw3","W3 · Closest to my family"],["qw4","W4 · My own ninth card"],
+ ["q_usedto","Grammar · used to / now"],["q_still","Grammar · what we still do"],
+ ["of_who","Ofrenda · who it is for"],["of_why","Ofrenda · why these objects"],
+ ["w_l1","WRITING Level 1"],["w_l2","WRITING Level 2"],["w_l3","WRITING Level 3"],
+ ["q_last","Exit · a question I still have"]
+];
+var COMPARE=[["c_days","What days"],["c_where","Where it started"],["c_who","Who it is for"],["c_wear","What people wear"],
+ ["c_food","Food"],["c_go","Where people go"],["c_feel","How people feel"],["c_rel","Religious?"]];
+
+/* ---------- load ---------- */
+function load(){
+  document.getElementById("stat").textContent="Loading…";
+  fetch(SUPA_URL+"/rest/v1/"+TABLE+"?select=*&guide_key=eq."+GUIDE_KEY+"&order=student_name.asc",{headers:headers()})
+    .then(function(r){return r.json();})
+    .then(function(rows){
+      ROWS=rows||[];
+      var ps={};
+      for(var i=0;i<ROWS.length;i++) ps[ROWS[i].period]=1;
+      var sel=document.getElementById("period"), cur=sel.value;
+      var keys=Object.keys(ps).sort(), h='<option value="">All periods</option>';
+      for(var k=0;k<keys.length;k++) h+='<option value="'+keys[k]+'">Period '+keys[k]+"</option>";
+      sel.innerHTML=h; sel.value=cur;
+      render();
+    })
+    .catch(function(e){ document.getElementById("stat").textContent="Could not load."; console.warn(e); });
+}
+function visible(){
+  var p=document.getElementById("period").value;
+  var r=ROWS.filter(function(x){return !p||String(x.period)===p;});
+  var s=document.getElementById("sortBy").value;
+  r.sort(function(a,b){
+    if(s==="score") return (b.score||0)-(a.score||0);
+    if(s==="progress") return (b.answered||0)-(a.answered||0);
+    if(s==="updated") return (b.updated_at||"")<(a.updated_at||"")?-1:1;
+    return (a.student_name||"").localeCompare(b.student_name||"");
+  });
+  return r;
+}
+function when(iso){
+  if(!iso) return "";
+  var d=new Date(iso), n=new Date();
+  var same=d.toDateString()===n.toDateString();
+  var h=d.getHours(),m=d.getMinutes(),ap=h>=12?"PM":"AM";h=h%12||12;if(m<10)m="0"+m;
+  return (same?"":(d.getMonth()+1)+"/"+d.getDate()+" ")+h+":"+m+" "+ap;
+}
+function render(){
+  var rows=visible(), h="";
+  h+='<table class="roster"><thead><tr><th>Student</th><th>Per</th><th>Progress</th><th>Score</th><th>Writing</th><th>Level</th><th>Status</th><th>Last saved</th></tr></thead><tbody>';
+  var done=0,sum=0,cnt=0;
+  for(var i=0;i<rows.length;i++){
+    var r=rows[i], p=r.payload||{}, meta=p.meta||{};
+    var pct=meta.total?Math.round(100*(meta.answered||0)/meta.total):0;
+    var sc=r.score||0, mx=r.max_score||71;
+    var spct=mx?Math.round(100*sc/mx):0;
+    var cls=spct>=80?"hi":(spct>=55?"mid":"low");
+    if(r.submitted){done++;}
+    sum+=spct;cnt++;
+    h+='<tr><td class="nm" data-i="'+i+'">'+(r.student_name||r.email)+"</td>"+
+       "<td>"+(r.period||"")+"</td>"+
+       '<td><span class="prog"><i style="width:'+pct+'%"></i></span> '+(meta.answered||0)+"/"+(meta.total||0)+"</td>"+
+       '<td class="sc '+cls+'">'+sc+"/"+mx+"</td>"+
+       "<td>"+(meta.words||0)+" w</td>"+
+       '<td><span class="pill'+(meta.level==="easy"?" easy":"")+'">'+(meta.level==="easy"?"Easier":"Full")+"</span></td>"+
+       '<td>'+(r.submitted?'<span class="pill in">Turned in</span>':'<span class="pill">Working</span>')+"</td>"+
+       "<td>"+when(r.updated_at)+"</td></tr>";
+  }
+  h+="</tbody></table>";
+  if(!rows.length) h='<p style="font-weight:700">No students yet for this filter.</p>';
+  document.getElementById("rosterWrap").innerHTML=h;
+  document.getElementById("stat").textContent=rows.length+" students · "+done+" turned in · class average "+(cnt?Math.round(sum/cnt):0)+"%";
+  var nms=document.querySelectorAll("td.nm");
+  for(var n=0;n<nms.length;n++) nms[n].addEventListener("click",function(){ openStudent(visible()[+this.getAttribute("data-i")]); });
+}
+
+/* ---------- one student ---------- */
+function esc(s){ return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function openStudent(r){
+  var p=r.payload||{}, f=p.fields||{}, rad=p.radios||{}, chk=p.checks||{}, of=p.ofrenda||{}, meta=p.meta||{};
+  var h='<button class="close" type="button" onclick="document.getElementById(\'panel\').style.display=\'none\'">Close</button>';
+  h+="<h2>"+esc(r.student_name)+"</h2>";
+  h+='<p class="meta">'+esc(r.email)+" · period "+r.period+" · "+(r.score||0)+"/"+(r.max_score||71)+
+     " auto-scored · "+(meta.words||0)+" words written · "+(r.submitted?"turned in":"still working")+" · last saved "+when(r.updated_at)+"</p>";
+
+  h+='<h3 class="sec">Survey</h3><div class="grid2">';
+  h+=ansBox("Country",f.s_country);
+  h+=ansBox("Day for the dead?",rad.s_deadday);
+  h+=ansBox("Name of the day",f.s_dayname);
+  h+=ansBox("Mood of the day",rad.s_mood);
+  h+=ansBox("Candy/sweets holiday?",rad.s_candy);
+  h+=ansBox("Name of it",f.s_candyname);
+  h+=ansBox("Celebrated Halloween?",rad.s_hall);
+  var acts=[];
+  for(var ck in chk){ if(ck.indexOf("s_act_")===0) acts.push(chk[ck]); }
+  h+=ansBox("What people do",acts.join(", "));
+  h+="</div>";
+
+  h+='<h3 class="sec">Auto-scored items</h3><p style="font-size:.9rem;font-weight:700;color:#5a6660">Red = wrong, green = right, grey = blank.</p>';
+  h+='<div class="grid2">';
+  for(var k in KEY){
+    var given = (f[k] !== undefined) ? f[k] : (rad[k] !== undefined ? rad[k] : "");
+    var right = norm(given) === norm(KEY[k]);
+    var cls = !String(given).trim() ? "" : (right ? "rightk" : "wrongk");
+    h+='<div class="ans '+cls+'"><div class="q">'+k+" — key: "+esc(KEY[k])+'</div><div class="a'+(String(given).trim()?"":" empty")+'">'+(esc(String(given))||"(blank)")+"</div></div>";
+  }
+  h+="</div>";
+
+  h+='<h3 class="sec">Comparison chart</h3><table class="roster"><thead><tr><th></th><th>Halloween</th><th>Día de los Muertos</th></tr></thead><tbody>';
+  for(var c=0;c<COMPARE.length;c++){
+    h+="<tr><td><b>"+COMPARE[c][1]+"</b></td><td>"+esc(f[COMPARE[c][0]+"_h"]||"")+"</td><td>"+esc(f[COMPARE[c][0]+"_d"]||"")+"</td></tr>";
+  }
+  h+="</tbody></table>";
+  h+='<p style="font-weight:700;margin-top:10px">Only Halloween: '+esc([f.venn_h1,f.venn_h2,f.venn_h3].filter(Boolean).join(", "))+
+     "<br>Both: "+esc([f.venn_b1,f.venn_b2,f.venn_b3].filter(Boolean).join(", "))+
+     "<br>Only Día de los Muertos: "+esc([f.venn_d1,f.venn_d2,f.venn_d3].filter(Boolean).join(", "))+"</p>";
+
+  var ofl=[];
+  for(var o=1;o<=8;o++){ if(of["of"+o]) ofl.push(of["of"+o]); }
+  h+='<h3 class="sec">Ofrenda</h3><p style="font-weight:700">'+(ofl.length?esc(ofl.join(" · ")):"(empty)")+"</p>";
+
+  h+='<h3 class="sec">Written answers</h3>';
+  for(var w=0;w<WRITTEN.length;w++){
+    var val=f[WRITTEN[w][0]]||"";
+    h+='<div class="ans"><div class="q">'+WRITTEN[w][1]+'</div><div class="a'+(val.trim()?"":" empty")+'">'+(esc(val)||"(blank)")+"</div></div>";
+  }
+  document.getElementById("panelInner").innerHTML=h;
+  document.getElementById("panel").style.display="block";
+  document.getElementById("panel").scrollTop=0;
+}
+function ansBox(q,a){
+  a=a||"";
+  return '<div class="ans"><div class="q">'+q+'</div><div class="a'+(String(a).trim()?"":" empty")+'">'+(esc(String(a))||"(blank)")+"</div></div>";
+}
+function norm(s){ return String(s==null?"":s).toLowerCase().trim().replace(/[.,!?;:"']/g,"").replace(/\s+/g," "); }
+document.getElementById("panel").addEventListener("click",function(e){ if(e.target===this) this.style.display="none"; });
+
+/* ---------- class survey view ---------- */
+function bar(label,n,total,alt){
+  var pct=total?Math.round(100*n/total):0;
+  return '<div class="chartrow"><div class="cl"><span>'+esc(label)+"</span><span>"+n+" ("+pct+'%)</span></div><div class="barout"><div class="barin'+(alt?" alt":"")+'" style="width:'+pct+'%"></div></div></div>';
+}
+function renderClass(){
+  var rows=visible(), n=rows.length, v=document.getElementById("classview");
+  if(!n){ v.innerHTML="<p style='font-weight:700'>No data yet.</p>"; return; }
+  function cr(name,val){var c=0;for(var i=0;i<rows.length;i++){var p=rows[i].payload;if(p&&p.radios&&p.radios[name]===val)c++;}return c;}
+  function cc(id){var c=0;for(var i=0;i<rows.length;i++){var p=rows[i].payload;if(p&&p.checks&&p.checks[id])c++;}return c;}
+  var countries={};
+  for(var i=0;i<rows.length;i++){
+    var p=rows[i].payload, cy=p&&p.fields&&p.fields.s_country?p.fields.s_country.trim():"";
+    if(cy){cy=cy.charAt(0).toUpperCase()+cy.slice(1).toLowerCase();countries[cy]=(countries[cy]||0)+1;}
+  }
+  var cl=Object.keys(countries).sort(function(a,b){return countries[b]-countries[a];});
+  var h="<h2 style='margin-top:0;color:#1f4d3d'>Our class — "+n+" students</h2>";
+  h+="<h3 class='sec'>Countries in the room</h3>";
+  for(var c=0;c<cl.length;c++) h+=bar(cl[c],countries[cl[c]],n,true);
+  h+="<h3 class='sec'>Does your country have a day to remember the dead?</h3>";
+  h+=bar("Yes",cr("s_deadday","Yes"),n)+bar("No",cr("s_deadday","No"),n)+bar("Not sure",cr("s_deadday","Not sure"),n);
+  h+="<h3 class='sec'>Is that day sad, happy, or both?</h3>";
+  h+=bar("Sad",cr("s_mood","Sad"),n)+bar("Happy",cr("s_mood","Happy"),n)+bar("Both",cr("s_mood","Both"),n)+bar("Quiet and serious",cr("s_mood","Quiet and serious"),n);
+  h+="<h3 class='sec'>Candy, sweets, or money at the door?</h3>";
+  h+=bar("Yes",cr("s_candy","Yes"),n,true)+bar("No",cr("s_candy","No"),n,true)+bar("Not sure",cr("s_candy","Not sure"),n,true);
+  h+="<h3 class='sec'>What people do on that day</h3>";
+  var acts=[["Visit graves","s_act_grave"],["Put out food","s_act_food"],["Candles or incense","s_act_candle"],["Show photos","s_act_photo"],["Pray","s_act_pray"],["Big family meal","s_act_eat"],["Music or dancing","s_act_music"],["Costumes or masks","s_act_costume"]];
+  for(var a=0;a<acts.length;a++) h+=bar(acts[a][0],cc(acts[a][1]),n);
+  h+="<h3 class='sec'>Have you ever celebrated Halloween?</h3>";
+  h+=bar("Many times",cr("s_hall","Yes, many times"),n,true)+bar("One time",cr("s_hall","Yes, one time"),n,true)+bar("Never",cr("s_hall","Never"),n,true);
+  h+="<h3 class='sec'>Names of holidays students wrote</h3><div class='quotes'>";
+  for(var q=0;q<rows.length;q++){
+    var pp=rows[q].payload, nm=pp&&pp.fields?pp.fields.s_dayname:"";
+    if(nm&&nm.trim()) h+="<p><b>"+esc(rows[q].student_name)+"</b>"+esc(nm)+"</p>";
+  }
+  h+="</div>";
+  h+="<h3 class='sec'>One person my family remembers</h3><div class='quotes'>";
+  for(var z=0;z<rows.length;z++){
+    var p2=rows[z].payload, t=p2&&p2.fields?p2.fields.q_person:"";
+    if(t&&t.trim()) h+="<p><b>"+esc(rows[z].student_name)+"</b>"+esc(t)+"</p>";
+  }
+  h+="</div>";
+  v.innerHTML=h;
+}
+document.getElementById("toggleClass").addEventListener("click",function(){
+  var v=document.getElementById("classview"), r=document.getElementById("rosterWrap");
+  if(v.style.display==="block"){ v.style.display="none"; r.style.display="block"; this.textContent="Class survey"; }
+  else { renderClass(); v.style.display="block"; r.style.display="none"; this.textContent="Back to roster"; }
+});
+
+/* ---------- CSV ---------- */
+document.getElementById("csv").addEventListener("click",function(){
+  var rows=visible();
+  var cols=["student_name","email","period","score","max_score","answered","total","words","level","submitted","updated_at","country","day_name","mood","candy_holiday","halloween"];
+  var keyIds=Object.keys(KEY);
+  var head=cols.concat(keyIds).concat(WRITTEN.map(function(w){return w[0];}));
+  var out=[head.join(",")];
+  for(var i=0;i<rows.length;i++){
+    var r=rows[i], p=r.payload||{}, f=p.fields||{}, rad=p.radios||{}, m=p.meta||{};
+    var line=[r.student_name,r.email,r.period,r.score||0,r.max_score||71,m.answered||0,m.total||0,m.words||0,m.level||"",r.submitted?"yes":"no",r.updated_at||"",
+              f.s_country||"",f.s_dayname||"",rad.s_mood||"",rad.s_candy||"",rad.s_hall||""];
+    for(var k=0;k<keyIds.length;k++){
+      var id=keyIds[k];
+      line.push(f[id]!==undefined?f[id]:(rad[id]!==undefined?rad[id]:""));
+    }
+    for(var w=0;w<WRITTEN.length;w++) line.push(f[WRITTEN[w][0]]||"");
+    out.push(line.map(function(c){ return '"'+String(c==null?"":c).replace(/"/g,'""')+'"'; }).join(","));
+  }
+  var b=new Blob([out.join("\n")],{type:"text/csv;charset=utf-8;"});
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(b);
+  a.download="holidays_unit_"+(document.getElementById("period").value||"all")+".csv";
+  a.click();
+});
+
+document.getElementById("refresh").addEventListener("click",load);
+document.getElementById("period").addEventListener("change",function(){
+  if(document.getElementById("classview").style.display==="block") renderClass(); else render();
+});
+document.getElementById("sortBy").addEventListener("change",render);
+
+document.getElementById("pwGo").addEventListener("click",function(){
+  if(document.getElementById("pw").value===PW){
+    document.getElementById("gateWrap").style.display="none";
+    document.getElementById("app").style.display="block";
+    load();
+  } else { document.getElementById("pwErr").textContent="Not the password."; }
+});
+document.getElementById("pw").addEventListener("keydown",function(e){ if(e.key==="Enter") document.getElementById("pwGo").click(); });
+</script>
+</body>
+</html>

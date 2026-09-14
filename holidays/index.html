@@ -1,0 +1,1768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ghosts, Candy, and Remembering — Mr. Toby's ELD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pine:#1f4d3d;
+  --pine-dk:#143528;
+  --pine-lt:#e8f0ec;
+  --ink:#1b1b1b;
+  --rule:#c9ccc8;
+  --paper:#ffffff;
+  --marigold:#d98a1f;
+  --tag-review:#2f6f4f;
+  --tag-infer:#7a4a86;
+  --tag-connect:#b1552a;
+  --tag-language:#1f5f8b;
+  --tag-ml:#8a6d1f;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:'Nunito',-apple-system,Segoe UI,Roboto,sans-serif;
+  color:var(--ink);background:#f2f4f2;font-size:17px;line-height:1.65;
+}
+body.big{font-size:21px}
+body.big .qbox textarea{min-height:120px}
+
+/* ---------- toolbar ---------- */
+#bar{
+  position:sticky;top:0;z-index:60;background:var(--pine);color:#fff;
+  padding:8px 14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;
+  box-shadow:0 2px 8px rgba(0,0,0,.2);
+}
+#bar .brand{font-weight:800;letter-spacing:.2px;margin-right:6px;font-size:15px}
+#bar button,#bar select{
+  font-family:inherit;font-size:14px;font-weight:700;
+  border:1px solid rgba(255,255,255,.45);background:rgba(255,255,255,.10);
+  color:#fff;border-radius:7px;padding:6px 10px;cursor:pointer;
+}
+#bar button:hover,#bar select:hover{background:rgba(255,255,255,.22)}
+#bar select option{color:#111;background:#fff}
+#bar .spacer{flex:1}
+#bar .who{font-size:13px;font-weight:700;opacity:.92}
+#bar button.turnin{background:#fff;color:var(--pine);border-color:#fff}
+#bar button.turnin:hover{background:#e4efe9}
+#bar button.on{background:var(--marigold);border-color:var(--marigold);color:#1b1b1b}
+#saveNote{font-size:13px;opacity:.9;font-weight:600}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:1px}
+.dot.ok{background:#8fe3b0}.dot.wait{background:#ffd76e}.dot.bad{background:#ff9a8f}
+
+/* ---------- page ---------- */
+.sheet{
+  max-width:880px;margin:18px auto 60px;background:var(--paper);
+  padding:34px 42px 50px;box-shadow:0 1px 10px rgba(0,0,0,.10);
+}
+h1{font-size:2.4rem;line-height:1.1;margin:0 0 2px;color:var(--pine);font-weight:800;letter-spacing:-.5px}
+.sub{font-size:1.05rem;font-weight:700;color:#5a6660;margin:0 0 4px}
+.byline{font-size:.9rem;color:#7a837e;margin:0 0 18px;font-weight:600}
+.nameline{
+  display:flex;gap:22px;flex-wrap:wrap;
+  border-top:2px solid var(--pine);border-bottom:2px solid var(--pine);
+  padding:10px 0;margin:0 0 20px;
+}
+.nameline label{font-weight:700;font-size:.95rem;white-space:nowrap}
+.nameline input{
+  font-family:inherit;font-size:1rem;border:none;border-bottom:1.5px solid var(--rule);
+  padding:2px 4px;min-width:150px;background:transparent;
+}
+.nameline .w1{min-width:230px}.nameline .w2{min-width:70px}
+
+h2{
+  font-size:1.45rem;color:var(--pine-dk);margin:40px 0 4px;font-weight:800;
+  border-bottom:3px solid var(--pine-lt);padding-bottom:5px;
+}
+h2 .num{
+  display:inline-block;background:var(--pine);color:#fff;
+  width:1.55em;height:1.55em;line-height:1.55em;text-align:center;
+  border-radius:50%;font-size:.78em;margin-right:9px;vertical-align:2px;
+}
+h3{font-size:1.12rem;color:var(--pine-dk);margin:26px 0 8px;font-weight:800}
+h4{font-size:1rem;color:var(--pine-dk);margin:18px 0 6px;font-weight:800}
+.instr{font-style:italic;color:#4f5a55;margin:2px 0 14px;font-weight:600}
+p.pass{margin:0 0 12px}
+p.pass .pnum{color:#8e9a94;font-weight:800;font-size:.8em;margin-right:7px;vertical-align:2px}
+
+/* ---------- jump nav ---------- */
+#jump{
+  display:flex;flex-wrap:wrap;gap:7px;margin:0 0 8px;padding:12px 14px;
+  border:1.5px solid var(--rule);border-radius:10px;background:#f7faf8;
+}
+#jump a{
+  font-size:.83rem;font-weight:800;text-decoration:none;color:var(--pine-dk);
+  border:1px solid var(--rule);border-radius:20px;padding:4px 11px;background:#fff;
+}
+#jump a:hover{border-color:var(--pine);background:var(--pine-lt)}
+
+/* ---------- glossed words ---------- */
+.gl{
+  border-bottom:2px dotted var(--pine);cursor:pointer;font-weight:700;color:var(--pine-dk);
+  background:rgba(31,77,61,.05);padding:0 1px;border-radius:2px;
+}
+.gl:focus{outline:2px solid var(--pine);outline-offset:2px}
+#tip{
+  position:absolute;z-index:200;max-width:320px;background:#fff;
+  border:2px solid var(--pine);border-radius:10px;padding:10px 13px;
+  box-shadow:0 6px 20px rgba(0,0,0,.24);font-size:15px;line-height:1.45;display:none;
+}
+#tip .w{font-weight:800;color:var(--pine);font-size:17px;display:block;margin-bottom:2px}
+#tip .d{margin-bottom:6px}
+#tip .t{border-top:1px dashed var(--rule);padding-top:6px;font-weight:700;font-size:17px}
+#tip .t.rtl{direction:rtl;text-align:right}
+#tip .none{color:#8a938e;font-style:italic;font-weight:600;font-size:14px}
+
+/* ---------- question boxes ---------- */
+.qgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+.qgrid.one{grid-template-columns:1fr}
+.qbox{border:1.5px solid var(--rule);border-radius:9px;padding:11px 13px 13px;break-inside:avoid;page-break-inside:avoid;background:#fff}
+.tag{display:inline-block;font-size:.68rem;font-weight:800;letter-spacing:.6px;color:#fff;border-radius:4px;padding:2px 7px;margin-bottom:6px}
+.tag.review{background:var(--tag-review)}
+.tag.infer{background:var(--tag-infer)}
+.tag.connect{background:var(--tag-connect)}
+.tag.language{background:var(--tag-language)}
+.tag.ml{background:var(--tag-ml)}
+.qtext{font-weight:700;margin:0 0 8px;font-size:1rem}
+.qbox textarea{
+  width:100%;font-family:inherit;font-size:1rem;line-height:28px;border:none;resize:vertical;
+  min-height:84px;padding:0;
+  background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 27px,var(--rule) 27px,var(--rule) 28px);
+  background-attachment:local;
+}
+.qbox textarea:focus{outline:none;background-color:#fbfdfb}
+.frame{font-size:.86rem;color:#5f6b65;font-weight:700;margin:0 0 6px;background:var(--pine-lt);border-radius:6px;padding:5px 8px}
+
+/* ---------- tables ---------- */
+table.tf,table.vocab,table.comp{width:100%;border-collapse:collapse;margin:12px 0}
+table.tf th,table.tf td,table.vocab th,table.vocab td,table.comp th,table.comp td{
+  border:1.5px solid var(--rule);padding:8px 10px;font-size:.98rem;vertical-align:top;
+}
+table.tf th,table.vocab th,table.comp th{background:var(--pine);color:#fff;font-weight:800;font-size:.9rem;text-align:left}
+table.tf th.tfcol,table.tf td.tfcol{width:54px;text-align:center}
+table.tf td.tfcol input{width:19px;height:19px;accent-color:var(--pine)}
+table.tf tr,table.vocab tr,table.comp tr{break-inside:avoid;page-break-inside:avoid}
+table.vocab td.w{font-weight:800;color:var(--pine-dk);width:19%}
+table.vocab td.tr{font-weight:700;width:26%}
+table.vocab td.tr.rtl{direction:rtl;text-align:right}
+table.vocab tr:nth-child(even) td{background:#f7faf8}
+table.comp td input{width:100%;font-family:inherit;font-size:.98rem;border:none;border-bottom:1.5px solid var(--rule);background:transparent;padding:2px}
+table.comp td input:focus{outline:none;background:#f0f6f2}
+table.comp td.lbl{background:#f7faf8;font-weight:800;width:24%;color:var(--pine-dk)}
+
+/* ---------- cloze / blanks ---------- */
+.bank{border:2px solid var(--pine);border-radius:9px;padding:12px 14px;margin:12px 0 18px;display:flex;flex-wrap:wrap;gap:8px 16px;background:var(--pine-lt)}
+.bank span{font-weight:800;color:var(--pine-dk)}
+.cloze{line-height:2.5;font-size:1.05rem}
+.blank{
+  font-family:inherit;font-size:1rem;font-weight:700;color:var(--pine-dk);
+  border:none;border-bottom:2px solid var(--pine);width:140px;text-align:center;
+  background:transparent;padding:1px 3px;
+}
+.blank:focus{outline:none;background:#f0f6f2}
+.blank.right{background:#e3f5e9;border-bottom-color:#2f6f4f}
+.blank.wrong{background:#fde8e6;border-bottom-color:#b3261e}
+.mark{font-weight:800;margin-left:6px;font-size:.95rem}
+.mark.right{color:#2f6f4f}.mark.wrong{color:#b3261e}
+
+/* ---------- rules / notes ---------- */
+.rule-box{border-left:6px solid var(--marigold);background:#fdf6ea;border-radius:0 9px 9px 0;padding:12px 16px;margin:14px 0}
+.rule-box p{margin:4px 0}
+.rule-box .eg{font-weight:700;color:var(--pine-dk)}
+.note-box{border:2px dashed var(--pine);border-radius:9px;background:#f7faf8;padding:12px 16px;margin:14px 0}
+
+/* ---------- level switch ---------- */
+.lvlbar{display:flex;gap:10px;align-items:center;margin:10px 0 14px;flex-wrap:wrap}
+.lvlbar .lbl{font-weight:800;font-size:.9rem;color:var(--pine-dk)}
+.lvlbtn{
+  font-family:inherit;font-size:.9rem;font-weight:800;border:2px solid var(--pine);
+  background:#fff;color:var(--pine);border-radius:20px;padding:5px 14px;cursor:pointer;
+}
+.lvlbtn.on{background:var(--pine);color:#fff}
+body[data-level="easy"] .lvl-hard{display:none}
+body[data-level="hard"] .lvl-easy{display:none}
+
+/* ---------- world cards ---------- */
+.world{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+.wcard{border:1.5px solid var(--rule);border-left:6px solid var(--marigold);border-radius:0 10px 10px 0;padding:12px 15px;background:#fff;break-inside:avoid;page-break-inside:avoid}
+.wcard h4{margin:0 0 2px;font-size:1.05rem;color:var(--pine-dk)}
+.wcard .place{font-size:.78rem;font-weight:800;color:var(--tag-connect);margin:0 0 6px}
+.wcard p{margin:0;font-size:.95rem}
+
+/* ---------- survey ---------- */
+.sq{border:1.5px solid var(--rule);border-radius:9px;padding:11px 14px;margin:10px 0;background:#fff;break-inside:avoid}
+.sq .qtext{margin-bottom:7px}
+.opts{display:flex;flex-wrap:wrap;gap:8px 18px}
+.opts label{font-weight:700;font-size:.97rem;cursor:pointer;display:flex;align-items:center;gap:6px}
+.opts input[type=radio],.opts input[type=checkbox]{width:18px;height:18px;accent-color:var(--pine)}
+.sq input[type=text]{width:100%;font-family:inherit;font-size:1rem;border:none;border-bottom:1.5px solid var(--rule);background:transparent;padding:3px}
+.sq input[type=text]:focus{outline:none;background:#f0f6f2}
+.sq select{font-family:inherit;font-size:1rem;padding:6px 9px;border:1.5px solid var(--rule);border-radius:7px;background:#fff}
+
+/* ---------- class chart ---------- */
+#chartWrap{border:1.5px solid var(--rule);border-radius:10px;padding:14px 16px;margin:12px 0;background:#f7faf8;display:none}
+.chartrow{margin:9px 0}
+.chartrow .cl{font-weight:800;font-size:.9rem;margin-bottom:3px;display:flex;justify-content:space-between}
+.barout{background:#e2e7e4;border-radius:5px;height:17px;overflow:hidden}
+.barin{background:var(--pine);height:100%;border-radius:5px;transition:width .4s ease}
+.barin.alt{background:var(--marigold)}
+
+/* ---------- multiple choice ---------- */
+.mc{border:1.5px solid var(--rule);border-radius:9px;padding:11px 14px;margin:10px 0;background:#fff;break-inside:avoid}
+.mc .qtext{margin-bottom:7px}
+.mc label{display:flex;gap:8px;align-items:flex-start;font-weight:600;margin:4px 0;cursor:pointer}
+.mc input[type=radio]{width:18px;height:18px;accent-color:var(--pine);margin-top:3px;flex:none}
+.mc.right{border-color:#2f6f4f;background:#f2fbf5}
+.mc.wrong{border-color:#b3261e;background:#fdf4f3}
+
+/* ---------- ofrenda builder ---------- */
+#ofrenda{border:1.5px solid var(--rule);border-radius:10px;padding:14px;background:#fffdf8;margin:12px 0}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px}
+.chip{
+  font-family:inherit;font-size:.86rem;font-weight:800;border:2px solid var(--pine);
+  background:#fff;color:var(--pine-dk);border-radius:20px;padding:4px 11px;cursor:pointer;
+}
+.chip.on{background:var(--pine);color:#fff}
+.altar{display:grid;gap:8px;max-width:560px;margin:0 auto}
+.tier{display:grid;gap:8px}
+.tier.t1{grid-template-columns:1fr 1fr}
+.tier.t2{grid-template-columns:1fr 1fr 1fr}
+.tier.t3{grid-template-columns:1fr 1fr 1fr}
+.slot{
+  border:2px dashed var(--marigold);border-radius:9px;min-height:64px;background:#fff;
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  font-weight:800;font-size:.87rem;color:#9aa49f;cursor:pointer;padding:6px;
+}
+.slot.filled{border-style:solid;color:var(--pine-dk);background:var(--pine-lt)}
+.tierlabel{font-size:.78rem;font-weight:800;color:var(--tag-connect);margin:6px 0 0}
+
+/* ---------- writing ---------- */
+.wcount{font-size:.82rem;font-weight:800;color:#7a837e;text-align:right;margin-top:4px}
+.checklist{list-style:none;padding:0;margin:10px 0}
+.checklist li{display:flex;gap:9px;align-items:flex-start;margin:6px 0;font-weight:700;font-size:.96rem}
+.checklist input{width:19px;height:19px;accent-color:var(--pine);margin-top:3px;flex:none}
+
+/* ---------- score ---------- */
+#scorebox{border:3px solid var(--pine);border-radius:11px;padding:14px 18px;margin:16px 0;background:var(--pine-lt);display:none}
+#scorebox .big{font-size:1.8rem;font-weight:800;color:var(--pine-dk)}
+.checkbtn{
+  font-family:inherit;font-size:.95rem;font-weight:800;background:var(--pine);color:#fff;
+  border:none;border-radius:8px;padding:9px 16px;cursor:pointer;margin:8px 6px 8px 0;
+}
+.checkbtn:hover{background:var(--pine-dk)}
+.checkbtn.ghost{background:#fff;color:var(--pine);border:2px solid var(--pine)}
+
+/* ---------- figures ---------- */
+figure.art{margin:0 0 10px 20px;float:right;width:230px;break-inside:avoid;page-break-inside:avoid}
+figure.art.left{float:left;margin:0 20px 10px 0}
+figure.art svg{width:100%;height:auto;display:block}
+figure.art figcaption{font-size:.82rem;color:#5f6b65;font-weight:700;text-align:center;margin-top:4px;line-height:1.35}
+.clearfix::after{content:"";display:table;clear:both}
+
+/* ---------- teacher ---------- */
+#teacher{border:2px dashed var(--tag-connect);border-radius:9px;padding:14px 16px;margin:34px 0 0;background:#fdf7f3;display:none}
+#teacher h3{margin-top:0;color:var(--tag-connect)}
+#teacher p{margin:5px 0;font-size:.95rem}
+#teacherBtn{font-family:inherit;font-size:.9rem;font-weight:800;margin-top:30px;background:#fff;border:2px solid var(--tag-connect);color:var(--tag-connect);border-radius:7px;padding:7px 12px;cursor:pointer}
+.footnote{font-size:.85rem;color:#7a837e;margin-top:34px;border-top:1px solid var(--rule);padding-top:10px}
+
+/* ---------- login gate ---------- */
+#gate{position:fixed;inset:0;z-index:500;background:rgba(20,53,40,.94);display:flex;align-items:center;justify-content:center;padding:20px}
+#gate .card{background:#fff;border-radius:14px;max-width:430px;width:100%;padding:26px 28px 24px;box-shadow:0 14px 44px rgba(0,0,0,.35)}
+#gate h2{margin:0 0 4px;border:none;padding:0;font-size:1.45rem}
+#gate p.hi{margin:0 0 18px;color:#5a6660;font-weight:600;font-size:.95rem}
+#gate label{display:block;font-weight:800;font-size:.85rem;color:var(--pine-dk);margin:12px 0 4px}
+#gate input,#gate select{width:100%;font-family:inherit;font-size:1.02rem;padding:9px 11px;border:2px solid var(--rule);border-radius:8px;background:#fff;color:var(--ink)}
+#gate input:focus,#gate select:focus{outline:none;border-color:var(--pine)}
+#gate button{width:100%;margin-top:20px;font-family:inherit;font-size:1.05rem;font-weight:800;background:var(--pine);color:#fff;border:none;border-radius:9px;padding:12px;cursor:pointer}
+#gate button:hover{background:var(--pine-dk)}
+#gate .err{color:#b3261e;font-weight:700;font-size:.88rem;margin-top:10px;min-height:1.1em}
+#gate .note{font-size:.8rem;color:#7a837e;margin-top:14px;line-height:1.45}
+
+/* ---------- print ---------- */
+@media print{
+  body{background:#fff;font-size:12pt}
+  #bar,#tip,#teacherBtn,#gate,#jump,.noprint,.chip,.checkbtn{display:none !important}
+  .sheet{box-shadow:none;margin:0;max-width:100%;padding:0}
+  h2{page-break-after:avoid}
+  .qbox,ol li,table tr,.mc,.sq,.wcard{page-break-inside:avoid}
+  .gl{background:none;border-bottom:1px dotted #555;color:#000}
+  .qbox textarea{min-height:78px}
+  a{text-decoration:none;color:#000}
+  .world{grid-template-columns:1fr 1fr}
+  #chartWrap{display:none !important}
+}
+@media (max-width:700px){
+  .sheet{padding:20px 18px 40px;margin:8px}
+  .qgrid,.world{grid-template-columns:1fr}
+  figure.art{float:none;width:100%;max-width:290px;margin:12px auto}
+  h1{font-size:1.9rem}
+  .tier.t2,.tier.t3{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body data-level="hard">
+
+<div id="gate">
+  <div class="card">
+    <h2>Ghosts, Candy, and Remembering</h2>
+    <p class="hi">Sign in so Mr. Toby can see your work.</p>
+    <label for="gEmail">School email address</label>
+    <input id="gEmail" type="email" autocomplete="email" placeholder="name@sfusd.edu" inputmode="email">
+    <label for="gName">Your full name</label>
+    <input id="gName" type="text" autocomplete="name" placeholder="First and last name">
+    <label for="gPeriod">Class period</label>
+    <select id="gPeriod">
+      <option value="">Choose your period</option>
+      <option>1</option><option>2</option><option>3</option><option>4</option>
+      <option>5</option><option>6</option><option>7</option><option>8</option>
+    </select>
+    <button id="gGo" type="button">Start</button>
+    <div class="err" id="gErr"></div>
+    <p class="note">Your answers save automatically while you work. You can close the page and come back later.</p>
+  </div>
+</div>
+
+<div id="bar">
+  <span class="brand">Ghosts, Candy, and Remembering</span>
+  <select id="lang" aria-label="Translation language">
+    <option value="none">Language: English only</option>
+    <option value="es">Español</option>
+    <option value="zh">中文 (简体)</option>
+    <option value="ar">العربية</option>
+    <option value="vi">Tiếng Việt</option>
+    <option value="th">ไทย</option>
+    <option value="ne">नेपाली</option>
+  </select>
+  <button id="lvlBtn" type="button">Easier English</button>
+  <button id="bigBtn" type="button">Bigger text</button>
+  <button id="pBlank" type="button">Print blank copy</button>
+  <button id="pMine" type="button">Print my answers</button>
+  <span class="spacer"></span>
+  <span class="who" id="whoNote"></span>
+  <button id="turnIn" class="turnin" type="button">Turn in</button>
+  <span id="saveNote"></span>
+</div>
+
+<div id="tip" role="tooltip"></div>
+
+<div class="sheet">
+
+  <h1>Ghosts, Candy, and Remembering</h1>
+  <p class="sub">Halloween, Día de los Muertos, and how the world talks to the dead</p>
+  <p class="byline">Mr. Toby &middot; Galileo Academy of Science and Technology &middot; English Language Development</p>
+
+  <div class="nameline">
+    <label>Name: <input class="w1" type="text" data-id="name"></label>
+    <label>Period: <input class="w2" type="text" data-id="period"></label>
+    <label>Date: <input class="w2" type="text" data-id="date"></label>
+    <label>Country I am from: <input type="text" data-id="country_top"></label>
+  </div>
+
+  <nav id="jump" class="noprint" aria-label="Jump to a part">
+    <a href="#p1">1 · Your holidays</a>
+    <a href="#p2">2 · Words</a>
+    <a href="#p3">3 · Halloween</a>
+    <a href="#p4">4 · Día de los Muertos</a>
+    <a href="#p5">5 · Compare</a>
+    <a href="#p6">6 · Around the world</a>
+    <a href="#p7">7 · Grammar</a>
+    <a href="#p8">8 · Build an altar</a>
+    <a href="#p9">9 · Writing</a>
+    <a href="#p10">10 · Show what you know</a>
+  </nav>
+
+  <div class="lvlbar noprint">
+    <span class="lbl">Reading level:</span>
+    <button class="lvlbtn" type="button" data-set="easy">Easier English</button>
+    <button class="lvlbtn on" type="button" data-set="hard">Full English</button>
+    <span class="lbl" style="color:#7a837e;font-weight:600">You can switch any time. Both readings say the same thing.</span>
+  </div>
+
+  <!-- ================= PART 1 ================= -->
+  <h2 id="p1"><span class="num">1</span>Before we read: your holidays</h2>
+  <p class="instr">Nobody is wrong here. You are the expert on your own family. Answer honestly — we will look at the class results together.</p>
+
+  <div class="sq">
+    <p class="qtext">1. What country did you live in before San Francisco?</p>
+    <input type="text" data-id="s_country" placeholder="Write the country">
+  </div>
+
+  <div class="sq">
+    <p class="qtext">2. In that country, is there a special day to remember people who died?</p>
+    <div class="opts">
+      <label><input type="radio" name="s_deadday" value="Yes" data-id="s_deadday"> Yes</label>
+      <label><input type="radio" name="s_deadday" value="No" data-id="s_deadday"> No</label>
+      <label><input type="radio" name="s_deadday" value="Not sure" data-id="s_deadday"> I am not sure</label>
+    </div>
+  </div>
+
+  <div class="sq">
+    <p class="qtext">3. If yes, what is the name of that day? What month is it?</p>
+    <input type="text" data-id="s_dayname" placeholder="Name of the day and the month">
+  </div>
+
+  <div class="sq">
+    <p class="qtext">4. On that day, what do people do? Check everything that is true.</p>
+    <div class="opts">
+      <label><input type="checkbox" data-id="s_act_grave" value="visit graves"> Visit graves</label>
+      <label><input type="checkbox" data-id="s_act_food" value="put out food"> Put out food for the dead</label>
+      <label><input type="checkbox" data-id="s_act_candle" value="light candles or incense"> Light candles or incense</label>
+      <label><input type="checkbox" data-id="s_act_photo" value="show photos"> Show photos of the dead</label>
+      <label><input type="checkbox" data-id="s_act_pray" value="pray"> Pray</label>
+      <label><input type="checkbox" data-id="s_act_eat" value="big family meal"> Eat a big family meal</label>
+      <label><input type="checkbox" data-id="s_act_music" value="music or dancing"> Music or dancing</label>
+      <label><input type="checkbox" data-id="s_act_costume" value="costumes or masks"> Costumes or masks</label>
+    </div>
+  </div>
+
+  <div class="sq">
+    <p class="qtext">5. Is the day sad, happy, or both?</p>
+    <div class="opts">
+      <label><input type="radio" name="s_mood" value="Sad" data-id="s_mood"> Sad</label>
+      <label><input type="radio" name="s_mood" value="Happy" data-id="s_mood"> Happy</label>
+      <label><input type="radio" name="s_mood" value="Both" data-id="s_mood"> Both</label>
+      <label><input type="radio" name="s_mood" value="Quiet and serious" data-id="s_mood"> Quiet and serious</label>
+    </div>
+  </div>
+
+  <div class="sq">
+    <p class="qtext">6. In your country, is there any holiday where children go to houses and get candy, sweets, food, or money?</p>
+    <div class="opts">
+      <label><input type="radio" name="s_candy" value="Yes" data-id="s_candy"> Yes</label>
+      <label><input type="radio" name="s_candy" value="No" data-id="s_candy"> No</label>
+      <label><input type="radio" name="s_candy" value="Not sure" data-id="s_candy"> I am not sure</label>
+    </div>
+    <p class="qtext" style="margin-top:9px">If yes, what is it called?</p>
+    <input type="text" data-id="s_candyname" placeholder="Name of the holiday">
+  </div>
+
+  <div class="sq">
+    <p class="qtext">7. Have you ever celebrated Halloween?</p>
+    <div class="opts">
+      <label><input type="radio" name="s_hall" value="Yes, many times" data-id="s_hall"> Yes, many times</label>
+      <label><input type="radio" name="s_hall" value="Yes, one time" data-id="s_hall"> Yes, one time</label>
+      <label><input type="radio" name="s_hall" value="Never" data-id="s_hall"> Never</label>
+    </div>
+  </div>
+
+  <div class="qgrid one">
+    <div class="qbox">
+      <span class="tag connect">CONNECT</span>
+      <p class="qtext">8. Write about one person your family remembers. Who were they? What did they like? You do not have to write a sad thing — you can write a funny thing.</p>
+      <p class="frame">My family remembers my ______. He / She was ______. He / She liked ______.</p>
+      <textarea data-id="q_person"></textarea>
+    </div>
+  </div>
+
+  <div class="noprint">
+    <button class="checkbtn ghost" id="classBtn" type="button">See the class results</button>
+    <div id="chartWrap"></div>
+  </div>
+
+  <!-- ================= PART 2 ================= -->
+  <h2 id="p2"><span class="num">2</span>Words for this unit</h2>
+  <p class="instr">Choose your language in the green bar at the top and the third column will fill in. Tap any <span style="border-bottom:2px dotted #1f4d3d;font-weight:700;color:#143528">dotted word</span> inside a reading to see it again.</p>
+  <table class="vocab">
+    <thead><tr><th>Word</th><th>What it means</th><th id="vocabLangHead">Your language</th></tr></thead>
+    <tbody id="vocabBody"></tbody>
+  </table>
+
+  <h3>Quick check: which word?</h3>
+  <p class="instr">Write one word from the table on each line.</p>
+  <div class="bank">
+    <span>ancestor</span><span>cemetery</span><span>costume</span><span>ofrenda / altar</span>
+    <span>marigold</span><span>carve</span><span>immigrant</span><span>tradition</span>
+    <span>mourn</span><span>superstition</span>
+  </div>
+  <p class="cloze">
+    1. A place with many graves is a <input class="blank" data-id="v1" data-key="cemetery"><span class="mark" data-for="v1"></span><br>
+    2. A person who moves to a new country is an <input class="blank" data-id="v2" data-key="immigrant"><span class="mark" data-for="v2"></span><br>
+    3. Your great-grandmother is your <input class="blank" data-id="v3" data-key="ancestor"><span class="mark" data-for="v3"></span><br>
+    4. You <input class="blank" data-id="v4" data-key="carve"><span class="mark" data-for="v4"></span> a face into a pumpkin.<br>
+    5. The orange flower for Día de los Muertos is a <input class="blank" data-id="v5" data-key="marigold|cempasuchil|cempasúchil"><span class="mark" data-for="v5"></span><br>
+    6. Special clothes for Halloween are a <input class="blank" data-id="v6" data-key="costume"><span class="mark" data-for="v6"></span><br>
+    7. Something your family does every year the same way is a <input class="blank" data-id="v7" data-key="tradition"><span class="mark" data-for="v7"></span><br>
+    8. A table with photos, food, and candles for the dead is an <input class="blank" data-id="v8" data-key="ofrenda|altar|ofrenda / altar"><span class="mark" data-for="v8"></span><br>
+    9. "A black cat brings bad luck" is a <input class="blank" data-id="v9" data-key="superstition"><span class="mark" data-for="v9"></span><br>
+    10. To feel very sad after someone dies is to <input class="blank" data-id="v10" data-key="mourn"><span class="mark" data-for="v10"></span>
+  </p>
+  <button class="checkbtn noprint" data-check="v">Check these 10</button>
+
+  <!-- ================= PART 3 ================= -->
+  <h2 id="p3"><span class="num">3</span>Reading A: Where Halloween came from</h2>
+  <p class="instr">Read it once without stopping. Then read it again and tap the dotted words.</p>
+
+  <div class="clearfix">
+  <figure class="art">
+    <svg viewBox="0 0 200 180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A carved pumpkin with a candle inside">
+      <g fill="none" stroke="#1f4d3d" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M100 42c-5-12-2-22 6-28 2 9 7 14 12 17"/>
+        <path d="M100 42c-34 0-58 22-58 54s24 54 58 54 58-22 58-54-24-54-58-54z"/>
+        <path d="M100 42c-14 0-22 24-22 54s8 54 22 54"/>
+        <path d="M100 42c14 0 22 24 22 54s-8 54-22 54"/>
+        <path d="M68 80l18-9 4 15z"/>
+        <path d="M132 80l-18-9-4 15z"/>
+        <path d="M92 104l8-10 8 10z"/>
+        <path d="M74 122c8 6 14 3 18 0s8-5 16-1 12 5 18-1"/>
+        <path d="M74 122c4 9 10 13 16 14"/>
+        <path d="M126 122c-4 9-10 13-16 14"/>
+      </g>
+      <g fill="none" stroke="#d98a1f" stroke-width="2.2" stroke-linecap="round">
+        <path d="M100 150v14"/><path d="M92 158h16"/>
+      </g>
+    </svg>
+    <figcaption>In Ireland people carved turnips. In America they found pumpkins.</figcaption>
+  </figure>
+
+  <div class="lvl-hard">
+    <p class="pass"><span class="pnum">1</span>More than two thousand years ago, the Celtic people lived in Ireland, Scotland, and northern France. Their year ended on October 31. They called that night Samhain (say it: SAH-win). The Celts believed that on Samhain the door between the world of the living and the world of the dead opened, and <span class="gl" data-g="spirit">spirits</span> could walk on the earth for one night.</p>
+    <p class="pass"><span class="pnum">2</span>People were <span class="gl" data-g="afraid">afraid</span>, so they did two things. They lit huge <span class="gl" data-g="bonfire">bonfires</span> on the hills, and they wore <span class="gl" data-g="mask">masks</span> and animal skins. If a spirit saw a person in a mask, the spirit would think that person was another <span class="gl">ghost</span> and leave them alone. That is the oldest reason for Halloween <span class="gl" data-g="costume">costumes</span>.</p>
+    <p class="pass"><span class="pnum">3</span>Later the Catholic Church made November 1 All Saints' Day, a day to <span class="gl">honor</span> the holy dead, and November 2 All Souls' Day. The night before All Saints' Day was called All Hallows' Eve. Over hundreds of years, "All Hallows' Eve" wore down into one short word: Halloween.</p>
+    <p class="pass"><span class="pnum">4</span>In England and Ireland, poor people walked from door to door on those days. They sang or prayed for the family's dead relatives, and the family gave them a small cake called a soul cake. This was called souling. In Scotland, children in costume went from house to house and performed a song, a poem, or a joke to get food or coins. This was called guising. Notice that the children had to <em>do</em> something first. The "trick" in "trick or treat" is what is left of that job.</p>
+    <p class="pass"><span class="pnum">5</span>In the 1840s a disease destroyed the potato crop in Ireland. More than a million people died and more than a million left. Many came to the United States. They brought Halloween the way every <span class="gl">immigrant</span> brings holidays — folded up in the suitcase, next to the clothes.</p>
+    <p class="pass"><span class="pnum">6</span>They also brought the story of Stingy Jack, a man who tricked the devil twice and then could not enter heaven or hell. He had to walk in the dark forever with one hot coal inside a <span class="gl">carve</span>d turnip. In Ireland people carved ugly faces into turnips and beets and put them in the window. In America there were <span class="gl" data-g="pumpkin">pumpkins</span> everywhere, and pumpkins are big and soft and easy to cut. The jack-o'-<span class="gl">lantern</span> was born in a new country, like the people who made it.</p>
+    <p class="pass"><span class="pnum">7</span>Souling and guising slowly turned into trick-or-treating. The words "trick or treat" appeared in American newspapers in the 1920s and 1930s, and after 1945 the custom spread to almost every <span class="gl" data-g="neighbor">neighborhood</span> in the country.</p>
+    <p class="pass"><span class="pnum">8</span>Today Halloween in the United States is not a <span class="gl">religious</span> day. It is a night for costumes, <span class="gl">candy</span>, decorations, and scary movies, and Americans spend billions of dollars on it. But under the plastic <span class="gl" data-g="skeleton">skeletons</span> the old idea is still there. At the end of October, when the nights get long and the leaves die, people think about the dead — and then they laugh at them, so they will not be afraid.</p>
+  </div>
+
+  <div class="lvl-easy">
+    <p class="pass"><span class="pnum">1</span>Halloween is on October 31.</p>
+    <p class="pass"><span class="pnum">2</span>Two thousand years ago, people lived in Ireland and Scotland. They had a holiday on October 31. They called it Samhain. It was the last day of their year.</p>
+    <p class="pass"><span class="pnum">3</span>They believed the dead came back on that night. They were <span class="gl" data-g="afraid">afraid</span> of the <span class="gl" data-g="ghost">ghosts</span>.</p>
+    <p class="pass"><span class="pnum">4</span>So they made big fires. And they wore <span class="gl" data-g="mask">masks</span>. A person in a mask looked like a ghost. Then the real ghosts did not touch them. This is why we wear <span class="gl" data-g="costume">costumes</span> today.</p>
+    <p class="pass"><span class="pnum">5</span>Later, the church made a new day. November 1 was All Saints' Day. The night before was "All Hallows' Eve." People said it fast. It became one word: Halloween.</p>
+    <p class="pass"><span class="pnum">6</span>Poor people walked to every house. They sang a song for the dead people of the family. The family gave them a small cake. Children in Scotland did this too. They wore costumes and told a joke. They got food or money.</p>
+    <p class="pass"><span class="pnum">7</span>In 1845 the potatoes in Ireland died. People had no food. Many people died. Many people moved to the United States. They brought Halloween with them. They were <span class="gl" data-g="immigrant">immigrants</span>.</p>
+    <p class="pass"><span class="pnum">8</span>In Ireland, people cut faces in turnips. In America, there were many <span class="gl" data-g="pumpkin">pumpkins</span>. So they cut faces in pumpkins. We call it a jack-o'-<span class="gl">lantern</span>.</p>
+    <p class="pass"><span class="pnum">9</span>Now Halloween is not <span class="gl">religious</span>. Children wear costumes. They say "Trick or treat!" They get <span class="gl">candy</span>. It is a fun night.</p>
+  </div>
+  </div>
+
+  <h3>True or false?</h3>
+  <table class="tf">
+    <thead><tr><th>Sentence</th><th class="tfcol">T</th><th class="tfcol">F</th></tr></thead>
+    <tbody>
+      <tr data-id="tfa1" data-key="F"><td>Halloween started in the United States.</td><td class="tfcol"><input type="radio" name="tfa1" value="T" data-id="tfa1"></td><td class="tfcol"><input type="radio" name="tfa1" value="F" data-id="tfa1"></td></tr>
+      <tr data-id="tfa2" data-key="T"><td>People first wore masks to hide from spirits.</td><td class="tfcol"><input type="radio" name="tfa2" value="T" data-id="tfa2"></td><td class="tfcol"><input type="radio" name="tfa2" value="F" data-id="tfa2"></td></tr>
+      <tr data-id="tfa3" data-key="F"><td>The first jack-o'-lanterns were pumpkins.</td><td class="tfcol"><input type="radio" name="tfa3" value="T" data-id="tfa3"></td><td class="tfcol"><input type="radio" name="tfa3" value="F" data-id="tfa3"></td></tr>
+      <tr data-id="tfa4" data-key="T"><td>Irish immigrants brought Halloween to the United States.</td><td class="tfcol"><input type="radio" name="tfa4" value="T" data-id="tfa4"></td><td class="tfcol"><input type="radio" name="tfa4" value="F" data-id="tfa4"></td></tr>
+      <tr data-id="tfa5" data-key="F"><td>Today Halloween in the United States is mostly a religious day.</td><td class="tfcol"><input type="radio" name="tfa5" value="T" data-id="tfa5"></td><td class="tfcol"><input type="radio" name="tfa5" value="F" data-id="tfa5"></td></tr>
+    </tbody>
+  </table>
+
+  <div class="qgrid">
+    <div class="qbox">
+      <span class="tag review">REVIEW</span>
+      <p class="qtext">Why did the Celts wear masks on Samhain?</p>
+      <p class="frame lvl-easy">They wore masks because ______.</p>
+      <textarea data-id="qa1"></textarea>
+    </div>
+    <div class="qbox">
+      <span class="tag review">REVIEW</span>
+      <p class="qtext">Where does the word <em>Halloween</em> come from?</p>
+      <p class="frame lvl-easy">It comes from ______.</p>
+      <textarea data-id="qa2"></textarea>
+    </div>
+    <div class="qbox">
+      <span class="tag infer">INFER</span>
+      <p class="qtext">In souling and guising, children had to sing or tell a joke <em>before</em> they got food. Today children only say "trick or treat." What changed, and why do you think it changed?</p>
+      <textarea data-id="qa3"></textarea>
+    </div>
+    <div class="qbox">
+      <span class="tag infer">INFER</span>
+      <p class="qtext">The writer says people "laugh at" the dead "so they will not be afraid." What does that mean? Do you think it works?</p>
+      <textarea data-id="qa4"></textarea>
+    </div>
+    <div class="qbox">
+      <span class="tag connect">CONNECT</span>
+      <p class="qtext">Irish immigrants carried their holiday to a new country. What is one thing your family carried here from your country?</p>
+      <p class="frame">My family brought ______ from ______.</p>
+      <textarea data-id="qa5"></textarea>
+    </div>
+    <div class="qbox">
+      <span class="tag language">LANGUAGE</span>
+      <p class="qtext">The writer says the holiday was "folded up in the suitcase, next to the clothes." A holiday cannot really go in a suitcase. Why did the writer say it that way?</p>
+      <textarea data-id="qa6"></textarea>
+    </div>
+  </div>
+
+  <!-- ================= PART 4 ================= -->
+  <h2 id="p4"><span class="num">4</span>Reading B: Día de los Muertos</h2>
+  <p class="instr">Same job: read once, then read again and tap the dotted words.</p>
+
+  <div class="clearfix">
+  <figure class="art left">
+    <svg viewBox="0 0 210 180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="An ofrenda with photos, candles, flowers and bread">
+      <g fill="none" stroke="#1f4d3d" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 168h166"/>
+        <path d="M34 168v-28h142v28"/>
+        <path d="M52 140v-30h106v30"/>
+        <path d="M72 110V82h66v28"/>
+        <rect x="88" y="50" width="34" height="30" rx="2"/>
+        <path d="M96 72c0-7 4-12 9-12s9 5 9 12"/>
+        <circle cx="105" cy="60" r="5"/>
+        <path d="M62 110V96M62 96c-4 0-6-3-6-6s3-5 6-5 6 2 6 5-2 6-6 6z"/>
+        <path d="M148 110V96M148 96c-4 0-6-3-6-6s3-5 6-5 6 2 6 5-2 6-6 6z"/>
+        <path d="M60 140v-8M150 140v-8"/>
+        <ellipse cx="105" cy="130" rx="16" ry="8"/>
+        <path d="M99 126l3 8M111 126l-3 8"/>
+        <path d="M48 162c6-4 10-4 16 0M146 162c6-4 10-4 16 0"/>
+      </g>
+      <g fill="none" stroke="#d98a1f" stroke-width="2.2" stroke-linecap="round">
+        <circle cx="62" cy="76" r="6"/><circle cx="148" cy="76" r="6"/>
+        <path d="M56 76h-5M68 76h5M62 70v-5M62 82v5"/>
+        <path d="M142 76h-5M154 76h5M148 70v-5M148 82v5"/>
+        <circle cx="70" cy="158" r="4"/><circle cx="88" cy="162" r="4"/>
+        <circle cx="122" cy="162" r="4"/><circle cx="140" cy="158" r="4"/>
+      </g>
+    </svg>
+    <figcaption>An ofrenda: photos on top, food and water below, marigolds everywhere.</figcaption>
+  </figure>
+
+  <div class="lvl-hard">
+    <p class="pass"><span class="pnum">1</span>Día de los Muertos means "Day of the Dead." It is not one day. It is November 1 and November 2 — and in many families the work starts weeks before.</p>
+    <p class="pass"><span class="pnum">2</span>The holiday is a mix of two histories. For thousands of years, Indigenous peoples in Mexico — the Nahua, the Purépecha, the Maya, the Zapotec and others — kept the bones and the memory of their <span class="gl" data-g="ancestor">ancestors</span> close, and held a festival for the dead. When the Spanish came in the 1500s, they brought All Saints' Day and All Souls' Day with them. The two <span class="gl" data-g="tradition">traditions</span> did not replace each other. They grew together, like two trees planted in one hole.</p>
+    <p class="pass"><span class="pnum">3</span>The center of the holiday is the ofrenda, the <span class="gl">altar</span> a family builds inside the house. It has levels, like steps. The family puts photographs of the people who died on it, and then the things those people loved: a favorite food, a bottle of soda, a guitar, a baseball, a pack of cigarettes. There is water, because the spirit is thirsty after a long walk. There is salt. There are <span class="gl" data-g="candle">candles</span>, one for each soul, to show the way.</p>
+    <p class="pass"><span class="pnum">4</span>And there are flowers — cempasúchil, the orange <span class="gl">marigold</span>. Families make a path of orange <span class="gl" data-g="petal">petals</span> from the street to the altar. The color is loud and the smell is strong, and people say the dead follow it home.</p>
+    <p class="pass"><span class="pnum">5</span>The food is part of the language of the day: pan de muerto, a sweet bread with bones of dough on top, and sugar <span class="gl" data-g="skull">skulls</span> with a name written on the forehead — sometimes the name of a living friend, as a joke. Papel picado, cut paper flags, move in the air above the table; people say the movement means the spirits are already in the room.</p>
+    <p class="pass"><span class="pnum">6</span>November 1 is for the children who died. People call them angelitos, little angels. November 2 is for the adults. Families go to the <span class="gl">cemetery</span>, clean the <span class="gl" data-g="grave">graves</span>, pull the <span class="gl" data-g="weeds">weeds</span>, paint the stone, put down flowers — and then they stay. They eat there. They play music. They tell stories about the dead person, including the embarrassing ones, and they laugh.</p>
+    <p class="pass"><span class="pnum">7</span>This is the part that surprises visitors: it is not a sad day. The sadness is real, but the holiday is a welcome, not a funeral. Mexicans often say a person dies three times — when the body stops, when the body is buried, and when the last person says their name for the last time. Día de los Muertos exists to push that third death far away.</p>
+    <p class="pass"><span class="pnum">8</span>It is also not "Mexican Halloween." The dates are close and both have skeletons, but the two holidays came from different places and do different work. One says <em>be afraid and then laugh</em>. The other says <em>come home, we cooked for you</em>.</p>
+  </div>
+
+  <div class="lvl-easy">
+    <p class="pass"><span class="pnum">1</span>Día de los Muertos means "Day of the Dead." It is in Mexico. It is on November 1 and November 2.</p>
+    <p class="pass"><span class="pnum">2</span>People remember their family who died. They believe the dead come back to visit for two days.</p>
+    <p class="pass"><span class="pnum">3</span>Long ago, the people of Mexico had a festival for the dead. Then the Spanish came. They brought a Catholic holiday. The two holidays became one holiday.</p>
+    <p class="pass"><span class="pnum">4</span>Families build an <span class="gl">altar</span> in the house. It is called an ofrenda. They put photos of the dead person on it.</p>
+    <p class="pass"><span class="pnum">5</span>They put the dead person's favorite food on the altar. They put water, because the spirit is thirsty. They put <span class="gl" data-g="candle">candles</span>. The candles show the way home.</p>
+    <p class="pass"><span class="pnum">6</span>They put many orange flowers on the altar. The flower is called cempasúchil. In English it is a <span class="gl">marigold</span>. The flower smells strong. People say the dead follow the smell home.</p>
+    <p class="pass"><span class="pnum">7</span>They eat a special bread. It is called pan de muerto. They make <span class="gl" data-g="skull">skulls</span> from sugar. They write a name on the skull.</p>
+    <p class="pass"><span class="pnum">8</span>November 1 is for children who died. November 2 is for adults.</p>
+    <p class="pass"><span class="pnum">9</span>Families go to the <span class="gl">cemetery</span>. They clean the <span class="gl">grave</span>. They put flowers on it. Then they stay all day and all night. They eat. They play music. They tell funny stories about the person.</p>
+    <p class="pass"><span class="pnum">10</span>The day is not sad. People are happy to see the dead again.</p>
+    <p class="pass"><span class="pnum">11</span>Día de los Muertos is not "Mexican Halloween." They are two different holidays.</p>
+  </div>
+  </div>
+
+  <h3>True or false?</h3>
+  <table class="tf">
+    <thead><tr><th>Sentence</th><th class="tfcol">T</th><th class="tfcol">F</th></tr></thead>
+    <tbody>
+      <tr data-id="tfb1" data-key="F"><td>Día de los Muertos is only one day.</td><td class="tfcol"><input type="radio" name="tfb1" value="T" data-id="tfb1"></td><td class="tfcol"><input type="radio" name="tfb1" value="F" data-id="tfb1"></td></tr>
+      <tr data-id="tfb2" data-key="T"><td>Families put water on the altar because the spirit is thirsty.</td><td class="tfcol"><input type="radio" name="tfb2" value="T" data-id="tfb2"></td><td class="tfcol"><input type="radio" name="tfb2" value="F" data-id="tfb2"></td></tr>
+      <tr data-id="tfb3" data-key="T"><td>Marigolds help the dead find the house.</td><td class="tfcol"><input type="radio" name="tfb3" value="T" data-id="tfb3"></td><td class="tfcol"><input type="radio" name="tfb3" value="F" data-id="tfb3"></td></tr>
+      <tr data-id="tfb4" data-key="F"><td>Families are quiet and sad at the cemetery.</td><td class="tfcol"><input type="radio" name="tfb4" value="T" data-id="tfb4"></td><td class="tfcol"><input type="radio" name="tfb4" value="F" data-id="tfb4"></td></tr>
+      <tr data-id="tfb5" data-key="T"><td>The holiday comes from Indigenous Mexican traditions and Catholic traditions together.</td><td class="tfcol"><input type="radio" name="tfb5" value="T" data-id="tfb5"></td><td class="tfcol"><input type="radio" name="tfb5" value="F" data-id="tfb5"></td></tr>
+    </tbody>
+  </table>
+
+  <div class="qgrid">
+    <div class="qbox">
+      <span class="tag review">REVIEW</span>
+      <p class="qtext">Name four things a family puts on an ofrenda and say why each one is there.</p>
+      <p class="frame lvl-easy">They put ______ because ______.</p>
+      <textarea data-id="qb1"></textarea>
+    </div>
+    <div class="qbox">
+      <span class="tag review">REVIEW</span>
+      <p class="qtext">What is the difference between November 1 and November 2?</p>
+      <textarea data-id="qb2"></textarea>
+    </div>
+    <div class="qbox">
+      <span class="tag infer">INFER</span>
+      <p class="qtext">"A person dies three times." Explain the third death in your own words. Why is it the one people fear most?</p>
+      <textarea data-id="qb3"></textarea>
+    </div>
+    <div class="qbox">
+      <span class="tag infer">INFER</span>
+      <p class="qtext">Why do you think families tell <em>embarrassing</em> stories about the dead person and laugh?</p>
+      <textarea data-id="qb4"></textarea>
+    </div>
+    <div class="qbox">
+      <span class="tag connect">CONNECT</span>
+      <p class="qtext">If you built an ofrenda, whose photo would you put on it? What food would you cook?</p>
+      <p class="frame">I would put ______ on my ofrenda. I would cook ______ because ______.</p>
+      <textarea data-id="qb5"></textarea>
+    </div>
+    <div class="qbox">
+      <span class="tag ml">MULTI-LEVEL</span>
+      <p class="qtext">The last line says one holiday means "be afraid and then laugh" and the other means "come home, we cooked for you." Which sentence fits a holiday from <em>your</em> country? Write your own short sentence for it.</p>
+      <textarea data-id="qb6"></textarea>
+    </div>
+  </div>
+
+  <!-- ================= PART 5 ================= -->
+  <h2 id="p5"><span class="num">5</span>Put the two holidays side by side</h2>
+  <p class="instr">Fill in the chart. Short answers are fine — you will turn these into sentences in Part 7 and Part 9.</p>
+
+  <table class="comp">
+    <thead><tr><th>Question</th><th>Halloween</th><th>Día de los Muertos</th></tr></thead>
+    <tbody>
+      <tr><td class="lbl">What days?</td><td><input type="text" data-id="c_days_h"></td><td><input type="text" data-id="c_days_d"></td></tr>
+      <tr><td class="lbl">Where did it start?</td><td><input type="text" data-id="c_where_h"></td><td><input type="text" data-id="c_where_d"></td></tr>
+      <tr><td class="lbl">Who is it for?</td><td><input type="text" data-id="c_who_h"></td><td><input type="text" data-id="c_who_d"></td></tr>
+      <tr><td class="lbl">What do people wear?</td><td><input type="text" data-id="c_wear_h"></td><td><input type="text" data-id="c_wear_d"></td></tr>
+      <tr><td class="lbl">What food?</td><td><input type="text" data-id="c_food_h"></td><td><input type="text" data-id="c_food_d"></td></tr>
+      <tr><td class="lbl">Where do people go?</td><td><input type="text" data-id="c_go_h"></td><td><input type="text" data-id="c_go_d"></td></tr>
+      <tr><td class="lbl">How do people feel?</td><td><input type="text" data-id="c_feel_h"></td><td><input type="text" data-id="c_feel_d"></td></tr>
+      <tr><td class="lbl">Is it religious?</td><td><input type="text" data-id="c_rel_h"></td><td><input type="text" data-id="c_rel_d"></td></tr>
+    </tbody>
+  </table>
+
+  <h3>What is the same? What is different?</h3>
+  <table class="comp">
+    <thead><tr><th>Only Halloween</th><th>Both holidays</th><th>Only Día de los Muertos</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><input type="text" data-id="venn_h1"><input type="text" data-id="venn_h2"><input type="text" data-id="venn_h3"></td>
+        <td><input type="text" data-id="venn_b1"><input type="text" data-id="venn_b2"><input type="text" data-id="venn_b3"></td>
+        <td><input type="text" data-id="venn_d1"><input type="text" data-id="venn_d2"><input type="text" data-id="venn_d3"></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="qgrid one">
+    <div class="qbox">
+      <span class="tag infer">INFER</span>
+      <p class="qtext">Some people call Día de los Muertos "Mexican Halloween." Write three sentences explaining why that name is not correct.</p>
+      <p class="frame">Both holidays ______, but ______. Also, ______. That is why ______.</p>
+      <textarea data-id="q_notmexhall"></textarea>
+    </div>
+  </div>
+
+  <!-- ================= PART 6 ================= -->
+  <h2 id="p6"><span class="num">6</span>The same idea in eight countries</h2>
+  <p class="instr">Almost every country on earth has a day for the dead, and many have a day when children get sweets at the door. Read the cards. Then answer the questions under them.</p>
+
+  <div class="world">
+    <div class="wcard">
+      <h4>Qingming and the Hungry Ghosts</h4>
+      <p class="place">CHINA</p>
+      <p>In early April, families go to the <span class="gl">cemetery</span> for Qingming — Tomb-Sweeping Day. They <span class="gl">sweep</span> the stone, pull the <span class="gl" data-g="weeds">weeds</span>, and set out food, tea, and rice wine. Then they burn paper money and paper houses so the <span class="gl" data-g="ancestor">ancestors</span> have what they need on the other side. In the seventh lunar month, the gates open for the Hungry Ghost Festival, and people leave food outside for spirits who have no family left.</p>
+    </div>
+    <div class="wcard">
+      <h4>Đám giỗ and Vu Lan</h4>
+      <p class="place">VIETNAM</p>
+      <p>Most Vietnamese homes have a bàn thờ — an ancestor <span class="gl">altar</span> with photographs, fruit, and <span class="gl">incense</span>. On the death anniversary, đám giỗ, the family cooks the dead person's favorite dishes, invites every relative, and eats together in front of the altar. During Vu Lan, in the seventh lunar month, people burn paper clothes and give rice porridge to wandering souls.</p>
+    </div>
+    <div class="wcard">
+      <h4>Sat Thai and Phi Ta Khon</h4>
+      <p class="place">THAILAND</p>
+      <p>In September, families carry food to the temple for their ancestors on Sat Thai, and make krayasat — a sticky sweet of rice, sesame, and peanuts. In the town of Dan Sai, the Phi Ta Khon festival fills the street with young people in tall painted <span class="gl" data-g="mask">masks</span> made from rice steamers and coconut leaves. They dance and joke as the ghosts.</p>
+    </div>
+    <div class="wcard">
+      <h4>Gai Jatra and Tihar</h4>
+      <p class="place">NEPAL</p>
+      <p>At Gai Jatra in August, every family that lost someone during the year walks a cow through the street, because the cow leads the soul. Children dress in <span class="gl" data-g="costume">costumes</span>, and the whole day is full of comedy and jokes — the joke is the medicine. During Tihar, children go house to house singing Deusi and Bhailo, and every <span class="gl">neighbor</span> gives them sweets, fruit, and money.</p>
+    </div>
+    <div class="wcard">
+      <h4>Eid mornings and Garangao</h4>
+      <p class="place">ARAB AND MUSLIM COUNTRIES</p>
+      <p>On the morning of Eid, many families go first to the <span class="gl" data-g="grave">graves</span> to pray for their dead, and then home to eat. Children wear new clothes and collect eidiya — money — and sweets from every adult they visit. In Qatar, Bahrain, Kuwait, and Oman, children go door to door in the middle of Ramadan on Garangao night with cloth bags, singing, and come home full of <span class="gl">candy</span> and nuts.</p>
+    </div>
+    <div class="wcard">
+      <h4>Giant kites for the dead</h4>
+      <p class="place">GUATEMALA</p>
+      <p>On November 1 in Sumpango and Santiago Sacatepéquez, people spend months building barriletes gigantes — kites of paper and bamboo up to twenty meters across, painted with messages. They fly them in the cemetery, above the <span class="gl" data-g="grave">graves</span>. The kite carries the message up, and the noise of the paper moves the spirits.</p>
+    </div>
+    <div class="wcard">
+      <h4>Obon</h4>
+      <p class="place">JAPAN</p>
+      <p>In August, families clean the family grave and hang <span class="gl" data-g="lantern">lanterns</span> to guide the spirits home. In the town square people dance bon odori in a circle. At the end of Obon, they float paper lanterns down a river — tōrō nagashi — to walk the spirits back out again.</p>
+    </div>
+    <div class="wcard">
+      <h4>Undás and Pangangaluluwa</h4>
+      <p class="place">PHILIPPINES</p>
+      <p>On November 1, families come to the cemetery with food, chairs, card games, and sometimes a tent, and stay the whole day and night with their dead. In some provinces an old custom called pangangaluluwa sends children to sing at the door <em>in the voice of the souls</em>, and the neighbors give them food or coins.</p>
+    </div>
+  </div>
+
+  <h3>Which country?</h3>
+  <p class="instr">Write the name of the country on each line.</p>
+  <p class="cloze">
+    1. Children sing at the door and get sweets and money at Tihar: <input class="blank" data-id="w1" data-key="nepal"><span class="mark" data-for="w1"></span><br>
+    2. People fly enormous paper kites over the graves: <input class="blank" data-id="w2" data-key="guatemala"><span class="mark" data-for="w2"></span><br>
+    3. Families burn paper money for their ancestors: <input class="blank" data-id="w3" data-key="china"><span class="mark" data-for="w3"></span><br>
+    4. People float lanterns down a river to send the spirits back: <input class="blank" data-id="w4" data-key="japan"><span class="mark" data-for="w4"></span><br>
+    5. Children collect candy in bags in the middle of Ramadan: <input class="blank" data-id="w5" data-key="qatar|bahrain|kuwait|oman|arab countries|the gulf|gulf countries"><span class="mark" data-for="w5"></span><br>
+    6. There is an altar with incense and fruit in almost every house: <input class="blank" data-id="w6" data-key="vietnam"><span class="mark" data-for="w6"></span><br>
+    7. Dancers wear tall masks made from rice steamers: <input class="blank" data-id="w7" data-key="thailand"><span class="mark" data-for="w7"></span><br>
+    8. Families spend the whole night in the cemetery on November 1: <input class="blank" data-id="w8" data-key="philippines|the philippines|mexico"><span class="mark" data-for="w8"></span>
+  </p>
+  <button class="checkbtn noprint" data-check="w">Check these 8</button>
+
+  <div class="qgrid">
+    <div class="qbox">
+      <span class="tag infer">INFER</span>
+      <p class="qtext">Look at all eight cards plus the two readings. Write <strong>three things</strong> that are the same in almost every country.</p>
+      <p class="frame">In almost every country, people ______.</p>
+      <textarea data-id="qw1"></textarea>
+    </div>
+    <div class="qbox">
+      <span class="tag infer">INFER</span>
+      <p class="qtext">Three of these traditions use <em>jokes, comedy, or laughing</em> around death. Why would a family want to laugh at a funeral time?</p>
+      <textarea data-id="qw2"></textarea>
+    </div>
+    <div class="qbox">
+      <span class="tag connect">CONNECT</span>
+      <p class="qtext">Which card is closest to something your family does? What is the same, and what is different?</p>
+      <p class="frame">The card about ______ is like my family, because ______. But in my family, ______.</p>
+      <textarea data-id="qw3"></textarea>
+    </div>
+    <div class="qbox">
+      <span class="tag ml">MULTI-LEVEL</span>
+      <p class="qtext">Write a ninth card. Use your own country or your own family. Give it a title, a place, and four or five sentences.</p>
+      <textarea data-id="qw4" style="min-height:150px"></textarea>
+    </div>
+  </div>
+
+  <!-- ================= PART 7 ================= -->
+  <h2 id="p7"><span class="num">7</span>Grammar you need to talk about traditions</h2>
+
+  <h3>A. Simple present — what people do every year</h3>
+  <div class="rule-box">
+    <p>Use the <strong>simple present</strong> for something that happens every year, not just one time.</p>
+    <p class="eg">I / you / we / they / people / families &rarr; <strong>visit</strong> &nbsp;&nbsp; he / she / it / my family / the family &rarr; <strong>visits</strong></p>
+    <p class="eg">People <strong>wear</strong> costumes. &nbsp;&nbsp; My grandmother <strong>wears</strong> black.</p>
+  </div>
+  <p class="cloze">
+    1. In Mexico, families <input class="blank" data-id="g1" data-key="build"><span class="mark" data-for="g1"></span> (build) an altar in the house.<br>
+    2. My grandmother <input class="blank" data-id="g2" data-key="puts"><span class="mark" data-for="g2"></span> (put) flowers on the grave.<br>
+    3. In China, people <input class="blank" data-id="g3" data-key="burn"><span class="mark" data-for="g3"></span> (burn) paper money.<br>
+    4. In Nepal, a family that lost someone <input class="blank" data-id="g4" data-key="walks"><span class="mark" data-for="g4"></span> (walk) a cow through the street.<br>
+    5. American children <input class="blank" data-id="g5" data-key="say"><span class="mark" data-for="g5"></span> (say) "Trick or treat!"<br>
+    6. My father <input class="blank" data-id="g6" data-key="cooks"><span class="mark" data-for="g6"></span> (cook) my grandfather's favorite food.<br>
+    7. In Japan, the family <input class="blank" data-id="g7" data-key="cleans"><span class="mark" data-for="g7"></span> (clean) the grave in August.<br>
+    8. Marigolds <input class="blank" data-id="g8" data-key="smell"><span class="mark" data-for="g8"></span> (smell) very strong.<br>
+    9. In the Philippines, everyone <input class="blank" data-id="g9" data-key="stays"><span class="mark" data-for="g9"></span> (stay) all night in the cemetery.<br>
+    10. We <input class="blank" data-id="g10" data-key="remember"><span class="mark" data-for="g10"></span> (remember) our ancestors.
+  </p>
+  <button class="checkbtn noprint" data-check="g">Check A</button>
+
+  <h3>B. <em>Used to</em> — what you did before you moved</h3>
+  <div class="rule-box">
+    <p><strong>used to</strong> + the plain verb = something you did many times in the past, but not now.</p>
+    <p class="eg">In Guatemala I <strong>used to fly</strong> kites on November 1. Now I <strong>go</strong> trick-or-treating.</p>
+    <p class="eg">Not: <span style="text-decoration:line-through">used to flew</span> &nbsp; Not: <span style="text-decoration:line-through">used to flying</span></p>
+  </div>
+  <p class="cloze">
+    1. In Vietnam, my family used to <input class="blank" data-id="u1" data-key="burn"><span class="mark" data-for="u1"></span> (burn) incense every morning.<br>
+    2. I used to <input class="blank" data-id="u2" data-key="visit"><span class="mark" data-for="u2"></span> (visit) my grandmother's grave with my mother.<br>
+    3. We used to <input class="blank" data-id="u3" data-key="eat"><span class="mark" data-for="u3"></span> (eat) special bread in November.<br>
+    4. My brother used to <input class="blank" data-id="u4" data-key="be"><span class="mark" data-for="u4"></span> (be) afraid of the cemetery.<br>
+    5. They used to <input class="blank" data-id="u5" data-key="sing"><span class="mark" data-for="u5"></span> (sing) at every door.
+  </p>
+  <button class="checkbtn noprint" data-check="u">Check B</button>
+  <div class="qgrid">
+    <div class="qbox">
+      <span class="tag ml">YOUR TURN</span>
+      <p class="qtext">Write two sentences about you. Use <em>used to</em> in the first one and the simple present in the second one.</p>
+      <p class="frame">In ______ I used to ______. Now, in San Francisco, I ______.</p>
+      <textarea data-id="q_usedto"></textarea>
+    </div>
+    <div class="qbox">
+      <span class="tag ml">YOUR TURN</span>
+      <p class="qtext">Write one sentence about something your family <em>still</em> does the same way here.</p>
+      <p class="frame">My family still ______ every year.</p>
+      <textarea data-id="q_still"></textarea>
+    </div>
+  </div>
+
+  <h3>C. in / on / at</h3>
+  <div class="rule-box">
+    <p><strong>in</strong> a month, a year, a season &nbsp;&middot;&nbsp; <strong>on</strong> a date or a day &nbsp;&middot;&nbsp; <strong>at</strong> a clock time, and <em>at night</em></p>
+    <p class="eg">in November &nbsp;&middot;&nbsp; on October 31 &nbsp;&middot;&nbsp; at midnight &nbsp;&middot;&nbsp; at night &nbsp;&middot;&nbsp; in the morning</p>
+  </div>
+  <p class="cloze">
+    1. Halloween is <input class="blank" data-id="p1a" data-key="on" style="width:70px"><span class="mark" data-for="p1a"></span> October 31.
+    2. Qingming is <input class="blank" data-id="p2a" data-key="in" style="width:70px"><span class="mark" data-for="p2a"></span> April.
+    3. Children go out <input class="blank" data-id="p3a" data-key="at" style="width:70px"><span class="mark" data-for="p3a"></span> night.<br>
+    4. The parade starts <input class="blank" data-id="p4a" data-key="at" style="width:70px"><span class="mark" data-for="p4a"></span> 7:00.
+    5. My grandfather died <input class="blank" data-id="p5a" data-key="in" style="width:70px"><span class="mark" data-for="p5a"></span> 2019.
+    6. We clean the grave <input class="blank" data-id="p6a" data-key="in" style="width:70px"><span class="mark" data-for="p6a"></span> the morning.<br>
+    7. Obon is <input class="blank" data-id="p7a" data-key="in" style="width:70px"><span class="mark" data-for="p7a"></span> the summer.
+    8. The family eats together <input class="blank" data-id="p8a" data-key="on" style="width:70px"><span class="mark" data-for="p8a"></span> November 2.
+  </p>
+  <button class="checkbtn noprint" data-check="p">Check C</button>
+
+  <h3>D. Words that compare</h3>
+  <div class="rule-box">
+    <p><strong>Both</strong> holidays have skeletons. &nbsp;&middot;&nbsp; Halloween is scary, <strong>but</strong> Día de los Muertos is warm.</p>
+    <p><strong>While</strong> Halloween is for fun, Día de los Muertos is for family. &nbsp;&middot;&nbsp; Halloween is in the US. <strong>However</strong>, it started in Ireland.</p>
+    <p>Halloween is <strong>different from</strong> Obon. &nbsp;&middot;&nbsp; Tihar is <strong>similar to</strong> Halloween.</p>
+  </div>
+  <p class="instr">Write <em>both</em>, <em>but</em>, <em>while</em>, <em>however</em>, <em>similar to</em>, or <em>different from</em>.</p>
+  <p class="cloze">
+    1. <input class="blank" data-id="d1" data-key="both" style="width:110px"><span class="mark" data-for="d1"></span> holidays happen at the end of October.<br>
+    2. Halloween is fun, <input class="blank" data-id="d2" data-key="but" style="width:110px"><span class="mark" data-for="d2"></span> Qingming is quiet and serious.<br>
+    3. Tihar is <input class="blank" data-id="d3" data-key="similar to" style="width:130px"><span class="mark" data-for="d3"></span> Halloween, because children go to every house.<br>
+    4. Obon is very <input class="blank" data-id="d4" data-key="different from" style="width:150px"><span class="mark" data-for="d4"></span> Halloween, because nobody wears a costume.<br>
+    5. <input class="blank" data-id="d5" data-key="while" style="width:110px"><span class="mark" data-for="d5"></span> Halloween is about being afraid, Día de los Muertos is about coming home.<br>
+    6. Many people call it "Mexican Halloween." <input class="blank" data-id="d6" data-key="however" style="width:130px"><span class="mark" data-for="d6"></span>, the two holidays are not related.
+  </p>
+  <button class="checkbtn noprint" data-check="d">Check D</button>
+
+  <!-- ================= PART 8 ================= -->
+  <h2 id="p8"><span class="num">8</span>Build an ofrenda</h2>
+  <p class="instr">Tap an object, then tap a shelf to put it there. Tap a full shelf to empty it. Build the altar for a real person if you want to, or for anybody — a grandparent, a musician, a dog, a hero.</p>
+
+  <div id="ofrenda" class="noprint">
+    <div class="chips" id="chips"></div>
+    <div class="altar">
+      <p class="tierlabel">Top shelf — heaven, the photos</p>
+      <div class="tier t1"><div class="slot" data-id="of1"></div><div class="slot" data-id="of2"></div></div>
+      <p class="tierlabel">Middle shelf — earth, the food and drink</p>
+      <div class="tier t2"><div class="slot" data-id="of3"></div><div class="slot" data-id="of4"></div><div class="slot" data-id="of5"></div></div>
+      <p class="tierlabel">Bottom shelf — the road home</p>
+      <div class="tier t3"><div class="slot" data-id="of6"></div><div class="slot" data-id="of7"></div><div class="slot" data-id="of8"></div></div>
+    </div>
+  </div>
+
+  <table class="comp" style="display:none" id="ofrendaPrint">
+    <thead><tr><th>Shelf</th><th>What I put there</th></tr></thead>
+    <tbody id="ofrendaPrintBody"></tbody>
+  </table>
+
+  <div class="qgrid">
+    <div class="qbox">
+      <span class="tag connect">CONNECT</span>
+      <p class="qtext">Who is your ofrenda for? Write their name and one sentence about them.</p>
+      <textarea data-id="of_who"></textarea>
+    </div>
+    <div class="qbox">
+      <span class="tag infer">INFER</span>
+      <p class="qtext">Choose <strong>two</strong> objects you put on the altar. Explain why you chose each one.</p>
+      <p class="frame">I put ______ on the altar because ______.</p>
+      <textarea data-id="of_why"></textarea>
+    </div>
+  </div>
+
+  <!-- ================= PART 9 ================= -->
+  <h2 id="p9"><span class="num">9</span>Writing</h2>
+  <p class="instr">There are three levels. Do the one Mr. Toby gives you — and if it feels easy, climb one level up.</p>
+
+  <h3>Level 1 — Six sentences</h3>
+  <div class="note-box">
+    <p style="margin:0 0 6px"><strong>Copy these sentences and finish them.</strong></p>
+    <p style="margin:2px 0">1. My family is from ______.</p>
+    <p style="margin:2px 0">2. In my country, we remember the dead on ______.</p>
+    <p style="margin:2px 0">3. On that day, people ______ and ______.</p>
+    <p style="margin:2px 0">4. My family used to ______.</p>
+    <p style="margin:2px 0">5. Halloween is different, because ______.</p>
+    <p style="margin:2px 0">6. I think ______ is important because ______.</p>
+  </div>
+  <div class="qgrid one"><div class="qbox">
+    <p class="qtext">Write your six sentences here.</p>
+    <textarea data-id="w_l1" style="min-height:170px"></textarea>
+    <div class="wcount" data-count="w_l1">0 words</div>
+  </div></div>
+
+  <h3>Level 2 — One paragraph: a holiday from my country</h3>
+  <div class="note-box">
+    <p style="margin:0 0 6px"><strong>Your paragraph needs:</strong></p>
+    <p style="margin:2px 0">&bull; A first sentence that names the holiday, the country, and the month.</p>
+    <p style="margin:2px 0">&bull; Three or four sentences in the <em>simple present</em> about what people do.</p>
+    <p style="margin:2px 0">&bull; One sentence with <em>used to</em> about what your family did before you came here.</p>
+    <p style="margin:2px 0">&bull; A last sentence that says how people feel on that day.</p>
+  </div>
+  <div class="qgrid one"><div class="qbox">
+    <p class="qtext">Write your paragraph here.</p>
+    <textarea data-id="w_l2" style="min-height:210px"></textarea>
+    <div class="wcount" data-count="w_l2">0 words</div>
+  </div></div>
+
+  <h3>Level 3 — Two paragraphs: a comparison</h3>
+  <div class="note-box">
+    <p style="margin:0 0 6px"><strong>Compare a holiday you know with Halloween or Día de los Muertos.</strong></p>
+    <p style="margin:2px 0"><strong>Paragraph 1:</strong> Start with a sentence that says what the two holidays have in common. Then give two or three specific examples of what is the same. Use <em>both</em> and <em>similar to</em>.</p>
+    <p style="margin:2px 0"><strong>Paragraph 2:</strong> Start with a sentence that says what is different. Give two or three examples. Use <em>but</em>, <em>while</em>, <em>however</em>, or <em>different from</em>. End with what you think a person from the other country would <em>not</em> understand about your holiday.</p>
+  </div>
+  <div class="qgrid one"><div class="qbox">
+    <p class="qtext">Write your two paragraphs here.</p>
+    <textarea data-id="w_l3" style="min-height:280px"></textarea>
+    <div class="wcount" data-count="w_l3">0 words</div>
+  </div></div>
+
+  <h3>Before you turn it in, check your own writing</h3>
+  <ul class="checklist">
+    <li><input type="checkbox" data-id="ck1"><span>Every sentence starts with a capital letter and ends with a period.</span></li>
+    <li><input type="checkbox" data-id="ck2"><span>I used the simple present for things that happen every year (and I checked the <em>-s</em>).</span></li>
+    <li><input type="checkbox" data-id="ck3"><span>I used <em>used to</em> + the plain verb at least one time.</span></li>
+    <li><input type="checkbox" data-id="ck4"><span>I used <em>in</em>, <em>on</em>, and <em>at</em> correctly with my dates.</span></li>
+    <li><input type="checkbox" data-id="ck5"><span>I used at least four words from the vocabulary table.</span></li>
+    <li><input type="checkbox" data-id="ck6"><span>I gave a real example, not only a general sentence.</span></li>
+    <li><input type="checkbox" data-id="ck7"><span>I read it out loud one time to myself.</span></li>
+  </ul>
+
+  <!-- ================= PART 10 ================= -->
+  <h2 id="p10"><span class="num">10</span>Show what you know</h2>
+  <p class="instr">Fourteen questions. Choose one answer for each. Then press the button at the bottom to see your score.</p>
+
+  <div class="mc" data-id="m1" data-key="b">
+    <p class="qtext">1. Samhain was the holiday of which people?</p>
+    <label><input type="radio" name="m1" value="a" data-id="m1"><span>The Aztecs</span></label>
+    <label><input type="radio" name="m1" value="b" data-id="m1"><span>The Celts of Ireland and Scotland</span></label>
+    <label><input type="radio" name="m1" value="c" data-id="m1"><span>The Romans</span></label>
+    <label><input type="radio" name="m1" value="d" data-id="m1"><span>The Spanish</span></label>
+  </div>
+  <div class="mc" data-id="m2" data-key="c">
+    <p class="qtext">2. Why did people first wear masks on that night?</p>
+    <label><input type="radio" name="m2" value="a" data-id="m2"><span>To win a prize</span></label>
+    <label><input type="radio" name="m2" value="b" data-id="m2"><span>To stay warm in the cold</span></label>
+    <label><input type="radio" name="m2" value="c" data-id="m2"><span>So the spirits would think they were spirits too</span></label>
+    <label><input type="radio" name="m2" value="d" data-id="m2"><span>Because the church told them to</span></label>
+  </div>
+  <div class="mc" data-id="m3" data-key="b">
+    <p class="qtext">3. The first jack-o'-lanterns were carved from</p>
+    <label><input type="radio" name="m3" value="a" data-id="m3"><span>pumpkins</span></label>
+    <label><input type="radio" name="m3" value="b" data-id="m3"><span>turnips and beets</span></label>
+    <label><input type="radio" name="m3" value="c" data-id="m3"><span>apples</span></label>
+    <label><input type="radio" name="m3" value="d" data-id="m3"><span>bread</span></label>
+  </div>
+  <div class="mc" data-id="m4" data-key="c">
+    <p class="qtext">4. Halloween came to the United States mainly with immigrants from</p>
+    <label><input type="radio" name="m4" value="a" data-id="m4"><span>Mexico</span></label>
+    <label><input type="radio" name="m4" value="b" data-id="m4"><span>Japan</span></label>
+    <label><input type="radio" name="m4" value="c" data-id="m4"><span>Ireland</span></label>
+    <label><input type="radio" name="m4" value="d" data-id="m4"><span>Nepal</span></label>
+  </div>
+  <div class="mc" data-id="m5" data-key="b">
+    <p class="qtext">5. Families put marigolds on the ofrenda because</p>
+    <label><input type="radio" name="m5" value="a" data-id="m5"><span>they are the cheapest flower in Mexico</span></label>
+    <label><input type="radio" name="m5" value="b" data-id="m5"><span>the strong color and smell show the dead the way home</span></label>
+    <label><input type="radio" name="m5" value="c" data-id="m5"><span>they keep insects away from the food</span></label>
+    <label><input type="radio" name="m5" value="d" data-id="m5"><span>they are the colors of the Mexican flag</span></label>
+  </div>
+  <div class="mc" data-id="m6" data-key="a">
+    <p class="qtext">6. Pan de muerto is</p>
+    <label><input type="radio" name="m6" value="a" data-id="m6"><span>a sweet bread with bones of dough on top</span></label>
+    <label><input type="radio" name="m6" value="b" data-id="m6"><span>an orange flower</span></label>
+    <label><input type="radio" name="m6" value="c" data-id="m6"><span>a paper flag</span></label>
+    <label><input type="radio" name="m6" value="d" data-id="m6"><span>a song for the dead</span></label>
+  </div>
+  <div class="mc" data-id="m7" data-key="b">
+    <p class="qtext">7. November 1 is the day for</p>
+    <label><input type="radio" name="m7" value="a" data-id="m7"><span>adults who died</span></label>
+    <label><input type="radio" name="m7" value="b" data-id="m7"><span>children who died</span></label>
+    <label><input type="radio" name="m7" value="c" data-id="m7"><span>soldiers</span></label>
+    <label><input type="radio" name="m7" value="d" data-id="m7"><span>farmers</span></label>
+  </div>
+  <div class="mc" data-id="m8" data-key="c">
+    <p class="qtext">8. Which is true about <em>both</em> Halloween and Día de los Muertos?</p>
+    <label><input type="radio" name="m8" value="a" data-id="m8"><span>Both are religious holidays today</span></label>
+    <label><input type="radio" name="m8" value="b" data-id="m8"><span>Both started in Mexico</span></label>
+    <label><input type="radio" name="m8" value="c" data-id="m8"><span>Both use pictures of skeletons and skulls</span></label>
+    <label><input type="radio" name="m8" value="d" data-id="m8"><span>Both are in December</span></label>
+  </div>
+  <div class="mc" data-id="m9" data-key="b">
+    <p class="qtext">9. At Qingming in China, families</p>
+    <label><input type="radio" name="m9" value="a" data-id="m9"><span>fly enormous kites</span></label>
+    <label><input type="radio" name="m9" value="b" data-id="m9"><span>sweep the graves and burn paper money</span></label>
+    <label><input type="radio" name="m9" value="c" data-id="m9"><span>wear tall painted masks</span></label>
+    <label><input type="radio" name="m9" value="d" data-id="m9"><span>float lanterns down a river</span></label>
+  </div>
+  <div class="mc" data-id="m10" data-key="a">
+    <p class="qtext">10. Which tradition is most like trick-or-treating?</p>
+    <label><input type="radio" name="m10" value="a" data-id="m10"><span>Deusi and Bhailo at Tihar in Nepal</span></label>
+    <label><input type="radio" name="m10" value="b" data-id="m10"><span>Obon in Japan</span></label>
+    <label><input type="radio" name="m10" value="c" data-id="m10"><span>Qingming in China</span></label>
+    <label><input type="radio" name="m10" value="d" data-id="m10"><span>Building an ofrenda in Mexico</span></label>
+  </div>
+  <div class="mc" data-id="m11" data-key="d">
+    <p class="qtext">11. "A person dies three times." The third death happens when</p>
+    <label><input type="radio" name="m11" value="a" data-id="m11"><span>the body stops working</span></label>
+    <label><input type="radio" name="m11" value="b" data-id="m11"><span>the body is buried</span></label>
+    <label><input type="radio" name="m11" value="c" data-id="m11"><span>the family moves to a new country</span></label>
+    <label><input type="radio" name="m11" value="d" data-id="m11"><span>the last person says their name for the last time</span></label>
+  </div>
+  <div class="mc" data-id="m12" data-key="b">
+    <p class="qtext">12. Which sentence is correct?</p>
+    <label><input type="radio" name="m12" value="a" data-id="m12"><span>My family visit the grave every year.</span></label>
+    <label><input type="radio" name="m12" value="b" data-id="m12"><span>My family visits the grave every year.</span></label>
+    <label><input type="radio" name="m12" value="c" data-id="m12"><span>My family visiting the grave every year.</span></label>
+    <label><input type="radio" name="m12" value="d" data-id="m12"><span>My family to visit the grave every year.</span></label>
+  </div>
+  <div class="mc" data-id="m13" data-key="c">
+    <p class="qtext">13. Which sentence is correct?</p>
+    <label><input type="radio" name="m13" value="a" data-id="m13"><span>I used to lived in Vietnam.</span></label>
+    <label><input type="radio" name="m13" value="b" data-id="m13"><span>I used to living in Vietnam.</span></label>
+    <label><input type="radio" name="m13" value="c" data-id="m13"><span>I used to live in Vietnam.</span></label>
+    <label><input type="radio" name="m13" value="d" data-id="m13"><span>I am used to live in Vietnam.</span></label>
+  </div>
+  <div class="mc" data-id="m14" data-key="b">
+    <p class="qtext">14. Halloween is ______ October 31, and children go out ______ night.</p>
+    <label><input type="radio" name="m14" value="a" data-id="m14"><span>in / in</span></label>
+    <label><input type="radio" name="m14" value="b" data-id="m14"><span>on / at</span></label>
+    <label><input type="radio" name="m14" value="c" data-id="m14"><span>at / on</span></label>
+    <label><input type="radio" name="m14" value="d" data-id="m14"><span>on / in</span></label>
+  </div>
+
+  <button class="checkbtn noprint" id="gradeBtn" type="button">Check everything and show my score</button>
+  <div id="scorebox"></div>
+
+  <h3>What can you do now?</h3>
+  <p class="instr">Check the ones that are true for you. This is not a grade — it tells Mr. Toby what to teach next.</p>
+  <ul class="checklist">
+    <li><input type="checkbox" data-id="ic1"><span>I can explain where Halloween came from.</span></li>
+    <li><input type="checkbox" data-id="ic2"><span>I can explain what an ofrenda is and why each object is on it.</span></li>
+    <li><input type="checkbox" data-id="ic3"><span>I can name three countries and what they do to remember the dead.</span></li>
+    <li><input type="checkbox" data-id="ic4"><span>I can use <em>both</em>, <em>but</em>, and <em>while</em> to compare two holidays.</span></li>
+    <li><input type="checkbox" data-id="ic5"><span>I can talk about a tradition from my own country in English.</span></li>
+    <li><input type="checkbox" data-id="ic6"><span>I can use <em>used to</em> to talk about my life before I moved.</span></li>
+  </ul>
+  <div class="qgrid one"><div class="qbox">
+    <span class="tag ml">LAST ONE</span>
+    <p class="qtext">What is one question you still have about any holiday in this unit?</p>
+    <textarea data-id="q_last"></textarea>
+  </div></div>
+
+  <button id="teacherBtn" class="noprint" type="button">Teacher notes</button>
+  <div id="teacher">
+    <h3>Teacher notes — Mr. Toby</h3>
+    <p><strong>Auto-scored:</strong> Part 2 cloze (10), Part 3 T/F (5), Part 4 T/F (5), Part 6 countries (8), Part 7 grammar (29), Part 10 multiple choice (14). Total 71 points, reported to the dashboard.</p>
+    <p><strong>Hand-scored:</strong> all textareas, the comparison chart, and the ofrenda. The dashboard shows them for reading.</p>
+    <p><strong>Sensitive ground:</strong> this unit asks students to name a dead relative. Some of them have lost people recently, and some lost them on the way here. Say out loud, before Part 1, that question 8 and Part 8 can be about anyone — a grandparent they never met, a neighbor, a pet, a singer — and that "I don't want to write about this" is an acceptable answer to be given privately. Watch the room during Part 8.</p>
+    <p><strong>Dashboard:</strong> <a href="dashboard.html">dashboard.html</a></p>
+  </div>
+
+  <p class="footnote">Mr. Toby &middot; Galileo Academy of Science and Technology &middot; English Language Development. Your work saves automatically. Press <strong>Turn in</strong> when you are finished.</p>
+
+</div>
+
+<script>
+/* ============================================================
+   GLOSSARY — simple English meaning + 6 translations
+   ============================================================ */
+var GLOSS = {
+ "ancestor":{d:"a family member who lived and died before you",
+   t:{es:"antepasado",zh:"祖先",ar:"سلف / جدّ",vi:"tổ tiên",th:"บรรพบุรุษ",ne:"पुर्खा"}},
+ "spirit":{d:"the part of a person that people believe lives after the body dies",
+   t:{es:"espíritu",zh:"灵魂",ar:"روح",vi:"linh hồn",th:"วิญญาณ",ne:"आत्मा"}},
+ "ghost":{d:"the spirit of a dead person that people believe they can see",
+   t:{es:"fantasma",zh:"鬼",ar:"شبح",vi:"con ma",th:"ผี",ne:"भूत"}},
+ "grave":{d:"the place in the ground where a dead body is put",
+   t:{es:"tumba",zh:"坟墓",ar:"قبر",vi:"ngôi mộ",th:"หลุมศพ",ne:"चिहान"}},
+ "cemetery":{d:"a place with many graves",
+   t:{es:"cementerio",zh:"墓地",ar:"مقبرة",vi:"nghĩa trang",th:"สุสาน",ne:"चिहानघारी"}},
+ "altar":{d:"a special table for religious or family objects",
+   t:{es:"altar / ofrenda",zh:"祭坛",ar:"مذبح / مزار",vi:"bàn thờ",th:"แท่นบูชา",ne:"वेदी"}},
+ "offering":{d:"food or a gift you give to a spirit or a god",
+   t:{es:"ofrenda",zh:"供品",ar:"قربان / نذر",vi:"đồ cúng",th:"เครื่องเซ่น",ne:"चढ़ावा"}},
+ "incense":{d:"a thin stick that burns slowly and makes sweet smoke",
+   t:{es:"incienso",zh:"香",ar:"بخور",vi:"nhang / hương",th:"ธูป",ne:"धूप"}},
+ "candle":{d:"wax with a string inside that burns and gives light",
+   t:{es:"vela",zh:"蜡烛",ar:"شمعة",vi:"nến",th:"เทียน",ne:"मैनबत्ती"}},
+ "marigold":{d:"an orange flower used on Día de los Muertos",
+   t:{es:"cempasúchil",zh:"万寿菊",ar:"زهرة القطيفة",vi:"hoa cúc vạn thọ",th:"ดาวเรือง",ne:"सयपत्री"}},
+ "skull":{d:"the bone of the head",
+   t:{es:"calavera / cráneo",zh:"头骨 / 骷髅",ar:"جمجمة",vi:"đầu lâu",th:"กะโหลก",ne:"खप्पर"}},
+ "skeleton":{d:"all the bones of a body together",
+   t:{es:"esqueleto",zh:"骨架 / 骷髅",ar:"هيكل عظمي",vi:"bộ xương",th:"โครงกระดูก",ne:"कंकाल"}},
+ "costume":{d:"special clothes to look like someone or something else",
+   t:{es:"disfraz",zh:"装扮服装",ar:"زيّ تنكّري",vi:"trang phục hóa trang",th:"ชุดแฟนซี",ne:"पोशाक"}},
+ "mask":{d:"a cover for your face",
+   t:{es:"máscara",zh:"面具",ar:"قناع",vi:"mặt nạ",th:"หน้ากาก",ne:"मुखुण्डो"}},
+ "candy":{d:"sweet food, like chocolate or sugar",
+   t:{es:"dulces",zh:"糖果",ar:"حلوى",vi:"kẹo",th:"ลูกอม",ne:"मिठाई"}},
+ "neighbor":{d:"a person who lives near you",
+   t:{es:"vecino",zh:"邻居",ar:"جار",vi:"hàng xóm",th:"เพื่อนบ้าน",ne:"छिमेकी"}},
+ "knock":{d:"to hit a door with your hand so someone opens it",
+   t:{es:"tocar la puerta",zh:"敲门",ar:"يطرق الباب",vi:"gõ cửa",th:"เคาะประตู",ne:"ढोका ढकढक्याउनु"}},
+ "celebrate":{d:"to do something special for a happy day",
+   t:{es:"celebrar",zh:"庆祝",ar:"يحتفل",vi:"ăn mừng",th:"ฉลอง",ne:"मनाउनु"}},
+ "honor":{d:"to show respect for someone",
+   t:{es:"honrar",zh:"纪念 / 敬重",ar:"يكرّم",vi:"tôn kính",th:"ให้เกียรติ",ne:"सम्मान गर्नु"}},
+ "remember":{d:"to keep someone or something in your mind",
+   t:{es:"recordar",zh:"记得 / 纪念",ar:"يتذكّر",vi:"nhớ",th:"จดจำ",ne:"सम्झनु"}},
+ "tradition":{d:"something a family or a country does the same way every year",
+   t:{es:"tradición",zh:"传统",ar:"تقليد",vi:"truyền thống",th:"ประเพณี",ne:"परम्परा"}},
+ "decorate":{d:"to put beautiful things on something",
+   t:{es:"decorar",zh:"装饰",ar:"يزيّن",vi:"trang trí",th:"ตกแต่ง",ne:"सजाउनु"}},
+ "carve":{d:"to cut a shape or a face into something",
+   t:{es:"tallar",zh:"雕刻",ar:"ينحت",vi:"khắc / gọt",th:"แกะสลัก",ne:"कुँद्नु"}},
+ "pumpkin":{d:"a big orange vegetable that grows in the fall",
+   t:{es:"calabaza",zh:"南瓜",ar:"يقطين",vi:"bí ngô",th:"ฟักทอง",ne:"फर्सी"}},
+ "lantern":{d:"a light inside paper or glass that you can carry",
+   t:{es:"farol / linterna",zh:"灯笼",ar:"فانوس",vi:"đèn lồng",th:"โคมไฟ",ne:"लालटिन"}},
+ "bonfire":{d:"a big fire outside",
+   t:{es:"hoguera",zh:"篝火",ar:"نار كبيرة في الخلاء",vi:"lửa trại",th:"กองไฟ",ne:"ठूलो आगो"}},
+ "harvest":{d:"the time when farmers bring in the food from the fields",
+   t:{es:"cosecha",zh:"收获",ar:"حصاد",vi:"mùa gặt",th:"การเก็บเกี่ยว",ne:"बाली भित्र्याउने समय"}},
+ "immigrant":{d:"a person who moves to a new country to live",
+   t:{es:"inmigrante",zh:"移民",ar:"مهاجر",vi:"người nhập cư",th:"ผู้อพยพ",ne:"आप्रवासी"}},
+ "religious":{d:"about God, or about a church, temple, or mosque",
+   t:{es:"religioso",zh:"宗教的",ar:"ديني",vi:"thuộc tôn giáo",th:"เกี่ยวกับศาสนา",ne:"धार्मिक"}},
+ "superstition":{d:"a belief that an action brings good luck or bad luck",
+   t:{es:"superstición",zh:"迷信",ar:"خرافة",vi:"mê tín",th:"ความเชื่อโชคลาง",ne:"अन्धविश्वास"}},
+ "afraid":{d:"feeling that something bad is going to happen",
+   t:{es:"asustado / con miedo",zh:"害怕",ar:"خائف",vi:"sợ hãi",th:"กลัว",ne:"डराएको"}},
+ "mourn":{d:"to feel very sad for a long time because someone died",
+   t:{es:"estar de luto",zh:"哀悼",ar:"يحزن على ميت",vi:"để tang",th:"ไว้ทุกข์",ne:"शोक गर्नु"}},
+ "generation":{d:"all the people in a family born at about the same time",
+   t:{es:"generación",zh:"一代人",ar:"جيل",vi:"thế hệ",th:"รุ่นคน",ne:"पुस्ता"}},
+ "sweep":{d:"to clean the ground with a brush",
+   t:{es:"barrer",zh:"打扫 / 扫墓",ar:"يكنس",vi:"quét",th:"กวาด",ne:"बढार्नु"}},
+ "petal":{d:"one soft colored part of a flower",
+   t:{es:"pétalo",zh:"花瓣",ar:"بتلة",vi:"cánh hoa",th:"กลีบดอกไม้",ne:"पंखुडी"}},
+ "weeds":{d:"bad plants that grow where you do not want them",
+   t:{es:"maleza",zh:"杂草",ar:"أعشاب ضارّة",vi:"cỏ dại",th:"วัชพืช",ne:"झारपात"}}
+};
+var VOCAB_ORDER = ["ancestor","spirit","ghost","grave","cemetery","sweep","weeds","altar","offering","incense","candle","marigold","petal","skull","skeleton","costume","mask","candy","neighbor","knock","celebrate","honor","remember","mourn","tradition","generation","decorate","carve","pumpkin","lantern","bonfire","harvest","immigrant","religious","superstition","afraid"];
+var LANGNAME = {es:"Español",zh:"中文",ar:"العربية",vi:"Tiếng Việt",th:"ไทย",ne:"नेपाली"};
+var curLang = "none";
+
+/* ---------- vocabulary table ---------- */
+function buildVocab(){
+  var tb = document.getElementById("vocabBody"), h = "";
+  var rtl = (curLang === "ar") ? " rtl" : "";
+  for(var i=0;i<VOCAB_ORDER.length;i++){
+    var k = VOCAB_ORDER[i], g = GLOSS[k];
+    var tr = (curLang !== "none" && g.t[curLang]) ? g.t[curLang] : "";
+    h += '<tr><td class="w">' + k + '</td><td>' + g.d + '</td><td class="tr' + rtl + '">' + tr + '</td></tr>';
+  }
+  tb.innerHTML = h;
+  document.getElementById("vocabLangHead").textContent =
+    (curLang === "none") ? "Your language" : LANGNAME[curLang];
+}
+
+/* ---------- tooltip ---------- */
+var tip = document.getElementById("tip");
+function showTip(el){
+  var key = el.getAttribute("data-g") || el.textContent.toLowerCase().replace(/[^a-z']/g,"");
+  var g = GLOSS[key];
+  if(!g){ return; }
+  var h = '<span class="w">' + key + '</span><span class="d">' + g.d + '</span>';
+  if(curLang === "none"){
+    h += '<div class="none">Choose a language in the green bar to see this word in your language.</div>';
+  } else {
+    h += '<div class="t' + (curLang === "ar" ? " rtl" : "") + '">' + (g.t[curLang] || "—") + '</div>';
+  }
+  tip.innerHTML = h;
+  tip.style.display = "block";
+  var r = el.getBoundingClientRect();
+  var top = r.bottom + window.scrollY + 6;
+  var left = r.left + window.scrollX;
+  var maxLeft = window.scrollX + document.documentElement.clientWidth - tip.offsetWidth - 12;
+  if(left > maxLeft) left = maxLeft;
+  if(left < window.scrollX + 8) left = window.scrollX + 8;
+  tip.style.top = top + "px";
+  tip.style.left = left + "px";
+}
+document.addEventListener("click", function(e){
+  var g = e.target.closest ? e.target.closest(".gl") : null;
+  if(g){ showTip(g); e.stopPropagation(); return; }
+  tip.style.display = "none";
+});
+document.addEventListener("keydown", function(e){ if(e.key === "Escape") tip.style.display = "none"; });
+
+/* ---------- toolbar ---------- */
+document.getElementById("lang").addEventListener("change", function(){
+  curLang = this.value;
+  buildVocab();
+  tip.style.display = "none";
+  try{ localStorage.setItem("hol_lang", curLang); }catch(err){}
+  queueSave();
+});
+document.getElementById("bigBtn").addEventListener("click", function(){
+  document.body.classList.toggle("big");
+  this.classList.toggle("on");
+});
+function setLevel(v){
+  document.body.setAttribute("data-level", v);
+  var bs = document.querySelectorAll(".lvlbtn");
+  for(var i=0;i<bs.length;i++) bs[i].classList.toggle("on", bs[i].getAttribute("data-set") === v);
+  document.getElementById("lvlBtn").textContent = (v === "easy") ? "Full English" : "Easier English";
+  document.getElementById("lvlBtn").classList.toggle("on", v === "easy");
+  try{ localStorage.setItem("hol_level", v); }catch(err){}
+}
+document.getElementById("lvlBtn").addEventListener("click", function(){
+  setLevel(document.body.getAttribute("data-level") === "easy" ? "hard" : "easy");
+});
+var lb = document.querySelectorAll(".lvlbtn");
+for(var i=0;i<lb.length;i++){
+  lb[i].addEventListener("click", function(){ setLevel(this.getAttribute("data-set")); });
+}
+
+/* ---------- ofrenda builder ---------- */
+var OF_ITEMS = ["a photo","a second photo","water","salt","a candle","marigolds","pan de muerto",
+  "a sugar skull","their favorite food","their favorite drink","fruit","bread",
+  "incense","papel picado","a guitar","a soccer ball","a toy","a letter","a cross","a blanket"];
+var ofPick = null;
+(function(){
+  var c = document.getElementById("chips"), h = "";
+  for(var i=0;i<OF_ITEMS.length;i++) h += '<button class="chip" type="button" data-item="' + OF_ITEMS[i] + '">' + OF_ITEMS[i] + '</button>';
+  h += '<button class="chip" type="button" data-item="__other__">something from my country…</button>';
+  c.innerHTML = h;
+  c.addEventListener("click", function(e){
+    var b = e.target.closest(".chip"); if(!b) return;
+    var was = b.classList.contains("on");
+    var all = c.querySelectorAll(".chip");
+    for(var j=0;j<all.length;j++) all[j].classList.remove("on");
+    if(was){ ofPick = null; return; }
+    b.classList.add("on");
+    var it = b.getAttribute("data-item");
+    if(it === "__other__"){
+      var typed = window.prompt("What do you want to put on the altar?");
+      if(!typed){ b.classList.remove("on"); ofPick = null; return; }
+      ofPick = typed.slice(0,40);
+      b.textContent = ofPick;
+      b.setAttribute("data-item", ofPick);
+    } else { ofPick = it; }
+  });
+  var slots = document.querySelectorAll("#ofrenda .slot");
+  for(var s=0;s<slots.length;s++){
+    slots[s].addEventListener("click", function(){
+      if(this.classList.contains("filled")){ setSlot(this, ""); queueSave(); return; }
+      if(!ofPick){ this.textContent = "pick an object first"; var me = this;
+        setTimeout(function(){ if(!me.classList.contains("filled")) me.textContent = ""; }, 900); return; }
+      setSlot(this, ofPick); queueSave();
+    });
+  }
+})();
+function setSlot(el, val){
+  el.setAttribute("data-val", val);
+  el.textContent = val;
+  el.classList.toggle("filled", !!val);
+}
+function ofrendaToPrintTable(){
+  var names = ["Top shelf","Top shelf","Middle shelf","Middle shelf","Middle shelf","Bottom shelf","Bottom shelf","Bottom shelf"];
+  var slots = document.querySelectorAll("#ofrenda .slot"), h = "";
+  for(var i=0;i<slots.length;i++){
+    h += "<tr><td class=\"lbl\">" + names[i] + "</td><td>" + (slots[i].getAttribute("data-val") || "") + "</td></tr>";
+  }
+  document.getElementById("ofrendaPrintBody").innerHTML = h;
+}
+
+/* ---------- word count ---------- */
+function wordsIn(s){ s = (s||"").trim(); return s ? s.split(/\s+/).length : 0; }
+document.addEventListener("input", function(e){
+  var id = e.target.getAttribute && e.target.getAttribute("data-id");
+  if(!id) return;
+  var c = document.querySelector('[data-count="' + id + '"]');
+  if(c) c.textContent = wordsIn(e.target.value) + " words";
+});
+</script>
+
+<script>
+/* ============================================================
+   AUTO-SCORING
+   ============================================================ */
+var GROUPS = {
+  v: /^v\d+$/,  w: /^w\d+$/,  g: /^g\d+$/,
+  u: /^u\d+$/,  p: /^p\d+a$/, d: /^d\d+$/
+};
+function norm(s){
+  return (s||"").toLowerCase().trim()
+    .replace(/[.,!?;:"']/g,"")
+    .replace(/\s+/g," ");
+}
+function blankOK(inp){
+  var keys = (inp.getAttribute("data-key")||"").split("|");
+  var val = norm(inp.value);
+  if(!val) return null;
+  for(var i=0;i<keys.length;i++){ if(norm(keys[i]) === val) return true; }
+  return false;
+}
+function markBlank(inp, ok){
+  var m = document.querySelector('.mark[data-for="' + inp.getAttribute("data-id") + '"]');
+  inp.classList.remove("right","wrong");
+  if(ok === null){ if(m) m.textContent = ""; return; }
+  inp.classList.add(ok ? "right" : "wrong");
+  if(m){ m.className = "mark " + (ok ? "right" : "wrong"); m.textContent = ok ? "✓" : "✗"; }
+}
+function checkBlanks(re, mark){
+  var got = 0, tot = 0;
+  var all = document.querySelectorAll("input.blank[data-key]");
+  for(var i=0;i<all.length;i++){
+    var id = all[i].getAttribute("data-id");
+    if(re && !re.test(id)) continue;
+    tot++;
+    var ok = blankOK(all[i]);
+    if(mark) markBlank(all[i], ok);
+    if(ok === true) got++;
+  }
+  return [got, tot];
+}
+function checkTF(mark){
+  var got = 0, tot = 0, rows = document.querySelectorAll("table.tf tr[data-key]");
+  for(var i=0;i<rows.length;i++){
+    tot++;
+    var name = rows[i].getAttribute("data-id");
+    var sel = rows[i].querySelector('input[name="' + name + '"]:checked');
+    var ok = sel && sel.value === rows[i].getAttribute("data-key");
+    if(mark){ rows[i].style.background = sel ? (ok ? "#f2fbf5" : "#fdf4f3") : ""; }
+    if(ok) got++;
+  }
+  return [got, tot];
+}
+function checkMC(mark){
+  var got = 0, tot = 0, blocks = document.querySelectorAll(".mc[data-key]");
+  for(var i=0;i<blocks.length;i++){
+    tot++;
+    var name = blocks[i].getAttribute("data-id");
+    var sel = blocks[i].querySelector('input[name="' + name + '"]:checked');
+    var ok = sel && sel.value === blocks[i].getAttribute("data-key");
+    if(mark){ blocks[i].classList.remove("right","wrong"); if(sel) blocks[i].classList.add(ok ? "right" : "wrong"); }
+    if(ok) got++;
+  }
+  return [got, tot];
+}
+function totalScore(mark){
+  var b = checkBlanks(null, mark), t = checkTF(mark), m = checkMC(mark);
+  return { score: b[0] + t[0] + m[0], max: b[1] + t[1] + m[1],
+           blanks: b, tf: t, mc: m };
+}
+var cbtns = document.querySelectorAll("[data-check]");
+for(var ci=0;ci<cbtns.length;ci++){
+  cbtns[ci].addEventListener("click", function(){
+    var r = checkBlanks(GROUPS[this.getAttribute("data-check")], true);
+    this.textContent = "You got " + r[0] + " of " + r[1] + " — check again";
+    queueSave();
+  });
+}
+document.getElementById("gradeBtn").addEventListener("click", function(){
+  var r = totalScore(true);
+  var pct = r.max ? Math.round(100 * r.score / r.max) : 0;
+  var msg = pct >= 85 ? "Strong. You know this unit."
+          : pct >= 70 ? "Good. Look at the red ones and fix them."
+          : pct >= 50 ? "You are getting there. Go back and re-read the part you missed."
+          : "Go back to the readings and try again — the answers are all in there.";
+  var box = document.getElementById("scorebox");
+  box.innerHTML = '<div class="big">' + r.score + " / " + r.max + "  (" + pct + "%)</div>" +
+    "<p style=\"margin:6px 0 0;font-weight:700\">" + msg + "</p>" +
+    '<p style="margin:8px 0 0;font-size:.92rem">Vocabulary and country blanks: ' + r.blanks[0] + " / " + r.blanks[1] +
+    " &nbsp;&middot;&nbsp; True or false: " + r.tf[0] + " / " + r.tf[1] +
+    " &nbsp;&middot;&nbsp; Multiple choice: " + r.mc[0] + " / " + r.mc[1] + "</p>";
+  box.style.display = "block";
+  if(box.scrollIntoView) box.scrollIntoView({behavior:"smooth", block:"center"});
+  queueSave();
+});
+document.getElementById("teacherBtn").addEventListener("click", function(){
+  var t = document.getElementById("teacher");
+  t.style.display = (t.style.display === "block") ? "none" : "block";
+});
+
+/* ============================================================
+   PRINTING
+   ============================================================ */
+function allFields(){ return document.querySelectorAll("[data-id]"); }
+document.getElementById("pMine").addEventListener("click", function(){
+  ofrendaToPrintTable();
+  document.getElementById("ofrendaPrint").style.display = "table";
+  window.print();
+});
+document.getElementById("pBlank").addEventListener("click", function(){
+  var f = allFields(), stash = [];
+  for(var i=0;i<f.length;i++){
+    var el = f[i];
+    if(el.tagName === "TEXTAREA" || (el.tagName === "INPUT" && (el.type === "text" || el.type === "email"))){
+      stash.push([el,"value",el.value]); el.value = "";
+    } else if(el.tagName === "INPUT" && (el.type === "radio" || el.type === "checkbox")){
+      stash.push([el,"checked",el.checked]); el.checked = false;
+    } else if(el.classList.contains("slot")){
+      stash.push([el,"slot",el.getAttribute("data-val")||""]); setSlot(el,"");
+    }
+  }
+  var marks = document.querySelectorAll(".mark"), mstash = [];
+  for(var k=0;k<marks.length;k++){ mstash.push(marks[k].textContent); marks[k].textContent = ""; }
+  ofrendaToPrintTable();
+  document.getElementById("ofrendaPrint").style.display = "table";
+  window.print();
+  setTimeout(function(){
+    for(var j=0;j<stash.length;j++){
+      if(stash[j][1] === "slot") setSlot(stash[j][0], stash[j][2]);
+      else stash[j][0][stash[j][1]] = stash[j][2];
+    }
+    for(var n=0;n<marks.length;n++) marks[n].textContent = mstash[n];
+    document.getElementById("ofrendaPrint").style.display = "none";
+  }, 400);
+});
+window.addEventListener("afterprint", function(){
+  document.getElementById("ofrendaPrint").style.display = "none";
+});
+
+/* ============================================================
+   SUPABASE — sign in, autosave, class results
+   ============================================================ */
+var SUPA_URL = "https://lhmwtfyceilgndpygivj.supabase.co";
+var SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU";
+var TABLE = "unit_responses";
+var GUIDE_KEY = "holidays_v1";
+var LOCAL_KEY = "holidays_v1_work";
+var STU_KEY = "holidays_v1_student";
+var student = null;
+
+function headers(extra){
+  var h = { "apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY, "Content-Type": "application/json" };
+  if(extra){ for(var k in extra) h[k] = extra[k]; }
+  return h;
+}
+function setStatus(cls, text){
+  document.getElementById("saveNote").innerHTML = '<span class="dot ' + cls + '"></span>' + text;
+}
+function timeNow(){
+  var d = new Date(), h = d.getHours(), m = d.getMinutes();
+  var ap = h >= 12 ? "PM" : "AM"; h = h % 12; if(h === 0) h = 12;
+  if(m < 10) m = "0" + m;
+  return h + ":" + m + " " + ap;
+}
+
+/* ---------- collect / restore ---------- */
+function collectPayload(){
+  var out = { fields:{}, checks:{}, radios:{}, ofrenda:{}, meta:{} };
+  var answered = 0, total = 0;
+  var f = allFields();
+  for(var i=0;i<f.length;i++){
+    var el = f[i], id = el.getAttribute("data-id");
+    if(el.tagName === "TEXTAREA" || (el.tagName === "INPUT" && el.type === "text")){
+      out.fields[id] = el.value;
+      total++; if(el.value.trim()) answered++;
+    } else if(el.tagName === "INPUT" && el.type === "checkbox"){
+      if(el.checked) out.checks[id] = el.value || true;
+    } else if(el.tagName === "INPUT" && el.type === "radio"){
+      if(el.checked){ out.radios[el.name] = el.value; }
+    } else if(el.classList.contains("slot")){
+      out.ofrenda[id] = el.getAttribute("data-val") || "";
+    }
+  }
+  var seen = {};
+  var radios = document.querySelectorAll('input[type="radio"][data-id]');
+  for(var r=0;r<radios.length;r++){
+    if(seen[radios[r].name]) continue;
+    seen[radios[r].name] = 1; total++;
+    if(out.radios[radios[r].name]) answered++;
+  }
+  var sc = totalScore(false);
+  out.meta.answered = answered;
+  out.meta.total = total;
+  out.meta.score = sc.score;
+  out.meta.max = sc.max;
+  out.meta.level = document.body.getAttribute("data-level");
+  out.meta.words = wordsIn(out.fields.w_l1) + wordsIn(out.fields.w_l2) + wordsIn(out.fields.w_l3);
+  return out;
+}
+function restorePayload(p){
+  if(!p) return;
+  var f = allFields();
+  for(var i=0;i<f.length;i++){
+    var el = f[i], id = el.getAttribute("data-id");
+    if(el.tagName === "TEXTAREA" || (el.tagName === "INPUT" && el.type === "text")){
+      if(p.fields && p.fields[id] !== undefined) el.value = p.fields[id];
+    } else if(el.tagName === "INPUT" && el.type === "checkbox"){
+      if(p.checks && p.checks[id] !== undefined) el.checked = true;
+    } else if(el.tagName === "INPUT" && el.type === "radio"){
+      if(p.radios && p.radios[el.name] === el.value) el.checked = true;
+    } else if(el.classList.contains("slot")){
+      if(p.ofrenda && p.ofrenda[id]) setSlot(el, p.ofrenda[id]);
+    }
+  }
+  var cs = document.querySelectorAll("[data-count]");
+  for(var c=0;c<cs.length;c++){
+    var src = document.querySelector('[data-id="' + cs[c].getAttribute("data-count") + '"]');
+    if(src) cs[c].textContent = wordsIn(src.value) + " words";
+  }
+}
+function saveLocal(){
+  try{ localStorage.setItem(LOCAL_KEY, JSON.stringify(collectPayload())); }catch(e){}
+}
+
+/* ---------- upsert ---------- */
+var saving = false, pending = false, saveTimer = null;
+function pushRow(markSubmitted, done){
+  saveLocal();
+  if(!student) return;
+  if(saving){ pending = true; return; }
+  saving = true;
+  setStatus("wait", "Saving…");
+  var pay = collectPayload();
+  var row = {
+    email: student.email, student_name: student.name, period: student.period,
+    guide_key: GUIDE_KEY, lang: curLang, payload: pay,
+    answered: pay.meta.answered, total: pay.meta.total,
+    score: pay.meta.score, max_score: pay.meta.max,
+    updated_at: new Date().toISOString()
+  };
+  if(markSubmitted){ row.submitted = true; row.submitted_at = new Date().toISOString(); }
+  fetch(SUPA_URL + "/rest/v1/" + TABLE + "?on_conflict=email,guide_key", {
+    method: "POST",
+    headers: headers({ "Prefer": "resolution=merge-duplicates,return=minimal" }),
+    body: JSON.stringify([row])
+  }).then(function(res){
+    saving = false;
+    if(res.ok){ setStatus("ok", "Saved " + timeNow()); if(done) done(true); }
+    else { res.text().then(function(t){ console.warn("Save failed:", res.status, t); });
+           setStatus("bad", "Not saved — check internet"); if(done) done(false); }
+    if(pending){ pending = false; pushRow(false); }
+  }).catch(function(e){
+    saving = false; console.warn("Save error:", e);
+    setStatus("bad", "Not saved — check internet");
+    if(done) done(false);
+    if(pending){ pending = false; pushRow(false); }
+  });
+}
+function queueSave(){
+  saveLocal();
+  if(!student) return;
+  setStatus("wait", "Saving…");
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(function(){ pushRow(false); }, 2500);
+}
+document.addEventListener("input", function(e){
+  if(e.target.hasAttribute && e.target.hasAttribute("data-id")) queueSave();
+});
+document.addEventListener("change", function(e){
+  if(e.target.hasAttribute && e.target.hasAttribute("data-id")) queueSave();
+});
+window.addEventListener("beforeunload", function(){
+  saveLocal();
+  if(!student || !saveTimer) return;
+  clearTimeout(saveTimer);
+  var pay = collectPayload();
+  try{
+    fetch(SUPA_URL + "/rest/v1/" + TABLE + "?on_conflict=email,guide_key", {
+      method: "POST", keepalive: true,
+      headers: headers({ "Prefer": "resolution=merge-duplicates,return=minimal" }),
+      body: JSON.stringify([{
+        email: student.email, student_name: student.name, period: student.period,
+        guide_key: GUIDE_KEY, lang: curLang, payload: pay,
+        answered: pay.meta.answered, total: pay.meta.total,
+        score: pay.meta.score, max_score: pay.meta.max,
+        updated_at: new Date().toISOString()
+      }])
+    });
+  }catch(e){}
+});
+
+/* ---------- turn in ---------- */
+document.getElementById("turnIn").addEventListener("click", function(){
+  if(!student){ alert("Sign in first."); return; }
+  var pay = collectPayload();
+  var left = pay.meta.total - pay.meta.answered;
+  var msg = left > 0 ? ("You still have " + left + " empty boxes. Turn it in anyway?") : "Turn in your work?";
+  if(!confirm(msg)) return;
+  var btn = this; btn.disabled = true; btn.textContent = "Turning in…";
+  pushRow(true, function(ok){
+    btn.disabled = false;
+    btn.textContent = ok ? "Turned in ✓" : "Turn in";
+    if(!ok) alert("It did not send. Check the wifi and press Turn in again.");
+  });
+});
+
+/* ---------- sign in ---------- */
+function startSession(s){
+  student = s;
+  document.getElementById("gate").style.display = "none";
+  document.getElementById("whoNote").textContent = s.name + " · period " + s.period;
+  var n = document.querySelector('[data-id="name"]'); if(n && !n.value) n.value = s.name;
+  var p = document.querySelector('[data-id="period"]'); if(p && !p.value) p.value = s.period;
+  setStatus("wait", "Loading your work…");
+  fetch(SUPA_URL + "/rest/v1/" + TABLE + "?select=payload&email=eq." + encodeURIComponent(s.email) +
+        "&guide_key=eq." + GUIDE_KEY, { headers: headers() })
+    .then(function(r){ return r.json(); })
+    .then(function(rows){
+      if(rows && rows.length && rows[0].payload) restorePayload(rows[0].payload);
+      else { try{ restorePayload(JSON.parse(localStorage.getItem(LOCAL_KEY))); }catch(e){} }
+      setStatus("ok", "Ready");
+    })
+    .catch(function(){
+      try{ restorePayload(JSON.parse(localStorage.getItem(LOCAL_KEY))); }catch(e){}
+      setStatus("bad", "Working offline — your answers are on this device only");
+    });
+}
+document.getElementById("gGo").addEventListener("click", function(){
+  var email = document.getElementById("gEmail").value.trim().toLowerCase();
+  var name = document.getElementById("gName").value.trim();
+  var period = document.getElementById("gPeriod").value;
+  var err = document.getElementById("gErr");
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ err.textContent = "Write your full school email address."; return; }
+  if(name.length < 3){ err.textContent = "Write your first and last name."; return; }
+  if(!period){ err.textContent = "Choose your class period."; return; }
+  var s = { email: email, name: name, period: period };
+  try{ localStorage.setItem(STU_KEY, JSON.stringify(s)); }catch(e){}
+  startSession(s);
+});
+document.getElementById("gEmail").addEventListener("keydown", function(e){ if(e.key === "Enter") document.getElementById("gGo").click(); });
+document.getElementById("gName").addEventListener("keydown", function(e){ if(e.key === "Enter") document.getElementById("gGo").click(); });
+
+/* ---------- class results ---------- */
+function bar(label, n, total, alt){
+  var pct = total ? Math.round(100 * n / total) : 0;
+  return '<div class="chartrow"><div class="cl"><span>' + label + '</span><span>' + n + " (" + pct + '%)</span></div>' +
+         '<div class="barout"><div class="barin' + (alt ? " alt" : "") + '" style="width:' + pct + '%"></div></div></div>';
+}
+document.getElementById("classBtn").addEventListener("click", function(){
+  var wrap = document.getElementById("chartWrap");
+  wrap.style.display = "block";
+  wrap.innerHTML = "<p style=\"font-weight:700;margin:0\">Loading the class…</p>";
+  fetch(SUPA_URL + "/rest/v1/" + TABLE + "?select=payload&guide_key=eq." + GUIDE_KEY, { headers: headers() })
+    .then(function(r){ return r.json(); })
+    .then(function(rows){
+      if(!rows || !rows.length){ wrap.innerHTML = "<p style=\"font-weight:700;margin:0\">Nobody has answered yet. Come back later.</p>"; return; }
+      var n = rows.length;
+      var countRadio = function(name, val){
+        var c = 0;
+        for(var i=0;i<rows.length;i++){
+          var p = rows[i].payload; if(p && p.radios && p.radios[name] === val) c++;
+        }
+        return c;
+      };
+      var countCheck = function(id){
+        var c = 0;
+        for(var i=0;i<rows.length;i++){
+          var p = rows[i].payload; if(p && p.checks && p.checks[id]) c++;
+        }
+        return c;
+      };
+      var countries = {};
+      for(var i=0;i<rows.length;i++){
+        var p = rows[i].payload;
+        var cy = p && p.fields && p.fields.s_country ? p.fields.s_country.trim() : "";
+        if(cy){ cy = cy.charAt(0).toUpperCase() + cy.slice(1).toLowerCase(); countries[cy] = (countries[cy]||0) + 1; }
+      }
+      var clist = Object.keys(countries).sort(function(a,b){ return countries[b]-countries[a]; }).slice(0,10);
+      var h = '<p style="font-weight:800;margin:0 0 8px">Our class so far — ' + n + " students</p>";
+      h += '<h4 style="margin:12px 0 2px">Countries in this room</h4>';
+      for(var c=0;c<clist.length;c++) h += bar(clist[c], countries[clist[c]], n, true);
+      h += '<h4 style="margin:16px 0 2px">Does your country have a day to remember the dead?</h4>';
+      h += bar("Yes", countRadio("s_deadday","Yes"), n) + bar("No", countRadio("s_deadday","No"), n) + bar("Not sure", countRadio("s_deadday","Not sure"), n);
+      h += '<h4 style="margin:16px 0 2px">Is the day sad, happy, or both?</h4>';
+      h += bar("Sad", countRadio("s_mood","Sad"), n) + bar("Happy", countRadio("s_mood","Happy"), n) +
+           bar("Both", countRadio("s_mood","Both"), n) + bar("Quiet and serious", countRadio("s_mood","Quiet and serious"), n);
+      h += '<h4 style="margin:16px 0 2px">A holiday where children get candy, sweets, or money at the door?</h4>';
+      h += bar("Yes", countRadio("s_candy","Yes"), n, true) + bar("No", countRadio("s_candy","No"), n, true) + bar("Not sure", countRadio("s_candy","Not sure"), n, true);
+      h += '<h4 style="margin:16px 0 2px">What do people do on that day?</h4>';
+      var acts = [["Visit graves","s_act_grave"],["Put out food","s_act_food"],["Candles or incense","s_act_candle"],
+                  ["Show photos","s_act_photo"],["Pray","s_act_pray"],["Big family meal","s_act_eat"],
+                  ["Music or dancing","s_act_music"],["Costumes or masks","s_act_costume"]];
+      for(var a=0;a<acts.length;a++) h += bar(acts[a][0], countCheck(acts[a][1]), n);
+      h += '<h4 style="margin:16px 0 2px">Have you ever celebrated Halloween?</h4>';
+      h += bar("Many times", countRadio("s_hall","Yes, many times"), n, true) +
+           bar("One time", countRadio("s_hall","Yes, one time"), n, true) +
+           bar("Never", countRadio("s_hall","Never"), n, true);
+      wrap.innerHTML = h;
+    })
+    .catch(function(){ wrap.innerHTML = "<p style=\"font-weight:700;margin:0\">Could not load the class results right now.</p>"; });
+});
+
+/* ---------- boot ---------- */
+(function(){
+  buildVocab();
+  try{
+    var L = localStorage.getItem("hol_lang");
+    if(L){ curLang = L; document.getElementById("lang").value = L; buildVocab(); }
+    var V = localStorage.getItem("hol_level");
+    if(V) setLevel(V); else setLevel("hard");
+    var saved = localStorage.getItem(STU_KEY);
+    if(saved) startSession(JSON.parse(saved));
+    else { restorePayload(JSON.parse(localStorage.getItem(LOCAL_KEY) || "null")); }
+  }catch(e){ setLevel("hard"); }
+})();
+</script>
+</body>
+</html>
