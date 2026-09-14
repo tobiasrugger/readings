@@ -41,6 +41,9 @@ tr.row:hover td{background:var(--sky)}
 .p70{background:#fdf6e3;color:#7a5c00}
 .p0{background:#fbeae5;color:#8a2f10}
 .pna{background:#f0f2ef;color:#98a49c}
+.stmt{display:inline-block;padding:2px 9px;border-radius:12px;font-size:.72rem;font-weight:800;white-space:nowrap}
+.stmt.done{background:#d8f0e2;color:#1b4332}
+.stmt.wip{background:#fdf6e3;color:#7a5c00}
 .name{font-weight:800;color:var(--pine)}
 #detail{background:#fff;border:1px solid var(--line);border-radius:13px;padding:20px 22px;margin-top:16px;display:none}
 #detail.show{display:block}
@@ -85,6 +88,7 @@ tr.row:hover td{background:var(--sky)}
 <main>
   <div id="msg"></div>
   <div class="stats" id="stats"></div>
+  <div id="filters" style="margin:4px 0 12px"></div>
   <div id="roster"></div>
   <div id="detail"></div>
 </main>
@@ -304,13 +308,14 @@ function loadAll(){
   .then(function(data){
     ROWS=data.map(function(r){
       var p=r.payload||{};
-      return {name:r.student_name,when:r.updated_at,p:p,
+      return {name:r.name||r.student_name||r.email, email:r.email||'', period:r.period||'',
+              when:r.updated_at, turned:r.turned_in?(p.turnedIn||r.updated_at):null, p:p,
         s:{cap:scoreCap(p),sv:scoreSV(p),sva:scoreMC(p.sva||{},SVA,2),
            frag:scoreMC(p.frag||{},FRAG,2),tos:scoreTOS(p.tos||{}),ord:scoreOrder(p.order),
            cloze:scoreCloze(p.cloze||{}),conj:scoreMC(p.conj||{},CONJ,2),
            cs:scoreCS(p.cs||{}),comma:scoreComma(p.comma||{}),draft:draftStats(p)}};
     });
-    m.innerHTML=ROWS.length?'':'<div class="msg info">No work turned in yet. Students only appear here after they tap <b>Turn in</b>.</div>';
+    m.innerHTML=ROWS.length?'':'<div class="msg info">Nothing here yet. Students appear about 20 seconds after they type their name and start working.</div>';
     render();
   })
   .catch(function(e){
@@ -318,24 +323,44 @@ function loadAll(){
       String(e.message).slice(0,300)+'</span><br><span class="tip">If it says the relation does not exist, run eld103_schema.sql in the Supabase SQL editor first.</span></div>';
   });
 }
+var PFILTER='';
+function setFilter(p){PFILTER=p; render();}
+function shown(){return PFILTER?ROWS.filter(function(r){return String(r.period)===PFILTER}):ROWS}
 function render(){
+  var st=document.getElementById('stats');
+  var periods=[];
+  ROWS.forEach(function(r){if(r.period&&periods.indexOf(String(r.period))<0)periods.push(String(r.period))});
+  periods.sort();
+  var fh='<button class="btn '+(PFILTER?'ghost ':'')+'small" onclick="setFilter(\'\')">All periods</button>';
+  periods.forEach(function(p){fh+='<button class="btn '+(PFILTER===p?'':'ghost ')+'small" onclick="setFilter(\''+p+'\')">Period '+p+'</button>'});
+  document.getElementById('filters').innerHTML=periods.length>1?fh:'';
+  var ROWS_ALL=ROWS; ROWS=shown();
+  renderInner();
+  ROWS=ROWS_ALL;
+}
+function renderInner(){
   var st=document.getElementById('stats');
   var n=ROWS.length;
   var withDraft=ROWS.filter(function(r){return r.s.draft}).length;
+  var turned=ROWS.filter(function(r){return r.turned}).length;
   var avg=function(k){var a=ROWS.map(function(r){return pct(r.s[k])}).filter(function(x){return x!==null});
     return a.length?Math.round(a.reduce(function(x,y){return x+y},0)/a.length)+'%':'—';};
   st.innerHTML=
-   '<div class="stat"><b>'+n+'</b><span>TURNED IN</span></div>'+
+   '<div class="stat"><b>'+n+'</b><span>STUDENTS WORKING</span></div>'+
+   '<div class="stat"><b>'+turned+'</b><span>TURNED IN</span></div>'+
    '<div class="stat"><b>'+withDraft+'</b><span>WROTE A PARAGRAPH</span></div>'+
    '<div class="stat"><b>'+avg('sv')+'</b><span>AVG SUBJECT + VERB</span></div>'+
    '<div class="stat"><b>'+avg('sva')+'</b><span>AVG AGREEMENT</span></div>'+
    '<div class="stat"><b>'+avg('comma')+'</b><span>AVG COMMAS</span></div>';
 
-  var h='<table><tr><th class="l">Student</th><th>2 Caps</th><th>3 S+V</th><th>4 Agr</th><th>5 Frag</th>'+
+  var h='<table><tr><th class="l">Student</th><th>P</th><th>Status</th><th>2 Caps</th><th>3 S+V</th><th>4 Agr</th><th>5 Frag</th>'+
         '<th class="opt">6 Sort</th><th class="opt">6 Order</th><th class="opt">7 Signals</th>'+
         '<th>8 Conj</th><th class="opt">8 S/C</th><th>9 Comma</th><th>Words</th><th class="opt">Updated</th></tr>';
   ROWS.forEach(function(r,i){
-    h+='<tr class="row" onclick="showDetail('+i+')"><td class="l name">'+esc(r.name)+'</td>'+
+    h+='<tr class="row" onclick="showDetail(\''+esc(r.email||r.name)+'\')"><td class="l name">'+esc(r.name)+
+      '<br><span class="tip" style="font-weight:600;font-size:.72rem">'+esc(r.email)+'</span></td>'+
+      '<td>'+esc(r.period||'—')+'</td>'+
+      '<td><span class="stmt '+(r.turned?'done':'wip')+'">'+(r.turned?'Turned in':'In progress')+'</span></td>'+
       cellTd(r.s.cap)+cellTd(r.s.sv)+cellTd(r.s.sva)+cellTd(r.s.frag)+
       cellTd(r.s.tos,1)+cellTd(r.s.ord,1)+cellTd(r.s.cloze,1)+
       cellTd(r.s.conj)+cellTd(r.s.cs,1)+cellTd(r.s.comma)+
@@ -352,9 +377,14 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){
   return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 
 /* ============ DETAIL ============ */
-function showDetail(i){
-  var r=ROWS[i],p=r.p,s=r.s,d=document.getElementById('detail');
-  var h='<h2>'+esc(r.name)+'</h2><div class="tip">Turned in '+when(r.when)+'</div>';
+function showDetail(id){
+  var r=null;
+  for(var k=0;k<ROWS.length;k++){if((ROWS[k].email||ROWS[k].name)===id){r=ROWS[k];break;}}
+  if(!r)return;
+  var p=r.p,s=r.s,d=document.getElementById('detail');
+  var h='<h2>'+esc(r.name)+'</h2><div class="tip">'+esc(r.email)+
+    (r.period?' · Period '+esc(r.period):'')+'</div><div class="tip">'+
+    (r.turned?'Turned in '+when(r.turned)+' · ':'Still working · ')+'last saved '+when(r.when)+'</div>';
 
   if(s.draft){
     h+='<h3>The paragraph</h3>';
@@ -441,12 +471,12 @@ function showDetail(i){
 
 /* ============ CSV ============ */
 function exportCSV(){
-  var head=['Student','Turned in','Caps','SubjVerb','Agreement','Fragments','WordPhrase','StoryOrder',
+  var head=['Student','Email','Period','Status','Last saved','Caps','SubjVerb','Agreement','Fragments','WordPhrase','StoryOrder',
             'Signals','JoiningWords','SimpleCompound','Commas','DraftWords','TimeSignals','CompoundSents','ChecklistDone','Title'];
   var lines=[head.join(',')];
   ROWS.forEach(function(r){
     var f=r.s.draft,ck=r.p.check||{};
-    var row=[r.name,when(r.when),pct(r.s.cap),pct(r.s.sv),pct(r.s.sva),pct(r.s.frag),pct(r.s.tos),
+    var row=[r.name,r.email,r.period,(r.turned?'Turned in':'In progress'),when(r.when),pct(r.s.cap),pct(r.s.sv),pct(r.s.sva),pct(r.s.frag),pct(r.s.tos),
       pct(r.s.ord),pct(r.s.cloze),pct(r.s.conj),pct(r.s.cs),pct(r.s.comma),
       f?f.words:'',f?f.signals.length:'',f?f.compound:'',
       Object.keys(ck).filter(function(k){return ck[k]}).length, r.p.title||''];
