@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Describing a character · Mr. Toby</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pine:#1f4d3d; --pine-dk:#163a2d; --pine-lt:#e7f0ec;
+  --paper:#fbfaf6; --card:#fff; --ink:#1d2320; --muted:#6b7370; --line:#dfe3e0;
+  --gold:#b8842c; --gold-lt:#fdf4e3; --rose:#a14a4a; --rose-lt:#fbecec;
+  --sky:#2f6d8f; --sky-lt:#e6f0f5; --plum:#5a4a8a; --plum-lt:#eae7f5; --r:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Nunito',system-ui,sans-serif;background:var(--paper);color:var(--ink);line-height:1.65;font-size:17px;padding-bottom:80px}
+
+/* SIGN IN */
+#signin{position:fixed;inset:0;background:var(--pine);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px}
+.signin-card{background:var(--card);border-radius:16px;padding:30px 28px;max-width:420px;width:100%;box-shadow:0 18px 50px rgba(0,0,0,.3)}
+.signin-card h1{font-size:23px;margin-bottom:4px;color:var(--pine)}
+.signin-card p.sub{color:var(--muted);font-size:15px;margin-bottom:18px}
+.signin-card label{display:block;font-weight:700;font-size:14px;margin:14px 0 5px}
+.signin-card input,.signin-card select{width:100%;padding:11px 12px;border:2px solid var(--line);border-radius:9px;font-family:inherit;font-size:16px;background:#fff}
+.signin-card input:focus,.signin-card select:focus{outline:none;border-color:var(--pine)}
+.signin-card button{width:100%;margin-top:20px;padding:13px;background:var(--pine);color:#fff;border:none;border-radius:9px;font-family:inherit;font-size:17px;font-weight:800;cursor:pointer}
+.signin-card button:hover{background:var(--pine-dk)}
+.signin-card button.skip{background:#fff;color:var(--pine);border:2px solid var(--pine);margin-top:10px;font-size:15px;padding:10px}
+#signin-err{color:var(--rose);font-size:14px;font-weight:700;margin-top:10px;min-height:20px}
+
+/* TOOLBAR */
+#bar{position:sticky;top:0;z-index:400;background:var(--pine);color:#fff;display:flex;align-items:center;gap:10px;padding:9px 14px;flex-wrap:wrap;box-shadow:0 2px 10px rgba(0,0,0,.15)}
+#bar .ttl{font-weight:800;font-size:17px;margin-right:auto}
+#bar .ttl a{color:#fff;text-decoration:none;opacity:.75;font-weight:700}
+#bar .ttl a:hover{opacity:1}
+#bar select,#bar button{font-family:inherit;font-size:14px;font-weight:700;border-radius:8px;padding:7px 11px;cursor:pointer;background:rgba(255,255,255,.15);color:#fff;border:1.5px solid rgba(255,255,255,.35)}
+#bar select option{color:#000}
+#bar button:hover{background:rgba(255,255,255,.28)}
+#bar button.turnin{background:var(--gold);border-color:var(--gold)}
+#bar button.on{background:#fff;color:var(--pine)}
+#who{font-size:13px;opacity:.9;cursor:pointer;text-decoration:underline}
+.dot{width:10px;height:10px;border-radius:50%;background:#8aa39a;display:inline-block}
+.dot.saving{background:#e0a33c}.dot.ok{background:#63c48b}.dot.err{background:#e06060}
+#savetxt{font-size:12px;opacity:.85}
+
+/* LAYOUT */
+.wrap{max-width:820px;margin:0 auto;padding:0 18px}
+.hero{background:var(--pine);color:#fff;padding:32px 18px 34px;margin-bottom:22px}
+.hero .kit{font-size:14px;font-weight:800;opacity:.7;margin-bottom:6px}
+.hero h1{font-size:33px;line-height:1.15;font-weight:800;margin-bottom:10px}
+.hero p{font-size:17px;opacity:.92;max-width:56ch}
+.hero .by{margin-top:16px;font-size:14px;opacity:.75}
+h2.sec{font-size:23px;font-weight:800;color:var(--pine);margin:38px 0 4px;padding-top:10px;border-top:3px solid var(--pine)}
+h2.sec .n{display:inline-block;background:var(--pine);color:#fff;width:28px;height:28px;line-height:28px;text-align:center;border-radius:50%;font-size:15px;margin-right:8px;vertical-align:2px}
+p.secsub{color:var(--muted);margin-bottom:16px;font-size:15px}
+h3{font-size:19px;font-weight:800;margin:24px 0 6px;color:var(--pine-dk)}
+
+/* TABS */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:18px 0 4px;border-bottom:2px solid var(--line);padding-bottom:0}
+.tabs button{font-family:inherit;font-size:15px;font-weight:800;padding:9px 15px;border:2px solid var(--line);border-bottom:none;background:#fff;color:var(--muted);border-radius:10px 10px 0 0;cursor:pointer;position:relative;top:2px}
+.tabs button.on{color:var(--pine);border-color:var(--pine);background:var(--pine-lt)}
+.tabpane{display:none}
+.tabpane.on{display:block}
+
+/* GRAMMAR TABLE */
+.gt{width:100%;border-collapse:collapse;background:#fff;border:1.5px solid var(--line);border-radius:var(--r);overflow:hidden;margin:14px 0;font-size:16px}
+.gt th{background:var(--pine);color:#fff;text-align:left;padding:9px 11px;font-size:14px;font-weight:800}
+.gt td{border-top:1px solid var(--line);padding:9px 11px;vertical-align:middle}
+.gt tr:nth-child(even) td{background:#fcfcfa}
+.gt .k{font-weight:800;color:var(--pine-dk);white-space:nowrap}
+.gt .ex{color:var(--muted);font-size:15px}
+.gt .mlcell{padding:5px 8px;width:22%}
+.ml{width:100%;border:1.5px dashed var(--gold);border-radius:8px;padding:6px 8px;font-family:inherit;font-size:15px;background:var(--gold-lt)}
+.ml:focus{outline:none;border-style:solid;background:#fff}
+.mlnote{font-size:14px;color:var(--muted);font-style:italic;margin:6px 0 0}
+
+/* PRONOUN / PERSON ICON */
+.pfig{width:34px;height:34px;color:var(--pine);vertical-align:middle;flex-shrink:0}
+
+/* SPEAK */
+.spk{background:none;border:none;cursor:pointer;color:var(--sky);padding:2px 4px;line-height:1;vertical-align:middle}
+.spk svg{width:19px;height:19px;display:block}
+.spk:hover{color:var(--pine)}
+
+/* GLOSSARY */
+.g{border-bottom:2px dotted var(--gold);cursor:pointer;font-weight:700}
+#tip{display:none;position:absolute;z-index:500;max-width:300px;background:var(--pine-dk);color:#fff;border-radius:10px;padding:11px 13px;font-size:15px;line-height:1.5;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+#tip .w{font-weight:800;margin-bottom:3px}
+#tip .tr{margin-top:7px;padding-top:7px;border-top:1px solid rgba(255,255,255,.25);font-weight:700}
+#tip .tr.load{opacity:.6;font-style:italic;font-weight:400}
+
+/* QUESTION BLOCKS */
+.q{background:var(--card);border:1.5px solid var(--line);border-left:5px solid var(--pine);border-radius:var(--r);padding:14px 16px;margin:14px 0}
+.q .tag{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.6px;padding:3px 8px;border-radius:20px;margin-bottom:7px}
+.tag.sci{background:var(--sky-lt);color:var(--sky)}
+.tag.hist{background:var(--gold-lt);color:var(--gold)}
+.tag.math{background:var(--plum-lt);color:var(--plum)}
+.tag.arts{background:var(--rose-lt);color:var(--rose)}
+.tag.talk{background:var(--pine-lt);color:var(--pine)}
+.q .qt{font-weight:700;margin-bottom:9px}
+.q .hint{font-size:14px;color:var(--muted);font-style:italic;margin-bottom:8px}
+textarea{width:100%;min-height:64px;border:1.5px solid var(--line);border-radius:9px;padding:10px 11px;font-family:inherit;font-size:16px;line-height:1.55;resize:vertical;background:#fffdf8}
+textarea:focus{outline:none;border-color:var(--pine);background:#fff}
+input.line{border:none;border-bottom:2px solid var(--pine);background:#fffdf8;font-family:inherit;font-size:16px;padding:3px 6px;min-width:120px;border-radius:4px 4px 0 0}
+input.line:focus{outline:none;background:var(--gold-lt)}
+input.line.short{min-width:80px;width:110px}
+
+/* FILL ROWS */
+.frow{padding:10px 0;border-bottom:1px solid var(--line);line-height:2.3}
+.frow:last-child{border-bottom:none}
+.frow .num{font-weight:800;color:var(--pine);margin-right:6px}
+.frow select{padding:5px 8px;border:1.5px solid var(--gold);border-radius:7px;font-family:inherit;font-size:16px;background:var(--gold-lt);font-weight:700}
+.frow select:focus{outline:none;border-color:var(--pine)}
+.mk{font-size:19px;font-weight:800;margin-left:6px}
+.mk.y{color:#2f8f5b}.mk.n{color:var(--rose)}
+
+/* WORD BANK / CHIPS */
+.wordbank{background:var(--pine-lt);border-radius:var(--r);padding:12px 15px;margin:12px 0;line-height:2.1}
+.wordbank b{display:block;font-size:14px;color:var(--pine);margin-bottom:4px}
+.chip{display:inline-block;background:#fff;border:1.5px solid var(--pine);border-radius:20px;padding:3px 13px;margin:3px 5px 3px 0;font-size:15px;font-weight:700;cursor:pointer;user-select:none}
+.chip.sel{background:var(--pine);color:#fff}
+.chip.used{opacity:.35;text-decoration:line-through}
+
+/* VENN */
+.venn{position:relative;background:#fff;border:1.5px solid var(--line);border-radius:var(--r);padding:14px;margin:12px 0}
+.vlab{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.vlab input{flex:1;min-width:130px;border:1.5px solid var(--line);border-radius:8px;padding:7px 10px;font-family:inherit;font-size:15px;font-weight:700}
+.vzones{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.vz{min-height:120px;border:2.5px solid var(--pine);padding:9px;cursor:pointer;background:#fcfdfc}
+.vz.left{border-radius:60px 8px 8px 60px;border-right-style:dashed}
+.vz.mid{border-radius:8px;border-left:none;border-right:none;background:var(--pine-lt)}
+.vz.right{border-radius:8px 60px 60px 8px;border-left-style:dashed}
+.vz .zt{font-size:12px;font-weight:800;color:var(--pine);text-align:center;margin-bottom:6px}
+.vz.arm{box-shadow:inset 0 0 0 3px var(--gold)}
+.vz .item{display:block;background:#fff;border:1.5px solid var(--line);border-radius:8px;padding:3px 8px;margin:4px 0;font-size:14px;font-weight:700;cursor:pointer}
+.vz .item:hover{border-color:var(--rose);color:var(--rose)}
+.vadd{display:flex;gap:7px;margin-top:10px}
+.vadd input{flex:1;border:1.5px solid var(--line);border-radius:8px;padding:7px 10px;font-family:inherit;font-size:15px}
+.vadd button{border:none;background:var(--pine);color:#fff;border-radius:8px;padding:7px 15px;font-family:inherit;font-weight:800;cursor:pointer}
+@media(max-width:560px){.vzones{grid-template-columns:1fr}.vz,.vz.left,.vz.right{border-radius:8px;border-style:solid}}
+
+/* FRAME BOX */
+.frames{background:var(--gold-lt);border:1.5px solid var(--gold);border-radius:var(--r);padding:14px 16px;margin:14px 0}
+.frames .f{margin:9px 0;font-weight:700}
+.frames .e{color:var(--muted);font-style:italic;font-weight:400;font-size:15px;margin-left:12px;display:block}
+.note{background:var(--pine-lt);border-radius:var(--r);padding:13px 16px;margin:14px 0;font-size:15px}
+.note b{color:var(--pine)}
+.warn{background:var(--rose-lt);border-left:5px solid var(--rose);border-radius:var(--r);padding:13px 16px;margin:14px 0;font-size:15px}
+
+/* CARD GRID (hub) */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;margin:16px 0}
+.card{display:block;background:#fff;border:1.5px solid var(--line);border-left:6px solid var(--pine);border-radius:var(--r);padding:15px 16px;text-decoration:none;color:inherit}
+.card:hover{border-left-color:var(--gold);box-shadow:0 5px 18px rgba(0,0,0,.07)}
+.card .n{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.5px}
+.card h4{font-size:18px;font-weight:800;color:var(--pine-dk);margin:2px 0 5px}
+.card p{font-size:14px;color:var(--muted);line-height:1.5}
+
+.btn{padding:11px 20px;border:none;border-radius:9px;background:var(--pine);color:#fff;font-family:inherit;font-size:16px;font-weight:800;cursor:pointer}
+.btn.ghost{background:#fff;color:var(--pine);border:2px solid var(--pine)}
+.score{margin-left:10px;font-weight:800}
+footer{text-align:center;color:var(--muted);font-size:14px;padding:36px 18px 10px}
+footer a{color:var(--pine)}
+.printhead{display:none}
+
+@media print{
+  @page{margin:1.4cm}
+  body{background:#fff;font-size:11.5pt;padding-bottom:0}
+  #bar,#signin,#tip,.btn,.noprint,.spk,.tabs{display:none!important}
+  .hero{background:#fff;color:#000;padding:0 0 8px;margin-bottom:10px;border-bottom:3px solid #000}
+  .hero h1{font-size:20pt}.hero p{font-size:10.5pt}
+  .printhead{display:block;border-bottom:1px solid #000;padding-bottom:5px;margin-bottom:14px;font-size:10.5pt}
+  .wrap{max-width:100%;padding:0}
+  .q,.venn,.frames,.gt tr,.note{break-inside:avoid;page-break-inside:avoid}
+  h2.sec{break-after:avoid;page-break-after:avoid;font-size:14pt}
+  .tabpane{display:block!important}
+  textarea{border:none;border-bottom:1px solid #999;border-radius:0;min-height:0;background:#fff;overflow:visible;resize:none}
+  input.line{background:#fff}
+  .vz{min-height:150px}
+}
+body.blank textarea,body.blank input,body.blank select{color:transparent!important}
+body.blank .vz .item{color:transparent!important}
+</style>
+</head>
+<body>
+<div id="signin">
+  <div class="signin-card">
+    <h1>Describing a character</h1>
+    <p class="sub">Sign in with your school email so Mr. Toby can see your work.</p>
+    <label for="si-email">School email</label>
+    <input id="si-email" type="email" placeholder="you@sfusd.edu" autocomplete="email">
+    <label for="si-name">First and last name</label>
+    <input id="si-name" type="text" placeholder="Maria Lopez" autocomplete="name">
+    <label for="si-period">Period</label>
+    <select id="si-period">
+      <option value="">Choose</option>
+      <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option>
+    </select>
+    <div id="signin-err"></div>
+    <button id="si-go">Start</button>
+  </div>
+</div>
+<div id="bar">
+  <span class="ttl"><a href="index.html" title="All toolkits">&#9664;</a> Lesson #3 &middot; Describing a character</span>
+  <span id="who" title="Sign out"></span>
+  <select id="lang" title="Translation language">
+    <option value="">Language</option>
+    <option value="Spanish">Espa&ntilde;ol</option>
+    <option value="Chinese (Simplified)">&#20013;&#25991; (&#31616;)</option>
+    <option value="Chinese (Traditional)">&#20013;&#25991; (&#32321;)</option>
+    <option value="Arabic">&#1575;&#1604;&#1593;&#1585;&#1576;&#1610;&#1577;</option>
+    <option value="Vietnamese">Ti&#7871;ng Vi&#7879;t</option>
+    <option value="Tagalog">Tagalog</option>
+    <option value="Russian">&#1056;&#1091;&#1089;&#1089;&#1082;&#1080;&#1081;</option>
+    <option value="Portuguese">Portugu&ecirc;s</option>
+    <option value="Thai">&#3652;&#3607;&#3618;</option>
+    <option value="Nepali">&#2344;&#2375;&#2346;&#2366;&#2354;&#2368;</option>
+    <option value="Burmese">&#4121;&#4156;&#4116;&#4154;&#4121;&#4140;</option>
+    <option value="Japanese">&#26085;&#26412;&#35486;</option>
+  </select>
+  <button id="btn-read" title="Read the page out loud when you tap a sentence">&#128266; Listen mode</button>
+  <span class="dot" id="dot"></span><span id="savetxt"></span>
+  <button id="btn-blank">Print blank</button>
+  <button id="btn-print">Print my work</button>
+  <button class="turnin" id="btn-turnin">Turn in</button>
+</div>
+
+<div class="printhead">
+  Name: <b id="ph-name">________________________</b> &nbsp;&nbsp; Period: <b id="ph-period">____</b> &nbsp;&nbsp; Date: ____________
+</div>
+<style>
+.trow{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.trow:last-child{border-bottom:none}
+.trow .tl{font-weight:800;color:var(--pine-dk);font-size:16px}
+.trow .tl .qq{display:block;font-size:14px;color:var(--muted);font-weight:600;font-style:italic}
+.trow select{width:100%;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:inherit;font-size:16px;background:#fff}
+.trow select:focus{outline:none;border-color:var(--pine)}
+.tsent{grid-column:1/-1;background:var(--pine-lt);border-radius:9px;padding:7px 12px;font-size:16px;font-weight:700;color:var(--pine-dk);min-height:36px}
+.tsent.empty{background:#f4f4f1;color:var(--muted);font-weight:400;font-style:italic}
+.subjpick{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--gold-lt);border:1.5px solid var(--gold);border-radius:var(--r);padding:12px 15px;margin:14px 0}
+.subjpick b{font-size:15px}
+.subjpick select,.subjpick input{padding:8px 11px;border:1.5px solid var(--gold);border-radius:8px;font-family:inherit;font-size:16px;font-weight:700;background:#fff}
+@media(max-width:560px){.trow{grid-template-columns:1fr}}
+</style>
+<div class="hero">
+  <div class="wrap">
+    <div class="kit">DESCRIBING PEOPLE &middot; LESSON #3</div>
+    <h1>Describing a character</h1>
+    <p>Choose a character from a video game, a book, a movie, or an athlete you follow. Describe them the same way you described yourself.</p>
+    <div class="by">Mr. Toby &middot; ELD</div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<div class="note noprint"><b>Toolkits you need.</b>
+<a href="toolkit2.html" target="_blank">Toolkit #2 &mdash; to be, to have, to do</a> tells you when to say <i>is</i> and when to say <i>has</i>.
+<a href="toolkit1.html" target="_blank">Toolkit #1 &mdash; Pronouns</a> tells you when to say <i>he</i>, <i>she</i>, <i>it</i>, or <i>they</i>.
+Open them in another tab and keep them open.</div>
+<div class="subjpick">
+  <b>Name of the character:</b> <input data-k="s3_name" placeholder="Type the name" style="min-width:170px">
+  <b>Which word do you use for this person?</b>
+  <select data-k="s3_subj"><option value=""></option><option>He</option><option>She</option><option>It</option><option>They</option></select>
+  <span style="font-size:14px;color:var(--muted)">Choose this first. Every sentence below will use it.</span>
+</div>
+
+<h2 class="sec"><span class="n">1</span>What do they have?</h2>
+<p class="secsub">Hair and eyes are things on the body. You <b>have</b> them. <button class="spk" data-s="She has brown eyes." title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button></p>
+<div id="s3_phys"></div>
+
+<h2 class="sec"><span class="n">2</span>What are they like?</h2>
+<p class="secsub">Height, age, and personality are what someone <b>is</b> like.</p>
+<div id="s3_char1"></div>
+
+<h2 class="sec"><span class="n">3</span>More character traits</h2>
+<p class="secsub">Think about how the character acts in the game or story, then choose the word.</p>
+<div id="s3_char2"></div>
+
+<h2 class="sec"><span class="n">3b</span>Character questions</h2>
+<p class="secsub">These questions only work for a character in a game, a book, or a movie.</p>
+<div id="s3_char3"></div>
+
+<h2 class="sec"><span class="n">3c</span>Write the questions</h2>
+<p class="secsub">Practice turning a trait into a question. Remember: <b>Is he&hellip;?</b> for <i>be</i> words and <b>Does he have&hellip;?</b> for <i>have</i> words.</p>
+<div class="q"><span class="tag talk">Questions</span>
+<div class="qt">Write four questions about your character.</div>
+<textarea data-k="s3_q0" placeholder="1." style="min-height:42px;margin-top:7px"></textarea>
+<textarea data-k="s3_q1" placeholder="2." style="min-height:42px;margin-top:7px"></textarea>
+<textarea data-k="s3_q2" placeholder="3." style="min-height:42px;margin-top:7px"></textarea>
+<textarea data-k="s3_q3" placeholder="4." style="min-height:42px;margin-top:7px"></textarea>
+</div>
+
+<h2 class="sec"><span class="n">4</span>Say why, with "because"</h2>
+<p class="secsub">A word by itself is a guess. A word plus evidence is a description. Add <b>because</b> and one detail.</p>
+<div class="frames">
+<div class="f">%s</div>
+<div class="f">Pattern: <b>______ is/has ______ because ______.</b><span class="e">Evidence means a real detail: something they do, own, say, or made.</span></div>
+</div>
+<div class="q"><span class="tag talk">Write</span>
+<div class="qt">Write six sentences with <b>because</b>. Use the words you chose above.</div>
+<textarea data-k="s3_bc0" placeholder="1." style="min-height:44px;margin-top:7px"></textarea>
+<textarea data-k="s3_bc1" placeholder="2." style="min-height:44px;margin-top:7px"></textarea>
+<textarea data-k="s3_bc2" placeholder="3." style="min-height:44px;margin-top:7px"></textarea>
+<textarea data-k="s3_bc3" placeholder="4." style="min-height:44px;margin-top:7px"></textarea>
+<textarea data-k="s3_bc4" placeholder="5." style="min-height:44px;margin-top:7px"></textarea>
+<textarea data-k="s3_bc5" placeholder="6." style="min-height:44px;margin-top:7px"></textarea>
+</div>
+
+<h2 class="sec"><span class="n">5</span>Harder words</h2>
+<p class="secsub">Characters are often extreme. These words fit them well. Tap a word to see what it means.</p>
+<div class="wordbank"><b>Choose from these, or use your own:</b>
+<span class="chip g" data-w="vengeful" data-d="wants to hurt someone who hurt them first">vengeful</span><span class="chip g" data-w="forgiving" data-d="stops being angry at someone who did something wrong">forgiving</span><span class="chip g" data-w="stubborn" data-d="refuses to change their mind">stubborn</span><span class="chip g" data-w="flexible" data-d="can change plans easily">flexible</span><span class="chip g" data-w="brave" data-d="not afraid to do a hard or scary thing">brave</span><span class="chip g" data-w="cowardly" data-d="too afraid to act">cowardly</span><span class="chip g" data-w="respectful" data-d="treats other people politely">respectful</span><span class="chip g" data-w="rude" data-d="treats other people impolitely">rude</span><span class="chip g" data-w="patient" data-d="can wait without getting angry">patient</span><span class="chip g" data-w="curious" data-d="wants to know how things work">curious</span><span class="chip g" data-w="honest" data-d="tells the truth">honest</span><span class="chip g" data-w="organized" data-d="keeps everything in order">organized</span><span class="chip g" data-w="creative" data-d="makes new things and new ideas">creative</span><span class="chip g" data-w="calm" data-d="stays quiet and steady, even in trouble">calm</span><span class="chip g" data-w="competitive" data-d="really wants to win">competitive</span><span class="chip g" data-w="loyal" data-d="stays with their friends and family, always">loyal</span></div>
+<div class="q"><span class="tag talk">Challenge</span>
+<div class="qt">Write five more sentences using harder words. Every sentence needs <b>because</b> and a real detail.</div>
+<textarea data-k="s3_bn0" placeholder="1." style="min-height:44px;margin-top:7px"></textarea>
+<textarea data-k="s3_bn1" placeholder="2." style="min-height:44px;margin-top:7px"></textarea>
+<textarea data-k="s3_bn2" placeholder="3." style="min-height:44px;margin-top:7px"></textarea>
+<textarea data-k="s3_bn3" placeholder="4." style="min-height:44px;margin-top:7px"></textarea>
+<textarea data-k="s3_bn4" placeholder="5." style="min-height:44px;margin-top:7px"></textarea>
+</div>
+
+<h2 class="sec"><span class="n">6</span>Read it out loud</h2>
+<p class="secsub">Read your sentences to your partner. Then answer this.</p>
+<div class="q"><span class="tag talk">Reflect</span>
+<div class="qt">Which of your sentences is the best one? Copy it here and say why it is the best.</div>
+<div class="hint">A good sentence has the right verb, a real detail, and a capital letter at the start.</div>
+<textarea data-k="s3_best"></textarea></div>
+
+
+<h2 class="sec"><span class="n">7</span>Draw and label</h2>
+<p class="secsub">On paper, draw your character. Then label the drawing with 5 to 15 words from this page. Type the words you used here so Mr. Toby can see them.</p>
+<div class="wordbank"><b>Word list:</b>
+<span class="chip">tall</span><span class="chip">short</span><span class="chip">young</span><span class="chip">old</span><span class="chip">heavy</span><span class="chip">muscular</span><span class="chip">skinny</span><span class="chip">peaceful</span><span class="chip">aggressive</span><span class="chip">friendly</span><span class="chip">secretive</span><span class="chip">nice</span><span class="chip">cruel</span><span class="chip">playful</span><span class="chip">serious</span><span class="chip">a hero</span><span class="chip">a villain</span><span class="chip">a human</span><span class="chip">an animal</span><span class="chip">an alien</span><span class="chip">a mutant</span><span class="chip">a monster</span><span class="chip">normal</span><span class="chip">superpowered</span><span class="chip">a costume</span><span class="chip">normal clothes</span><span class="chip">black hair</span><span class="chip">brown hair</span><span class="chip">blond hair</span><span class="chip">red hair</span><span class="chip">blue eyes</span><span class="chip">brown eyes</span><span class="chip">black eyes</span><span class="chip">long hair</span><span class="chip">medium hair</span><span class="chip">short hair</span><span class="chip">straight hair</span><span class="chip">wavy hair</span><span class="chip">curly hair</span>
+</div>
+<div class="q"><span class="tag talk">Labels</span>
+<div class="qt">Type the words you wrote on your drawing.</div>
+<textarea data-k="s3_labels" placeholder="tall, muscular, a costume, brown eyes..."></textarea></div>
+
+<div class="note noprint"><b>Next:</b> <a href="lesson3b.html">Lesson #3b &mdash; Venn diagram and comparing sentences</a>. You will use the answers from this page there, so finish this one first.</div>
+<footer>Mr. Toby &middot; Galileo Academy of Science and Technology &middot; <a href="index.html">All toolkits</a></footer>
+</div>
+
+<div id="tip"></div>
+
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var PROXY='https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
+var TABLE='toolkit_work';
+var SECTION='lesson3';
+var LS='les3_v1';
+
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+var student=null, data={answers:{},venn:{}}, saveTimer=null, tipEl=null, readMode=false;
+
+/* ---------- TRANSLATE ---------- */
+var tc={};
+function translate(w,m,lang){
+  var key=w+'|'+lang;
+  if(tc[key]) return Promise.resolve(tc[key]);
+  var url=PROXY+'?action=translate&idiom='+encodeURIComponent(w)+'&meaning='+encodeURIComponent(m||'')+'&lang='+encodeURIComponent(lang);
+  return fetch(url).then(function(r){return r.json();}).then(function(d){
+    if(!d||!d.ok||!d.translation) return null;
+    tc[key]=d.translation; return d.translation;
+  }).catch(function(){return null;});
+}
+/* Any element with class "tx" gets a translation line under it when a language is chosen. */
+function translateAll(){
+  var lang=$('lang').value;
+  var els=document.querySelectorAll('.tx');
+  for(var i=0;i<els.length;i++){
+    (function(el){
+      var box=el.nextElementSibling;
+      if(!box||!box.classList.contains('txline')){
+        box=document.createElement('div');box.className='txline';
+        box.style.cssText='font-size:15px;color:#5a4a8a;font-weight:700;margin-top:3px';
+        el.parentNode.insertBefore(box,el.nextSibling);
+      }
+      if(!lang){box.textContent='';return;}
+      box.textContent='...';
+      translate(el.getAttribute('data-tx')||el.textContent.trim(),'',lang).then(function(t){
+        box.textContent=t?(t.equiv||''):'';
+      });
+    })(els[i]);
+  }
+}
+
+/* ---------- GLOSSARY TOOLTIP ---------- */
+function showTip(span){
+  var word=span.getAttribute('data-w')||span.textContent;
+  var def=span.getAttribute('data-d')||'';
+  var lang=$('lang').value;
+  var h='<div class="w">'+esc(word)+'</div><div>'+esc(def)+'</div>';
+  if(lang) h+='<div class="tr load" id="tip-tr">translating...</div>';
+  tipEl.innerHTML=h; tipEl.style.display='block';
+  var r=span.getBoundingClientRect();
+  var left=r.left+window.scrollX;
+  if(left+310>window.innerWidth) left=Math.max(10,window.innerWidth-315);
+  tipEl.style.top=(r.bottom+window.scrollY+8)+'px'; tipEl.style.left=left+'px';
+  if(lang){
+    translate(word,def,lang).then(function(t){
+      var b=$('tip-tr'); if(!b) return;
+      b.classList.remove('load');
+      if(!t){b.textContent='Translation not available.';return;}
+      var txt=t.equiv||''; if(t.meaning) txt+=' \u2014 '+t.meaning;
+      b.textContent=txt;
+    });
+  }
+}
+
+/* ---------- SPEAK ---------- */
+function speak(txt){
+  if(!('speechSynthesis' in window)) return;
+  try{
+    window.speechSynthesis.cancel();
+    var u=new SpeechSynthesisUtterance(txt);
+    u.lang='en-US'; u.rate=.82;
+    window.speechSynthesis.speak(u);
+  }catch(e){}
+}
+
+/* ---------- SAVE ---------- */
+function collect(){
+  var out={}, f=document.querySelectorAll('[data-k]');
+  for(var i=0;i<f.length;i++){ out[f[i].getAttribute('data-k')]=f[i].value; }
+  return out;
+}
+function restore(){
+  var f=document.querySelectorAll('[data-k]');
+  for(var i=0;i<f.length;i++){
+    var k=f[i].getAttribute('data-k');
+    if(data.answers[k]!==undefined) f[i].value=data.answers[k];
+  }
+  if(window.restoreVenns) restoreVenns();
+}
+function setDot(c,t){$('dot').className='dot '+(c||'');$('savetxt').textContent=t||'';}
+function loadLocal(){
+  try{var c=localStorage.getItem(LS);if(c){var j=JSON.parse(c);data.answers=j.answers||{};data.venn=j.venn||{};}}catch(e){}
+}
+function queueSave(){
+  data.answers=collect();
+  if(window.collectVenns) data.venn=collectVenns();
+  try{localStorage.setItem(LS,JSON.stringify(data));}catch(e){}
+  if(!student){setDot('','saved on this device');return;}
+  setDot('saving','saving...');
+  clearTimeout(saveTimer); saveTimer=setTimeout(push,2200);
+}
+function push(submitted){
+  if(!student) return;
+  var row={email:student.email,name:student.name,period:student.period,section:SECTION,
+           payload:{answers:collect(),venn:(window.collectVenns?collectVenns():{})},
+           updated_at:new Date().toISOString()};
+  if(submitted) row.submitted=true;
+  return fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email,section',{
+    method:'POST',
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json',
+             'Prefer':'resolution=merge-duplicates,return=minimal'},
+    body:JSON.stringify([row])
+  }).then(function(r){
+    if(r.ok){var t=new Date();setDot('ok','saved '+t.getHours()+':'+String(t.getMinutes()).padStart(2,'0'));}
+    else{r.text().then(function(x){console.error('save failed',r.status,x);});setDot('err','not saved');}
+  }).catch(function(e){console.error(e);setDot('err','offline');});
+}
+function load(){
+  var url=SUPA_URL+'/rest/v1/'+TABLE+'?email=eq.'+encodeURIComponent(student.email)+'&section=eq.'+SECTION+'&select=payload';
+  return fetch(url,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}})
+    .then(function(r){return r.json();})
+    .then(function(rows){
+      if(rows&&rows.length&&rows[0].payload){
+        data.answers=rows[0].payload.answers||data.answers;
+        data.venn=rows[0].payload.venn||data.venn;
+      }
+    }).catch(function(){});
+}
+
+/* ---------- SIGN IN ---------- */
+function signIn(){
+  var email=$('si-email').value.trim().toLowerCase();
+  var name=$('si-name').value.trim();
+  var per=$('si-period').value;
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){$('signin-err').textContent='Type your full school email.';return;}
+  if(name.length<3){$('signin-err').textContent='Type your first and last name.';return;}
+  if(!per){$('signin-err').textContent='Choose your period.';return;}
+  student={email:email,name:name,period:per};
+  localStorage.setItem('tk_student',JSON.stringify(student));
+  start();
+}
+function start(){
+  $('signin').style.display='none';
+  $('who').textContent=student.name+' \u00b7 P'+student.period;
+  $('ph-name').textContent=student.name;
+  $('ph-period').textContent=student.period;
+  loadLocal(); restore();
+  load().then(function(){restore();setDot('ok','loaded');});
+}
+
+/* ---------- INIT ---------- */
+document.addEventListener('DOMContentLoaded',function(){
+  tipEl=$('tip');
+  if(window.buildPage) buildPage();
+
+  $('si-go').addEventListener('click',signIn);
+  ['si-email','si-name'].forEach(function(id){
+    $(id).addEventListener('keydown',function(e){if(e.key==='Enter')signIn();});
+  });
+
+  try{var s=localStorage.getItem('tk_student');if(s){student=JSON.parse(s);start();}}catch(e){}
+  $('who').addEventListener('click',function(){
+    if(!confirm('Sign out? Your work is already saved.'))return;
+    localStorage.removeItem('tk_student');location.reload();
+  });
+
+  $('lang').addEventListener('change',function(){
+    localStorage.setItem('tk_lang',this.value);
+    translateAll(); if(window.onLang) onLang();
+  });
+  try{var L=localStorage.getItem('tk_lang');if(L){$('lang').value=L;translateAll();if(window.onLang)onLang();}}catch(e){}
+
+  $('btn-read').addEventListener('click',function(){
+    readMode=!readMode; this.classList.toggle('on',readMode);
+    document.body.style.cursor=readMode?'help':'';
+  });
+
+  document.addEventListener('click',function(e){
+    var s=e.target.closest?e.target.closest('.g'):null;
+    if(s){showTip(s);e.stopPropagation();return;}
+    var b=e.target.closest?e.target.closest('.spk'):null;
+    if(b){speak(b.getAttribute('data-s')||'');e.stopPropagation();return;}
+    if(tipEl) tipEl.style.display='none';
+    if(readMode){
+      var t=e.target.closest?e.target.closest('p,li,td,div.qt,div.f,h2,h3,.hint,.e'):null;
+      if(t&&t.textContent.trim()) speak(t.textContent.trim().slice(0,320));
+    }
+  });
+
+  document.addEventListener('input',function(e){
+    if(e.target.hasAttribute&&e.target.hasAttribute('data-k')) queueSave();
+  });
+
+  $('btn-blank').addEventListener('click',function(){
+    document.body.classList.add('blank');window.print();
+    setTimeout(function(){document.body.classList.remove('blank');},600);
+  });
+  $('btn-print').addEventListener('click',function(){window.print();});
+  var ti=$('btn-turnin');
+  if(ti) ti.addEventListener('click',function(){
+    if(!student){alert('Sign in first so your teacher can see your work.');return;}
+    if(!confirm('Turn in your work? You can still change it after.'))return;
+    push(true).then(function(){alert('Turned in. Mr. Toby can see it now.');});
+  });
+  buildTraits('s3_phys','s3_subj',[{"k": "s3_h1", "label": "Hair color", "q": "What color is your hair?", "verb": "have", "opts": ["black hair", "brown hair", "blond hair", "red hair", "gray hair", "dyed hair"]}, {"k": "s3_h2", "label": "Eye color", "q": "What color are your eyes?", "verb": "have", "opts": ["black eyes", "brown eyes", "blue eyes", "green eyes", "hazel eyes"]}, {"k": "s3_h3", "label": "Hair length", "q": "Is your hair short, medium, or long?", "verb": "have", "opts": ["short hair", "medium hair", "long hair", "no hair"]}, {"k": "s3_h4", "label": "Hair type", "q": "Is your hair straight, wavy, or curly?", "verb": "have", "opts": ["straight hair", "wavy hair", "curly hair"]}]);
+  buildTraits('s3_char1','s3_subj',[{"k": "s3_c1", "label": "Height", "q": "Are you tall or short?", "verb": "be", "opts": ["tall", "short", "average height"]}, {"k": "s3_c2", "label": "Age", "q": "Are you young or old?", "verb": "be", "opts": ["young", "old", "a teenager"]}, {"k": "s3_c3", "label": "Sports or art", "q": "Are you athletic or artistic?", "verb": "be", "opts": ["athletic", "artistic", "both athletic and artistic"]}, {"k": "s3_c4", "label": "With people", "q": "Are you friendly or shy?", "verb": "be", "opts": ["friendly", "shy"]}]);
+  buildTraits('s3_char2','s3_subj',[{"k": "s3_c5", "label": "Voice", "q": "Are you loud or quiet?", "verb": "be", "opts": ["loud", "quiet"]}, {"k": "s3_c6", "label": "Giving", "q": "Are you generous or selfish?", "verb": "be", "opts": ["generous", "selfish"]}, {"k": "s3_c7", "label": "Music or drama", "q": "Are you musical or dramatic?", "verb": "be", "opts": ["musical", "dramatic", "both musical and dramatic"]}, {"k": "s3_c8", "label": "Mood", "q": "Are you playful or serious?", "verb": "be", "opts": ["playful", "serious"]}, {"k": "s3_c9", "label": "Work", "q": "Are you hardworking or lazy?", "verb": "be", "opts": ["hardworking", "lazy"]}, {"k": "s3_c10", "label": "Conflict", "q": "Are you peaceful or aggressive?", "verb": "be", "opts": ["peaceful", "aggressive"]}, {"k": "s3_c11", "label": "Kindness", "q": "Are you nice or mean?", "verb": "be", "opts": ["nice", "mean"]}, {"k": "s3_c12", "label": "Pride", "q": "Are you proud or humble?", "verb": "be", "opts": ["proud", "humble"]}]);
+  buildTraits('s3_char3','s3_subj',[{"k": "s3_d1", "label": "Good or bad", "q": "Is the character a hero or a villain?", "verb": "be", "opts": ["a hero", "a villain", "neither a hero nor a villain"]}, {"k": "s3_d2", "label": "Body", "q": "Is the character heavy, muscular, or skinny?", "verb": "be", "opts": ["heavy", "muscular", "skinny", "average"]}, {"k": "s3_d3", "label": "Species", "q": "Is the character a human, an animal, a mutant, an alien, or a monster?", "verb": "be", "opts": ["a human", "an animal", "a mutant", "an alien", "a monster", "a robot"]}, {"k": "s3_d4", "label": "Powers", "q": "Is the character normal or superpowered?", "verb": "be", "opts": ["normal", "superpowered"]}, {"k": "s3_d5", "label": "Clothes", "q": "Does the character wear a costume or normal clothes?", "verb": "have", "opts": ["a costume", "normal clothes", "armor", "a mask"]}, {"k": "s3_d6", "label": "Secrets", "q": "Is the character friendly or secretive?", "verb": "be", "opts": ["friendly", "secretive"]}]);
+  setTimeout(refreshTraits,60);
+  var _or=restore; restore=function(){_or();refreshTraits();};
+
+});
+
+/* ---------- TRAIT PICKERS ---------- */
+var BE={'I':'am','You':'are','He':'is','She':'is','It':'is','We':'are','They':'are'};
+var HV={'I':'have','You':'have','He':'has','She':'has','It':'has','We':'have','They':'have'};
+var TSETS=[];
+function buildTraits(cid,subjKey,rows){
+  var el=$(cid); if(!el) return;
+  var html='';
+  for(var i=0;i<rows.length;i++){
+    var r=rows[i];
+    var o='<option value=""></option>';
+    for(var j=0;j<r.opts.length;j++) o+='<option>'+r.opts[j]+'</option>';
+    html+='<div class="trow" data-verb="'+r.verb+'" data-subj="'+subjKey+'">'+
+      '<div class="tl">'+r.label+(r.q?'<span class="qq">'+r.q+'</span>':'')+'</div>'+
+      '<select data-k="'+r.k+'">'+o+'</select>'+
+      '<div class="tsent empty" id="ts_'+r.k+'">Choose a word and your sentence appears here.</div>'+
+    '</div>';
+  }
+  el.innerHTML=html;
+  TSETS.push(cid);
+}
+function subjOf(key){
+  var s=document.querySelector('[data-k="'+key+'"]');
+  return (s&&s.value)?s.value:'';
+}
+function refreshTraits(){
+  document.querySelectorAll('.trow').forEach(function(row){
+    var sel=row.querySelector('select'); if(!sel)return;
+    var k=sel.getAttribute('data-k');
+    var box=$('ts_'+k); if(!box)return;
+    var subj=subjOf(row.getAttribute('data-subj'))||'';
+    var verb=row.getAttribute('data-verb');
+    if(!sel.value||!subj){
+      box.className='tsent empty';
+      box.textContent=subj?'Choose a word and your sentence appears here.':'Choose He, She, It, or They at the top first.';
+      return;
+    }
+    var v=(verb==='have')?HV[subj]:BE[subj];
+    var s=subj+' '+v+' '+sel.value+'.';
+    box.className='tsent';
+    box.innerHTML=esc(s)+' <button class="spk" data-s="'+esc(s)+'" title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button>';
+  });
+}
+document.addEventListener('change',function(e){
+  if(e.target.tagName==='SELECT') refreshTraits();
+});
+document.addEventListener('input',function(e){
+  if(e.target.tagName==='SELECT'||e.target.tagName==='INPUT') refreshTraits();
+});
+
+</script>
+</body>
+</html>

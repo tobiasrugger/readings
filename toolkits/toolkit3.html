@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Toolkit #3 — Compare and contrast · Mr. Toby</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pine:#1f4d3d; --pine-dk:#163a2d; --pine-lt:#e7f0ec;
+  --paper:#fbfaf6; --card:#fff; --ink:#1d2320; --muted:#6b7370; --line:#dfe3e0;
+  --gold:#b8842c; --gold-lt:#fdf4e3; --rose:#a14a4a; --rose-lt:#fbecec;
+  --sky:#2f6d8f; --sky-lt:#e6f0f5; --plum:#5a4a8a; --plum-lt:#eae7f5; --r:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Nunito',system-ui,sans-serif;background:var(--paper);color:var(--ink);line-height:1.65;font-size:17px;padding-bottom:80px}
+
+/* SIGN IN */
+#signin{position:fixed;inset:0;background:var(--pine);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px}
+.signin-card{background:var(--card);border-radius:16px;padding:30px 28px;max-width:420px;width:100%;box-shadow:0 18px 50px rgba(0,0,0,.3)}
+.signin-card h1{font-size:23px;margin-bottom:4px;color:var(--pine)}
+.signin-card p.sub{color:var(--muted);font-size:15px;margin-bottom:18px}
+.signin-card label{display:block;font-weight:700;font-size:14px;margin:14px 0 5px}
+.signin-card input,.signin-card select{width:100%;padding:11px 12px;border:2px solid var(--line);border-radius:9px;font-family:inherit;font-size:16px;background:#fff}
+.signin-card input:focus,.signin-card select:focus{outline:none;border-color:var(--pine)}
+.signin-card button{width:100%;margin-top:20px;padding:13px;background:var(--pine);color:#fff;border:none;border-radius:9px;font-family:inherit;font-size:17px;font-weight:800;cursor:pointer}
+.signin-card button:hover{background:var(--pine-dk)}
+.signin-card button.skip{background:#fff;color:var(--pine);border:2px solid var(--pine);margin-top:10px;font-size:15px;padding:10px}
+#signin-err{color:var(--rose);font-size:14px;font-weight:700;margin-top:10px;min-height:20px}
+
+/* TOOLBAR */
+#bar{position:sticky;top:0;z-index:400;background:var(--pine);color:#fff;display:flex;align-items:center;gap:10px;padding:9px 14px;flex-wrap:wrap;box-shadow:0 2px 10px rgba(0,0,0,.15)}
+#bar .ttl{font-weight:800;font-size:17px;margin-right:auto}
+#bar .ttl a{color:#fff;text-decoration:none;opacity:.75;font-weight:700}
+#bar .ttl a:hover{opacity:1}
+#bar select,#bar button{font-family:inherit;font-size:14px;font-weight:700;border-radius:8px;padding:7px 11px;cursor:pointer;background:rgba(255,255,255,.15);color:#fff;border:1.5px solid rgba(255,255,255,.35)}
+#bar select option{color:#000}
+#bar button:hover{background:rgba(255,255,255,.28)}
+#bar button.turnin{background:var(--gold);border-color:var(--gold)}
+#bar button.on{background:#fff;color:var(--pine)}
+#who{font-size:13px;opacity:.9;cursor:pointer;text-decoration:underline}
+.dot{width:10px;height:10px;border-radius:50%;background:#8aa39a;display:inline-block}
+.dot.saving{background:#e0a33c}.dot.ok{background:#63c48b}.dot.err{background:#e06060}
+#savetxt{font-size:12px;opacity:.85}
+
+/* LAYOUT */
+.wrap{max-width:820px;margin:0 auto;padding:0 18px}
+.hero{background:var(--pine);color:#fff;padding:32px 18px 34px;margin-bottom:22px}
+.hero .kit{font-size:14px;font-weight:800;opacity:.7;margin-bottom:6px}
+.hero h1{font-size:33px;line-height:1.15;font-weight:800;margin-bottom:10px}
+.hero p{font-size:17px;opacity:.92;max-width:56ch}
+.hero .by{margin-top:16px;font-size:14px;opacity:.75}
+h2.sec{font-size:23px;font-weight:800;color:var(--pine);margin:38px 0 4px;padding-top:10px;border-top:3px solid var(--pine)}
+h2.sec .n{display:inline-block;background:var(--pine);color:#fff;width:28px;height:28px;line-height:28px;text-align:center;border-radius:50%;font-size:15px;margin-right:8px;vertical-align:2px}
+p.secsub{color:var(--muted);margin-bottom:16px;font-size:15px}
+h3{font-size:19px;font-weight:800;margin:24px 0 6px;color:var(--pine-dk)}
+
+/* TABS */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:18px 0 4px;border-bottom:2px solid var(--line);padding-bottom:0}
+.tabs button{font-family:inherit;font-size:15px;font-weight:800;padding:9px 15px;border:2px solid var(--line);border-bottom:none;background:#fff;color:var(--muted);border-radius:10px 10px 0 0;cursor:pointer;position:relative;top:2px}
+.tabs button.on{color:var(--pine);border-color:var(--pine);background:var(--pine-lt)}
+.tabpane{display:none}
+.tabpane.on{display:block}
+
+/* GRAMMAR TABLE */
+.gt{width:100%;border-collapse:collapse;background:#fff;border:1.5px solid var(--line);border-radius:var(--r);overflow:hidden;margin:14px 0;font-size:16px}
+.gt th{background:var(--pine);color:#fff;text-align:left;padding:9px 11px;font-size:14px;font-weight:800}
+.gt td{border-top:1px solid var(--line);padding:9px 11px;vertical-align:middle}
+.gt tr:nth-child(even) td{background:#fcfcfa}
+.gt .k{font-weight:800;color:var(--pine-dk);white-space:nowrap}
+.gt .ex{color:var(--muted);font-size:15px}
+.gt .mlcell{padding:5px 8px;width:22%}
+.ml{width:100%;border:1.5px dashed var(--gold);border-radius:8px;padding:6px 8px;font-family:inherit;font-size:15px;background:var(--gold-lt)}
+.ml:focus{outline:none;border-style:solid;background:#fff}
+.mlnote{font-size:14px;color:var(--muted);font-style:italic;margin:6px 0 0}
+
+/* PRONOUN / PERSON ICON */
+.pfig{width:34px;height:34px;color:var(--pine);vertical-align:middle;flex-shrink:0}
+
+/* SPEAK */
+.spk{background:none;border:none;cursor:pointer;color:var(--sky);padding:2px 4px;line-height:1;vertical-align:middle}
+.spk svg{width:19px;height:19px;display:block}
+.spk:hover{color:var(--pine)}
+
+/* GLOSSARY */
+.g{border-bottom:2px dotted var(--gold);cursor:pointer;font-weight:700}
+#tip{display:none;position:absolute;z-index:500;max-width:300px;background:var(--pine-dk);color:#fff;border-radius:10px;padding:11px 13px;font-size:15px;line-height:1.5;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+#tip .w{font-weight:800;margin-bottom:3px}
+#tip .tr{margin-top:7px;padding-top:7px;border-top:1px solid rgba(255,255,255,.25);font-weight:700}
+#tip .tr.load{opacity:.6;font-style:italic;font-weight:400}
+
+/* QUESTION BLOCKS */
+.q{background:var(--card);border:1.5px solid var(--line);border-left:5px solid var(--pine);border-radius:var(--r);padding:14px 16px;margin:14px 0}
+.q .tag{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.6px;padding:3px 8px;border-radius:20px;margin-bottom:7px}
+.tag.sci{background:var(--sky-lt);color:var(--sky)}
+.tag.hist{background:var(--gold-lt);color:var(--gold)}
+.tag.math{background:var(--plum-lt);color:var(--plum)}
+.tag.arts{background:var(--rose-lt);color:var(--rose)}
+.tag.talk{background:var(--pine-lt);color:var(--pine)}
+.q .qt{font-weight:700;margin-bottom:9px}
+.q .hint{font-size:14px;color:var(--muted);font-style:italic;margin-bottom:8px}
+textarea{width:100%;min-height:64px;border:1.5px solid var(--line);border-radius:9px;padding:10px 11px;font-family:inherit;font-size:16px;line-height:1.55;resize:vertical;background:#fffdf8}
+textarea:focus{outline:none;border-color:var(--pine);background:#fff}
+input.line{border:none;border-bottom:2px solid var(--pine);background:#fffdf8;font-family:inherit;font-size:16px;padding:3px 6px;min-width:120px;border-radius:4px 4px 0 0}
+input.line:focus{outline:none;background:var(--gold-lt)}
+input.line.short{min-width:80px;width:110px}
+
+/* FILL ROWS */
+.frow{padding:10px 0;border-bottom:1px solid var(--line);line-height:2.3}
+.frow:last-child{border-bottom:none}
+.frow .num{font-weight:800;color:var(--pine);margin-right:6px}
+.frow select{padding:5px 8px;border:1.5px solid var(--gold);border-radius:7px;font-family:inherit;font-size:16px;background:var(--gold-lt);font-weight:700}
+.frow select:focus{outline:none;border-color:var(--pine)}
+.mk{font-size:19px;font-weight:800;margin-left:6px}
+.mk.y{color:#2f8f5b}.mk.n{color:var(--rose)}
+
+/* WORD BANK / CHIPS */
+.wordbank{background:var(--pine-lt);border-radius:var(--r);padding:12px 15px;margin:12px 0;line-height:2.1}
+.wordbank b{display:block;font-size:14px;color:var(--pine);margin-bottom:4px}
+.chip{display:inline-block;background:#fff;border:1.5px solid var(--pine);border-radius:20px;padding:3px 13px;margin:3px 5px 3px 0;font-size:15px;font-weight:700;cursor:pointer;user-select:none}
+.chip.sel{background:var(--pine);color:#fff}
+.chip.used{opacity:.35;text-decoration:line-through}
+
+/* VENN */
+.venn{position:relative;background:#fff;border:1.5px solid var(--line);border-radius:var(--r);padding:14px;margin:12px 0}
+.vlab{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.vlab input{flex:1;min-width:130px;border:1.5px solid var(--line);border-radius:8px;padding:7px 10px;font-family:inherit;font-size:15px;font-weight:700}
+.vzones{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.vz{min-height:120px;border:2.5px solid var(--pine);padding:9px;cursor:pointer;background:#fcfdfc}
+.vz.left{border-radius:60px 8px 8px 60px;border-right-style:dashed}
+.vz.mid{border-radius:8px;border-left:none;border-right:none;background:var(--pine-lt)}
+.vz.right{border-radius:8px 60px 60px 8px;border-left-style:dashed}
+.vz .zt{font-size:12px;font-weight:800;color:var(--pine);text-align:center;margin-bottom:6px}
+.vz.arm{box-shadow:inset 0 0 0 3px var(--gold)}
+.vz .item{display:block;background:#fff;border:1.5px solid var(--line);border-radius:8px;padding:3px 8px;margin:4px 0;font-size:14px;font-weight:700;cursor:pointer}
+.vz .item:hover{border-color:var(--rose);color:var(--rose)}
+.vadd{display:flex;gap:7px;margin-top:10px}
+.vadd input{flex:1;border:1.5px solid var(--line);border-radius:8px;padding:7px 10px;font-family:inherit;font-size:15px}
+.vadd button{border:none;background:var(--pine);color:#fff;border-radius:8px;padding:7px 15px;font-family:inherit;font-weight:800;cursor:pointer}
+@media(max-width:560px){.vzones{grid-template-columns:1fr}.vz,.vz.left,.vz.right{border-radius:8px;border-style:solid}}
+
+/* FRAME BOX */
+.frames{background:var(--gold-lt);border:1.5px solid var(--gold);border-radius:var(--r);padding:14px 16px;margin:14px 0}
+.frames .f{margin:9px 0;font-weight:700}
+.frames .e{color:var(--muted);font-style:italic;font-weight:400;font-size:15px;margin-left:12px;display:block}
+.note{background:var(--pine-lt);border-radius:var(--r);padding:13px 16px;margin:14px 0;font-size:15px}
+.note b{color:var(--pine)}
+.warn{background:var(--rose-lt);border-left:5px solid var(--rose);border-radius:var(--r);padding:13px 16px;margin:14px 0;font-size:15px}
+
+/* CARD GRID (hub) */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;margin:16px 0}
+.card{display:block;background:#fff;border:1.5px solid var(--line);border-left:6px solid var(--pine);border-radius:var(--r);padding:15px 16px;text-decoration:none;color:inherit}
+.card:hover{border-left-color:var(--gold);box-shadow:0 5px 18px rgba(0,0,0,.07)}
+.card .n{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.5px}
+.card h4{font-size:18px;font-weight:800;color:var(--pine-dk);margin:2px 0 5px}
+.card p{font-size:14px;color:var(--muted);line-height:1.5}
+
+.btn{padding:11px 20px;border:none;border-radius:9px;background:var(--pine);color:#fff;font-family:inherit;font-size:16px;font-weight:800;cursor:pointer}
+.btn.ghost{background:#fff;color:var(--pine);border:2px solid var(--pine)}
+.score{margin-left:10px;font-weight:800}
+footer{text-align:center;color:var(--muted);font-size:14px;padding:36px 18px 10px}
+footer a{color:var(--pine)}
+.printhead{display:none}
+
+@media print{
+  @page{margin:1.4cm}
+  body{background:#fff;font-size:11.5pt;padding-bottom:0}
+  #bar,#signin,#tip,.btn,.noprint,.spk,.tabs{display:none!important}
+  .hero{background:#fff;color:#000;padding:0 0 8px;margin-bottom:10px;border-bottom:3px solid #000}
+  .hero h1{font-size:20pt}.hero p{font-size:10.5pt}
+  .printhead{display:block;border-bottom:1px solid #000;padding-bottom:5px;margin-bottom:14px;font-size:10.5pt}
+  .wrap{max-width:100%;padding:0}
+  .q,.venn,.frames,.gt tr,.note{break-inside:avoid;page-break-inside:avoid}
+  h2.sec{break-after:avoid;page-break-after:avoid;font-size:14pt}
+  .tabpane{display:block!important}
+  textarea{border:none;border-bottom:1px solid #999;border-radius:0;min-height:0;background:#fff;overflow:visible;resize:none}
+  input.line{background:#fff}
+  .vz{min-height:150px}
+}
+body.blank textarea,body.blank input,body.blank select{color:transparent!important}
+body.blank .vz .item{color:transparent!important}
+</style>
+</head>
+<body>
+<div id="signin">
+  <div class="signin-card">
+    <h1>Toolkit #3: Compare and contrast</h1>
+    <p class="sub">Sign in so your own-language notes follow you to every class. Or skip it and just use the sheet.</p>
+    <label for="si-email">School email</label>
+    <input id="si-email" type="email" placeholder="you@sfusd.edu" autocomplete="email">
+    <label for="si-name">First and last name</label>
+    <input id="si-name" type="text" placeholder="Maria Lopez" autocomplete="name">
+    <label for="si-period">Period</label>
+    <select id="si-period">
+      <option value="">Choose</option>
+      <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option>
+    </select>
+    <div id="signin-err"></div>
+    <button id="si-go">Start</button>
+  <button class="skip" id="si-skip">Use it without signing in</button>
+  </div>
+</div>
+<div id="bar">
+  <span class="ttl"><a href="index.html" title="All toolkits">&#9664;</a> Toolkit #3 &middot; Compare and contrast</span>
+  <span id="who" title="Sign out"></span>
+  <select id="lang" title="Translation language">
+    <option value="">Language</option>
+    <option value="Spanish">Espa&ntilde;ol</option>
+    <option value="Chinese (Simplified)">&#20013;&#25991; (&#31616;)</option>
+    <option value="Chinese (Traditional)">&#20013;&#25991; (&#32321;)</option>
+    <option value="Arabic">&#1575;&#1604;&#1593;&#1585;&#1576;&#1610;&#1577;</option>
+    <option value="Vietnamese">Ti&#7871;ng Vi&#7879;t</option>
+    <option value="Tagalog">Tagalog</option>
+    <option value="Russian">&#1056;&#1091;&#1089;&#1089;&#1082;&#1080;&#1081;</option>
+    <option value="Portuguese">Portugu&ecirc;s</option>
+    <option value="Thai">&#3652;&#3607;&#3618;</option>
+    <option value="Nepali">&#2344;&#2375;&#2346;&#2366;&#2354;&#2368;</option>
+    <option value="Burmese">&#4121;&#4156;&#4116;&#4154;&#4121;&#4140;</option>
+    <option value="Japanese">&#26085;&#26412;&#35486;</option>
+  </select>
+  <button id="btn-read" title="Read the page out loud when you tap a sentence">&#128266; Listen mode</button>
+  <span class="dot" id="dot"></span><span id="savetxt"></span>
+  <button id="btn-blank">Print blank</button>
+  <button id="btn-print">Print my work</button>
+</div>
+
+<div class="printhead">
+  Name: <b id="ph-name">________________________</b> &nbsp;&nbsp; Period: <b id="ph-period">____</b> &nbsp;&nbsp; Date: ____________
+</div>
+<style>
+.lvl{display:inline-block;font-size:11px;font-weight:800;padding:2px 8px;border-radius:20px;margin-right:7px;vertical-align:2px}
+.lvl.easier{background:var(--pine-lt);color:var(--pine)}
+.lvl.standard{background:var(--sky-lt);color:var(--sky)}
+.lvl.challenge{background:var(--plum-lt);color:var(--plum)}
+.frames.cf{background:var(--pine-lt);border-color:var(--pine)}
+.lvlbar{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.lvlbar button{font-family:inherit;font-size:14px;font-weight:800;padding:6px 13px;border-radius:20px;border:2px solid var(--line);background:#fff;color:var(--muted);cursor:pointer}
+.lvlbar button.on{border-color:var(--pine);background:var(--pine);color:#fff}
+body.only-easier .f:not(.show-easier),body.only-standard .f:not(.show-standard),body.only-challenge .f:not(.show-challenge){display:none}
+</style>
+
+<div class="hero">
+  <div class="wrap">
+    <div class="kit">TOOLKIT #3</div>
+    <h1>Compare and contrast</h1>
+    <p class="tx" data-tx="Compare means say how things are similar. Contrast means say how things are different.">To <b>compare</b> is to say how two things are <b>similar</b>. To <b>contrast</b> is to say how they are <b>different</b>. Almost every class asks you to do this.</p>
+    <div class="by">Mr. Toby &middot; ELD</div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<table class="gt">
+<tr><th>Word</th><th>It means</th><th>My language (ML)</th></tr>
+<tr><td class="k">compare <button class="spk" data-s="compare" title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button></td><td>say how things are <b>the same</b></td><td class="mlcell"><input class="ml" data-k="ml_w1"></td></tr>
+<tr><td class="k">contrast <button class="spk" data-s="contrast" title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button></td><td>say how things are <b>different</b></td><td class="mlcell"><input class="ml" data-k="ml_w2"></td></tr>
+<tr><td class="k">similar <button class="spk" data-s="similar" title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button></td><td>almost the same</td><td class="mlcell"><input class="ml" data-k="ml_w3"></td></tr>
+<tr><td class="k">different <button class="spk" data-s="different" title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button></td><td>not the same</td><td class="mlcell"><input class="ml" data-k="ml_w4"></td></tr>
+</table>
+
+<h2 class="sec"><span class="n">1</span>The Venn diagram</h2>
+<p class="secsub tx" data-tx="A Venn diagram helps you organize similarities and differences before you write.">Two circles that overlap. Differences on the outside, similarities in the middle. Fill this in <b>before</b> you write, and the sentences come easily.</p>
+
+<div class="venn" id="vdemo"></div>
+<p class="mlnote">Try it: tap a word, then tap a circle. Tap a word inside a circle to take it back out. Add your own words too.</p>
+
+<h2 class="sec"><span class="n">2</span>Compare language</h2>
+<p class="secsub">Sentences that say <b>how things are the same</b>. Start with the green ones.</p>
+<div class="lvlbar noprint">
+  <button data-l="" class="on">Show all</button>
+  <button data-l="easier">Easier</button>
+  <button data-l="standard">Standard</button>
+  <button data-l="challenge">Challenge</button>
+</div>
+<div class="frames cf">
+<div class="f show-easier"><span class="lvl easier">easier</span> 1) ______ and ______ are both ______.<span class="e">Romeo and Juliet are both teenagers. <button class="spk" data-s="Romeo and Juliet are both teenagers." title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button></span><span class="e">Apples and oranges are both fruits. <button class="spk" data-s="Apples and oranges are both fruits." title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button></span></div>
+<div class="f show-easier"><span class="lvl easier">easier</span> 2) ______ is like ______ because ______.<span class="e">A circle is like a basketball because they are both round. <button class="spk" data-s="A circle is like a basketball because they are both round." title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button></span><span class="e">A drum is like a heart because they both keep a beat. <button class="spk" data-s="A drum is like a heart because they both keep a beat." title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button></span></div>
+<div class="f show-standard"><span class="lvl standard">standard</span> 3) An important similarity between ______ and ______ is that ______.<span class="e">An important similarity between English class and history class is that they both require a lot of writing. <button class="spk" data-s="An important similarity between English class and history class is that they both require a lot of writing." title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button></span><span class="e">An important similarity between the Sun and a lightbulb is that they both give off light. <button class="spk" data-s="An important similarity between the Sun and a lightbulb is that they both give off light." title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button></span></div>
+<div class="f show-standard"><span class="lvl standard">standard</span> 4) Something that ______ and ______ have in common is ______.<span class="e">Something that Juliet and Tybalt have in common is that they are Capulets. <button class="spk" data-s="Something that Juliet and Tybalt have in common is that they are Capulets." title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button></span><span class="e">Something that the Mission and Chinatown have in common is that they both have many immigrants. <button class="spk" data-s="Something that the Mission and Chinatown have in common is that they both have many immigrants." title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button></span></div>
+<div class="f show-challenge"><span class="lvl challenge">challenge</span> 5) ______ and ______ share the following traits: ______, ______, and ______.<span class="e">San Francisco and New York share the following traits: big, on the coast, and many immigrants. <button class="spk" data-s="San Francisco and New York share the following traits: big, on the coast, and many immigrants." title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button></span><span class="e">Basketball and soccer share the following traits: two teams, one ball, and a clock. <button class="spk" data-s="Basketball and soccer share the following traits: two teams, one ball, and a clock." title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button></span></div>
+<div class="f show-challenge"><span class="lvl challenge">challenge</span> 6) ______, just as ______.<span class="e">Romeo kills Tybalt, just as Tybalt kills Mercutio. <button class="spk" data-s="Romeo kills Tybalt, just as Tybalt kills Mercutio." title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button></span><span class="e">A plant needs water, just as a person needs water. <button class="spk" data-s="A plant needs water, just as a person needs water." title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button></span></div>
+</div>
+<p class="mlnote"><b>is like</b> means the same as <b>is similar to</b>. Both are correct.</p>
+
+<h2 class="sec"><span class="n">3</span>Contrast language</h2>
+<p class="secsub">Sentences that say <b>how things are different</b>.</p>
+<div class="frames">
+<div class="f show-easier"><span class="lvl easier">easier</span> 1) ______ is/has ______, but ______ is/has ______.<span class="e">An apple is red, but a banana is yellow. <button class="spk" data-s="An apple is red, but a banana is yellow." title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button></span><span class="e">A snake has no legs, but a mouse has four legs. <button class="spk" data-s="A snake has no legs, but a mouse has four legs." title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button></span></div>
+<div class="f show-easier"><span class="lvl easier">easier</span> 2) ______ and ______ are different because ______ is/has ______ and ______ is/has ______.<span class="e">Apples and oranges are different because an apple is red and an orange is orange. <button class="spk" data-s="Apples and oranges are different because an apple is red and an orange is orange." title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button></span><span class="e">Daniel's neighborhood and Norma's neighborhood are different because Daniel's neighborhood has cold weather and Norma's neighborhood has hot weather. <button class="spk" data-s="Daniel's neighborhood and Norma's neighborhood are different because Daniel's neighborhood has cold weather and Norma's neighborhood has hot weather." title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button></span></div>
+<div class="f show-standard"><span class="lvl standard">standard</span> 3) An important difference between ______ and ______ is that ______.<span class="e">An important difference between a tree and a rock is that a tree is alive and a rock is not alive. <button class="spk" data-s="An important difference between a tree and a rock is that a tree is alive and a rock is not alive." title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button></span><span class="e">An important difference between a guitar and a drum is that a guitar has strings and a drum does not. <button class="spk" data-s="An important difference between a guitar and a drum is that a guitar has strings and a drum does not." title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button></span></div>
+<div class="f show-standard"><span class="lvl standard">standard</span> 4) ______ and ______ differ because ______, while ______.<span class="e">Plays and stories differ because plays are performed, while stories are read. <button class="spk" data-s="Plays and stories differ because plays are performed, while stories are read." title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button></span><span class="e">Sharks and dolphins differ because sharks are fish, while dolphins are mammals. <button class="spk" data-s="Sharks and dolphins differ because sharks are fish, while dolphins are mammals." title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button></span></div>
+<div class="f show-challenge"><span class="lvl challenge">challenge</span> 5) Unlike ______, who/which ______, ______.<span class="e">Unlike Galileo, which is a big school, my old school was very small. <button class="spk" data-s="Unlike Galileo, which is a big school, my old school was very small." title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button></span><span class="e">Unlike the Moon, which has no air, the Earth has an atmosphere. <button class="spk" data-s="Unlike the Moon, which has no air, the Earth has an atmosphere." title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button></span></div>
+<div class="f show-challenge"><span class="lvl challenge">challenge</span> 6) The most notable contrast is that ______ is/has ______, whereas ______ is/has ______.<span class="e">The most notable contrast is that a circle is round, whereas a square has four sides. <button class="spk" data-s="The most notable contrast is that a circle is round, whereas a square has four sides." title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button></span><span class="e">The most notable contrast is that the north had factories, whereas the south had farms. <button class="spk" data-s="The most notable contrast is that the north had factories, whereas the south had farms." title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button></span></div>
+</div>
+
+<h2 class="sec"><span class="n">4</span>Signal words</h2>
+<p class="secsub">These little words tell your reader what is coming next.</p>
+<table class="gt">
+<tr><th>To show&hellip;</th><th>Use these words</th><th>Example</th></tr>
+<tr><td class="k">Similar</td><td>both, also, too, the same, as well, like, similar to, in the same way</td><td class="ex">Both rocks are gray. The second rock is gray too. <button class="spk" data-s="Both rocks are gray. The second rock is gray too." title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button></td></tr>
+<tr><td class="k">Different</td><td>but, however, while, whereas, unlike, on the other hand, different from</td><td class="ex">Gold is soft, but iron is hard. <button class="spk" data-s="Gold is soft, but iron is hard." title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button></td></tr>
+</table>
+<div class="warn"><b>Careful with <i>both</i>.</b> <b>Both</b> goes after the verb <i>are</i>: <i>They <b>are both</b> tall.</i> But before a normal verb: <i>They <b>both</b> play soccer.</i> Either order is fine at the start: <i><b>Both</b> boys are tall.</i></div>
+
+<h2 class="sec"><span class="n">5</span>Choose the right words</h2>
+<div id="p1">
+<div class="frow"><span class="num">1.</span> Water and ice ___ made of the same molecule. <select data-k="cc0" data-a="are both"><option value=""></option><option>are both</option><option>differ</option><option>unlike</option></select></div>
+<div class="frow"><span class="num">2.</span> A bat is a mammal, ___ a bird is not. <select data-k="cc1" data-a="but"><option value=""></option><option>both</option><option>but</option><option>just as</option></select></div>
+<div class="frow"><span class="num">3.</span> ___ a square, which has four sides, a triangle has three. <select data-k="cc2" data-a="Unlike"><option value=""></option><option>Both</option><option>Unlike</option><option>While</option></select></div>
+<div class="frow"><span class="num">4.</span> Soccer and basketball ___ because soccer uses feet, while basketball uses hands. <select data-k="cc3" data-a="differ"><option value=""></option><option>are both</option><option>differ</option><option>share</option></select></div>
+<div class="frow"><span class="num">5.</span> The violin is like the guitar ___ they both have strings. <select data-k="cc4" data-a="because"><option value=""></option><option>because</option><option>but</option><option>whereas</option></select></div>
+<div class="frow"><span class="num">6.</span> Mercury and Venus ___ the following traits: rocky, small, and close to the Sun. <select data-k="cc5" data-a="share"><option value=""></option><option>share</option><option>differ</option><option>unlike</option></select></div>
+</div>
+<button class="btn ghost noprint" onclick="checkBlock('p1','s1')">Check my answers</button><span class="score" id="s1"></span>
+
+<h2 class="sec"><span class="n">6</span>Compare or contrast?</h2>
+<div id="p2">
+<div class="frow"><span class="num">1.</span> Which sentence COMPARES? <select data-k="cd0" data-a="A drum and a flute are both instruments."><option value=""></option><option>A drum is loud, but a flute is quiet.</option><option>A drum and a flute are both instruments.</option></select></div>
+<div class="frow"><span class="num">2.</span> Which sentence CONTRASTS? <select data-k="cd1" data-a="The Nile is in Africa, whereas the Amazon is in South America."><option value=""></option><option>The Nile and the Amazon are both rivers.</option><option>The Nile is in Africa, whereas the Amazon is in South America.</option></select></div>
+<div class="frow"><span class="num">3.</span> Which sentence COMPARES? <select data-k="cd2" data-a="A cat is like a lion because they are both felines."><option value=""></option><option>Unlike a cat, a dog barks.</option><option>A cat is like a lion because they are both felines.</option></select></div>
+<div class="frow"><span class="num">4.</span> Which sentence CONTRASTS? <select data-k="cd3" data-a="An important difference between a solid and a liquid is that a solid keeps its shape."><option value=""></option><option>An important difference between a solid and a liquid is that a solid keeps its shape.</option><option>A solid and a liquid are both states of matter.</option></select></div>
+</div>
+<button class="btn ghost noprint" onclick="checkBlock('p2','s2')">Check my answers</button><span class="score" id="s2"></span>
+
+<h2 class="sec"><span class="n">7</span>Write two of your own</h2>
+<div class="q"><span class="tag talk">Compare</span>
+<div class="qt">Write one sentence that says how two things in your class today are <b>similar</b>.</div>
+<div class="hint">Use a frame from section 2.</div>
+<textarea data-k="own1"></textarea></div>
+<div class="q"><span class="tag talk">Contrast</span>
+<div class="qt">Write one sentence that says how those same two things are <b>different</b>.</div>
+<div class="hint">Use a frame from section 3.</div>
+<textarea data-k="own2"></textarea></div>
+
+<h2 class="sec"><span class="n">8</span>Say it in your class</h2>
+<table class="gt">
+<tr><th>Class</th><th>Sentence</th><th>My language (ML)</th></tr>
+<tr><td class="k">Science</td><td>A solid and a liquid are both states of matter, but a solid keeps its shape. <button class="spk" data-s="A solid and a liquid are both states of matter, but a solid keeps its shape." title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button></td><td class="mlcell"><input class="ml" data-k="ml_c1"></td></tr>
+<tr><td class="k">History</td><td>An important difference between the two empires is that one had an army and one had a navy. <button class="spk" data-s="An important difference between the two empires is that one had an army and one had a navy." title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button></td><td class="mlcell"><input class="ml" data-k="ml_c2"></td></tr>
+<tr><td class="k">Math</td><td>A square is like a rectangle because they both have four right angles. <button class="spk" data-s="A square is like a rectangle because they both have four right angles." title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button></td><td class="mlcell"><input class="ml" data-k="ml_c3"></td></tr>
+<tr><td class="k">Art</td><td>Both paintings use blue, whereas only one uses gold. <button class="spk" data-s="Both paintings use blue, whereas only one uses gold." title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button></td><td class="mlcell"><input class="ml" data-k="ml_c4"></td></tr>
+<tr><td class="k">Music</td><td>The violin and the guitar share the following traits: strings, wood, and a neck. <button class="spk" data-s="The violin and the guitar share the following traits: strings, wood, and a neck." title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button></td><td class="mlcell"><input class="ml" data-k="ml_c5"></td></tr>
+<tr><td class="k">PE</td><td>Soccer and basketball differ because soccer uses feet, while basketball uses hands. <button class="spk" data-s="Soccer and basketball differ because soccer uses feet, while basketball uses hands." title="Listen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg></button></td><td class="mlcell"><input class="ml" data-k="ml_c6"></td></tr>
+</table>
+
+<h2 class="sec"><span class="n">9</span>Practice for this toolkit</h2>
+<div class="cards">
+  <a class="card" href="toolkit3-practice.html#sci"><div class="n">SCIENCE</div><h4>Two things under the microscope</h4><p>Compare states of matter, planets, and animals.</p></a>
+  <a class="card" href="toolkit3-practice.html#hist"><div class="n">HISTORY</div><h4>Two sides, two places</h4><p>Compare regions, leaders, and ways of life.</p></a>
+  <a class="card" href="toolkit3-practice.html#math"><div class="n">MATH</div><h4>Two shapes, two numbers</h4><p>Explain what is the same and what is not.</p></a>
+  <a class="card" href="toolkit3-practice.html#arts"><div class="n">ART, MUSIC, PE</div><h4>Two paintings, two sports</h4><p>Compare what you see, hear, and play.</p></a>
+</div>
+<footer>Mr. Toby &middot; Galileo Academy of Science and Technology &middot; <a href="index.html">All toolkits</a></footer>
+</div>
+
+<div id="tip"></div>
+
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var PROXY='https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
+var TABLE='toolkit_work';
+var SECTION='toolkit3';
+var LS='tk3_v1';
+
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+var student=null, data={answers:{},venn:{}}, saveTimer=null, tipEl=null, readMode=false;
+
+/* ---------- TRANSLATE ---------- */
+var tc={};
+function translate(w,m,lang){
+  var key=w+'|'+lang;
+  if(tc[key]) return Promise.resolve(tc[key]);
+  var url=PROXY+'?action=translate&idiom='+encodeURIComponent(w)+'&meaning='+encodeURIComponent(m||'')+'&lang='+encodeURIComponent(lang);
+  return fetch(url).then(function(r){return r.json();}).then(function(d){
+    if(!d||!d.ok||!d.translation) return null;
+    tc[key]=d.translation; return d.translation;
+  }).catch(function(){return null;});
+}
+/* Any element with class "tx" gets a translation line under it when a language is chosen. */
+function translateAll(){
+  var lang=$('lang').value;
+  var els=document.querySelectorAll('.tx');
+  for(var i=0;i<els.length;i++){
+    (function(el){
+      var box=el.nextElementSibling;
+      if(!box||!box.classList.contains('txline')){
+        box=document.createElement('div');box.className='txline';
+        box.style.cssText='font-size:15px;color:#5a4a8a;font-weight:700;margin-top:3px';
+        el.parentNode.insertBefore(box,el.nextSibling);
+      }
+      if(!lang){box.textContent='';return;}
+      box.textContent='...';
+      translate(el.getAttribute('data-tx')||el.textContent.trim(),'',lang).then(function(t){
+        box.textContent=t?(t.equiv||''):'';
+      });
+    })(els[i]);
+  }
+}
+
+/* ---------- GLOSSARY TOOLTIP ---------- */
+function showTip(span){
+  var word=span.getAttribute('data-w')||span.textContent;
+  var def=span.getAttribute('data-d')||'';
+  var lang=$('lang').value;
+  var h='<div class="w">'+esc(word)+'</div><div>'+esc(def)+'</div>';
+  if(lang) h+='<div class="tr load" id="tip-tr">translating...</div>';
+  tipEl.innerHTML=h; tipEl.style.display='block';
+  var r=span.getBoundingClientRect();
+  var left=r.left+window.scrollX;
+  if(left+310>window.innerWidth) left=Math.max(10,window.innerWidth-315);
+  tipEl.style.top=(r.bottom+window.scrollY+8)+'px'; tipEl.style.left=left+'px';
+  if(lang){
+    translate(word,def,lang).then(function(t){
+      var b=$('tip-tr'); if(!b) return;
+      b.classList.remove('load');
+      if(!t){b.textContent='Translation not available.';return;}
+      var txt=t.equiv||''; if(t.meaning) txt+=' \u2014 '+t.meaning;
+      b.textContent=txt;
+    });
+  }
+}
+
+/* ---------- SPEAK ---------- */
+function speak(txt){
+  if(!('speechSynthesis' in window)) return;
+  try{
+    window.speechSynthesis.cancel();
+    var u=new SpeechSynthesisUtterance(txt);
+    u.lang='en-US'; u.rate=.82;
+    window.speechSynthesis.speak(u);
+  }catch(e){}
+}
+
+/* ---------- SAVE ---------- */
+function collect(){
+  var out={}, f=document.querySelectorAll('[data-k]');
+  for(var i=0;i<f.length;i++){ out[f[i].getAttribute('data-k')]=f[i].value; }
+  return out;
+}
+function restore(){
+  var f=document.querySelectorAll('[data-k]');
+  for(var i=0;i<f.length;i++){
+    var k=f[i].getAttribute('data-k');
+    if(data.answers[k]!==undefined) f[i].value=data.answers[k];
+  }
+  if(window.restoreVenns) restoreVenns();
+}
+function setDot(c,t){$('dot').className='dot '+(c||'');$('savetxt').textContent=t||'';}
+function loadLocal(){
+  try{var c=localStorage.getItem(LS);if(c){var j=JSON.parse(c);data.answers=j.answers||{};data.venn=j.venn||{};}}catch(e){}
+}
+function queueSave(){
+  data.answers=collect();
+  if(window.collectVenns) data.venn=collectVenns();
+  try{localStorage.setItem(LS,JSON.stringify(data));}catch(e){}
+  if(!student){setDot('','saved on this device');return;}
+  setDot('saving','saving...');
+  clearTimeout(saveTimer); saveTimer=setTimeout(push,2200);
+}
+function push(submitted){
+  if(!student) return;
+  var row={email:student.email,name:student.name,period:student.period,section:SECTION,
+           payload:{answers:collect(),venn:(window.collectVenns?collectVenns():{})},
+           updated_at:new Date().toISOString()};
+  if(submitted) row.submitted=true;
+  return fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email,section',{
+    method:'POST',
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json',
+             'Prefer':'resolution=merge-duplicates,return=minimal'},
+    body:JSON.stringify([row])
+  }).then(function(r){
+    if(r.ok){var t=new Date();setDot('ok','saved '+t.getHours()+':'+String(t.getMinutes()).padStart(2,'0'));}
+    else{r.text().then(function(x){console.error('save failed',r.status,x);});setDot('err','not saved');}
+  }).catch(function(e){console.error(e);setDot('err','offline');});
+}
+function load(){
+  var url=SUPA_URL+'/rest/v1/'+TABLE+'?email=eq.'+encodeURIComponent(student.email)+'&section=eq.'+SECTION+'&select=payload';
+  return fetch(url,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}})
+    .then(function(r){return r.json();})
+    .then(function(rows){
+      if(rows&&rows.length&&rows[0].payload){
+        data.answers=rows[0].payload.answers||data.answers;
+        data.venn=rows[0].payload.venn||data.venn;
+      }
+    }).catch(function(){});
+}
+
+/* ---------- SIGN IN ---------- */
+function signIn(){
+  var email=$('si-email').value.trim().toLowerCase();
+  var name=$('si-name').value.trim();
+  var per=$('si-period').value;
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){$('signin-err').textContent='Type your full school email.';return;}
+  if(name.length<3){$('signin-err').textContent='Type your first and last name.';return;}
+  if(!per){$('signin-err').textContent='Choose your period.';return;}
+  student={email:email,name:name,period:per};
+  localStorage.setItem('tk_student',JSON.stringify(student));
+  start();
+}
+function start(){
+  $('signin').style.display='none';
+  $('who').textContent=student.name+' \u00b7 P'+student.period;
+  $('ph-name').textContent=student.name;
+  $('ph-period').textContent=student.period;
+  loadLocal(); restore();
+  load().then(function(){restore();setDot('ok','loaded');});
+}
+
+/* ---------- INIT ---------- */
+document.addEventListener('DOMContentLoaded',function(){
+  tipEl=$('tip');
+  if(window.buildPage) buildPage();
+
+  $('si-go').addEventListener('click',signIn);
+  ['si-email','si-name'].forEach(function(id){
+    $(id).addEventListener('keydown',function(e){if(e.key==='Enter')signIn();});
+  });
+  var sk=$('si-skip');
+  if(sk) sk.addEventListener('click',function(){student=null;$('signin').style.display='none';
+    $('who').textContent='not signed in';loadLocal();restore();setDot('','local only');});
+
+  try{var s=localStorage.getItem('tk_student');if(s){student=JSON.parse(s);start();}}catch(e){}
+  $('who').addEventListener('click',function(){
+    if(!confirm('Sign out? Your work is already saved.'))return;
+    localStorage.removeItem('tk_student');location.reload();
+  });
+
+  $('lang').addEventListener('change',function(){
+    localStorage.setItem('tk_lang',this.value);
+    translateAll(); if(window.onLang) onLang();
+  });
+  try{var L=localStorage.getItem('tk_lang');if(L){$('lang').value=L;translateAll();if(window.onLang)onLang();}}catch(e){}
+
+  $('btn-read').addEventListener('click',function(){
+    readMode=!readMode; this.classList.toggle('on',readMode);
+    document.body.style.cursor=readMode?'help':'';
+  });
+
+  document.addEventListener('click',function(e){
+    var s=e.target.closest?e.target.closest('.g'):null;
+    if(s){showTip(s);e.stopPropagation();return;}
+    var b=e.target.closest?e.target.closest('.spk'):null;
+    if(b){speak(b.getAttribute('data-s')||'');e.stopPropagation();return;}
+    if(tipEl) tipEl.style.display='none';
+    if(readMode){
+      var t=e.target.closest?e.target.closest('p,li,td,div.qt,div.f,h2,h3,.hint,.e'):null;
+      if(t&&t.textContent.trim()) speak(t.textContent.trim().slice(0,320));
+    }
+  });
+
+  document.addEventListener('input',function(e){
+    if(e.target.hasAttribute&&e.target.hasAttribute('data-k')) queueSave();
+  });
+
+  $('btn-blank').addEventListener('click',function(){
+    document.body.classList.add('blank');window.print();
+    setTimeout(function(){document.body.classList.remove('blank');},600);
+  });
+  $('btn-print').addEventListener('click',function(){window.print();});
+  var ti=$('btn-turnin');
+  if(ti) ti.addEventListener('click',function(){
+    if(!student){alert('Sign in first so your teacher can see your work.');return;}
+    if(!confirm('Turn in your work? You can still change it after.'))return;
+    push(true).then(function(){alert('Turned in. Mr. Toby can see it now.');});
+  });
+
+  buildVenn('vdemo',['round','has strings','made of wood','loud','you hit it','you strum it','has a beat','an instrument']);
+  var vl=document.querySelector('#vdemo .vlab');
+  if(vl){vl.children[0].value=vl.children[0].value||'guitar';vl.children[1].value=vl.children[1].value||'drum';}
+  document.querySelector('.lvlbar').addEventListener('click',function(e){
+    var b=e.target.closest('button'); if(!b)return;
+    this.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b);});
+    document.body.className=document.body.className.replace(/only-\S+/g,'').trim();
+    var l=b.getAttribute('data-l'); if(l) document.body.classList.add('only-'+l);
+  });
+
+});
+
+/* Auto-scoring: every <select data-a="answer"> inside a block id gets checked. */
+function checkBlock(blockId,scoreId){
+  var sels=document.querySelectorAll('#'+blockId+' [data-a]');
+  var right=0,total=0;
+  for(var i=0;i<sels.length;i++){
+    var el=sels[i], want=el.getAttribute('data-a'), got=(el.value||'').trim();
+    var mk=el.parentNode.querySelector('.mk');
+    if(!mk){mk=document.createElement('span');mk.className='mk';el.parentNode.insertBefore(mk,el.nextSibling);}
+    total++;
+    if(!got){mk.textContent='';mk.className='mk';continue;}
+    if(got.toLowerCase()===want.toLowerCase()){mk.textContent='\u2713';mk.className='mk y';right++;}
+    else{mk.textContent='\u2717';mk.className='mk n';}
+  }
+  var s=$(scoreId);
+  if(s) s.textContent=right+' / '+total+(right===total?'  \u2b50':'');
+}
+
+/* ---------- VENN (tap to place, phone friendly) ---------- */
+var armed=null;
+function buildVenn(id,bank){
+  var el=$(id); if(!el) return;
+  var h='<div class="vlab">'+
+    '<input data-k="'+id+'_L" placeholder="Left: name or thing">'+
+    '<input data-k="'+id+'_R" placeholder="Right: name or thing"></div>'+
+    '<div class="wordbank" id="'+id+'_bank"><b>Tap a word, then tap a circle.</b></div>'+
+    '<div class="vzones">'+
+      '<div class="vz left" data-z="L"><div class="zt">ONLY left</div></div>'+
+      '<div class="vz mid" data-z="M"><div class="zt">BOTH</div></div>'+
+      '<div class="vz right" data-z="R"><div class="zt">ONLY right</div></div>'+
+    '</div>'+
+    '<div class="vadd"><input id="'+id+'_new" placeholder="Add your own word"><button type="button">Add</button></div>';
+  el.innerHTML=h;
+  var bk=$(id+'_bank');
+  for(var i=0;i<bank.length;i++){
+    var c=document.createElement('span'); c.className='chip'; c.textContent=bank[i];
+    bk.appendChild(c);
+  }
+  bk.addEventListener('click',function(e){
+    var c=e.target.closest('.chip'); if(!c)return;
+    if(armed) armed.classList.remove('sel');
+    if(armed===c){armed=null;flagZones(false);return;}
+    armed=c; c.classList.add('sel'); flagZones(true);
+  });
+  el.querySelectorAll('.vz').forEach(function(z){
+    z.addEventListener('click',function(e){
+      if(e.target.classList.contains('item')){e.target.remove();queueSave();return;}
+      if(!armed) return;
+      var it=document.createElement('span'); it.className='item'; it.textContent=armed.textContent;
+      z.appendChild(it);
+      armed.classList.add('used'); armed.classList.remove('sel'); armed=null; flagZones(false);
+      queueSave();
+    });
+  });
+  var addbtn=el.querySelector('.vadd button');
+  addbtn.addEventListener('click',function(){
+    var v=$(id+'_new').value.trim(); if(!v)return;
+    var c=document.createElement('span'); c.className='chip'; c.textContent=v;
+    bk.appendChild(c); $(id+'_new').value='';
+  });
+  $(id+'_new').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();addbtn.click();}});
+}
+function flagZones(on){
+  document.querySelectorAll('.vz').forEach(function(z){z.classList.toggle('arm',on);});
+}
+function collectVenns(){
+  var out={};
+  document.querySelectorAll('.venn').forEach(function(v){
+    var o={L:[],M:[],R:[],extra:[]};
+    v.querySelectorAll('.vz').forEach(function(z){
+      var zz=z.getAttribute('data-z');
+      z.querySelectorAll('.item').forEach(function(it){o[zz].push(it.textContent);});
+    });
+    v.querySelectorAll('.chip').forEach(function(c){o.extra.push(c.textContent);});
+    out[v.id]=o;
+  });
+  return out;
+}
+function restoreVenns(){
+  document.querySelectorAll('.venn').forEach(function(v){
+    var o=data.venn[v.id]; if(!o)return;
+    var bk=v.querySelector('.wordbank');
+    if(o.extra){
+      var have={}; v.querySelectorAll('.chip').forEach(function(c){have[c.textContent]=1;});
+      o.extra.forEach(function(w){if(!have[w]){var c=document.createElement('span');c.className='chip';c.textContent=w;bk.appendChild(c);}});
+    }
+    ['L','M','R'].forEach(function(zz){
+      var z=v.querySelector('.vz[data-z="'+zz+'"]'); if(!z)return;
+      z.querySelectorAll('.item').forEach(function(x){x.remove();});
+      (o[zz]||[]).forEach(function(w){
+        var it=document.createElement('span');it.className='item';it.textContent=w;z.appendChild(it);
+        v.querySelectorAll('.chip').forEach(function(c){if(c.textContent===w)c.classList.add('used');});
+      });
+    });
+  });
+}
+
+</script>
+</body>
+</html>
