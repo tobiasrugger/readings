@@ -1,0 +1,229 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Teacher Dashboard &mdash; Who Am I?</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:'Nunito',system-ui,sans-serif;background:#f4f1e8;color:#22301f;font-size:16px}
+.bar{position:sticky;top:0;z-index:60;background:#1F4D3D;color:#fff;padding:10px 14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.bar h1{font-size:17px;margin:0;flex:1 1 180px;font-weight:800}
+.bar button,.bar select,.bar input{font-family:inherit;font-size:14px;font-weight:700;border:0;border-radius:8px;padding:7px 11px;background:#e8dfc8;color:#1F4D3D;cursor:pointer}
+.bar button:hover{background:#fff}
+.wrap{max-width:1200px;margin:0 auto;padding:18px}
+h2{font-size:22px;color:#1F4D3D;border-bottom:3px solid #d8cba8;padding-bottom:5px;margin:26px 0 8px}
+.card{background:#fff;border:1px solid #ded3b8;border-radius:14px;padding:16px 18px;margin:14px 0}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{border:1px solid #cdbf9e;padding:6px 8px;text-align:left;vertical-align:top}
+th{background:#e8dfc8;color:#1F4D3D;position:sticky;top:44px}
+td.n{text-align:center;font-weight:800}
+.b0{background:#f6f2e6;color:#b0a48a}
+.b1{background:#fdf0d2}
+.b2{background:#e3f0d9}
+.b3{background:#bfe3b0}
+.ti{background:#1F4D3D;color:#fff;border-radius:4px;padding:1px 5px;font-size:11px;font-weight:800}
+.overlay{position:fixed;inset:0;background:rgba(24,38,28,.96);z-index:400;display:flex;align-items:center;justify-content:center;padding:20px}
+.box{background:#fffdf6;border-radius:16px;padding:26px;max-width:420px;width:100%}
+.box input{width:100%;font-size:17px;padding:9px;border:2px solid #cdbf9e;border-radius:9px;margin-top:8px}
+.btn{background:#1F4D3D;color:#fff;border:0;border-radius:10px;padding:10px 18px;font-family:inherit;font-size:16px;font-weight:800;cursor:pointer;margin-top:12px}
+.btn.alt{background:#f0a830;color:#3a2400}
+#pane{position:fixed;right:0;top:0;bottom:0;width:min(640px,94vw);background:#fffdf6;border-left:3px solid #1F4D3D;box-shadow:-4px 0 22px rgba(0,0,0,.25);overflow:auto;padding:18px;z-index:300;display:none}
+#pane h3{color:#1F4D3D;margin:18px 0 6px}
+.ans{background:#fff;border:1px solid #ded3b8;border-radius:9px;padding:8px 11px;margin:6px 0}
+.ans b{color:#1F4D3D;font-size:13px;display:block}
+.x{float:right;cursor:pointer;font-weight:800;font-size:22px;color:#1F4D3D}
+.pillrow{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.pillrow span{background:#e8dfc8;border-radius:20px;padding:3px 11px;font-size:13px;font-weight:700;color:#1F4D3D}
+.small{font-size:13px;color:#5c6b58}
+.stat{display:inline-block;background:#1F4D3D;color:#fff;border-radius:10px;padding:10px 16px;margin:5px 8px 5px 0;font-weight:800}
+</style>
+</head>
+<body>
+<div class="bar">
+<h1>Who Am I? &middot; Teacher Dashboard</h1>
+<input type="text" id="filter" placeholder="Filter by name or email" oninput="render()" style="flex:1 1 180px;background:#fff">
+<select id="pagesel" onchange="render()"><option value="">All pages</option></select>
+<button onclick="load()">Refresh</button>
+<button onclick="csv()">Export CSV</button>
+<button onclick="location.href='index.html'">Unit</button>
+</div>
+
+<div class="overlay" id="gate">
+  <div class="box">
+    <h2 style="margin-top:0;border:0">Teacher sign-in</h2>
+    <p class="small">Student work for the Psychology &amp; Short Stories unit.</p>
+    <input type="password" id="pw" placeholder="Password" onkeydown="if(event.key==='Enter')unlock()">
+    <button class="btn" onclick="unlock()">Open</button>
+    <p id="gerr" style="color:#c0392b;font-weight:700;min-height:20px"></p>
+  </div>
+</div>
+
+<div id="pane"><span class="x" onclick="document.getElementById('pane').style.display='none'">&#10005;</span><div id="paneBody"></div></div>
+
+<div class="wrap">
+<div id="stats"></div>
+<h2>Progress Grid</h2>
+<p class="small">Each cell shows how many boxes the student filled on that page. Darker = more. <span class="ti">IN</span> means they pressed Turn In. Click any row to read the work.</p>
+<div class="card" style="overflow:auto"><table id="grid"></table></div>
+<h2>Needs Attention</h2>
+<div class="card" id="flags"></div>
+</div>
+
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var TABLE='psych_work';
+var PAGES=['p1','p2','p3','p4','p5','p6','grammar','writing','assessment'];
+var LABEL={p1:'1 Psych',p2:'2 Big5',p3:'3 Somebody',p4:'4 Selves',p5:'5 Jacket',p6:'6 Influence',grammar:'Grammar',writing:'Writing',assessment:'Test'};
+var ROWS=[];
+
+function H(){return {'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};}
+function $(i){return document.getElementById(i);}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function unlock(){
+  if($('pw').value==='galileo2026'){
+    $('gate').style.display='none';
+    try{sessionStorage.setItem('psy_tch','1');}catch(e){}
+    load();
+  } else { $('gerr').textContent='Wrong password.'; }
+}
+
+function load(){
+  var sel=$('pagesel');
+  if(sel.options.length<2){
+    for(var i=0;i<PAGES.length;i++){
+      var o=document.createElement('option'); o.value=PAGES[i]; o.textContent=LABEL[PAGES[i]]; sel.appendChild(o);
+    }
+  }
+  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?select=*&order=name.asc',{headers:H()})
+   .then(function(r){return r.json();})
+   .then(function(d){ ROWS=Array.isArray(d)?d:[]; render(); })
+   .catch(function(e){ $('grid').innerHTML='<tr><td>Could not load. Check that the psych_work table exists.</td></tr>'; });
+}
+
+function countFilled(data){
+  if(!data) return 0;
+  var n=0;
+  for(var k in data){ if(k.indexOf('_pts')>=0||k==='auto_total') continue; var v=data[k]; if(v && String(v).trim().length>0) n++; }
+  return n;
+}
+
+function students(){
+  var m={};
+  for(var i=0;i<ROWS.length;i++){
+    var r=ROWS[i];
+    if(!m[r.email]) m[r.email]={email:r.email,name:r.name||r.email,pages:{}};
+    if(r.name) m[r.email].name=r.name;
+    m[r.email].pages[r.page]=r;
+  }
+  var out=[];
+  for(var k in m) out.push(m[k]);
+  out.sort(function(a,b){return (a.name||'').localeCompare(b.name||'');});
+  return out;
+}
+
+function band(n){ if(!n) return 'b0'; if(n<8) return 'b1'; if(n<20) return 'b2'; return 'b3'; }
+
+function render(){
+  var f=($('filter').value||'').toLowerCase();
+  var only=$('pagesel').value;
+  var st=students().filter(function(s){
+    return !f || (s.name||'').toLowerCase().indexOf(f)>=0 || (s.email||'').toLowerCase().indexOf(f)>=0;
+  });
+
+  var cols = only? [only] : PAGES;
+  var h='<tr><th style="min-width:170px">Student</th>';
+  for(var i=0;i<cols.length;i++) h+='<th>'+LABEL[cols[i]]+'</th>';
+  h+='<th>Test score</th><th>Last saved</th></tr>';
+  var last='';
+  for(var i=0;i<st.length;i++){
+    var s=st[i];
+    h+='<tr onclick="openPane(\''+s.email+'\')" style="cursor:pointer">';
+    h+='<td><b>'+esc(s.name)+'</b><br><span class="small">'+esc(s.email)+'</span></td>';
+    var newest='';
+    for(var j=0;j<cols.length;j++){
+      var r=s.pages[cols[j]];
+      var n=r?countFilled(r.data):0;
+      if(r && r.updated_at && r.updated_at>newest) newest=r.updated_at;
+      h+='<td class="n '+band(n)+'">'+(n||'')+(r&&r.turned_in?' <span class="ti">IN</span>':'')+'</td>';
+    }
+    var a=s.pages['assessment'];
+    h+='<td class="n">'+((a&&a.data&&a.data.auto_total)?esc(a.data.auto_total):'')+'</td>';
+    h+='<td class="small">'+(newest?newest.slice(0,16).replace('T',' '):'')+'</td>';
+    h+='</tr>';
+  }
+  $('grid').innerHTML=h;
+
+  var turned=0, tot=0;
+  for(var i=0;i<ROWS.length;i++){ tot++; if(ROWS[i].turned_in) turned++; }
+  $('stats').innerHTML='<span class="stat">'+st.length+' students</span><span class="stat">'+tot+' page records</span><span class="stat">'+turned+' turned in</span>';
+
+  // flags
+  var fl='';
+  for(var i=0;i<st.length;i++){
+    var s=st[i], missing=[];
+    for(var j=0;j<PAGES.length;j++){
+      var r=s.pages[PAGES[j]];
+      if(!r || countFilled(r.data)<4) missing.push(LABEL[PAGES[j]]);
+    }
+    if(missing.length>=4) fl+='<div class="ans"><b>'+esc(s.name)+'</b>Little or no work on: '+missing.join(', ')+'</div>';
+  }
+  $('flags').innerHTML = fl || '<p class="small">Nobody is more than four pages behind right now.</p>';
+}
+
+function openPane(email){
+  var s=students().filter(function(x){return x.email===email;})[0];
+  if(!s) return;
+  var h='<h2 style="margin-top:0;border:0">'+esc(s.name)+'</h2><p class="small">'+esc(s.email)+'</p>';
+  for(var j=0;j<PAGES.length;j++){
+    var p=PAGES[j], r=s.pages[p];
+    if(!r || !r.data) continue;
+    h+='<h3>'+LABEL[p]+(r.turned_in?' <span class="ti">TURNED IN</span>':'')+'</h3>';
+    var d=r.data, keys=Object.keys(d).sort();
+    var scores='';
+    for(var k=0;k<keys.length;k++){
+      if(keys[k].indexOf('_pts')>=0 || keys[k]==='auto_total'){ scores+='<span>'+esc(keys[k].replace('_pts',''))+': '+esc(d[keys[k]])+'</span>'; }
+    }
+    if(scores) h+='<div class="pillrow">'+scores+'</div>';
+    for(var k=0;k<keys.length;k++){
+      var key=keys[k];
+      if(key.indexOf('_pts')>=0||key==='auto_total') continue;
+      var v=String(d[key]||'');
+      if(!v.trim()) continue;
+      if(v.length<3 && v.indexOf('|')<0) { h+='<div class="ans"><b>'+esc(key)+'</b>'+esc(v)+'</div>'; }
+      else h+='<div class="ans"><b>'+esc(key)+'</b>'+esc(v)+'</div>';
+    }
+  }
+  $('paneBody').innerHTML=h;
+  $('pane').style.display='block';
+  $('pane').scrollTop=0;
+}
+
+function csv(){
+  var st=students();
+  var head=['name','email'];
+  for(var j=0;j<PAGES.length;j++){ head.push(LABEL[PAGES[j]]+' filled'); head.push(LABEL[PAGES[j]]+' turned in'); }
+  head.push('test auto score');
+  var lines=[head.join(',')];
+  for(var i=0;i<st.length;i++){
+    var s=st[i], row=['"'+(s.name||'').replace(/"/g,'')+'"','"'+s.email+'"'];
+    for(var j=0;j<PAGES.length;j++){
+      var r=s.pages[PAGES[j]];
+      row.push(r?countFilled(r.data):0);
+      row.push(r&&r.turned_in?'yes':'no');
+    }
+    var a=s.pages['assessment'];
+    row.push('"'+((a&&a.data&&a.data.auto_total)||'')+'"');
+    lines.push(row.join(','));
+  }
+  var blob=new Blob([lines.join('\n')],{type:'text/csv'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='psych-unit-progress.csv';
+  a.click();
+}
+
+try{ if(sessionStorage.getItem('psy_tch')==='1'){ $('gate').style.display='none'; load(); } }catch(e){}
+</script>
+</body></html>
