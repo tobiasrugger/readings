@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Seedfolks: Kim (Easier) — Mr. Toby's ELD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f7f4ec; --paper:#fff; --ink:#17251e; --muted:#6b6355;
+  --edge:#e0d8c6; --pine:#2f6f52; --pine2:#3f9e73; --gold:#d9a441; --clay:#c9573f; --soil:#7b5a3a;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Nunito',-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.75;font-size:19px}
+.wrap{max-width:720px;margin:0 auto;padding:0 18px 90px}
+
+#bar{position:sticky;top:0;z-index:50;background:var(--pine);color:#eaf5ee;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:9px 16px;box-shadow:0 2px 10px rgba(0,0,0,.18)}
+#bar .name{font-weight:800;font-size:1rem;margin-right:auto}
+#bar .who{font-size:.78rem;font-weight:700;opacity:.85}
+#bar select,#bar button{font-family:inherit;font-weight:800;font-size:.8rem;border-radius:8px;border:1px solid rgba(255,255,255,.32);background:rgba(255,255,255,.1);color:#eaf5ee;padding:6px 11px;cursor:pointer}
+#bar button.primary{background:var(--gold);color:#20160a;border-color:var(--gold)}
+#dot{width:10px;height:10px;border-radius:50%;background:#7f9a8c}
+#dot.saving{background:var(--gold)}#dot.ok{background:#7fe0ac}#dot.err{background:#ff7a6b}
+#savetxt{font-size:.74rem;font-weight:700;opacity:.85;min-width:60px}
+
+#gate{position:fixed;inset:0;z-index:100;background:#16261f;display:flex;align-items:center;justify-content:center;padding:22px}
+#gate .box{background:#fff;border-radius:16px;padding:28px 26px;max-width:390px;width:100%}
+#gate h2{margin:0 0 4px;font-size:1.5rem}
+#gate p{margin:0 0 14px;color:var(--muted);font-size:.9rem}
+#gate label{display:block;font-weight:800;font-size:.8rem;margin:12px 0 4px;color:var(--muted)}
+#gate input,#gate select{width:100%;font-family:inherit;font-size:1rem;padding:10px 12px;border:2px solid var(--edge);border-radius:9px}
+#gate button{width:100%;margin-top:20px;padding:13px;border:0;border-radius:10px;background:var(--pine);color:#fff;font-family:inherit;font-weight:800;font-size:1.02rem;cursor:pointer}
+#gate .err{color:var(--clay);font-weight:700;font-size:.85rem;margin-top:10px;display:none}
+
+header.top{padding:36px 0 8px}
+h1{font-size:clamp(1.9rem,6vw,2.6rem);margin:0;font-weight:800;letter-spacing:-.8px;line-height:1.15}
+header.top .sub{color:var(--muted);font-weight:700;margin:8px 0 0;font-size:.95rem}
+.rule{height:3px;width:70px;background:var(--gold);border-radius:3px;margin:16px 0 0}
+
+section{background:var(--paper);border:1px solid var(--edge);border-radius:14px;padding:22px 22px 26px;margin:22px 0}
+section>h2{margin:0 0 14px;font-size:1.3rem;font-weight:800}
+section>h2 .num{color:var(--gold);margin-right:8px}
+h3{font-size:1.05rem;margin:24px 0 6px;font-weight:800}
+.pages{display:inline-block;background:var(--soil);color:#fff;font-weight:800;font-size:.74rem;padding:3px 10px;border-radius:20px;margin-bottom:8px}
+.note{background:#fdf6e6;border-left:4px solid var(--gold);border-radius:0 10px 10px 0;padding:13px 15px;margin:16px 0;font-size:.95rem}
+
+.q{margin:20px 0}
+.q .prompt{font-weight:700;margin-bottom:7px}
+.q .prompt .qn{color:var(--gold);font-weight:800;margin-right:6px}
+textarea,input.short{width:100%;font-family:inherit;font-size:1.02rem;line-height:1.6;border:2px solid var(--edge);border-radius:9px;padding:11px 13px;background:#fffdf8;resize:vertical;color:var(--ink)}
+textarea:focus,input.short:focus{outline:none;border-color:var(--pine2);background:#fff}
+textarea{min-height:74px}
+
+.opts{display:grid;gap:8px;margin-top:4px}
+.opt{display:flex;align-items:flex-start;gap:10px;border:2px solid var(--edge);border-radius:9px;padding:11px 13px;cursor:pointer;background:#fffdf8;font-weight:700}
+.opt input{margin:5px 0 0;accent-color:var(--pine)}
+.opt.sel{border-color:var(--pine2);background:#eef7f1}
+
+.vocab{display:grid;gap:9px;margin-top:10px}
+.vw{border:1px solid var(--edge);border-radius:10px;padding:11px 14px;background:#fffdf8;cursor:pointer}
+.vw .w{font-weight:800;color:var(--pine);font-size:1.05rem}
+.vw .d{font-size:.95rem}
+.vw .t{font-size:.95rem;color:var(--clay);font-weight:700;margin-top:3px;display:none}
+.vw .t.show{display:block}
+
+.sort{display:grid;gap:9px;margin-top:10px}
+.strip{display:flex;align-items:center;gap:10px;border:2px solid var(--edge);border-radius:10px;padding:9px 11px;background:#fffdf8;flex-wrap:wrap}
+.strip .txt{flex:1;min-width:170px;font-weight:700}
+.strip button{border:2px solid var(--edge);background:#fff;font-family:inherit;font-weight:800;font-size:.78rem;border-radius:7px;padding:7px 13px;cursor:pointer;color:var(--muted)}
+.strip button.on{background:var(--pine);color:#fff;border-color:var(--pine)}
+.strip button.on.no{background:var(--clay);border-color:var(--clay)}
+
+.wheel{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:10px}
+.wheel label{display:block;font-weight:800;font-size:.78rem;color:var(--muted);margin-bottom:4px}
+
+figure.art{margin:16px 0;text-align:center}
+figure.art svg{max-width:100%;height:auto}
+figure.art figcaption{color:var(--muted);font-size:.82rem;font-weight:700;margin-top:6px}
+
+footer{margin-top:40px;border-top:1px solid var(--edge);padding-top:18px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;color:var(--muted);font-weight:700;font-size:.88rem}
+footer a{color:var(--pine);text-decoration:none}
+#done{display:none;background:#eef7f1;border:2px solid var(--pine2);border-radius:12px;padding:16px 18px;margin:22px 0;font-weight:800;color:var(--pine)}
+
+@media print{
+  #bar,#gate,footer a{display:none!important}
+  body{background:#fff;font-size:12pt}
+  section{break-inside:avoid;border-color:#999;margin:12px 0;padding:14px}
+  textarea,input.short{border:1px solid #999;background:#fff}
+  .vw .t{display:block!important}
+}
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="box">
+    <h2>Seedfolks: Kim</h2>
+    <p>Sign in. Your work saves by itself.</p>
+    <label for="gname">Your name</label>
+    <input id="gname" placeholder="First and last name">
+    <label for="gmail">Your school email</label>
+    <input id="gmail" type="email" placeholder="you@sfusd.edu">
+    <label for="gper">Class period</label>
+    <select id="gper"><option value="">Choose…</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select>
+    <button id="gbtn">Start</button>
+    <div class="err" id="gerr">Please fill in all three boxes.</div>
+  </div>
+</div>
+
+<div id="bar">
+  <span class="name">Seedfolks &middot; Kim</span>
+  <span class="who" id="who"></span>
+  <select id="lang">
+    <option value="">Language</option>
+    <option value="es">Español</option><option value="zh-CN">中文</option>
+    <option value="ar">العربية</option><option value="vi">Tiếng Việt</option>
+    <option value="th">ไทย</option><option value="ne">नेपाली</option>
+  </select>
+  <span id="dot"></span><span id="savetxt"></span>
+  <button onclick="window.print()">Print</button>
+  <button class="primary" id="turnin">Turn in</button>
+</div>
+
+<div class="wrap">
+
+<header class="top">
+  <h1>Kim plants six beans</h1>
+  <p class="sub"><em>Seedfolks</em> &middot; Chapter 1 &middot; Pages 1&ndash;4</p>
+  <div class="rule"></div>
+</header>
+
+<div id="done">You turned it in. Your teacher can see your work now.</div>
+
+<section>
+  <h2><span class="num">1</span>The story</h2>
+
+  <figure class="art">
+    <svg viewBox="0 0 440 180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A girl planting beans in an empty city lot">
+      <rect x="0" y="122" width="440" height="58" fill="#e6ded1"/>
+      <rect x="14" y="22" width="76" height="100" fill="#cfd9d2" stroke="#17251e" stroke-width="2"/>
+      <rect x="28" y="38" width="20" height="22" fill="#fff" stroke="#17251e" stroke-width="2"/>
+      <rect x="56" y="38" width="20" height="22" fill="#fff" stroke="#17251e" stroke-width="2"/>
+      <rect x="28" y="74" width="20" height="22" fill="#fff" stroke="#17251e" stroke-width="2"/>
+      <rect x="56" y="74" width="20" height="22" fill="#fff" stroke="#17251e" stroke-width="2"/>
+      <rect x="356" y="34" width="76" height="88" fill="#cfd9d2" stroke="#17251e" stroke-width="2"/>
+      <rect x="370" y="50" width="20" height="22" fill="#fff" stroke="#17251e" stroke-width="2"/>
+      <rect x="398" y="50" width="20" height="22" fill="#fff" stroke="#17251e" stroke-width="2"/>
+      <rect x="112" y="74" width="44" height="48" fill="#eceff0" stroke="#17251e" stroke-width="2"/>
+      <line x1="112" y1="94" x2="156" y2="94" stroke="#17251e" stroke-width="2"/>
+      <path d="M196 122 l12 -22 l13 22Z" fill="#c2b8a6" stroke="#17251e" stroke-width="2"/>
+      <circle cx="252" cy="117" r="6" fill="#c2b8a6" stroke="#17251e" stroke-width="2"/>
+      <g stroke="#17251e" stroke-width="2" fill="none">
+        <circle cx="176" cy="86" r="11" fill="#f0e3d4"/>
+        <path d="M165 84 q11 -13 22 0 q-4 -11 -11 -11 q-8 0 -11 11Z" fill="#2c2a28" stroke="none"/>
+        <path d="M176 97 q-15 4 -17 25 l34 0 q-2 -21 -17 -25Z" fill="#5d8f74"/>
+        <path d="M161 114 q-11 5 -13 8"/><path d="M191 114 q13 4 16 8"/>
+      </g>
+      <g fill="#8fae63"><ellipse cx="208" cy="120" rx="4" ry="3"/><ellipse cx="218" cy="121" rx="4" ry="3"/><ellipse cx="228" cy="119" rx="4" ry="3"/></g>
+    </svg>
+    <figcaption>An empty lot on Gibb Street, Cleveland</figcaption>
+  </figure>
+
+  <p>Kim is nine years old. Her family is from Vietnam. Now they live in Cleveland.</p>
+  <p>Kim's father died in Vietnam. He died before Kim was born. Kim never met him.</p>
+  <p>Her father was a farmer. He grew food.</p>
+  <p>Near her home there is an empty lot. It is full of junk.</p>
+  <p>Early one morning, Kim goes to the lot. She has six beans. She digs small holes. She plants the beans.</p>
+  <p>She does not tell anyone. She wants her father to see her. She wants him to know she is his daughter.</p>
+</section>
+
+<section>
+  <h2><span class="num">2</span>Words</h2>
+  <p style="color:var(--muted);font-weight:700;font-size:.9rem;margin:0 0 8px">Pick a language in the green bar. Then tap a word.</p>
+  <div class="vocab" id="vocab"></div>
+</section>
+
+<section>
+  <h2><span class="num">3</span>Read the book</h2>
+  <span class="pages">Pages 1 to 4</span>
+  <p style="margin-top:6px">Read with your group. Stop and answer.</p>
+
+  <h3>Part A &mdash; Kim's family</h3>
+  <div class="q"><div class="prompt"><span class="qn">1</span>How old is Kim?</div><input class="short" data-q="r1"></div>
+  <div class="q"><div class="prompt"><span class="qn">2</span>Who lives with Kim?</div><input class="short" data-q="r2"></div>
+
+  <h3>Part B &mdash; Her father</h3>
+  <div class="q"><div class="prompt"><span class="qn">3</span>What was her father's job?</div><input class="short" data-q="r3"></div>
+  <div class="q"><div class="prompt"><span class="qn">4</span>Why has Kim never met her father?</div><textarea data-q="r4"></textarea></div>
+
+  <h3>Part C &mdash; The empty lot</h3>
+  <div class="q"><div class="prompt"><span class="qn">5</span>Write three things Kim sees in the lot.</div><input class="short" data-q="r5"></div>
+
+  <h3>Part D &mdash; The beans</h3>
+  <div class="q"><div class="prompt"><span class="qn">6</span>How many beans does Kim plant?</div><input class="short" data-q="r6"></div>
+  <div class="q"><div class="prompt"><span class="qn">7</span>Why does Kim plant the beans?</div><textarea data-q="r7"></textarea></div>
+</section>
+
+<section>
+  <h2><span class="num">4</span>Check</h2>
+  <div id="mc"></div>
+</section>
+
+<section>
+  <h2><span class="num">5</span>Kim card</h2>
+  <div class="wheel">
+    <div><label for="c1">Age</label><input class="short" id="c1" data-q="c1"></div>
+    <div><label for="c2">Country</label><input class="short" id="c2" data-q="c2"></div>
+    <div><label for="c3">City</label><input class="short" id="c3" data-q="c3"></div>
+    <div><label for="c4">She plants</label><input class="short" id="c4" data-q="c4"></div>
+    <div><label for="c5">She feels</label><input class="short" id="c5" data-q="c5"></div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">6</span>Grammar: is it a sentence?</h2>
+  <p style="margin:0 0 4px">A sentence has a <strong>subject</strong> and a <strong>verb</strong>. It is a complete idea.</p>
+  <div class="sort" id="sort"></div>
+
+  <h3>Finish the sentence</h3>
+  <div class="q"><div class="prompt"><span class="qn">8</span>Kim planted the beans <strong>because</strong>&hellip;</div><input class="short" data-q="g1"></div>
+  <div class="q"><div class="prompt"><span class="qn">9</span>Kim never met her father, <strong>so</strong>&hellip;</div><input class="short" data-q="g2"></div>
+
+  <h3>Past tense: add -ed</h3>
+  <div class="q"><div class="prompt"><span class="qn">10</span>Today she walks. Yesterday she &hellip;</div><input class="short" data-q="v1"></div>
+  <div class="q"><div class="prompt"><span class="qn">11</span>Today she plants. Yesterday she &hellip;</div><input class="short" data-q="v2"></div>
+  <div class="q"><div class="prompt"><span class="qn">12</span>Today she watches. Yesterday she &hellip;</div><input class="short" data-q="v3"></div>
+</section>
+
+<section>
+  <h2><span class="num">7</span>Write</h2>
+  <div class="note"><strong>Write three sentences about Kim.</strong> Use these words: <em>father, beans, lot</em>.</div>
+  <div class="q"><div class="prompt"><span class="qn">13</span>Your sentences</div><textarea data-q="w1" style="min-height:150px" placeholder="Kim is&hellip;"></textarea></div>
+</section>
+
+<footer>
+  <span>Mr. Toby</span>
+  <a href="../">All readings</a>
+</footer>
+
+</div>
+
+<script>
+var SUPA_URL = 'https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var PROXY    = 'https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
+var TABLE    = 'seedfolks_work';
+var CHAPTER  = 'kim';
+var VERSION  = 'easier';
+
+var WORDS = [
+  ['altar','a small table with photos of a person who died'],
+  ['farmer','a person who grows food'],
+  ['empty lot','land in a city with no building on it'],
+  ['junk','old broken things nobody wants'],
+  ['soil','the dirt that plants grow in'],
+  ['seed','a small hard thing. A plant grows from it.'],
+  ['bean','a seed you can eat'],
+  ['plant','to put a seed in the ground'],
+  ['dig','to make a hole in the ground'],
+  ['grow','to get bigger'],
+  ['remember','to keep something in your mind'],
+  ['died','stopped living'],
+  ['afraid','scared'],
+  ['secret','something you do not tell anyone']
+];
+
+var MC = [
+  ['How old is Kim?',['five','nine','fifteen'],1],
+  ['Kim\u2019s family is from…',['Mexico','Korea','Vietnam'],2],
+  ['Kim lives in…',['Cleveland','New York','Houston'],0],
+  ['Her father was a…',['teacher','farmer','driver'],1],
+  ['Kim plants…',['beans','flowers','corn'],0],
+  ['She plants in…',['a garden at school','an empty lot','her kitchen'],1],
+  ['She tells…',['her mother','her sister','nobody'],2],
+  ['Kim wants her father to…',['come home','see her','send money'],1]
+];
+
+var STRIPS = [
+  ['Kim is nine years old.',1],
+  ['in the empty lot',0],
+  ['She planted six beans.',1],
+  ['her mother and her sisters',0],
+  ['Her father was a farmer.',1],
+  ['because she never met him',0]
+];
+
+var S = { name:'', email:'', period:'', answers:{}, turned:false };
+var $ = function(id){ return document.getElementById(id); };
+
+(function build(){
+  var h = '';
+  WORDS.forEach(function(w,i){
+    h += '<div class="vw" data-w="' + w[0] + '"><div class="w">' + w[0] + '</div><div class="d">' + w[1] + '</div><div class="t"></div></div>';
+  });
+  $('vocab').innerHTML = h;
+
+  h = '';
+  MC.forEach(function(q,i){
+    h += '<div class="q"><div class="prompt"><span class="qn">' + (i+1) + '</span>' + q[0] + '</div><div class="opts" data-q="m' + i + '">';
+    q[1].forEach(function(o,j){ h += '<label class="opt"><input type="radio" name="m' + i + '" value="' + j + '"><span>' + o + '</span></label>'; });
+    h += '</div></div>';
+  });
+  $('mc').innerHTML = h;
+
+  h = '';
+  STRIPS.forEach(function(s,i){
+    h += '<div class="strip" data-q="s' + i + '"><span class="txt">' + s[0] + '</span>'
+      +  '<button data-v="yes">Sentence</button><button data-v="no" class="no">Not a sentence</button></div>';
+  });
+  $('sort').innerHTML = h;
+})();
+
+document.addEventListener('input', function(e){
+  var k = e.target.getAttribute('data-q');
+  if(k){ S.answers[k] = e.target.value; queue(); }
+});
+document.addEventListener('change', function(e){
+  if(e.target.type === 'radio'){
+    var box = e.target.closest('.opts');
+    if(box){
+      S.answers[box.getAttribute('data-q')] = e.target.value;
+      Array.prototype.forEach.call(box.querySelectorAll('.opt'), function(o){ o.classList.remove('sel'); });
+      e.target.closest('.opt').classList.add('sel');
+      queue();
+    }
+  }
+});
+document.addEventListener('click', function(e){
+  var b = e.target.closest('.strip button');
+  if(b){
+    var row = b.closest('.strip'), k = row.getAttribute('data-q');
+    S.answers[k] = b.getAttribute('data-v');
+    Array.prototype.forEach.call(row.querySelectorAll('button'), function(x){ x.classList.remove('on'); });
+    b.classList.add('on'); queue(); return;
+  }
+  var vw = e.target.closest('.vw');
+  if(vw) translateCard(vw);
+});
+
+var cache = {};
+function translate(text, code, cb){
+  if(!code){ cb(null); return; }
+  var key = code + '::' + text;
+  if(cache[key]){ cb(cache[key]); return; }
+  var tries = [
+    PROXY + '?text=' + encodeURIComponent(text) + '&target=' + encodeURIComponent(code),
+    PROXY + '?q=' + encodeURIComponent(text) + '&target=' + encodeURIComponent(code),
+    PROXY + '?text=' + encodeURIComponent(text) + '&lang=' + encodeURIComponent(code)
+  ];
+  var i = 0;
+  function attempt(){
+    if(i >= tries.length){ cb(null); return; }
+    fetch(tries[i++]).then(function(r){ return r.text(); }).then(function(t){
+      var out = t;
+      try { var j = JSON.parse(t); out = j.translation || j.text || j.result || j.output || (typeof j === 'string' ? j : ''); } catch(err){}
+      out = (out || '').trim();
+      if(out && out.toLowerCase() !== text.toLowerCase() && out.indexOf('<') !== 0){ cache[key] = out; cb(out); }
+      else attempt();
+    }).catch(attempt);
+  }
+  attempt();
+}
+function translateCard(card){
+  var code = $('lang').value, box = card.querySelector('.t');
+  if(!code){ box.textContent = 'Choose a language in the green bar first.'; box.classList.add('show'); return; }
+  box.textContent = '…'; box.classList.add('show');
+  var w = card.getAttribute('data-w'), def = card.querySelector('.d').textContent;
+  translate(w, code, function(tw){
+    translate(def, code, function(td){ box.textContent = (tw || w) + ' — ' + (td || def); });
+  });
+}
+$('lang').addEventListener('change', function(){
+  try { localStorage.setItem('sf_lang', $('lang').value); } catch(e){}
+  Array.prototype.forEach.call(document.querySelectorAll('.vw .t.show'), function(b){ translateCard(b.closest('.vw')); });
+});
+
+var timer = null, dirty = false;
+function queue(){ dirty = true; setDot('saving','Saving'); if(timer) clearTimeout(timer); timer = setTimeout(save, 2500); }
+function setDot(c,t){ $('dot').className = c || ''; $('savetxt').textContent = t || ''; }
+
+function save(){
+  if(!S.email) return;
+  var body = [{
+    email:S.email, student_name:S.name, period:S.period,
+    chapter:CHAPTER, version:VERSION, answers:S.answers,
+    turned_in:S.turned, updated_at:new Date().toISOString()
+  }];
+  fetch(SUPA_URL + '/rest/v1/' + TABLE + '?on_conflict=email,chapter,version', {
+    method:'POST',
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer ' + SUPA_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
+    body: JSON.stringify(body)
+  }).then(function(r){
+    if(r.ok){ dirty = false; setDot('ok','Saved'); }
+    else { r.text().then(function(t){ console.warn('save failed', r.status, t); }); setDot('err','Not saved'); }
+  }).catch(function(){ setDot('err','Offline'); });
+  try { localStorage.setItem('sf_kim_easy_backup', JSON.stringify(S)); } catch(e){}
+}
+window.addEventListener('beforeunload', function(){ if(dirty) save(); });
+
+function restore(){
+  fetch(SUPA_URL + '/rest/v1/' + TABLE + '?select=*&email=eq.' + encodeURIComponent(S.email) + '&chapter=eq.' + CHAPTER + '&version=eq.' + VERSION, {
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer ' + SUPA_KEY}
+  }).then(function(r){ return r.json(); }).then(function(rows){
+    if(rows && rows.length && rows[0].answers){ S.answers = rows[0].answers; S.turned = !!rows[0].turned_in; }
+    paint(); setDot('ok','Saved');
+  }).catch(function(){ paint(); setDot('err','Offline'); });
+}
+
+function paint(){
+  Object.keys(S.answers).forEach(function(k){
+    var v = S.answers[k], f = document.querySelector('[data-q="' + k + '"]');
+    if(!f) return;
+    if(f.classList.contains('strip')){
+      Array.prototype.forEach.call(f.querySelectorAll('button'), function(b){ b.classList.toggle('on', b.getAttribute('data-v') === v); });
+    } else if(f.classList.contains('opts')){
+      var r = f.querySelector('input[value="' + v + '"]');
+      if(r){ r.checked = true; r.closest('.opt').classList.add('sel'); }
+    } else { f.value = v; }
+  });
+  if(S.turned) $('done').style.display = 'block';
+}
+
+$('turnin').addEventListener('click', function(){
+  S.turned = true; $('done').style.display = 'block'; save();
+  window.scrollTo({top:0,behavior:'smooth'});
+});
+
+$('gbtn').addEventListener('click', function(){
+  var n = $('gname').value.trim(), m = $('gmail').value.trim().toLowerCase(), p = $('gper').value;
+  if(!n || !m || !p || m.indexOf('@') < 1){ $('gerr').style.display = 'block'; return; }
+  S.name = n; S.email = m; S.period = p;
+  try { localStorage.setItem('sf_id', JSON.stringify({n:n,m:m,p:p})); } catch(e){}
+  $('gate').style.display = 'none';
+  $('who').textContent = n + ' · P' + p;
+  restore();
+});
+$('gmail').addEventListener('keydown', function(e){ if(e.key === 'Enter') $('gbtn').click(); });
+
+(function boot(){
+  try {
+    var l = localStorage.getItem('sf_lang'); if(l) $('lang').value = l;
+    var id = JSON.parse(localStorage.getItem('sf_id') || 'null');
+    if(id && id.m){ $('gname').value = id.n; $('gmail').value = id.m; $('gper').value = id.p; }
+  } catch(e){}
+})();
+
+function buildKeys(){
+  var k = {};
+  MC.forEach(function(q,i){ k['m' + i] = String(q[2]); });
+  STRIPS.forEach(function(s,i){ k['s' + i] = s[1] ? 'yes' : 'no'; });
+  k.v1 = 'walked'; k.v2 = 'planted'; k.v3 = 'watched';
+  return k;
+}
+window.buildKeys = buildKeys;
+</script>
+</body>
+</html>
