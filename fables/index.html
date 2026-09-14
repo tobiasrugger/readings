@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Short Stories &amp; Fables — Mr. Toby's ELD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pine:#2f6f52; --pine-d:#245640; --pine-l:#3f9e73;
+  --ink:#1b2a23; --muted:#5f7268; --paper:#fbfaf6; --card:#ffffff;
+  --line:#dde5e0; --gold:#c98a2e; --red:#c4553d; --blue:#3f7ea8;
+  --accent:#2f6f52;
+  --shadow:0 1px 2px rgba(27,42,35,.06), 0 6px 18px rgba(27,42,35,.07);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:'Nunito',-apple-system,Segoe UI,Roboto,sans-serif;
+  font-size:18px; line-height:1.65; -webkit-text-size-adjust:100%;
+}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+
+/* ---------- toolbar ---------- */
+#bar{
+  position:sticky; top:0; z-index:60; background:var(--pine); color:#fff;
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  padding:9px 14px; box-shadow:0 2px 10px rgba(0,0,0,.18);
+}
+#bar .brand{font-weight:900;letter-spacing:-.3px;font-size:1.02rem;margin-right:2px;white-space:nowrap}
+#bar select,#bar button{
+  background:rgba(255,255,255,.12); color:#fff; border:1px solid rgba(255,255,255,.28);
+  border-radius:9px; padding:6px 10px; font-weight:700; font-size:.88rem; cursor:pointer;
+}
+#bar select{max-width:190px}
+#bar button:hover{background:rgba(255,255,255,.22)}
+#bar .spacer{flex:1}
+#bar .who{font-size:.82rem;font-weight:700;opacity:.9;white-space:nowrap}
+#dot{width:10px;height:10px;border-radius:50%;background:#96b8a6;display:inline-block;transition:background .25s}
+#dot.saving{background:var(--gold)} #dot.ok{background:#7fe0ac} #dot.err{background:#ff8b73}
+#turnin{background:var(--gold);border-color:var(--gold);color:#231a06}
+#turnin.done{background:#7fe0ac;border-color:#7fe0ac;color:#0d2a1c}
+
+/* ---------- steps ---------- */
+#steps{
+  position:sticky; top:52px; z-index:55; background:var(--paper);
+  border-bottom:1px solid var(--line); padding:8px 14px;
+  display:flex; gap:7px; overflow-x:auto; scrollbar-width:thin;
+}
+#steps button{
+  flex:0 0 auto; background:#fff; border:1px solid var(--line); color:var(--muted);
+  border-radius:999px; padding:6px 14px; font-weight:800; font-size:.84rem; cursor:pointer;
+  display:flex; align-items:center; gap:7px;
+}
+#steps button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+#steps button .tick{opacity:0;font-size:.8rem}
+#steps button.done .tick{opacity:1;color:var(--pine-l)}
+#steps button.on.done .tick{color:#fff}
+
+/* ---------- layout ---------- */
+.wrap{max-width:760px;margin:0 auto;padding:26px 18px 90px}
+h1.story-title{font-size:clamp(1.7rem,5.4vw,2.5rem);font-weight:900;letter-spacing:-1px;margin:0 0 2px}
+.byline{color:var(--muted);font-weight:700;margin:0 0 22px;font-size:.95rem}
+h2.sec{font-size:1.28rem;font-weight:900;margin:0 0 4px;letter-spacing:-.4px}
+p.lede{color:var(--muted);margin:0 0 18px;font-weight:600;font-size:.95rem}
+.panel{display:none} .panel.on{display:block}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 18px;margin:0 0 14px;box-shadow:var(--shadow)}
+.card h3{margin:0 0 8px;font-size:1.04rem;font-weight:800}
+
+textarea,input[type=text]{
+  width:100%; background:#fff; border:1.5px solid var(--line); border-radius:10px;
+  padding:10px 12px; line-height:1.55; resize:vertical;
+}
+textarea:focus,input[type=text]:focus{border-color:var(--pine-l)}
+textarea{min-height:86px}
+label.q{display:block;font-weight:800;margin:0 0 7px}
+.frame{color:var(--muted);font-style:italic;font-size:.88rem;margin:5px 0 7px;font-weight:600}
+
+.btn{background:var(--pine);color:#fff;border:none;border-radius:10px;padding:9px 17px;font-weight:800;cursor:pointer}
+.btn:hover{background:var(--pine-d)}
+.btn.ghost{background:#fff;color:var(--pine);border:1.5px solid var(--line)}
+.btn.ghost:hover{background:#f2f7f4}
+.btn.small{padding:5px 12px;font-size:.85rem;border-radius:8px}
+.row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+
+/* ---------- reading ---------- */
+.levelbar{display:flex;gap:0;background:#eef3f0;border-radius:11px;padding:4px;margin:0 0 16px;width:max-content}
+.levelbar button{background:none;border:none;padding:7px 18px;border-radius:8px;font-weight:800;cursor:pointer;color:var(--muted);font-size:.9rem}
+.levelbar button.on{background:#fff;color:var(--ink);box-shadow:var(--shadow)}
+.art{background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px;margin:0 0 18px;box-shadow:var(--shadow)}
+.art svg{display:block;width:100%;height:auto}
+.para{display:flex;gap:11px;align-items:flex-start;margin:0 0 14px}
+.para .num{flex:0 0 26px;height:26px;border-radius:50%;background:#eef3f0;color:var(--muted);
+  font-weight:900;font-size:.78rem;display:flex;align-items:center;justify-content:center;margin-top:5px}
+.para .txt{flex:1;font-size:1.06rem;line-height:1.8}
+.para .say{flex:0 0 auto;background:none;border:1px solid var(--line);border-radius:8px;
+  width:30px;height:30px;cursor:pointer;margin-top:3px;color:var(--muted);font-size:.9rem}
+.para .say:hover{background:#f2f7f4;color:var(--pine)}
+.para.reading{background:#fff8e6;border-radius:8px}
+.g{border-bottom:2px dotted var(--gold);cursor:pointer;font-weight:700}
+.g:hover{background:#fdf4e2}
+
+#tip{
+  position:fixed;z-index:200;max-width:290px;background:#1b2a23;color:#fff;
+  border-radius:12px;padding:11px 13px;box-shadow:0 10px 30px rgba(0,0,0,.3);
+  font-size:.92rem;line-height:1.5;display:none;
+}
+#tip .w{font-weight:900;color:#ffd98a;display:block;margin-bottom:3px}
+#tip .tr{margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.2);font-weight:700}
+
+/* ---------- language table ---------- */
+.tablescroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:12px;background:#fff}
+table.langtab{border-collapse:collapse;font-size:.88rem;min-width:820px;width:100%}
+table.langtab th{position:sticky;top:0;z-index:2;background:#eef3f0;color:var(--muted);font-size:.72rem;
+  font-weight:900;padding:8px 9px;text-align:left;border-bottom:2px solid var(--line);white-space:nowrap}
+table.langtab td{padding:7px 9px;border-bottom:1px solid var(--line);vertical-align:middle;line-height:1.45}
+table.langtab th:first-child,table.langtab td:first-child{position:sticky;left:0;background:#fff;
+  font-weight:900;border-right:2px solid var(--line);white-space:nowrap}
+table.langtab th:first-child{background:#eef3f0;z-index:4}
+table.langtab td:first-child{z-index:1;cursor:pointer;color:var(--ink)}
+table.langtab td:first-child:hover{background:#f2f7f4;color:var(--pine)}
+table.langtab td:first-child::after{content:" \25b6";font-size:.62em;color:#b6c4bc}
+table.langtab tr:hover td{background:#f8fbf9}
+table.langtab tr:hover td:first-child{background:#f2f7f4}
+table.langtab td[dir=rtl]{text-align:right}
+.scrollhint{color:var(--muted);font-size:.8rem;font-weight:700;margin:7px 0 0}
+#tabsel{background:#fff;border:1.5px solid var(--line);border-radius:10px;padding:7px 11px;font-weight:800;cursor:pointer}
+#tabsel:focus{border-color:var(--pine-l)}
+
+/* ---------- vocab ---------- */
+.vgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:11px}
+.vcard{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;cursor:pointer;box-shadow:var(--shadow)}
+.vcard .w{font-weight:900;font-size:1.04rem}
+.vcard .d{color:var(--muted);font-size:.87rem;font-weight:600;margin-top:3px}
+.vcard .t{margin-top:7px;padding-top:7px;border-top:1px dashed var(--line);font-weight:800;color:var(--pine);font-size:.95rem;min-height:1.2em}
+
+/* match game */
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.mcol{display:flex;flex-direction:column;gap:8px}
+.mitem{background:#fff;border:1.5px solid var(--line);border-radius:10px;padding:9px 11px;cursor:pointer;font-weight:700;font-size:.93rem;text-align:left}
+.mitem.sel{border-color:var(--pine);background:#eef7f2}
+.mitem.hit{border-color:#7fc9a3;background:#e9f7f0;color:#2f6f52;cursor:default;opacity:.62}
+.mitem.miss{border-color:var(--red);background:#fbeeeb;animation:shake .3s}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+
+/* ---------- sequence ---------- */
+.seq{list-style:none;margin:0;padding:0;counter-reset:s}
+.seq li{
+  background:#fff;border:1.5px solid var(--line);border-radius:11px;padding:11px 12px;margin:0 0 8px;
+  display:flex;gap:11px;align-items:center;cursor:grab;box-shadow:var(--shadow);
+}
+.seq li.drag{opacity:.4}
+.seq li .n{counter-increment:s;flex:0 0 26px;height:26px;border-radius:50%;background:#eef3f0;
+  color:var(--muted);font-weight:900;font-size:.8rem;display:flex;align-items:center;justify-content:center}
+.seq li .n::before{content:counter(s)}
+.seq li .s{flex:1;font-weight:700;font-size:.96rem}
+.seq li .arrows{display:flex;flex-direction:column;gap:2px}
+.seq li .arrows button{background:none;border:1px solid var(--line);border-radius:6px;width:26px;height:19px;
+  line-height:1;cursor:pointer;color:var(--muted);font-size:.68rem;padding:0}
+.seq li.right{border-color:#7fc9a3;background:#f2fbf6}
+.seq li.wrong{border-color:var(--red);background:#fdf1ee}
+
+/* ---------- grammar ---------- */
+table.gt{width:100%;border-collapse:collapse;font-size:.95rem}
+table.gt th{text-align:left;font-size:.8rem;color:var(--muted);font-weight:800;padding:0 8px 6px;border-bottom:2px solid var(--line)}
+table.gt td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.gt td:first-child{font-weight:800;white-space:nowrap}
+table.gt input{border:1.5px solid var(--line);border-radius:8px;padding:6px 9px;width:100%;min-width:88px}
+table.gt input.right{border-color:#7fc9a3;background:#f2fbf6}
+table.gt input.wrong{border-color:var(--red);background:#fdf1ee}
+.rw{margin:0 0 14px;padding:0 0 12px;border-bottom:1px dashed var(--line)}
+.rw .pres{font-weight:700;margin:0 0 6px}
+.rw .pres b{color:var(--blue)}
+
+/* ---------- quiz ---------- */
+.qitem{margin:0 0 16px;padding:0 0 14px;border-bottom:1px dashed var(--line)}
+.qitem:last-child{border:none}
+.opt{display:flex;gap:9px;align-items:flex-start;background:#fff;border:1.5px solid var(--line);
+  border-radius:10px;padding:9px 11px;margin:0 0 6px;cursor:pointer;font-weight:600;font-size:.95rem}
+.opt:hover{border-color:var(--pine-l)}
+.opt input{margin:4px 0 0;accent-color:var(--pine)}
+.opt.right{border-color:#7fc9a3;background:#f2fbf6}
+.opt.wrong{border-color:var(--red);background:#fdf1ee}
+#score{font-weight:900;font-size:1.4rem;margin:0 0 6px}
+
+.pill{display:inline-block;background:#eef3f0;border-radius:999px;padding:3px 11px;font-size:.78rem;font-weight:800;color:var(--muted)}
+.hintbox{background:#fff8e6;border:1px solid #f0dcae;border-radius:11px;padding:11px 13px;font-size:.92rem;font-weight:600;margin:0 0 14px}
+.done-note{background:#eef7f2;border:1px solid #b9dfcb;border-radius:11px;padding:11px 13px;font-weight:700;color:var(--pine-d);margin:12px 0 0}
+
+/* ---------- login ---------- */
+#gate{position:fixed;inset:0;background:var(--pine);z-index:300;display:flex;align-items:center;justify-content:center;padding:22px}
+#gate .box{background:#fff;border-radius:18px;padding:28px 26px;max-width:400px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+#gate h2{margin:0 0 4px;font-size:1.5rem;font-weight:900;letter-spacing:-.6px}
+#gate p{margin:0 0 18px;color:var(--muted);font-weight:600;font-size:.94rem}
+#gate input{margin:0 0 11px}
+#gate .btn{width:100%;padding:12px}
+#gate .err{color:var(--red);font-weight:800;font-size:.88rem;min-height:1.2em;margin:8px 0 0}
+
+footer{max-width:760px;margin:0 auto;padding:0 18px 40px;color:var(--muted);font-size:.85rem;font-weight:700;
+  display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+footer a{color:var(--pine);text-decoration:none}
+
+/* ---------- print ---------- */
+@media print{
+  @page{margin:14mm}
+  body{background:#fff;font-size:11.5pt;line-height:1.5}
+  #bar,#steps,#gate,#tip,.say,.arrows,.levelbar,.btn,#printnote{display:none !important}
+  .wrap{max-width:none;padding:0}
+  .panel{display:block !important;page-break-before:always}
+  .panel:first-of-type{page-break-before:avoid}
+  .card{box-shadow:none;border:1px solid #bbb;page-break-inside:avoid}
+  .g{border:none}
+  textarea{min-height:70px;border:1px solid #999}
+  .vgrid{grid-template-columns:1fr 1fr 1fr}
+  .tablescroll{overflow:visible;border:none}
+  .scrollhint{display:none}
+  table.langtab{min-width:0;font-size:7.6pt;page-break-inside:auto}
+  table.langtab th{position:static;padding:3px 4px;font-size:6.4pt}
+  table.langtab td{padding:3px 4px;line-height:1.3}
+  table.langtab th:first-child,table.langtab td:first-child{position:static}
+  table.langtab td:first-child::after{content:""}
+  table.langtab tr{page-break-inside:avoid}
+  .art svg{max-height:190px}
+  .para .num{border:1px solid #bbb}
+  h2.sec{page-break-after:avoid}
+  a[href]:after{content:""}
+}
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="box">
+    <h2>Short Stories &amp; Fables</h2>
+    <p>Type your name and your school email. Your work saves by itself.</p>
+    <input type="text" id="gname" placeholder="First and last name" autocomplete="name">
+    <input type="text" id="gmail" placeholder="you@sfusd.edu" autocomplete="email" inputmode="email">
+    <button class="btn" id="gbtn">Start</button>
+    <div class="err" id="gerr"></div>
+  </div>
+</div>
+
+<div id="bar">
+  <span class="brand">Fables</span>
+  <select id="storysel" aria-label="Choose a story"></select>
+  <select id="langsel" aria-label="Translation language">
+    <option value="">Translate…</option>
+    <option value="es">Español</option>
+    <option value="zh-CN">中文 (简体)</option>
+    <option value="ar">العربية</option>
+    <option value="vi">Tiếng Việt</option>
+    <option value="th">ไทย</option>
+    <option value="ne">नेपाली</option>
+    <option value="ru">Русский</option>
+    <option value="uk">Українська</option>
+    <option value="tl">Tagalog</option>
+    <option value="mn">Монгол</option>
+    <option value="pt">Português</option>
+    <option value="fa">فارسی</option>
+  </select>
+  <span class="spacer"></span>
+  <span class="who" id="who"></span>
+  <span id="dot" title="Save status"></span>
+  <button id="printbtn">Print</button>
+  <button id="turnin">Turn in</button>
+</div>
+
+<div id="steps"></div>
+
+<div class="wrap">
+  <h1 class="story-title" id="stitle"></h1>
+  <p class="byline" id="sby"></p>
+
+  <!-- 1 BEFORE -->
+  <section class="panel" data-step="before">
+    <h2 class="sec">Before you read</h2>
+    <p class="lede">There are no wrong answers here. Just say what you think.</p>
+    <div class="card"><div id="predict-art"></div></div>
+    <div class="card">
+      <h3>Do you agree or disagree?</h3>
+      <div id="agreelist"></div>
+    </div>
+    <div class="card">
+      <h3>Words you need on this page</h3>
+      <p class="lede" style="margin-bottom:10px">Find your language. Tap an English word to hear it and translate it.</p>
+      <div class="row" style="margin:0 0 12px">
+        <select id="tabsel" aria-label="Show one language"></select>
+      </div>
+      <div class="tablescroll"><table class="langtab" id="langtab"></table></div>
+      <p class="scrollhint">Slide the table sideways to see more languages &rarr;</p>
+    </div>
+
+    <div class="card">
+      <h3>What do you think will happen?</h3>
+      <p class="frame">Look at the picture and the title. I think ___ because ___.</p>
+      <textarea data-k="predict" placeholder="I think…"></textarea>
+    </div>
+  </section>
+
+  <!-- 2 WORDS -->
+  <section class="panel" data-step="words">
+    <h2 class="sec">Words you need</h2>
+    <p class="lede">Tap a word to hear it and translate it. Pick your language in the green bar at the top.</p>
+    <div class="vgrid" id="vgrid"></div>
+    <div class="card" style="margin-top:16px">
+      <h3>Check yourself: match the word to the meaning</h3>
+      <p class="lede" style="margin-bottom:12px">Tap a word on the left, then tap its meaning on the right.</p>
+      <div class="mgrid"><div class="mcol" id="mleft"></div><div class="mcol" id="mright"></div></div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn ghost small" id="mreset">Shuffle again</button>
+        <span class="pill" id="mscore">0 matched</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 READ -->
+  <section class="panel" data-step="read">
+    <h2 class="sec">Read the story</h2>
+    <p class="lede">Gold dotted words are new words — tap them. Tap the speaker to hear a sentence read aloud.</p>
+    <div class="levelbar">
+      <button data-lv="easy" class="on">Easier English</button>
+      <button data-lv="hard">Full story</button>
+    </div>
+    <div class="art" id="art"></div>
+    <div class="row" style="margin:0 0 16px">
+      <button class="btn ghost small" id="readall">▶ Read the whole story to me</button>
+      <button class="btn ghost small" id="stopread">■ Stop</button>
+    </div>
+    <div id="storytext"></div>
+    <div class="card" style="margin-top:20px">
+      <h3>Two quick questions</h3>
+      <label class="q">1. Who are the characters?</label>
+      <textarea data-k="r1" placeholder="The characters are…"></textarea>
+      <label class="q" style="margin-top:12px">2. What is the problem in the story?</label>
+      <textarea data-k="r2" placeholder="The problem is…"></textarea>
+    </div>
+  </section>
+
+  <!-- 4 ORDER -->
+  <section class="panel" data-step="order">
+    <h2 class="sec">Put the story in order</h2>
+    <p class="lede">Drag the sentences, or use the little arrows, until they are in the right order. Then check.</p>
+    <ul class="seq" id="seq"></ul>
+    <div class="row">
+      <button class="btn" id="seqcheck">Check my order</button>
+      <button class="btn ghost" id="seqshuffle">Mix them up again</button>
+      <span class="pill" id="seqscore"></span>
+    </div>
+  </section>
+
+  <!-- 5 ELEMENTS -->
+  <section class="panel" data-step="elements">
+    <h2 class="sec">Story elements</h2>
+    <p class="lede">Every story has these five parts. Use the sentence starters if you need them.</p>
+    <div class="card">
+      <h3>1. Characters <span class="pill">the people or animals</span></h3>
+      <p class="frame">The characters in this story are ___ and ___.</p>
+      <textarea data-k="e_char"></textarea>
+    </div>
+    <div class="card">
+      <h3>2. Setting <span class="pill">where and when</span></h3>
+      <p class="frame">The story takes place in ___. It happens ___.</p>
+      <textarea data-k="e_set"></textarea>
+    </div>
+    <div class="card">
+      <h3>3. Conflict <span class="pill">the problem</span></h3>
+      <p class="frame">The problem is that ___.</p>
+      <textarea data-k="e_con"></textarea>
+    </div>
+    <div class="card">
+      <h3>4. Plot <span class="pill">what happens, in order</span></h3>
+      <p class="frame">First ___. Then ___. Next ___. After that ___. Finally ___.</p>
+      <textarea data-k="e_plot" style="min-height:130px"></textarea>
+    </div>
+    <div class="card">
+      <h3>5. Resolution <span class="pill">how it ends</span></h3>
+      <p class="frame">At the end, ___.</p>
+      <textarea data-k="e_res"></textarea>
+    </div>
+    <div class="card" style="border-color:var(--gold)">
+      <h3>The moral <span class="pill">what the story teaches us</span></h3>
+      <p class="frame">This story teaches us that ___.</p>
+      <textarea data-k="e_moral"></textarea>
+    </div>
+  </section>
+
+  <!-- 6 GRAMMAR -->
+  <section class="panel" data-step="grammar">
+    <h2 class="sec">Grammar: the past tense</h2>
+    <p class="lede">Stories happen in the past. Use Toolkit #10 (your irregular verb list) if you get stuck.</p>
+    <div class="hintbox">Most verbs add <b>-ed</b>: walk → walk<b>ed</b>. But some verbs change completely: run → <b>ran</b>. Those are the irregular ones.</div>
+    <div class="card">
+      <h3>Write the past tense</h3>
+      <table class="gt"><thead><tr><th>Verb</th><th>My language</th><th>Past tense</th></tr></thead><tbody id="verbtbl"></tbody></table>
+      <div class="row" style="margin-top:12px">
+        <button class="btn" id="verbcheck">Check my verbs</button>
+        <span class="pill" id="verbscore"></span>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Change these sentences to the past tense</h3>
+      <p class="lede" style="margin-bottom:14px">The verbs are in <b style="color:var(--blue)">blue</b>. Rewrite the whole sentence.</p>
+      <div id="rewrites"></div>
+      <button class="btn ghost small" id="rwhint">Show me the verbs I need</button>
+      <div id="rwhintbox"></div>
+    </div>
+  </section>
+
+  <!-- 7 WRITE -->
+  <section class="panel" data-step="write">
+    <h2 class="sec">Write about the story</h2>
+    <p class="lede">Write 5–7 sentences or more. Use the frames if you want them.</p>
+    <div class="card">
+      <h3 id="wprompt"></h3>
+      <p class="frame" id="wframe"></p>
+      <textarea data-k="write" style="min-height:230px"></textarea>
+      <div class="row" style="margin-top:10px"><span class="pill" id="wcount">0 words</span></div>
+    </div>
+    <div class="card">
+      <h3>Connect it to your life</h3>
+      <p class="frame">This story is like my life because ___. / I know someone who ___.</p>
+      <textarea data-k="connect"></textarea>
+    </div>
+  </section>
+
+  <!-- 8 QUIZ -->
+  <section class="panel" data-step="quiz">
+    <h2 class="sec">Quiz</h2>
+    <p class="lede">Answer every question, then press Check. You can try again.</p>
+    <div id="quiz"></div>
+    <div class="row"><button class="btn" id="qcheck">Check my answers</button><button class="btn ghost" id="qreset">Clear</button></div>
+    <div id="qresult" style="margin-top:16px"></div>
+  </section>
+</div>
+
+<footer>
+  <span>Mr. Toby &middot; Galileo Academy</span>
+  <a href="../">← All readings</a>
+</footer>
+
+<div id="tip"></div>
+<script>
+/* ============================================================
+   SHORT STORIES & FABLES — ELD unit
+   Mr. Toby / Galileo Academy
+   Glossary markup in story text:  [[shown text|lookup key]]
+   ============================================================ */
+
+var SUPA_URL = 'https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var TABLE = 'fables_work';
+var PROXY = 'https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
+
+/* ---------- artwork ---------- */
+var ART = {};
+
+ART.ant = '<svg viewBox="0 0 600 230" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A grasshopper plays a fiddle while an ant carries a seed">'+
+'<rect width="600" height="230" fill="#f4f8f2"/>'+
+'<circle cx="512" cy="46" r="26" fill="#f0cf7a"/>'+
+'<path d="M0 178 Q150 158 300 176 T600 170 L600 230 L0 230Z" fill="#cfe3cf"/>'+
+'<path d="M0 196 Q160 182 320 196 T600 190 L600 230 L0 230Z" fill="#b3d3b3"/>'+
+'<g stroke="#6f9c6f" stroke-width="3" fill="none" stroke-linecap="round">'+
+'<path d="M60 180 L58 140M60 180 L74 148M60 180 L44 150"/><path d="M118 184 L116 150M118 184 L130 158"/>'+
+'<path d="M470 176 L468 142M470 176 L484 150M470 176 L456 150"/><path d="M545 180 L543 152"/></g>'+
+/* grasshopper */
+'<g transform="translate(150,92)">'+
+'<ellipse cx="42" cy="52" rx="46" ry="21" fill="#7bbf63"/>'+
+'<circle cx="86" cy="42" r="17" fill="#8ecb74"/>'+
+'<circle cx="93" cy="38" r="3.4" fill="#243a24"/>'+
+'<path d="M60 40 Q40 20 12 34" stroke="#5f9e4d" stroke-width="9" fill="none" stroke-linecap="round"/>'+
+'<path d="M30 62 L10 92 L26 96" stroke="#5f9e4d" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'+
+'<path d="M62 62 L52 94 L70 98" stroke="#5f9e4d" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'+
+'<path d="M96 26 L112 6M102 30 L120 16" stroke="#5f9e4d" stroke-width="3.2" stroke-linecap="round"/>'+
+'<rect x="60" y="30" width="34" height="13" rx="5" transform="rotate(-22 60 30)" fill="#c98a2e"/>'+
+'<path d="M58 22 L96 8" stroke="#8a6020" stroke-width="2.6" stroke-linecap="round"/>'+
+'<g fill="none" stroke="#c98a2e" stroke-width="2.4" stroke-linecap="round" opacity=".85">'+
+'<path d="M118 44 q8 -10 0 -20"/><path d="M128 50 q14 -16 0 -32"/></g>'+
+'</g>'+
+/* ant */
+'<g transform="translate(392,108)">'+
+'<ellipse cx="8" cy="44" rx="21" ry="15" fill="#a9422f"/>'+
+'<circle cx="34" cy="41" r="11" fill="#bd4c37"/>'+
+'<circle cx="52" cy="36" r="13" fill="#a9422f"/>'+
+'<circle cx="57" cy="32" r="2.8" fill="#2a1410"/>'+
+'<path d="M60 22 L70 8M64 26 L78 18" stroke="#a9422f" stroke-width="2.8" stroke-linecap="round"/>'+
+'<g stroke="#8d3526" stroke-width="4" stroke-linecap="round">'+
+'<path d="M4 56 L-6 74M14 56 L14 76M28 52 L36 72M0 40 L-16 30M18 36 L12 18"/></g>'+
+'<ellipse cx="42" cy="6" rx="19" ry="13" fill="#e2c579" stroke="#c0a252" stroke-width="2"/>'+
+'<path d="M28 8 q14 -10 28 0" stroke="#c0a252" stroke-width="2" fill="none"/>'+
+'</g>'+
+'<text x="20" y="32" font-family="Nunito,sans-serif" font-size="19" font-weight="800" fill="#6f8a72">summer</text>'+
+'</svg>';
+
+ART.hare = '<svg viewBox="0 0 600 230" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A hare sleeps under a tree while a tortoise walks toward the finish line">'+
+'<rect width="600" height="230" fill="#f4f8f2"/>'+
+'<path d="M0 180 Q160 162 300 178 T600 172 L600 230 L0 230Z" fill="#cfe3cf"/>'+
+'<path d="M0 198 Q170 186 340 198 T600 194 L600 230 L0 230Z" fill="#b3d3b3"/>'+
+/* tree */
+'<rect x="128" y="96" width="16" height="86" rx="5" fill="#8a6a45"/>'+
+'<circle cx="136" cy="74" r="46" fill="#7bbf63"/><circle cx="98" cy="92" r="30" fill="#8ecb74"/><circle cx="176" cy="92" r="32" fill="#6fae58"/>'+
+/* sleeping hare */
+'<g transform="translate(96,150)">'+
+'<ellipse cx="46" cy="22" rx="42" ry="20" fill="#cbbba4"/>'+
+'<circle cx="88" cy="14" r="15" fill="#d8c9b3"/>'+
+'<path d="M84 2 Q80 -28 92 -34 Q98 -24 94 0Z" fill="#d8c9b3"/>'+
+'<path d="M94 2 Q96 -26 110 -28 Q110 -16 102 2Z" fill="#c4b39c"/>'+
+'<path d="M92 13 q7 0 11 3" stroke="#5c4f3f" stroke-width="2.4" fill="none" stroke-linecap="round"/>'+
+'<path d="M84 11 q5 2 9 0" stroke="#5c4f3f" stroke-width="2.4" fill="none" stroke-linecap="round"/>'+
+'<circle cx="6" cy="18" r="10" fill="#e6dbc9"/>'+
+'</g>'+
+'<g fill="#9ab79c" font-family="Nunito,sans-serif" font-weight="800">'+
+'<text x="196" y="126" font-size="20">z</text><text x="210" y="112" font-size="26">z</text><text x="228" y="94" font-size="32">z</text></g>'+
+/* tortoise */
+'<g transform="translate(356,142)">'+
+'<path d="M8 40 Q46 -6 92 40Z" fill="#5f8e4f"/>'+
+'<path d="M8 40 Q46 -6 92 40Z" fill="none" stroke="#436b38" stroke-width="3"/>'+
+'<path d="M30 34 q8 -18 20 -22M62 32 q-6 -18 -14 -22M20 40 q4 -12 10 -16M76 40 q-6 -12 -12 -16" stroke="#436b38" stroke-width="2.4" fill="none"/>'+
+'<rect x="4" y="38" width="92" height="12" rx="6" fill="#d1b98a"/>'+
+'<circle cx="104" cy="34" r="13" fill="#c3aa7c"/>'+
+'<circle cx="109" cy="31" r="2.6" fill="#2a2418"/>'+
+'<rect x="16" y="48" width="12" height="18" rx="5" fill="#c3aa7c"/><rect x="70" y="48" width="12" height="18" rx="5" fill="#c3aa7c"/>'+
+'</g>'+
+/* finish */
+'<g transform="translate(520,84)"><rect x="0" y="0" width="6" height="106" fill="#6b7a70"/>'+
+'<g><rect x="6" y="2" width="15" height="13" fill="#33413a"/><rect x="36" y="2" width="15" height="13" fill="#33413a"/>'+
+'<rect x="21" y="15" width="15" height="13" fill="#33413a"/><rect x="6" y="28" width="15" height="13" fill="#33413a"/>'+
+'<rect x="36" y="28" width="15" height="13" fill="#33413a"/><rect x="6" y="2" width="45" height="39" fill="none" stroke="#33413a" stroke-width="2"/></g></g>'+
+'<text x="20" y="32" font-family="Nunito,sans-serif" font-size="19" font-weight="800" fill="#6f8a72">the race</text>'+
+'</svg>';
+
+ART.wolf = '<svg viewBox="0 0 600 230" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A shepherd boy shouts on a hill with sheep while a wolf watches from the trees">'+
+'<rect width="600" height="230" fill="#eef3f6"/>'+
+'<circle cx="72" cy="46" r="22" fill="#e8e2cf"/>'+
+'<path d="M0 150 Q140 96 300 150 T600 138 L600 230 L0 230Z" fill="#cfe0cd"/>'+
+'<path d="M0 182 Q170 156 340 186 T600 178 L600 230 L0 230Z" fill="#b0ccae"/>'+
+/* dark forest right */
+'<g fill="#3c5147"><path d="M470 168 L496 96 L522 168Z"/><path d="M506 172 L536 84 L566 172Z"/><path d="M552 170 L578 104 L600 170 L600 172Z"/></g>'+
+'<g fill="#ffd24a"><circle cx="528" cy="132" r="4"/><circle cx="544" cy="132" r="4"/></g>'+
+/* boy */
+'<g transform="translate(214,88)">'+
+'<circle cx="30" cy="18" r="16" fill="#e8c39a"/>'+
+'<path d="M14 14 q16 -20 32 0 q-6 -10 -16 -10 q-12 0 -16 10Z" fill="#5a4630"/>'+
+'<circle cx="25" cy="18" r="2.4" fill="#33261a"/><circle cx="36" cy="18" r="2.4" fill="#33261a"/>'+
+'<ellipse cx="31" cy="26" rx="5" ry="6" fill="#7a3c30"/>'+
+'<path d="M16 36 L46 36 L52 86 L10 86Z" fill="#c4553d"/>'+
+'<path d="M46 40 L74 20" stroke="#e8c39a" stroke-width="9" stroke-linecap="round"/>'+
+'<path d="M16 40 L0 66" stroke="#e8c39a" stroke-width="9" stroke-linecap="round"/>'+
+'<path d="M18 86 L16 118M44 86 L48 118" stroke="#4c5f52" stroke-width="10" stroke-linecap="round"/>'+
+'<path d="M78 16 q16 -16 26 -2 q-10 -6 -18 4 L80 96" stroke="#8a6a45" stroke-width="6" fill="none" stroke-linecap="round"/>'+
+'</g>'+
+/* speech */
+'<g transform="translate(286,54)"><path d="M0 10 q0 -14 18 -14 h86 q18 0 18 14 v22 q0 14 -18 14 h-72 l-20 16 4 -16 h2 q-18 0 -18 -14Z" fill="#fff" stroke="#9fb2a6" stroke-width="2"/>'+
+'<text x="20" y="30" font-family="Nunito,sans-serif" font-size="20" font-weight="900" fill="#c4553d">Wolf! Wolf!</text></g>'+
+/* sheep */
+'<g fill="#f6f4ee" stroke="#cdc9bd" stroke-width="2">'+
+'<g transform="translate(96,152)"><ellipse cx="26" cy="14" rx="26" ry="17"/><circle cx="48" cy="6" r="9" fill="#4a4a44" stroke="none"/><path d="M14 30 l0 10M38 30 l0 10" stroke="#4a4a44" stroke-width="4"/></g>'+
+'<g transform="translate(150,170)"><ellipse cx="22" cy="12" rx="22" ry="14"/><circle cx="40" cy="5" r="8" fill="#4a4a44" stroke="none"/><path d="M12 25 l0 9M32 25 l0 9" stroke="#4a4a44" stroke-width="4"/></g>'+
+'<g transform="translate(340,160)"><ellipse cx="24" cy="13" rx="24" ry="15"/><circle cx="44" cy="5" r="8" fill="#4a4a44" stroke="none"/><path d="M13 27 l0 9M35 27 l0 9" stroke="#4a4a44" stroke-width="4"/></g>'+
+'</g>'+
+'</svg>';
+
+ART.magi = '<svg viewBox="0 0 600 230" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A gold pocket watch with a chain and a pair of jewelled combs">'+
+'<rect width="600" height="230" fill="#f7f2ee"/>'+
+'<g stroke="#e3d6cd" stroke-width="2" fill="none"><path d="M0 40 h600M0 190 h600"/></g>'+
+'<g opacity=".5" fill="#e8dcd2"><circle cx="60" cy="60" r="3"/><circle cx="120" cy="38" r="2.4"/><circle cx="520" cy="52" r="3"/><circle cx="470" cy="34" r="2.4"/><circle cx="300" cy="26" r="2.6"/></g>'+
+/* watch */
+'<g transform="translate(126,74)">'+
+'<circle cx="52" cy="52" r="48" fill="#e0b85c" stroke="#b9902f" stroke-width="4"/>'+
+'<circle cx="52" cy="52" r="37" fill="#fdf8ea" stroke="#b9902f" stroke-width="2"/>'+
+'<path d="M52 28 v24 l16 12" stroke="#4a3c1c" stroke-width="3.4" fill="none" stroke-linecap="round"/>'+
+'<circle cx="52" cy="52" r="3.4" fill="#4a3c1c"/>'+
+'<g stroke="#b9902f" stroke-width="2.4" stroke-linecap="round"><path d="M52 18 v6M86 52 h6M52 86 v6M18 52 h-6"/></g>'+
+'<rect x="44" y="-8" width="16" height="12" rx="4" fill="#c9a13f"/>'+
+'</g>'+
+/* chain */
+'<g fill="none" stroke="#c9a13f" stroke-width="4">'+
+'<path d="M178 66 q34 -34 72 -12 q34 20 66 6"/></g>'+
+'<g fill="none" stroke="#e0b85c" stroke-width="2.4">'+
+'<circle cx="196" cy="56" r="6"/><circle cx="216" cy="48" r="6"/><circle cx="238" cy="50" r="6"/><circle cx="258" cy="58" r="6"/><circle cx="280" cy="60" r="6"/><circle cx="302" cy="58" r="6"/></g>'+
+/* combs */
+'<g transform="translate(352,80)">'+
+'<path d="M0 26 q52 -34 104 0 v14 H0Z" fill="#7a4a4a"/>'+
+'<g stroke="#7a4a4a" stroke-width="6" stroke-linecap="round"><path d="M10 42 v34M26 42 v40M42 42 v44M58 42 v44M74 42 v40M90 42 v34"/></g>'+
+'<g fill="#5fa8c4" stroke="#3d7e98" stroke-width="1.6"><circle cx="34" cy="20" r="6"/><circle cx="52" cy="14" r="7"/><circle cx="70" cy="20" r="6"/></g>'+
+'</g>'+
+'<g transform="translate(380,132) rotate(8)" opacity=".55">'+
+'<path d="M0 26 q46 -30 92 0 v12 H0Z" fill="#8e5a5a"/>'+
+'<g stroke="#8e5a5a" stroke-width="5" stroke-linecap="round"><path d="M10 38 v28M26 38 v32M42 38 v34M58 38 v32M74 38 v28"/></g></g>'+
+'<text x="20" y="30" font-family="Nunito,sans-serif" font-size="19" font-weight="800" fill="#a68b78">two presents</text>'+
+'</svg>';
+
+ART.lion = '<svg viewBox="0 0 600 230" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A lion caught in a net while a small mouse bites the ropes">'+
+'<rect width="600" height="230" fill="#f8f5ec"/>'+
+'<path d="M0 178 Q150 160 300 176 T600 168 L600 230 L0 230Z" fill="#e4dcc2"/>'+
+'<path d="M0 198 Q170 188 340 200 T600 192 L600 230 L0 230Z" fill="#d3c8a6"/>'+
+/* lion */
+'<g transform="translate(150,54)">'+
+'<ellipse cx="146" cy="116" rx="84" ry="38" fill="#dba85a"/>'+
+'<path d="M212 130 q34 -6 34 22 q-14 -12 -34 -6Z" fill="#dba85a"/>'+
+'<circle cx="242" cy="152" r="9" fill="#a97b34"/>'+
+'<g fill="#c8912f"><circle cx="70" cy="94" r="52"/></g>'+
+'<circle cx="70" cy="94" r="38" fill="#eec178"/>'+
+'<g fill="#5e3f15"><circle cx="58" cy="88" r="3.6"/><circle cx="84" cy="88" r="3.6"/></g>'+
+'<path d="M64 102 q6 6 12 0" stroke="#5e3f15" stroke-width="3" fill="none" stroke-linecap="round"/>'+
+'<path d="M70 100 v6" stroke="#5e3f15" stroke-width="3" stroke-linecap="round"/>'+
+'<ellipse cx="70" cy="97" rx="6" ry="4.4" fill="#8a5a20"/>'+
+'<g stroke="#a97b34" stroke-width="2" stroke-linecap="round"><path d="M44 100 l-16 -4M44 106 l-16 4M96 100 l16 -4M96 106 l16 4"/></g>'+
+'<g fill="#c9973f"><rect x="88" y="146" width="20" height="26" rx="9"/><rect x="168" y="146" width="20" height="26" rx="9"/></g>'+
+'</g>'+
+/* net */
+'<g stroke="#6d7f72" stroke-width="2.2" fill="none" opacity=".9">'+
+'<path d="M154 68 L448 150M170 54 L462 122M192 178 L440 64M156 150 L406 50M150 106 L456 178"/>'+
+'<path d="M180 44 q140 -10 280 26 q-130 156 -300 128 q-30 -84 20 -154Z"/></g>'+
+/* mouse */
+'<g transform="translate(430,164)">'+
+'<ellipse cx="26" cy="20" rx="26" ry="16" fill="#9aa0a6"/>'+
+'<circle cx="52" cy="14" r="11" fill="#adb3b9"/>'+
+'<circle cx="40" cy="6" r="8" fill="#c8a9a9"/><circle cx="56" cy="0" r="7" fill="#c8a9a9"/>'+
+'<circle cx="58" cy="12" r="2.2" fill="#2a2e33"/>'+
+'<circle cx="63" cy="16" r="2.4" fill="#e08a8a"/>'+
+'<path d="M0 22 q-28 6 -22 -14" stroke="#9aa0a6" stroke-width="3.4" fill="none" stroke-linecap="round"/>'+
+'<g stroke="#6f757b" stroke-width="1.6" stroke-linecap="round"><path d="M62 18 l12 4M62 14 l13 -2"/></g>'+
+'</g>'+
+'<text x="20" y="32" font-family="Nunito,sans-serif" font-size="19" font-weight="800" fill="#a89a70">a small friend</text>'+
+'</svg>';
+
+/* ---------- the stories ---------- */
+var STORIES = [
+{
+ id:"ant", title:"The Ant and the Grasshopper", by:"A fable by Aesop", accent:"#5f8e4f", art:"ant",
+ agree:["It is important to save money and food for the future.","People who do not work should not get help.","It is also important to rest, sing and enjoy life."],
+ vocab:[
+  {w:"an ant",d:"a very small insect that works in a group"},
+  {w:"a grasshopper",d:"an insect with long back legs that jumps"},
+  {w:"a field",d:"open land with grass"},
+  {w:"hardworking",d:"doing a lot of work"},
+  {w:"lazy",d:"not wanting to work"},
+  {w:"to save",d:"to keep something so you can use it later"},
+  {w:"autumn",d:"the season after summer, when leaves fall"},
+  {w:"to warn",d:"to tell someone that danger is coming"},
+  {w:"to ignore",d:"to hear someone but not listen to them"},
+  {w:"to knock",d:"to hit a door with your hand"}],
+ easy:[
+  "There was an [[ant]]. There was a [[grasshopper]]. They lived in the same [[field]].",
+  "The ant was [[hardworking]]. He worked all day, every day.",
+  "He built a small house. He carried food inside. He [[saved|to save]] the food for winter.",
+  "The grasshopper was [[lazy]]. He sang songs. He played music. He relaxed in the sun.",
+  "[[Autumn]] came. The leaves fell from the trees. The air was cold.",
+  "\u201cSave your food,\u201d the ant [[warned|to warn]] him. \u201cWinter is coming.\u201d The grasshopper [[ignored|to ignore]] the ant.",
+  "Winter came. Snow covered the field. The grasshopper was cold and hungry.",
+  "He [[knocked|to knock]] on the ant\u2019s door. \u201cPlease let me come in,\u201d he said.",
+  "\u201cWhat did you do all summer?\u201d asked the ant. \u201cI sang and played music,\u201d said the grasshopper.",
+  "\u201cThen you can sing all winter,\u201d said the ant. He closed the door."],
+ hard:[
+  "Once there was an [[ant]] and a [[grasshopper]]. The ant worked very hard. He worked and worked all day. He made a lovely house.",
+  "Every day, the ant would work and look for bread or food. Every time he got a piece of food, he would eat just a little, then [[save|to save]] the rest for winter.",
+  "The grasshopper, on the other hand, was very [[lazy]]. He liked to sing and relax all day. He did not work to save food. He would just sing and play music, and relax in the sun.",
+  "Then [[autumn]] came. The leaves were falling, and all the little ants and grasshoppers were gathering food before there was no more. The ant worked very hard.",
+  "\u201cSave your food,\u201d [[warned|to warn]] the ant. But the grasshopper was lazy and did not go to work. \u201cBuild a house. Winter is coming,\u201d said the ant. But again the grasshopper [[ignored|to ignore]] him. He just relaxed and played music in the autumn sun.",
+  "Then the days grew cold. The sun was not enough. The grasshopper needed a house to protect him from the winter.",
+  "He [[knocked|to knock]] on the ant\u2019s door. \u201cPlease let me stay in your house for winter.\u201d",
+  "\u201cWhat were you doing all summer and autumn?\u201d asked the ant. \u201cPlaying music and relaxing in the sun,\u201d said the grasshopper.",
+  "\u201cNo, you cannot come in. You should have made a house,\u201d said the ant. \u201cPlease give me some food, at least,\u201d said the grasshopper. \u201cNo, you should have looked for food,\u201d he replied.",
+  "The grasshopper left the ant\u2019s house. He had no food and no house for the winter."],
+ seq:["The ant works hard and saves food for winter.","The grasshopper sings, plays music and relaxes in the sun.","Autumn comes and the leaves fall.","The ant warns the grasshopper that winter is coming.","The grasshopper ignores the ant.","Winter comes and the grasshopper is cold and hungry.","The ant does not open the door, and the grasshopper leaves."],
+ verbs:[["work","worked"],["play","played"],["save","saved"],["relax","relaxed"],["sing","sang"],["come","came"],["fall","fell"],["say","said"],["have","had"],["be","was"]],
+ rewrites:[
+  {pres:"The ant <b>works</b> hard every day.",need:["worked"]},
+  {pres:"The grasshopper <b>sings</b> and <b>plays</b> music.",need:["sang","played"]},
+  {pres:"Autumn <b>comes</b> and the leaves <b>fall</b>.",need:["came","fell"]},
+  {pres:"The ant <b>says</b>, \u201cWinter is coming.\u201d",need:["said"]},
+  {pres:"The grasshopper <b>has</b> no food and <b>is</b> hungry.",need:["had","was"]}],
+ wprompt:"Who is right \u2014 the ant or the grasshopper?",
+ wframe:"I think the ___ is right because ___. In the story, ___. In my life, ___.",
+ quiz:[
+  {q:"Who works hard in the story?",o:["the ant","the grasshopper","both of them","nobody"],a:0},
+  {q:"What does the grasshopper do all summer?",o:["He builds a house.","He sings and plays music.","He looks for food.","He sleeps in the snow."],a:1},
+  {q:"Why does the ant save food?",o:["Because he is hungry now","Because winter is coming","Because the grasshopper asked him to","Because he wants to sell it"],a:1},
+  {q:"What season comes after summer in this story?",o:["spring","winter","autumn","Monday"],a:2},
+  {q:"What does \u201cignore\u201d mean?",o:["to hear someone but not listen","to help someone","to shout at someone","to run away"],a:0},
+  {q:"Why does the grasshopper knock on the ant\u2019s door?",o:["He wants to sing for the ant.","He is cold and hungry.","He wants to give the ant food.","He is lost."],a:1},
+  {q:"What does the ant do at the end?",o:["He gives the grasshopper food.","He lets the grasshopper come in.","He says no and closes the door.","He goes outside to sing."],a:2},
+  {q:"What is the moral of this story?",o:["Never talk to insects.","Music is bad.","Winter is the best season.","Work and plan now, so you are ready later."],a:3}]
+},
+{
+ id:"hare", title:"The Tortoise and the Hare", by:"A fable by Aesop", accent:"#3f7ea8", art:"hare",
+ agree:["Being fast is more important than never stopping.","If you are very good at something, it is OK to say so.","A slow person can beat a fast person."],
+ vocab:[
+  {w:"a hare",d:"a big rabbit with long legs that runs very fast"},
+  {w:"a tortoise",d:"a slow animal that carries a hard shell on its back"},
+  {w:"a race",d:"a game to see who is fastest"},
+  {w:"proud",d:"feeling very good about yourself"},
+  {w:"to boast",d:"to talk too much about how good you are"},
+  {w:"to laugh at",d:"to make fun of someone"},
+  {w:"the finish line",d:"the end of a race"},
+  {w:"steady",d:"always the same, not stopping"},
+  {w:"to pass",d:"to go by someone and get in front of them"},
+  {w:"too late",d:"after the right time has already gone"}],
+ easy:[
+  "A [[hare]] could run very fast. He was very [[proud]] of his legs.",
+  "Every day he [[laughed at|to laugh at]] the [[tortoise]]. \u201cYou are so slow!\u201d he said.",
+  "One day the tortoise said, \u201cLet us have a [[race]].\u201d The hare laughed and said yes.",
+  "All the animals came to watch. A fox shouted, \u201cReady\u2026 go!\u201d",
+  "The hare ran fast. Soon he could not see the tortoise behind him.",
+  "\u201cI have time to sleep,\u201d said the hare. He lay under a tree and closed his eyes.",
+  "The tortoise walked. He did not stop. Step, step, step.",
+  "The tortoise [[passed|to pass]] the sleeping hare.",
+  "The hare woke up. He ran as fast as he could.",
+  "But it was [[too late]]. The tortoise was already at the [[finish line]].",
+  "\u201cSlow and [[steady]] wins the race,\u201d said the tortoise."],
+ hard:[
+  "There was once a [[hare]] who was very [[proud]] of how fast he could run. He liked to [[boast|to boast]] about it to every animal in the forest.",
+  "Day after day he [[laughed at|to laugh at]] the [[tortoise]], who moved slowly and carried a heavy shell. \u201cYou are the slowest animal alive,\u201d the hare said.",
+  "At last the tortoise had had enough. \u201cThen let us have a [[race]],\u201d he said quietly. The hare laughed so hard that he almost fell over, but he agreed.",
+  "On the day of the race, all the animals of the forest came to watch. The fox marked the [[finish line|the finish line]] and shouted, \u201cReady\u2026 set\u2026 go!\u201d",
+  "The hare shot forward and was soon far ahead. When he looked back, the tortoise was only a tiny dot on the road.",
+  "\u201cI have plenty of time,\u201d the hare thought. \u201cI will rest for a moment.\u201d He lay down in the cool grass under a tree and fell asleep.",
+  "The tortoise did not stop. He did not rest. He kept walking, slow and [[steady]], hour after hour.",
+  "Without making a sound, the tortoise [[passed|to pass]] the sleeping hare.",
+  "When the hare finally woke up, the sun was low. He jumped up and ran faster than he had ever run in his life.",
+  "But it was [[too late]]. The tortoise was crossing the finish line, and all the animals were cheering for him.",
+  "\u201cSlow and steady wins the race,\u201d said the tortoise. The hare said nothing at all."],
+ seq:["The hare laughs at the tortoise because he is slow.","The tortoise asks the hare to have a race.","The animals come to watch and the race begins.","The hare runs far ahead of the tortoise.","The hare lies down under a tree and falls asleep.","The tortoise keeps walking and passes the hare.","The hare wakes up too late and the tortoise wins."],
+ verbs:[["run","ran"],["laugh","laughed"],["sleep","slept"],["wake","woke"],["walk","walked"],["pass","passed"],["win","won"],["say","said"],["sit","sat"],["be","was"]],
+ rewrites:[
+  {pres:"The hare <b>runs</b> very fast.",need:["ran"]},
+  {pres:"The hare <b>laughs</b> at the tortoise.",need:["laughed"]},
+  {pres:"The hare <b>sleeps</b> under a tree.",need:["slept"]},
+  {pres:"The tortoise <b>walks</b> and <b>passes</b> the hare.",need:["walked","passed"]},
+  {pres:"The hare <b>wakes</b> up, but the tortoise <b>wins</b>.",need:["woke","won"]}],
+ wprompt:"Why does the tortoise win the race?",
+ wframe:"The tortoise wins because ___. The hare loses because ___. This tells me that ___.",
+ quiz:[
+  {q:"Which animal is faster?",o:["the tortoise","the hare","the fox","they are the same"],a:1},
+  {q:"Why does the tortoise ask for a race?",o:["He wants to win money.","He is tired of the hare laughing at him.","The fox tells him to.","He wants to see the forest."],a:1},
+  {q:"What does the hare do in the middle of the race?",o:["He goes home.","He helps the tortoise.","He falls asleep under a tree.","He eats lunch with the fox."],a:2},
+  {q:"What does the tortoise do while the hare sleeps?",o:["He sleeps too.","He keeps walking, slow and steady.","He waits for the hare.","He runs very fast."],a:1},
+  {q:"What does \u201cto boast\u201d mean?",o:["to run fast","to talk too much about how good you are","to feel sad","to sleep"],a:1},
+  {q:"When the hare wakes up, what happens?",o:["He wins easily.","He is too late.","He starts again.","He goes back to sleep."],a:1},
+  {q:"\u201cSlow and steady wins the race\u201d means\u2026",o:["Always walk, never run.","Fast people always lose.","Keep going without stopping, and you will finish.","Races are not fair."],a:2},
+  {q:"What is the hare\u2019s biggest mistake?",o:["He runs too slowly.","He is too proud and stops trying.","He starts the race late.","He takes the wrong road."],a:1}]
+},
+{
+ id:"wolf", title:"The Boy Who Cried Wolf", by:"A fable by Aesop", accent:"#c4553d", art:"wolf",
+ agree:["A small lie is not a big problem.","Once you lie to someone, they will never fully trust you again.","It is boring jobs that make people do silly things."],
+ vocab:[
+  {w:"a village",d:"a very small town"},
+  {w:"a shepherd",d:"a person whose job is to watch sheep"},
+  {w:"sheep",d:"a farm animal with thick white wool"},
+  {w:"bored",d:"having nothing interesting to do"},
+  {w:"to shout",d:"to say something very loudly"},
+  {w:"to lie",d:"to say something that is not true"},
+  {w:"a liar",d:"a person who lies"},
+  {w:"to believe",d:"to think that something is true"},
+  {w:"to trust",d:"to believe that someone is honest and safe"},
+  {w:"real",d:"true, not a joke and not imaginary"}],
+ easy:[
+  "A boy lived in a small [[village]]. He was a [[shepherd]]. His job was to watch the [[sheep]].",
+  "Every day he sat on the hill with the sheep. He was [[bored|bored]].",
+  "One day he had an idea. He [[shouted|to shout]], \u201cWolf! Wolf! A wolf is eating the sheep!\u201d",
+  "The people of the village ran up the hill. They wanted to help.",
+  "There was no wolf. The boy laughed. The people were angry.",
+  "A few days later, the boy shouted again. \u201cWolf! Wolf!\u201d",
+  "The people ran up the hill again. Again there was no wolf. The boy laughed again.",
+  "\u201cDo not [[lie|to lie]] to us,\u201d said an old man. \u201cNobody [[believes|to believe]] a [[liar]].\u201d",
+  "Then one evening a [[real]] wolf came out of the forest.",
+  "\u201cWolf! Wolf!\u201d shouted the boy. \u201cPlease help me!\u201d",
+  "The people heard him. But nobody came. They thought he was lying again.",
+  "The wolf took the sheep. The boy sat alone on the hill and cried."],
+ hard:[
+  "In a small [[village]] at the bottom of a green hill there lived a boy whose job was to be a [[shepherd]]. Every morning he took the [[sheep]] up the hill, and every evening he brought them home again.",
+  "It was quiet work, and the boy was [[bored]]. He sat on a rock and watched the clouds, and the hours passed slowly.",
+  "One afternoon an idea came to him. He stood up and [[shouted|to shout]] as loudly as he could: \u201cWolf! Wolf! A wolf is attacking the sheep!\u201d",
+  "The villagers dropped their work and ran up the hill with sticks in their hands, ready to save him.",
+  "There was no wolf. The boy laughed until he could not breathe. The villagers went home angry.",
+  "A few days later he was bored again, and he did exactly the same thing. \u201cWolf! Wolf!\u201d",
+  "Again the villagers climbed the hill. Again there was nothing there. Again the boy laughed at them.",
+  "\u201cDo not [[lie|to lie]] to us,\u201d said an old woman, and she did not smile. \u201cNobody [[believes|to believe]] a [[liar]], even when he tells the truth.\u201d",
+  "Then, one evening, as the sun went down, a [[real]] wolf came out of the dark forest.",
+  "\u201cWolf! Wolf!\u201d the boy screamed. \u201cPlease, someone help me!\u201d",
+  "Down in the village, the people heard him clearly. They looked at one another and kept working. \u201cHe is lying again,\u201d they said.",
+  "Nobody came. The wolf took the sheep into the forest, and the boy sat alone on the hill in the dark and cried."],
+ seq:["The boy has a boring job watching sheep on a hill.","He shouts \u201cWolf!\u201d as a joke, and the villagers run up the hill.","There is no wolf, and the boy laughs at them.","He plays the same trick a second time.","An old villager warns him that nobody believes a liar.","A real wolf comes out of the forest.","The boy shouts for help, but nobody comes."],
+ verbs:[["shout","shouted"],["laugh","laughed"],["run","ran"],["come","came"],["hear","heard"],["think","thought"],["take","took"],["sit","sat"],["cry","cried"],["be","was"]],
+ rewrites:[
+  {pres:"The boy <b>shouts</b>, \u201cWolf! Wolf!\u201d",need:["shouted"]},
+  {pres:"The villagers <b>run</b> up the hill.",need:["ran"]},
+  {pres:"The boy <b>laughs</b> and the people <b>are</b> angry.",need:["laughed","were"]},
+  {pres:"A real wolf <b>comes</b> out of the forest.",need:["came"]},
+  {pres:"They <b>hear</b> him, but they <b>think</b> he is lying.",need:["heard","thought"]}],
+ wprompt:"Whose fault is it that the sheep are gone \u2014 the boy\u2019s, or the villagers\u2019?",
+ wframe:"I think it is ___\u2019s fault because ___. Another person might say ___, but ___.",
+ quiz:[
+  {q:"What is the boy\u2019s job?",o:["to cook for the village","to watch the sheep","to cut trees","to teach children"],a:1},
+  {q:"Why does the boy shout \u201cWolf!\u201d the first time?",o:["He sees a wolf.","He is bored and wants something to happen.","He wants to sell the sheep.","He is afraid of the dark."],a:1},
+  {q:"How do the villagers feel after the first trick?",o:["happy","angry","tired","hungry"],a:1},
+  {q:"What does a \u201cliar\u201d do?",o:["works very hard","says things that are not true","watches sheep","lives in a village"],a:1},
+  {q:"How many times does the boy lie before the real wolf comes?",o:["one time","two times","five times","he never lies"],a:1},
+  {q:"What happens when the real wolf comes?",o:["The villagers save the sheep.","The boy runs home safely.","Nobody comes to help.","The wolf runs away."],a:2},
+  {q:"Why does nobody come the last time?",o:["They are asleep.","They do not believe him anymore.","They are too far away.","They do not like sheep."],a:1},
+  {q:"What is the moral of this story?",o:["Sheep are hard to watch.","Never go up a hill alone.","Wolves are dangerous animals.","If you lie, people stop believing you \u2014 even when you tell the truth."],a:3}]
+},
+{
+ id:"magi", title:"The Gift of the Magi", by:"By O. Henry \u00b7 retold for English learners", accent:"#b9902f", art:"magi",
+ agree:["The best present is an expensive present.","It is worth giving up something you love to make someone happy.","Della and Jim made a mistake."],
+ vocab:[
+  {w:"a cent",d:"a small coin; 100 cents = one dollar"},
+  {w:"a husband",d:"the man a woman is married to"},
+  {w:"poor",d:"having very little money"},
+  {w:"a present",d:"a gift you give to someone"},
+  {w:"enough",d:"as much as you need"},
+  {w:"a mirror",d:"glass you look into to see yourself"},
+  {w:"to sell",d:"to give something and get money for it"},
+  {w:"a chain",d:"metal rings joined together, used to hold a watch"},
+  {w:"a comb",d:"a thing you use to make your hair neat"},
+  {w:"a package",d:"something wrapped in paper, ready to give"}],
+ easy:[
+  "It was the day before Christmas in New York City, about the year 1905.",
+  "Della counted her money. One dollar and eighty-seven [[cents|a cent]]. That was all.",
+  "She wanted to buy a [[present]] for Jim, her [[husband]]. But $1.87 was not [[enough]].",
+  "Della and Jim were [[poor]]. But they had two beautiful things. Jim had a gold watch from his father. Della had long, beautiful hair.",
+  "Della looked in the [[mirror]]. Then she smiled. She had an idea.",
+  "She went to a shop. \u201cWill you buy my hair?\u201d she asked. \u201cTwenty dollars,\u201d said the woman. Della [[sold|to sell]] her hair.",
+  "Then Della went from store to store. She found the perfect present: a gold [[chain]] for Jim\u2019s watch. It cost twenty-one dollars.",
+  "At seven o\u2019clock, Jim came home. He looked at Della\u2019s short hair. He did not move. He did not speak.",
+  "\u201cI sold my hair to buy you a present,\u201d said Della. \u201cIt will grow again. Do you still love me?\u201d",
+  "Jim gave her a small [[package]]. Inside were beautiful [[combs|a comb]] \u2014 the combs Della wanted for her long hair.",
+  "Della cried. Then she smiled. \u201cMy hair grows so fast, Jim!\u201d She gave him the gold chain.",
+  "Jim sat down and smiled. \u201cI sold my watch,\u201d he said, \u201cto buy your combs.\u201d"],
+ hard:[
+  "One dollar and eighty-seven [[cents|a cent]]. That was all. Della had saved it one and two pennies at a time, and three times she counted it. Tomorrow was Christmas.",
+  "She did not have [[enough]] money to buy a [[present]] for Jim. Della sat down and cried.",
+  "Their home was an apartment that cost eight dollars a week in a [[poor]] neighbourhood of New York. It was not a beautiful place, but it was all that Della and her [[husband]] could have.",
+  "Della stopped crying and stood by the window. She looked out at a grey cat walking on a grey fence in a grey backyard.",
+  "Suddenly she smiled. She stood in front of the [[mirror]] and pulled down her hair, and let it fall.",
+  "There were two things that Jim and Della were very proud of. Jim had a gold watch that had belonged to his father and his grandfather. The other was Della\u2019s hair. Everyone admired it.",
+  "She put her hair up again, put on her old brown jacket and her old brown hat, and hurried out the door and down the stairs to the street.",
+  "She stopped at a shop with a sign that read \u201cHair Goods of All Kinds.\u201d \u201cWill you buy my hair?\u201d Della asked. \u201cTwenty dollars,\u201d said the owner. \u201cGive it to me quickly,\u201d said Della. Then her hair was [[sold|to sell]] and cut.",
+  "For two hours Della ran from store to store. At last she found it: a beautiful [[chain]] for Jim\u2019s watch. She paid twenty-one dollars and hurried home with the eighty-seven cents.",
+  "At seven o\u2019clock Jim came in and closed the door. He stared at Della and did not move. Della could not tell what he was thinking.",
+  "\u201cJim, darling,\u201d she said, \u201cdo not look at me that way. I cut my hair and sold it because I wanted to give you a present. It will grow again. Say \u2018Merry Christmas,\u2019 Jim.\u201d",
+  "Jim pulled a [[package]] from his coat pocket and put it on the table. \u201cI love you with long hair or short hair,\u201d he said. \u201cBut open that, and you will see why I stared at you.\u201d",
+  "Inside were the [[combs|a comb]] \u2014 beautiful combs with jewels, the ones Della had seen in the store window and loved without ever hoping to own. And now they were hers, and her hair was gone.",
+  "She held them close, looked up with wet eyes, and said, \u201cMy hair grows so fast, Jim!\u201d Then she gave him the chain. \u201cGive me your watch. I want to see how it looks.\u201d",
+  "Jim smiled and sat down. \u201cLet us put our Christmas presents away for a while,\u201d he said. \u201cThey are too nice to use right now. I sold the watch to get the money to buy your combs.\u201d"],
+ seq:["Della counts her money and finds she has only $1.87.","She decides to sell her long hair for twenty dollars.","She buys a gold chain for Jim\u2019s watch.","Jim comes home and stares at Della\u2019s short hair.","Jim gives Della a package with beautiful combs inside.","Della gives Jim the chain for his watch.","Jim says that he sold his watch to buy the combs."],
+ verbs:[["count","counted"],["want","wanted"],["sell","sold"],["buy","bought"],["go","went"],["find","found"],["come","came"],["give","gave"],["cry","cried"],["sit","sat"]],
+ rewrites:[
+  {pres:"Della <b>counts</b> her money.",need:["counted"]},
+  {pres:"She <b>sells</b> her hair and <b>buys</b> a chain.",need:["sold","bought"]},
+  {pres:"Della <b>goes</b> from store to store and <b>finds</b> the present.",need:["went","found"]},
+  {pres:"Jim <b>comes</b> home and <b>gives</b> her a package.",need:["came","gave"]},
+  {pres:"Della <b>cries</b>, and then she <b>is</b> happy.",need:["cried","was"]}],
+ wprompt:"Della and Jim each sold their most beautiful thing. Was it worth it?",
+ wframe:"I think it was / was not worth it because ___. In the story, ___. If I were Della, I would ___.",
+ quiz:[
+  {q:"How much money does Della have at the start?",o:["$18.70","$1.87","$21.00","$20.00"],a:1},
+  {q:"What are the two things Della and Jim are proud of?",o:["their house and their cat","Jim\u2019s watch and Della\u2019s hair","their money and their clothes","the combs and the chain"],a:1},
+  {q:"What does Della sell?",o:["her hair","her ring","her coat","the watch"],a:0},
+  {q:"What present does Della buy for Jim?",o:["a gold watch","combs for his hair","a chain for his watch","a new coat"],a:2},
+  {q:"What present does Jim buy for Della?",o:["a mirror","combs for her hair","a gold chain","a hat"],a:1},
+  {q:"Why does Jim stare at Della when he comes home?",o:["He is angry about the money.","Her hair is short.","He does not like the chain.","He is very tired."],a:1},
+  {q:"How did Jim get the money for Della\u2019s present?",o:["He worked extra hours.","He borrowed it.","He sold his watch.","He found it."],a:2},
+  {q:"What is the main idea of this story?",o:["Never sell your things.","Love matters more than the present itself.","Christmas is expensive.","Always ask before you buy a present."],a:1}]
+},
+{
+ id:"lion", title:"The Lion and the Mouse", by:"A fable by Aesop", accent:"#c8912f", art:"lion",
+ agree:["A small, weak person can never help a strong person.","If someone helps you, you should help them later.","It is always right to let a prisoner go free."],
+ vocab:[
+  {w:"a paw",d:"the foot of an animal like a lion or a cat"},
+  {w:"to let go",d:"to stop holding something"},
+  {w:"to promise",d:"to say you will really do something"},
+  {w:"a hunter",d:"a person who catches wild animals"},
+  {w:"a net",d:"ropes tied together to catch animals or fish"},
+  {w:"a rope",d:"thick, strong string"},
+  {w:"to bite",d:"to cut something with your teeth"},
+  {w:"teeth",d:"the hard white parts in your mouth"},
+  {w:"to roar",d:"to make a very loud sound, like a lion"},
+  {w:"free",d:"not held, not in a cage; able to go"}],
+ easy:[
+  "A lion was sleeping under a tree.",
+  "A little mouse ran across his nose. The lion woke up. He put his big [[paw]] on the mouse.",
+  "\u201cPlease [[let me go|to let go]],\u201d said the mouse. \u201cOne day I will help you. I [[promise|to promise]].\u201d",
+  "The lion laughed. \u201cYou? Help me? You are so small!\u201d But he let the mouse go.",
+  "A few days later, [[hunters|a hunter]] came to the forest. They caught the lion in a strong [[net]].",
+  "The lion [[roared|to roar]]. He could not move.",
+  "The little mouse heard him. She ran to the lion.",
+  "She [[bit|to bite]] the [[ropes|a rope]] with her small [[teeth]]. She bit and bit and bit.",
+  "The net opened. The lion was [[free]].",
+  "\u201cYou were right,\u201d said the lion. \u201cSmall friends can be great friends.\u201d"],
+ hard:[
+  "One hot afternoon a lion lay sleeping in the shade of a tree, and the whole forest was quiet.",
+  "A little mouse, running where she should not have been running, went straight across the lion\u2019s nose. He woke at once and pinned her to the ground with one huge [[paw]].",
+  "\u201cPlease [[let me go|to let go]],\u201d cried the mouse. \u201cI did not mean to wake you. If you let me live, one day I will help you. I [[promise|to promise]].\u201d",
+  "The lion laughed until the ground shook. The idea that such a tiny creature could ever help the king of the forest was the funniest thing he had heard. But he was in a good mood, and he lifted his paw and let her run away.",
+  "Not many days later, [[hunters|a hunter]] came into the forest looking for the lion. They hid a strong [[net]] under the leaves, and the lion walked straight into it.",
+  "He [[roared|to roar]] until the birds flew out of the trees, but the more he struggled, the tighter the net held him.",
+  "Far away, the little mouse heard that roar and knew whose it was. She ran towards the sound as fast as her legs would carry her.",
+  "When she found him, she said nothing. She simply began to [[bite|to bite]] the [[ropes|a rope]], one by one, with her tiny sharp [[teeth]].",
+  "It took a long time. But at last the net fell open, and the lion stood up, [[free]].",
+  "\u201cYou were right, and I was wrong,\u201d said the lion. \u201cI laughed at you, and you saved my life. A small friend can be a great friend.\u201d"],
+ seq:["A lion is sleeping under a tree.","A little mouse wakes the lion up.","The lion catches the mouse but then lets her go.","Hunters catch the lion in a net.","The lion roars and cannot move.","The mouse hears the lion and runs to him.","The mouse bites the ropes and the lion is free."],
+ verbs:[["sleep","slept"],["run","ran"],["wake","woke"],["put","put"],["let","let"],["catch","caught"],["hear","heard"],["bite","bit"],["laugh","laughed"],["be","was"]],
+ rewrites:[
+  {pres:"The lion <b>sleeps</b> under a tree.",need:["slept"]},
+  {pres:"A mouse <b>runs</b> across his nose and <b>wakes</b> him up.",need:["ran","woke"]},
+  {pres:"The lion <b>laughs</b> and <b>lets</b> the mouse go.",need:["laughed","let"]},
+  {pres:"Hunters <b>catch</b> the lion in a net.",need:["caught"]},
+  {pres:"The mouse <b>hears</b> the lion and <b>bites</b> the ropes.",need:["heard","bit"]}],
+ wprompt:"The lion laughed at the mouse. Was he wrong? Why?",
+ wframe:"The lion was wrong because ___. He thought ___, but really ___. This is like ___.",
+ quiz:[
+  {q:"Where is the lion at the beginning of the story?",o:["in a cage","sleeping under a tree","hunting for food","in the village"],a:1},
+  {q:"How does the mouse wake the lion?",o:["She shouts at him.","She runs across his nose.","She bites his paw.","She brings hunters."],a:1},
+  {q:"What does the mouse promise?",o:["to be quiet","to bring food","to help the lion one day","to leave the forest"],a:2},
+  {q:"Why does the lion laugh at the mouse?",o:["She is very funny.","She is too small to help him.","She is afraid.","She is his friend."],a:1},
+  {q:"How do the hunters catch the lion?",o:["with a net","with a rope around his neck","with a cage","with food"],a:0},
+  {q:"What does the mouse use to free the lion?",o:["her paws","a knife","her teeth","a rope"],a:2},
+  {q:"What does \u201cfree\u201d mean here?",o:["costing no money","not held, able to go","very fast","alone"],a:1},
+  {q:"What is the moral of this story?",o:["Lions should not sleep outside.","Hunters are dangerous.","Never wake a lion.","Even a small friend can help you \u2014 so be kind to everyone."],a:3}]
+}
+];
+
+/* ============================================================
+   ENGINE
+   ============================================================ */
+function $(s,r){return (r||document).querySelector(s)}
+function $$(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function norm(s){return String(s).toLowerCase().replace(/^(a|an|the|to)\s+/,'').replace(/[^a-z0-9' ]/g,'').trim()}
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
+
+var STEPS=[["before","Before"],["words","Words"],["read","Read"],["order","Order"],["elements","Elements"],["grammar","Grammar"],["write","Write"],["quiz","Quiz"]];
+var S=null, ALL={}, ans={}, step="before", level="easy", lang="", TURNED={};
+var me={name:"",email:""};
+
+/* ---------- translation ---------- */
+var trCache={};
+function translate(text,cb,force){
+  var lg=force||lang;
+  if(!lg){cb(null);return}
+  var k=lg+"|"+text;
+  if(trCache[k]!==undefined){cb(trCache[k]);return}
+  var q=encodeURIComponent(text), L=encodeURIComponent(lg);
+  var u=PROXY+"?text="+q+"&q="+q+"&target="+L+"&lang="+L+"&to="+L+"&source=en";
+  fetch(u).then(function(r){return r.text()}).then(function(t){
+    var out=t;
+    try{var j=JSON.parse(t);
+      out=j.translation||j.translatedText||j.text||j.result||
+         (j.data&&j.data.translations&&j.data.translations[0]&&j.data.translations[0].translatedText)||t;
+    }catch(e){}
+    out=String(out).trim(); trCache[k]=out; cb(out);
+  }).catch(function(){cb(null)});
+}
+
+/* ---------- speech ---------- */
+function stripTags(h){var d=document.createElement("div");d.innerHTML=h;return d.textContent||""}
+function speak(text,onEnd){
+  if(!window.speechSynthesis){if(onEnd)onEnd();return}
+  var u=new SpeechSynthesisUtterance(text);
+  u.lang="en-US"; u.rate=.82; u.pitch=1;
+  if(onEnd)u.onend=onEnd;
+  speechSynthesis.speak(u);
+}
+function stopSpeak(){if(window.speechSynthesis)speechSynthesis.cancel();$$(".para.reading").forEach(function(p){p.classList.remove("reading")})}
+
+/* ---------- saving ---------- */
+var dot=null, timer=null;
+function setDot(c){if(!dot)dot=$("#dot");dot.className=c||""}
+function touch(){ans.__updated=new Date().toISOString();setDot("saving");clearTimeout(timer);timer=setTimeout(save,2500);localStorage.setItem("fables_"+me.email,JSON.stringify(ALL))}
+function save(){
+  if(!me.email||!S)return;
+  var body=[{email:me.email,student_name:me.name,story:S.id,data:ans,
+             score:(ans.__quiz&&typeof ans.__quiz.pct==="number")?ans.__quiz.pct:null,
+             turned_in:!!TURNED[S.id],updated_at:new Date().toISOString()}];
+  fetch(SUPA_URL+"/rest/v1/"+TABLE+"?on_conflict=email,story",{
+    method:"POST",
+    headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json",
+             "Prefer":"resolution=merge-duplicates,return=minimal"},
+    body:JSON.stringify(body)
+  }).then(function(r){setDot(r.ok?"ok":"err")}).catch(function(){setDot("err")});
+}
+function pull(cb){
+  fetch(SUPA_URL+"/rest/v1/"+TABLE+"?select=story,data,turned_in&email=eq."+encodeURIComponent(me.email),{
+    headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY}
+  }).then(function(r){return r.json()}).then(function(rows){
+    if(Array.isArray(rows))rows.forEach(function(r){ALL[r.story]=r.data||{};if(r.turned_in)TURNED[r.story]=true});
+    cb();
+  }).catch(function(){
+    var c=localStorage.getItem("fables_"+me.email); if(c){try{ALL=JSON.parse(c)}catch(e){}}
+    cb();
+  });
+}
+
+/* ---------- login ---------- */
+function start(){
+  var n=$("#gname").value.trim(), e=$("#gmail").value.trim().toLowerCase();
+  if(n.length<2){$("#gerr").textContent="Please type your full name.";return}
+  if(!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/.test(e)){$("#gerr").textContent="Please type a real email address.";return}
+  me.name=n; me.email=e;
+  localStorage.setItem("fables_me",JSON.stringify(me));
+  $("#gerr").textContent="Loading your work\u2026";
+  pull(function(){ $("#gate").style.display="none"; boot(); });
+}
+$("#gbtn").addEventListener("click",start);
+$("#gmail").addEventListener("keydown",function(ev){if(ev.key==="Enter")start()});
+
+/* ---------- boot ---------- */
+function boot(){
+  $("#who").textContent=me.name;
+  var sel=$("#storysel");
+  sel.innerHTML=STORIES.map(function(s,i){return '<option value="'+s.id+'">'+(i+1)+". "+esc(s.title)+"</option>"}).join("");
+  sel.addEventListener("change",function(){loadStory(sel.value)});
+  $("#steps").innerHTML=STEPS.map(function(st){
+    return '<button data-s="'+st[0]+'"><span class="tick">\u2714</span>'+st[1]+"</button>"}).join("");
+  $$("#steps button").forEach(function(b){b.addEventListener("click",function(){go(b.dataset.s)})});
+  $("#langsel").addEventListener("change",function(){lang=$("#langsel").value;trCache={};renderVocab();hideTip();
+    localStorage.setItem("fables_lang",lang)});
+  var L=localStorage.getItem("fables_lang"); if(L){lang=L;$("#langsel").value=L}
+  $("#printbtn").addEventListener("click",function(){stopSpeak();window.print()});
+  $("#turnin").addEventListener("click",turnIn);
+  $$(".levelbar button").forEach(function(b){b.addEventListener("click",function(){
+    level=b.dataset.lv; ans.__level=level;
+    $$(".levelbar button").forEach(function(x){x.classList.toggle("on",x===b)});
+    renderRead(); touch();
+  })});
+  $("#readall").addEventListener("click",readAll);
+  $("#stopread").addEventListener("click",stopSpeak);
+  $("#seqcheck").addEventListener("click",seqCheck);
+  $("#seqshuffle").addEventListener("click",function(){renderSeq(true)});
+  $("#mreset").addEventListener("click",function(){renderMatch(true)});
+  $("#verbcheck").addEventListener("click",verbCheck);
+  $("#rwhint").addEventListener("click",rwHint);
+  $("#qcheck").addEventListener("click",quizCheck);
+  $("#qreset").addEventListener("click",function(){$$("#quiz input").forEach(function(i){i.checked=false});
+    $$("#quiz .opt").forEach(function(o){o.className="opt"});$("#qresult").innerHTML="";delete ans.__quiz;touch();marks()});
+  document.addEventListener("click",function(ev){
+    var g=ev.target.closest?ev.target.closest(".g"):null;
+    if(g){showTip(g);return}
+    if(!ev.target.closest||!ev.target.closest("#tip"))hideTip();
+  });
+  renderLangTab();
+  loadStory(location.hash.replace("#","")||STORIES[0].id);
+}
+
+function loadStory(id){
+  stopSpeak();
+  if(S)save();
+  S=STORIES.filter(function(s){return s.id===id})[0]||STORIES[0];
+  location.hash=S.id;
+  $("#storysel").value=S.id;
+  ALL[S.id]=ALL[S.id]||{}; ans=ALL[S.id];
+  level=ans.__level||"easy";
+  document.documentElement.style.setProperty("--accent",S.accent);
+  $("#stitle").textContent=S.title;
+  $("#sby").textContent=S.by;
+  $$(".levelbar button").forEach(function(x){x.classList.toggle("on",x.dataset.lv===level)});
+  $("#art").innerHTML=ART[S.art]; $("#predict-art").innerHTML=ART[S.art];
+  renderAgree(); renderVocab(); renderMatch(); renderRead(); renderSeq(); renderVerbs(); renderRewrites();
+  $("#wprompt").textContent=S.wprompt; $("#wframe").textContent=S.wframe;
+  renderQuiz();
+  bindText();
+  $("#turnin").classList.toggle("done",!!TURNED[S.id]);
+  $("#turnin").textContent=TURNED[S.id]?"Turned in \u2714":"Turn in";
+  go(step); marks();
+}
+
+function go(s){
+  step=s;
+  $$(".panel").forEach(function(p){p.classList.toggle("on",p.dataset.step===s)});
+  $$("#steps button").forEach(function(b){b.classList.toggle("on",b.dataset.s===s)});
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+/* ---------- text fields ---------- */
+function bindText(){
+  $$("textarea[data-k],input[data-k]").forEach(function(t){
+    t.value=ans[t.dataset.k]||"";
+    t.oninput=function(){ans[t.dataset.k]=t.value;touch();
+      if(t.dataset.k==="write")wcount();
+      marks()};
+  });
+  wcount();
+}
+function wcount(){
+  var t=(ans.write||"").trim();
+  var n=t?t.split(/\s+/).length:0;
+  $("#wcount").textContent=n+(n===1?" word":" words");
+}
+
+/* ---------- before ---------- */
+function renderAgree(){
+  $("#agreelist").innerHTML=S.agree.map(function(t,i){
+    var v=(ans.__agree||{})[i]||"";
+    return '<div style="margin:0 0 12px"><div style="font-weight:700;margin-bottom:6px">'+esc(t)+"</div>"+
+     '<div class="row">'+
+     ['agree','not sure','disagree'].map(function(o){
+       return '<button class="btn '+(v===o?"":"ghost")+' small" data-a="'+i+'" data-v="'+o+'">'+o+"</button>"}).join("")+
+     "</div></div>"}).join("");
+  $$("#agreelist button").forEach(function(b){b.onclick=function(){
+    ans.__agree=ans.__agree||{}; ans.__agree[b.dataset.a]=b.dataset.v; renderAgree(); touch()}});
+}
+
+/* ---------- shared language table (Before page) ---------- */
+var TLANGS=[
+ {c:"es",   n:"Espa\u00f1ol"},
+ {c:"zh-CN",n:"\u4e2d\u6587"},
+ {c:"ar",   n:"\u0627\u0644\u0639\u0631\u0628\u064a\u0629", rtl:true},
+ {c:"vi",   n:"Ti\u1ebfng Vi\u1ec7t"},
+ {c:"th",   n:"\u0e44\u0e17\u0e22"},
+ {c:"ne",   n:"\u0928\u0947\u092a\u093e\u0932\u0940"},
+ {c:"ru",   n:"\u0420\u0443\u0441\u0441\u043a\u0438\u0439"},
+ {c:"tl",   n:"Tagalog"}
+];
+/* order of each row matches TLANGS */
+var TWORDS=[
+["agree",      "estar de acuerdo",   "\u540c\u610f",           "\u0623\u0648\u0627\u0641\u0642",                         "\u0111\u1ed3ng \u00fd",       "\u0e40\u0e2b\u0e47\u0e19\u0e14\u0e49\u0e27\u0e22",      "\u0938\u0939\u092e\u0924",                "\u0441\u043e\u0433\u043b\u0430\u0441\u0435\u043d",     "sang-ayon"],
+["disagree",   "no estar de acuerdo","\u4e0d\u540c\u610f",     "\u0644\u0627 \u0623\u0648\u0627\u0641\u0642",             "kh\u00f4ng \u0111\u1ed3ng \u00fd","\u0e44\u0e21\u0e48\u0e40\u0e2b\u0e47\u0e19\u0e14\u0e49\u0e27\u0e22","\u0905\u0938\u0939\u092e\u0924",          "\u043d\u0435 \u0441\u043e\u0433\u043b\u0430\u0441\u0435\u043d","hindi sang-ayon"],
+["not sure",   "no estoy seguro",    "\u4e0d\u786e\u5b9a",     "\u0644\u0633\u062a \u0645\u062a\u0623\u0643\u062f\u064b\u0627","kh\u00f4ng ch\u1eafc ch\u1eafn","\u0e44\u0e21\u0e48\u0e41\u0e19\u0e48\u0e43\u0e08","\u092a\u0915\u094d\u0915\u093e \u091b\u0948\u0928","\u043d\u0435 \u0443\u0432\u0435\u0440\u0435\u043d","hindi sigurado"],
+["important",  "importante",         "\u91cd\u8981",           "\u0645\u0647\u0645",                                     "quan tr\u1ecdng",             "\u0e2a\u0e33\u0e04\u0e31\u0e0d",                        "\u092e\u0939\u0924\u094d\u0924\u094d\u0935\u092a\u0942\u0930\u094d\u0923","\u0432\u0430\u0436\u043d\u043e","mahalaga"],
+["save money", "ahorrar dinero",     "\u5b58\u94b1",           "\u062a\u0648\u0641\u064a\u0631 \u0627\u0644\u0645\u0627\u0644","ti\u1ebft ki\u1ec7m ti\u1ec1n","\u0e40\u0e01\u0e47\u0e1a\u0e40\u0e07\u0e34\u0e19","\u092a\u0948\u0938\u093e \u092c\u091a\u093e\u0909\u0928\u0941","\u043a\u043e\u043f\u0438\u0442\u044c \u0434\u0435\u043d\u044c\u0433\u0438","mag-ipon ng pera"],
+["save food",  "guardar comida",     "\u50a8\u5b58\u98df\u7269","\u062a\u062e\u0632\u064a\u0646 \u0627\u0644\u0637\u0639\u0627\u0645","d\u1ef1 tr\u1eef th\u1ee9c \u0103n","\u0e40\u0e01\u0e47\u0e1a\u0e2d\u0e32\u0e2b\u0e32\u0e23","\u0916\u093e\u0928\u093e \u091c\u094b\u0917\u093e\u0909\u0928\u0941","\u0437\u0430\u043f\u0430\u0441\u0430\u0442\u044c \u0435\u0434\u0443","magtabi ng pagkain"],
+["future",     "el futuro",          "\u672a\u6765",           "\u0627\u0644\u0645\u0633\u062a\u0642\u0628\u0644",         "t\u01b0\u01a1ng lai",         "\u0e2d\u0e19\u0e32\u0e04\u0e15",                        "\u092d\u0935\u093f\u0937\u094d\u092f",    "\u0431\u0443\u0434\u0443\u0449\u0435\u0435",           "hinaharap"],
+["work",       "trabajar",           "\u5de5\u4f5c",           "\u064a\u0639\u0645\u0644",                                "l\u00e0m vi\u1ec7c",          "\u0e17\u0e33\u0e07\u0e32\u0e19",                        "\u0915\u093e\u092e \u0917\u0930\u094d\u0928\u0941",   "\u0440\u0430\u0431\u043e\u0442\u0430\u0442\u044c",     "magtrabaho"],
+["should",     "deber\u00eda",       "\u5e94\u8be5",           "\u064a\u062c\u0628",                                      "n\u00ean",                    "\u0e04\u0e27\u0e23",                                    "\u0917\u0930\u094d\u0928\u0941\u092a\u0930\u094d\u091b","\u0434\u043e\u043b\u0436\u0435\u043d",                "dapat"],
+["help",       "ayudar",             "\u5e2e\u52a9",           "\u064a\u0633\u0627\u0639\u062f",                          "gi\u00fap \u0111\u1ee1",      "\u0e0a\u0e48\u0e27\u0e22\u0e40\u0e2b\u0e25\u0e37\u0e2d","\u092e\u0926\u094d\u0926\u0924 \u0917\u0930\u094d\u0928\u0941","\u043f\u043e\u043c\u043e\u0433\u0430\u0442\u044c",    "tumulong"],
+["rest",       "descansar",          "\u4f11\u606f",           "\u064a\u0633\u062a\u0631\u064a\u062d",                    "ngh\u1ec9 ng\u01a1i",         "\u0e1e\u0e31\u0e01\u0e1c\u0e48\u0e2d\u0e19",            "\u0906\u0930\u093e\u092e \u0917\u0930\u094d\u0928\u0941","\u043e\u0442\u0434\u044b\u0445\u0430\u0442\u044c",     "magpahinga"],
+["sing",       "cantar",             "\u5531\u6b4c",           "\u064a\u063a\u0646\u064a",                                "h\u00e1t",                    "\u0e23\u0e49\u0e2d\u0e07\u0e40\u0e1e\u0e25\u0e07",      "\u0917\u0940\u0924 \u0917\u093e\u0909\u0928\u0941",   "\u043f\u0435\u0442\u044c",                             "kumanta"],
+["enjoy",      "disfrutar",          "\u4eab\u53d7",           "\u064a\u0633\u062a\u0645\u062a\u0639",                    "t\u1eadn h\u01b0\u1edfng",    "\u0e40\u0e1e\u0e25\u0e34\u0e14\u0e40\u0e1e\u0e25\u0e34\u0e19","\u0930\u092e\u093e\u0907\u0932\u094b \u0917\u0930\u094d\u0928\u0941","\u043d\u0430\u0441\u043b\u0430\u0436\u0434\u0430\u0442\u044c\u0441\u044f","masiyahan"],
+["happen",     "pasar, suceder",     "\u53d1\u751f",           "\u064a\u062d\u062f\u062b",                                "x\u1ea3y ra",                 "\u0e40\u0e01\u0e34\u0e14\u0e02\u0e36\u0e49\u0e19",      "\u0939\u0941\u0928\u0941",                "\u0441\u043b\u0443\u0447\u0430\u0442\u044c\u0441\u044f","mangyari"],
+["picture",    "la imagen, el dibujo","\u56fe\u7247",          "\u0635\u0648\u0631\u0629",                                "b\u1ee9c tranh",              "\u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e",                  "\u0924\u0938\u094d\u092c\u093f\u0930",    "\u043a\u0430\u0440\u0442\u0438\u043d\u043a\u0430",     "larawan"],
+["life",       "la vida",            "\u751f\u6d3b",           "\u0627\u0644\u062d\u064a\u0627\u0629",                    "cu\u1ed9c s\u1ed1ng",         "\u0e0a\u0e35\u0e27\u0e34\u0e15",                        "\u091c\u0940\u0935\u0928",                "\u0436\u0438\u0437\u043d\u044c",                       "buhay"]
+];
+
+var tabLang="";
+function renderLangTab(){
+  var sel=$("#tabsel");
+  if(!sel.options.length){
+    sel.innerHTML='<option value="">All languages</option>'+
+      TLANGS.map(function(l){return '<option value="'+l.c+'">'+l.n+" only</option>"}).join("");
+    var saved=localStorage.getItem("fables_tablang");
+    if(saved!==null){tabLang=saved;sel.value=saved}
+    sel.onchange=function(){tabLang=sel.value;localStorage.setItem("fables_tablang",tabLang);renderLangTab()};
+  }
+  var cols=tabLang?TLANGS.filter(function(l){return l.c===tabLang}):TLANGS;
+  var h="<thead><tr><th>English</th>"+cols.map(function(l){return "<th>"+l.n+"</th>"}).join("")+"</tr></thead><tbody>";
+  TWORDS.forEach(function(r){
+    h+='<tr><td data-word="'+esc(r[0])+'">'+esc(r[0])+"</td>"+
+      cols.map(function(l){
+        var i=TLANGS.map(function(x){return x.c}).indexOf(l.c);
+        return "<td"+(l.rtl?' dir="rtl"':"")+">"+esc(r[i+1])+"</td>"}).join("")+"</tr>";
+  });
+  $("#langtab").innerHTML=h+"</tbody>";
+  var hint=document.querySelector(".scrollhint");
+  if(hint)hint.style.display=(cols.length>2)?"":"none";
+  $$("#langtab td[data-word]").forEach(function(td){
+    td.onclick=function(){speak(td.dataset.word);showWordTip(td,td.dataset.word)};
+    if(window.matchMedia&&window.matchMedia("(hover:hover)").matches){
+      td.onmouseenter=function(){showWordTip(td,td.dataset.word,true)};
+      td.onmouseleave=function(){hideTip()};
+    }
+  });
+}
+
+/* ---------- vocab ---------- */
+function findVocab(key){
+  var k=norm(key);
+  for(var i=0;i<S.vocab.length;i++){if(norm(S.vocab[i].w)===k)return S.vocab[i]}
+  for(var j=0;j<S.vocab.length;j++){if(norm(S.vocab[j].w).indexOf(k)===0||k.indexOf(norm(S.vocab[j].w))===0)return S.vocab[j]}
+  return null;
+}
+function renderVocab(){
+  if(!S)return;
+  $("#vgrid").innerHTML=S.vocab.map(function(v,i){
+    return '<div class="vcard" data-i="'+i+'"><div class="w">'+esc(v.w)+'</div><div class="d">'+esc(v.d)+
+           '</div><div class="t" id="vt'+i+'">'+(lang?"tap to translate":"")+"</div></div>"}).join("");
+  $$("#vgrid .vcard").forEach(function(c){c.onclick=function(){
+    var v=S.vocab[+c.dataset.i], out=$("#vt"+c.dataset.i);
+    speak(v.w.replace(/^(a|an|to)\s+/,""));
+    if(!lang){out.textContent="Choose a language at the top \u2191";return}
+    out.textContent="\u2026";
+    translate(v.w+" \u2014 "+v.d,function(t){out.textContent=t||"(no translation)"});
+  }});
+}
+function renderMatch(re){
+  if(!S)return;
+  var words=S.vocab.map(function(v,i){return{i:i,t:v.w}});
+  var defs=shuffle(S.vocab.map(function(v,i){return{i:i,t:v.d}}));
+  $("#mleft").innerHTML=words.map(function(w){return '<button class="mitem" data-i="'+w.i+'">'+esc(w.t)+"</button>"}).join("");
+  $("#mright").innerHTML=defs.map(function(d){return '<button class="mitem" data-i="'+d.i+'">'+esc(d.t)+"</button>"}).join("");
+  var sel=null,hits=0;
+  function upd(){$("#mscore").textContent=hits+" of "+S.vocab.length+" matched";
+    if(hits===S.vocab.length){ans.__match=true;touch();marks()}}
+  $$("#mleft .mitem,#mright .mitem").forEach(function(b){b.onclick=function(){
+    if(b.classList.contains("hit"))return;
+    if(!sel){sel=b;b.classList.add("sel");return}
+    if(sel===b){b.classList.remove("sel");sel=null;return}
+    var same=(sel.parentNode===b.parentNode);
+    if(same){sel.classList.remove("sel");sel=b;b.classList.add("sel");return}
+    if(sel.dataset.i===b.dataset.i){sel.className="mitem hit";b.className="mitem hit";hits++;upd()}
+    else{var a=sel;a.classList.add("miss");b.classList.add("miss");
+      setTimeout(function(){a.className="mitem";b.className="mitem"},380)}
+    sel=null;
+  }});
+  upd();
+}
+
+/* ---------- read ---------- */
+function gloss(s){
+  return esc(s).replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g,function(m,disp,key){
+    return '<span class="g" data-k="'+esc(key||disp)+'">'+disp+"</span>"});
+}
+function renderRead(){
+  var paras=(level==="easy")?S.easy:S.hard;
+  $("#storytext").innerHTML=paras.map(function(p,i){
+    return '<div class="para" data-i="'+i+'"><span class="num">'+(i+1)+"</span>"+
+      '<div class="txt">'+gloss(p)+"</div>"+
+      '<button class="say" title="Read this to me">\u25b6</button></div>'}).join("");
+  $$("#storytext .say").forEach(function(b){b.onclick=function(){
+    stopSpeak(); var p=b.parentNode; p.classList.add("reading");
+    speak(stripTags($(".txt",p).innerHTML),function(){p.classList.remove("reading")})}});
+}
+function readAll(){
+  stopSpeak();
+  var ps=$$("#storytext .para"), i=0;
+  (function next(){
+    if(i>=ps.length)return;
+    var p=ps[i++]; p.classList.add("reading");
+    p.scrollIntoView({block:"center",behavior:"smooth"});
+    speak(stripTags($(".txt",p).innerHTML),function(){p.classList.remove("reading");next()});
+  })();
+}
+
+/* ---------- tooltip ---------- */
+function showTip(el){
+  var key=el.dataset.k, v=findVocab(key), tip=$("#tip");
+  tip.innerHTML='<span class="w">'+esc(el.textContent)+"</span>"+
+    (v?esc(v.d):"")+'<div class="tr" id="tiptr">'+(lang?"\u2026":"Choose a language at the top")+"</div>";
+  tip.style.display="block"; place(tip,el);
+  speak(el.textContent);
+  if(lang)translate((v?v.w+" \u2014 "+v.d:el.textContent),function(t){
+    var e=$("#tiptr"); if(e)e.textContent=t||"(no translation)"});
+}
+function showWordTip(el,word,quiet){
+  var use=lang||tabLang, tip=$("#tip");
+  tip.innerHTML='<span class="w">'+esc(word)+"</span>"+
+    '<div class="tr" id="tiptr">'+(use?"\u2026":"Pick a language above, or in the green bar")+"</div>";
+  tip.style.display="block"; place(tip,el);
+  if(use)translate(word,function(t){var e=$("#tiptr");if(e)e.textContent=t||"(no translation)"},use);
+}
+function place(tip,el){
+  var r=el.getBoundingClientRect();
+  var top=r.bottom+8, left=Math.min(Math.max(8,r.left-20),window.innerWidth-300);
+  if(top+150>window.innerHeight)top=Math.max(8,r.top-160);
+  tip.style.top=top+"px"; tip.style.left=left+"px";
+}
+function hideTip(){var t=$("#tip");if(t)t.style.display="none"}
+
+/* ---------- sequence ---------- */
+function renderSeq(re){
+  var order=(!re&&ans.__seq)?ans.__seq:shuffle(S.seq.map(function(_,i){return i}));
+  ans.__seq=order;
+  $("#seq").innerHTML=order.map(function(idx){
+    return '<li draggable="true" data-i="'+idx+'"><span class="n"></span><span class="s">'+esc(S.seq[idx])+"</span>"+
+      '<span class="arrows"><button data-m="up">\u25b2</button><button data-m="down">\u25bc</button></span></li>'}).join("");
+  $("#seqscore").textContent="";
+  var dragEl=null;
+  $$("#seq li").forEach(function(li){
+    li.addEventListener("dragstart",function(){dragEl=li;li.classList.add("drag")});
+    li.addEventListener("dragend",function(){li.classList.remove("drag");saveSeq()});
+    li.addEventListener("dragover",function(e){e.preventDefault();
+      if(!dragEl||dragEl===li)return;
+      var r=li.getBoundingClientRect();
+      li.parentNode.insertBefore(dragEl,(e.clientY-r.top)/r.height>.5?li.nextSibling:li)});
+    $$("button",li).forEach(function(b){b.onclick=function(){
+      if(b.dataset.m==="up"&&li.previousElementSibling)li.parentNode.insertBefore(li,li.previousElementSibling);
+      if(b.dataset.m==="down"&&li.nextElementSibling)li.parentNode.insertBefore(li.nextElementSibling,li);
+      saveSeq()}});
+  });
+  $("#seq").addEventListener("dragover",function(e){e.preventDefault()});
+}
+function saveSeq(){ans.__seq=$$("#seq li").map(function(l){return +l.dataset.i});touch();
+  $$("#seq li").forEach(function(l){l.classList.remove("right","wrong")});$("#seqscore").textContent=""}
+function seqCheck(){
+  var cur=$$("#seq li"), right=0;
+  cur.forEach(function(li,pos){
+    var ok=(+li.dataset.i===pos); li.classList.toggle("right",ok); li.classList.toggle("wrong",!ok);
+    if(ok)right++;
+  });
+  $("#seqscore").textContent=right+" of "+S.seq.length+" in the right place";
+  ans.__seqScore=right; if(right===S.seq.length)ans.__seqDone=true;
+  touch(); marks();
+}
+
+/* ---------- grammar ---------- */
+function renderVerbs(){
+  $("#verbtbl").innerHTML=S.verbs.map(function(v,i){
+    return "<tr><td>"+esc(v[0])+'</td><td><input type="text" data-k="vl'+i+'"></td>'+
+      '<td><input type="text" data-vp="'+i+'" autocapitalize="off"></td></tr>'}).join("");
+  $$("#verbtbl input[data-vp]").forEach(function(inp){
+    inp.value=(ans.__verbs||{})[inp.dataset.vp]||"";
+    inp.oninput=function(){ans.__verbs=ans.__verbs||{};ans.__verbs[inp.dataset.vp]=inp.value;inp.className="";touch()}});
+  $("#verbscore").textContent="";
+}
+function verbCheck(){
+  var right=0;
+  $$("#verbtbl input[data-vp]").forEach(function(inp){
+    var want=S.verbs[+inp.dataset.vp][1];
+    var ok=norm(inp.value)===norm(want)||(want==="was"&&norm(inp.value)==="were");
+    inp.className=ok?"right":"wrong"; if(ok)right++;
+  });
+  $("#verbscore").textContent=right+" of "+S.verbs.length+" correct";
+  ans.__verbScore=right; if(right===S.verbs.length)ans.__verbDone=true;
+  touch(); marks();
+}
+function renderRewrites(){
+  $("#rewrites").innerHTML=S.rewrites.map(function(r,i){
+    return '<div class="rw"><p class="pres">'+(i+1)+". "+r.pres+"</p>"+
+      '<input type="text" data-rw="'+i+'" placeholder="Write it in the past tense\u2026">'+
+      '<div class="row" style="margin-top:7px"><button class="btn ghost small" data-rwc="'+i+'">Check</button>'+
+      '<span class="pill" id="rwm'+i+'"></span></div></div>'}).join("");
+  $$("#rewrites input").forEach(function(inp){
+    inp.value=(ans.__rw||{})[inp.dataset.rw]||"";
+    inp.oninput=function(){ans.__rw=ans.__rw||{};ans.__rw[inp.dataset.rw]=inp.value;touch()}});
+  $$("#rewrites button[data-rwc]").forEach(function(b){b.onclick=function(){
+    var i=+b.dataset.rwc, r=S.rewrites[i], v=" "+norm($('#rewrites input[data-rw="'+i+'"]').value)+" ";
+    var miss=r.need.filter(function(w){return v.indexOf(" "+w+" ")<0});
+    var m=$("#rwm"+i);
+    if(!v.trim()){m.textContent="Write your sentence first.";return}
+    if(miss.length===0){m.textContent="\u2714 Correct";m.style.color="#2f6f52";
+      ans.__rwOK=ans.__rwOK||{};ans.__rwOK[i]=true;touch();marks()}
+    else{m.textContent="Not yet \u2014 check the verb"+(miss.length>1?"s":"");m.style.color="#c4553d"}
+  }});
+  $("#rwhintbox").innerHTML="";
+}
+function rwHint(){
+  $("#rwhintbox").innerHTML='<div class="hintbox" style="margin-top:12px">Past tense verbs you need: <b>'+
+    S.rewrites.map(function(r){return r.need.join(", ")}).join(" \u00b7 ")+"</b></div>";
+}
+
+/* ---------- quiz ---------- */
+function renderQuiz(){
+  var picked=(ans.__quiz&&ans.__quiz.picked)||{};
+  $("#quiz").innerHTML=S.quiz.map(function(q,i){
+    return '<div class="qitem"><label class="q">'+(i+1)+". "+esc(q.q)+"</label>"+
+      q.o.map(function(o,j){
+        return '<label class="opt"><input type="radio" name="q'+i+'" value="'+j+'"'+
+          (picked[i]==j?" checked":"")+"> <span>"+esc(o)+"</span></label>"}).join("")+"</div>"}).join("");
+  $$("#quiz input").forEach(function(inp){inp.onchange=function(){
+    ans.__quiz=ans.__quiz||{picked:{}}; ans.__quiz.picked=ans.__quiz.picked||{};
+    ans.__quiz.picked[inp.name.slice(1)]=inp.value; touch()}});
+  $("#qresult").innerHTML="";
+}
+function quizCheck(){
+  var right=0, unanswered=0;
+  S.quiz.forEach(function(q,i){
+    var sel=$('#quiz input[name="q'+i+'"]:checked');
+    var opts=$$('#quiz input[name="q'+i+'"]');
+    opts.forEach(function(o){o.parentNode.className="opt"});
+    if(!sel){unanswered++;return}
+    if(+sel.value===q.a){sel.parentNode.className="opt right";right++}
+    else{sel.parentNode.className="opt wrong";opts[q.a].parentNode.className="opt right"}
+  });
+  var pct=Math.round(right/S.quiz.length*100);
+  ans.__quiz=ans.__quiz||{}; ans.__quiz.right=right; ans.__quiz.total=S.quiz.length; ans.__quiz.pct=pct;
+  var msg = pct===100?"Perfect. Every single one.":pct>=75?"Nice work \u2014 look at the red ones and try again.":
+            "Go back to the story and read it once more, then try again.";
+  $("#qresult").innerHTML='<div class="done-note"><div id="score">'+right+" / "+S.quiz.length+"  ("+pct+"%)</div>"+
+    (unanswered?"<div>You left "+unanswered+" question"+(unanswered>1?"s":"")+" blank.</div>":"")+
+    "<div>"+msg+"</div></div>";
+  if(pct===100)confetti();
+  touch(); marks();
+}
+function confetti(){
+  var C=["#c98a2e","#3f9e73","#c4553d","#3f7ea8","#e0b85c"];
+  for(var i=0;i<70;i++){(function(i){
+    var d=document.createElement("div");
+    d.style.cssText="position:fixed;z-index:400;width:9px;height:14px;pointer-events:none;border-radius:2px;"+
+      "background:"+C[i%C.length]+";left:"+(Math.random()*100)+"vw;top:-20px;opacity:.95;";
+    document.body.appendChild(d);
+    var t=900+Math.random()*900, x=(Math.random()-.5)*260;
+    d.animate([{transform:"translate(0,0) rotate(0)"},{transform:"translate("+x+"px,"+(window.innerHeight+60)+"px) rotate("+(Math.random()*900)+"deg)"}],
+      {duration:t,easing:"cubic-bezier(.3,.7,.5,1)"}).onfinish=function(){d.remove()};
+  })(i)}
+}
+
+/* ---------- progress ticks ---------- */
+function marks(){
+  var f=function(k){return (ans[k]||"").trim().length>2};
+  var done={
+    before: f("predict"),
+    words: !!ans.__match,
+    read: f("r1")&&f("r2"),
+    order: !!ans.__seqDone,
+    elements: ["e_char","e_set","e_con","e_plot","e_res","e_moral"].every(f),
+    grammar: !!ans.__verbDone,
+    write: ((ans.write||"").trim().split(/\s+/).filter(Boolean).length>=25),
+    quiz: !!(ans.__quiz&&typeof ans.__quiz.pct==="number")
+  };
+  ans.__done=done;
+  $$("#steps button").forEach(function(b){b.classList.toggle("done",!!done[b.dataset.s])});
+}
+
+/* ---------- turn in ---------- */
+function turnIn(){
+  if(TURNED[S.id]){alert("You already turned this one in. You can still keep working \u2014 it saves.");return}
+  var d=ans.__done||{}, missing=STEPS.filter(function(s){return !d[s[0]]}).map(function(s){return s[1]});
+  if(missing.length && !confirm("These parts are not finished yet:\n\n"+missing.join(", ")+"\n\nTurn it in anyway?"))return;
+  TURNED[S.id]=true;
+  $("#turnin").classList.add("done"); $("#turnin").textContent="Turned in \u2714";
+  save(); confetti();
+}
+
+/* ---------- restore session ---------- */
+(function(){
+  var m=localStorage.getItem("fables_me");
+  if(m){try{me=JSON.parse(m);$("#gname").value=me.name;$("#gmail").value=me.email}catch(e){}}
+  if(me.email&&me.name){pull(function(){$("#gate").style.display="none";boot()})}
+})();
+window.addEventListener("beforeunload",function(){if(S)save()});
+</script>
+</body>
+</html>

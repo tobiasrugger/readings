@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fables — Teacher Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--pine:#2f6f52;--pine-d:#245640;--ink:#1b2a23;--muted:#5f7268;--paper:#f6f8f6;--line:#dde5e0;--gold:#c98a2e;--red:#c4553d;--green:#3f9e73}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:'Nunito',sans-serif;font-size:16px}
+button,input,select{font-family:inherit;font-size:inherit}
+#bar{position:sticky;top:0;z-index:20;background:var(--pine);color:#fff;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 16px}
+#bar b{font-size:1.05rem;font-weight:900;margin-right:4px}
+#bar select,#bar button,#bar input{background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:9px;padding:6px 10px;font-weight:700;font-size:.88rem}
+#bar input::placeholder{color:rgba(255,255,255,.65)}
+#bar button{cursor:pointer}
+#bar .sp{flex:1}
+.wrap{max-width:1240px;margin:0 auto;padding:20px 16px 70px}
+#gate{position:fixed;inset:0;background:var(--pine);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px}
+#gate .b{background:#fff;border-radius:16px;padding:26px;max-width:340px;width:100%}
+#gate h2{margin:0 0 14px;font-weight:900}
+#gate input{width:100%;padding:11px;border:1.5px solid var(--line);border-radius:10px;margin:0 0 10px}
+#gate button{width:100%;padding:11px;background:var(--pine);color:#fff;border:none;border-radius:10px;font-weight:800;cursor:pointer}
+.stats{display:flex;gap:12px;flex-wrap:wrap;margin:0 0 18px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 18px;min-width:120px}
+.stat .n{font-size:1.7rem;font-weight:900;line-height:1.1}
+.stat .l{color:var(--muted);font-size:.8rem;font-weight:800}
+table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:.9rem}
+th{background:#eef3f0;text-align:left;padding:9px 10px;font-size:.76rem;font-weight:900;color:var(--muted);white-space:nowrap;cursor:pointer}
+th:hover{background:#e3ece7}
+td{padding:9px 10px;border-top:1px solid var(--line);vertical-align:middle}
+tr:hover td{background:#f8fbf9}
+.nm{font-weight:800;cursor:pointer;color:var(--pine)}
+.ticks{display:flex;gap:3px}
+.tk{width:17px;height:17px;border-radius:4px;background:#e6ebe8;font-size:.6rem;display:flex;align-items:center;justify-content:center;color:#9fb0a6;font-weight:900}
+.tk.on{background:var(--green);color:#fff}
+.pct{font-weight:900}
+.pct.hi{color:var(--green)}.pct.mid{color:var(--gold)}.pct.lo{color:var(--red)}
+.badge{background:#eef7f2;color:var(--pine-d);border-radius:999px;padding:2px 9px;font-size:.72rem;font-weight:900}
+.badge.no{background:#f2f4f3;color:#9fb0a6}
+#modal{position:fixed;inset:0;background:rgba(20,32,26,.6);display:none;z-index:60;padding:24px;overflow:auto}
+#modal.on{display:block}
+#modal .sheet{background:#fff;max-width:820px;margin:0 auto;border-radius:16px;padding:26px}
+#modal h2{margin:0 0 2px;font-weight:900}
+#modal .sub{color:var(--muted);font-weight:700;margin:0 0 18px;font-size:.9rem}
+#modal h4{margin:20px 0 4px;font-size:.78rem;font-weight:900;color:var(--muted)}
+#modal .a{background:#f6f8f6;border:1px solid var(--line);border-left:3px solid var(--pine);border-radius:0 9px 9px 0;padding:9px 12px;white-space:pre-wrap;line-height:1.55}
+#modal .a.empty{color:#a9b7ae;font-style:italic;border-left-color:#dfe5e0}
+#modal .close{float:right;background:var(--pine);color:#fff;border:none;border-radius:9px;padding:7px 15px;font-weight:800;cursor:pointer}
+#keys{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px;margin:22px 0 0;font-size:.88rem;line-height:1.7}
+#keys h3{margin:0 0 10px;font-weight:900}
+#keys details{border-top:1px solid var(--line);padding:9px 0}
+#keys summary{cursor:pointer;font-weight:800}
+#keys ol{margin:8px 0 0;padding-left:22px}
+#keys b{color:var(--pine)}
+.empty-note{background:#fff;border:1px dashed var(--line);border-radius:12px;padding:28px;text-align:center;color:var(--muted);font-weight:700}
+</style>
+</head>
+<body>
+<div id="gate"><div class="b"><h2>Teacher dashboard</h2><input type="password" id="pw" placeholder="Password"><button id="go">Open</button></div></div>
+
+<div id="bar">
+  <b>Fables</b>
+  <select id="fstory"><option value="">All stories</option></select>
+  <select id="fturn"><option value="">Everyone</option><option value="1">Turned in only</option><option value="0">Not turned in</option></select>
+  <input type="text" id="q" placeholder="Search a name…">
+  <span class="sp"></span>
+  <button id="refresh">Refresh</button>
+  <button id="csv">Download CSV</button>
+</div>
+
+<div class="wrap">
+  <div class="stats" id="stats"></div>
+  <div id="tablewrap"></div>
+  <div id="keys"></div>
+</div>
+
+<div id="modal"><div class="sheet"><button class="close" onclick="document.getElementById('modal').classList.remove('on')">Close</button><div id="mbody"></div></div></div>
+
+<script>
+var STORIES = [
+{
+ id:"ant", title:"The Ant and the Grasshopper", by:"A fable by Aesop", accent:"#5f8e4f", art:"ant",
+ agree:["It is important to save money and food for the future.","People who do not work should not get help.","It is also important to rest, sing and enjoy life."],
+ vocab:[
+  {w:"an ant",d:"a very small insect that works in a group"},
+  {w:"a grasshopper",d:"an insect with long back legs that jumps"},
+  {w:"a field",d:"open land with grass"},
+  {w:"hardworking",d:"doing a lot of work"},
+  {w:"lazy",d:"not wanting to work"},
+  {w:"to save",d:"to keep something so you can use it later"},
+  {w:"autumn",d:"the season after summer, when leaves fall"},
+  {w:"to warn",d:"to tell someone that danger is coming"},
+  {w:"to ignore",d:"to hear someone but not listen to them"},
+  {w:"to knock",d:"to hit a door with your hand"}],
+ easy:[
+  "There was an [[ant]]. There was a [[grasshopper]]. They lived in the same [[field]].",
+  "The ant was [[hardworking]]. He worked all day, every day.",
+  "He built a small house. He carried food inside. He [[saved|to save]] the food for winter.",
+  "The grasshopper was [[lazy]]. He sang songs. He played music. He relaxed in the sun.",
+  "[[Autumn]] came. The leaves fell from the trees. The air was cold.",
+  "\u201cSave your food,\u201d the ant [[warned|to warn]] him. \u201cWinter is coming.\u201d The grasshopper [[ignored|to ignore]] the ant.",
+  "Winter came. Snow covered the field. The grasshopper was cold and hungry.",
+  "He [[knocked|to knock]] on the ant\u2019s door. \u201cPlease let me come in,\u201d he said.",
+  "\u201cWhat did you do all summer?\u201d asked the ant. \u201cI sang and played music,\u201d said the grasshopper.",
+  "\u201cThen you can sing all winter,\u201d said the ant. He closed the door."],
+ hard:[
+  "Once there was an [[ant]] and a [[grasshopper]]. The ant worked very hard. He worked and worked all day. He made a lovely house.",
+  "Every day, the ant would work and look for bread or food. Every time he got a piece of food, he would eat just a little, then [[save|to save]] the rest for winter.",
+  "The grasshopper, on the other hand, was very [[lazy]]. He liked to sing and relax all day. He did not work to save food. He would just sing and play music, and relax in the sun.",
+  "Then [[autumn]] came. The leaves were falling, and all the little ants and grasshoppers were gathering food before there was no more. The ant worked very hard.",
+  "\u201cSave your food,\u201d [[warned|to warn]] the ant. But the grasshopper was lazy and did not go to work. \u201cBuild a house. Winter is coming,\u201d said the ant. But again the grasshopper [[ignored|to ignore]] him. He just relaxed and played music in the autumn sun.",
+  "Then the days grew cold. The sun was not enough. The grasshopper needed a house to protect him from the winter.",
+  "He [[knocked|to knock]] on the ant\u2019s door. \u201cPlease let me stay in your house for winter.\u201d",
+  "\u201cWhat were you doing all summer and autumn?\u201d asked the ant. \u201cPlaying music and relaxing in the sun,\u201d said the grasshopper.",
+  "\u201cNo, you cannot come in. You should have made a house,\u201d said the ant. \u201cPlease give me some food, at least,\u201d said the grasshopper. \u201cNo, you should have looked for food,\u201d he replied.",
+  "The grasshopper left the ant\u2019s house. He had no food and no house for the winter."],
+ seq:["The ant works hard and saves food for winter.","The grasshopper sings, plays music and relaxes in the sun.","Autumn comes and the leaves fall.","The ant warns the grasshopper that winter is coming.","The grasshopper ignores the ant.","Winter comes and the grasshopper is cold and hungry.","The ant does not open the door, and the grasshopper leaves."],
+ verbs:[["work","worked"],["play","played"],["save","saved"],["relax","relaxed"],["sing","sang"],["come","came"],["fall","fell"],["say","said"],["have","had"],["be","was"]],
+ rewrites:[
+  {pres:"The ant <b>works</b> hard every day.",need:["worked"]},
+  {pres:"The grasshopper <b>sings</b> and <b>plays</b> music.",need:["sang","played"]},
+  {pres:"Autumn <b>comes</b> and the leaves <b>fall</b>.",need:["came","fell"]},
+  {pres:"The ant <b>says</b>, \u201cWinter is coming.\u201d",need:["said"]},
+  {pres:"The grasshopper <b>has</b> no food and <b>is</b> hungry.",need:["had","was"]}],
+ wprompt:"Who is right \u2014 the ant or the grasshopper?",
+ wframe:"I think the ___ is right because ___. In the story, ___. In my life, ___.",
+ quiz:[
+  {q:"Who works hard in the story?",o:["the ant","the grasshopper","both of them","nobody"],a:0},
+  {q:"What does the grasshopper do all summer?",o:["He builds a house.","He sings and plays music.","He looks for food.","He sleeps in the snow."],a:1},
+  {q:"Why does the ant save food?",o:["Because he is hungry now","Because winter is coming","Because the grasshopper asked him to","Because he wants to sell it"],a:1},
+  {q:"What season comes after summer in this story?",o:["spring","winter","autumn","Monday"],a:2},
+  {q:"What does \u201cignore\u201d mean?",o:["to hear someone but not listen","to help someone","to shout at someone","to run away"],a:0},
+  {q:"Why does the grasshopper knock on the ant\u2019s door?",o:["He wants to sing for the ant.","He is cold and hungry.","He wants to give the ant food.","He is lost."],a:1},
+  {q:"What does the ant do at the end?",o:["He gives the grasshopper food.","He lets the grasshopper come in.","He says no and closes the door.","He goes outside to sing."],a:2},
+  {q:"What is the moral of this story?",o:["Never talk to insects.","Music is bad.","Winter is the best season.","Work and plan now, so you are ready later."],a:3}]
+},
+{
+ id:"hare", title:"The Tortoise and the Hare", by:"A fable by Aesop", accent:"#3f7ea8", art:"hare",
+ agree:["Being fast is more important than never stopping.","If you are very good at something, it is OK to say so.","A slow person can beat a fast person."],
+ vocab:[
+  {w:"a hare",d:"a big rabbit with long legs that runs very fast"},
+  {w:"a tortoise",d:"a slow animal that carries a hard shell on its back"},
+  {w:"a race",d:"a game to see who is fastest"},
+  {w:"proud",d:"feeling very good about yourself"},
+  {w:"to boast",d:"to talk too much about how good you are"},
+  {w:"to laugh at",d:"to make fun of someone"},
+  {w:"the finish line",d:"the end of a race"},
+  {w:"steady",d:"always the same, not stopping"},
+  {w:"to pass",d:"to go by someone and get in front of them"},
+  {w:"too late",d:"after the right time has already gone"}],
+ easy:[
+  "A [[hare]] could run very fast. He was very [[proud]] of his legs.",
+  "Every day he [[laughed at|to laugh at]] the [[tortoise]]. \u201cYou are so slow!\u201d he said.",
+  "One day the tortoise said, \u201cLet us have a [[race]].\u201d The hare laughed and said yes.",
+  "All the animals came to watch. A fox shouted, \u201cReady\u2026 go!\u201d",
+  "The hare ran fast. Soon he could not see the tortoise behind him.",
+  "\u201cI have time to sleep,\u201d said the hare. He lay under a tree and closed his eyes.",
+  "The tortoise walked. He did not stop. Step, step, step.",
+  "The tortoise [[passed|to pass]] the sleeping hare.",
+  "The hare woke up. He ran as fast as he could.",
+  "But it was [[too late]]. The tortoise was already at the [[finish line]].",
+  "\u201cSlow and [[steady]] wins the race,\u201d said the tortoise."],
+ hard:[
+  "There was once a [[hare]] who was very [[proud]] of how fast he could run. He liked to [[boast|to boast]] about it to every animal in the forest.",
+  "Day after day he [[laughed at|to laugh at]] the [[tortoise]], who moved slowly and carried a heavy shell. \u201cYou are the slowest animal alive,\u201d the hare said.",
+  "At last the tortoise had had enough. \u201cThen let us have a [[race]],\u201d he said quietly. The hare laughed so hard that he almost fell over, but he agreed.",
+  "On the day of the race, all the animals of the forest came to watch. The fox marked the [[finish line|the finish line]] and shouted, \u201cReady\u2026 set\u2026 go!\u201d",
+  "The hare shot forward and was soon far ahead. When he looked back, the tortoise was only a tiny dot on the road.",
+  "\u201cI have plenty of time,\u201d the hare thought. \u201cI will rest for a moment.\u201d He lay down in the cool grass under a tree and fell asleep.",
+  "The tortoise did not stop. He did not rest. He kept walking, slow and [[steady]], hour after hour.",
+  "Without making a sound, the tortoise [[passed|to pass]] the sleeping hare.",
+  "When the hare finally woke up, the sun was low. He jumped up and ran faster than he had ever run in his life.",
+  "But it was [[too late]]. The tortoise was crossing the finish line, and all the animals were cheering for him.",
+  "\u201cSlow and steady wins the race,\u201d said the tortoise. The hare said nothing at all."],
+ seq:["The hare laughs at the tortoise because he is slow.","The tortoise asks the hare to have a race.","The animals come to watch and the race begins.","The hare runs far ahead of the tortoise.","The hare lies down under a tree and falls asleep.","The tortoise keeps walking and passes the hare.","The hare wakes up too late and the tortoise wins."],
+ verbs:[["run","ran"],["laugh","laughed"],["sleep","slept"],["wake","woke"],["walk","walked"],["pass","passed"],["win","won"],["say","said"],["sit","sat"],["be","was"]],
+ rewrites:[
+  {pres:"The hare <b>runs</b> very fast.",need:["ran"]},
+  {pres:"The hare <b>laughs</b> at the tortoise.",need:["laughed"]},
+  {pres:"The hare <b>sleeps</b> under a tree.",need:["slept"]},
+  {pres:"The tortoise <b>walks</b> and <b>passes</b> the hare.",need:["walked","passed"]},
+  {pres:"The hare <b>wakes</b> up, but the tortoise <b>wins</b>.",need:["woke","won"]}],
+ wprompt:"Why does the tortoise win the race?",
+ wframe:"The tortoise wins because ___. The hare loses because ___. This tells me that ___.",
+ quiz:[
+  {q:"Which animal is faster?",o:["the tortoise","the hare","the fox","they are the same"],a:1},
+  {q:"Why does the tortoise ask for a race?",o:["He wants to win money.","He is tired of the hare laughing at him.","The fox tells him to.","He wants to see the forest."],a:1},
+  {q:"What does the hare do in the middle of the race?",o:["He goes home.","He helps the tortoise.","He falls asleep under a tree.","He eats lunch with the fox."],a:2},
+  {q:"What does the tortoise do while the hare sleeps?",o:["He sleeps too.","He keeps walking, slow and steady.","He waits for the hare.","He runs very fast."],a:1},
+  {q:"What does \u201cto boast\u201d mean?",o:["to run fast","to talk too much about how good you are","to feel sad","to sleep"],a:1},
+  {q:"When the hare wakes up, what happens?",o:["He wins easily.","He is too late.","He starts again.","He goes back to sleep."],a:1},
+  {q:"\u201cSlow and steady wins the race\u201d means\u2026",o:["Always walk, never run.","Fast people always lose.","Keep going without stopping, and you will finish.","Races are not fair."],a:2},
+  {q:"What is the hare\u2019s biggest mistake?",o:["He runs too slowly.","He is too proud and stops trying.","He starts the race late.","He takes the wrong road."],a:1}]
+},
+{
+ id:"wolf", title:"The Boy Who Cried Wolf", by:"A fable by Aesop", accent:"#c4553d", art:"wolf",
+ agree:["A small lie is not a big problem.","Once you lie to someone, they will never fully trust you again.","It is boring jobs that make people do silly things."],
+ vocab:[
+  {w:"a village",d:"a very small town"},
+  {w:"a shepherd",d:"a person whose job is to watch sheep"},
+  {w:"sheep",d:"a farm animal with thick white wool"},
+  {w:"bored",d:"having nothing interesting to do"},
+  {w:"to shout",d:"to say something very loudly"},
+  {w:"to lie",d:"to say something that is not true"},
+  {w:"a liar",d:"a person who lies"},
+  {w:"to believe",d:"to think that something is true"},
+  {w:"to trust",d:"to believe that someone is honest and safe"},
+  {w:"real",d:"true, not a joke and not imaginary"}],
+ easy:[
+  "A boy lived in a small [[village]]. He was a [[shepherd]]. His job was to watch the [[sheep]].",
+  "Every day he sat on the hill with the sheep. He was [[bored|bored]].",
+  "One day he had an idea. He [[shouted|to shout]], \u201cWolf! Wolf! A wolf is eating the sheep!\u201d",
+  "The people of the village ran up the hill. They wanted to help.",
+  "There was no wolf. The boy laughed. The people were angry.",
+  "A few days later, the boy shouted again. \u201cWolf! Wolf!\u201d",
+  "The people ran up the hill again. Again there was no wolf. The boy laughed again.",
+  "\u201cDo not [[lie|to lie]] to us,\u201d said an old man. \u201cNobody [[believes|to believe]] a [[liar]].\u201d",
+  "Then one evening a [[real]] wolf came out of the forest.",
+  "\u201cWolf! Wolf!\u201d shouted the boy. \u201cPlease help me!\u201d",
+  "The people heard him. But nobody came. They thought he was lying again.",
+  "The wolf took the sheep. The boy sat alone on the hill and cried."],
+ hard:[
+  "In a small [[village]] at the bottom of a green hill there lived a boy whose job was to be a [[shepherd]]. Every morning he took the [[sheep]] up the hill, and every evening he brought them home again.",
+  "It was quiet work, and the boy was [[bored]]. He sat on a rock and watched the clouds, and the hours passed slowly.",
+  "One afternoon an idea came to him. He stood up and [[shouted|to shout]] as loudly as he could: \u201cWolf! Wolf! A wolf is attacking the sheep!\u201d",
+  "The villagers dropped their work and ran up the hill with sticks in their hands, ready to save him.",
+  "There was no wolf. The boy laughed until he could not breathe. The villagers went home angry.",
+  "A few days later he was bored again, and he did exactly the same thing. \u201cWolf! Wolf!\u201d",
+  "Again the villagers climbed the hill. Again there was nothing there. Again the boy laughed at them.",
+  "\u201cDo not [[lie|to lie]] to us,\u201d said an old woman, and she did not smile. \u201cNobody [[believes|to believe]] a [[liar]], even when he tells the truth.\u201d",
+  "Then, one evening, as the sun went down, a [[real]] wolf came out of the dark forest.",
+  "\u201cWolf! Wolf!\u201d the boy screamed. \u201cPlease, someone help me!\u201d",
+  "Down in the village, the people heard him clearly. They looked at one another and kept working. \u201cHe is lying again,\u201d they said.",
+  "Nobody came. The wolf took the sheep into the forest, and the boy sat alone on the hill in the dark and cried."],
+ seq:["The boy has a boring job watching sheep on a hill.","He shouts \u201cWolf!\u201d as a joke, and the villagers run up the hill.","There is no wolf, and the boy laughs at them.","He plays the same trick a second time.","An old villager warns him that nobody believes a liar.","A real wolf comes out of the forest.","The boy shouts for help, but nobody comes."],
+ verbs:[["shout","shouted"],["laugh","laughed"],["run","ran"],["come","came"],["hear","heard"],["think","thought"],["take","took"],["sit","sat"],["cry","cried"],["be","was"]],
+ rewrites:[
+  {pres:"The boy <b>shouts</b>, \u201cWolf! Wolf!\u201d",need:["shouted"]},
+  {pres:"The villagers <b>run</b> up the hill.",need:["ran"]},
+  {pres:"The boy <b>laughs</b> and the people <b>are</b> angry.",need:["laughed","were"]},
+  {pres:"A real wolf <b>comes</b> out of the forest.",need:["came"]},
+  {pres:"They <b>hear</b> him, but they <b>think</b> he is lying.",need:["heard","thought"]}],
+ wprompt:"Whose fault is it that the sheep are gone \u2014 the boy\u2019s, or the villagers\u2019?",
+ wframe:"I think it is ___\u2019s fault because ___. Another person might say ___, but ___.",
+ quiz:[
+  {q:"What is the boy\u2019s job?",o:["to cook for the village","to watch the sheep","to cut trees","to teach children"],a:1},
+  {q:"Why does the boy shout \u201cWolf!\u201d the first time?",o:["He sees a wolf.","He is bored and wants something to happen.","He wants to sell the sheep.","He is afraid of the dark."],a:1},
+  {q:"How do the villagers feel after the first trick?",o:["happy","angry","tired","hungry"],a:1},
+  {q:"What does a \u201cliar\u201d do?",o:["works very hard","says things that are not true","watches sheep","lives in a village"],a:1},
+  {q:"How many times does the boy lie before the real wolf comes?",o:["one time","two times","five times","he never lies"],a:1},
+  {q:"What happens when the real wolf comes?",o:["The villagers save the sheep.","The boy runs home safely.","Nobody comes to help.","The wolf runs away."],a:2},
+  {q:"Why does nobody come the last time?",o:["They are asleep.","They do not believe him anymore.","They are too far away.","They do not like sheep."],a:1},
+  {q:"What is the moral of this story?",o:["Sheep are hard to watch.","Never go up a hill alone.","Wolves are dangerous animals.","If you lie, people stop believing you \u2014 even when you tell the truth."],a:3}]
+},
+{
+ id:"magi", title:"The Gift of the Magi", by:"By O. Henry \u00b7 retold for English learners", accent:"#b9902f", art:"magi",
+ agree:["The best present is an expensive present.","It is worth giving up something you love to make someone happy.","Della and Jim made a mistake."],
+ vocab:[
+  {w:"a cent",d:"a small coin; 100 cents = one dollar"},
+  {w:"a husband",d:"the man a woman is married to"},
+  {w:"poor",d:"having very little money"},
+  {w:"a present",d:"a gift you give to someone"},
+  {w:"enough",d:"as much as you need"},
+  {w:"a mirror",d:"glass you look into to see yourself"},
+  {w:"to sell",d:"to give something and get money for it"},
+  {w:"a chain",d:"metal rings joined together, used to hold a watch"},
+  {w:"a comb",d:"a thing you use to make your hair neat"},
+  {w:"a package",d:"something wrapped in paper, ready to give"}],
+ easy:[
+  "It was the day before Christmas in New York City, about the year 1905.",
+  "Della counted her money. One dollar and eighty-seven [[cents|a cent]]. That was all.",
+  "She wanted to buy a [[present]] for Jim, her [[husband]]. But $1.87 was not [[enough]].",
+  "Della and Jim were [[poor]]. But they had two beautiful things. Jim had a gold watch from his father. Della had long, beautiful hair.",
+  "Della looked in the [[mirror]]. Then she smiled. She had an idea.",
+  "She went to a shop. \u201cWill you buy my hair?\u201d she asked. \u201cTwenty dollars,\u201d said the woman. Della [[sold|to sell]] her hair.",
+  "Then Della went from store to store. She found the perfect present: a gold [[chain]] for Jim\u2019s watch. It cost twenty-one dollars.",
+  "At seven o\u2019clock, Jim came home. He looked at Della\u2019s short hair. He did not move. He did not speak.",
+  "\u201cI sold my hair to buy you a present,\u201d said Della. \u201cIt will grow again. Do you still love me?\u201d",
+  "Jim gave her a small [[package]]. Inside were beautiful [[combs|a comb]] \u2014 the combs Della wanted for her long hair.",
+  "Della cried. Then she smiled. \u201cMy hair grows so fast, Jim!\u201d She gave him the gold chain.",
+  "Jim sat down and smiled. \u201cI sold my watch,\u201d he said, \u201cto buy your combs.\u201d"],
+ hard:[
+  "One dollar and eighty-seven [[cents|a cent]]. That was all. Della had saved it one and two pennies at a time, and three times she counted it. Tomorrow was Christmas.",
+  "She did not have [[enough]] money to buy a [[present]] for Jim. Della sat down and cried.",
+  "Their home was an apartment that cost eight dollars a week in a [[poor]] neighbourhood of New York. It was not a beautiful place, but it was all that Della and her [[husband]] could have.",
+  "Della stopped crying and stood by the window. She looked out at a grey cat walking on a grey fence in a grey backyard.",
+  "Suddenly she smiled. She stood in front of the [[mirror]] and pulled down her hair, and let it fall.",
+  "There were two things that Jim and Della were very proud of. Jim had a gold watch that had belonged to his father and his grandfather. The other was Della\u2019s hair. Everyone admired it.",
+  "She put her hair up again, put on her old brown jacket and her old brown hat, and hurried out the door and down the stairs to the street.",
+  "She stopped at a shop with a sign that read \u201cHair Goods of All Kinds.\u201d \u201cWill you buy my hair?\u201d Della asked. \u201cTwenty dollars,\u201d said the owner. \u201cGive it to me quickly,\u201d said Della. Then her hair was [[sold|to sell]] and cut.",
+  "For two hours Della ran from store to store. At last she found it: a beautiful [[chain]] for Jim\u2019s watch. She paid twenty-one dollars and hurried home with the eighty-seven cents.",
+  "At seven o\u2019clock Jim came in and closed the door. He stared at Della and did not move. Della could not tell what he was thinking.",
+  "\u201cJim, darling,\u201d she said, \u201cdo not look at me that way. I cut my hair and sold it because I wanted to give you a present. It will grow again. Say \u2018Merry Christmas,\u2019 Jim.\u201d",
+  "Jim pulled a [[package]] from his coat pocket and put it on the table. \u201cI love you with long hair or short hair,\u201d he said. \u201cBut open that, and you will see why I stared at you.\u201d",
+  "Inside were the [[combs|a comb]] \u2014 beautiful combs with jewels, the ones Della had seen in the store window and loved without ever hoping to own. And now they were hers, and her hair was gone.",
+  "She held them close, looked up with wet eyes, and said, \u201cMy hair grows so fast, Jim!\u201d Then she gave him the chain. \u201cGive me your watch. I want to see how it looks.\u201d",
+  "Jim smiled and sat down. \u201cLet us put our Christmas presents away for a while,\u201d he said. \u201cThey are too nice to use right now. I sold the watch to get the money to buy your combs.\u201d"],
+ seq:["Della counts her money and finds she has only $1.87.","She decides to sell her long hair for twenty dollars.","She buys a gold chain for Jim\u2019s watch.","Jim comes home and stares at Della\u2019s short hair.","Jim gives Della a package with beautiful combs inside.","Della gives Jim the chain for his watch.","Jim says that he sold his watch to buy the combs."],
+ verbs:[["count","counted"],["want","wanted"],["sell","sold"],["buy","bought"],["go","went"],["find","found"],["come","came"],["give","gave"],["cry","cried"],["sit","sat"]],
+ rewrites:[
+  {pres:"Della <b>counts</b> her money.",need:["counted"]},
+  {pres:"She <b>sells</b> her hair and <b>buys</b> a chain.",need:["sold","bought"]},
+  {pres:"Della <b>goes</b> from store to store and <b>finds</b> the present.",need:["went","found"]},
+  {pres:"Jim <b>comes</b> home and <b>gives</b> her a package.",need:["came","gave"]},
+  {pres:"Della <b>cries</b>, and then she <b>is</b> happy.",need:["cried","was"]}],
+ wprompt:"Della and Jim each sold their most beautiful thing. Was it worth it?",
+ wframe:"I think it was / was not worth it because ___. In the story, ___. If I were Della, I would ___.",
+ quiz:[
+  {q:"How much money does Della have at the start?",o:["$18.70","$1.87","$21.00","$20.00"],a:1},
+  {q:"What are the two things Della and Jim are proud of?",o:["their house and their cat","Jim\u2019s watch and Della\u2019s hair","their money and their clothes","the combs and the chain"],a:1},
+  {q:"What does Della sell?",o:["her hair","her ring","her coat","the watch"],a:0},
+  {q:"What present does Della buy for Jim?",o:["a gold watch","combs for his hair","a chain for his watch","a new coat"],a:2},
+  {q:"What present does Jim buy for Della?",o:["a mirror","combs for her hair","a gold chain","a hat"],a:1},
+  {q:"Why does Jim stare at Della when he comes home?",o:["He is angry about the money.","Her hair is short.","He does not like the chain.","He is very tired."],a:1},
+  {q:"How did Jim get the money for Della\u2019s present?",o:["He worked extra hours.","He borrowed it.","He sold his watch.","He found it."],a:2},
+  {q:"What is the main idea of this story?",o:["Never sell your things.","Love matters more than the present itself.","Christmas is expensive.","Always ask before you buy a present."],a:1}]
+},
+{
+ id:"lion", title:"The Lion and the Mouse", by:"A fable by Aesop", accent:"#c8912f", art:"lion",
+ agree:["A small, weak person can never help a strong person.","If someone helps you, you should help them later.","It is always right to let a prisoner go free."],
+ vocab:[
+  {w:"a paw",d:"the foot of an animal like a lion or a cat"},
+  {w:"to let go",d:"to stop holding something"},
+  {w:"to promise",d:"to say you will really do something"},
+  {w:"a hunter",d:"a person who catches wild animals"},
+  {w:"a net",d:"ropes tied together to catch animals or fish"},
+  {w:"a rope",d:"thick, strong string"},
+  {w:"to bite",d:"to cut something with your teeth"},
+  {w:"teeth",d:"the hard white parts in your mouth"},
+  {w:"to roar",d:"to make a very loud sound, like a lion"},
+  {w:"free",d:"not held, not in a cage; able to go"}],
+ easy:[
+  "A lion was sleeping under a tree.",
+  "A little mouse ran across his nose. The lion woke up. He put his big [[paw]] on the mouse.",
+  "\u201cPlease [[let me go|to let go]],\u201d said the mouse. \u201cOne day I will help you. I [[promise|to promise]].\u201d",
+  "The lion laughed. \u201cYou? Help me? You are so small!\u201d But he let the mouse go.",
+  "A few days later, [[hunters|a hunter]] came to the forest. They caught the lion in a strong [[net]].",
+  "The lion [[roared|to roar]]. He could not move.",
+  "The little mouse heard him. She ran to the lion.",
+  "She [[bit|to bite]] the [[ropes|a rope]] with her small [[teeth]]. She bit and bit and bit.",
+  "The net opened. The lion was [[free]].",
+  "\u201cYou were right,\u201d said the lion. \u201cSmall friends can be great friends.\u201d"],
+ hard:[
+  "One hot afternoon a lion lay sleeping in the shade of a tree, and the whole forest was quiet.",
+  "A little mouse, running where she should not have been running, went straight across the lion\u2019s nose. He woke at once and pinned her to the ground with one huge [[paw]].",
+  "\u201cPlease [[let me go|to let go]],\u201d cried the mouse. \u201cI did not mean to wake you. If you let me live, one day I will help you. I [[promise|to promise]].\u201d",
+  "The lion laughed until the ground shook. The idea that such a tiny creature could ever help the king of the forest was the funniest thing he had heard. But he was in a good mood, and he lifted his paw and let her run away.",
+  "Not many days later, [[hunters|a hunter]] came into the forest looking for the lion. They hid a strong [[net]] under the leaves, and the lion walked straight into it.",
+  "He [[roared|to roar]] until the birds flew out of the trees, but the more he struggled, the tighter the net held him.",
+  "Far away, the little mouse heard that roar and knew whose it was. She ran towards the sound as fast as her legs would carry her.",
+  "When she found him, she said nothing. She simply began to [[bite|to bite]] the [[ropes|a rope]], one by one, with her tiny sharp [[teeth]].",
+  "It took a long time. But at last the net fell open, and the lion stood up, [[free]].",
+  "\u201cYou were right, and I was wrong,\u201d said the lion. \u201cI laughed at you, and you saved my life. A small friend can be a great friend.\u201d"],
+ seq:["A lion is sleeping under a tree.","A little mouse wakes the lion up.","The lion catches the mouse but then lets her go.","Hunters catch the lion in a net.","The lion roars and cannot move.","The mouse hears the lion and runs to him.","The mouse bites the ropes and the lion is free."],
+ verbs:[["sleep","slept"],["run","ran"],["wake","woke"],["put","put"],["let","let"],["catch","caught"],["hear","heard"],["bite","bit"],["laugh","laughed"],["be","was"]],
+ rewrites:[
+  {pres:"The lion <b>sleeps</b> under a tree.",need:["slept"]},
+  {pres:"A mouse <b>runs</b> across his nose and <b>wakes</b> him up.",need:["ran","woke"]},
+  {pres:"The lion <b>laughs</b> and <b>lets</b> the mouse go.",need:["laughed","let"]},
+  {pres:"Hunters <b>catch</b> the lion in a net.",need:["caught"]},
+  {pres:"The mouse <b>hears</b> the lion and <b>bites</b> the ropes.",need:["heard","bit"]}],
+ wprompt:"The lion laughed at the mouse. Was he wrong? Why?",
+ wframe:"The lion was wrong because ___. He thought ___, but really ___. This is like ___.",
+ quiz:[
+  {q:"Where is the lion at the beginning of the story?",o:["in a cage","sleeping under a tree","hunting for food","in the village"],a:1},
+  {q:"How does the mouse wake the lion?",o:["She shouts at him.","She runs across his nose.","She bites his paw.","She brings hunters."],a:1},
+  {q:"What does the mouse promise?",o:["to be quiet","to bring food","to help the lion one day","to leave the forest"],a:2},
+  {q:"Why does the lion laugh at the mouse?",o:["She is very funny.","She is too small to help him.","She is afraid.","She is his friend."],a:1},
+  {q:"How do the hunters catch the lion?",o:["with a net","with a rope around his neck","with a cage","with food"],a:0},
+  {q:"What does the mouse use to free the lion?",o:["her paws","a knife","her teeth","a rope"],a:2},
+  {q:"What does \u201cfree\u201d mean here?",o:["costing no money","not held, able to go","very fast","alone"],a:1},
+  {q:"What is the moral of this story?",o:["Lions should not sleep outside.","Hunters are dangerous.","Never wake a lion.","Even a small friend can help you \u2014 so be kind to everyone."],a:3}]
+}
+];
+</script>
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var TABLE='fables_work', PASS='galileo2026';
+var STEPS=[['before','B'],['words','W'],['read','R'],['order','O'],['elements','E'],['grammar','G'],['write','Wr'],['quiz','Q']];
+var ROWS=[], sortKey='name', sortDir=1;
+
+function $(s){return document.querySelector(s)}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function story(id){for(var i=0;i<STORIES.length;i++)if(STORIES[i].id===id)return STORIES[i];return null}
+
+$('#go').onclick=function(){
+  if($('#pw').value!==PASS){$('#pw').value='';$('#pw').placeholder='Try again';return}
+  sessionStorage.setItem('fab_t','1'); $('#gate').style.display='none'; init();
+};
+$('#pw').onkeydown=function(e){if(e.key==='Enter')$('#go').click()};
+if(sessionStorage.getItem('fab_t')){$('#gate').style.display='none';init()}
+
+function init(){
+  $('#fstory').innerHTML='<option value="">All stories</option>'+STORIES.map(function(s,i){
+    return '<option value="'+s.id+'">'+(i+1)+'. '+esc(s.title)+'</option>'}).join('');
+  ['#fstory','#fturn','#q'].forEach(function(s){$(s).oninput=render;$(s).onchange=render});
+  $('#refresh').onclick=load; $('#csv').onclick=csv;
+  buildKeys(); load();
+}
+
+function load(){
+  $('#tablewrap').innerHTML='<div class="empty-note">Loading…</div>';
+  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?select=*&order=updated_at.desc',{
+    headers:{apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY}
+  }).then(function(r){return r.json()}).then(function(d){
+    ROWS=Array.isArray(d)?d:[]; render();
+  }).catch(function(){$('#tablewrap').innerHTML='<div class="empty-note">Could not reach Supabase. Check the table exists.</div>'});
+}
+
+function filtered(){
+  var s=$('#fstory').value, t=$('#fturn').value, q=$('#q').value.toLowerCase().trim();
+  return ROWS.filter(function(r){
+    if(s&&r.story!==s)return false;
+    if(t==='1'&&!r.turned_in)return false;
+    if(t==='0'&&r.turned_in)return false;
+    if(q&&(String(r.student_name||'')+' '+r.email).toLowerCase().indexOf(q)<0)return false;
+    return true;
+  });
+}
+
+function doneCount(r){var d=(r.data&&r.data.__done)||{};var n=0;STEPS.forEach(function(s){if(d[s[0]])n++});return n}
+
+function render(){
+  var rows=filtered();
+  var withQuiz=rows.filter(function(r){return typeof r.score==='number'});
+  var avg=withQuiz.length?Math.round(withQuiz.reduce(function(a,r){return a+r.score},0)/withQuiz.length):0;
+  var students={}; rows.forEach(function(r){students[r.email]=1});
+  $('#stats').innerHTML=
+    stat(Object.keys(students).length,'students')+
+    stat(rows.length,'story attempts')+
+    stat(rows.filter(function(r){return r.turned_in}).length,'turned in')+
+    stat(avg+'%','average quiz')+
+    stat(withQuiz.filter(function(r){return r.score<70}).length,'quiz under 70%');
+
+  if(!rows.length){$('#tablewrap').innerHTML='<div class="empty-note">Nothing here yet.</div>';return}
+  rows.sort(function(a,b){
+    var v;
+    if(sortKey==='name')v=String(a.student_name||'').localeCompare(String(b.student_name||''));
+    else if(sortKey==='story')v=String(a.story).localeCompare(String(b.story));
+    else if(sortKey==='steps')v=doneCount(a)-doneCount(b);
+    else if(sortKey==='score')v=(a.score==null?-1:a.score)-(b.score==null?-1:b.score);
+    else v=String(a.updated_at||'').localeCompare(String(b.updated_at||''));
+    return v*sortDir;
+  });
+  var h='<table><thead><tr>'+
+    th('name','Student')+th('story','Story')+
+    '<th>Progress</th>'+th('score','Quiz')+'<th>Sequence</th><th>Verbs</th><th>Words written</th>'+
+    '<th>Turned in</th>'+th('when','Last saved')+'</tr></thead><tbody>';
+  rows.forEach(function(r,i){
+    var d=(r.data&&r.data.__done)||{}, st=story(r.story);
+    var wc=((r.data&&r.data.write)||'').trim(); wc=wc?wc.split(/\s+/).length:0;
+    var cls=r.score==null?'':(r.score>=85?'hi':r.score>=65?'mid':'lo');
+    h+='<tr><td><span class="nm" data-i="'+i+'">'+esc(r.student_name||'(no name)')+'</span><br>'+
+       '<span style="color:#8fa298;font-size:.76rem">'+esc(r.email)+'</span></td>'+
+       '<td>'+esc(st?st.title:r.story)+'</td>'+
+       '<td><div class="ticks">'+STEPS.map(function(s){
+          return '<span class="tk'+(d[s[0]]?' on':'')+'" title="'+s[0]+'">'+s[1]+'</span>'}).join('')+'</div></td>'+
+       '<td class="pct '+cls+'">'+(r.score==null?'—':r.score+'%')+'</td>'+
+       '<td>'+(r.data&&r.data.__seqScore!=null?r.data.__seqScore+'/'+(st?st.seq.length:7):'—')+'</td>'+
+       '<td>'+(r.data&&r.data.__verbScore!=null?r.data.__verbScore+'/'+(st?st.verbs.length:10):'—')+'</td>'+
+       '<td>'+wc+'</td>'+
+       '<td>'+(r.turned_in?'<span class="badge">yes</span>':'<span class="badge no">no</span>')+'</td>'+
+       '<td style="color:#8fa298;font-size:.78rem">'+when(r.updated_at)+'</td></tr>';
+  });
+  $('#tablewrap').innerHTML=h+'</tbody></table>';
+  Array.prototype.forEach.call(document.querySelectorAll('.nm'),function(n){
+    n.onclick=function(){openRow(rows[+n.dataset.i])}});
+  Array.prototype.forEach.call(document.querySelectorAll('th[data-k]'),function(t){
+    t.onclick=function(){var k=t.dataset.k;sortDir=(sortKey===k)?-sortDir:1;sortKey=k;render()}});
+}
+function th(k,label){return '<th data-k="'+k+'">'+label+(sortKey===k?(sortDir>0?' ▲':' ▼'):'')+'</th>'}
+function stat(n,l){return '<div class="stat"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>'}
+function when(t){if(!t)return '—';var d=new Date(t),m=(Date.now()-d)/60000;
+  if(m<60)return Math.round(m)+' min ago'; if(m<1440)return Math.round(m/60)+' hr ago';
+  return d.toLocaleDateString()+' '+d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}
+
+function openRow(r){
+  var st=story(r.story), d=r.data||{};
+  function box(label,val){return '<h4>'+label+'</h4><div class="a'+((val&&String(val).trim())?'':' empty')+'">'+
+    esc((val&&String(val).trim())||'(blank)')+'</div>'}
+  var h='<h2>'+esc(r.student_name||r.email)+'</h2><p class="sub">'+esc(st?st.title:r.story)+' · '+
+    (d.__level==='hard'?'read the full story':'read the easier version')+' · last saved '+when(r.updated_at)+'</p>';
+  h+='<h4>Quiz</h4><div class="a">'+(r.score==null?'not taken yet':
+      (d.__quiz.right+' / '+d.__quiz.total+'  ('+r.score+'%)'))+'</div>';
+  if(d.__quiz&&d.__quiz.picked&&st){
+    h+='<h4>Which questions were wrong</h4><div class="a">';
+    var wrong=[];
+    st.quiz.forEach(function(q,i){var p=d.__quiz.picked[i];
+      if(p!=null&&+p!==q.a)wrong.push((i+1)+'. chose "'+q.o[+p]+'" → answer: "'+q.o[q.a]+'"')});
+    h+=esc(wrong.length?wrong.join('\n'):'none wrong')+'</div>';
+  }
+  h+=box('Prediction',d.predict);
+  h+=box('Who are the characters?',d.r1)+box('What is the problem?',d.r2);
+  h+=box('Characters',d.e_char)+box('Setting',d.e_set)+box('Conflict',d.e_con)+
+     box('Plot',d.e_plot)+box('Resolution',d.e_res)+box('Moral',d.e_moral);
+  if(st){
+    var vt=(d.__verbs||{}); var lines=st.verbs.map(function(v,i){
+      var got=(vt[i]||'').trim(); var ok=got.toLowerCase()===v[1]||(v[1]==='was'&&got.toLowerCase()==='were');
+      return v[0]+' → '+(got||'—')+(ok?'  ✔':'   (answer: '+v[1]+')')});
+    h+='<h4>Past tense verbs</h4><div class="a">'+esc(lines.join('\n'))+'</div>';
+    var rw=(d.__rw||{}); var rl=st.rewrites.map(function(r2,i){
+      return (i+1)+'. '+(rw[i]||'—')}).join('\n');
+    h+='<h4>Rewritten sentences</h4><div class="a">'+esc(rl)+'</div>';
+  }
+  h+=box('Writing',d.write)+box('Connection to their life',d.connect);
+  $('#mbody').innerHTML='<button class="close" onclick="document.getElementById(\'modal\').classList.remove(\'on\')">Close</button>'+h;
+  $('#modal').classList.add('on');
+}
+
+function buildKeys(){
+  var h='<h3>Answer keys</h3>';
+  STORIES.forEach(function(s,n){
+    h+='<details><summary>'+(n+1)+'. '+esc(s.title)+'</summary>';
+    h+='<p><b>Moral / target idea:</b> '+esc(s.wprompt)+'</p>';
+    h+='<p><b>Correct sequence:</b></p><ol>'+s.seq.map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+'</ol>';
+    h+='<p><b>Past tense:</b> '+s.verbs.map(function(v){return v[0]+' → <b>'+v[1]+'</b>'}).join(' · ')+'</p>';
+    h+='<p><b>Sentences to rewrite:</b></p><ol>'+s.rewrites.map(function(r){
+      return '<li>'+r.pres+' → needs <b>'+r.need.join(', ')+'</b></li>'}).join('')+'</ol>';
+    h+='<p><b>Quiz:</b></p><ol>'+s.quiz.map(function(q){
+      return '<li>'+esc(q.q)+' → <b>'+esc(q.o[q.a])+'</b></li>'}).join('')+'</ol>';
+    h+='<p><b>Vocabulary:</b> '+s.vocab.map(function(v){return esc(v.w)}).join(' · ')+'</p>';
+    h+='</details>';
+  });
+  $('#keys').innerHTML=h;
+}
+
+function csv(){
+  var rows=filtered();
+  var head=['Name','Email','Story','Level','Steps done','Quiz %','Quiz right','Sequence','Verbs','Words written','Turned in','Last saved'];
+  var out=[head.join(',')];
+  rows.forEach(function(r){
+    var d=r.data||{}, st=story(r.story);
+    var wc=((d.write||'').trim()); wc=wc?wc.split(/\s+/).length:0;
+    out.push([r.student_name||'',r.email,st?st.title:r.story,d.__level==='hard'?'full':'easier',
+      doneCount(r)+'/8', r.score==null?'':r.score,
+      (d.__quiz?d.__quiz.right+'/'+d.__quiz.total:''),
+      (d.__seqScore!=null?d.__seqScore:''),(d.__verbScore!=null?d.__verbScore:''),
+      wc, r.turned_in?'yes':'no', r.updated_at||''
+    ].map(function(v){return '"'+String(v).replace(/"/g,'""')+'"'}).join(','));
+  });
+  var b=new Blob([out.join('\n')],{type:'text/csv'});
+  var a=document.createElement('a'); a.href=URL.createObjectURL(b);
+  a.download='fables_'+(new Date().toISOString().slice(0,10))+'.csv'; a.click();
+}
+</script>
+</body>
+</html>
