@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rev. Dr. Martin Luther King, Jr. — Reading Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pine:#1b4d3e;
+  --pine-dark:#143b30;
+  --gold:#e8b64c;
+  --paper:#fdfaf4;
+  --ink:#22201c;
+  --line:#d9d2c4;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;font-family:Nunito,system-ui,sans-serif;background:var(--paper);color:var(--ink);
+  font-size:18px;line-height:1.7;-webkit-text-size-adjust:100%;
+}
+/* ---------- toolbar ---------- */
+#bar{
+  position:sticky;top:0;z-index:60;background:var(--pine);color:#fff;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 14px;
+  box-shadow:0 2px 10px rgba(0,0,0,.2);
+}
+#bar .title{font-weight:800;font-size:17px;margin-right:auto}
+#bar select,#bar button{
+  font-family:inherit;font-size:14px;font-weight:700;border-radius:8px;border:0;
+  padding:7px 12px;cursor:pointer;
+}
+#bar select{background:#fff;color:var(--ink)}
+#bar button{background:var(--gold);color:#3a2b06}
+#bar button.ghost{background:rgba(255,255,255,.16);color:#fff}
+#who{font-size:13px;font-weight:700;opacity:.95}
+#dot{width:10px;height:10px;border-radius:50%;background:#8aa89c;display:inline-block;margin-right:5px;vertical-align:middle}
+#dot.on{background:var(--gold)}
+#dot.ok{background:#7ed492}
+#dot.err{background:#ff7a6b}
+
+/* ---------- layout ---------- */
+.wrap{max-width:820px;margin:0 auto;padding:22px 18px 90px}
+h1{font-size:30px;line-height:1.25;margin:.2em 0 .1em}
+.sub{color:#6b6357;font-weight:600;margin-bottom:18px}
+.dir{
+  background:#fff;border:2px solid var(--pine);border-radius:12px;padding:14px 16px;margin:18px 0 26px;
+  font-weight:600;
+}
+.dir b{color:var(--pine)}
+section{margin:0 0 10px}
+.para{
+  background:#fff;border:1px solid var(--line);border-left:6px solid var(--pine);
+  border-radius:10px;padding:16px 18px;margin:0 0 14px;
+}
+.para p{margin:0 0 .8em}
+.para p:last-child{margin-bottom:0}
+.pnum{
+  display:inline-block;background:var(--pine);color:#fff;font-weight:800;font-size:13px;
+  border-radius:6px;padding:2px 9px;margin-bottom:8px;letter-spacing:.04em;
+}
+
+/* ---------- glossed words ---------- */
+.g{
+  font-weight:800;color:var(--pine-dark);cursor:pointer;
+  border-bottom:2px dotted var(--pine);
+}
+.g:active{background:#fff3d6}
+.g.seen{border-bottom-style:solid;background:#fff6e0}
+#pop{
+  position:absolute;z-index:200;max-width:300px;background:#fff;border:2px solid var(--pine);
+  border-radius:12px;padding:12px 14px;box-shadow:0 10px 28px rgba(0,0,0,.22);display:none;
+}
+#pop .w{font-weight:800;color:var(--pine);font-size:19px}
+#pop .d{font-size:15px;margin-top:4px}
+#pop .t{font-size:19px;margin-top:8px;padding-top:8px;border-top:1px solid var(--line);min-height:26px}
+#pop .t.wait{color:#9a9284;font-style:italic;font-size:15px}
+#pop .x{float:right;cursor:pointer;color:#9a9284;font-weight:800;font-size:18px;line-height:1}
+
+/* ---------- questions ---------- */
+.q{
+  background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:0 0 14px;
+}
+.q .lab{font-weight:800;color:var(--pine);font-size:15px;margin-bottom:2px}
+.q .lab .tag{
+  background:var(--gold);color:#3a2b06;font-size:12px;border-radius:20px;padding:2px 10px;margin-left:6px;
+  vertical-align:middle;
+}
+.q .prompt{font-weight:700;margin-bottom:10px}
+.q textarea{
+  width:100%;min-height:92px;font-family:inherit;font-size:17px;line-height:1.6;
+  border:1px solid var(--line);border-radius:8px;padding:10px;resize:vertical;background:var(--paper);
+}
+.q textarea:focus{outline:2px solid var(--pine);background:#fff}
+.starter{font-size:15px;color:#6b6357;font-weight:600;margin-bottom:8px}
+.starter code{background:#f0ece1;border-radius:4px;padding:1px 6px;font-family:inherit}
+
+/* ---------- draw ---------- */
+.draw{border:1px solid var(--line);border-radius:8px;background:#fff;overflow:hidden}
+.draw canvas{display:block;width:100%;height:auto;touch-action:none;cursor:crosshair}
+.tools{display:flex;gap:6px;flex-wrap:wrap;padding:8px;background:#f4f1e8;border-top:1px solid var(--line)}
+.tools button{
+  font-family:inherit;font-size:13px;font-weight:700;border:1px solid var(--line);background:#fff;
+  border-radius:7px;padding:5px 11px;cursor:pointer;
+}
+.tools button.on{background:var(--pine);color:#fff;border-color:var(--pine)}
+.sw{width:26px;height:26px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--line);cursor:pointer;padding:0}
+.sw.on{box-shadow:0 0 0 3px var(--pine)}
+
+/* ---------- gates / overlays ---------- */
+.gate{
+  position:fixed;inset:0;background:rgba(27,77,62,.96);z-index:300;display:flex;
+  align-items:center;justify-content:center;padding:20px;
+}
+.card{background:#fff;border-radius:16px;padding:26px;max-width:420px;width:100%}
+.card h2{margin:0 0 6px;color:var(--pine)}
+.card p{margin:0 0 16px;font-size:16px;color:#6b6357;font-weight:600}
+.card input,.card select{
+  width:100%;font-family:inherit;font-size:17px;padding:11px;margin-bottom:12px;
+  border:1px solid var(--line);border-radius:9px;
+}
+.card button{
+  width:100%;font-family:inherit;font-size:17px;font-weight:800;background:var(--pine);color:#fff;
+  border:0;border-radius:9px;padding:13px;cursor:pointer;
+}
+.err{color:#c0392b;font-weight:700;font-size:15px;margin-bottom:10px;display:none}
+
+/* ---------- teacher ---------- */
+#teach{position:fixed;inset:0;background:var(--paper);z-index:250;overflow:auto;display:none}
+#teach .wrap{padding-top:14px}
+.srow{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px}
+.srow h3{margin:0;font-size:18px;cursor:pointer}
+.srow .meta{font-size:14px;color:#6b6357;font-weight:600}
+.srow .body{display:none;margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+.srow .body.open{display:block}
+.ans{margin-bottom:12px}
+.ans .qq{font-weight:800;color:var(--pine);font-size:15px}
+.ans .aa{white-space:pre-wrap;background:var(--paper);border-radius:8px;padding:8px 10px;margin-top:4px}
+.ans img{max-width:100%;border:1px solid var(--line);border-radius:8px;margin-top:4px}
+.pill{font-size:12px;font-weight:800;border-radius:20px;padding:2px 10px;margin-left:6px}
+.pill.in{background:#7ed492;color:#0d3d1f}
+.pill.out{background:#f0ece1;color:#6b6357}
+
+/* ---------- print ---------- */
+@media print{
+  #bar,.tools,.gate,#teach,#pop,.noprint{display:none !important}
+  body{background:#fff;font-size:12pt}
+  .wrap{max-width:none;padding:0}
+  .para,.q{break-inside:avoid;box-shadow:none}
+  .q textarea{border:1px solid #000;min-height:70px}
+  .g{border-bottom:0;background:none}
+}
+</style>
+</head>
+<body>
+
+<div id="bar">
+  <span class="title">Dr. Martin Luther King, Jr.</span>
+  <span id="who"></span>
+  <select id="lang" title="Translation language">
+    <option value="">Language…</option>
+    <option value="Spanish">Español</option>
+    <option value="Chinese (Simplified)">中文</option>
+    <option value="Arabic">العربية</option>
+    <option value="Vietnamese">Tiếng Việt</option>
+    <option value="Thai">ไทย</option>
+    <option value="Nepali">नेपाली</option>
+  </select>
+  <span><span id="dot"></span><span id="stat" style="font-size:13px;font-weight:700">—</span></span>
+  <button class="ghost" onclick="window.print()">Print</button>
+  <button id="turnin">Turn In</button>
+</div>
+
+<div class="wrap" id="main">
+  <h1>Rev. Dr. Martin Luther King, Jr.</h1>
+  <div class="sub">Reading Guide &nbsp;·&nbsp; Mr. Toby</div>
+
+  <div class="dir">
+    <b>DIRECTIONS:</b> First, <b>tap</b> every dark green word to see the meaning and the translation.
+    Then read the paragraph and answer the questions. Your work saves by itself.
+    When you finish, press <b>Turn In</b>.
+  </div>
+
+  <!-- ============ SECTION 1 ============ -->
+  <section>
+    <div class="para">
+      <span class="pnum">PARAGRAPH 1</span>
+      <p>Reverend Dr. Martin Luther King, Jr. was born in Georgia in 1929. He was a good student.
+      After high school, Martin Luther King, Jr. went to college to become a <b class="g" data-k="preacher">preacher</b>.
+      He <b class="g" data-k="became">became</b> a great speaker and a famous American
+      <b class="g" data-k="leader">leader</b>. He was very good at making
+      <b class="g" data-k="speeches">speeches</b> and speaking in front of other people.
+      When he spoke, he <b class="g" data-k="inspired">inspired</b> the
+      <b class="g" data-k="audience">audience</b>. He spoke loudly and clearly and often used
+      <b class="g" data-k="metaphors">metaphors</b> and <b class="g" data-k="similes">similes</b>.
+      People liked listening to him.</p>
+    </div>
+
+    <div class="q" data-q="q1">
+      <div class="lab">Question 1 <span class="tag">Make an inference</span></div>
+      <div class="prompt">Why did people like listening to Martin Luther King?</div>
+      <div class="starter">Try starting with: <code>People liked listening to him because…</code></div>
+      <textarea placeholder="Write your answer here…"></textarea>
+    </div>
+
+    <div class="q" data-draw="d1">
+      <div class="lab">Question 2 <span class="tag">Visualize</span></div>
+      <div class="prompt">Draw a picture of this sentence: “He was very good at making speeches.”</div>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 2 ============ -->
+  <section>
+    <div class="para">
+      <span class="pnum">PARAGRAPH 2</span>
+      <p>Dr. Martin Luther King, Jr. was one of the important leaders of the
+      <b class="g" data-k="civil rights">civil rights</b> <b class="g" data-k="movement">movement</b>.
+      “Civil rights” means rights all people (citizens) of a country should have. In the 1960s, some of the
+      laws in the United States were <b class="g" data-k="racist">racist</b>. African-American (Black) people
+      did not have the same rights as white people. For example, African-American people could not drink the
+      same water as white people. African-American people had to drink from a different
+      <b class="g" data-k="water fountain">water fountain</b> than white people. Also, African-American
+      people had to sit in the back of a bus. It was <b class="g" data-k="illegal">illegal</b> for an
+      African-American person to sit in the <b class="g" data-k="front">front</b> of a bus. The police
+      could <b class="g" data-k="arrest">arrest</b> an African-American person who wanted to sit in the
+      front of a bus.</p>
+    </div>
+
+    <div class="q" data-q="q3">
+      <div class="lab">Question 3 <span class="tag">Check for understanding</span></div>
+      <div class="prompt">What are two examples of how life was <b class="g" data-k="unfair">unfair</b> for Black Americans?</div>
+      <div class="starter">Use two sentences. <code>First,… Second,…</code></div>
+      <textarea placeholder="Write your answer here…"></textarea>
+    </div>
+
+    <div class="q" data-q="q4">
+      <div class="lab">Question 4 <span class="tag">Make a prediction</span></div>
+      <div class="prompt">What do you think Martin Luther King, Jr. will do to help Black people get more rights?</div>
+      <div class="starter">Try: <code>I predict that he will…</code></div>
+      <textarea placeholder="Write your answer here…"></textarea>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 3 ============ -->
+  <section>
+    <div class="para">
+      <span class="pnum">PARAGRAPH 3</span>
+      <p>Dr. King wanted to make things equal for people <b class="g" data-k="regardless">regardless</b>
+      of their <b class="g" data-k="race">race</b>, or color of their skin. Dr. King worked hard to fight
+      for rights for <b class="g" data-k="nonwhite">nonwhite</b> people. Dr. King was a
+      <b class="g" data-k="minister">minister</b> in a church. He made many speeches and he gave
+      <b class="g" data-k="sermons">sermons</b> in his church about what was and was not fair. When people
+      listened to Dr. King’s speeches, they learned about and understood the racism and the problems with
+      civil rights in the United States. When people listened to Dr. King talk, they often decided to
+      <b class="g" data-k="protest">protest</b> against the racism in the United States.</p>
+    </div>
+
+    <div class="q" data-q="q5">
+      <div class="lab">Question 5 <span class="tag">Check for understanding</span></div>
+      <div class="prompt">What is racism? What is an example of racism from the reading, or from your own life?</div>
+      <div class="starter">Try: <code>Racism is… One example is…</code></div>
+      <textarea placeholder="Write your answer here…"></textarea>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 4 ============ -->
+  <section>
+    <div class="para">
+      <span class="pnum">PARAGRAPH 4</span>
+      <p>Dr. King believed that it was important to fight for what was right without using
+      <b class="g" data-k="violence">violence</b>. When someone fights or protests for rights without
+      violence, this is called <b class="g" data-k="nonviolent">nonviolent</b> protest. Dr. King organized
+      and participated in many nonviolent protests. In some protests, people
+      <b class="g" data-k="marched">marched</b> in the street and sang songs or
+      <b class="g" data-k="demanded">demanded</b> more rights. In other protests, called
+      <b class="g" data-k="sit-in">sit-ins</b>, people <b class="g" data-k="would">would</b> sit in a place
+      where white people or the police did not want them to be. They
+      <b class="g" data-k="wouldn't">wouldn’t</b> leave for hours or days. They would not do anything
+      violent, they would only sit there.</p>
+    </div>
+
+    <div class="q" data-draw="d2">
+      <div class="lab">Question 6 <span class="tag">Visualize</span></div>
+      <div class="prompt">Draw a picture of this sentence: “In other protests, called sit-ins, people would sit in a place… They wouldn’t leave for hours or days.”</div>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 5 ============ -->
+  <section>
+    <div class="para">
+      <span class="pnum">PARAGRAPH 5</span>
+      <p>These protests <b class="g" data-k="persuaded">persuaded</b> many Americans that the civil rights
+      movement was right. Many people saw how Black Americans were treated badly in other parts of the
+      country and felt <b class="g" data-k="shocked">shocked</b>. Dr. King was a powerful leader and many
+      people liked him. He had many <b class="g" data-k="followers">followers</b>. However, not everybody
+      liked him. Some people even hated him. Some people thought Dr. King was
+      <b class="g" data-k="dangerous">dangerous</b>. One day, in 1968, he was
+      <b class="g" data-k="assassinated">assassinated</b>, or murdered, in Tennessee. Millions of people in
+      the United States were sad to lose Dr. King, a brilliant, nonviolent leader. If Dr. King had not been
+      assassinated, the United States might be an even better country today.</p>
+    </div>
+
+    <div class="q" data-q="q7">
+      <div class="lab">Question 7 <span class="tag">Make an inference</span></div>
+      <div class="prompt">Dr. King never hurt anybody. So why did some people think he was dangerous?</div>
+      <div class="starter">Try: <code>Some people thought he was dangerous because…</code></div>
+      <textarea placeholder="Write your answer here…"></textarea>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 6 ============ -->
+  <section>
+    <div class="para">
+      <span class="pnum">PARAGRAPH 6</span>
+      <p>Dr. King’s <b class="g" data-k="grave">grave</b> is at the King Center in the city of Atlanta,
+      Georgia. People in the United States remember Martin Luther King for his famous speeches, for his
+      strong <b class="g" data-k="principles">principles</b>, and for his hard,
+      <b class="g" data-k="tireless">tireless</b> work to create more
+      <b class="g" data-k="equality">equality</b> and <b class="g" data-k="peace">peace</b> in the United
+      States. The people of the United States <b class="g" data-k="honor">honor</b> Martin Luther King, Jr.
+      every year in January. We have a national holiday, called Martin Luther King, Jr. Day. The holiday is
+      <b class="g" data-k="celebrated">celebrated</b> on the third Monday in January.</p>
+    </div>
+
+    <div class="q" data-q="q8">
+      <div class="lab">Question 8 <span class="tag">Connect</span></div>
+      <div class="prompt">The United States has a holiday for Dr. King. Is there a person in your home country that people honor with a holiday or a statue? Who is it, and why?</div>
+      <div class="starter">Try: <code>In my country, people honor… because…</code></div>
+      <textarea placeholder="Write your answer here…"></textarea>
+    </div>
+
+    <div class="q" data-q="q9">
+      <div class="lab">Question 9 <span class="tag">Big question</span></div>
+      <div class="prompt">Dr. King said you can change a country without violence. Do you agree? Why or why not?</div>
+      <div class="starter">Try: <code>I agree / I disagree because…</code></div>
+      <textarea placeholder="Write your answer here…"></textarea>
+    </div>
+  </section>
+
+  <div class="noprint" style="text-align:center;margin-top:26px">
+    <button id="turnin2" style="font-family:inherit;font-size:18px;font-weight:800;background:var(--pine);color:#fff;border:0;border-radius:10px;padding:14px 34px;cursor:pointer">Turn In</button>
+    <div style="font-size:14px;color:#6b6357;font-weight:600;margin-top:8px">You can still change your answers after you turn in.</div>
+  </div>
+
+  <div class="noprint" style="text-align:center;margin-top:40px">
+    <a href="#" id="tlink" style="color:#b5ad9e;font-size:13px;font-weight:700;text-decoration:none">teacher</a>
+  </div>
+</div>
+
+<div id="pop"></div>
+
+<!-- ============ LOGIN GATE ============ -->
+<div class="gate" id="gate">
+  <div class="card">
+    <h2>Dr. Martin Luther King, Jr.</h2>
+    <p>Type your name and your school email to start.</p>
+    <div class="err" id="gerr"></div>
+    <input id="gname" placeholder="Your full name" autocomplete="name">
+    <input id="gmail" placeholder="you@sfusd.edu" autocomplete="email" inputmode="email">
+    <select id="glang">
+      <option value="">My language (optional)</option>
+      <option value="Spanish">Español</option>
+      <option value="Chinese (Simplified)">中文</option>
+      <option value="Arabic">العربية</option>
+      <option value="Vietnamese">Tiếng Việt</option>
+      <option value="Thai">ไทย</option>
+      <option value="Nepali">नेपाली</option>
+    </select>
+    <button id="gbtn">Start</button>
+  </div>
+</div>
+
+<!-- ============ TEACHER VIEW ============ -->
+<div id="teach">
+  <div id="bar" style="position:sticky">
+    <span class="title">Teacher View — MLK</span>
+    <button class="ghost" id="trefresh">Refresh</button>
+    <button class="ghost" id="tcsv">CSV</button>
+    <button id="tclose">Close</button>
+  </div>
+  <div class="wrap">
+    <div id="tstats" style="font-weight:700;margin-bottom:14px"></div>
+    <div id="tlist"></div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   CONFIG
+   ============================================================ */
+var SUPA_URL = 'https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var TABLE = 'mlk_work';
+var TPROXY = 'https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
+var TPASS = 'galileo2026';
+var LS = 'mlk_work_v1';
+
+/* ============================================================
+   GLOSSARY — simple ELD definitions
+   ============================================================ */
+var GLOSS = {
+  'preacher':'a person whose job is to speak about religion in a church',
+  'became':'past tense of become — changed into',
+  'leader':'a person who other people follow',
+  'speeches':'talks that one person gives to a big group of people',
+  'inspired':'made people feel excited and ready to do something good',
+  'audience':'all the people who are listening or watching',
+  'metaphors':'saying one thing IS another thing — "Her voice is music."',
+  'similes':'comparing with LIKE or AS — "brave as a lion"',
+  'civil rights':'the rights that every citizen of a country should have',
+  'movement':'a big group of people working together to change something',
+  'racist':'treating people badly because of their race or skin color',
+  'water fountain':'a machine in a public place where people drink water',
+  'illegal':'against the law; not allowed',
+  'front':'the part at the beginning — the opposite of the back',
+  'arrest':'when the police take a person to jail',
+  'unfair':'not equal; not right',
+  'regardless':'it does not matter; no matter what',
+  'race':'a group of people who share skin color or background',
+  'nonwhite':'not white; people of color',
+  'minister':'a religious leader of a church',
+  'sermons':'religious talks a minister gives in a church',
+  'protest':'to show in public that you think something is wrong',
+  'violence':'hurting people with your body or a weapon',
+  'nonviolent':'without hurting anyone',
+  'marched':'walked together in a group to show what you believe',
+  'demanded':'asked very strongly — "We must have this."',
+  'sit-in':'a protest where people sit down and refuse to leave',
+  'would':'we use "would" for something that happened many times in the past',
+  "wouldn't":'would not — they refused to do it',
+  'persuaded':'made someone change their mind and agree with you',
+  'shocked':'very surprised in a bad way',
+  'followers':'people who believe in a leader and support them',
+  'dangerous':'able to cause harm or trouble',
+  'assassinated':'killed on purpose (used for a famous or important person)',
+  'grave':'the place in the ground where a dead person is buried',
+  'principles':'strong beliefs about what is right and wrong',
+  'tireless':'never stopping; working very hard for a long time',
+  'equality':'when everybody has the same rights',
+  'peace':'no fighting and no war',
+  'honor':'to show great respect for someone',
+  'celebrated':'when people do something special to remember a day'
+};
+
+/* ============================================================
+   STATE
+   ============================================================ */
+var S = { name:'', email:'', lang:'', answers:{}, drawings:{}, seen:{}, turned_in:false };
+var dirty = false, saving = false;
+
+function $(s,r){ return (r||document).querySelector(s); }
+function $$(s,r){ return Array.prototype.slice.call((r||document).querySelectorAll(s)); }
+
+/* ============================================================
+   LOGIN
+   ============================================================ */
+function boot(){
+  var raw = null;
+  try { raw = JSON.parse(localStorage.getItem(LS)||'null'); } catch(e){}
+  if(raw && raw.email){ S = Object.assign(S, raw); start(); }
+  else { $('#gate').style.display='flex'; }
+}
+$('#gbtn').onclick = function(){
+  var n = $('#gname').value.trim(), e = $('#gmail').value.trim().toLowerCase();
+  if(n.length < 2){ gerr('Please type your full name.'); return; }
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)){ gerr('Please type a real email address.'); return; }
+  S.name = n; S.email = e; S.lang = $('#glang').value;
+  $('#gate').style.display='none';
+  save(true);
+  pull();
+  start();
+};
+$('#gmail').addEventListener('keydown', function(ev){ if(ev.key==='Enter') $('#gbtn').click(); });
+function gerr(m){ var x=$('#gerr'); x.textContent=m; x.style.display='block'; }
+
+function start(){
+  $('#who').textContent = S.name;
+  if(S.lang) $('#lang').value = S.lang;
+  restore();
+  status('ok','Saved');
+}
+
+/* ============================================================
+   QUESTIONS
+   ============================================================ */
+$$('.q[data-q]').forEach(function(q){
+  var key = q.getAttribute('data-q');
+  var ta = $('textarea', q);
+  ta.addEventListener('input', function(){ S.answers[key] = ta.value; touch(); });
+});
+
+function restore(){
+  $$('.q[data-q]').forEach(function(q){
+    var key = q.getAttribute('data-q');
+    if(S.answers[key]) $('textarea',q).value = S.answers[key];
+  });
+  Object.keys(S.seen||{}).forEach(function(k){
+    $$('.g').forEach(function(g){ if(g.getAttribute('data-k')===k) g.classList.add('seen'); });
+  });
+  Object.keys(S.drawings||{}).forEach(function(k){ loadDraw(k, S.drawings[k]); });
+}
+
+/* ============================================================
+   DRAWING CANVASES
+   ============================================================ */
+var PENS = ['#22201c','#c0392b','#1b4d3e','#2166ac','#e8b64c'];
+function buildDraw(box){
+  var key = box.getAttribute('data-draw');
+  var d = document.createElement('div'); d.className='draw';
+  var cv = document.createElement('canvas'); cv.width=900; cv.height=460;
+  d.appendChild(cv);
+  var tools = document.createElement('div'); tools.className='tools noprint';
+  PENS.forEach(function(c,i){
+    var b=document.createElement('button'); b.className='sw'+(i===0?' on':''); b.style.background=c;
+    b.title='color';
+    b.onclick=function(){ $$('.sw',tools).forEach(function(x){x.classList.remove('on')}); b.classList.add('on'); state.color=c; state.erase=false; er.classList.remove('on'); };
+    tools.appendChild(b);
+  });
+  var er=document.createElement('button'); er.textContent='Eraser';
+  er.onclick=function(){ state.erase=!state.erase; er.classList.toggle('on', state.erase); };
+  var cl=document.createElement('button'); cl.textContent='Clear';
+  cl.onclick=function(){ if(!confirm('Erase the whole drawing?')) return; ctx.fillStyle='#fff'; ctx.fillRect(0,0,cv.width,cv.height); push(); };
+  tools.appendChild(er); tools.appendChild(cl);
+  d.appendChild(tools);
+  box.appendChild(d);
+
+  var ctx = cv.getContext('2d');
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.lineCap='round'; ctx.lineJoin='round';
+  var state={color:PENS[0],erase:false,down:false,x:0,y:0};
+
+  function pt(ev){
+    var r=cv.getBoundingClientRect();
+    return { x:(ev.clientX-r.left)*(cv.width/r.width), y:(ev.clientY-r.top)*(cv.height/r.height) };
+  }
+  cv.addEventListener('pointerdown',function(ev){
+    cv.setPointerCapture(ev.pointerId); state.down=true;
+    var p=pt(ev); state.x=p.x; state.y=p.y;
+    ctx.beginPath(); ctx.arc(p.x,p.y,(state.erase?14:2),0,7);
+    ctx.fillStyle=state.erase?'#fff':state.color; ctx.fill();
+  });
+  cv.addEventListener('pointermove',function(ev){
+    if(!state.down) return; var p=pt(ev);
+    ctx.strokeStyle=state.erase?'#fff':state.color; ctx.lineWidth=state.erase?28:4;
+    ctx.beginPath(); ctx.moveTo(state.x,state.y); ctx.lineTo(p.x,p.y); ctx.stroke();
+    state.x=p.x; state.y=p.y;
+  });
+  ['pointerup','pointercancel','pointerleave'].forEach(function(e){
+    cv.addEventListener(e,function(){ if(state.down){ state.down=false; push(); } });
+  });
+  function push(){ S.drawings[key]=cv.toDataURL('image/jpeg',0.6); touch(); }
+  CANV[key]={cv:cv,ctx:ctx};
+}
+var CANV={};
+$$('.q[data-draw]').forEach(buildDraw);
+function loadDraw(key,data){
+  var c=CANV[key]; if(!c||!data) return;
+  var img=new Image(); img.onload=function(){ c.ctx.drawImage(img,0,0,c.cv.width,c.cv.height); };
+  img.src=data;
+}
+
+/* ============================================================
+   GLOSSARY POPUP + TRANSLATION
+   ============================================================ */
+var pop = $('#pop'), TC = {};
+try { TC = JSON.parse(localStorage.getItem('mlk_tcache')||'{}'); } catch(e){}
+
+document.addEventListener('click', function(ev){
+  var g = ev.target.closest ? ev.target.closest('.g') : null;
+  if(g){ showPop(g); return; }
+  if(!ev.target.closest || !ev.target.closest('#pop')) pop.style.display='none';
+});
+
+function showPop(g){
+  var k = g.getAttribute('data-k');
+  var def = GLOSS[k] || '';
+  g.classList.add('seen'); S.seen[k]=1; touch();
+  var lang = $('#lang').value;
+  pop.innerHTML = '<span class="x">&times;</span><div class="w">'+k+'</div><div class="d">'+def+'</div>'+
+    (lang ? '<div class="t wait" id="tz">translating…</div>' : '');
+  pop.style.display='block';
+  var r = g.getBoundingClientRect();
+  var top = r.bottom + window.scrollY + 8;
+  var left = Math.min(r.left + window.scrollX, window.innerWidth - pop.offsetWidth - 14);
+  pop.style.top = top+'px'; pop.style.left = Math.max(10,left)+'px';
+  $('.x',pop).onclick = function(){ pop.style.display='none'; };
+  if(lang) translate(k, def, lang);
+}
+
+function translate(word, def, lang){
+  var ck = lang+'::'+word;
+  if(TC[ck]){ setT(TC[ck]); return; }
+  var q = TPROXY + '?text=' + encodeURIComponent(word + ' — ' + def) + '&lang=' + encodeURIComponent(lang) +
+          '&target=' + encodeURIComponent(lang);
+  fetch(q).then(function(r){ return r.text(); }).then(function(t){
+    var out = t;
+    try {
+      var j = JSON.parse(t);
+      out = j.translation || j.translated || j.text || j.result || j.output || t;
+    } catch(e){}
+    TC[ck] = out;
+    try { localStorage.setItem('mlk_tcache', JSON.stringify(TC)); } catch(e){}
+    setT(out);
+  }).catch(function(){ setT('(translation not available)'); });
+}
+function setT(txt){
+  var z = $('#tz'); if(!z) return;
+  z.classList.remove('wait'); z.textContent = txt;
+}
+$('#lang').onchange = function(){ S.lang = this.value; touch(); };
+
+/* ============================================================
+   SAVE — localStorage + Supabase upsert
+   ============================================================ */
+function touch(){ dirty = true; status('on','Saving…'); }
+function status(c,t){
+  var d=$('#dot'); d.className=''; if(c) d.className=c; $('#stat').textContent=t;
+}
+setInterval(function(){ if(dirty && !saving && S.email) save(); }, 2500);
+
+function save(force){
+  if(!S.email) return;
+  try { localStorage.setItem(LS, JSON.stringify(S)); } catch(e){}
+  dirty = false; saving = true;
+  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email', {
+    method:'POST',
+    headers:{
+      'apikey':SUPA_KEY,
+      'Authorization':'Bearer '+SUPA_KEY,
+      'Content-Type':'application/json',
+      'Prefer':'resolution=merge-duplicates,return=minimal'
+    },
+    body: JSON.stringify([{
+      email:S.email, name:S.name, lang:S.lang,
+      answers:S.answers, drawings:S.drawings, seen:S.seen,
+      turned_in:S.turned_in, updated_at:new Date().toISOString()
+    }])
+  }).then(function(r){
+    saving=false;
+    if(r.ok) status('ok','Saved');
+    else { status('err','Not saved'); r.text().then(function(t){ console.warn('supabase',r.status,t); }); }
+  }).catch(function(e){ saving=false; status('err','Offline'); console.warn(e); });
+}
+
+function pull(){
+  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?email=eq.'+encodeURIComponent(S.email)+'&select=*', {
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}
+  }).then(function(r){ return r.json(); }).then(function(rows){
+    if(!rows || !rows.length) return;
+    var r = rows[0];
+    if(r.answers && Object.keys(r.answers).length && !Object.keys(S.answers).length){
+      S.answers = r.answers; S.drawings = r.drawings||{}; S.seen = r.seen||{};
+      S.turned_in = !!r.turned_in; restore();
+    }
+  }).catch(function(){});
+}
+
+function turnIn(){
+  S.turned_in = true; save(true);
+  alert('Turned in. Thank you, ' + S.name.split(' ')[0] + '!');
+}
+$('#turnin').onclick = turnIn;
+$('#turnin2').onclick = turnIn;
+
+window.addEventListener('beforeunload', function(){ if(dirty) save(); });
+
+/* ============================================================
+   TEACHER VIEW
+   ============================================================ */
+var QTEXT = {};
+$$('.q[data-q]').forEach(function(q){ QTEXT[q.getAttribute('data-q')] = $('.prompt',q).textContent.trim(); });
+$$('.q[data-draw]').forEach(function(q){ QTEXT[q.getAttribute('data-draw')] = $('.prompt',q).textContent.trim(); });
+
+$('#tlink').onclick = function(ev){
+  ev.preventDefault();
+  if(prompt('Password:') !== TPASS) return;
+  $('#teach').style.display='block';
+  loadTeach();
+};
+$('#tclose').onclick = function(){ $('#teach').style.display='none'; };
+$('#trefresh').onclick = loadTeach;
+
+var ROWS = [];
+function loadTeach(){
+  $('#tlist').innerHTML = '<p>Loading…</p>';
+  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?select=*&order=name.asc', {
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}
+  }).then(function(r){ return r.json(); }).then(function(rows){
+    ROWS = rows || [];
+    var inn = ROWS.filter(function(r){ return r.turned_in; }).length;
+    $('#tstats').textContent = ROWS.length + ' students · ' + inn + ' turned in';
+    $('#tlist').innerHTML = '';
+    ROWS.forEach(function(r,i){
+      var n = Object.keys(r.answers||{}).filter(function(k){ return (r.answers[k]||'').trim().length>3; }).length;
+      var nd = Object.keys(r.drawings||{}).length;
+      var div = document.createElement('div'); div.className='srow';
+      div.innerHTML =
+        '<h3>'+esc(r.name||'(no name)')+
+        '<span class="pill '+(r.turned_in?'in':'out')+'">'+(r.turned_in?'turned in':'in progress')+'</span></h3>'+
+        '<div class="meta">'+esc(r.email)+' · '+n+'/7 written · '+nd+'/2 drawings · '+
+        (r.updated_at? new Date(r.updated_at).toLocaleString() : '')+'</div>'+
+        '<div class="body" id="b'+i+'"></div>';
+      $('h3',div).onclick = function(){
+        var b = $('#b'+i);
+        if(!b.innerHTML) b.innerHTML = render(r);
+        b.classList.toggle('open');
+      };
+      $('#tlist').appendChild(div);
+    });
+  }).catch(function(e){ $('#tlist').innerHTML='<p>Could not load.</p>'; console.warn(e); });
+}
+function render(r){
+  var out = '';
+  Object.keys(QTEXT).forEach(function(k){
+    out += '<div class="ans"><div class="qq">'+esc(QTEXT[k])+'</div>';
+    if(k.charAt(0)==='d'){
+      out += (r.drawings&&r.drawings[k]) ? '<img src="'+r.drawings[k]+'">' : '<div class="aa">(no drawing)</div>';
+    } else {
+      out += '<div class="aa">'+esc((r.answers&&r.answers[k])||'(blank)')+'</div>';
+    }
+    out += '</div>';
+  });
+  return out;
+}
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+$('#tcsv').onclick = function(){
+  var keys = Object.keys(QTEXT).filter(function(k){ return k.charAt(0)!=='d'; });
+  var head = ['name','email','turned_in','updated_at'].concat(keys);
+  var lines = [head.map(csv).join(',')];
+  ROWS.forEach(function(r){
+    var row = [r.name,r.email,r.turned_in,r.updated_at].concat(keys.map(function(k){ return (r.answers||{})[k]||''; }));
+    lines.push(row.map(csv).join(','));
+  });
+  var blob = new Blob([lines.join('\n')],{type:'text/csv'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'mlk_answers.csv'; a.click();
+};
+function csv(v){ return '"' + String(v==null?'':v).replace(/"/g,'""') + '"'; }
+
+boot();
+</script>
+</body>
+</html>
