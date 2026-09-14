@@ -145,6 +145,9 @@ body[data-level=chal] #bank{display:none}
 .idbar .inner{max-width:920px;margin:0 auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .idbar input,.idbar select{flex:1 1 150px;padding:7px 10px;font-size:.95rem}
 .idbar .who{font-weight:800;color:var(--pine)}
+.idbar .idnote{flex:1 1 100%;font-size:.84rem;font-weight:700;color:#6B7F75;line-height:1.3}
+.idbar .idnote.warn{color:#B26A00}
+.idbar .idnote.good{color:#1F4D3D}
 
 /* ---------- print ---------- */
 @media print{
@@ -164,7 +167,7 @@ body[data-level=chal] #bank{display:none}
 <div class="levels noprint" role="group" aria-label="Choose your level">
   <button data-l="easy">Easier</button><button data-l="std">Standard</button><button data-l="chal">Challenge</button>
 </div>
-<div class="note">Your work saves by itself. Use the same name and period every time so you don't lose it.
+<div class="note">Your work saves by itself, under your school email. Sign in with the same email on any computer and your song comes back.
   <span id="saveState" class="frame" style="display:block"></span></div>
 
 <section class="card">
@@ -316,36 +319,60 @@ async function translateWord(word,meaning,lang){
   throw new Error('translation failed');
 }
 
-/* ---- who am I (name + period, kept in this browser) ---- */
-var ME={name:'',period:''};
+/* ---- who am I (school email is the identifier) ---- */
+var ME={email:'',name:'',period:''};
 function loadMe(){
   try{var m=JSON.parse(localStorage.getItem('galileo_song_me')||'{}');
+    ME.email=String(m.email||'').trim().toLowerCase();
     ME.name=m.name||'';ME.period=m.period||'';}catch(e){}
 }
 function saveMe(){try{localStorage.setItem('galileo_song_me',JSON.stringify(ME));}catch(e){}}
-function meKey(){return keyify(ME.name);}
-function meReady(){return !!(ME.name&&ME.name.trim().length>1&&ME.period);}
+function meKey(){return String(ME.email||'').trim().toLowerCase();}
+function emailOK(s){return /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(String(s||'').trim());}
+function meReady(){return !!(emailOK(ME.email)&&ME.name&&ME.name.trim().length>1&&ME.period);}
+function meMissing(){
+  if(!emailOK(ME.email))return 'Type your school email at the top (it ends with @sfusd.edu).';
+  if(!(ME.name&&ME.name.trim().length>1))return 'Type your name at the top so the class knows whose song it is.';
+  if(!ME.period)return 'Choose your class period at the top.';
+  return '';
+}
 
 function idBarHTML(){
   var opts=['1','2','3','4','5','6','7','8'].map(function(p){
     return '<option value="'+p+'">Period '+p+'</option>';}).join('');
   return '<div class="idbar noprint"><div class="inner">'
-    +'<span class="who">Your name</span>'
-    +'<input type="text" id="meName" placeholder="First name and last initial" autocomplete="off">'
-    +'<select id="mePeriod"><option value="">Class period…</option>'+opts+'</select>'
+    +'<span class="who">School email</span>'
+    +'<input type="email" id="meEmail" placeholder="you@sfusd.edu" autocomplete="email" '
+      +'inputmode="email" spellcheck="false" autocapitalize="none" style="flex:2 1 210px">'
+    +'<input type="text" id="meName" placeholder="Your name (shown on the mixtape)" autocomplete="off">'
+    +'<select id="mePeriod"><option value="">Class period&hellip;</option>'+opts+'</select>'
+    +'<span class="idnote" id="idNote"></span>'
     +'</div></div>';
+}
+function idNote(){
+  var el=$('#idNote'); if(!el)return;
+  var v=String(ME.email||'').trim();
+  if(!v){el.textContent='Your work saves to your school email, so you can finish on any computer.';
+    el.className='idnote';return;}
+  if(!emailOK(v)){el.textContent='That is not a whole email address yet.';el.className='idnote warn';return;}
+  if(!/@sfusd\.edu$/i.test(v)){el.textContent='Careful \u2014 school emails end with @sfusd.edu.';
+    el.className='idnote warn';return;}
+  el.textContent='\u2713 '+v+(ME.period?(' \u00b7 Period '+ME.period):'');el.className='idnote good';
 }
 function wireIdBar(onChange){
   loadMe();
-  var n=$('#meName'),p=$('#mePeriod');
-  if(!n||!p)return;
-  n.value=ME.name;p.value=ME.period;
-  function sync(){ME.name=n.value;ME.period=p.value;saveMe();}
+  var e=$('#meEmail'),n=$('#meName'),p=$('#mePeriod');
+  if(!e||!n||!p)return;
+  e.value=ME.email;n.value=ME.name;p.value=ME.period;
+  function sync(){ME.email=String(e.value||'').trim().toLowerCase();
+    ME.name=n.value;ME.period=p.value;saveMe();idNote();}
   function notify(){sync();if(onChange)onChange();}
-  n.addEventListener('input',sync);
-  n.addEventListener('change',notify);
-  n.addEventListener('blur',notify);
+  ['input','change','blur'].forEach(function(ev){
+    e.addEventListener(ev,ev==='input'?sync:notify);
+    n.addEventListener(ev,ev==='input'?sync:notify);
+  });
   p.addEventListener('change',notify);
+  idNote();
 }
 
 /* ---- youtube helpers ---- */
@@ -392,7 +419,7 @@ function chipSet(host,val){
 
 function collect(){
   return {
-    student_name:ME.name.trim(), student_key:meKey(), class_period:ME.period,
+    student_name:ME.name.trim(), email:meKey(), class_period:ME.period,
     sticker:chipGet('stickers',false),
     song_title:$('#songTitle').value.trim(),
     artist:$('#artist').value.trim(),
@@ -424,9 +451,9 @@ function mark(){dirty=true;$('#saveState').textContent='Not saved yet…';clearT
 
 async function save(silent){
   try{localStorage.setItem('galileo_my_song',JSON.stringify(collect()));}catch(e){}
-  if(!meReady()){$('#saveState').textContent='Add your name and period at the top to save.';
-    if(!silent)toast('Type your name and choose your period at the top.');return false;}
-  var ok=await sbUpsert('song_entries',collect(),'student_key,class_period');
+  if(!meReady()){$('#saveState').textContent=meMissing();
+    if(!silent)toast(meMissing());return false;}
+  var ok=await sbUpsert('song_entries',collect(),'email');
   $('#saveState').textContent = ok ? ('Saved ✓ '+new Date().toLocaleTimeString()) : 'Saved on this device only';
   if(!silent)toast(ok?'Saved ✓':'Could not reach the internet — saved on this device.');
   dirty=!ok;
@@ -434,8 +461,7 @@ async function save(silent){
 }
 async function loadMine(){
   if(!meReady())return;
-  var rows=await sbSelect('song_entries','select=*&student_key=eq.'+encodeURIComponent(meKey())
-    +'&class_period=eq.'+encodeURIComponent(ME.period));
+  var rows=await sbSelect('song_entries','select=*&email=eq.'+encodeURIComponent(meKey()));
   if(rows&&rows.length){LOADED_ID=rows[0].id;fill(rows[0]);
     $('#saveState').textContent='Loaded your saved answers.';}
 }
@@ -482,12 +508,12 @@ document.addEventListener('DOMContentLoaded',function(){
     if(!d.why_like)missing.push('why you like it');
     if(!d.main_idea)missing.push('the main idea');
     if(!d.fav_line)missing.push('your favorite line');
-    if(!meReady()){toast('Type your name and choose your period at the top.');return;}
+    if(!meReady()){toast(meMissing());return;}
     if(missing.length){
       if(!confirm('You are missing: '+missing.join(', ')+'.\n\nTurn it in anyway?'))return;
     }
     d.turned_in=true;
-    var ok=await sbUpsert('song_entries',d,'student_key,class_period');
+    var ok=await sbUpsert('song_entries',d,'email');
     if(ok){$('#doneBox').style.display='block';
       try{$('#doneBox').scrollIntoView({behavior:'smooth',block:'center'});}catch(e){}
       toast('Turned in ✓ Your song is on the mixtape.');}

@@ -145,6 +145,9 @@ body[data-level=chal] #bank{display:none}
 .idbar .inner{max-width:920px;margin:0 auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .idbar input,.idbar select{flex:1 1 150px;padding:7px 10px;font-size:.95rem}
 .idbar .who{font-weight:800;color:var(--pine)}
+.idbar .idnote{flex:1 1 100%;font-size:.84rem;font-weight:700;color:#6B7F75;line-height:1.3}
+.idbar .idnote.warn{color:#B26A00}
+.idbar .idnote.good{color:#1F4D3D}
 
 /* ---------- print ---------- */
 @media print{
@@ -178,6 +181,8 @@ body[data-level=chal] #bank{display:none}
     <button class="chip" data-t="songs" aria-pressed="true">Songs</button>
     <button class="chip" data-t="vocab" aria-pressed="false">Word lessons</button>
     <button class="chip" data-t="comments" aria-pressed="false">Comments</button>
+    <button class="chip" data-t="missing" aria-pressed="false">Who is missing</button>
+    <button class="chip" data-t="pick" aria-pressed="false">Class pick</button>
   </div>
   <div id="body"></div>
 </div>
@@ -241,36 +246,60 @@ async function translateWord(word,meaning,lang){
   throw new Error('translation failed');
 }
 
-/* ---- who am I (name + period, kept in this browser) ---- */
-var ME={name:'',period:''};
+/* ---- who am I (school email is the identifier) ---- */
+var ME={email:'',name:'',period:''};
 function loadMe(){
   try{var m=JSON.parse(localStorage.getItem('galileo_song_me')||'{}');
+    ME.email=String(m.email||'').trim().toLowerCase();
     ME.name=m.name||'';ME.period=m.period||'';}catch(e){}
 }
 function saveMe(){try{localStorage.setItem('galileo_song_me',JSON.stringify(ME));}catch(e){}}
-function meKey(){return keyify(ME.name);}
-function meReady(){return !!(ME.name&&ME.name.trim().length>1&&ME.period);}
+function meKey(){return String(ME.email||'').trim().toLowerCase();}
+function emailOK(s){return /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(String(s||'').trim());}
+function meReady(){return !!(emailOK(ME.email)&&ME.name&&ME.name.trim().length>1&&ME.period);}
+function meMissing(){
+  if(!emailOK(ME.email))return 'Type your school email at the top (it ends with @sfusd.edu).';
+  if(!(ME.name&&ME.name.trim().length>1))return 'Type your name at the top so the class knows whose song it is.';
+  if(!ME.period)return 'Choose your class period at the top.';
+  return '';
+}
 
 function idBarHTML(){
   var opts=['1','2','3','4','5','6','7','8'].map(function(p){
     return '<option value="'+p+'">Period '+p+'</option>';}).join('');
   return '<div class="idbar noprint"><div class="inner">'
-    +'<span class="who">Your name</span>'
-    +'<input type="text" id="meName" placeholder="First name and last initial" autocomplete="off">'
-    +'<select id="mePeriod"><option value="">Class period…</option>'+opts+'</select>'
+    +'<span class="who">School email</span>'
+    +'<input type="email" id="meEmail" placeholder="you@sfusd.edu" autocomplete="email" '
+      +'inputmode="email" spellcheck="false" autocapitalize="none" style="flex:2 1 210px">'
+    +'<input type="text" id="meName" placeholder="Your name (shown on the mixtape)" autocomplete="off">'
+    +'<select id="mePeriod"><option value="">Class period&hellip;</option>'+opts+'</select>'
+    +'<span class="idnote" id="idNote"></span>'
     +'</div></div>';
+}
+function idNote(){
+  var el=$('#idNote'); if(!el)return;
+  var v=String(ME.email||'').trim();
+  if(!v){el.textContent='Your work saves to your school email, so you can finish on any computer.';
+    el.className='idnote';return;}
+  if(!emailOK(v)){el.textContent='That is not a whole email address yet.';el.className='idnote warn';return;}
+  if(!/@sfusd\.edu$/i.test(v)){el.textContent='Careful \u2014 school emails end with @sfusd.edu.';
+    el.className='idnote warn';return;}
+  el.textContent='\u2713 '+v+(ME.period?(' \u00b7 Period '+ME.period):'');el.className='idnote good';
 }
 function wireIdBar(onChange){
   loadMe();
-  var n=$('#meName'),p=$('#mePeriod');
-  if(!n||!p)return;
-  n.value=ME.name;p.value=ME.period;
-  function sync(){ME.name=n.value;ME.period=p.value;saveMe();}
+  var e=$('#meEmail'),n=$('#meName'),p=$('#mePeriod');
+  if(!e||!n||!p)return;
+  e.value=ME.email;n.value=ME.name;p.value=ME.period;
+  function sync(){ME.email=String(e.value||'').trim().toLowerCase();
+    ME.name=n.value;ME.period=p.value;saveMe();idNote();}
   function notify(){sync();if(onChange)onChange();}
-  n.addEventListener('input',sync);
-  n.addEventListener('change',notify);
-  n.addEventListener('blur',notify);
+  ['input','change','blur'].forEach(function(ev){
+    e.addEventListener(ev,ev==='input'?sync:notify);
+    n.addEventListener(ev,ev==='input'?sync:notify);
+  });
   p.addEventListener('change',notify);
+  idNote();
 }
 
 /* ---- youtube helpers ---- */
@@ -282,7 +311,7 @@ function ytId(url){
 function ytThumb(url){var id=ytId(url);return id?'https://img.youtube.com/vi/'+id+'/mqdefault.jpg':'';}
 function firstUrl(s){var m=String(s||'').match(/https?:\/\/[^\s<>"'\)\]]+/);return m?m[0]:'';}
 
-var PW='galileo2026', TAB='songs', PERIOD='', ROWS=[], VROWS=[], CROWS=[];
+var PW='galileo2026', TAB='songs', PERIOD='', ROWS=[], VROWS=[], CROWS=[], TROWS=[];
 
 function gate(){
   var ok=sessionStorage.getItem('galileo_song_dash')==='1';
@@ -296,6 +325,7 @@ async function load(){
   ROWS=await sbSelect('song_entries','select=*'+f+'&order=class_period.asc,student_name.asc');
   VROWS=await sbSelect('song_vocab_progress','select=*'+f+'&order=class_period.asc,student_name.asc');
   CROWS=await sbSelect('song_comments','select=*'+(PERIOD?('&class_period=eq.'+encodeURIComponent(PERIOD)):'')+'&order=created_at.desc');
+  TROWS=await sbSelect('song_votes','select=*'+f+'&order=created_at.desc');
   draw();
 }
 function done(e){
@@ -307,18 +337,22 @@ function drawSongs(){
   if(!ROWS.length)return '<p>No songs yet.</p>';
   return '<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:.92rem">'
    +'<tr style="background:#1F4D3D;color:#FBF6EA;text-align:left">'
-   +['Per','Student','Song','Artist','Link','Feelings','Done','In','',''].map(function(h){
+   +['Per','Student','School email','Song','Artist','Link','Done','In','\u2605','',''].map(function(h){
        return '<th style="padding:7px 9px">'+h+'</th>';}).join('')+'</tr>'
    +ROWS.map(function(e,i){
      return '<tr style="border-bottom:1px solid #CFDCD5;background:'+(i%2?'#F4FAF6':'#fff')+'">'
       +'<td style="padding:7px 9px">'+esc(e.class_period)+'</td>'
       +'<td style="padding:7px 9px"><strong>'+esc(e.student_name)+'</strong></td>'
+      +'<td style="padding:7px 9px;font-size:.85rem;color:#41564C">'+esc(e.email||'—')+'</td>'
       +'<td style="padding:7px 9px">'+esc(e.song_title||'')+'</td>'
       +'<td style="padding:7px 9px">'+esc(e.artist||'')+'</td>'
       +'<td style="padding:7px 9px">'+(e.song_url?'<a href="'+esc(e.song_url)+'" target="_blank" rel="noopener">open</a>':'—')+'</td>'
-      +'<td style="padding:7px 9px">'+esc((e.moods||[]).join(', '))+'</td>'
       +'<td style="padding:7px 9px">'+done(e)+'</td>'
       +'<td style="padding:7px 9px">'+(e.turned_in?'✓':'')+'</td>'
+      +'<td style="padding:7px 9px"><button class="ghost exBtn" data-id="'+e.id+'" data-v="'
+        +(e.is_example?'0':'1')+'" title="Show this entry to every class as a model" '
+        +'style="padding:3px 9px;font-size:.85rem'+(e.is_example?';background:#E8A33D;border-color:#B87C22':'')
+        +'">'+(e.is_example?'★':'☆')+'</button></td>'
       +'<td style="padding:7px 9px"><button class="ghost seeBtn" data-id="'+e.id+'" style="padding:3px 10px;font-size:.85rem">read</button></td>'
       +'<td style="padding:7px 9px"><button class="ghost delEntry" data-id="'+e.id+'" style="padding:3px 10px;font-size:.85rem;border-color:#C0392B;color:#C0392B">del</button></td>'
       +'</tr>';}).join('')+'</table></div>';
@@ -336,6 +370,110 @@ function drawVocab(){
       +(wt?'<div style="margin-top:8px;white-space:pre-wrap;background:#F4FAF6;padding:10px;border-radius:10px">'+esc(wt)+'</div>':'')
       +'</div>';}).join('');
 }
+function rosterKey(){return 'galileo_song_roster_'+(PERIOD||'all');}
+function getRoster(){
+  try{return JSON.parse(localStorage.getItem(rosterKey())||'[]');}catch(e){return [];}
+}
+function setRoster(list){
+  try{localStorage.setItem(rosterKey(),JSON.stringify(list));}catch(e){}
+}
+function parseRoster(txt){
+  var out=[],seen={};
+  String(txt||'').split(/[\s,;]+/).forEach(function(x){
+    x=x.trim().toLowerCase();
+    if(x.indexOf('@')<1)return;
+    if(seen[x])return; seen[x]=1; out.push(x);
+  });
+  return out;
+}
+function drawMissing(){
+  var roster=getRoster();
+  var head='<div class="card" style="margin:12px 0">'
+    +'<h3 style="margin-top:0">Your class list</h3>'
+    +'<p>Paste your students\' school emails here \u2014 straight out of Synergy or a Google Group is '
+    +'fine, spaces, commas or line breaks all work. It is saved in this browser, one list per period.</p>'
+    +'<textarea id="rosterBox" style="min-height:110px" placeholder="student1@sfusd.edu\nstudent2@sfusd.edu">'
+    +esc(roster.join('\n'))+'</textarea>'
+    +'<p><button id="rosterSave">Save class list</button> '
+    +'<button class="ghost" id="rosterClear">Clear</button></p></div>';
+  if(!roster.length)return head+'<p>Paste a list above and this tab will show you who has not turned in.</p>';
+
+  var live=ROWS.filter(function(r){return !r.is_example;});
+  var byEmail={};
+  live.forEach(function(r){if(r.email)byEmail[String(r.email).toLowerCase()]=r;});
+  var vocab={};
+  VROWS.forEach(function(v){if(v.email){vocab[String(v.email).toLowerCase()]=vocab[String(v.email).toLowerCase()]||{};
+    vocab[String(v.email).toLowerCase()][v.lesson]=v;}});
+
+  var rows=roster.map(function(em){
+    var e=byEmail[em], vv=vocab[em]||{};
+    return {email:em,entry:e,sound:!!vv.sound,feelings:!!vv.feelings};
+  });
+  var nothing=rows.filter(function(r){return !r.entry;});
+  var started=rows.filter(function(r){return r.entry&&!r.entry.turned_in;});
+  var inYet=rows.filter(function(r){return r.entry&&r.entry.turned_in;});
+
+  function chunk(title,list,tone,render){
+    if(!list.length)return '';
+    return '<div class="card" style="margin:12px 0;border-left:8px solid '+tone+'">'
+      +'<h3 style="margin-top:0">'+title+' ('+list.length+')</h3>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:8px">'+list.map(render).join('')+'</div></div>';
+  }
+  var extra=live.filter(function(r){return r.email&&roster.indexOf(String(r.email).toLowerCase())<0;});
+
+  return head
+   +'<div style="display:flex;gap:12px;flex-wrap:wrap;margin:12px 0">'
+     +[['On the list',roster.length],['Turned in',inYet.length],
+       ['Started, not in',started.length],['Nothing yet',nothing.length]].map(function(c){
+       return '<div style="flex:1 1 130px;background:#fff;border:2px solid #1F4D3D;border-radius:14px;padding:10px 14px">'
+         +'<div style="font-family:Fredoka;font-size:1.6rem;color:#1F4D3D;line-height:1.1">'+c[1]+'</div>'
+         +'<div style="font-size:.85rem;font-weight:700;color:#41564C">'+c[0]+'</div></div>';}).join('')
+   +'</div>'
+   +chunk('Nothing yet',nothing,'#C0392B',function(r){
+      return '<span style="background:#FBEAE7;border-radius:8px;padding:4px 10px;font-size:.9rem">'
+        +esc(r.email)+(r.sound||r.feelings?' <em style="color:#41564C">(did a word lesson)</em>':'')+'</span>';})
+   +chunk('Started but not turned in',started,'#E8A33D',function(r){
+      return '<span style="background:#FCF3E3;border-radius:8px;padding:4px 10px;font-size:.9rem">'
+        +esc(r.entry.student_name||r.email)+' \u2014 '+done(r.entry)+'</span>';})
+   +chunk('Turned in',inYet,'#1F4D3D',function(r){
+      return '<span style="background:#EAF4EE;border-radius:8px;padding:4px 10px;font-size:.9rem">'
+        +esc(r.entry.student_name||r.email)+'</span>';})
+   +(extra.length?chunk('Turned in but not on your list',extra,'#57709e',function(r){
+      return '<span style="background:#EEF1F8;border-radius:8px;padding:4px 10px;font-size:.9rem">'
+        +esc(r.student_name||'')+' \u00b7 '+esc(r.email)+'</span>';}):'');
+}
+
+function slugify(s){
+  return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'').slice(0,24)||'song';
+}
+function drawPick(){
+  var live=ROWS.filter(function(r){return !r.is_example;});
+  if(!live.length)return '<p>No songs yet, so there is nothing to vote on.</p>';
+  var tally={};
+  TROWS.forEach(function(v){tally[v.entry_id]=(tally[v.entry_id]||0)+1;});
+  var rank=live.slice().sort(function(a,b){return (tally[b.id]||0)-(tally[a.id]||0);});
+  var voted=TROWS.length;
+  var top=tally[rank[0].id]||1;
+  return '<div class="card" style="margin:12px 0"><h3 style="margin-top:0">Which song should the class study?</h3>'
+    +'<p>'+voted+' vote'+(voted===1?'':'s')+' so far'+(PERIOD?(' in period '+esc(PERIOD)):' across all periods')
+    +'. One vote per student, and they can change it.</p></div>'
+    +rank.slice(0,12).map(function(e){
+      var v=tally[e.id]||0, w=Math.round(100*v/top);
+      return '<div class="card" style="margin:10px 0;padding:12px">'
+        +'<div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap">'
+          +'<strong style="font-size:1.05rem">'+(esc(e.song_title)||'(no title)')+'</strong>'
+          +'<span style="font-family:Fredoka;font-size:1.2rem;color:#1F4D3D">'+v+'</span></div>'
+        +'<div style="font-size:.9rem;color:#41564C">'+esc(e.artist||'')
+          +(e.song_language?' \u00b7 '+esc(e.song_language):'')+' \u00b7 chosen by '+esc(e.student_name||'')+'</div>'
+        +'<div style="height:12px;background:#E4EDE8;border-radius:8px;overflow:hidden;margin:6px 0">'
+          +'<div style="height:100%;width:'+w+'%;background:#E8A33D"></div></div>'
+        +(e.song_url?'<a href="'+esc(e.song_url)+'" target="_blank" rel="noopener">open the song \u2197</a> ':'')
+        +'<button class="ghost pickBtn" data-slug="'+esc(slugify(e.song_title))+'" '
+          +'data-title="'+esc(e.song_title||'')+'" data-artist="'+esc(e.artist||'')+'" '
+          +'style="padding:3px 12px;font-size:.85rem;margin-left:8px">make this the class song</button>'
+        +'</div>';}).join('');
+}
+
 function drawComments(){
   if(!CROWS.length)return '<p>No comments yet.</p>';
   return CROWS.map(function(c){
@@ -351,14 +489,18 @@ function drawComments(){
 }
 function draw(){
   $$('#tabs button').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.t===TAB));});
-  $('#body').innerHTML = TAB==='songs'?drawSongs():(TAB==='vocab'?drawVocab():drawComments());
+  $('#body').innerHTML = TAB==='songs'?drawSongs()
+    :TAB==='vocab'?drawVocab()
+    :TAB==='comments'?drawComments()
+    :TAB==='missing'?drawMissing()
+    :drawPick();
 }
 function csv(){
-  var cols=['class_period','student_name','song_title','artist','song_url','lyrics_url','song_language',
+  var cols=['class_period','student_name','email','song_title','artist','song_url','lyrics_url','song_language',
     'speed','volume','voice','instruments','moods','why_like','first_heard','main_idea','fav_line',
     'fav_line_why','turned_in','updated_at'];
   var out=[cols.join(',')];
-  ROWS.forEach(function(r){
+  ROWS.filter(function(r){return !r.is_example;}).forEach(function(r){
     out.push(cols.map(function(c){
       var v=r[c];if(Array.isArray(v))v=v.join('; ');
       return '"'+String(v==null?'':v).replace(/"/g,'""').replace(/\n/g,' ')+'"';}).join(','));});
@@ -387,6 +529,27 @@ document.addEventListener('DOMContentLoaded',function(){
         +'\n\nMAIN IDEA: '+(r.main_idea||'—')+'\n\nFAVORITE LINE: '+(r.fav_line||'—')
         +'\nWHY: '+(r.fav_line_why||'—'));return;
     }
+    var ex=e.target.closest('.exBtn');
+    if(ex){
+      await fetch(SUPA_URL+'/rest/v1/song_entries?id=eq.'+ex.dataset.id,{method:'PATCH',
+        headers:sbHeaders({'Prefer':'return=minimal'}),
+        body:JSON.stringify({is_example:ex.dataset.v==='1'})});
+      toast(ex.dataset.v==='1'?'Now shown to every class as a model.':'No longer a model.');
+      load();return;}
+    var rs=e.target.closest('#rosterSave');
+    if(rs){setRoster(parseRoster($('#rosterBox').value));toast('Class list saved.');draw();return;}
+    var rc=e.target.closest('#rosterClear');
+    if(rc){setRoster([]);toast('Class list cleared.');draw();return;}
+    var pk=e.target.closest('.pickBtn');
+    if(pk){
+      var sl=pk.dataset.slug;
+      alert('Class song: '+pk.dataset.title+' \u2014 '+pk.dataset.artist+'\n\n'
+        +'Build the analysis page with this slug:\n\n    var SLUG = \''+sl+'\';\n\n'
+        +'1. Copy your song-analysis template into readings/songs/'+sl+'.html\n'
+        +'2. Change SLUG at the top of the file to '+sl+'\n'
+        +'3. Open the page and paste the lyrics into the in-page box \u2014 they go to song_lyrics.\n'
+        +'4. Add the card to the readings hub.');
+      return;}
     var d=e.target.closest('.delEntry');
     if(d){if(!confirm('Delete this song entry? This cannot be undone.'))return;
       await sbDelete('song_entries','id=eq.'+d.dataset.id);load();return;}
