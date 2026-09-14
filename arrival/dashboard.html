@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Arrival &mdash; Teacher Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--pine:#1f4d3d;--pine-dk:#143528;--pine-lt:#e8f0ec;--ink:#1b1b1b;--rule:#c9ccc8;--sepia:#8a6d45}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:'Nunito',-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink);background:#f2f4f2;font-size:16px;line-height:1.55}
+#bar{position:sticky;top:0;z-index:60;background:var(--pine);color:#fff;padding:9px 14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+#bar .brand{font-weight:800;margin-right:8px}
+#bar button,#bar select,#bar input{font-family:inherit;font-size:14px;font-weight:700;border:1px solid rgba(255,255,255,.45);background:rgba(255,255,255,.10);color:#fff;border-radius:7px;padding:6px 10px;cursor:pointer}
+#bar input{cursor:text;min-width:150px}
+#bar input::placeholder{color:rgba(255,255,255,.65)}
+#bar select option{color:#111;background:#fff}
+#bar .spacer{flex:1}
+#stat{font-size:13px;opacity:.9;font-weight:700}
+.wrap{max-width:1180px;margin:18px auto 70px;padding:0 16px}
+h1{font-size:1.6rem;margin:0 0 2px;color:var(--pine-dk)}
+.sub{color:#5d6b63;font-weight:700;margin:0 0 18px;font-size:.92rem}
+table.t{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--rule)}
+table.t th,table.t td{border-bottom:1px solid #e6eae7;padding:8px 10px;font-size:.92rem;text-align:left;vertical-align:top}
+table.t th{background:var(--pine);color:#fff;font-weight:800;font-size:.82rem;position:sticky;top:46px;cursor:pointer}
+table.t tr:hover td{background:#f3f8f5}
+table.t td.nm{font-weight:800;color:var(--pine-dk);cursor:pointer}
+table.t td.nm:hover{text-decoration:underline}
+.pill{display:inline-block;font-size:.74rem;font-weight:800;padding:2px 8px;border-radius:20px;background:#e6eae7;color:#3f4c46}
+.pill.in{background:#d8efe1;color:#1f5b3c}
+.pill.no{background:#f3e3e0;color:#8a3a2c}
+.pill.easy{background:#fdf0d9;color:#7a5a14}
+.pill.chal{background:#e0e9f4;color:#1f4a70}
+.bar{height:7px;background:#e6eae7;border-radius:4px;overflow:hidden;min-width:70px}
+.bar i{display:block;height:100%;background:var(--pine)}
+.card{background:#fff;border:1px solid var(--rule);border-radius:8px;padding:16px 18px;margin:14px 0}
+.card h3{margin:0 0 8px;color:var(--pine-dk);font-size:1.1rem}
+.kv{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.kv b{font-size:.8rem;background:var(--pine-lt);color:var(--pine-dk);padding:4px 10px;border-radius:6px;font-weight:800}
+.sec{margin:16px 0 4px;font-weight:800;color:var(--pine-dk);border-bottom:2px solid var(--pine-lt);padding-bottom:4px}
+.ans{padding:7px 0;border-bottom:1px solid #f0f3f1}
+.ans .k{font-size:.76rem;font-weight:800;color:#6c7d74}
+.ans .v{white-space:pre-wrap}
+.ans .v.blank{color:#a9b3ae;font-style:italic}
+button.act{font-family:inherit;font-weight:800;font-size:.86rem;background:var(--pine);color:#fff;border:0;border-radius:7px;padding:7px 14px;cursor:pointer;margin-right:8px}
+button.act.gh{background:#fff;color:var(--pine);border:1.5px solid var(--pine)}
+#gate{position:fixed;inset:0;z-index:200;background:rgba(16,28,23,.95);display:flex;align-items:center;justify-content:center;padding:20px}
+#gate .g{background:#fff;border-radius:12px;padding:28px 26px;max-width:380px;width:100%}
+#gate h2{margin:0 0 14px;color:var(--pine-dk)}
+#gate input{width:100%;font-family:inherit;font-size:1rem;padding:10px 12px;margin-bottom:10px;border:1.5px solid var(--rule);border-radius:7px}
+#gate button{width:100%;font-family:inherit;font-weight:800;font-size:1rem;background:var(--pine);color:#fff;border:0;border-radius:7px;padding:12px;cursor:pointer}
+#gerr{color:#a33;font-weight:700;font-size:.9rem;min-height:20px}
+.empty{padding:40px;text-align:center;color:#6c7d74;font-weight:700;background:#fff;border:1px solid var(--rule)}
+@media (max-width:720px){ table.t th:nth-child(n+5),table.t td:nth-child(n+5){display:none} }
+</style>
+</head>
+<body>
+
+<div id="bar">
+  <span class="brand">The Arrival &mdash; Dashboard</span>
+  <select id="fGuide">
+    <option value="arrival_unit">Unit (ch 1&ndash;6)</option>
+    <option value="arrival_projects">Final projects</option>
+  </select>
+  <select id="fPeriod"><option value="">All periods</option></select>
+  <select id="fLevel">
+    <option value="">All levels</option>
+    <option value="easy">Easier</option>
+    <option value="std">Standard</option>
+    <option value="chal">Challenge</option>
+  </select>
+  <input id="fSearch" placeholder="Search a name">
+  <button id="reload">Reload</button>
+  <button id="csv">Export CSV</button>
+  <span class="spacer"></span>
+  <span id="stat"></span>
+</div>
+
+<div class="wrap">
+  <h1 id="title">Unit progress</h1>
+  <p class="sub" id="sub"></p>
+  <div id="view"></div>
+</div>
+
+<div id="gate">
+  <div class="g">
+    <h2>Teacher access</h2>
+    <input id="pw" type="password" placeholder="Password">
+    <div id="gerr"></div>
+    <button id="pwBtn">Open</button>
+  </div>
+</div>
+
+<script>
+var SUPA_URL = "https://lhmwtfyceilgndpygivj.supabase.co";
+var SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU";
+var TABLE = "arrival_responses";
+var PW = "galileo2026";
+
+var ROWS = [], SORT = { k:"student_name", dir:1 }, OPEN = null;
+
+function esc(s){ return String(s == null ? "" : s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function headers(){ return { "apikey":SUPA_KEY, "Authorization":"Bearer " + SUPA_KEY, "Content-Type":"application/json" }; }
+function when(iso){
+  if(!iso) return "";
+  var d = new Date(iso), n = new Date();
+  var same = d.toDateString() === n.toDateString();
+  var h = d.getHours(), m = d.getMinutes(), ap = h >= 12 ? "PM" : "AM";
+  h = h % 12 || 12; if(m < 10) m = "0" + m;
+  return (same ? "" : (d.getMonth()+1) + "/" + d.getDate() + " ") + h + ":" + m + " " + ap;
+}
+
+/* ---------- labels for answer keys ---------- */
+var SECT = [
+  [/^start_/,      "Start &mdash; baseline writing"],
+  [/^words_/,      "Vocabulary self-check"],
+  [/^ch(\d)_before/,"Chapter $1 &mdash; before you look"],
+  [/^ch(\d)_order/, "Chapter $1 &mdash; sequence"],
+  [/^ch(\d)_tf/,    "Chapter $1 &mdash; true / false"],
+  [/^ch(\d)_match/, "Chapter $1 &mdash; word match"],
+  [/^ch(\d)_(see|think|wonder|stw)/, "Chapter $1 &mdash; see / think / wonder"],
+  [/^ch(\d)_th_/,   "Chapter $1 &mdash; theme search"],
+  [/^ch(\d)_partner/,"Chapter $1 &mdash; partner talk"],
+  [/^ch(\d)_w_/,    "Chapter $1 &mdash; writing"],
+  [/^ch(\d)_cap/,   "Chapter $1 &mdash; read aloud"],
+  [/^pj_/,         "Project choice"],
+  [/^ob_/,         "Project 1 &mdash; the object"],
+  [/^sx_/,         "Six-panel story"],
+  [/^gd_/,         "Survival guide"],
+  [/^vo_/,         "Voice-over"],
+  [/^un_/,         "Untold chapter"],
+  [/^iv_/,         "Interview"],
+  [/^mu_/,         "Museum talk"],
+  [/^final_/,      "Final write"],
+  [/^ru_/,         "Self-assessment"]
+];
+function sectionOf(key){
+  for(var i = 0; i < SECT.length; i++){
+    var m = key.match(SECT[i][0]);
+    if(m) return SECT[i][1].replace("$1", m[1] || "");
+  }
+  return "Other";
+}
+
+/* ---------- load ---------- */
+function load(){
+  document.getElementById("stat").textContent = "Loading\u2026";
+  var g = document.getElementById("fGuide").value;
+  fetch(SUPA_URL + "/rest/v1/" + TABLE + "?guide_key=eq." + g +
+        "&select=email,student_name,period,level,lang,payload,answered,total,submitted,submitted_at,updated_at" +
+        "&order=student_name.asc", { headers: headers() })
+    .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function(rows){
+      ROWS = rows || [];
+      var per = {};
+      ROWS.forEach(function(r){ if(r.period) per[r.period] = 1; });
+      var sel = document.getElementById("fPeriod"), keep = sel.value;
+      sel.innerHTML = '<option value="">All periods</option>';
+      Object.keys(per).sort().forEach(function(p){
+        sel.innerHTML += '<option' + (p === keep ? ' selected' : '') + '>' + esc(p) + '</option>';
+      });
+      document.getElementById("stat").textContent = ROWS.length + " students";
+      render();
+    })
+    .catch(function(e){
+      document.getElementById("stat").textContent = "Load failed";
+      document.getElementById("view").innerHTML =
+        '<div class="empty">Could not load. Check the internet, and check that the table <b>' + TABLE +
+        '</b> exists in Supabase.<br><br>' + esc(e.message) + '</div>';
+    });
+}
+
+function filtered(){
+  var p = document.getElementById("fPeriod").value;
+  var lv = document.getElementById("fLevel").value;
+  var q = document.getElementById("fSearch").value.trim().toLowerCase();
+  return ROWS.filter(function(r){
+    if(p && String(r.period) !== p) return false;
+    if(lv && r.level !== lv) return false;
+    if(q && (r.student_name || "").toLowerCase().indexOf(q) < 0 && (r.email || "").toLowerCase().indexOf(q) < 0) return false;
+    return true;
+  }).sort(function(a,b){
+    var x = a[SORT.k], y = b[SORT.k];
+    if(SORT.k === "answered"){ x = a.total ? a.answered / a.total : 0; y = b.total ? b.answered / b.total : 0; }
+    if(x == null) x = ""; if(y == null) y = "";
+    return (x > y ? 1 : x < y ? -1 : 0) * SORT.dir;
+  });
+}
+
+/* ---------- chapter progress from payload ---------- */
+function chapterCounts(p){
+  var out = {};
+  if(!p || !p.answers) return out;
+  Object.keys(p.answers).forEach(function(k){
+    var m = k.match(/^ch(\d)_/);
+    if(!m || k.indexOf("_cap") > -1) return;
+    var n = m[1];
+    if(!out[n]) out[n] = { a:0, t:0 };
+    out[n].t++;
+    if(p.answers[k]) out[n].a++;
+  });
+  return out;
+}
+function scoreSummary(p){
+  if(!p || !p.scores) return "";
+  var ks = Object.keys(p.scores);
+  if(!ks.length) return "";
+  var got = 0, tot = 0;
+  ks.forEach(function(k){
+    var v = String(p.scores[k]).split("/");
+    got += parseInt(v[0],10) || 0; tot += parseInt(v[1],10) || 0;
+  });
+  return got + "/" + tot;
+}
+
+function render(){
+  var rows = filtered();
+  var isUnit = document.getElementById("fGuide").value === "arrival_unit";
+  document.getElementById("title").textContent = isUnit ? "Unit progress" : "Final project progress";
+  var turned = rows.filter(function(r){ return r.submitted; }).length;
+  document.getElementById("sub").innerHTML = rows.length + " students shown &middot; " + turned + " turned in";
+
+  if(!rows.length){
+    document.getElementById("view").innerHTML = '<div class="empty">No student work yet.</div>';
+    return;
+  }
+
+  var h = '<table class="t"><tr>' +
+    '<th data-s="student_name">Student</th>' +
+    '<th data-s="period">Per</th>' +
+    '<th data-s="level">Level</th>' +
+    '<th data-s="answered">Filled in</th>' +
+    (isUnit ? '<th>Auto-score</th><th>Chapters started</th>' : '<th>Project</th><th>Choice made</th>') +
+    '<th data-s="submitted">Turned in</th>' +
+    '<th data-s="updated_at">Last worked</th></tr>';
+
+  rows.forEach(function(r){
+    var pct = r.total ? Math.round(100 * r.answered / r.total) : 0;
+    var lvp = r.level === "easy" ? "easy" : r.level === "chal" ? "chal" : "";
+    var lvn = r.level === "easy" ? "Easier" : r.level === "chal" ? "Challenge" : "Standard";
+    var colA = "", colB = "";
+    if(isUnit){
+      colA = scoreSummary(r.payload) || "&mdash;";
+      var cc = chapterCounts(r.payload), started = [];
+      for(var i = 1; i <= 6; i++) if(cc[i] && cc[i].a > 0) started.push(i);
+      colB = started.length ? started.join(", ") : "&mdash;";
+    } else {
+      var a = (r.payload && r.payload.answers) || {};
+      colA = a.pj_choice ? esc(a.pj_choice) : "&mdash;";
+      colB = a.ob_s_final || a.ob_e_final || a.ob_c_final ? "object written" : "&mdash;";
+    }
+    h += '<tr>' +
+      '<td class="nm" data-em="' + esc(r.email) + '">' + esc(r.student_name) + '</td>' +
+      '<td>' + esc(r.period) + '</td>' +
+      '<td><span class="pill ' + lvp + '">' + lvn + '</span></td>' +
+      '<td><div class="bar"><i style="width:' + pct + '%"></i></div><span style="font-size:.78rem;font-weight:700">' +
+        r.answered + '/' + r.total + '</span></td>' +
+      '<td>' + colA + '</td><td>' + colB + '</td>' +
+      '<td>' + (r.submitted ? '<span class="pill in">yes</span>' : '<span class="pill no">no</span>') + '</td>' +
+      '<td style="font-size:.82rem">' + esc(when(r.updated_at)) + '</td>' +
+      '</tr>';
+  });
+  h += '</table>';
+
+  if(OPEN){
+    var r = ROWS.filter(function(x){ return x.email === OPEN; })[0];
+    if(r) h = detail(r) + h;
+  }
+  document.getElementById("view").innerHTML = h;
+
+  document.querySelectorAll("td.nm").forEach(function(td){
+    td.addEventListener("click", function(){ OPEN = (OPEN === td.getAttribute("data-em")) ? null : td.getAttribute("data-em"); render(); window.scrollTo(0,0); });
+  });
+  document.querySelectorAll("th[data-s]").forEach(function(th){
+    th.addEventListener("click", function(){
+      var k = th.getAttribute("data-s");
+      SORT.dir = (SORT.k === k) ? -SORT.dir : 1; SORT.k = k; render();
+    });
+  });
+  var cb = document.getElementById("closeD");
+  if(cb) cb.addEventListener("click", function(){ OPEN = null; render(); });
+  var pb = document.getElementById("printD");
+  if(pb) pb.addEventListener("click", function(){ window.print(); });
+}
+
+function detail(r){
+  var p = r.payload || {}, ans = p.answers || {};
+  var groups = {}, order = [];
+  Object.keys(ans).forEach(function(k){
+    if(k.indexOf("_cap") > -1) return;
+    var s = sectionOf(k);
+    if(!groups[s]){ groups[s] = []; order.push(s); }
+    groups[s].push([k, ans[k]]);
+  });
+  var readCount = Object.keys(ans).filter(function(k){ return k.indexOf("_cap") > -1 && ans[k]; }).length;
+
+  var h = '<div class="card"><h3>' + esc(r.student_name) + '</h3>' +
+    '<div class="kv"><b>' + esc(r.email) + '</b><b>Period ' + esc(r.period) + '</b>' +
+    '<b>' + (r.level === "easy" ? "Easier" : r.level === "chal" ? "Challenge" : "Standard") + '</b>' +
+    '<b>' + r.answered + ' of ' + r.total + ' filled in</b>' +
+    (scoreSummary(p) ? '<b>Auto-score ' + scoreSummary(p) + '</b>' : '') +
+    (readCount ? '<b>' + readCount + ' sentences read aloud</b>' : '') +
+    '<b>' + (r.submitted ? "Turned in " + esc(when(r.submitted_at)) : "Not turned in") + '</b></div>' +
+    '<button class="act" id="printD">Print this student</button>' +
+    '<button class="act gh" id="closeD">Close</button>';
+
+  order.forEach(function(s){
+    h += '<div class="sec">' + s + '</div>';
+    groups[s].forEach(function(pair){
+      var v = pair[1];
+      h += '<div class="ans"><div class="k">' + esc(pair[0]) + '</div>' +
+           '<div class="v' + (v ? '' : ' blank') + '">' + (v ? esc(v) : "(blank)") + '</div></div>';
+    });
+  });
+  return h + '</div>';
+}
+
+/* ---------- csv ---------- */
+function toCSV(){
+  var rows = filtered();
+  var keys = {};
+  rows.forEach(function(r){
+    var a = (r.payload && r.payload.answers) || {};
+    Object.keys(a).forEach(function(k){ if(k.indexOf("_cap") < 0) keys[k] = 1; });
+  });
+  var cols = ["student_name","email","period","level","answered","total","submitted","updated_at"].concat(Object.keys(keys).sort());
+  var out = [cols.join(",")];
+  rows.forEach(function(r){
+    var a = (r.payload && r.payload.answers) || {};
+    out.push(cols.map(function(c){
+      var v = (c in r) ? r[c] : (a[c] || "");
+      return '"' + String(v == null ? "" : v).replace(/"/g,'""') + '"';
+    }).join(","));
+  });
+  var blob = new Blob([out.join("\n")], { type:"text/csv;charset=utf-8" });
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "arrival_" + document.getElementById("fGuide").value + "_" + new Date().toISOString().slice(0,10) + ".csv";
+  a.click();
+}
+
+["fGuide","fPeriod","fLevel"].forEach(function(id){
+  document.getElementById(id).addEventListener("change", function(){ OPEN = null; (id === "fGuide") ? load() : render(); });
+});
+document.getElementById("fSearch").addEventListener("input", render);
+document.getElementById("reload").addEventListener("click", load);
+document.getElementById("csv").addEventListener("click", toCSV);
+
+document.getElementById("pwBtn").addEventListener("click", function(){
+  if(document.getElementById("pw").value === PW){
+    document.getElementById("gate").style.display = "none";
+    load();
+  } else { document.getElementById("gerr").textContent = "Wrong password."; }
+});
+document.getElementById("pw").addEventListener("keydown", function(e){ if(e.key === "Enter") document.getElementById("pwBtn").click(); });
+</script>
+</body>
+</html>

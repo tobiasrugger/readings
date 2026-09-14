@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Arrival &mdash; Final Projects</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pine:#1f4d3d;
+  --pine-dk:#143528;
+  --pine-lt:#e8f0ec;
+  --ink:#1b1b1b;
+  --rule:#c9ccc8;
+  --paper:#ffffff;
+  --sepia:#8a6d45;
+  --t-asp:#2f6f4f;
+  --t-opp:#8c3a2f;
+  --t-tra:#1f5f8b;
+  --warn:#8a5a1f;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:'Nunito',-apple-system,Segoe UI,Roboto,sans-serif;
+  color:var(--ink);background:#f2f4f2;font-size:17px;line-height:1.65;
+}
+body.big{font-size:21px}
+body.big textarea{min-height:130px}
+
+/* ---------- toolbar ---------- */
+#bar{
+  position:sticky;top:0;z-index:60;background:var(--pine);color:#fff;
+  padding:8px 14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;
+  box-shadow:0 2px 8px rgba(0,0,0,.2);
+}
+#bar .brand{font-weight:800;margin-right:6px;font-size:15px}
+#bar button,#bar select{
+  font-family:inherit;font-size:14px;font-weight:700;
+  border:1px solid rgba(255,255,255,.45);background:rgba(255,255,255,.10);
+  color:#fff;border-radius:7px;padding:6px 10px;cursor:pointer;
+}
+#bar button:hover,#bar select:hover{background:rgba(255,255,255,.22)}
+#bar select option{color:#111;background:#fff}
+#bar .spacer{flex:1}
+#who{font-size:13px;font-weight:700;opacity:.9}
+#saveNote{font-size:13px;opacity:.85;font-weight:600}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.dot.ok{background:#7fe0a8}.dot.wait{background:#ffd36b}.dot.bad{background:#ff8f7a}
+
+/* ---------- chapter tabs ---------- */
+#tabs{
+  position:sticky;top:45px;z-index:55;background:var(--pine-dk);
+  display:flex;gap:2px;overflow-x:auto;padding:0 8px;
+  scrollbar-width:none;
+}
+#tabs::-webkit-scrollbar{display:none}
+#tabs button{
+  font-family:inherit;font-size:14px;font-weight:800;white-space:nowrap;
+  background:transparent;color:#b7cdc1;border:0;border-bottom:3px solid transparent;
+  padding:9px 13px;cursor:pointer;
+}
+#tabs button.on{color:#fff;border-bottom-color:#7fe0a8}
+#tabs button:hover{color:#fff}
+
+/* ---------- page ---------- */
+.sheet{
+  max-width:880px;margin:18px auto 70px;background:var(--paper);
+  padding:34px 42px 60px;border:1px solid var(--rule);border-radius:4px;
+  box-shadow:0 1px 4px rgba(0,0,0,.06);
+}
+h1.unit{font-size:2.1rem;margin:0;font-weight:800;letter-spacing:-.5px;color:var(--pine-dk)}
+.byline{color:#5d6b63;font-weight:700;margin:4px 0 0;font-size:.95rem}
+.hr{height:3px;width:70px;background:var(--pine);border-radius:3px;margin:16px 0 26px}
+
+section.pane{display:none}
+section.pane.on{display:block}
+
+h2.ch{font-size:1.5rem;margin:0 0 2px;color:var(--pine-dk);font-weight:800}
+.chsub{color:#5d6b63;font-weight:700;margin:0 0 22px;font-size:.97rem}
+
+h3.step{
+  font-size:1.05rem;margin:32px 0 4px;color:var(--pine-dk);font-weight:800;
+  padding-bottom:5px;border-bottom:2px solid var(--pine-lt);
+}
+h3.step .num{
+  display:inline-block;min-width:24px;height:24px;line-height:24px;text-align:center;
+  background:var(--pine);color:#fff;border-radius:50%;font-size:.8rem;margin-right:8px;
+}
+.how{color:#4a5852;font-size:.94rem;margin:8px 0 12px;font-style:italic}
+
+/* level chips */
+.levelbar{display:flex;gap:6px;margin:10px 0 14px;flex-wrap:wrap}
+.levelbar span{
+  font-size:.78rem;font-weight:800;padding:4px 11px;border-radius:20px;
+  border:1.5px solid var(--rule);color:#5d6b63;
+}
+.levelbar span.on{background:var(--pine);border-color:var(--pine);color:#fff}
+.lv{display:none}
+.lv.on{display:block}
+
+/* boxes */
+.box{
+  border:1.5px solid var(--rule);border-left:5px solid var(--pine);
+  border-radius:6px;padding:14px 16px;margin:12px 0;background:#fafcfb;
+  break-inside:avoid;page-break-inside:avoid;
+}
+.box.warn{border-left-color:var(--warn);background:#fdf9f2}
+.box.note{border-left-color:var(--sepia);background:#fbf8f3}
+.box p:first-child{margin-top:0}
+.box p:last-child{margin-bottom:0}
+textarea{
+  width:100%;font-family:inherit;font-size:1rem;line-height:1.6;padding:9px 11px;
+  border:1.5px solid var(--rule);border-radius:6px;min-height:78px;resize:vertical;background:#fff;
+}
+textarea:focus,input:focus,select:focus{outline:2px solid var(--pine);outline-offset:1px}
+input.line{
+  font-family:inherit;font-size:1rem;border:0;border-bottom:2px solid var(--pine);
+  background:transparent;padding:2px 4px;min-width:130px;
+}
+label.q{display:block;font-weight:700;margin:12px 0 5px}
+
+/* caption bank */
+ol.caps{list-style:none;counter-reset:cap;padding:0;margin:10px 0}
+ol.caps li{
+  counter-increment:cap;display:flex;gap:10px;align-items:flex-start;
+  padding:7px 9px;border-bottom:1px solid #e6eae7;
+}
+ol.caps li:nth-child(odd){background:#f7faf8}
+ol.caps li::before{
+  content:counter(cap);flex:0 0 26px;text-align:center;font-weight:800;
+  color:#fff;background:var(--sepia);border-radius:4px;font-size:.82rem;line-height:22px;height:22px;margin-top:3px;
+}
+ol.caps li .txt{flex:1}
+ol.caps li input[type=checkbox]{width:19px;height:19px;accent-color:var(--pine);margin-top:4px;flex:0 0 auto}
+
+/* tables */
+table.g{width:100%;border-collapse:collapse;margin:12px 0}
+table.g th,table.g td{border:1px solid var(--rule);padding:7px 10px;font-size:.97rem;vertical-align:top}
+table.g th{background:var(--pine);color:#fff;font-weight:800;font-size:.88rem;text-align:left}
+table.g td.w{font-weight:800;color:var(--pine-dk);width:22%}
+table.g td.tr{font-weight:700;width:26%}
+table.g td.tr.rtl{direction:rtl;text-align:right}
+table.g tr:nth-child(even) td{background:#f7faf8}
+table.g tr{break-inside:avoid;page-break-inside:avoid}
+table.g td.tfc{width:54px;text-align:center}
+table.g td.tfc input{width:19px;height:19px;accent-color:var(--pine)}
+
+/* order + match */
+ol.order{list-style:none;padding:0;margin:10px 0;counter-reset:none}
+ol.order li{display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid #eef1ef}
+ol.order li input{
+  width:52px;text-align:center;font-family:inherit;font-weight:800;font-size:1rem;
+  border:1.5px solid var(--rule);border-radius:6px;padding:6px 4px;
+}
+ol.order li .ev{flex:1}
+select.pick{
+  font-family:inherit;font-size:.97rem;font-weight:700;padding:5px 8px;
+  border:1.5px solid var(--rule);border-radius:6px;background:#fff;max-width:100%;
+}
+.mrow{display:flex;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid #eef1ef;flex-wrap:wrap}
+.mrow .def{flex:1;min-width:200px}
+
+.mark{font-weight:800;margin-left:8px}
+.mark.y{color:#2f6f4f}
+.mark.n{color:#a33}
+button.check{
+  font-family:inherit;font-weight:800;font-size:.92rem;background:var(--pine);color:#fff;
+  border:0;border-radius:7px;padding:8px 16px;cursor:pointer;margin-top:10px;
+}
+button.check:hover{background:var(--pine-dk)}
+.score{font-weight:800;margin-left:12px;color:var(--pine-dk)}
+
+/* script */
+.script{border:1.5px solid var(--rule);border-radius:6px;padding:4px 0;margin:12px 0;background:#fafcfb}
+.script .ln{display:flex;gap:10px;padding:7px 14px;border-bottom:1px solid #eef1ef}
+.script .ln:last-child{border-bottom:0}
+.script .ln .sp{font-weight:800;flex:0 0 30px;color:var(--pine)}
+.script .ln.b .sp{color:var(--sepia)}
+
+/* themes */
+.themechips{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.themechips b{font-size:.85rem;font-weight:800;padding:5px 12px;border-radius:20px;color:#fff}
+.themechips b.asp{background:var(--t-asp)}
+.themechips b.opp{background:var(--t-opp)}
+.themechips b.tra{background:var(--t-tra)}
+
+/* gate */
+#gate{
+  position:fixed;inset:0;z-index:200;background:rgba(16,28,23,.93);
+  display:flex;align-items:center;justify-content:center;padding:20px;
+}
+#gate .card{
+  background:#fff;border-radius:12px;padding:28px 26px;max-width:420px;width:100%;
+}
+#gate h2{margin:0 0 6px;color:var(--pine-dk);font-size:1.35rem}
+#gate p{margin:0 0 16px;color:#5d6b63;font-size:.95rem}
+#gate input,#gate select{
+  width:100%;font-family:inherit;font-size:1rem;padding:10px 12px;margin-bottom:10px;
+  border:1.5px solid var(--rule);border-radius:7px;
+}
+#gate button{
+  width:100%;font-family:inherit;font-weight:800;font-size:1rem;background:var(--pine);
+  color:#fff;border:0;border-radius:7px;padding:12px;cursor:pointer;
+}
+#gateErr{color:#a33;font-weight:700;font-size:.9rem;min-height:20px}
+
+footer.pg{max-width:880px;margin:0 auto 60px;text-align:center;color:#5d6b63;font-size:.85rem;font-weight:700}
+footer.pg a{color:var(--pine);font-weight:800}
+
+@media (max-width:640px){
+  .sheet{padding:22px 18px 44px;margin:10px auto 50px}
+  h1.unit{font-size:1.65rem}
+  #tabs{top:81px}
+}
+@media print{
+  #bar,#tabs,#gate,button.check,.levelbar{display:none !important}
+  body{background:#fff;font-size:12pt}
+  .sheet{box-shadow:none;border:0;max-width:100%;padding:0;margin:0}
+  section.pane{display:block !important;page-break-before:always}
+  section.pane:first-of-type{page-break-before:auto}
+  .lv{display:block !important}
+  .lv::before{content:attr(data-lvname) ": ";font-weight:800;color:#1f4d3d}
+  textarea{min-height:70px}
+  .box,table tr,ol.caps li{page-break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<style>
+.pcard{border:1.5px solid var(--rule);border-radius:8px;padding:0;margin:14px 0;overflow:hidden}
+.pcard .ph{background:var(--pine);color:#fff;padding:11px 16px}
+.pcard .ph h4{margin:0;font-size:1.08rem;font-weight:800}
+.pcard .ph .who{font-size:.82rem;font-weight:700;opacity:.9}
+.pcard .pb{padding:14px 16px}
+.pcard.alt .ph{background:var(--sepia)}
+.model{background:#fbf8f3;border:1.5px dashed var(--sepia);border-radius:6px;padding:13px 15px;margin:10px 0}
+.model b.lbl{display:block;color:var(--sepia);font-size:.82rem;margin-bottom:4px}
+table.cal th.d{width:78px}
+table.rub td{font-size:.9rem}
+table.rub th:first-child{width:22%}
+ul.tight{margin:8px 0;padding-left:22px}
+ul.tight li{margin:4px 0}
+</style>
+
+<div id="bar">
+  <span class="brand">The Arrival &mdash; Projects</span>
+  <select id="levelSel" title="Difficulty level">
+    <option value="easy">Easier</option>
+    <option value="std" selected>Standard</option>
+    <option value="chal">Challenge</option>
+  </select>
+  <button id="bigBtn">Big text</button>
+  <button id="printBtn">Print</button>
+  <button id="turninBtn">Turn in</button>
+  <span class="spacer"></span>
+  <span id="who"></span>
+  <span id="saveNote"><span class="dot wait"></span>Not signed in</span>
+</div>
+
+<div id="tabs"></div>
+
+<div class="sheet">
+  <h1 class="unit">Final Projects</h1>
+  <p class="byline">The Arrival &middot; Weeks 7 and 8 &middot; Mr. Toby</p>
+  <div class="hr"></div>
+  <div id="panes"></div>
+</div>
+
+<footer class="pg">
+  <a href="index.html">&larr; Back to the unit</a> &nbsp;&middot;&nbsp;
+  <a href="https://tobiasrugger.github.io/readings/">Readings hub</a>
+</footer>
+
+<div id="gate">
+  <div class="card">
+    <h2>Sign in</h2>
+    <p>Your work saves by itself. Use your school email.</p>
+    <input id="gName" placeholder="First and last name" autocomplete="name">
+    <input id="gEmail" placeholder="you@sfusd.edu" autocomplete="email" inputmode="email">
+    <select id="gPeriod">
+      <option value="">Class period</option>
+      <option>1</option><option>2</option><option>3</option>
+      <option>4</option><option>5</option><option>6</option><option>7</option>
+    </select>
+    <div id="gateErr"></div>
+    <button id="gBtn">Start</button>
+  </div>
+</div>
+
+<script>
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+var curLevel = "std";
+function ta(id, ph){ return '<textarea data-id="' + id + '" placeholder="' + esc(ph||"") + '"></textarea>'; }
+function li(id, ph, w){ return '<input class="line" data-id="' + id + '" placeholder="' + esc(ph||"") + '"' + (w?' style="min-width:'+w+'"':'') + '>'; }
+function lvbar(){ return '<div class="levelbar"><span data-lvchip="easy">Easier</span><span data-lvchip="std">Standard</span><span data-lvchip="chal">Challenge</span></div>'; }
+
+/* ---------- rubric builder ---------- */
+function rubric(title, rows){
+  var h = '<table class="g rub"><tr><th>' + esc(title) + '</th><th>1 &mdash; Starting</th><th>2 &mdash; Growing</th><th>3 &mdash; Got it</th><th>4 &mdash; Strong</th></tr>';
+  rows.forEach(function(r){
+    h += '<tr><td class="w">' + esc(r[0]) + '</td><td>' + esc(r[1]) + '</td><td>' + esc(r[2]) + '</td><td>' + esc(r[3]) + '</td><td>' + esc(r[4]) + '</td></tr>';
+  });
+  return h + '</table>';
+}
+
+/* ============================================================
+   PANE: THE PLAN
+   ============================================================ */
+function planPane(){
+  var cal = [
+    ["Day 1","Launch. Look at three student models. Choose your object. Bring it (or a photo, or a drawing) tomorrow."],
+    ["Day 2","Object Project: draw the panel. Sepia pencil or pen only, like Shaun Tan. No colour."],
+    ["Day 3","Object Project: write the four sentences. Conference with Mr. Toby."],
+    ["Day 4","Exhibit label lesson. Read three real museum labels. Write draft 1 of your label."],
+    ["Day 5","Choose your second project. Read the handout. Make a plan and a materials list."],
+    ["Day 6","Work day 1. Mr. Toby conferences with half the class."],
+    ["Day 7","Work day 2. Mr. Toby conferences with the other half."],
+    ["Day 8","Peer feedback using the rubric. Revise. Stronger / clearer each time, twice."],
+    ["Day 9","Final on-demand write (45 min, no notes). Then mount and label your work."],
+    ["Day 10","Museum of Arrival. Families, front office, and two other classes are invited."]
+  ];
+  var h = '<h2 class="ch">The plan</h2><p class="chsub">Ten days. Two projects. One exhibition.</p>';
+
+  h += '<h3 class="step"><span class="num">1</span>What everyone does</h3>';
+  h += '<div class="box"><p><b>Everyone</b> makes the <b>Object Project</b>. It is small and it is due first.</p>' +
+       '<p><b>Then everyone chooses one more</b> from the five that follow.</p>' +
+       '<p><b>All of it goes on the wall</b> at the Museum of Arrival on the last day. That is the real deadline. ' +
+       'Real people are coming to look at your work.</p></div>';
+
+  h += '<h3 class="step"><span class="num">2</span>Ten days</h3>';
+  h += '<table class="g"><tr><th class="d">Day</th><th>What we do</th></tr>';
+  cal.forEach(function(r){ h += '<tr><td class="w">' + esc(r[0]) + '</td><td>' + esc(r[1]) + '</td></tr>'; });
+  h += '</table>';
+
+  h += '<h3 class="step"><span class="num">3</span>Your choice</h3>';
+  h += '<p class="how">Read all five, then decide. Talk to Mr. Toby before you commit.</p>';
+  h += '<label class="q">I am choosing:</label>' +
+       '<select class="pick" data-id="pj_choice"><option value="">choose one</option>' +
+       '<option>Six-Panel Arrival Story</option><option>Survival Guide to a New Country</option>' +
+       '<option>Voice-Over the Silence</option><option>The Untold Chapter</option>' +
+       '<option>Someone Else\u2019s Crossing (interview)</option></select>';
+  h += '<label class="q">Why did you choose it?</label>' + ta("pj_why","I chose this because ...");
+  h += '<label class="q">What will you need? (paper, phone, headphones, help with something)</label>' + ta("pj_needs","");
+
+  h += '<h3 class="step"><span class="num">4</span>A reminder about your own story</h3>';
+  h += '<div class="box warn"><p>Every project here can be done about <b>you</b>, about <b>someone in your family</b>, ' +
+       'about <b>a character in the book</b>, or about <b>a person you invent</b>. All four get the same grade.</p>' +
+       '<p>You never have to put your own life on the wall. If you want to, that is good. If you do not want to, ' +
+       'that is also good, and you do not need to give a reason.</p></div>';
+  return h;
+}
+
+/* ============================================================
+   PANE: OBJECT PROJECT
+   ============================================================ */
+function objectPane(){
+  var h = '<h2 class="ch">Project 1 &mdash; The Object</h2>';
+  h += '<p class="chsub">Everyone does this one. One drawing, a few sentences, one wall label.</p>';
+
+  h += '<div class="pcard"><div class="ph"><h4>What you make</h4><span class="who">Required &middot; 3 days</span></div><div class="pb">' +
+       '<ul class="tight"><li>One drawing of <b>one object</b>, in sepia or pencil, filling half a page.</li>' +
+       '<li>A short piece of writing about the object.</li>' +
+       '<li>One museum wall label, mounted next to the drawing.</li></ul></div></div>';
+
+  h += '<h3 class="step"><span class="num">1</span>Choose your object</h3>';
+  h += '<p class="how">Pick <b>one</b>. Small is better than big. Ordinary is better than expensive.</p>';
+  h += '<div class="box"><p>Something you brought with you &middot; something you wish you had brought &middot; ' +
+       'something that reminds you of a person &middot; something from your grandmother\u2019s house &middot; ' +
+       'the first thing you bought here &middot; a photo &middot; a piece of clothing &middot; a tool &middot; ' +
+       'a coin &middot; a plant &middot; a recipe written down.</p></div>';
+  h += '<label class="q">My object is:</label>' + li("ob_what","the object", "260px");
+  h += '<label class="q">Who does it come from, or where?</label>' + li("ob_who","", "260px");
+
+  h += '<h3 class="step"><span class="num">2</span>Look at the models</h3>';
+  h += lvbar();
+
+  h += '<div class="lv" data-lv="easy" data-lvname="Easier"><div class="model"><b class="lbl">Model &mdash; Easier</b>' +
+       '<p>This is my grandmother\u2019s spoon.<br>She gave it to me in Guatemala.<br>She used it for many years.<br>' +
+       'I put it in my bag when we left.<br>The spoon represents my grandmother.<br>When I see it, I remember her kitchen.</p>' +
+       '</div></div>';
+
+  h += '<div class="lv" data-lv="std" data-lvname="Standard"><div class="model"><b class="lbl">Model &mdash; Standard</b>' +
+       '<p>These are my grandmother\u2019s scissors. She gave them to me in Guatemala when I was nine years old. ' +
+       'She used them for thirty years to cut cloth, and the handles are smooth from her hands. ' +
+       'When we left, my mother said I could only bring small things, so I put the scissors inside my shoe. ' +
+       'For me, the scissors represent my grandmother\u2019s work. When I see them, I remember that she worked every day ' +
+       'so that I could go to school.</p></div></div>';
+
+  h += '<div class="lv" data-lv="chal" data-lvname="Challenge"><div class="model"><b class="lbl">Model &mdash; Challenge</b>' +
+       '<p>These are my grandmother\u2019s scissors, and they are the only object in my room that is older than I am. ' +
+       'She cut cloth with them for thirty years in a small shop in Quetzaltenango, and the handles have gone smooth ' +
+       'and slightly crooked from the shape of her hand. When we left, my mother told me I could bring only small things, ' +
+       'so I hid them inside my shoe and walked to the bus that way.</p>' +
+       '<p>In <i>The Arrival</i>, Shaun Tan draws a teapot and a clock on the family\u2019s table before the father leaves, ' +
+       'and then he draws the same room empty. He is showing that an object can hold a whole person inside it. ' +
+       'My scissors do the same work. They are not valuable and nobody would steal them, but they carry my ' +
+       'grandmother\u2019s thirty years, and they are the proof that somebody worked so that I could be here.</p></div></div>';
+
+  h += '<h3 class="step"><span class="num">3</span>Write it</h3>';
+  h += lvbar();
+
+  h += '<div class="lv" data-lv="easy" data-lvname="Easier">' +
+       '<p>Finish each sentence. Six sentences is enough.</p>' +
+       '<p>This is my ' + li("ob_e1","object","170px") + ' .</p>' +
+       '<p>It comes from ' + li("ob_e2","person or place","200px") + ' .</p>' +
+       '<p>It is ' + li("ob_e3","colour, size, old or new","220px") + ' .</p>' +
+       '<p>I have it because ' + li("ob_e4","why?","220px") + ' .</p>' +
+       '<p>It represents ' + li("ob_e5","an idea or a person","220px") + ' .</p>' +
+       '<p>When I see it, I remember ' + li("ob_e6","what?","220px") + ' .</p>' +
+       '<label class="q">Now write all six sentences together in one paragraph.</label>' + ta("ob_e_final","") +
+       '</div>';
+
+  h += '<div class="lv" data-lv="std" data-lvname="Standard">' +
+       '<p>Write one paragraph, five to seven sentences. Answer all four:</p>' +
+       '<ul class="tight"><li>What is it, and what does it look like?</li>' +
+       '<li>Who gave it to you, or where did it come from?</li>' +
+       '<li>What does it <b>represent</b>?</li>' +
+       '<li>What do you remember when you see it?</li></ul>' +
+       ta("ob_s_final","This is ...") +
+       '</div>';
+
+  h += '<div class="lv" data-lv="chal" data-lvname="Challenge">' +
+       '<p>Write two paragraphs. In the first, describe the object precisely enough that a reader could draw it. ' +
+       'In the second, connect it to one specific image from <i>The Arrival</i> and explain what both objects are doing ' +
+       'for the people who own them.</p>' +
+       ta("ob_c_final","") +
+       '</div>';
+
+  h += '<h3 class="step"><span class="num">4</span>Draw it</h3>';
+  h += '<div class="box"><p>Sepia, brown pencil, or plain graphite. <b>No colour.</b> ' +
+       'The object fills half the page. Draw it three times on scrap paper first &mdash; the third one is always better.</p>' +
+       '<p>Look at how Shaun Tan draws ordinary things: soft edges, a lot of small marks, ' +
+       'and light coming from one side. Copy that light.</p></div>';
+  h += '<label class="q">Before you draw: where is the light coming from, and what is the hardest part to draw?</label>' +
+       ta("ob_draw_plan","");
+
+  h += '<h3 class="step"><span class="num">5</span>Your wall label</h3>';
+  h += '<p class="how">A museum label is short. Title, one line about what it is, three or four sentences. That is all.</p>';
+  h += '<div class="model"><b class="lbl">Real museum label &mdash; the shape to copy</b>' +
+       '<p><b>Dressmaking Shears</b><br>Steel and painted wood, about 1970<br><br>' +
+       'Carried from Quetzaltenango to San Francisco in 2023. The owner\u2019s grandmother used these ' +
+       'for three decades in a tailoring shop. The handles have worn smooth on one side.</p></div>';
+  h += '<label class="q">Title of your object (2&ndash;4 words)</label>' + li("ob_lab_title","", "260px");
+  h += '<label class="q">Materials and year, as far as you know</label>' + li("ob_lab_mat","", "300px");
+  h += '<label class="q">Three or four sentences for the label</label>' + ta("ob_lab_text","");
+  return h;
+}
+
+/* ============================================================
+   PANE: CHOICE PROJECTS
+   ============================================================ */
+function sixPane(){
+  var h = '<h2 class="ch">Choice &mdash; Six-Panel Arrival Story</h2>';
+  h += '<p class="chsub">Tell one story in six pictures, the way Shaun Tan does.</p>';
+  h += '<div class="pcard"><div class="ph"><h4>What you make</h4><span class="who">Choice &middot; 4 days</span></div><div class="pb">' +
+       '<ul class="tight"><li>Six panels on one page, with <b>no words inside the pictures</b>.</li>' +
+       '<li>Six captions on a separate strip, one for each panel.</li>' +
+       '<li>Both go on the wall together. All six class stories get bound into one printed book.</li></ul></div></div>';
+
+  h += '<h3 class="step"><span class="num">1</span>Plan in the language you think in</h3>';
+  h += '<p class="how">Write your six moments in your first language first. Get the story right before you get the English right. ' +
+       'Nobody grades this box.</p>';
+  h += ta("sx_l1","Six moments, in any language.");
+
+  h += '<h3 class="step"><span class="num">2</span>Six moments in English</h3>';
+  h += '<div class="box"><p>A good six-panel story is one small thing that happened, not a whole life. ' +
+       '<i>The morning we packed. The bus. The border. The airport. The first night. The first day of school.</i></p></div>';
+  for(var i=1;i<=6;i++){
+    h += '<label class="q">Panel ' + i + ' &mdash; what do we see?</label>' + li("sx_p" + i, "In panel " + i + " we see ...", "80%");
+  }
+
+  h += '<h3 class="step"><span class="num">3</span>Draw</h3>';
+  h += '<div class="box"><p>Six boxes on one page. Change the <b>distance</b> at least twice: one panel very close ' +
+       '(just hands, just a face), one panel very far (a small person in a big place). That change is what makes a ' +
+       'comic feel like a comic.</p><p>Sepia or pencil. No speech bubbles.</p></div>';
+
+  h += '<h3 class="step"><span class="num">4</span>Write the captions</h3>';
+  h += lvbar();
+  h += '<div class="lv" data-lv="easy" data-lvname="Easier"><p>One sentence under each panel. ' +
+       'Start with a time word: <b>First, Then, Next, After that, Later, Finally.</b></p>' + ta("sx_cap_e","") + '</div>';
+  h += '<div class="lv" data-lv="std" data-lvname="Standard"><p>One or two sentences under each panel. ' +
+       'Use time words, and put a feeling in at least three of them.</p>' + ta("sx_cap_s","") + '</div>';
+  h += '<div class="lv" data-lv="chal" data-lvname="Challenge"><p>Write the captions so that they do <b>not</b> repeat ' +
+       'what the picture already shows. The picture shows the action; the caption says the thing the picture cannot say.</p>' +
+       ta("sx_cap_c","") + '</div>';
+  return h;
+}
+
+function guidePane(){
+  var h = '<h2 class="ch">Choice &mdash; Survival Guide to a New Country</h2>';
+  h += '<p class="chsub">For the student who arrives at Galileo next semester and cannot read anything yet.</p>';
+  h += '<div class="pcard alt"><div class="ph"><h4>What you make</h4><span class="who">Choice &middot; 4 days &middot; can be done in pairs</span></div><div class="pb">' +
+       '<ul class="tight"><li>A folded guide with <b>six illustrated pages</b>.</li>' +
+       '<li>Pictures first, words second &mdash; a newcomer must be able to use it with almost no English.</li>' +
+       '<li>Real copies get printed and given to the newcomer intake desk in January.</li></ul></div></div>';
+
+  h += '<div class="box note"><p>In chapters 3 and 4, the man cannot read a sign, cannot order food, ' +
+       'hangs a poster upside down, and gets lost. Your guide is the thing nobody gave him.</p></div>';
+
+  h += '<h3 class="step"><span class="num">1</span>Choose your six pages</h3>';
+  h += '<p class="how">Pick six from this list, or invent your own.</p>';
+  h += '<div class="box"><p>Getting a Clipper card &middot; riding the 30 or the 47 &middot; what happens at lunch &middot; ' +
+       'where the bathrooms are &middot; how to ask a teacher for help &middot; what to do if you are late &middot; ' +
+       'how to use the library computers &middot; where to find free food on the weekend &middot; ' +
+       'what to say at the front office &middot; how to call home for free &middot; what PE means &middot; ' +
+       'the words on your class schedule.</p></div>';
+  for(var i=1;i<=6;i++){
+    h += '<label class="q">Page ' + i + '</label>' + li("gd_p" + i, "topic", "70%");
+  }
+
+  h += '<h3 class="step"><span class="num">2</span>Write the instructions</h3>';
+  h += lvbar();
+  h += '<div class="lv" data-lv="easy" data-lvname="Easier"><p>Three steps per page. Start every step with a verb: ' +
+       '<b>Go. Take. Show. Say. Wait. Ask.</b> Draw a picture for every step.</p>' +
+       '<p>Example: <i>1. Go to the front office. 2. Show your paper. 3. Say &ldquo;I am new.&rdquo;</i></p>' +
+       ta("gd_e","Write all six pages here. Three steps each.") + '</div>';
+  h += '<div class="lv" data-lv="std" data-lvname="Standard"><p>Three to five steps per page, plus one ' +
+       '<b>&ldquo;If something goes wrong&rdquo;</b> line at the bottom of each page.</p>' +
+       ta("gd_s","") + '</div>';
+  h += '<div class="lv" data-lv="chal" data-lvname="Challenge"><p>Write each page twice: once in English, ' +
+       'once in a language you speak. Then add one short note explaining what a newcomer is likely to ' +
+       'misunderstand about this situation and why.</p>' + ta("gd_c","") + '</div>';
+
+  h += '<h3 class="step"><span class="num">3</span>Test it</h3>';
+  h += '<p class="how">Give your guide to a classmate who was not in your group. Watch them try to follow it. Do not help.</p>';
+  h += '<label class="q">What did they get stuck on? What are you going to change?</label>' + ta("gd_test","");
+  return h;
+}
+
+function voicePane(){
+  var h = '<h2 class="ch">Choice &mdash; Voice-Over the Silence</h2>';
+  h += '<p class="chsub">Give the book a soundtrack. You are the voice.</p>';
+  h += '<div class="pcard"><div class="ph"><h4>What you make</h4><span class="who">Choice &middot; 4 days</span></div><div class="pb">' +
+       '<ul class="tight"><li>A written script for <b>four pages</b> of the book.</li>' +
+       '<li>A recording of you reading it, 60&ndash;90 seconds.</li>' +
+       '<li>At the museum, the pages are projected and your recording plays.</li></ul></div></div>';
+
+  h += '<h3 class="step"><span class="num">1</span>Choose four pages</h3>';
+  h += '<label class="q">Which pages? Why those?</label>' + ta("vo_pick","I chose pages ______ because ...");
+
+  h += '<h3 class="step"><span class="num">2</span>Write the script</h3>';
+  h += lvbar();
+  h += '<div class="lv" data-lv="easy" data-lvname="Easier"><p>Narrate what happens. Two sentences per page. ' +
+       'Use <b>First, Then, Next, Finally</b>.</p>' + ta("vo_e","First, the man ...") + '</div>';
+  h += '<div class="lv" data-lv="std" data-lvname="Standard"><p>Mix narration and dialogue. Give at least one character ' +
+       'something to say. Mark it like a script: <b>NARRATOR:</b> / <b>MAN:</b> / <b>OFFICER:</b></p>' + ta("vo_s","") + '</div>';
+  h += '<div class="lv" data-lv="chal" data-lvname="Challenge"><p>Write it in first person, as the man, in past tense. ' +
+       'Include one thing he thinks but would never say out loud.</p>' + ta("vo_c","") + '</div>';
+
+  h += '<h3 class="step"><span class="num">3</span>Practise before you record</h3>';
+  h += '<div class="box"><p>Read it out loud three times. Mark every place you want to <b>pause</b> with a slash: / ' +
+       'Underline the words you want to say <b>loudly</b>. Circle any word you cannot say yet and practise just that word ' +
+       'twenty times.</p><p>Record on the fluency tracker so it goes straight into your recordings.</p></div>';
+  h += '<label class="q">Which words were hard? How did you fix them?</label>' + ta("vo_hard","");
+  h += '<label class="q">Paste your recording link, or write &ldquo;uploaded&rdquo;.</label>' + li("vo_link","", "70%");
+  return h;
+}
+
+function untoldPane(){
+  var h = '<h2 class="ch">Choice &mdash; The Untold Chapter</h2>';
+  h += '<p class="chsub">Shaun Tan never shows us what happened to the daughter while her father was gone.</p>';
+  h += '<div class="pcard alt"><div class="ph"><h4>What you make</h4><span class="who">Choice &middot; 4 days</span></div><div class="pb">' +
+       '<ul class="tight"><li>Four panels showing a part of the story the book leaves out.</li>' +
+       '<li>A written chapter to go with it.</li>' +
+       '<li>It has to fit the book &mdash; same world, same people, nothing that contradicts what we read.</li></ul></div></div>';
+
+  h += '<h3 class="step"><span class="num">1</span>Choose your gap</h3>';
+  h += '<div class="box"><p>The daughter\u2019s year without her father &middot; the mother, alone, in the city with the shadows &middot; ' +
+       'the woman from the factory, the night she escaped &middot; the old soldier\u2019s first day home &middot; ' +
+       'the friend from the factory, before the war &middot; what the man wrote in his letters &middot; ' +
+       'the first person who was kind to him, and why.</p></div>';
+  h += '<label class="q">My gap is:</label>' + li("un_gap","", "70%");
+  h += '<label class="q">What evidence in the book tells you this happened? Give two details.</label>' + ta("un_evid","");
+
+  h += '<h3 class="step"><span class="num">2</span>Write it</h3>';
+  h += lvbar();
+  h += '<div class="lv" data-lv="easy" data-lvname="Easier"><p>Eight sentences. Four panels, two sentences each. ' +
+       'Past tense: <i>She waited. She went to school. She looked at the photograph.</i></p>' + ta("un_e","") + '</div>';
+  h += '<div class="lv" data-lv="std" data-lvname="Standard"><p>Two paragraphs in past tense. Include one moment of ' +
+       'waiting and one moment where something changes.</p>' + ta("un_s","") + '</div>';
+  h += '<div class="lv" data-lv="chal" data-lvname="Challenge"><p>Write it so that it explains something in the real book ' +
+       'that we did not understand before. Then add a short note naming what you explained and where it appears.</p>' +
+       ta("un_c","") + '</div>';
+  return h;
+}
+
+function interviewPane(){
+  var h = '<h2 class="ch">Choice &mdash; Someone Else\u2019s Crossing</h2>';
+  h += '<p class="chsub">Interview a real person who moved. Turn their story into four panels.</p>';
+  h += '<div class="pcard"><div class="ph"><h4>What you make</h4><span class="who">Choice &middot; 4 days</span></div><div class="pb">' +
+       '<ul class="tight"><li>An interview with one person &mdash; family, neighbour, someone who works at this school.</li>' +
+       '<li>Four panels telling their story.</li>' +
+       '<li>A short written summary, and their permission to display it.</li></ul></div></div>';
+
+  h += '<div class="box warn"><p>Ask permission first, and ask again before you put it on the wall. ' +
+       'If the person wants no name, use no name. If they want to stop the interview, stop.</p></div>';
+
+  h += '<h3 class="step"><span class="num">1</span>Your questions</h3>';
+  h += '<p class="how">You may do the interview in any language. Write the answers in English afterwards.</p>';
+  h += '<div class="box"><p>Where did you live before? &middot; How old were you when you left? &middot; ' +
+       'What did you take with you? &middot; What was the hardest day? &middot; Who helped you? &middot; ' +
+       'What surprised you here? &middot; What do you miss? &middot; What do you want people here to understand?</p></div>';
+  h += '<label class="q">Who are you interviewing, and how do you know them?</label>' + li("iv_who","", "70%");
+  h += '<label class="q">Write your six questions.</label>' + ta("iv_qs","");
+
+  h += '<h3 class="step"><span class="num">2</span>What they said</h3>';
+  h += '<label class="q">Write down the answers. You may write short notes, not full sentences.</label>' + ta("iv_notes","");
+  h += '<label class="q">Which one moment will you draw? Why that one?</label>' + ta("iv_moment","");
+
+  h += '<h3 class="step"><span class="num">3</span>Tell it</h3>';
+  h += lvbar();
+  h += '<div class="lv" data-lv="easy" data-lvname="Easier"><p>Eight sentences about their story, in past tense. ' +
+       'Use their name or say <i>this person</i>.</p>' + ta("iv_e","") + '</div>';
+  h += '<div class="lv" data-lv="std" data-lvname="Standard"><p>Two paragraphs. One tells their story. ' +
+       'One says what surprised you and what it has to do with <i>The Arrival</i>.</p>' + ta("iv_s","") + '</div>';
+  h += '<div class="lv" data-lv="chal" data-lvname="Challenge"><p>Write their story, then compare it to one of the three ' +
+       'stories Shaun Tan tells inside the book. What is the same, what is different, and what does the difference tell you?</p>' +
+       ta("iv_c","") + '</div>';
+  return h;
+}
+
+/* ============================================================
+   PANE: MUSEUM + FINAL WRITE
+   ============================================================ */
+function museumPane(){
+  var h = '<h2 class="ch">The Museum of Arrival</h2>';
+  h += '<p class="chsub">Day 10. Your work on the wall, and you standing next to it.</p>';
+
+  h += '<h3 class="step"><span class="num">1</span>What happens</h3>';
+  h += '<div class="box"><p>Everything goes up on the wall with a label. Families, the front office, and two other ' +
+       'classes walk through. You stand near your work. When someone stops, you tell them about it for about one minute.</p>' +
+       '<p>This is the speaking grade. It is the only part you cannot do on paper.</p></div>';
+
+  h += '<h3 class="step"><span class="num">2</span>Your one minute</h3>';
+  h += '<p class="how">Practise this with a partner four times before day 10. By the fourth time you should not need to read it.</p>';
+  h += '<div class="script">' +
+       '<div class="ln"><span class="sp">1</span><span>Hello. My name is ________ and this is my ________.</span></div>' +
+       '<div class="ln b"><span class="sp">2</span><span>It comes from ________.</span></div>' +
+       '<div class="ln"><span class="sp">3</span><span>I chose it because ________.</span></div>' +
+       '<div class="ln b"><span class="sp">4</span><span>For me it represents ________.</span></div>' +
+       '<div class="ln"><span class="sp">5</span><span>We read a book called <i>The Arrival</i>. It is about ________.</span></div>' +
+       '<div class="ln b"><span class="sp">6</span><span>My work connects to the book because ________.</span></div>' +
+       '<div class="ln"><span class="sp">7</span><span>Thank you for looking. Do you have a question?</span></div>' +
+       '</div>';
+  h += '<label class="q">Write out your own version of lines 3, 4 and 6.</label>' + ta("mu_speech","");
+  h += '<label class="q">Two questions a visitor might ask, and what you will say.</label>' + ta("mu_qs","");
+
+  h += '<h3 class="step"><span class="num">3</span>Final write &mdash; day 9</h3>';
+  h += '<div class="box note"><p>Forty-five minutes, no notes, no phone. This is the same question you answered on ' +
+       'the first day of the unit. At the end, Mr. Toby gives you both pieces of writing back so you can see ' +
+       'what changed.</p></div>';
+  h += '<label class="q">Tell about a time you moved to a new place, or started at a new school. ' +
+       'Where were you? Who was with you? How did you feel? Then explain what <i>The Arrival</i> helped you ' +
+       'understand about that experience &mdash; yours, or someone else\u2019s.</label>';
+  h += ta("final_write","");
+  h += '<label class="q">Look at your first piece of writing from day one. Name two things you can do now that you could not do then.</label>';
+  h += ta("final_reflect","");
+  return h;
+}
+
+/* ============================================================
+   PANE: RUBRICS
+   ============================================================ */
+function rubricPane(){
+  var h = '<h2 class="ch">How it is graded</h2>';
+  h += '<p class="chsub">Read these before you start, not after.</p>';
+
+  h += '<h3 class="step"><span class="num">1</span>Any written project</h3>';
+  h += rubric("Writing", [
+    ["Ideas","Very little, or off the topic.","Some ideas, but thin or unfinished.","Clear ideas that answer the whole question.","Clear ideas with a point of view that is yours."],
+    ["Connection to the book","No connection to The Arrival.","Mentions the book without detail.","Uses one real detail from the book.","Uses two or more details as real evidence."],
+    ["Unit vocabulary","No unit words used.","One unit word, used correctly.","Two or three unit words, used correctly.","Several unit words used naturally, not forced in."],
+    ["Sentences","Words and fragments.","Short sentences, some unclear.","Complete sentences a reader can follow.","Varied sentences, joined with because / but / so."],
+    ["Revision","One draft, no changes.","Small changes after feedback.","Real changes after feedback.","Reworked from feedback and clearly better."]
+  ]);
+
+  h += '<h3 class="step"><span class="num">2</span>Any visual project</h3>';
+  h += rubric("Drawing and design", [
+    ["Finish","Unfinished.","Started but rushed.","Complete and careful.","Complete, careful, and drawn more than once."],
+    ["Shaun Tan\u2019s style","No connection to the book\u2019s look.","Some sepia or pencil used.","Sepia or pencil, consistent across the work.","Sepia or pencil, with light and detail like the book."],
+    ["The picture tells the story","The picture needs the words to make sense.","The picture gives part of the story.","The picture tells the story on its own.","The picture tells the story and adds something the words do not."],
+    ["Label","No label.","Label with the title only.","Complete label in the museum format.","Label that makes a stranger want to look longer."]
+  ]);
+
+  h += '<h3 class="step"><span class="num">3</span>Speaking at the museum</h3>';
+  h += rubric("Speaking", [
+    ["Says the whole thing","Says only a few words.","Says part of it, with long pauses.","Says all of it, understandably.","Says all of it clearly and naturally."],
+    ["Without reading","Reads every word from the paper.","Reads most of it.","Glances at the paper once or twice.","Does not need the paper."],
+    ["Answers a question","Cannot answer.","Answers with one word.","Answers in a full sentence.","Answers, and asks the visitor something back."]
+  ]);
+
+  h += '<h3 class="step"><span class="num">4</span>Grade yourself first</h3>';
+  h += '<p class="how">Do this on day 8, before peer feedback. Be honest; it is not the grade.</p>';
+  h += '<label class="q">Writing &mdash; what number, and why?</label>' + ta("ru_self_w","");
+  h += '<label class="q">Visual &mdash; what number, and why?</label>' + ta("ru_self_v","");
+  h += '<label class="q">What is the one thing you are going to fix before day 10?</label>' + ta("ru_self_fix","");
+  return h;
+}
+
+/* ============================================================
+   BUILD
+   ============================================================ */
+(function(){
+  var defs = [
+    {id:"plan",   label:"The plan",     fn:planPane},
+    {id:"object", label:"1 &middot; Object", fn:objectPane},
+    {id:"six",    label:"Six panels",   fn:sixPane},
+    {id:"guide",  label:"Survival guide",fn:guidePane},
+    {id:"voice",  label:"Voice-over",   fn:voicePane},
+    {id:"untold", label:"Untold chapter",fn:untoldPane},
+    {id:"iview",  label:"Interview",    fn:interviewPane},
+    {id:"museum", label:"Museum",       fn:museumPane},
+    {id:"rubric", label:"Rubrics",      fn:rubricPane}
+  ];
+  var tabs = document.getElementById("tabs"), panes = document.getElementById("panes");
+  defs.forEach(function(d,i){
+    var b = document.createElement("button");
+    b.innerHTML = d.label; b.setAttribute("data-pane", d.id);
+    if(i === 0) b.className = "on";
+    tabs.appendChild(b);
+    var s = document.createElement("section");
+    s.className = "pane" + (i === 0 ? " on" : ""); s.id = "pane_" + d.id;
+    s.innerHTML = d.fn();
+    panes.appendChild(s);
+  });
+  tabs.addEventListener("click", function(e){
+    var b = e.target.closest("button[data-pane]"); if(!b) return;
+    tabs.querySelectorAll("button").forEach(function(x){ x.classList.remove("on"); });
+    b.classList.add("on");
+    panes.querySelectorAll("section.pane").forEach(function(x){ x.classList.remove("on"); });
+    document.getElementById("pane_" + b.getAttribute("data-pane")).classList.add("on");
+    window.scrollTo(0,0);
+  });
+  setLevel("std");
+})();
+
+function setLevel(lv){
+  curLevel = lv;
+  document.querySelectorAll(".lv").forEach(function(d){ d.classList.toggle("on", d.getAttribute("data-lv") === lv); });
+  document.querySelectorAll("[data-lvchip]").forEach(function(s){ s.classList.toggle("on", s.getAttribute("data-lvchip") === lv); });
+  document.getElementById("levelSel").value = lv;
+}
+document.getElementById("levelSel").addEventListener("change", function(){ setLevel(this.value); queueSave(); });
+document.addEventListener("click", function(e){
+  var chip = e.target.closest("[data-lvchip]");
+  if(chip) setLevel(chip.getAttribute("data-lvchip"));
+});
+document.getElementById("bigBtn").addEventListener("click", function(){ document.body.classList.toggle("big"); });
+document.getElementById("printBtn").addEventListener("click", function(){ window.print(); });
+
+function readField(id){
+  var els = document.querySelectorAll('[data-id="' + id + '"]');
+  if(!els.length) return "";
+  if(els[0].type === "radio"){ for(var i=0;i<els.length;i++) if(els[i].checked) return els[i].value; return ""; }
+  if(els[0].type === "checkbox") return els[0].checked ? "1" : "";
+  return (els[0].value || "").trim();
+}
+
+/* ---------- Supabase ---------- */
+var SUPA_URL = "https://lhmwtfyceilgndpygivj.supabase.co";
+var SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU";
+var TABLE = "arrival_responses";
+var GUIDE_KEY = "arrival_projects";
+var STU_KEY = "arrival_student";
+var student = null;
+
+function headers(extra){
+  var h = { "apikey":SUPA_KEY, "Authorization":"Bearer " + SUPA_KEY, "Content-Type":"application/json" };
+  if(extra) for(var k in extra) h[k] = extra[k];
+  return h;
+}
+function setStatus(cls, text){ document.getElementById("saveNote").innerHTML = '<span class="dot ' + cls + '"></span>' + text; }
+function timeNow(){ var d=new Date(),h=d.getHours(),m=d.getMinutes(),ap=h>=12?"PM":"AM"; h=h%12||12; if(m<10)m="0"+m; return h+":"+m+" "+ap; }
+
+function collectPayload(){
+  var ans={},answered=0,total=0,seen={};
+  document.querySelectorAll("[data-id]").forEach(function(el){
+    var id=el.getAttribute("data-id"); if(seen[id])return; seen[id]=1;
+    var v=readField(id); ans[id]=v;
+    var lv = el.closest ? el.closest(".lv") : null;
+    if(lv && lv.getAttribute("data-lv") !== curLevel) return;
+    total++; if(v) answered++;
+  });
+  return { answers:ans, meta:{ answered:answered, total:total, level:curLevel } };
+}
+function restorePayload(p){
+  if(!p||!p.answers) return;
+  Object.keys(p.answers).forEach(function(id){
+    var v=p.answers[id];
+    var els=document.querySelectorAll('[data-id="'+id+'"]');
+    if(!els.length) return;
+    if(els[0].type==="radio"){ els.forEach(function(r){ r.checked=(r.value===v); }); }
+    else if(els[0].type==="checkbox"){ els[0].checked=!!v; }
+    else els[0].value=v;
+  });
+  if(p.meta && p.meta.level) setLevel(p.meta.level);
+}
+
+var saving=false,pending=false,saveTimer=null;
+function pushRow(markSubmitted, done){
+  if(!student) return;
+  if(saving){ pending=true; return; }
+  saving=true; setStatus("wait","Saving\u2026");
+  var pay=collectPayload();
+  var row={ email:student.email, student_name:student.name, period:student.period,
+    guide_key:GUIDE_KEY, lang:"", level:curLevel, payload:pay,
+    answered:pay.meta.answered, total:pay.meta.total, updated_at:new Date().toISOString() };
+  if(markSubmitted){ row.submitted=true; row.submitted_at=new Date().toISOString(); }
+  fetch(SUPA_URL+"/rest/v1/"+TABLE+"?on_conflict=email,guide_key",{
+    method:"POST", headers:headers({"Prefer":"resolution=merge-duplicates,return=minimal"}),
+    body:JSON.stringify([row])
+  }).then(function(res){
+    saving=false;
+    if(res.ok){ setStatus("ok","Saved "+timeNow()); if(done)done(true); }
+    else { res.text().then(function(t){ console.warn("Save failed:",res.status,t); });
+           setStatus("bad","Not saved \u2014 check internet"); if(done)done(false); }
+    if(pending){ pending=false; pushRow(false); }
+  }).catch(function(e){
+    saving=false; console.warn(e); setStatus("bad","Not saved \u2014 check internet");
+    if(done)done(false); if(pending){ pending=false; pushRow(false); }
+  });
+}
+function queueSave(){
+  if(!student) return;
+  setStatus("wait","Saving\u2026"); clearTimeout(saveTimer);
+  saveTimer=setTimeout(function(){ pushRow(false); },2500);
+}
+document.addEventListener("input",function(e){ if(e.target.hasAttribute&&e.target.hasAttribute("data-id")) queueSave(); });
+document.addEventListener("change",function(e){ if(e.target.hasAttribute&&e.target.hasAttribute("data-id")) queueSave(); });
+window.addEventListener("beforeunload",function(){
+  if(!student||!saveTimer) return;
+  clearTimeout(saveTimer);
+  var pay=collectPayload();
+  try{
+    fetch(SUPA_URL+"/rest/v1/"+TABLE+"?on_conflict=email,guide_key",{
+      method:"POST", keepalive:true,
+      headers:headers({"Prefer":"resolution=merge-duplicates,return=minimal"}),
+      body:JSON.stringify([{ email:student.email, student_name:student.name, period:student.period,
+        guide_key:GUIDE_KEY, lang:"", level:curLevel, payload:pay,
+        answered:pay.meta.answered, total:pay.meta.total, updated_at:new Date().toISOString() }])
+    });
+  }catch(e){}
+});
+document.getElementById("turninBtn").addEventListener("click",function(){
+  if(!student){ alert("Sign in first."); return; }
+  var pay=collectPayload();
+  if(!confirm("Turn in your project work?\n\nYou filled in "+pay.meta.answered+" of "+pay.meta.total+" boxes.\n\nYou can keep working after you turn it in.")) return;
+  clearTimeout(saveTimer);
+  pushRow(true,function(ok){ alert(ok?"Turned in. Mr. Toby can see it now.":"It did not send. Check the internet and try again."); });
+});
+
+function signedIn(){
+  document.getElementById("gate").style.display="none";
+  document.getElementById("who").textContent=student.name+" \u00b7 P"+student.period;
+  setStatus("ok","Ready");
+  fetch(SUPA_URL+"/rest/v1/"+TABLE+"?email=eq."+encodeURIComponent(student.email)+
+        "&guide_key=eq."+GUIDE_KEY+"&select=payload",{headers:headers()})
+    .then(function(r){ return r.ok?r.json():[]; })
+    .then(function(rows){ if(rows&&rows.length&&rows[0].payload){ restorePayload(rows[0].payload); setStatus("ok","Your work loaded"); } })
+    .catch(function(){});
+}
+document.getElementById("gBtn").addEventListener("click",function(){
+  var name=document.getElementById("gName").value.trim();
+  var email=document.getElementById("gEmail").value.trim().toLowerCase();
+  var period=document.getElementById("gPeriod").value;
+  var err=document.getElementById("gateErr");
+  if(name.length<2){ err.textContent="Please write your name."; return; }
+  if(email.indexOf("@")<1){ err.textContent="Please write your school email."; return; }
+  if(!period){ err.textContent="Please choose your period."; return; }
+  student={name:name,email:email,period:period};
+  try{ localStorage.setItem(STU_KEY,JSON.stringify(student)); }catch(e){}
+  signedIn();
+});
+document.getElementById("gEmail").addEventListener("keydown",function(e){ if(e.key==="Enter") document.getElementById("gBtn").click(); });
+(function(){
+  try{ var s=JSON.parse(localStorage.getItem(STU_KEY)||"null"); if(s&&s.email){ student=s; signedIn(); } }catch(e){}
+})();
+</script>
+</body>
+</html>
