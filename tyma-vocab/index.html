@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thank You, Ma'am — Words Before We Read</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pine:#1f4d3d; --pine-dk:#163a2d; --pine-lt:#e7f0ec;
+  --paper:#fbfaf6; --card:#fff; --ink:#1d2320; --muted:#6b7370; --line:#dfe3e0;
+  --gold:#b8842c; --gold-lt:#fdf4e3; --rose:#a14a4a; --rose-lt:#fbecec; --r:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Nunito',system-ui,sans-serif;background:var(--paper);color:var(--ink);line-height:1.65;font-size:17px;padding-bottom:80px}
+
+/* SIGN IN */
+#signin{position:fixed;inset:0;background:var(--pine);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px}
+.signin-card{background:var(--card);border-radius:16px;padding:30px 28px;max-width:420px;width:100%;box-shadow:0 18px 50px rgba(0,0,0,.3)}
+.signin-card h1{font-size:23px;margin-bottom:4px;color:var(--pine)}
+.signin-card p.sub{color:var(--muted);font-size:15px;margin-bottom:18px}
+.signin-card label{display:block;font-weight:700;font-size:14px;margin:14px 0 5px}
+.signin-card input,.signin-card select{width:100%;padding:11px 12px;border:2px solid var(--line);border-radius:9px;font-family:inherit;font-size:16px;background:#fff}
+.signin-card input:focus,.signin-card select:focus{outline:none;border-color:var(--pine)}
+.signin-card button{width:100%;margin-top:20px;padding:13px;background:var(--pine);color:#fff;border:none;border-radius:9px;font-family:inherit;font-size:17px;font-weight:800;cursor:pointer}
+.signin-card button:hover{background:var(--pine-dk)}
+#signin-err{color:var(--rose);font-size:14px;font-weight:700;margin-top:10px;min-height:20px}
+
+/* TOOLBAR */
+#bar{position:sticky;top:0;z-index:400;background:var(--pine);color:#fff;display:flex;align-items:center;gap:10px;padding:9px 14px;flex-wrap:wrap;box-shadow:0 2px 10px rgba(0,0,0,.15)}
+#bar .ttl{font-weight:800;font-size:17px;margin-right:auto}
+#bar select,#bar button{font-family:inherit;font-size:14px;font-weight:700;border-radius:8px;padding:7px 11px;cursor:pointer;background:rgba(255,255,255,.15);color:#fff;border:1.5px solid rgba(255,255,255,.35)}
+#bar select option{color:#000}
+#bar button:hover{background:rgba(255,255,255,.28)}
+#bar button.turnin{background:var(--gold);border-color:var(--gold)}
+#who{font-size:13px;opacity:.9;cursor:pointer;text-decoration:underline}
+.dot{width:10px;height:10px;border-radius:50%;background:#8aa39a;display:inline-block}
+.dot.saving{background:#e0a33c}.dot.ok{background:#63c48b}.dot.err{background:#e06060}
+#savetxt{font-size:12px;opacity:.85}
+
+/* LAYOUT */
+.wrap{max-width:760px;margin:0 auto;padding:0 18px}
+.hero{background:var(--pine);color:#fff;padding:34px 18px 38px;margin-bottom:24px}
+.hero h1{font-size:33px;line-height:1.15;font-weight:800;margin-bottom:10px}
+.hero p{font-size:17px;opacity:.92;max-width:52ch}
+.hero .by{margin-top:16px;font-size:14px;opacity:.75}
+h2.sec{font-size:24px;font-weight:800;color:var(--pine);margin:38px 0 4px;padding-top:10px;border-top:3px solid var(--pine)}
+h2.sec .n{display:inline-block;background:var(--pine);color:#fff;width:28px;height:28px;line-height:28px;text-align:center;border-radius:50%;font-size:15px;margin-right:8px;vertical-align:2px}
+p.secsub{color:var(--muted);margin-bottom:16px;font-size:15px}
+h3{font-size:19px;font-weight:800;margin:24px 0 6px;color:var(--pine-dk)}
+
+/* QUESTIONS */
+.q{background:var(--card);border:1.5px solid var(--line);border-left:5px solid var(--pine);border-radius:var(--r);padding:14px 16px;margin:14px 0}
+.q .tag{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;padding:3px 8px;border-radius:20px;margin-bottom:7px}
+.tag.predict{background:var(--gold-lt);color:var(--gold)}
+.tag.connect{background:var(--rose-lt);color:var(--rose)}
+.tag.lang{background:#eae7f5;color:#5a4a8a}
+.q .qt{font-weight:700;margin-bottom:9px}
+.q .hint{font-size:14px;color:var(--muted);font-style:italic;margin-bottom:8px}
+textarea{width:100%;min-height:70px;border:1.5px solid var(--line);border-radius:9px;padding:10px 11px;font-family:inherit;font-size:16px;line-height:1.55;resize:vertical;background:#fffdf8}
+textarea:focus{outline:none;border-color:var(--pine);background:#fff}
+
+/* VOCAB CARDS */
+.vgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:12px;margin:14px 0}
+.vcard{background:var(--card);border:1.5px solid var(--line);border-radius:var(--r);padding:13px 10px;text-align:center}
+.vcard svg{width:52px;height:52px;color:var(--pine);display:block;margin:0 auto 7px}
+.vcard .w{font-weight:800;font-size:16px;color:var(--pine-dk)}
+.vcard .pos{font-size:11px;color:var(--muted);font-style:italic}
+.vcard .d{font-size:13px;color:var(--muted);line-height:1.4;margin-top:4px}
+.vcard .tr{font-size:15px;margin-top:6px;font-weight:700;min-height:20px}
+
+/* MATCH */
+.matchrow{display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--line);padding:9px 0;flex-wrap:wrap}
+.matchrow svg{width:42px;height:42px;color:var(--pine);flex-shrink:0}
+.matchrow .def{flex:1;min-width:180px}
+.matchrow select{flex:1;min-width:150px;padding:9px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:inherit;font-size:16px;background:#fff}
+.matchrow .mk{font-size:20px;width:24px;text-align:center}
+.fib{margin:11px 0}
+.fib select{padding:5px 8px;border:1.5px solid var(--gold);border-radius:7px;font-family:inherit;font-size:16px;background:var(--gold-lt);font-weight:700}
+.wordbank{background:var(--pine-lt);border-radius:var(--r);padding:12px 15px;margin:12px 0;line-height:2}
+.wordbank span{display:inline-block;background:#fff;border:1.5px solid var(--pine);border-radius:20px;padding:2px 12px;margin:3px 5px 3px 0;font-size:15px;font-weight:700}
+
+/* DRAW */
+.drawgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;margin:14px 0}
+.drawcell{background:var(--card);border:1.5px solid var(--line);border-radius:var(--r);padding:10px}
+.drawcell .lab{font-weight:800;color:var(--pine-dk);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+.drawcell .lab button{background:none;border:none;color:var(--rose);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline}
+canvas{width:100%;height:140px;border:1.5px dashed var(--line);border-radius:8px;background:#fff;touch-action:none;display:block;cursor:crosshair}
+
+/* SCENES */
+.scene{background:var(--card);border:1.5px solid var(--line);border-radius:var(--r);padding:14px 16px;margin:14px 0}
+.scene svg{width:100%;max-width:430px;height:auto;display:block;margin:0 auto 10px;color:var(--pine-dk)}
+.scene .cap{font-weight:800;color:var(--pine);margin-bottom:6px}
+.scene .use{font-size:14px;color:var(--muted);font-style:italic;margin-bottom:8px}
+
+.note{background:var(--pine-lt);border-radius:var(--r);padding:13px 16px;margin:14px 0;font-size:15px}
+.note b{color:var(--pine)}
+.btn{padding:11px 20px;border:none;border-radius:9px;background:var(--pine);color:#fff;font-family:inherit;font-size:16px;font-weight:800;cursor:pointer}
+.btn.ghost{background:#fff;color:var(--pine);border:2px solid var(--pine)}
+footer{text-align:center;color:var(--muted);font-size:14px;padding:36px 18px 10px}
+.printhead{display:none}
+
+@media print{
+  @page{margin:1.5cm}
+  body{background:#fff;font-size:12pt;padding-bottom:0}
+  #bar,#signin,#tip,.btn,.drawcell .lab button,.noprint{display:none!important}
+  .hero{background:#fff;color:#000;padding:0 0 8px;margin-bottom:10px;border-bottom:3px solid #000}
+  .hero h1{font-size:21pt}.hero p{font-size:11pt}
+  .printhead{display:block;border-bottom:1px solid #000;padding-bottom:5px;margin-bottom:14px;font-size:11pt}
+  .wrap{max-width:100%;padding:0}
+  .q,.vcard,.drawcell,.scene{break-inside:avoid;page-break-inside:avoid}
+  h2.sec{break-after:avoid;page-break-after:avoid;font-size:15pt}
+  textarea{border:none;border-bottom:1px solid #999;border-radius:0;min-height:0;background:#fff;overflow:visible;resize:none}
+  .vgrid{grid-template-columns:repeat(4,1fr)}
+  .drawgrid{grid-template-columns:repeat(3,1fr)}
+  canvas{height:120px;border:1px solid #999}
+}
+body.blank textarea{color:transparent!important}
+body.blank select{color:transparent!important}
+body.blank canvas{visibility:hidden}
+body.blank .drawcell{min-height:150px}
+</style>
+</head>
+<body>
+
+<div id="signin">
+  <div class="signin-card">
+    <h1>Thank You, Ma'am</h1>
+    <p class="sub">Words before we read. Sign in so your work saves.</p>
+    <label for="si-email">School email</label>
+    <input id="si-email" type="email" placeholder="name@s.sfusd.edu" autocomplete="email">
+    <label for="si-name">Full name</label>
+    <input id="si-name" type="text" placeholder="First and last name" autocomplete="name">
+    <label for="si-period">Period</label>
+    <select id="si-period">
+      <option value="">Choose your period</option>
+      <option>1</option><option>2</option><option>3</option><option>5</option><option>6</option>
+    </select>
+    <div id="signin-err"></div>
+    <button id="si-go">Start</button>
+  </div>
+</div>
+
+<div id="bar">
+  <span class="ttl">Thank You, Ma'am — Words</span>
+  <span id="who" title="Sign out"></span>
+  <select id="lang" title="Translation language">
+    <option value="">Language</option>
+    <option value="Spanish">Español</option>
+    <option value="Chinese (Simplified)">中文</option>
+    <option value="Arabic">العربية</option>
+    <option value="Vietnamese">Tiếng Việt</option>
+    <option value="Thai">ไทย</option>
+    <option value="Nepali">नेपाली</option>
+  </select>
+  <span class="dot" id="dot"></span><span id="savetxt"></span>
+  <button id="btn-blank">Print blank</button>
+  <button id="btn-print">Print my work</button>
+  <button class="turnin" id="btn-turnin">Turn in</button>
+</div>
+
+<div class="printhead">
+  Name: <b id="ph-name">________________________</b> &nbsp;&nbsp; Period: <b id="ph-period">____</b> &nbsp;&nbsp; Date: ____________
+</div>
+
+<div class="hero">
+  <div class="wrap">
+    <h1>Fourteen words<br>before we read</h1>
+    <p>A woman is walking alone at night. A boy runs up behind her. You need these words before you meet them in the story.</p>
+    <div class="by">Mr. Toby &middot; ELD</div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- 1 WORDS -->
+<h2 class="sec"><span class="n">1</span>The words</h2>
+<p class="secsub">Choose a language in the green bar and every card translates.</p>
+<div class="vgrid" id="vgrid"></div>
+
+<!-- 2 PICTURE MATCH -->
+<h2 class="sec"><span class="n">2</span>Match the picture</h2>
+<p class="secsub">Which word goes with the picture?</p>
+<div id="matchbox"></div>
+<button class="btn ghost noprint" id="btn-check1" style="margin-top:12px">Check my answers</button>
+<span id="score1" style="margin-left:10px;font-weight:800"></span>
+
+<!-- 3 MEANING MATCH -->
+<h2 class="sec"><span class="n">3</span>Match the meaning</h2>
+<p class="secsub">Read the meaning. Choose the word.</p>
+<div id="defbox"></div>
+<button class="btn ghost noprint" id="btn-check2" style="margin-top:12px">Check my answers</button>
+<span id="score2" style="margin-left:10px;font-weight:800"></span>
+
+<!-- 4 CLOZE -->
+<h2 class="sec"><span class="n">4</span>Finish the sentence</h2>
+<div class="wordbank" id="bank"></div>
+<div id="fibbox"></div>
+<button class="btn ghost noprint" id="btn-check3" style="margin-top:12px">Check my answers</button>
+<span id="score3" style="margin-left:10px;font-weight:800"></span>
+
+<!-- 5 DRAW -->
+<h2 class="sec"><span class="n">5</span>Draw the word</h2>
+<p class="secsub">Use your finger, your mouse, or a pencil if this is on paper. Simple drawings are fine — nobody is grading your art.</p>
+<div class="drawgrid" id="drawgrid"></div>
+
+<!-- 6 SCENES -->
+<h2 class="sec"><span class="n">6</span>Write about the pictures</h2>
+<p class="secsub">These four pictures show the beginning of the story. Write one sentence about each. Use capital letters and periods.</p>
+<div id="scenebox"></div>
+
+<div class="q">
+  <span class="tag lang">Language</span>
+  <div class="qt">Now write four questions about the pictures.</div>
+  <div class="hint">Start with: Why…? &nbsp; Who…? &nbsp; Where…? &nbsp; What…? &nbsp; When…? &nbsp;&nbsp; Example: <i>What city is this?</i></div>
+  <textarea data-k="q1" style="min-height:42px" placeholder="1."></textarea>
+  <textarea data-k="q2" style="min-height:42px;margin-top:8px" placeholder="2."></textarea>
+  <textarea data-k="q3" style="min-height:42px;margin-top:8px" placeholder="3."></textarea>
+  <textarea data-k="q4" style="min-height:42px;margin-top:8px" placeholder="4."></textarea>
+</div>
+
+<!-- 7 PREDICT -->
+<h2 class="sec"><span class="n">7</span>Before you read</h2>
+
+<div class="note"><b>"Ma'am"</b> is a polite way to speak to a woman you do not know. It is short for <i>madam</i>. In the story, a boy says it to a woman he has just met. Listen for how many times he says it.</div>
+
+<div class="q">
+  <span class="tag predict">Predict</span>
+  <div class="qt">The title is "Thank You, Ma'am." A boy tries to steal a woman's purse. She catches him. What do you think she will do next?</div>
+  <div class="hint">There is no wrong answer yet. Guess.</div>
+  <textarea data-k="p1"></textarea>
+</div>
+<div class="q">
+  <span class="tag predict">Predict</span>
+  <div class="qt">At the end, the boy says thank you. Why do you think he says it?</div>
+  <textarea data-k="p2"></textarea>
+</div>
+<div class="q">
+  <span class="tag connect">Connect</span>
+  <div class="qt">Name one reason you would say thank you to an adult.</div>
+  <textarea data-k="p3"></textarea>
+</div>
+
+<footer>Mr. Toby &middot; Galileo Academy of Science and Technology</footer>
+</div>
+
+<div id="tip"></div>
+
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var TABLE='tyma_vocab';
+var SECTION='main';
+var PROXY='https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
+var LS='tyma_vocab_v1';
+
+/* ---------- ICONS ---------- */
+var I={};
+I.run='<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="40" cy="12" r="6"/><path d="M38 22l-9 9 6 8-4 13"/><path d="M29 31l-11 3"/><path d="M35 39l10 5 4 10"/><path d="M6 24h10M4 34h8M8 44h8"/></svg>';
+I.large='<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="10" width="36" height="44" rx="3"/><rect x="48" y="38" width="12" height="16" rx="2"/><path d="M12 4h24M18 60h12"/></svg>';
+I.purse='<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 24h40l-4 30H16z"/><path d="M22 24v-6a10 10 0 0120 0v6"/><path d="M52 26l6-16"/></svg>';
+I.obey='<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="20" cy="14" r="6"/><path d="M20 20v18M12 44l8-6 8 6M14 56l6-12M26 56l-6-12"/><path d="M44 10v34M38 20l6-8 6 8"/><path d="M36 54h18"/></svg>';
+I.steal='<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="16" r="7"/><path d="M14 20h20"/><path d="M24 23v16M16 48l8-9 8 9M18 58l6-10M30 58l-6-10"/><path d="M40 30h16v14H40z"/><path d="M48 30v-4"/></svg>';
+I.takecare='<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="16" r="7"/><path d="M24 23v14M14 32l10-5 10 5"/><path d="M24 37l-6 18M24 37l6 18"/><path d="M44 22c-2-4-9-3-9 2 0 5 9 10 9 10s9-5 9-10c0-5-7-6-9-2z"/></svg>';
+I.grab='<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 34V14a4 4 0 018 0v18"/><path d="M28 30V10a4 4 0 018 0v22"/><path d="M36 32V16a4 4 0 018 0v22"/><path d="M44 30a4 4 0 018 0v12c0 9-7 16-16 16h-4c-9 0-14-6-14-14V30"/></svg>';
+I.trust='<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 38l12-8 10 5h10"/><path d="M60 38l-12-8-10 5"/><path d="M32 10c-3-4-11-3-11 3 0 6 11 13 11 13s11-7 11-13c0-6-8-7-11-3z"/></svg>';
+I.frail='<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="26" cy="12" r="6"/><path d="M26 18v22M20 26l6-4 6 4M26 40l-5 16M26 40l5 16"/><path d="M44 24v32M40 24h8"/></svg>';
+I.drag='<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="14" r="6"/><path d="M16 20v14M16 34l-5 14M16 34l6 14"/><path d="M22 26l14 6"/><path d="M36 32h18v12H36z"/><path d="M4 56h56"/></svg>';
+I.snatch='<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M26 40V18a4 4 0 018 0v16"/><path d="M34 34V14a4 4 0 018 0v22"/><path d="M42 36a4 4 0 018 0v8c0 8-6 14-14 14h-4c-8 0-12-5-12-12V32"/><path d="M4 16l12 4M6 30l12 1M8 44l12-3"/></svg>';
+I.ashamed='<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="32" cy="28" r="20"/><path d="M24 24c1.5 2 3 3 4 3M36 24c1.5 2 3 3 4 3"/><path d="M24 40c3-4 13-4 16 0"/><path d="M12 44c-3 4-4 8-4 12M52 44c3 4 4 8 4 12"/></svg>';
+I.loose='<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M14 40V20a4 4 0 018 0v14"/><path d="M22 34V18a4 4 0 018 0v16"/><path d="M30 34a4 4 0 018 0v10c0 8-6 12-13 12S14 52 14 44v-4"/><path d="M46 14l12 12M58 14L46 26"/></svg>';
+I.sidewalk='<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 44h56M4 56h56"/><path d="M18 44v12M34 44v12M50 44v12"/><path d="M12 14v20M6 14h12"/><circle cx="12" cy="12" r="4"/><path d="M44 34c0-6 4-10 8-10s8 4 8 10"/></svg>';
+
+/* ---------- WORDS ---------- */
+var V=[
+ {k:'run',      w:'run',              pos:'verb',       d:'move fast with your legs',                 ic:'run'},
+ {k:'large',    w:'large',            pos:'adjective',  d:'big',                                      ic:'large'},
+ {k:'purse',    w:'purse / bag',      pos:'noun',       d:'a bag a woman carries her things in',      ic:'purse'},
+ {k:'obey',     w:'obey',             pos:'verb',       d:'do what someone tells you to do',          ic:'obey'},
+ {k:'steal',    w:'steal / rob',      pos:'verb',       d:'take something that is not yours',         ic:'steal'},
+ {k:'takecare', w:'take care of',     pos:'verb',       d:'look after someone so they are safe',      ic:'takecare'},
+ {k:'grab',     w:'grab / hold onto', pos:'verb',       d:'take something with your hand and hold it',ic:'grab'},
+ {k:'trust',    w:'trust',            pos:'verb',       d:'believe someone will not hurt you',        ic:'trust'},
+ {k:'frail',    w:'frail',            pos:'adjective',  d:'thin and weak',                            ic:'frail'},
+ {k:'drag',     w:'drag',             pos:'verb',       d:'pull something along the ground',          ic:'drag'},
+ {k:'snatch',   w:'snatch',           pos:'verb',       d:'take something very fast',                 ic:'snatch'},
+ {k:'ashamed',  w:'ashamed',          pos:'adjective',  d:'feeling bad about something you did',      ic:'ashamed'},
+ {k:'loose',    w:'let go',           pos:'verb',       d:'stop holding someone. The story says "turn loose."', ic:'loose'},
+ {k:'sidewalk', w:'sidewalk',         pos:'noun',       d:'the path where people walk next to a street', ic:'sidewalk'}
+];
+
+var PICS=['run','purse','grab','drag','frail','steal','sidewalk','trust'];
+
+var DEFS=[
+ {t:'thin and weak',                        a:'frail'},
+ {t:'take something very fast',             a:'snatch'},
+ {t:'do what someone tells you to do',      a:'obey'},
+ {t:'feeling bad about something you did',  a:'ashamed'},
+ {t:'stop holding someone so they are free',a:'loose'},
+ {t:'look after someone so they are safe',  a:'takecare'},
+ {t:'pull something along the ground',      a:'drag'},
+ {t:'believe someone will not hurt you',    a:'trust'}
+];
+
+var FIB=[
+ {s:'The woman carried a ___ over her shoulder.',              a:'purse'},
+ {s:'Do not ___ in the hallway. Please walk.',                 a:'run'},
+ {s:'The boy tried to ___ the bag and get away fast.',         a:'snatch'},
+ {s:'It is wrong to ___ things from other people.',            a:'steal'},
+ {s:'The bag was too heavy to lift, so I had to ___ it.',      a:'drag'},
+ {s:'Good children ___ their parents.',                        a:'obey'},
+ {s:'After his illness, my grandfather was thin and ___.',     a:'frail'},
+ {s:'My mother has to ___ my little sister every day.',        a:'takecare'},
+ {s:'I ___ my best friend with my secrets.',                   a:'trust'},
+ {s:'___ my hand when we cross the street.',                   a:'grab'},
+ {s:'He felt ___ when everyone saw that he had lied.',         a:'ashamed'},
+ {s:'The children play on the ___ in front of the house.',     a:'sidewalk'},
+ {s:'She held his arm tight and would not ___.',               a:'loose'},
+ {s:'She was a ___ woman, taller than everyone on the bus.',   a:'large'}
+];
+
+var DRAW=['run','grab','purse','drag','frail','obey'];
+
+/* ---------- SCENE ART ---------- */
+function fig(x, y, s, opts){
+  opts = opts || {};
+  return '<g transform="translate(' + x + ',' + y + ') scale(' + s + ')">' +
+    '<circle cx="0" cy="0" r="7"/>' +
+    '<path d="M0 7v20"/>' +
+    (opts.arms || '<path d="M-10 16l10-6 10 6"/>') +
+    (opts.legs || '<path d="M0 27l-7 16M0 27l7 16"/>') +
+    (opts.coat ? '<path d="M-9 9l9-4 9 4-3 24h-12z"/>' : '') +
+    '</g>';
+}
+function sceneWrap(inner){
+  return '<svg viewBox="0 0 420 200" fill="none" stroke="currentColor" stroke-width="2.4" ' +
+         'stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">' +
+         '<path d="M0 168h420" stroke-width="3"/>' +
+         '<path d="M0 182h420" opacity=".4"/>' +
+         '<path d="M40 168V56M26 56h28" /><circle cx="40" cy="50" r="8"/>' +
+         '<path d="M355 40a12 12 0 1 0 10 18 14 14 0 0 1-10-18z"/>' +
+         inner + '</svg>';
+}
+var SCENES=[
+ {cap:'Picture 1',
+  use:'run &middot; large &middot; purse &middot; sidewalk',
+  svg:sceneWrap(
+    fig(250,110,1.5,{coat:true}) +
+    '<path d="M262 118l14 10 6 22" /><path d="M276 128l16-4-2 20h-16z"/>' +
+    fig(150,116,1.4,{arms:'<path d="M-12 14l12-5 14 2"/>', legs:'<path d="M0 27l-11 14M0 27l10 15"/>'})
+  )},
+ {cap:'Picture 2',
+  use:'grab &middot; snatch &middot; steal &middot; sidewalk',
+  svg:sceneWrap(
+    fig(240,110,1.5,{coat:true, arms:'<path d="M-10 16l-12 6M10 14l12 8"/>'}) +
+    '<g transform="translate(160,150)"><circle cx="0" cy="-6" r="7"/><path d="M-2 1l-22 6"/>' +
+    '<path d="M-24 7l-14-6M-24 7l-6 12"/><path d="M-4 0l10 6"/></g>' +
+    '<path d="M196 132l14-6 10 12" opacity=".8"/><path d="M214 122l-6-14"/>'
+  )},
+ {cap:'Picture 3',
+  use:'grab &middot; hold onto &middot; large &middot; frail',
+  svg:sceneWrap(
+    fig(230,100,1.7,{coat:true, arms:'<path d="M-11 16l-14 4"/>'}) +
+    fig(178,122,1.2,{arms:'<path d="M-10 14l8-8 10 4"/>', legs:'<path d="M0 27l-6 16M0 27l7 16"/>'}) +
+    '<path d="M206 128l-14 2" stroke-dasharray="3 3"/>'
+  )},
+ {cap:'Picture 4',
+  use:'drag &middot; run &middot; obey &middot; let go',
+  svg:sceneWrap(
+    fig(200,104,1.6,{coat:true, arms:'<path d="M-10 16l12 5"/>'}) +
+    '<g transform="translate(250,126)"><circle cx="0" cy="-8" r="7"/><path d="M0 -1l-16 10"/>' +
+    '<path d="M-16 9l-14 6M-16 9l-8 14"/><path d="M2 -3l-16 -8"/></g>' +
+    '<path d="M214 118l22 2" stroke-dasharray="4 3"/>'
+  )}
+];
+
+/* ---------- STATE ---------- */
+var student=null, data={answers:{},draw:{}}, saveTimer=null, tipEl;
+function $(i){return document.getElementById(i);}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function byKey(k){for(var i=0;i<V.length;i++){if(V[i].k===k)return V[i];}return null;}
+
+/* ---------- BUILD ---------- */
+function opts(){
+  var sorted=V.slice().sort(function(a,b){return a.w<b.w?-1:1;});
+  var o='<option value="">choose a word</option>';
+  for(var i=0;i<sorted.length;i++){o+='<option value="'+sorted[i].k+'">'+esc(sorted[i].w)+'</option>';}
+  return o;
+}
+function build(){
+  var g='';
+  for(var i=0;i<V.length;i++){
+    var v=V[i];
+    g+='<div class="vcard">'+I[v.ic]+'<div class="w">'+esc(v.w)+'</div>';
+    g+='<div class="pos">'+esc(v.pos)+'</div><div class="d">'+esc(v.d)+'</div>';
+    g+='<div class="tr" id="vtr-'+v.k+'"></div></div>';
+  }
+  $('vgrid').innerHTML=g;
+
+  var o=opts(), m='';
+  for(var p=0;p<PICS.length;p++){
+    var vv=byKey(PICS[p]);
+    m+='<div class="matchrow">'+I[vv.ic]+'<select data-k="m'+p+'" data-ans="'+vv.k+'">'+o+'</select><span class="mk" id="mk'+p+'"></span></div>';
+  }
+  $('matchbox').innerHTML=m;
+
+  var d='';
+  for(var q=0;q<DEFS.length;q++){
+    d+='<div class="matchrow"><span class="def">'+(q+1)+'. '+esc(DEFS[q].t)+'</span>';
+    d+='<select data-k="d'+q+'" data-ans="'+DEFS[q].a+'">'+o+'</select><span class="mk" id="dk'+q+'"></span></div>';
+  }
+  $('defbox').innerHTML=d;
+
+  var sorted=V.slice().sort(function(a,b){return a.w<b.w?-1:1;}), bank='';
+  for(var b=0;b<sorted.length;b++){bank+='<span>'+esc(sorted[b].w)+'</span>';}
+  $('bank').innerHTML=bank;
+
+  var f='';
+  for(var n=0;n<FIB.length;n++){
+    var parts=FIB[n].s.split('___');
+    f+='<div class="fib">'+(n+1)+'. '+esc(parts[0])+'<select data-k="f'+n+'" data-ans="'+FIB[n].a+'">'+o+'</select>'+esc(parts[1]||'');
+    if(parts.length>2) f+=esc(parts[2]);
+    f+=' <span class="mk" id="fk'+n+'"></span></div>';
+  }
+  $('fibbox').innerHTML=f;
+
+  var dr='';
+  for(var c=0;c<DRAW.length;c++){
+    var w=byKey(DRAW[c]);
+    dr+='<div class="drawcell"><div class="lab"><span>'+esc(w.w)+'</span>';
+    dr+='<button class="noprint" data-clear="'+w.k+'">clear</button></div>';
+    dr+='<canvas id="cv-'+w.k+'" data-w="'+w.k+'"></canvas></div>';
+  }
+  $('drawgrid').innerHTML=dr;
+
+  var sc='';
+  for(var s=0;s<SCENES.length;s++){
+    sc+='<div class="scene"><div class="cap">'+SCENES[s].cap+'</div>'+SCENES[s].svg;
+    sc+='<div class="use">Use 2–3 of these words: '+SCENES[s].use+'</div>';
+    sc+='<textarea data-k="s'+s+'" style="min-height:56px" placeholder="Write one sentence."></textarea></div>';
+  }
+  $('scenebox').innerHTML=sc;
+}
+
+function check(pre,count,mk,out){
+  var right=0;
+  for(var i=0;i<count;i++){
+    var sel=document.querySelector('[data-k="'+pre+i+'"]'); var mark=$(mk+i);
+    if(!sel||!mark) continue;
+    if(sel.value===''){mark.textContent='';continue;}
+    if(sel.value===sel.getAttribute('data-ans')){mark.textContent='✓';mark.style.color='#2a8a5a';right++;}
+    else{mark.textContent='✗';mark.style.color='#b34545';}
+  }
+  $(out).textContent=right+' / '+count;
+}
+
+/* ---------- TRANSLATE ---------- */
+var tc={};
+function translate(w,m,lang){
+  var key=w+'|'+lang;
+  if(tc[key]) return Promise.resolve(tc[key]);
+  var url=PROXY+'?action=translate&idiom='+encodeURIComponent(w)+'&meaning='+encodeURIComponent(m)+'&lang='+encodeURIComponent(lang);
+  return fetch(url).then(function(r){return r.json();}).then(function(d){
+    if(!d||!d.ok||!d.translation) return null;
+    tc[key]=d.translation; return d.translation;
+  }).catch(function(){return null;});
+}
+function translateCards(){
+  var lang=$('lang').value;
+  for(var i=0;i<V.length;i++){
+    (function(v){
+      var el=$('vtr-'+v.k); if(!el) return;
+      if(!lang){el.textContent='';return;}
+      el.textContent='…';
+      translate(v.w,v.d,lang).then(function(t){el.textContent=t?(t.equiv||''):'';});
+    })(V[i]);
+  }
+}
+
+/* ---------- DRAWING ---------- */
+function initCanvases(){
+  for(var i=0;i<DRAW.length;i++){ setupCanvas($('cv-'+DRAW[i])); }
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('[data-clear]'); if(!b) return;
+    var k=b.getAttribute('data-clear'); var cv=$('cv-'+k);
+    var ctx=cv.getContext('2d'); ctx.clearRect(0,0,cv.width,cv.height);
+    delete data.draw[k]; queueSave();
+  });
+}
+function setupCanvas(cv){
+  if(!cv) return;
+  var ratio=window.devicePixelRatio||1;
+  var r=cv.getBoundingClientRect();
+  cv.width=Math.max(300,Math.round(r.width*ratio));
+  cv.height=Math.round(140*ratio);
+  var ctx=cv.getContext('2d');
+  ctx.scale(ratio,ratio);
+  ctx.lineWidth=2.4; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle='#1d2320';
+  var drawing=false;
+  function pos(e){
+    var b=cv.getBoundingClientRect();
+    var t=(e.touches&&e.touches[0])?e.touches[0]:e;
+    return {x:t.clientX-b.left, y:t.clientY-b.top};
+  }
+  function down(e){e.preventDefault();drawing=true;var p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);}
+  function move(e){if(!drawing)return;e.preventDefault();var p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke();}
+  function up(){if(!drawing)return;drawing=false;storeCanvas(cv);}
+  cv.addEventListener('mousedown',down); cv.addEventListener('mousemove',move);
+  window.addEventListener('mouseup',up);
+  cv.addEventListener('touchstart',down,{passive:false});
+  cv.addEventListener('touchmove',move,{passive:false});
+  cv.addEventListener('touchend',up);
+}
+function storeCanvas(cv){
+  try{ data.draw[cv.getAttribute('data-w')]=cv.toDataURL('image/png'); queueSave(); }catch(e){}
+}
+function restoreCanvases(){
+  for(var i=0;i<DRAW.length;i++){
+    (function(k){
+      var url=data.draw[k]; if(!url) return;
+      var cv=$('cv-'+k); if(!cv) return;
+      var img=new Image();
+      img.onload=function(){
+        var ratio=window.devicePixelRatio||1;
+        cv.getContext('2d').drawImage(img,0,0,cv.width/ratio,cv.height/ratio);
+      };
+      img.src=url;
+    })(DRAW[i]);
+  }
+}
+
+/* ---------- GLOSSARY TIP ---------- */
+function showTip(span){
+  var word=span.textContent, def=span.getAttribute('data-d')||'', lang=$('lang').value;
+  var h='<div class="w">'+esc(word)+'</div><div>'+esc(def)+'</div>';
+  if(lang) h+='<div class="tr load" id="tip-tr">translating…</div>';
+  tipEl.innerHTML=h; tipEl.style.display='block';
+  var r=span.getBoundingClientRect();
+  var left=r.left+window.scrollX;
+  if(left+300>window.innerWidth) left=Math.max(10,window.innerWidth-305);
+  tipEl.style.top=(r.bottom+window.scrollY+8)+'px'; tipEl.style.left=left+'px';
+  if(lang){
+    translate(word,def,lang).then(function(t){
+      var b=$('tip-tr'); if(!b) return;
+      b.classList.remove('load');
+      if(!t){b.textContent='Translation not available.';return;}
+      var txt=t.equiv||''; if(t.meaning) txt+=' — '+t.meaning;
+      b.textContent=txt;
+    });
+  }
+}
+
+/* ---------- SAVE ---------- */
+function collect(){
+  var out={}, f=document.querySelectorAll('[data-k]');
+  for(var i=0;i<f.length;i++){ out[f[i].getAttribute('data-k')]=f[i].value; }
+  return out;
+}
+function restore(){
+  var f=document.querySelectorAll('[data-k]');
+  for(var i=0;i<f.length;i++){
+    var k=f[i].getAttribute('data-k');
+    if(data.answers[k]!==undefined) f[i].value=data.answers[k];
+  }
+  restoreCanvases();
+}
+function setDot(c,t){$('dot').className='dot '+(c||'');$('savetxt').textContent=t||'';}
+function queueSave(){
+  data.answers=collect();
+  try{localStorage.setItem(LS,JSON.stringify(data));}catch(e){}
+  setDot('saving','saving…');
+  clearTimeout(saveTimer); saveTimer=setTimeout(push,2500);
+}
+function push(submitted){
+  if(!student) return;
+  var row={email:student.email,name:student.name,period:student.period,section:SECTION,
+           payload:{answers:collect(),draw:data.draw},updated_at:new Date().toISOString()};
+  if(submitted) row.submitted=true;
+  return fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email,section',{
+    method:'POST',
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json',
+             'Prefer':'resolution=merge-duplicates,return=minimal'},
+    body:JSON.stringify([row])
+  }).then(function(r){
+    if(r.ok){var t=new Date();setDot('ok','saved '+t.getHours()+':'+String(t.getMinutes()).padStart(2,'0'));}
+    else{r.text().then(function(x){console.error('save failed',r.status,x);});setDot('err','not saved');}
+  }).catch(function(e){console.error(e);setDot('err','offline');});
+}
+function load(){
+  var url=SUPA_URL+'/rest/v1/'+TABLE+'?email=eq.'+encodeURIComponent(student.email)+'&section=eq.'+SECTION+'&select=payload';
+  return fetch(url,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}})
+    .then(function(r){return r.json();})
+    .then(function(rows){
+      if(rows&&rows.length&&rows[0].payload){
+        data.answers=rows[0].payload.answers||{};
+        data.draw=rows[0].payload.draw||{};
+      }
+    }).catch(function(){});
+}
+
+/* ---------- SIGN IN ---------- */
+function signIn(){
+  var email=$('si-email').value.trim().toLowerCase();
+  var name=$('si-name').value.trim();
+  var per=$('si-period').value;
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){$('signin-err').textContent='Type your full school email.';return;}
+  if(name.length<3){$('signin-err').textContent='Type your first and last name.';return;}
+  if(!per){$('signin-err').textContent='Choose your period.';return;}
+  student={email:email,name:name,period:per};
+  localStorage.setItem('tyma_student',JSON.stringify(student));
+  start();
+}
+function start(){
+  $('signin').style.display='none';
+  $('who').textContent=student.name+' · P'+student.period;
+  $('ph-name').textContent=student.name;
+  $('ph-period').textContent=student.period;
+  try{var c=localStorage.getItem(LS);if(c){var j=JSON.parse(c);data.answers=j.answers||{};data.draw=j.draw||{};}}catch(e){}
+  restore();
+  load().then(function(){restore();setDot('ok','loaded');});
+}
+
+/* ---------- INIT ---------- */
+document.addEventListener('DOMContentLoaded',function(){
+  tipEl=$('tip');
+  build();
+  initCanvases();
+
+  $('si-go').addEventListener('click',signIn);
+  $('si-email').addEventListener('keydown',function(e){if(e.key==='Enter')$('si-name').focus();});
+  $('si-name').addEventListener('keydown',function(e){if(e.key==='Enter')signIn();});
+
+  var saved=localStorage.getItem('tyma_student');
+  if(saved){try{student=JSON.parse(saved);start();}catch(e){}}
+
+  $('who').addEventListener('click',function(){
+    if(!confirm('Sign out? The next student can sign in on this device.'))return;
+    localStorage.removeItem('tyma_student');localStorage.removeItem(LS);location.reload();
+  });
+
+  document.addEventListener('input',function(e){
+    if(e.target.matches('textarea, input[type=text], select')) queueSave();
+  });
+  document.addEventListener('click',function(e){
+    var g=e.target.closest('.g');
+    if(g&&g.hasAttribute('data-d')){showTip(g);return;}
+    if(!e.target.closest('#tip')) tipEl.style.display='none';
+  });
+
+  $('lang').addEventListener('change',function(){translateCards();tipEl.style.display='none';});
+  $('btn-check1').addEventListener('click',function(){check('m',PICS.length,'mk','score1');});
+  $('btn-check2').addEventListener('click',function(){check('d',DEFS.length,'dk','score2');});
+  $('btn-check3').addEventListener('click',function(){check('f',FIB.length,'fk','score3');});
+
+  $('btn-print').addEventListener('click',function(){grow();window.print();});
+  $('btn-blank').addEventListener('click',function(){
+    document.body.classList.add('blank');window.print();
+    setTimeout(function(){document.body.classList.remove('blank');},600);
+  });
+  $('btn-turnin').addEventListener('click',function(){
+    if(!confirm('Turn in your work? You can still keep working after this.'))return;
+    push(true); $('btn-turnin').textContent='Turned in ✓';
+  });
+
+  window.addEventListener('beforeunload',function(){
+    if(!student)return;
+    try{
+      var row={email:student.email,name:student.name,period:student.period,section:SECTION,
+               payload:{answers:collect(),draw:data.draw},updated_at:new Date().toISOString()};
+      navigator.sendBeacon(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email,section&apikey='+SUPA_KEY,
+        new Blob([JSON.stringify([row])],{type:'application/json'}));
+    }catch(e){}
+  });
+});
+function grow(){
+  var t=document.querySelectorAll('textarea');
+  for(var i=0;i<t.length;i++){t[i].style.height='auto';t[i].style.height=(t[i].scrollHeight+6)+'px';}
+}
+</script>
+</body>
+</html>
