@@ -414,5 +414,222 @@ document.getElementById("btnBig").onclick = function(){
   autoGrowAll();
 };
 </script>
+<style>
+  .cl-bar{
+    position:sticky;top:0;z-index:55;
+    display:flex;flex-wrap:wrap;gap:8px;align-items:center;
+    background:#fdf6ec;border-bottom:1px solid #d7d2c4;
+    padding:8px 16px;font-size:14px;
+  }
+  .cl-bar b{font-size:14px}
+  .cl-bar input{font:inherit;font-size:14px;padding:6px 8px;border:1px solid #b7bcb6;border-radius:4px;min-width:190px}
+  .cl-bar button{font:inherit;font-size:14px;background:#3b4a3f;color:#fff;border:none;border-radius:4px;padding:6px 11px;cursor:pointer}
+  .cl-bar button:hover{background:#2c3830}
+  .cl-bar button:focus-visible{outline:3px solid #ffd27f;outline-offset:2px}
+  .cl-bar button.ghost{background:#fff;color:#3b4a3f;border:1px solid #b7bcb6}
+  .cl-bar .cl-status{margin-left:auto;color:#5a5f5c}
+  .cl-bar .cl-status.ok{color:#2f6f4e;font-weight:700}
+  .cl-bar .cl-status.warn{color:#8f4426;font-weight:700}
+  .cl-bar .cl-in{font-weight:700;color:#1d4536}
+  @media print{ .cl-bar{display:none !important} }
+</style>
+<script>
+/* =========================================================================
+   Supabase autosave — table body_work, unique on (email, page)
+   ========================================================================= */
+(function(){
+  var SUPA_URL = 'https://lhmwtfyceilgndpygivj.supabase.co';
+  var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+  var TABLE = 'body_work';
+  var PAGE  = 'vocab';
+  var EMAIL_KEY = 'sbm_student_email';
+
+  var email = "";
+  var pushTimer = null;
+  var dirty = false;
+
+  /* ---------- bar ---------- */
+  var wrap = document.createElement('div');
+  wrap.className = 'cl-bar';
+  wrap.innerHTML =
+    '<b>Save my work:</b>' +
+    '<span id="cl-signin"><input id="cl-email" type="email" placeholder="your school email" autocomplete="email">' +
+    '<button id="cl-go">Sign in</button></span>' +
+    '<span id="cl-who" class="cl-in" style="display:none"></span>' +
+    '<button id="cl-turn" class="ghost" style="display:none">Turn in</button>' +
+    '<button id="cl-out" class="ghost" style="display:none">Sign out</button>' +
+    '<span class="cl-status" id="cl-status">Not signed in \u2014 work is only on this device</span>';
+
+  var anchor = document.querySelector('.bar');
+  if(anchor && anchor.parentNode){ anchor.parentNode.insertBefore(wrap, anchor.nextSibling); }
+  else { document.body.insertBefore(wrap, document.body.firstChild); }
+
+  var $ = function(id){ return document.getElementById(id); };
+  function status(msg, cls){
+    var s = $('cl-status');
+    s.textContent = msg;
+    s.className = 'cl-status' + (cls ? ' ' + cls : '');
+  }
+
+  /* ---------- field helpers ---------- */
+  function skip(k){
+    /* teacher-only fields: movie clip times and image links */
+    return /^c\d+[se]$/.test(k) || /^url\d+$/.test(k) || k === '__text' || k === '__lang';
+  }
+  function collect(){
+    var out = {};
+    var f = document.querySelectorAll('[data-save]');
+    for(var i = 0; i < f.length; i++){
+      var k = f[i].getAttribute('data-save');
+      if(skip(k)) continue;
+      if(f[i].value) out[k] = f[i].value;
+    }
+    return out;
+  }
+  function apply(answers){
+    if(!answers) return;
+    var f = document.querySelectorAll('[data-save]');
+    for(var i = 0; i < f.length; i++){
+      var k = f[i].getAttribute('data-save');
+      if(!(k in answers)) continue;
+      f[i].value = answers[k];
+      var ev;
+      try{ ev = new Event('input', {bubbles:true}); }
+      catch(e){ ev = document.createEvent('Event'); ev.initEvent('input', true, false); }
+      f[i].dispatchEvent(ev);
+    }
+  }
+  function fieldVal(key){
+    var el = document.querySelector('[data-save="' + key + '"]');
+    return el ? el.value : "";
+  }
+
+  /* ---------- network ---------- */
+  function headers(extra){
+    var h = {
+      'apikey': SUPA_KEY,
+      'Authorization': 'Bearer ' + SUPA_KEY,
+      'Content-Type': 'application/json'
+    };
+    if(extra){ for(var k in extra){ h[k] = extra[k]; } }
+    return h;
+  }
+
+  function pull(){
+    var url = SUPA_URL + '/rest/v1/' + TABLE +
+      '?select=answers&email=eq.' + encodeURIComponent(email) +
+      '&page=eq.' + encodeURIComponent(PAGE);
+    return fetch(url, {headers: headers()})
+      .then(function(r){ return r.ok ? r.json() : []; })
+      .then(function(rows){ return (rows && rows[0]) ? rows[0].answers : null; });
+  }
+
+  function push(turnedIn){
+    if(!email) return Promise.resolve();
+    var body = [{
+      email: email,
+      page: PAGE,
+      name: fieldVal('nm'),
+      class_period: fieldVal('cl'),
+      answers: collect(),
+      updated_at: new Date().toISOString()
+    }];
+    if(turnedIn){ body[0].turned_in = true; }
+    var url = SUPA_URL + '/rest/v1/' + TABLE + '?on_conflict=email,page';
+    return fetch(url, {
+      method: 'POST',
+      headers: headers({'Prefer': 'resolution=merge-duplicates,return=minimal'}),
+      body: JSON.stringify(body)
+    }).then(function(r){
+      if(r.ok){
+        dirty = false;
+        status('Saved ' + new Date().toLocaleTimeString(), 'ok');
+      } else {
+        status('Could not save to the server \u2014 kept on this device', 'warn');
+      }
+    }).catch(function(){
+      status('Offline \u2014 kept on this device', 'warn');
+    });
+  }
+
+  function queue(){
+    if(!email) return;
+    dirty = true;
+    status('Writing\u2026');
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(function(){ push(false); }, 1500);
+  }
+
+  /* ---------- sign in / out ---------- */
+  function signedInUI(){
+    $('cl-signin').style.display = 'none';
+    $('cl-who').style.display = '';
+    $('cl-who').textContent = email;
+    $('cl-turn').style.display = '';
+    $('cl-out').style.display = '';
+  }
+
+  function signIn(addr, silent){
+    email = String(addr || "").trim().toLowerCase();
+    if(email.indexOf('@') < 1){ status('Please type your full email address', 'warn'); return; }
+    try{ window.localStorage.setItem(EMAIL_KEY, email); }catch(e){}
+    signedInUI();
+    status('Loading your work\u2026');
+    pull().then(function(answers){
+      if(answers && Object.keys(answers).length){
+        apply(answers);
+        status('Loaded your saved work', 'ok');
+      } else {
+        status(silent ? 'Signed in' : 'Signed in \u2014 nothing saved yet', 'ok');
+        if(Object.keys(collect()).length){ push(false); }
+      }
+    }).catch(function(){
+      status('Offline \u2014 work is saved on this device', 'warn');
+    });
+  }
+
+  $('cl-go').onclick = function(){ signIn($('cl-email').value, false); };
+  $('cl-email').addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){ signIn($('cl-email').value, false); }
+  });
+  $('cl-out').onclick = function(){
+    if(dirty){ push(false); }
+    try{ window.localStorage.removeItem(EMAIL_KEY); }catch(e){}
+    email = "";
+    $('cl-signin').style.display = '';
+    $('cl-who').style.display = 'none';
+    $('cl-turn').style.display = 'none';
+    $('cl-out').style.display = 'none';
+    status('Signed out');
+  };
+  $('cl-turn').onclick = function(){
+    if(!email) return;
+    clearTimeout(pushTimer);
+    push(true).then(function(){
+      status('Turned in \u2014 you can still make changes', 'ok');
+    });
+  };
+
+  /* ---------- listeners ---------- */
+  document.addEventListener('input', function(e){
+    if(e.target && e.target.hasAttribute && e.target.hasAttribute('data-save')){
+      if(!skip(e.target.getAttribute('data-save'))){ queue(); }
+    }
+  });
+  window.addEventListener('beforeunload', function(){
+    if(dirty && email && navigator.sendBeacon){
+      /* best effort flush */
+      clearTimeout(pushTimer);
+      push(false);
+    }
+  });
+
+  /* ---------- auto sign-in ---------- */
+  var saved = null;
+  try{ saved = window.localStorage.getItem(EMAIL_KEY); }catch(e){}
+  if(saved){ $('cl-email').value = saved; signIn(saved, true); }
+})();
+</script>
+
 </body>
 </html>
