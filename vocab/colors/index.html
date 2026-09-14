@@ -6,7 +6,7 @@
 <title>Colors — Mr. Toby's ELD</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --pine:#1F4D3D; --pine2:#2b6b53; --mint:#e7f2ec; --edge:#cfe0d7;
@@ -30,13 +30,17 @@ nav.tabs button:focus-visible{outline:2px solid var(--pine);outline-offset:2px}
 
 section.pane{display:none}
 section.pane.on{display:block}
-h2.pt{font-size:1.5rem;margin:0 0 4px;font-weight:800}
+h2.pt{font-family:'Caveat','Segoe Print','Bradley Hand',cursive;font-size:2.4rem;line-height:1.1;margin:0 0 6px;font-weight:700;color:var(--pine)}
 p.lead{margin:0 0 18px;color:var(--muted)}
 
 .grid{display:grid;gap:13px;grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
 .fc{background:#fff;border:1px solid var(--edge);border-radius:14px;padding:14px;text-align:center;cursor:pointer}
 .fc .pic{font-size:3.1rem;line-height:1.15;display:block}
-.fc .sw{width:100%;height:62px;border-radius:10px;border:1px solid var(--edge)}
+.sw{display:inline-block;width:100%;height:62px;border-radius:10px;border:1px solid var(--edge);vertical-align:middle}
+.fc .sw{width:100%;height:62px}
+.mitem .sw{height:54px;display:block}
+.stem .sw{width:54px;height:34px;margin-right:7px}
+.stem .pic{font-size:2rem;vertical-align:middle;margin-right:7px}
 .fc .w{font-weight:800;font-size:1.12rem;margin-top:7px}
 .fc .d{font-size:.84rem;color:var(--muted);margin-top:3px}
 .fc .hide{visibility:hidden}
@@ -50,7 +54,7 @@ p.lead{margin:0 0 18px;color:var(--muted)}
 .mitem.done{opacity:.35;pointer-events:none;border-style:dashed}
 .mitem.bad{border-color:#e06b5a;background:#fdeeeb}
 
-table.ws{border-collapse:collapse;margin:0 auto}
+table.ws{border-collapse:collapse;margin:0 auto;touch-action:none}
 table.ws td{width:30px;height:30px;text-align:center;font-weight:800;font-size:.94rem;border:1px solid var(--edge);cursor:pointer;user-select:none;background:#fff}
 table.ws td.pick{background:var(--mint)}
 table.ws td.found{background:var(--pine);color:#fff;border-color:var(--pine)}
@@ -59,8 +63,8 @@ table.ws td.found{background:var(--pine);color:#fff;border-color:var(--pine)}
 .wslist span.got{text-decoration:line-through;color:var(--muted);background:var(--mint)}
 
 table.cw{border-collapse:collapse;margin:0 auto}
-table.cw td{width:30px;height:30px;padding:0;border:1px solid transparent}
-table.cw td.cell{border-color:var(--ink);background:#fff;position:relative}
+table.cw td{width:30px;height:30px;padding:0;border:0}
+table.cw td.cell{border:1px solid var(--ink);background:#fff;position:relative}
 table.cw td.cell input{width:100%;height:100%;border:0;text-align:center;font-family:inherit;font-weight:800;font-size:.95rem;text-transform:uppercase;background:transparent;color:var(--ink)}
 table.cw td.cell input:focus{outline:2px solid var(--pine);outline-offset:-2px}
 table.cw td.cell b{position:absolute;top:0;left:2px;font-size:.52rem;font-weight:800;color:var(--muted)}
@@ -491,15 +495,93 @@ function renderWS(){
   }
   html+='</table>';
   $('wsGrid').innerHTML=html;
-  Array.prototype.forEach.call($('wsGrid').querySelectorAll('td'), function(td){
-    td.addEventListener('click', function(){ pickWS(td); });
-  });
+  if(!$('wsGrid').__wsBound){ bindWS(); $('wsGrid').__wsBound = 1; }
   $('wsList').innerHTML = WS.placed.map(function(p){
     var got = state.ws.indexOf(p.word)>=0 ? ' class="got"' : '';
     return '<span'+got+' data-w="'+p.word+'">'+p.word+'</span>';
   }).join('');
   paintWS(); wsScore();
 }
+var WSDrag = null;
+
+function wsTd(el){ return (el && el.closest) ? el.closest('#wsGrid td[data-r]') : null; }
+function wsClearHL(){
+  var picks = $('wsGrid').querySelectorAll('td.pick');
+  Array.prototype.forEach.call(picks, function(t){ t.classList.remove('pick'); });
+}
+function wsLine(a, b){
+  var dr = Math.sign(b.r - a.r), dc = Math.sign(b.c - a.c);
+  var ar = Math.abs(b.r - a.r), ac = Math.abs(b.c - a.c);
+  if(ar !== 0 && ac !== 0 && ar !== ac) return null;   /* not a straight line */
+  var len = Math.max(ar, ac) + 1, out = [], i;
+  for(i = 0; i < len; i++) out.push({ r: a.r + dr*i, c: a.c + dc*i });
+  return out;
+}
+function wsHL(a, b){
+  wsClearHL();
+  var cells = wsLine(a, b); if(!cells) return;
+  cells.forEach(function(p){
+    var td = $('wsGrid').querySelector('td[data-r="'+p.r+'"][data-c="'+p.c+'"]');
+    if(td) td.classList.add('pick');
+  });
+}
+function wsCommit(a, b){
+  var cells = wsLine(a, b); if(!cells) return;
+  var s = '', i;
+  for(i = 0; i < cells.length; i++){
+    var p = cells[i];
+    if(p.r < 0 || p.r >= WS.size || p.c < 0 || p.c >= WS.size) return;
+    s += WS.grid[p.r][p.c];
+  }
+  var rev = s.split('').reverse().join('');
+  var hit = WS.placed.filter(function(p){ return p.word === s || p.word === rev; })[0];
+  if(hit && state.ws.indexOf(hit.word) < 0){
+    state.ws.push(hit.word); touch(); speak(hit.word); renderWS();
+  }
+}
+function bindWS(){
+  var grid = $('wsGrid');
+
+  grid.addEventListener('pointerdown', function(e){
+    var td = wsTd(e.target); if(!td) return;
+    e.preventDefault();
+    if(grid.setPointerCapture){ try{ grid.setPointerCapture(e.pointerId); }catch(err){} }
+    WSDrag = { r:+td.dataset.r, c:+td.dataset.c, moved:false };
+    wsHL(WSDrag, WSDrag);
+  });
+
+  grid.addEventListener('pointermove', function(e){
+    if(!WSDrag) return;
+    e.preventDefault();
+    var td = wsTd(document.elementFromPoint(e.clientX, e.clientY)); if(!td) return;
+    var b = { r:+td.dataset.r, c:+td.dataset.c };
+    if(b.r !== WSDrag.r || b.c !== WSDrag.c) WSDrag.moved = true;
+    wsHL(WSDrag, b);
+  });
+
+  function finish(e){
+    if(!WSDrag) return;
+    var start = WSDrag; WSDrag = null;
+    var td = wsTd(document.elementFromPoint(e.clientX, e.clientY));
+    wsClearHL();
+    if(start.moved && td){
+      wsCommit(start, { r:+td.dataset.r, c:+td.dataset.c });
+      WS.a = null;
+    } else {
+      /* no drag = a tap. Keep the old tap-first-then-last behaviour. */
+      var cell = $('wsGrid').querySelector('td[data-r="'+start.r+'"][data-c="'+start.c+'"]');
+      if(cell) pickWS(cell);
+    }
+  }
+  grid.addEventListener('pointerup', finish);
+  grid.addEventListener('pointercancel', function(){ WSDrag = null; wsClearHL(); });
+  window.addEventListener('pointerup', function(e){
+    if(WSDrag && !wsTd(document.elementFromPoint(e.clientX, e.clientY))){
+      WSDrag = null; wsClearHL();
+    }
+  });
+}
+
 function pickWS(td){
   if(!WS.a){ WS.a=td; td.classList.add('pick'); return; }
   var r1=+WS.a.dataset.r, c1=+WS.a.dataset.c, r2=+td.dataset.r, c2=+td.dataset.c;
@@ -894,6 +976,14 @@ $('tCsv').addEventListener('click', function(){
   a.download = SET.slug + '_results.csv';
   a.click();
 });
+
+/* pane headings read "Colors — Match" and pick up the Caveat/green style */
+Array.prototype.forEach.call(document.querySelectorAll('h2.pt'), function(h){
+  if(h.getAttribute('data-titled')) return;
+  h.setAttribute('data-titled','1');
+  h.textContent = SET.title + ' \u2014 ' + h.textContent;
+});
+
 </script>
 </body>
 </html>
