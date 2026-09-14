@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>This Is How We Do It &amp; This Is How I Do It &mdash; Unit</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pine:#1f5c4a; --pine-d:#164237; --pine-l:#2e7a63;
+  --paper:#fbf8f2; --card:#ffffff; --ink:#1d2a25; --muted:#6b7a73;
+  --line:#ddd6c7; --clay:#c2653c; --gold:#d9a440;
+  --ok:#2f7d52; --bad:#b23b2e; --sky:#4a7fa5;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:Nunito,system-ui,sans-serif;background:var(--paper);color:var(--ink);font-size:17px;line-height:1.55}
+h1,h2,h3,h4{line-height:1.2;margin:0 0 .4em}
+a{color:var(--pine)}
+
+/* ---------- toolbar ---------- */
+.bar{position:sticky;top:0;z-index:60;background:var(--pine);color:#fff;padding:8px 12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.bar .ttl{font-weight:800;font-size:17px;margin-right:auto;letter-spacing:.2px}
+.bar .ttl small{display:block;font-weight:600;font-size:12px;opacity:.8}
+.btn{background:#fff;color:var(--pine-d);border:0;border-radius:999px;padding:7px 14px;font:inherit;font-weight:700;font-size:14px;cursor:pointer}
+.btn:hover{background:#eaf3ef}
+.btn.ghost{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.55)}
+.btn.ghost:hover{background:rgba(255,255,255,.14)}
+.btn.clay{background:var(--clay);color:#fff}
+.btn:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.dot{width:11px;height:11px;border-radius:50%;background:#9fb5ab;display:inline-block;margin-right:6px;vertical-align:-1px}
+.dot.on{background:#8ce0b0}.dot.err{background:#ff8d7d}
+#who{font-size:13px;font-weight:700;opacity:.95}
+
+/* level switch */
+.lv{display:flex;background:rgba(0,0,0,.18);border-radius:999px;padding:3px;gap:2px}
+.lv button{background:transparent;border:0;color:#fff;font:inherit;font-weight:700;font-size:13px;padding:5px 11px;border-radius:999px;cursor:pointer;opacity:.75}
+.lv button[aria-pressed="true"]{background:#fff;color:var(--pine-d);opacity:1}
+
+/* ---------- tabs ---------- */
+nav.tabs{position:sticky;top:53px;z-index:55;background:var(--pine-d);display:flex;gap:0;overflow-x:auto;scrollbar-width:thin}
+nav.tabs button{flex:0 0 auto;background:transparent;border:0;border-bottom:4px solid transparent;color:#cfe3da;font:inherit;font-weight:700;font-size:13.5px;padding:10px 13px;cursor:pointer;white-space:nowrap}
+nav.tabs button[aria-selected="true"]{color:#fff;border-bottom-color:var(--gold);background:rgba(255,255,255,.07)}
+
+/* ---------- layout ---------- */
+main{max-width:860px;margin:0 auto;padding:18px 14px 90px}
+section.lesson{display:none}
+section.lesson.on{display:block}
+.hero{background:linear-gradient(180deg,#fff,#f5f1e7);border:1px solid var(--line);border-left:6px solid var(--pine);border-radius:14px;padding:16px 18px;margin-bottom:18px}
+.hero h2{font-size:25px;margin-bottom:2px}
+.hero .sub{color:var(--muted);font-weight:700;font-size:14px}
+.hero .goal{margin-top:10px;font-size:15px}
+.hero .goal b{color:var(--pine)}
+
+.blk{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:0 0 14px}
+.blk > h3{font-size:18px;color:var(--pine-d);display:flex;align-items:center;gap:8px}
+.blk > h3 .num{background:var(--pine);color:#fff;border-radius:8px;font-size:13px;padding:2px 8px;flex:0 0 auto}
+.dir{background:#f3f7f4;border:1px dashed var(--pine-l);border-radius:12px;padding:12px 16px;margin-bottom:14px;font-weight:600}
+.note{background:#fdf6e6;border:1px solid var(--gold);border-radius:12px;padding:11px 15px;margin-bottom:14px;font-size:15.5px}
+
+label.q{display:block;font-weight:700;margin:10px 0 5px}
+textarea,input.short,select.sel{width:100%;font:inherit;border:1px solid var(--line);border-radius:9px;padding:9px 11px;background:#fffdf8}
+textarea{resize:vertical;line-height:2.1;background-image:repeating-linear-gradient(#fffdf8 0 33px,#eee7d8 33px 34px);background-attachment:local}
+input.short{max-width:100%}
+.frame{color:var(--muted);font-style:italic;font-weight:700;font-size:14.5px;margin:2px 0 4px}
+.helper{margin:6px 0 2px}
+.helper summary{cursor:pointer;font-weight:700;color:var(--clay);font-size:14px}
+.helper .inner{background:#fbf0e9;border:1px solid #efd6c6;border-radius:9px;padding:9px 12px;margin-top:6px;font-size:15px}
+.helper .inner ul{margin:4px 0 0;padding-left:18px}
+
+/* vocab chips */
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:6px}
+.chip{background:#eef4f1;border:1px solid #cfe0d8;color:var(--pine-d);border-radius:999px;padding:6px 12px;font-weight:700;font-size:14.5px;cursor:pointer}
+.chip:hover{background:#dfeae5}
+.gl{background:#fdf6e6;border-bottom:2px dotted var(--gold);cursor:pointer;font-weight:700}
+
+/* mc / match */
+.opts{display:flex;flex-direction:column;gap:6px;margin-top:4px}
+.opt{display:flex;gap:9px;align-items:flex-start;border:1px solid var(--line);border-radius:9px;padding:8px 11px;cursor:pointer;background:#fffdf8}
+.opt:hover{background:#f4f8f6}
+.opt input{margin-top:5px;flex:0 0 auto}
+.opt.right{border-color:var(--ok);background:#eefaf2}
+.opt.wrong{border-color:var(--bad);background:#fdeeec}
+.mrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:center;margin-bottom:6px}
+.mrow .lft{font-weight:700}
+.fb{font-weight:700;font-size:14.5px;margin-top:6px}
+.fb.ok{color:var(--ok)}.fb.no{color:var(--bad)}
+
+/* frames block */
+.fbox{background:#f7f4ec;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-top:8px}
+.fbox .line{margin:8px 0;font-weight:700}
+.fbox input{width:100%;font:inherit;border:0;border-bottom:2px solid var(--pine-l);background:transparent;padding:4px 2px}
+
+/* canvas */
+.draw{border:1px solid var(--line);border-radius:12px;background:#fff;touch-action:none;width:100%;display:block}
+.drawbar{display:flex;gap:7px;flex-wrap:wrap;margin:7px 0 0}
+.swatch{width:26px;height:26px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--line);cursor:pointer}
+.swatch[aria-pressed="true"]{box-shadow:0 0 0 3px var(--pine)}
+
+/* map */
+.mapwrap{position:relative;border:1px solid var(--line);border-radius:12px;background:#eef4f7;overflow:hidden}
+svg.world{display:block;width:100%;height:auto}
+.land{fill:#dfe8d9;stroke:#b9c7b0;stroke-width:1.2}
+.pin{cursor:pointer}
+.pin circle{stroke:#fff;stroke-width:2.5}
+.pin.we circle{fill:var(--clay)}
+.pin.i circle{fill:var(--sky)}
+.pin.both circle{fill:var(--pine)}
+.pin.done circle{fill:var(--gold)}
+.pin text{font-size:13px;font-weight:800;fill:#33423c;paint-order:stroke;stroke:#fff;stroke-width:3.5px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:14px;font-weight:700;margin-top:8px;color:var(--muted)}
+.legend i{width:12px;height:12px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:-1px}
+.passport{margin-top:10px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.passport .prow{display:grid;grid-template-columns:130px 1fr 1.3fr;gap:0;border-bottom:1px solid var(--line)}
+.passport .prow:last-child{border-bottom:0}
+.passport .prow>div{padding:7px 9px;border-right:1px solid var(--line)}
+.passport .prow>div:last-child{border-right:0}
+.passport .hd{background:#f1f5f2;font-weight:800;font-size:13.5px;color:var(--pine-d)}
+.passport input{width:100%;border:0;background:transparent;font:inherit;padding:2px}
+.passport .cn{font-weight:800}
+.passport .bk{font-size:12px;font-weight:800;color:#fff;border-radius:999px;padding:1px 7px;display:inline-block;margin-left:5px}
+.bk.we{background:var(--clay)}.bk.i{background:var(--sky)}.bk.both{background:var(--pine)}
+
+/* progress */
+.prog{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.pbar{flex:1;height:11px;background:#e6e0d2;border-radius:999px;overflow:hidden}
+.pbar i{display:block;height:100%;background:var(--pine-l);width:0;transition:width .3s}
+.prog span{font-weight:800;font-size:14px;color:var(--muted)}
+
+/* rubric */
+table.rub{width:100%;border-collapse:collapse;font-size:14.5px;margin-top:6px}
+table.rub th,table.rub td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+table.rub th{background:#f1f5f2;color:var(--pine-d)}
+
+/* modal */
+.mask{position:fixed;inset:0;background:rgba(20,30,26,.6);display:none;align-items:center;justify-content:center;z-index:200;padding:16px}
+.mask.on{display:flex}
+.sheet{background:#fff;border-radius:16px;max-width:430px;width:100%;padding:22px}
+.sheet h2{margin-top:0;color:var(--pine-d)}
+.sheet input,.sheet select{width:100%;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:9px;margin-bottom:10px}
+.pop{position:fixed;z-index:210;max-width:300px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 26px rgba(0,0,0,.2);padding:12px 14px;display:none}
+.pop.on{display:block}
+.pop .w{font-weight:800;color:var(--pine-d);font-size:17px}
+.pop .d{font-size:15px;margin:4px 0 8px}
+.pop .t{font-size:16px;font-weight:700;color:var(--clay);min-height:22px}
+.pop select{font:inherit;padding:5px 8px;border-radius:8px;border:1px solid var(--line);width:100%}
+
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--pine-d);color:#fff;padding:11px 18px;border-radius:999px;font-weight:700;z-index:300;opacity:0;pointer-events:none;transition:opacity .25s}
+.toast.on{opacity:1}
+
+.pm{display:none;white-space:pre-wrap}
+
+@media (max-width:620px){
+  .mrow{grid-template-columns:1fr}
+  .passport .prow{grid-template-columns:1fr}
+  .passport .prow>div{border-right:0;border-bottom:1px solid #eee}
+  nav.tabs{top:96px}
+}
+
+/* ---------- print ---------- */
+@media print{
+  @page{margin:14mm}
+  body{background:#fff;font-size:12pt}
+  .bar,nav.tabs,.no-print,.mask,.pop,.toast,.helper summary{display:none !important}
+  main{max-width:none;padding:0}
+  section.lesson{display:none}
+  section.lesson.printme{display:block;page-break-after:always}
+  .blk,.hero,.dir,.note{break-inside:avoid;box-shadow:none}
+  textarea{display:none}
+  .pm{display:block;border-bottom:1px solid #000;min-height:1.9em;line-height:1.9;background-image:repeating-linear-gradient(#fff 0 1.85em,#999 1.85em calc(1.85em + 1px))}
+  input.short,.fbox input{border:0;border-bottom:1px solid #000;border-radius:0;background:#fff}
+  .opt{padding:3px 7px}
+  .helper .inner{display:block}
+  .draw{max-height:340px}
+  a[href]:after{content:""}
+}
+</style>
+</head>
+<body>
+
+<header class="bar no-print">
+  <div class="ttl">This Is How We Do It &amp; This Is How I Do It
+    <small>Matt Lamothe &middot; ELD Unit &middot; Mr. Toby</small></div>
+  <div class="lv" id="lvSwitch" role="group" aria-label="Choose your level">
+    <button data-lv="e" aria-pressed="false">Easier</button>
+    <button data-lv="s" aria-pressed="true">On level</button>
+    <button data-lv="c" aria-pressed="false">Challenge</button>
+  </div>
+  <span id="who"><span class="dot" id="saveDot"></span><span id="whoName">Not signed in</span></span>
+  <button class="btn ghost" id="btnPrint">Print</button>
+  <button class="btn clay" id="btnTurn">Turn in</button>
+</header>
+
+<nav class="tabs no-print" id="tabs" role="tablist"></nav>
+
+<main id="app"></main>
+
+<div class="mask" id="login">
+  <div class="sheet">
+    <h2>Sign in to save your work</h2>
+    <p style="margin-top:0;color:var(--muted);font-weight:600;font-size:15px">Your answers save automatically. Use the same email every time.</p>
+    <input id="inName" placeholder="Your full name" autocomplete="name">
+    <input id="inEmail" placeholder="Your school email" autocomplete="email" inputmode="email">
+    <select id="inPeriod">
+      <option value="">Choose your class period</option>
+      <option>Period 1</option><option>Period 2</option><option>Period 3</option>
+      <option>Period 4</option><option>Period 5</option><option>Period 6</option>
+    </select>
+    <select id="inLang">
+      <option value="">Your home language (for translations)</option>
+      <option value="Spanish">Español / Spanish</option>
+      <option value="Chinese (Simplified)">中文 / Chinese</option>
+      <option value="Arabic">العربية / Arabic</option>
+      <option value="Vietnamese">Tiếng Việt / Vietnamese</option>
+      <option value="Thai">ไทย / Thai</option>
+      <option value="Nepali">नेपाली / Nepali</option>
+    </select>
+    <button class="btn" style="width:100%;background:var(--pine);color:#fff;padding:11px" id="btnLogin">Start</button>
+  </div>
+</div>
+
+<div class="pop" id="pop">
+  <div class="w" id="popW"></div>
+  <div class="d" id="popD"></div>
+  <div class="t" id="popT"></div>
+  <select id="popL">
+    <option value="Spanish">Español</option>
+    <option value="Chinese (Simplified)">中文</option>
+    <option value="Arabic">العربية</option>
+    <option value="Vietnamese">Tiếng Việt</option>
+    <option value="Thai">ไทย</option>
+    <option value="Nepali">नेपाली</option>
+  </select>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   This Is How We Do It / This Is How I Do It  —  ELD unit app
+   Mr. Toby · Galileo Academy
+   ============================================================ */
+var SUPA_URL = 'https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var TABLE = 'tih_work';
+var PROXY = 'https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
+var LSKEY = 'tih_local_v1';
+
+/* ---------- glossary ---------- */
+var GLOSS = {
+  'infer':'to make a smart guess using clues you can see',
+  'guess':'to say what you think is true when you are not sure',
+  'cover':'the outside front page of a book',
+  'author':'the person who writes a book',
+  'illustrator':'the person who draws the pictures in a book',
+  'around the world':'in many different countries',
+  'oldest':'the one who has lived the most years',
+  'youngest':'the one who has lived the fewest years',
+  'closest':'the nearest; the shortest distance away',
+  'bedroom':'the room where you sleep',
+  'level':'one floor of a building (also called a story)',
+  'apartment':'a home inside a larger building',
+  'roof':'the top cover of a house',
+  'share':'to use the same thing with another person',
+  'neighborhood':'the streets and houses around your home',
+  'grandparents':'your mother or father\u2019s parents',
+  'cousin':'the child of your aunt or uncle',
+  'single mother':'a mother who raises children without a partner',
+  'biggest':'the largest of all',
+  'fewest':'the smallest number of all',
+  'jump rope':'to jump over a rope you swing under your feet',
+  'throw rocks':'to send small stones through the air with your hand',
+  'freeze tag':'a chasing game where you must stand still when tagged',
+  'horseback riding':'sitting on a horse and riding it',
+  'marbles':'a game with small glass balls',
+  'chores':'small jobs you do at home to help your family',
+  'do the laundry':'to wash dirty clothes',
+  'tend the cornfields':'to take care of the corn plants growing in a field',
+  'sweep':'to clean the floor with a broom',
+  'feed pets':'to give food to the animals in your home',
+  'water the plants':'to pour water on plants so they grow',
+  'hang clothes to dry':'to put wet clothes on a line in the air',
+  'on foot':'walking, not using a car or bus',
+  'commute':'the trip you take to get to school or work',
+  'ferry':'a boat that carries people across water',
+  'both':'the two of them together',
+  'compare':'to look for how two things are the same',
+  'contrast':'to look for how two things are different'
+};
+
+/* ---------- countries ---------- */
+var COUNTRIES = [
+  {c:'Italy',       lat:42,  lon:12.5, b:'we'},
+  {c:'Russia',      lat:60,  lon:100,  b:'we'},
+  {c:'Japan',       lat:36,  lon:138,  b:'we'},
+  {c:'Uganda',      lat:1,   lon:32,   b:'we'},
+  {c:'India',       lat:22,  lon:79,   b:'we'},
+  {c:'Iran',        lat:32,  lon:53,   b:'we'},
+  {c:'Peru',        lat:-10, lon:-76,  b:'both'},
+  {c:'Bangladesh',  lat:24,  lon:90,   b:'i'},
+  {c:'Bolivia',     lat:-17, lon:-64,  b:'i'},
+  {c:'Kazakhstan',  lat:48,  lon:68,   b:'i'},
+  {c:'Mexico',      lat:23,  lon:-102, b:'i'},
+  {c:'Mongolia',    lat:46,  lon:105,  b:'i'},
+  {c:'Nepal',       lat:28,  lon:84,   b:'i'},
+  {c:'Rwanda',      lat:-2,  lon:30,   b:'i'},
+  {c:'Sweden',      lat:62,  lon:15,   b:'i'},
+  {c:'Tanzania',    lat:-6,  lon:35,   b:'i'},
+  {c:'Thailand',    lat:15,  lon:101,  b:'i'},
+  {c:'United States',lat:39, lon:-98,  b:'i'}
+];
+
+/* ---------- lesson data ---------- */
+function L(n,t,sub,goal,blocks){return{id:'l'+n,n:n,t:t,sub:sub,goal:goal,blocks:blocks};}
+
+var LESSONS = [
+
+L(1,'Who is in these books?','Covers, names, countries',
+  'I can <b>infer</b> from a cover and find each child\u2019s country. I can use <b>-est</b> words (oldest, youngest, closest).',
+[
+ {t:'d',x:{e:'Look at the two covers. Then look at the first pages of each book.',
+           s:'Look at the cover of each book. Then read the first pages that introduce the children.',
+           c:'Study both covers. Notice what the illustrator chose to show and what he left out.'}},
+ {t:'v',w:['cover','author','illustrator','infer','guess','around the world','oldest','youngest','closest']},
+ {t:'see',id:'q101',p:{e:'Look at the cover of <i>This Is How We Do It</i>. Write 2 sentences. What do you see?',
+                        s:'Look at the cover of <i>This Is How We Do It</i>. Write 3\u20135 sentences describing what you see.',
+                        c:'Describe the cover of <i>This Is How We Do It</i> in 5 sentences, then explain one choice the illustrator made.'},
+   fr:'I see \u2026  In the middle I see \u2026  On the left I see \u2026',
+   help:['I see a \u2026','There is / There are \u2026','On the left / On the right / In the middle \u2026','The children are \u2026'],rows:5},
+ {t:'see',id:'q102',p:{e:'Now look at the cover of <i>This Is How I Do It</i>. Write 2 sentences.',
+                        s:'Now look at the cover of <i>This Is How I Do It</i>. Write 3\u20135 sentences.',
+                        c:'Compare the two covers in 4\u20135 sentences. What is the same? What changed?'},
+   fr:'On this cover I see \u2026  It is different because \u2026',rows:4},
+ {t:'mc',id:'q103',p:'Who is the author of both books?',o:['Matt Lamothe','Jacqueline Woodson','Yuyi Morales','Peter Reynolds'],k:0},
+ {t:'mc',id:'q104',p:'How many children are in <i>This Is How We Do It</i>?',o:['Five','Seven','Ten','Twelve'],k:1},
+ {t:'mc',id:'q105',p:'How many children are in <i>This Is How I Do It</i>?',o:['Seven','Nine','Twelve','Twenty'],k:2},
+ {t:'match',id:'q106',p:'Match each child from <i>This Is How We Do It</i> to their country.',
+   pairs:[['Romeo','Italy'],['Ribaldo','Peru'],['Oleg','Russia'],['Kei','Japan'],['Daphine','Uganda'],['Ananya','India'],['Kian','Iran']]},
+ {t:'short',id:'q107',p:'Look at the ages. Who is the <b>oldest</b> child? Answer in a complete sentence.',fr:'The oldest child is ___.'},
+ {t:'short',id:'q108',p:'Who is the <b>youngest</b> child? Answer in a complete sentence.',fr:'The youngest child is ___.'},
+ {t:'map',id:'q109'},
+ {t:'short',id:'q110',p:'Of all the countries in the two books, which one is <b>closest</b> to your home country?',
+   fr:'The country closest to my home country is ___.'},
+ {t:'gram',id:'g1',title:'Grammar: the -est words (superlatives)',
+   chart:'<b>one short word</b> &rarr; add <b>-est</b>: old &rarr; oldest, young &rarr; youngest, tall &rarr; tallest, close &rarr; closest<br><b>long word</b> &rarr; use <b>most</b>: beautiful &rarr; the most beautiful<br>Always use <b>the</b>: <i>Kei is <b>the</b> youngest.</i>',
+   items:[
+     {q:'Oleg is 11. Ananya is 9. Kei is 7. Kei is the ___.',o:['young','younger','youngest'],k:2},
+     {q:'Mount Everest is the ___ mountain in the world.',o:['high','higher','highest'],k:2},
+     {q:'My little brother is ___ than me.',o:['young','younger','youngest'],k:1},
+     {q:'Of all seven children, Daphine has the ___ walk to school.',o:['long','longer','longest'],k:2}]},
+ {t:'draw',id:'q111',p:'Draw yourself, or draw something important that shows your country.'},
+ {t:'exit',id:'q112',p:'Exit ticket: write one sentence with an <b>-est</b> word about someone in your family.'}
+]),
+
+L(2,'This is where I live','Houses, rooms, and floors',
+  'I can find details about homes in both books. I can use <b>there is / there are</b> and <b>in, on, at</b>.',
+[
+ {t:'d',x:{e:'Open your book. Find the pages that say \u201cThis is where I live.\u201d Look at the houses.',
+           s:'Open your book to the pages that say \u201cThis is where I live,\u201d with pictures of different houses.',
+           c:'Open both books to \u201cThis is where I live.\u201d Read every caption before you answer.'}},
+ {t:'v',w:['bedroom','level','apartment','roof','share','neighborhood']},
+ {t:'see',id:'q201',p:{e:'What do you see? Write 2 sentences.',s:'What do you see? Write 3\u20135 sentences.',
+                        c:'Write 5 sentences. Include one sentence about what surprised you.'},
+   fr:'I see \u2026 There is \u2026 There are \u2026',
+   help:['There is one \u2026','There are four \u2026','The house has \u2026','It is made of \u2026'],rows:5},
+ {t:'short',id:'q202',p:'Who lives in <b>Nepal</b>? Write a complete sentence.',fr:'The person who lives in Nepal is ___. / ___ lives in Nepal.',k:'susadh'},
+ {t:'short',id:'q203',p:'How many bedrooms are in the house in Nepal?',fr:'There are ___ bedrooms.'},
+ {t:'short',id:'q204',p:'Who lives in <b>Tanzania</b>?',fr:'___ lives in Tanzania.'},
+ {t:'short',id:'q205',p:'How many bedrooms are in the house in Tanzania?'},
+ {t:'short',id:'q206',p:'What country does <b>Carlo</b> live in?',fr:'Carlo lives in ___.'},
+ {t:'short',id:'q207',p:'How many levels (stories) are in the building in <b>Kazakhstan</b>?'},
+ {t:'short',id:'q208',p:{e:'Which home looks most like your home? Write one sentence.',
+                          s:'Which home is most like the home you lived in? Explain in 2 sentences.',
+                          c:'Which home is most like your old home, and which is most like your home now? Explain the difference.'},rows:3},
+ {t:'gram',id:'g2',title:'Grammar: there is / there are &amp; in, on, at',
+   chart:'<b>There is</b> + one thing: <i>There is a kitchen.</i><br><b>There are</b> + two or more: <i>There are three bedrooms.</i><br><b>in</b> a country, a city, a room &nbsp;|&nbsp; <b>on</b> a street, a floor, the roof &nbsp;|&nbsp; <b>at</b> home, at school, at 7:00',
+   items:[
+     {q:'___ four bedrooms in the house.',o:['There is','There are','It is'],k:1},
+     {q:'Susadh lives ___ Nepal.',o:['in','on','at'],k:0},
+     {q:'The family sleeps ___ the floor.',o:['in','on','at'],k:1},
+     {q:'___ a small kitchen behind the house.',o:['There is','There are','They are'],k:0}]},
+ {t:'frames',id:'q209',title:'Your turn: This is where I lived / This is where I live',
+   lines:[{l:'This is where I <b>lived</b>. I lived in a(n)',ph:'house / apartment / farm'},
+          {l:'in a city called',ph:'city'},
+          {l:'in the country of',ph:'country'},
+          {l:'This is where I <b>live now</b>. I live in a(n)',ph:'house / apartment'},
+          {l:'in a city called',ph:'city'},
+          {l:'in the country of',ph:'country'}]},
+ {t:'draw',id:'q210',p:'Draw your home \u2014 the one you lived in before, or the one you live in now.'},
+ {t:'exit',id:'q211',p:'Exit ticket: write one <b>There are</b> sentence about your home.'}
+]),
+
+L(3,'This is who I live with','Families',
+  'I can describe families and use <b>possessives</b> (Ana\u2019s, her, his) and <b>-er</b> comparisons.',
+[
+ {t:'d',x:{e:'Find the pages that say \u201cThis is who I live with.\u201d Look at the families.',
+           s:'Open your book to the pages that say \u201cThis is who I live with,\u201d with pictures of different families.',
+           c:'Open both books to the family pages and read every name and label.'}},
+ {t:'v',w:['grandparents','cousin','single mother','biggest','fewest','share']},
+ {t:'see',id:'q301',p:{e:'What do you see? Write 2 sentences.',s:'What do you see? Write 3\u20135 sentences.',
+                        c:'Write 5 sentences. Name at least three different kinds of family.'},
+   fr:'I see \u2026 One family has \u2026 Another family has \u2026',rows:5},
+ {t:'short',id:'q302',p:'Who is from <b>Peru</b> in <i>This Is How I Do It</i>?',fr:'The person from Peru is ___.',k:'neyser'},
+ {t:'short',id:'q303',p:'Who has the <b>biggest</b> family?',fr:'___ has the biggest family.'},
+ {t:'short',id:'q304',p:'Who lives with their <b>grandparents</b>?'},
+ {t:'short',id:'q305',p:'Who has <b>two fathers</b>?'},
+ {t:'short',id:'q306',p:'Who has a brother but no sisters?'},
+ {t:'short',id:'q307',p:'Who has a <b>single mother</b>?'},
+ {t:'short',id:'q308',p:'Who lives in <b>Bangladesh</b>?'},
+ {t:'long',id:'q309',p:{e:'How many people live in your home? Write 2 sentences.',
+                         s:'Whose family is most like yours? Why? Write 3 sentences.',
+                         c:'Whose family is most like yours, and whose is most different? Use <i>while</i> or <i>but</i> in your answer.'},rows:4},
+ {t:'gram',id:'g3',title:'Grammar: possessives',
+   chart:'<b>Person + \u2019s</b> = it belongs to them: <i>Neyser\u2019s family, my sister\u2019s room</i><br><b>my, your, his, her, our, their</b> come <u>before</u> a noun: <i>her grandparents, his brother</i>',
+   items:[
+     {q:'This is ___ family.',o:['Neyser','Neyser\u2019s','Neysers'],k:1},
+     {q:'Ananya lives with ___ grandparents.',o:['she','her','hers'],k:1},
+     {q:'Romeo and ___ brother play outside.',o:['he','his','him'],k:1},
+     {q:'That is my ___ bedroom.',o:['sisters','sister\u2019s','sister'],k:1}]},
+ {t:'frames',id:'q310',title:'Your turn: This is who I lived with / live with',
+   lines:[{l:'This is who I <b>lived</b> with. I lived with',ph:'my mother, my two brothers \u2026'},
+          {l:'in the country of',ph:'country'},
+          {l:'This is who I <b>live with now</b>. I live with',ph:'people in your home now'},
+          {l:'in the country of',ph:'United States'}]},
+ {t:'draw',id:'q311',p:'Draw your family. Write each person\u2019s name next to them.'},
+ {t:'exit',id:'q312',p:'Exit ticket: write one sentence using \u2019s (for example: <i>My brother\u2019s name is \u2026</i>).'}
+]),
+
+L(4,'This is how I play','Games around the world',
+  'I can find how children play in each country. I can use <b>plays</b> vs <b>play</b> correctly.',
+[
+ {t:'d',x:{e:'Find the pages that say \u201cThis is how I play.\u201d Look at the children playing.',
+           s:'Open your book to the pages that say \u201cThis is how I play,\u201d with pictures of children playing.',
+           c:'Open both books to the play pages. Notice which games need equipment and which need none.'}},
+ {t:'v',w:['jump rope','throw rocks','freeze tag','horseback riding','marbles']},
+ {t:'see',id:'q401',p:{e:'What do you see? Write 2 sentences.',s:'What do you see? Write 3\u20135 sentences.',
+                        c:'Write 5 sentences. Include one sentence about a game you have never seen before.'},
+   fr:'I see \u2026 The children are \u2026 -ing',rows:5},
+ {t:'short',id:'q402',p:'How do the boys play in <b>Italy</b>? Write a complete sentence.',fr:'In Italy, the boys ___.'},
+ {t:'short',id:'q403',p:'In what country do the children play <b>soccer</b>?'},
+ {t:'short',id:'q404',p:'What game do the children play in <b>Japan</b>?'},
+ {t:'short',id:'q405',p:'In what country do the children go <b>horseback riding</b>?'},
+ {t:'short',id:'q406',p:'Have you ever ridden a horse?',fr:'Yes, I have ridden \u2026 / No, I have never ridden \u2026'},
+ {t:'short',id:'q407',p:'Do children play <b>freeze tag</b> in your country? What do they call it?'},
+ {t:'gram',id:'g4',title:'Grammar: he plays / they play',
+   chart:'<b>He, She, It</b> &rarr; add <b>-s</b>: <i>Kei play<b>s</b>. Oleg go<b>es</b>. She watch<b>es</b>.</i><br><b>I, You, We, They</b> &rarr; no -s: <i>They play. The boys ride.</i>',
+   items:[
+     {q:'Kei ___ tag with her friends.',o:['play','plays'],k:1},
+     {q:'The boys in Italy ___ soccer after school.',o:['play','plays'],k:0},
+     {q:'Oleg ___ to school by bus.',o:['go','goes'],k:1},
+     {q:'Ananya and her cousin ___ outside every evening.',o:['ride','rides'],k:0}]},
+ {t:'frames',id:'q408',title:'Your turn: This is how I played / how I play',
+   lines:[{l:'This is how I <b>played</b> in my home country. I played',ph:'soccer / marbles / hide and seek'},
+          {l:'with',ph:'my cousins / my friends'},
+          {l:'in',ph:'the street / the park'},
+          {l:'This is how I <b>play</b> in the United States. I play',ph:'game'},
+          {l:'with',ph:'people'},
+          {l:'in',ph:'place'}]},
+ {t:'draw',id:'q409',p:'Draw the game you played most when you were small.'},
+ {t:'exit',id:'q410',p:'Exit ticket: write one sentence with <i>plays</i> and one with <i>play</i>.'}
+]),
+
+L(5,'This is how I help','Chores and responsibility',
+  'I can name chores in both books. I can use the <b>past tense</b> (helped, went, did).',
+[
+ {t:'d',x:{e:'Find the pages that say \u201cThis is how I help.\u201d Look at the children helping.',
+           s:'Open your book to the pages that say \u201cThis is how I help,\u201d with pictures of children helping at home.',
+           c:'Open both books to the helping pages. Compare who helps outside and who helps inside.'}},
+ {t:'v',w:['chores','do the laundry','tend the cornfields','sweep','feed pets','water the plants','hang clothes to dry']},
+ {t:'see',id:'q501',p:{e:'What do you see? Write 2 sentences.',s:'What do you see? Write 3\u20135 sentences.',
+                        c:'Write 5 sentences. Say which chore looks hardest and why.'},
+   fr:'I see \u2026 One child is \u2026 -ing',rows:5},
+ {t:'short',id:'q502',p:'Who is from <b>Mexico</b>? Write a complete sentence.',fr:'The person from Mexico is ___.',k:'bosco'},
+ {t:'short',id:'q503',p:'Who <b>waters the plants</b>?'},
+ {t:'short',id:'q504',p:'Who <b>hangs clothes to dry</b> or helps with the laundry?'},
+ {t:'note',x:'For the next three questions, use <i>This Is How We Do It</i> (or the photocopies from Mr. Toby).'},
+ {t:'short',id:'q505',p:'In <b>Japan</b>, what does Kei do to help?',fr:'In Japan, Kei ___.'},
+ {t:'short',id:'q506',p:'In <b>Iran</b>, what does Kian do to help?'},
+ {t:'short',id:'q507',p:'In <b>Peru</b>, what does Ribaldo do to help?'},
+ {t:'gram',id:'g5',title:'Grammar: past tense',
+   chart:'<b>Regular</b>: add <b>-ed</b> &rarr; help \u2192 helped, wash \u2192 washed, cook \u2192 cooked<br><b>Irregular</b>: go \u2192 <b>went</b>, eat \u2192 <b>ate</b>, do \u2192 <b>did</b>, make \u2192 <b>made</b>, take \u2192 <b>took</b>, sweep \u2192 <b>swept</b>',
+   items:[
+     {q:'Yesterday I ___ my mother in the kitchen.',o:['help','helped','helping'],k:1},
+     {q:'In my country I ___ to school on foot.',o:['go','goes','went'],k:2},
+     {q:'She ___ the dishes last night.',o:['wash','washed','washes'],k:1},
+     {q:'We ___ rice and beans for dinner.',o:['eat','eated','ate'],k:2}]},
+ {t:'frames',id:'q508',title:'Your turn: This is how I helped / how I help',
+   lines:[{l:'This is how I <b>helped</b> in my home country. I helped when I',ph:'swept the floor / watched my sister'},
+          {l:'This is how I <b>help now</b>. Now I help out when I',ph:'cook / clean / translate for my family'}]},
+ {t:'draw',id:'q509',p:'Draw yourself doing one chore at home.'},
+ {t:'exit',id:'q510',p:'Exit ticket: write one past-tense sentence about something you did to help yesterday.'}
+]),
+
+L(6,'This is how I get to school','The trip to school',
+  'I can describe how each child gets to school. I can use <b>by bus / on foot</b> and ask <b>How does \u2026 ?</b>',
+[
+ {t:'d',x:{e:'Find the pages about going to school. Look at how the children travel.',
+           s:'Open your book to the pages that say \u201cThis is how I get to school.\u201d',
+           c:'Open both books. Notice how long each trip seems to take.'}},
+ {t:'v',w:['on foot','commute','ferry','neighborhood']},
+ {t:'see',id:'q601',p:{e:'What do you see? Write 2 sentences.',s:'What do you see? Write 3\u20135 sentences.',
+                        c:'Write 5 sentences comparing the longest trip and the shortest trip.'},
+   fr:'I see \u2026 One child goes \u2026',rows:5},
+ {t:'short',id:'q602',p:'Which child walks to school?'},
+ {t:'short',id:'q603',p:'Which child rides in a car or a bus?'},
+ {t:'short',id:'q604',p:'Who has the <b>longest</b> trip to school? How do you know?',rows:3},
+ {t:'short',id:'q605',p:'Who has the <b>shortest</b> trip to school?'},
+ {t:'short',id:'q606',p:'How do <b>you</b> get to Galileo?',fr:'I get to school by ___ / on foot.'},
+ {t:'gram',id:'g6',title:'Grammar: by bus, on foot, How does \u2026 ?',
+   chart:'<b>by</b> + vehicle: by bus, by car, by train, by bike, by boat<br><b>on foot</b> = walking (never say \u201cby foot\u201d)<br>Question: <b>How does</b> he get to school? &rarr; He <b>goes</b> by bus.<br><b>How do</b> they get to school? &rarr; They <b>walk</b>.',
+   items:[
+     {q:'Kian gets to school ___ car.',o:['by','on','in'],k:0},
+     {q:'Daphine walks to school ___ foot.',o:['by','on','at'],k:1},
+     {q:'How ___ Oleg get to school?',o:['do','does','is'],k:1},
+     {q:'They ___ the bus every morning.',o:['take','takes','taking'],k:0}]},
+ {t:'frames',id:'q607',title:'Your turn: how I went / how I go to school',
+   lines:[{l:'In my home country I <b>went</b> to school',ph:'on foot / by bus'},
+          {l:'It took about',ph:'20 minutes'},
+          {l:'Now I <b>go</b> to school',ph:'by bus / on foot'},
+          {l:'It takes about',ph:'minutes'}]},
+ {t:'draw',id:'q608',p:'Draw your trip to school. Show the streets, the bus, or the people you see.'},
+ {t:'exit',id:'q609',p:'Exit ticket: answer in one sentence \u2014 <i>How do you get to school?</i>'}
+]),
+
+L(7,'Two books, one world','Comparing the two books',
+  'I can <b>compare</b> and <b>contrast</b> two texts and use <b>but, while, also, both</b>.',
+[
+ {t:'d',x:{e:'Put both books next to each other. Look for things that are the same and different.',
+           s:'Put the two books side by side. Look for patterns across both books.',
+           c:'Put the two books side by side and think about why the author wrote a second book.'}},
+ {t:'v',w:['compare','contrast','both','around the world']},
+ {t:'mc',id:'q701',p:'Which country appears in <b>both</b> books?',o:['Japan','Peru','Sweden','Mexico'],k:1},
+ {t:'short',id:'q702',p:'Name the child from Peru in <i>This Is How We Do It</i> and the child from Peru in <i>This Is How I Do It</i>.',
+   fr:'In <i>We Do It</i> the child from Peru is ___. In <i>I Do It</i> the child from Peru is ___.'},
+ {t:'long',id:'q703',p:'Write <b>three things that are the same</b> in both books.',fr:'Both books \u2026  In both books \u2026',rows:4},
+ {t:'long',id:'q704',p:'Write <b>three things that are different</b> between the two books.',
+   fr:'<i>This Is How We Do It</i> has \u2026, but <i>This Is How I Do It</i> has \u2026',rows:4},
+ {t:'long',id:'q705',p:{e:'Which book do you like more? Write 2 sentences and say why.',
+                         s:'Which book do you like more, and why? Write 4 sentences with reasons from the books.',
+                         c:'Why do you think the author wrote a second book? Use evidence from both books in 5\u20136 sentences.'},rows:6},
+ {t:'gram',id:'g7',title:'Grammar: words for comparing',
+   chart:'<b>both</b> + plural: <i>Both books are about children.</i><br><b>also</b>: <i>Peru is also in the second book.</i><br><b>but / while</b> show a difference: <i>Kei eats rice, <b>but</b> I eat bread.</i> / <i>Kian walks, <b>while</b> Oleg takes the bus.</i><br><b>-er than</b>: <i>My school is bigger <b>than</b> her school.</i>',
+   items:[
+     {q:'I eat bread for breakfast, ___ my friend eats rice.',o:['but','so','because'],k:0},
+     {q:'Peru is in the first book. Peru is ___ in the second book.',o:['also','never','only'],k:0},
+     {q:'My school is ___ than the school in the book.',o:['big','bigger','biggest'],k:1},
+     {q:'Both books ___ about one day in a child\u2019s life.',o:['is','are','was'],k:1}]},
+ {t:'long',id:'q706',p:'<b>Paragraph.</b> Choose one child from each book. Compare their day to your day. Write 6\u20138 sentences.',
+   fr:'Topic sentence: <i>___ and ___ live very different lives, but their days are the same in some ways.</i>',
+   help:['Both ___ and ___ \u2026','___ lives in ___, while ___ lives in ___.','In my country, I \u2026','The biggest difference is \u2026','This makes me think \u2026'],rows:10},
+ {t:'rubric'},
+ {t:'exit',id:'q707',p:'Exit ticket: write one sentence with <b>while</b> comparing two children from the books.'}
+]),
+
+L(8,'This is how I do it','Make your own page',
+  'I can write and illustrate my own page for the book, using all the grammar from this unit.',
+[
+ {t:'d',x:{e:'Now you are in the book. Fill in each sentence about your life. Then draw.',
+           s:'Now you are the thirteenth child. Complete each panel about your own life, then illustrate it.',
+           c:'You are the next child in the book. Write each panel in full sentences with vivid detail, then illustrate.'}},
+ {t:'note',x:'This is your final project. Finish every panel, then press <b>Print</b> and choose <b>This page only</b> to make your book page.'},
+ {t:'frames',id:'q801',title:'Panel 1 \u2014 This is where I live',
+   lines:[{l:'I live in a(n)',ph:'apartment / house'},{l:'in',ph:'San Francisco'},{l:'My favorite room is',ph:'room'}]},
+ {t:'draw',id:'q802',p:'Draw your home.'},
+ {t:'frames',id:'q803',title:'Panel 2 \u2014 This is who I live with',
+   lines:[{l:'I live with',ph:'people'},{l:'The person I talk to most is',ph:'person'}]},
+ {t:'draw',id:'q804',p:'Draw the people you live with.'},
+ {t:'frames',id:'q805',title:'Panel 3 \u2014 This is how I get to school',
+   lines:[{l:'I get to school',ph:'by bus / on foot'},{l:'On the way I see',ph:'what you see'}]},
+ {t:'frames',id:'q806',title:'Panel 4 \u2014 This is what I eat',
+   lines:[{l:'For breakfast I eat',ph:'food'},{l:'My favorite food from my country is',ph:'food'}]},
+ {t:'draw',id:'q807',p:'Draw your favorite meal.'},
+ {t:'frames',id:'q808',title:'Panel 5 \u2014 This is how I play',
+   lines:[{l:'After school I',ph:'activity'},{l:'I play with',ph:'people'}]},
+ {t:'frames',id:'q809',title:'Panel 6 \u2014 This is how I help',
+   lines:[{l:'At home I help when I',ph:'chore'},{l:'I also help my family by',ph:'how you help'}]},
+ {t:'frames',id:'q810',title:'Panel 7 \u2014 This is what I learn',
+   lines:[{l:'At school I am learning',ph:'subject'},{l:'The hardest thing for me is',ph:'thing'}]},
+ {t:'frames',id:'q811',title:'Panel 8 \u2014 This is how I go to sleep',
+   lines:[{l:'At night I',ph:'routine'},{l:'Before I sleep I think about',ph:'thought'}]},
+ {t:'draw',id:'q812',p:'Draw yourself at the end of your day.'},
+ {t:'long',id:'q813',p:{e:'Write 3 sentences: what do you want other people to know about your life?',
+                         s:'Write a short paragraph (5\u20136 sentences): what do you want readers of this book to know about your life?',
+                         c:'Write a paragraph (7\u20139 sentences) for the last page of the book, in the voice of the book itself.'},rows:8},
+ {t:'rubric'}
+])
+];
+
+/* ---------- grammar gym (mixed review) ---------- */
+var GYM = [
+ {title:'1 \u00b7 The -est words',items:[
+   {q:'Of all the children, Kian has the ___ family.',o:['big','bigger','biggest'],k:2},
+   {q:'This book is ___ than that book.',o:['short','shorter','shortest'],k:1},
+   {q:'That is the ___ house on the street.',o:['small','smaller','smallest'],k:2}]},
+ {title:'2 \u00b7 There is / There are',items:[
+   {q:'___ two windows in my bedroom.',o:['There is','There are','It is'],k:1},
+   {q:'___ one bathroom in the apartment.',o:['There is','There are','They are'],k:0},
+   {q:'How many people ___ in your family?',o:['is there','are there','there are'],k:1}]},
+ {title:'3 \u00b7 Possessives',items:[
+   {q:'___ mother works at a market.',o:['Daphine','Daphine\u2019s','Daphines'],k:1},
+   {q:'Kei rides ___ bike to school.',o:['she','her','hers'],k:1},
+   {q:'The two ___ rooms are upstairs.',o:['boys\u2019','boy\u2019s','boys'],k:0}]},
+ {title:'4 \u00b7 He plays / they play',items:[
+   {q:'My sister ___ the dishes every night.',o:['wash','washes','washing'],k:1},
+   {q:'We ___ soccer on Saturday.',o:['play','plays','playing'],k:0},
+   {q:'Ribaldo ___ his family on the farm.',o:['help','helps','helping'],k:1}]},
+ {title:'5 \u00b7 Past tense',items:[
+   {q:'Last year we ___ in another country.',o:['live','lived','living'],k:1},
+   {q:'I ___ my homework before dinner.',o:['do','did','doed'],k:1},
+   {q:'She ___ the floor this morning.',o:['sweep','swept','sweeped'],k:1}]},
+ {title:'6 \u00b7 Getting there',items:[
+   {q:'I come to Galileo ___ bus.',o:['by','on','in'],k:0},
+   {q:'He goes to school ___ foot.',o:['by','on','with'],k:1},
+   {q:'How ___ you get home?',o:['do','does','is'],k:0}]},
+ {title:'7 \u00b7 Comparing',items:[
+   {q:'___ children go to school in the morning.',o:['Both','Also','But'],k:0},
+   {q:'Oleg lives in Russia, ___ Kei lives in Japan.',o:['while','because','so'],k:0},
+   {q:'My city is ___ than my old city.',o:['noisy','noisier','noisiest'],k:1}]}
+];
+
+/* ---------- unit test ---------- */
+var TEST = [
+ {q:'Who wrote both books?',o:['Matt Lamothe','Jacqueline Woodson','Yuyi Morales','Peter Reynolds'],k:0},
+ {q:'How many children are in <i>This Is How We Do It</i>?',o:['Five','Seven','Ten','Twelve'],k:1},
+ {q:'How many children are in <i>This Is How I Do It</i>?',o:['Seven','Nine','Twelve','Twenty'],k:2},
+ {q:'Which country is in <b>both</b> books?',o:['Japan','Peru','Sweden','Mexico'],k:1},
+ {q:'Kei lives in \u2026',o:['Japan','India','Iran','Italy'],k:0},
+ {q:'Daphine lives in \u2026',o:['Russia','Uganda','Peru','Nepal'],k:1},
+ {q:'Kian lives in \u2026',o:['Iran','India','Italy','Mexico'],k:0},
+ {q:'Susadh lives in \u2026',o:['Nepal','Tanzania','Bolivia','Sweden'],k:0},
+ {q:'Bosco lives in \u2026',o:['Mongolia','Mexico','Rwanda','Thailand'],k:1},
+ {q:'Neyser lives in \u2026',o:['Peru','Bolivia','Kazakhstan','Bangladesh'],k:0},
+ {q:'<b>Chores</b> means \u2026',o:['games you play outside','small jobs you do at home','food you eat in the morning','clothes you wear to school'],k:1},
+ {q:'To <b>infer</b> means \u2026',o:['to read out loud','to make a smart guess from clues','to copy a sentence','to translate a word'],k:1},
+ {q:'<b>On foot</b> means \u2026',o:['by bus','walking','by bicycle','by boat'],k:1},
+ {q:'To <b>tend the cornfields</b> means \u2026',o:['to take care of the corn plants','to sell corn at a market','to eat corn for dinner','to cut down corn plants'],k:0},
+ {q:'She ___ to school by bus.',o:['go','goes','going','gone'],k:1},
+ {q:'___ three bedrooms in my house.',o:['There is','There are','It is','They is'],k:1},
+ {q:'Last year I ___ in Mexico.',o:['live','lives','lived','living'],k:2},
+ {q:'This is ___ book.',o:['Ananya','Ananya\u2019s','Ananyas','Ananyas\u2019'],k:1},
+ {q:'My brother is ___ than me.',o:['tall','taller','tallest','most tall'],k:1},
+ {q:'Romeo and his friends ___ soccer after school.',o:['plays','play','playing','is play'],k:1}
+];
+
+/* ============================================================
+   state
+   ============================================================ */
+var state = {name:'',email:'',period:'',lang:'Spanish',level:'s',ans:{},turned:false};
+var dirty=false, saveTimer=null;
+
+function $(s){return document.querySelector(s);}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function toast(m){var t=$('#toast');t.textContent=m;t.classList.add('on');setTimeout(function(){t.classList.remove('on');},2200);}
+function P(x){ if(x==null) return ''; if(typeof x==='string') return x; return x[state.level]||x.s||x.e||''; }
+
+/* ============================================================
+   rendering
+   ============================================================ */
+function glossify(html){
+  var keys=Object.keys(GLOSS).sort(function(a,b){return b.length-a.length;});
+  for(var i=0;i<keys.length;i++){
+    var k=keys[i];
+    var re=new RegExp('(?![^<]*>)\\b('+k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')\\b','i');
+    html=html.replace(re,function(m){return '<span class="gl" data-w="'+k+'">'+m+'</span>';});
+  }
+  return html;
+}
+
+function blkHTML(b,li){
+  var h='';
+  if(b.t==='d')  return '<div class="dir">'+glossify(P(b.x))+'</div>';
+  if(b.t==='note')return '<div class="note">'+P(b.x)+'</div>';
+
+  if(b.t==='v'){
+    h='<div class="blk"><h3>Words for this lesson</h3><p style="margin:0;color:var(--muted);font-weight:600;font-size:14.5px">Tap a word for the meaning and a translation.</p><div class="chips">';
+    for(var i=0;i<b.w.length;i++) h+='<button class="chip gl" data-w="'+esc(b.w[i])+'">'+esc(b.w[i])+'</button>';
+    return h+'</div></div>';
+  }
+
+  if(b.t==='see'||b.t==='short'||b.t==='long'||b.t==='exit'){
+    var rows=b.rows||(b.t==='short'?1:4);
+    h='<div class="blk"><label class="q" for="'+b.id+'">'+glossify(P(b.p))+'</label>';
+    if(b.fr) h+='<div class="frame">'+glossify(b.fr)+'</div>';
+    if(b.t==='short'&&!b.rows) h+='<input class="short ans" id="'+b.id+'" data-id="'+b.id+'" type="text"><div class="pm" data-pm="'+b.id+'"></div>';
+    else h+='<textarea class="ans" id="'+b.id+'" data-id="'+b.id+'" rows="'+rows+'"></textarea><div class="pm" data-pm="'+b.id+'" style="min-height:'+(rows*1.9)+'em"></div>';
+    if(b.help){
+      h+='<details class="helper"><summary>Help me start</summary><div class="inner"><b>Sentence starters</b><ul>';
+      for(var j=0;j<b.help.length;j++) h+='<li>'+b.help[j]+'</li>';
+      h+='</ul></div></details>';
+    }
+    return h+'</div>';
+  }
+
+  if(b.t==='mc'){
+    h='<div class="blk" data-mc="'+b.id+'"><label class="q">'+glossify(b.p)+'</label><div class="opts">';
+    for(var m=0;m<b.o.length;m++)
+      h+='<label class="opt"><input type="radio" name="'+b.id+'" value="'+m+'" class="ansmc" data-id="'+b.id+'"><span>'+b.o[m]+'</span></label>';
+    return h+'</div><div class="fb" data-fb="'+b.id+'"></div></div>';
+  }
+
+  if(b.t==='match'){
+    var rights=b.pairs.map(function(p){return p[1];}).slice().sort();
+    h='<div class="blk"><label class="q">'+b.p+'</label>';
+    for(var n=0;n<b.pairs.length;n++){
+      h+='<div class="mrow"><div class="lft">'+b.pairs[n][0]+'</div><select class="sel ansmt" data-id="'+b.id+'" data-i="'+n+'"><option value="">choose a country</option>';
+      for(var r=0;r<rights.length;r++) h+='<option value="'+esc(rights[r])+'">'+esc(rights[r])+'</option>';
+      h+='</select></div>';
+    }
+    return h+'<button class="btn no-print" style="background:var(--pine);color:#fff" data-check="'+b.id+'">Check my answers</button><div class="fb" data-fb="'+b.id+'"></div></div>';
+  }
+
+  if(b.t==='frames'){
+    h='<div class="blk"><h3>'+b.title+'</h3><div class="fbox">';
+    for(var f=0;f<b.lines.length;f++)
+      h+='<div class="line">'+b.lines[f].l+' <input class="ans" data-id="'+b.id+'_'+f+'" placeholder="'+esc(b.lines[f].ph)+'"></div>';
+    return h+'</div></div>';
+  }
+
+  if(b.t==='draw'){
+    h='<div class="blk"><label class="q">'+glossify(b.p)+'</label>';
+    h+='<canvas class="draw" id="cv_'+b.id+'" data-id="'+b.id+'" width="900" height="520"></canvas>';
+    h+='<div class="drawbar no-print">';
+    var cols=['#1d2a25','#c2653c','#1f5c4a','#4a7fa5','#d9a440','#b23b2e'];
+    for(var c=0;c<cols.length;c++) h+='<button class="swatch" data-cv="'+b.id+'" data-col="'+cols[c]+'" style="background:'+cols[c]+'" aria-pressed="'+(c===0?'true':'false')+'" aria-label="color"></button>';
+    h+='<button class="btn" data-erase="'+b.id+'" style="background:#eee">Eraser</button>';
+    h+='<button class="btn" data-clear="'+b.id+'" style="background:#eee">Clear</button></div>';
+    return h+'</div>';
+  }
+
+  if(b.t==='gram'){
+    h='<div class="blk"><h3>'+b.title+'</h3><div class="note" style="margin-bottom:10px">'+b.chart+'</div>';
+    for(var g=0;g<b.items.length;g++){
+      var gid=b.id+'_'+g;
+      h+='<div data-mc="'+gid+'"><label class="q">'+(g+1)+'. '+b.items[g].q+'</label><div class="opts">';
+      for(var o=0;o<b.items[g].o.length;o++)
+        h+='<label class="opt"><input type="radio" name="'+gid+'" value="'+o+'" class="ansmc" data-id="'+gid+'"><span>'+b.items[g].o[o]+'</span></label>';
+      h+='</div><div class="fb" data-fb="'+gid+'"></div></div>';
+    }
+    return h+'</div>';
+  }
+
+  if(b.t==='map') return mapHTML(b.id);
+
+  if(b.t==='rubric'){
+    return '<div class="blk"><h3>How your writing is scored</h3><table class="rub">'+
+    '<tr><th style="width:24%">&nbsp;</th><th>4 &mdash; Strong</th><th>3 &mdash; Getting there</th><th>2 &mdash; Beginning</th></tr>'+
+    '<tr><td><b>Ideas</b></td><td>Clear ideas with details from both books and from my own life</td><td>Clear ideas with some details</td><td>Few ideas or details</td></tr>'+
+    '<tr><td><b>Sentences</b></td><td>Complete sentences with capitals and periods</td><td>Most sentences complete</td><td>Many pieces of sentences</td></tr>'+
+    '<tr><td><b>Grammar</b></td><td>Uses unit grammar correctly (-est, -ed, \u2019s, by / on foot)</td><td>Uses some unit grammar</td><td>Grammar makes meaning hard to follow</td></tr>'+
+    '<tr><td><b>Words</b></td><td>Uses unit vocabulary naturally</td><td>Uses a few unit words</td><td>Little unit vocabulary</td></tr></table></div>';
+  }
+  return '';
+}
+
+function mapHTML(id){
+  var land = [
+    '83,75 120,58 200,45 300,42 330,62 310,95 285,120 262,150 245,178 228,196 214,182 196,150 170,130 140,110 110,95',
+    '352,38 400,32 420,52 405,75 372,70 350,55',
+    '255,232 300,225 332,242 340,276 324,320 305,362 286,398 271,368 264,330 256,284',
+    '452,205 470,175 520,158 570,152 618,168 625,200 605,240 585,285 565,325 548,348 536,312 524,268 495,238 465,222',
+    '472,122 500,95 540,68 585,58 611,72 600,100 570,118 545,140 515,146 490,136',
+    '611,62 700,45 800,40 900,55 960,70 975,95 930,110 900,140 872,166 840,150 800,170 782,202 762,216 742,192 712,176 682,152 652,132 622,106',
+    '705,176 738,176 726,216 712,200',
+    '770,226 812,220 842,236 820,252 786,246',
+    '820,300 870,288 915,295 925,320 900,345 860,352 830,335',
+    '955,340 968,335 972,356 958,361'
+  ];
+  var h='<div class="blk"><h3>Passport: find every child on the map</h3>';
+  h+='<p style="margin:0 0 8px;color:var(--muted);font-weight:600;font-size:14.5px">Tap a dot to jump to that country in the table below. Fill in the child\u2019s name and one thing you learned about them.</p>';
+  h+='<div class="mapwrap"><svg class="world" viewBox="0 0 1000 500" role="img" aria-label="World map with the countries from both books">';
+  for(var i=0;i<land.length;i++) h+='<polygon class="land" points="'+land[i]+'"/>';
+  for(var j=0;j<COUNTRIES.length;j++){
+    var c=COUNTRIES[j];
+    var x=((c.lon+180)/360*1000).toFixed(1), y=((90-c.lat)/180*500).toFixed(1);
+    h+='<g class="pin '+c.b+'" data-c="'+esc(c.c)+'" tabindex="0" role="button" aria-label="'+esc(c.c)+'">'+
+       '<circle cx="'+x+'" cy="'+y+'" r="9"/><text x="'+x+'" y="'+(Number(y)-14)+'" text-anchor="middle">'+esc(c.c)+'</text></g>';
+  }
+  h+='</svg></div>';
+  h+='<div class="legend"><span><i style="background:var(--clay)"></i>This Is How We Do It</span><span><i style="background:var(--sky)"></i>This Is How I Do It</span><span><i style="background:var(--pine)"></i>in both books</span><span><i style="background:var(--gold)"></i>you finished it</span></div>';
+  h+='<div class="passport"><div class="prow hd"><div>Country</div><div>Child\u2019s name</div><div>One thing I learned</div></div>';
+  for(var k=0;k<COUNTRIES.length;k++){
+    var cc=COUNTRIES[k];
+    var tag=cc.b==='we'?'<span class="bk we">We</span>':(cc.b==='i'?'<span class="bk i">I</span>':'<span class="bk both">both</span>');
+    h+='<div class="prow" id="pp_'+cc.c.replace(/\s/g,'_')+'"><div class="cn">'+esc(cc.c)+tag+'</div>'+
+       '<div><input class="ans" data-id="'+id+'_'+k+'_n" placeholder="name"></div>'+
+       '<div><input class="ans" data-id="'+id+'_'+k+'_f" placeholder="one detail"></div></div>';
+  }
+  return h+'</div></div>';
+}
+
+function gymHTML(){
+  var h='<div class="hero"><h2>Grammar gym</h2><div class="sub">Mixed review \u00b7 all seven grammar points</div>'+
+        '<div class="goal">Practice as many times as you want. Your best score is saved.</div></div>';
+  for(var s=0;s<GYM.length;s++){
+    h+='<div class="blk"><h3>'+GYM[s].title+'</h3>';
+    for(var i=0;i<GYM[s].items.length;i++){
+      var gid='gym'+s+'_'+i;
+      h+='<div data-mc="'+gid+'"><label class="q">'+GYM[s].items[i].q+'</label><div class="opts">';
+      for(var o=0;o<GYM[s].items[i].o.length;o++)
+        h+='<label class="opt"><input type="radio" name="'+gid+'" value="'+o+'" class="ansmc" data-id="'+gid+'"><span>'+GYM[s].items[i].o[o]+'</span></label>';
+      h+='</div><div class="fb" data-fb="'+gid+'"></div></div>';
+    }
+    h+='</div>';
+  }
+  return h;
+}
+
+function testHTML(){
+  var h='<div class="hero"><h2>Unit test</h2><div class="sub">20 questions + one paragraph</div>'+
+        '<div class="goal">Close your books. Answer every question, then write the paragraph at the end.</div></div>';
+  h+='<div class="note no-print">You only get feedback after you press <b>Score my test</b> at the bottom.</div>';
+  for(var i=0;i<TEST.length;i++){
+    var tid='t'+i;
+    h+='<div class="blk" data-mc="'+tid+'"><label class="q">'+(i+1)+'. '+TEST[i].q+'</label><div class="opts">';
+    for(var o=0;o<TEST[i].o.length;o++)
+      h+='<label class="opt"><input type="radio" name="'+tid+'" value="'+o+'" class="ansmc" data-id="'+tid+'" data-silent="1"><span>'+TEST[i].o[o]+'</span></label>';
+    h+='</div><div class="fb" data-fb="'+tid+'"></div></div>';
+  }
+  h+='<div class="blk"><label class="q" for="twrite">21. <b>Paragraph.</b> Choose one child from either book. Compare that child\u2019s day to your day. Write 6\u20138 sentences. Use at least one <b>-est</b> word, one <b>past tense</b> verb, and the word <b>but</b> or <b>while</b>.</label>'+
+     '<textarea class="ans" id="twrite" data-id="twrite" rows="10"></textarea><div class="pm" data-pm="twrite" style="min-height:19em"></div></div>';
+  h+='<button class="btn no-print" id="btnScore" style="background:var(--clay);color:#fff;padding:12px 22px;font-size:16px">Score my test</button>';
+  h+='<div class="note" id="testResult" style="display:none;margin-top:12px"></div>';
+  return h;
+}
+
+/* ---------- build ---------- */
+function build(){
+  var tabs='',app='';
+  for(var i=0;i<LESSONS.length;i++){
+    var l=LESSONS[i];
+    tabs+='<button role="tab" data-tab="'+l.id+'" aria-selected="'+(i===0?'true':'false')+'">'+l.n+'. '+l.t+'</button>';
+    var body='<div class="hero"><h2>'+l.t+'</h2><div class="sub">Lesson '+l.n+' \u00b7 '+l.sub+'</div><div class="goal"><b>Goal:</b> '+l.goal+'</div></div>';
+    body+='<div class="prog no-print"><div class="pbar"><i data-bar="'+l.id+'"></i></div><span data-pct="'+l.id+'">0%</span></div>';
+    for(var b=0;b<l.blocks.length;b++) body+=blkHTML(l.blocks[b],l);
+    app+='<section class="lesson'+(i===0?' on':'')+'" id="'+l.id+'" data-title="'+esc(l.n+'. '+l.t)+'">'+body+'</section>';
+  }
+  tabs+='<button role="tab" data-tab="gym" aria-selected="false">Grammar gym</button>';
+  tabs+='<button role="tab" data-tab="test" aria-selected="false">Unit test</button>';
+  app+='<section class="lesson" id="gym" data-title="Grammar gym">'+gymHTML()+'</section>';
+  app+='<section class="lesson" id="test" data-title="Unit test">'+testHTML()+'</section>';
+  $('#tabs').innerHTML=tabs; $('#app').innerHTML=app;
+  initCanvases();
+}
+
+/* ============================================================
+   answers, scoring, progress
+   ============================================================ */
+function norm(s){return String(s||'').toLowerCase().replace(/[^a-z0-9\u00c0-\u024f ]/g,'').replace(/\s+/g,' ').trim();}
+
+function setAns(id,v){ state.ans[id]=v; dirty=true; scheduleSave(); updateProgress(); }
+
+function restore(){
+  var els=document.querySelectorAll('.ans');
+  for(var i=0;i<els.length;i++){ var id=els[i].dataset.id; if(state.ans[id]!=null) els[i].value=state.ans[id]; }
+  var rs=document.querySelectorAll('.ansmc');
+  for(var j=0;j<rs.length;j++){ var rid=rs[j].dataset.id; if(state.ans[rid]!=null && String(state.ans[rid])===rs[j].value){ rs[j].checked=true; if(!rs[j].dataset.silent) gradeMC(rid); } }
+  var ms=document.querySelectorAll('.ansmt');
+  for(var k=0;k<ms.length;k++){ var mid=ms[k].dataset.id+'_'+ms[k].dataset.i; if(state.ans[mid]!=null) ms[k].value=state.ans[mid]; }
+  for(var c=0;c<CANV.length;c++){ var d=state.ans['cv_'+CANV[c].id]; if(d) drawDataURL(CANV[c],d); }
+  updateProgress(); markMap();
+}
+
+function gradeMC(id){
+  var box=document.querySelector('[data-mc="'+id+'"]'); if(!box) return;
+  var def=findMC(id); if(!def) return;
+  var chosen=state.ans[id];
+  var opts=box.querySelectorAll('.opt');
+  for(var i=0;i<opts.length;i++){ opts[i].classList.remove('right','wrong'); }
+  if(chosen==null||chosen==='') return;
+  var ci=Number(chosen);
+  var fb=box.querySelector('[data-fb="'+id+'"]');
+  if(ci===def.k){ opts[ci].classList.add('right'); if(fb){fb.className='fb ok';fb.textContent='Correct.';} }
+  else { opts[ci].classList.add('wrong'); opts[def.k].classList.add('right'); if(fb){fb.className='fb no';fb.textContent='Not yet \u2014 the correct answer is highlighted.';} }
+}
+
+function findMC(id){
+  for(var i=0;i<LESSONS.length;i++){ var bs=LESSONS[i].blocks;
+    for(var b=0;b<bs.length;b++){
+      if(bs[b].t==='mc'&&bs[b].id===id) return {k:bs[b].k};
+      if(bs[b].t==='gram'){ for(var g=0;g<bs[b].items.length;g++) if(bs[b].id+'_'+g===id) return {k:bs[b].items[g].k}; }
+    }}
+  var mg=/^gym(\d+)_(\d+)$/.exec(id); if(mg) return {k:GYM[+mg[1]].items[+mg[2]].k};
+  var mt=/^t(\d+)$/.exec(id); if(mt) return {k:TEST[+mt[1]].k};
+  return null;
+}
+
+function allScorable(){
+  var out=[];
+  for(var i=0;i<LESSONS.length;i++){ var bs=LESSONS[i].blocks;
+    for(var b=0;b<bs.length;b++){ var x=bs[b];
+      if(x.t==='mc') out.push({id:x.id,k:x.k,kind:'mc'});
+      if(x.t==='gram') for(var g=0;g<x.items.length;g++) out.push({id:x.id+'_'+g,k:x.items[g].k,kind:'mc'});
+      if(x.t==='match') for(var p=0;p<x.pairs.length;p++) out.push({id:x.id+'_'+p,k:x.pairs[p][1],kind:'txt'});
+      if(x.t==='short'&&x.k) out.push({id:x.id,k:x.k,kind:'txt'});
+    }}
+  for(var s=0;s<GYM.length;s++) for(var q=0;q<GYM[s].items.length;q++) out.push({id:'gym'+s+'_'+q,k:GYM[s].items[q].k,kind:'mc'});
+  return out;
+}
+
+function autoScore(){
+  var list=allScorable(),got=0;
+  for(var i=0;i<list.length;i++){
+    var a=state.ans[list[i].id];
+    if(a==null||a==='') continue;
+    if(list[i].kind==='mc'){ if(Number(a)===list[i].k) got++; }
+    else { if(norm(a)===norm(list[i].k)||norm(a).indexOf(norm(list[i].k))>-1) got++; }
+  }
+  return {got:got,total:list.length};
+}
+
+function testScore(){
+  var got=0; for(var i=0;i<TEST.length;i++){ if(Number(state.ans['t'+i])===TEST[i].k) got++; } return got;
+}
+
+function allFields(l){
+  var ids=[];
+  for(var b=0;b<l.blocks.length;b++){ var x=l.blocks[b];
+    if(['see','short','long','exit'].indexOf(x.t)>-1) ids.push(x.id);
+    if(x.t==='mc') ids.push(x.id);
+    if(x.t==='gram') for(var g=0;g<x.items.length;g++) ids.push(x.id+'_'+g);
+    if(x.t==='match') for(var p=0;p<x.pairs.length;p++) ids.push(x.id+'_'+p);
+    if(x.t==='frames') for(var f=0;f<x.lines.length;f++) ids.push(x.id+'_'+f);
+    if(x.t==='draw') ids.push('cv_'+x.id);
+    if(x.t==='map') for(var c=0;c<COUNTRIES.length;c++){ ids.push(x.id+'_'+c+'_n'); ids.push(x.id+'_'+c+'_f'); }
+  }
+  return ids;
+}
+
+function updateProgress(){
+  for(var i=0;i<LESSONS.length;i++){
+    var ids=allFields(LESSONS[i]),done=0;
+    for(var j=0;j<ids.length;j++){ var v=state.ans[ids[j]]; if(v!=null&&String(v).trim()!=='') done++; }
+    var pct=ids.length?Math.round(done/ids.length*100):0;
+    var bar=document.querySelector('[data-bar="'+LESSONS[i].id+'"]'), lab=document.querySelector('[data-pct="'+LESSONS[i].id+'"]');
+    if(bar) bar.style.width=pct+'%'; if(lab) lab.textContent=pct+'%';
+  }
+  markMap();
+}
+
+function markMap(){
+  for(var c=0;c<COUNTRIES.length;c++){
+    var n=state.ans['q109_'+c+'_n'], f=state.ans['q109_'+c+'_f'];
+    var pin=document.querySelector('.pin[data-c="'+COUNTRIES[c].c+'"]');
+    if(pin) pin.classList.toggle('done', !!(n&&String(n).trim()&&f&&String(f).trim()));
+  }
+}
+
+/* ============================================================
+   canvas
+   ============================================================ */
+var CANV=[];
+function initCanvases(){
+  CANV=[];
+  var cs=document.querySelectorAll('canvas.draw');
+  for(var i=0;i<cs.length;i++){
+    var cv=cs[i],ctx=cv.getContext('2d');
+    ctx.fillStyle='#fff';ctx.fillRect(0,0,cv.width,cv.height);
+    ctx.lineCap='round';ctx.lineJoin='round';
+    var o={el:cv,ctx:ctx,id:cv.dataset.id,col:'#1d2a25',w:3,down:false};
+    CANV.push(o); wire(o);
+  }
+}
+function pt(o,e){var r=o.el.getBoundingClientRect();var t=e.touches?e.touches[0]:e;
+  return {x:(t.clientX-r.left)*(o.el.width/r.width), y:(t.clientY-r.top)*(o.el.height/r.height)};}
+function wire(o){
+  function start(e){e.preventDefault();o.down=true;var p=pt(o,e);o.ctx.beginPath();o.ctx.moveTo(p.x,p.y);}
+  function move(e){if(!o.down)return;e.preventDefault();var p=pt(o,e);
+    o.ctx.strokeStyle=o.col;o.ctx.lineWidth=o.w;o.ctx.lineTo(p.x,p.y);o.ctx.stroke();}
+  function end(){if(!o.down)return;o.down=false;setAns('cv_'+o.id,o.el.toDataURL('image/png'));}
+  o.el.addEventListener('mousedown',start);o.el.addEventListener('mousemove',move);
+  window.addEventListener('mouseup',end);
+  o.el.addEventListener('touchstart',start,{passive:false});o.el.addEventListener('touchmove',move,{passive:false});
+  o.el.addEventListener('touchend',end);
+}
+function drawDataURL(o,d){var img=new Image();img.onload=function(){o.ctx.drawImage(img,0,0,o.el.width,o.el.height);};img.src=d;}
+function canvById(id){for(var i=0;i<CANV.length;i++) if(CANV[i].id===id) return CANV[i]; return null;}
+
+/* ============================================================
+   translation
+   ============================================================ */
+var TCACHE={};
+try{TCACHE=JSON.parse(localStorage.getItem('tih_tcache')||'{}');}catch(e){TCACHE={};}
+function translate(text,lang,cb){
+  var key=lang+'||'+text;
+  if(TCACHE[key]) return cb(TCACHE[key]);
+  var url=PROXY+'?text='+encodeURIComponent(text)+'&lang='+encodeURIComponent(lang)+'&target='+encodeURIComponent(lang);
+  fetch(url).then(function(r){return r.text();}).then(function(t){
+    var out=t;
+    try{var j=JSON.parse(t); out=j.translation||j.translated||j.text||j.result||t;}catch(e){}
+    TCACHE[key]=out;
+    try{localStorage.setItem('tih_tcache',JSON.stringify(TCACHE));}catch(e){}
+    cb(out);
+  }).catch(function(){cb('Translation is not available right now. Try again in a moment.');});
+}
+
+function showPop(word,x,y){
+  var d=GLOSS[word.toLowerCase()]||'';
+  $('#popW').textContent=word;
+  $('#popD').textContent=d;
+  $('#popT').textContent='\u2026';
+  var pop=$('#pop'); pop.classList.add('on');
+  var w=Math.min(300,window.innerWidth-24);
+  pop.style.left=Math.max(12,Math.min(x-w/2,window.innerWidth-w-12))+'px';
+  pop.style.top=Math.min(y+14,window.innerHeight-230)+'px';
+  $('#popL').value=state.lang;
+  runTrans(word);
+}
+function runTrans(word){
+  var lang=$('#popL').value; state.lang=lang;
+  $('#popT').textContent='\u2026';
+  translate(word+' \u2014 '+(GLOSS[word.toLowerCase()]||word),lang,function(t){ $('#popT').textContent=t; });
+}
+
+/* ============================================================
+   supabase
+   ============================================================ */
+function hdrs(extra){
+  var h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};
+  if(extra) for(var k in extra) h[k]=extra[k];
+  return h;
+}
+function dot(cls){var d=$('#saveDot'); d.className='dot'+(cls?' '+cls:'');}
+function scheduleSave(){ saveLocal(); if(saveTimer) clearTimeout(saveTimer); saveTimer=setTimeout(save,2500); }
+function saveLocal(){ try{localStorage.setItem(LSKEY,JSON.stringify(state));}catch(e){} }
+
+function save(){
+  if(!state.email) return;
+  var sc=autoScore();
+  var row={email:state.email,name:state.name,period:state.period,level:state.level,
+           data:state.ans,auto_score:sc.got,auto_total:sc.total,test_score:testScore(),
+           turned_in:state.turned,updated_at:new Date().toISOString()};
+  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email',{
+    method:'POST',
+    headers:hdrs({'Prefer':'resolution=merge-duplicates,return=minimal'}),
+    body:JSON.stringify(row)
+  }).then(function(r){ if(r.ok){dot('on');dirty=false;} else {dot('err');} })
+    .catch(function(){dot('err');});
+}
+
+function load(){
+  if(!state.email) return;
+  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?email=eq.'+encodeURIComponent(state.email)+'&select=*',{headers:hdrs()})
+  .then(function(r){return r.json();})
+  .then(function(rows){
+    if(rows&&rows.length){
+      var r=rows[0];
+      if(r.data&&typeof r.data==='object') state.ans=r.data;
+      if(r.level) setLevel(r.level);
+      state.turned=!!r.turned_in;
+      dot('on');
+    }
+    restore();
+  }).catch(function(){ dot('err'); restore(); });
+}
+
+/* ============================================================
+   events
+   ============================================================ */
+function setLevel(lv){
+  state.level=lv;
+  var bs=document.querySelectorAll('#lvSwitch button');
+  for(var i=0;i<bs.length;i++) bs[i].setAttribute('aria-pressed', bs[i].dataset.lv===lv?'true':'false');
+  var scrollY=window.scrollY, cur=document.querySelector('.lesson.on');
+  var curId=cur?cur.id:'l1';
+  build(); showTab(curId); restore(); window.scrollTo(0,scrollY);
+  saveLocal();
+}
+
+function showTab(id){
+  var ss=document.querySelectorAll('.lesson');
+  for(var i=0;i<ss.length;i++) ss[i].classList.toggle('on',ss[i].id===id);
+  var bs=document.querySelectorAll('#tabs button');
+  for(var j=0;j<bs.length;j++) bs[j].setAttribute('aria-selected', bs[j].dataset.tab===id?'true':'false');
+  window.scrollTo(0,0);
+}
+
+document.addEventListener('input',function(e){
+  var t=e.target;
+  if(t.classList&&t.classList.contains('ans')) setAns(t.dataset.id,t.value);
+});
+document.addEventListener('change',function(e){
+  var t=e.target;
+  if(t.classList&&t.classList.contains('ansmc')){ setAns(t.dataset.id,t.value); if(!t.dataset.silent) gradeMC(t.dataset.id); }
+  if(t.classList&&t.classList.contains('ansmt')) setAns(t.dataset.id+'_'+t.dataset.i,t.value);
+  if(t.id==='popL'){ runTrans($('#popW').textContent); saveLocal(); }
+});
+
+document.addEventListener('click',function(e){
+  var t=e.target;
+
+  var tab=t.closest?t.closest('#tabs button'):null;
+  if(tab){ showTab(tab.dataset.tab); return; }
+
+  var g=t.closest?t.closest('.gl'):null;
+  if(g){ showPop(g.dataset.w||g.textContent.trim(), e.clientX, e.clientY); return; }
+
+  var pin=t.closest?t.closest('.pin'):null;
+  if(pin){ var row=document.getElementById('pp_'+pin.dataset.c.replace(/\s/g,'_'));
+    if(row){ row.scrollIntoView({behavior:'smooth',block:'center'}); var inp=row.querySelector('input'); if(inp) setTimeout(function(){inp.focus();},350); }
+    return; }
+
+  if(t.dataset&&t.dataset.check){
+    var bid=t.dataset.check, def=null;
+    for(var i=0;i<LESSONS.length;i++) for(var b=0;b<LESSONS[i].blocks.length;b++)
+      if(LESSONS[i].blocks[b].t==='match'&&LESSONS[i].blocks[b].id===bid) def=LESSONS[i].blocks[b];
+    if(def){ var got=0;
+      for(var p=0;p<def.pairs.length;p++) if(norm(state.ans[bid+'_'+p])===norm(def.pairs[p][1])) got++;
+      var fb=document.querySelector('[data-fb="'+bid+'"]');
+      fb.className='fb '+(got===def.pairs.length?'ok':'no');
+      fb.textContent=got+' out of '+def.pairs.length+' correct.'+(got===def.pairs.length?' All matched.':' Check the ones you are unsure about and try again.');
+    }
+    return;
+  }
+
+  if(t.dataset&&t.dataset.col){
+    var o=canvById(t.dataset.cv); if(o){ o.col=t.dataset.col; o.w=3;
+      var sw=document.querySelectorAll('[data-cv="'+t.dataset.cv+'"]');
+      for(var s=0;s<sw.length;s++) sw[s].setAttribute('aria-pressed', sw[s]===t?'true':'false'); }
+    return;
+  }
+  if(t.dataset&&t.dataset.erase){ var oe=canvById(t.dataset.erase); if(oe){oe.col='#ffffff';oe.w=22;} return; }
+  if(t.dataset&&t.dataset.clear){ var oc=canvById(t.dataset.clear);
+    if(oc){ oc.ctx.fillStyle='#fff'; oc.ctx.fillRect(0,0,oc.el.width,oc.el.height); setAns('cv_'+oc.id,''); } return; }
+
+  if(t.id==='btnScore'){
+    for(var q=0;q<TEST.length;q++) gradeMC('t'+q);
+    var sc=testScore();
+    var box=$('#testResult'); box.style.display='block';
+    box.innerHTML='<b>You scored '+sc+' out of '+TEST.length+'.</b> Your paragraph is read and scored by Mr. Toby with the rubric in Lesson 7.';
+    save(); box.scrollIntoView({behavior:'smooth',block:'center'});
+    return;
+  }
+
+  if(!t.closest || !t.closest('#pop')) $('#pop').classList.remove('on');
+});
+
+document.addEventListener('keydown',function(e){
+  if(e.key==='Enter'&&e.target.classList&&e.target.classList.contains('pin')) e.target.click();
+  if(e.key==='Escape') $('#pop').classList.remove('on');
+});
+
+$('#lvSwitch').addEventListener('click',function(e){
+  var b=e.target.closest('button'); if(b) setLevel(b.dataset.lv);
+});
+
+$('#btnTurn').addEventListener('click',function(){
+  if(!state.email){ $('#login').classList.add('on'); return; }
+  state.turned=true; save();
+  toast('Turned in. You can still keep working \u2014 changes keep saving.');
+});
+
+/* ---------- printing ---------- */
+$('#btnPrint').addEventListener('click',function(){
+  var cur=document.querySelector('.lesson.on');
+  var name=cur?cur.dataset.title:'this page';
+  var choice=prompt('Print what?\n\n1 = this page only ('+name+')\n2 = the whole packet\n3 = blank packet (no answers, for handwriting)','1');
+  if(!choice) return;
+  var ss=document.querySelectorAll('.lesson');
+  for(var i=0;i<ss.length;i++) ss[i].classList.remove('printme');
+  if(choice==='1'&&cur) cur.classList.add('printme');
+  else for(var j=0;j<ss.length;j++) ss[j].classList.add('printme');
+  window.__blank = (choice==='3');
+  window.print();
+});
+
+window.addEventListener('beforeprint',function(){
+  var pms=document.querySelectorAll('.pm');
+  for(var i=0;i<pms.length;i++){
+    var id=pms[i].dataset.pm;
+    pms[i].textContent = window.__blank ? '' : (state.ans[id]||'');
+  }
+  if(window.__blank){
+    var ins=document.querySelectorAll('input.short, .fbox input, .passport input');
+    for(var j=0;j<ins.length;j++){ ins[j].dataset.keep=ins[j].value; ins[j].value=''; }
+    var rs=document.querySelectorAll('.ansmc'); for(var k=0;k<rs.length;k++) rs[k].dataset.keep=rs[k].checked?'1':'';
+  }
+});
+window.addEventListener('afterprint',function(){
+  if(window.__blank){
+    var ins=document.querySelectorAll('input.short, .fbox input, .passport input');
+    for(var j=0;j<ins.length;j++) if(ins[j].dataset.keep!=null) ins[j].value=ins[j].dataset.keep;
+  }
+  window.__blank=false;
+});
+
+window.addEventListener('beforeunload',function(){ if(dirty) save(); });
+
+/* ---------- boot ---------- */
+$('#btnLogin').addEventListener('click',function(){
+  var n=$('#inName').value.trim(), em=$('#inEmail').value.trim().toLowerCase();
+  if(!n||!em){ toast('Please type your name and your email.'); return; }
+  state.name=n; state.email=em; state.period=$('#inPeriod').value; state.lang=$('#inLang').value||'Spanish';
+  $('#whoName').textContent=n;
+  $('#login').classList.remove('on');
+  saveLocal(); load();
+});
+
+(function boot(){
+  try{ var s=JSON.parse(localStorage.getItem(LSKEY)||'null');
+       if(s&&s.email){ state=Object.assign(state,s); } }catch(e){}
+  build();
+  if(state.email){
+    $('#whoName').textContent=state.name||state.email;
+    setLevel(state.level||'s');
+    load();
+  } else {
+    $('#login').classList.add('on');
+  }
+})();
+</script>
+</body>
+</html>

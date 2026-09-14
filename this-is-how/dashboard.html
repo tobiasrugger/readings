@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teacher dashboard &mdash; This Is How We Do It / I Do It</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--pine:#1f5c4a;--pine-d:#164237;--paper:#fbf8f2;--ink:#1d2a25;--muted:#6b7a73;
+      --line:#ddd6c7;--clay:#c2653c;--gold:#d9a440;--ok:#2f7d52;--bad:#b23b2e}
+*{box-sizing:border-box}
+body{margin:0;font-family:Nunito,system-ui,sans-serif;background:var(--paper);color:var(--ink);font-size:16px}
+.bar{position:sticky;top:0;z-index:40;background:var(--pine);color:#fff;padding:9px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.bar .ttl{font-weight:800;margin-right:auto}
+.bar .ttl small{display:block;font-weight:600;font-size:12px;opacity:.8}
+.btn{background:#fff;color:var(--pine-d);border:0;border-radius:999px;padding:7px 14px;font:inherit;font-weight:700;font-size:14px;cursor:pointer}
+.btn.ghost{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.5)}
+.btn.clay{background:var(--clay);color:#fff}
+nav.tabs{background:var(--pine-d);display:flex;overflow-x:auto;position:sticky;top:52px;z-index:39}
+nav.tabs button{background:transparent;border:0;border-bottom:4px solid transparent;color:#cfe3da;font:inherit;font-weight:700;font-size:14px;padding:10px 15px;cursor:pointer;white-space:nowrap}
+nav.tabs button[aria-selected="true"]{color:#fff;border-bottom-color:var(--gold);background:rgba(255,255,255,.07)}
+main{max-width:1180px;margin:0 auto;padding:16px 14px 80px}
+section{display:none}section.on{display:block}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px}
+h2{margin:0 0 10px;color:var(--pine-d)}
+h3{margin:0 0 8px;color:var(--pine-d);font-size:17px}
+table{width:100%;border-collapse:collapse;font-size:14.5px}
+th,td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+th{background:#f1f5f2;color:var(--pine-d);position:sticky;top:96px;cursor:pointer}
+tr:nth-child(even) td{background:#fcfbf7}
+.pbar{height:9px;background:#e6e0d2;border-radius:999px;overflow:hidden;min-width:80px}
+.pbar i{display:block;height:100%;background:var(--pine)}
+.pill{font-size:12px;font-weight:800;border-radius:999px;padding:2px 9px;color:#fff;display:inline-block}
+.pill.in{background:var(--ok)}.pill.out{background:#b9b0a0}
+input,select,textarea{font:inherit;border:1px solid var(--line);border-radius:8px;padding:6px 9px;background:#fffdf8}
+input.k{width:100%}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.mask{position:fixed;inset:0;background:rgba(20,30,26,.6);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px}
+.mask.off{display:none}
+.sheet{background:#fff;border-radius:14px;max-width:380px;width:100%;padding:22px}
+.sheet input{width:100%;margin-bottom:10px;padding:10px}
+.det{background:#f7f4ec;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:8px}
+.qa{border-bottom:1px solid var(--line);padding:6px 0}
+.qa:last-child{border-bottom:0}
+.qa .q{font-weight:700;font-size:14px;color:var(--muted)}
+.qa .a{white-space:pre-wrap}
+.qa.right{border-left:4px solid var(--ok);padding-left:8px}
+.qa.wrong{border-left:4px solid var(--bad);padding-left:8px}
+.qa.blank{opacity:.5}
+img.dw{max-width:260px;border:1px solid var(--line);border-radius:8px;background:#fff}
+.kgrid{display:grid;grid-template-columns:1fr 260px;gap:8px;align-items:center;border-bottom:1px solid var(--line);padding:6px 0}
+.small{color:var(--muted);font-size:14px}
+.stat{display:inline-block;background:#f1f5f2;border-radius:10px;padding:8px 14px;margin:0 8px 8px 0;font-weight:800;color:var(--pine-d)}
+.stat b{display:block;font-size:24px}
+.bars div{display:grid;grid-template-columns:minmax(120px,1fr) 3fr 54px;gap:8px;align-items:center;margin-bottom:5px;font-size:14px}
+@media (max-width:760px){.kgrid{grid-template-columns:1fr}th{position:static}}
+</style>
+</head>
+<body>
+
+<div class="mask" id="gate">
+  <div class="sheet">
+    <h2>Teacher dashboard</h2>
+    <p class="small" style="margin-top:0">This Is How We Do It / This Is How I Do It</p>
+    <input id="pw" type="password" placeholder="Password" autocomplete="current-password">
+    <button class="btn" style="width:100%;background:var(--pine);color:#fff;padding:11px" id="go">Open</button>
+    <div id="pwErr" class="small" style="color:var(--bad);margin-top:8px"></div>
+  </div>
+</div>
+
+<header class="bar">
+  <div class="ttl">Teacher dashboard<small>This Is How We Do It &amp; This Is How I Do It &middot; Mr. Toby</small></div>
+  <span class="small" id="count" style="color:#cfe3da;font-weight:700"></span>
+  <button class="btn ghost" id="btnRefresh">Refresh</button>
+  <button class="btn clay" id="btnCSV">Export CSV</button>
+</header>
+
+<nav class="tabs">
+  <button data-tab="roster" aria-selected="true">Class roster</button>
+  <button data-tab="byq" aria-selected="false">By question</button>
+  <button data-tab="key" aria-selected="false">Answer key</button>
+  <button data-tab="stats" aria-selected="false">Class report</button>
+</nav>
+
+<main>
+
+<section id="roster" class="on">
+  <div class="card">
+    <div class="filters">
+      <select id="fPeriod"><option value="">All periods</option></select>
+      <select id="fTurn"><option value="">Turned in and not</option><option value="1">Turned in only</option><option value="0">Not turned in</option></select>
+      <input id="fName" placeholder="Search a name">
+      <span class="small" id="rosterNote"></span>
+    </div>
+    <div style="overflow-x:auto">
+      <table id="tbl">
+        <thead><tr>
+          <th data-s="name">Student</th><th data-s="period">Period</th><th data-s="level">Level</th>
+          <th data-s="pct">Progress</th><th data-s="auto">Auto score</th><th data-s="open">Short answers</th>
+          <th data-s="test">Unit test</th><th data-s="teacher">My score</th><th data-s="turned">Status</th><th>Work</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="byq">
+  <div class="card">
+    <h3>Read one question across the whole class</h3>
+    <div class="filters">
+      <select id="qPick"></select>
+      <select id="qPeriod"><option value="">All periods</option></select>
+    </div>
+    <div id="qOut"></div>
+  </div>
+</section>
+
+<section id="key">
+  <div class="card">
+    <h3>Answer key</h3>
+    <p class="small">Multiple choice and the matching activity are already scored automatically. Fill in the short answers below that depend on the books, and the dashboard will check student answers against them. Leave a row blank to skip it.</p>
+    <div class="filters">
+      <button class="btn" style="background:var(--pine);color:#fff" id="btnSaveKey">Save answer key</button>
+      <span class="small" id="keyMsg"></span>
+    </div>
+    <div id="keyList"></div>
+  </div>
+</section>
+
+<section id="stats">
+  <div class="card"><h3>Class at a glance</h3><div id="statTop"></div></div>
+  <div class="card"><h3>Hardest questions</h3><p class="small">Percent of students who answered correctly, lowest first. Only auto-scored items.</p><div class="bars" id="statBars"></div></div>
+  <div class="card"><h3>Progress by lesson</h3><div class="bars" id="statLessons"></div></div>
+</section>
+
+</main>
+
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var TABLE='tih_work';
+var PASS='galileo2026';
+var KEY_EMAIL='answer-key@teacher';
+
+var QMETA=[{"id":"q101","L":1,"t":"see","k":"","q":"Look at the cover of This Is How We Do It. Write 3–5 sentences describing what you see."},{"id":"q102","L":1,"t":"see","k":"","q":"Now look at the cover of This Is How I Do It. Write 3–5 sentences."},{"id":"q103","L":1,"t":"mc","k":0,"q":"Who is the author of both books?"},{"id":"q104","L":1,"t":"mc","k":1,"q":"How many children are in This Is How We Do It?"},{"id":"q105","L":1,"t":"mc","k":2,"q":"How many children are in This Is How I Do It?"},{"id":"q106_0","L":1,"t":"mt","k":"Italy","q":"Match: Romeo"},{"id":"q106_1","L":1,"t":"mt","k":"Peru","q":"Match: Ribaldo"},{"id":"q106_2","L":1,"t":"mt","k":"Russia","q":"Match: Oleg"},{"id":"q106_3","L":1,"t":"mt","k":"Japan","q":"Match: Kei"},{"id":"q106_4","L":1,"t":"mt","k":"Uganda","q":"Match: Daphine"},{"id":"q106_5","L":1,"t":"mt","k":"India","q":"Match: Ananya"},{"id":"q106_6","L":1,"t":"mt","k":"Iran","q":"Match: Kian"},{"id":"q107","L":1,"t":"short","k":"","q":"Look at the ages. Who is the oldest child? Answer in a complete sentence."},{"id":"q108","L":1,"t":"short","k":"","q":"Who is the youngest child? Answer in a complete sentence."},{"id":"q109_0_n","L":1,"t":"map","k":"","q":"Passport Italy — name"},{"id":"q109_0_f","L":1,"t":"map","k":"","q":"Passport Italy — detail"},{"id":"q109_1_n","L":1,"t":"map","k":"","q":"Passport Russia — name"},{"id":"q109_1_f","L":1,"t":"map","k":"","q":"Passport Russia — detail"},{"id":"q109_2_n","L":1,"t":"map","k":"","q":"Passport Japan — name"},{"id":"q109_2_f","L":1,"t":"map","k":"","q":"Passport Japan — detail"},{"id":"q109_3_n","L":1,"t":"map","k":"","q":"Passport Uganda — name"},{"id":"q109_3_f","L":1,"t":"map","k":"","q":"Passport Uganda — detail"},{"id":"q109_4_n","L":1,"t":"map","k":"","q":"Passport India — name"},{"id":"q109_4_f","L":1,"t":"map","k":"","q":"Passport India — detail"},{"id":"q109_5_n","L":1,"t":"map","k":"","q":"Passport Iran — name"},{"id":"q109_5_f","L":1,"t":"map","k":"","q":"Passport Iran — detail"},{"id":"q109_6_n","L":1,"t":"map","k":"","q":"Passport Peru — name"},{"id":"q109_6_f","L":1,"t":"map","k":"","q":"Passport Peru — detail"},{"id":"q109_7_n","L":1,"t":"map","k":"","q":"Passport Bangladesh — name"},{"id":"q109_7_f","L":1,"t":"map","k":"","q":"Passport Bangladesh — detail"},{"id":"q109_8_n","L":1,"t":"map","k":"","q":"Passport Bolivia — name"},{"id":"q109_8_f","L":1,"t":"map","k":"","q":"Passport Bolivia — detail"},{"id":"q109_9_n","L":1,"t":"map","k":"","q":"Passport Kazakhstan — name"},{"id":"q109_9_f","L":1,"t":"map","k":"","q":"Passport Kazakhstan — detail"},{"id":"q109_10_n","L":1,"t":"map","k":"","q":"Passport Mexico — name"},{"id":"q109_10_f","L":1,"t":"map","k":"","q":"Passport Mexico — detail"},{"id":"q109_11_n","L":1,"t":"map","k":"","q":"Passport Mongolia — name"},{"id":"q109_11_f","L":1,"t":"map","k":"","q":"Passport Mongolia — detail"},{"id":"q109_12_n","L":1,"t":"map","k":"","q":"Passport Nepal — name"},{"id":"q109_12_f","L":1,"t":"map","k":"","q":"Passport Nepal — detail"},{"id":"q109_13_n","L":1,"t":"map","k":"","q":"Passport Rwanda — name"},{"id":"q109_13_f","L":1,"t":"map","k":"","q":"Passport Rwanda — detail"},{"id":"q109_14_n","L":1,"t":"map","k":"","q":"Passport Sweden — name"},{"id":"q109_14_f","L":1,"t":"map","k":"","q":"Passport Sweden — detail"},{"id":"q109_15_n","L":1,"t":"map","k":"","q":"Passport Tanzania — name"},{"id":"q109_15_f","L":1,"t":"map","k":"","q":"Passport Tanzania — detail"},{"id":"q109_16_n","L":1,"t":"map","k":"","q":"Passport Thailand — name"},{"id":"q109_16_f","L":1,"t":"map","k":"","q":"Passport Thailand — detail"},{"id":"q109_17_n","L":1,"t":"map","k":"","q":"Passport United States — name"},{"id":"q109_17_f","L":1,"t":"map","k":"","q":"Passport United States — detail"},{"id":"q110","L":1,"t":"short","k":"","q":"Of all the countries in the two books, which one is closest to your home country?"},{"id":"g1_0","L":1,"t":"mc","k":2,"q":"Oleg is 11. Ananya is 9. Kei is 7. Kei is the ___."},{"id":"g1_1","L":1,"t":"mc","k":2,"q":"Mount Everest is the ___ mountain in the world."},{"id":"g1_2","L":1,"t":"mc","k":1,"q":"My little brother is ___ than me."},{"id":"g1_3","L":1,"t":"mc","k":2,"q":"Of all seven children, Daphine has the ___ walk to school."},{"id":"cv_q111","L":1,"t":"draw","k":"","q":"Draw yourself, or draw something important that shows your country."},{"id":"q112","L":1,"t":"exit","k":"","q":"Exit ticket: write one sentence with an -est word about someone in your family."},{"id":"q201","L":2,"t":"see","k":"","q":"What do you see? Write 3–5 sentences."},{"id":"q202","L":2,"t":"short","k":"susadh","q":"Who lives in Nepal? Write a complete sentence."},{"id":"q203","L":2,"t":"short","k":"","q":"How many bedrooms are in the house in Nepal?"},{"id":"q204","L":2,"t":"short","k":"","q":"Who lives in Tanzania?"},{"id":"q205","L":2,"t":"short","k":"","q":"How many bedrooms are in the house in Tanzania?"},{"id":"q206","L":2,"t":"short","k":"","q":"What country does Carlo live in?"},{"id":"q207","L":2,"t":"short","k":"","q":"How many levels (stories) are in the building in Kazakhstan?"},{"id":"q208","L":2,"t":"short","k":"","q":"Which home is most like the home you lived in? Explain in 2 sentences."},{"id":"g2_0","L":2,"t":"mc","k":1,"q":"___ four bedrooms in the house."},{"id":"g2_1","L":2,"t":"mc","k":0,"q":"Susadh lives ___ Nepal."},{"id":"g2_2","L":2,"t":"mc","k":1,"q":"The family sleeps ___ the floor."},{"id":"g2_3","L":2,"t":"mc","k":0,"q":"___ a small kitchen behind the house."},{"id":"q209_0","L":2,"t":"fr","k":"","q":"Your turn: This is where I lived / This is where I live — This is where I lived. I lived in a(n)"},{"id":"q209_1","L":2,"t":"fr","k":"","q":"Your turn: This is where I lived / This is where I live — in a city called"},{"id":"q209_2","L":2,"t":"fr","k":"","q":"Your turn: This is where I lived / This is where I live — in the country of"},{"id":"q209_3","L":2,"t":"fr","k":"","q":"Your turn: This is where I lived / This is where I live — This is where I live now. I live in a(n)"},{"id":"q209_4","L":2,"t":"fr","k":"","q":"Your turn: This is where I lived / This is where I live — in a city called"},{"id":"q209_5","L":2,"t":"fr","k":"","q":"Your turn: This is where I lived / This is where I live — in the country of"},{"id":"cv_q210","L":2,"t":"draw","k":"","q":"Draw your home — the one you lived in before, or the one you live in now."},{"id":"q211","L":2,"t":"exit","k":"","q":"Exit ticket: write one There are sentence about your home."},{"id":"q301","L":3,"t":"see","k":"","q":"What do you see? Write 3–5 sentences."},{"id":"q302","L":3,"t":"short","k":"neyser","q":"Who is from Peru in This Is How I Do It?"},{"id":"q303","L":3,"t":"short","k":"","q":"Who has the biggest family?"},{"id":"q304","L":3,"t":"short","k":"","q":"Who lives with their grandparents?"},{"id":"q305","L":3,"t":"short","k":"","q":"Who has two fathers?"},{"id":"q306","L":3,"t":"short","k":"","q":"Who has a brother but no sisters?"},{"id":"q307","L":3,"t":"short","k":"","q":"Who has a single mother?"},{"id":"q308","L":3,"t":"short","k":"","q":"Who lives in Bangladesh?"},{"id":"q309","L":3,"t":"long","k":"","q":"Whose family is most like yours? Why? Write 3 sentences."},{"id":"g3_0","L":3,"t":"mc","k":1,"q":"This is ___ family."},{"id":"g3_1","L":3,"t":"mc","k":1,"q":"Ananya lives with ___ grandparents."},{"id":"g3_2","L":3,"t":"mc","k":1,"q":"Romeo and ___ brother play outside."},{"id":"g3_3","L":3,"t":"mc","k":1,"q":"That is my ___ bedroom."},{"id":"q310_0","L":3,"t":"fr","k":"","q":"Your turn: This is who I lived with / live with — This is who I lived with. I lived with"},{"id":"q310_1","L":3,"t":"fr","k":"","q":"Your turn: This is who I lived with / live with — in the country of"},{"id":"q310_2","L":3,"t":"fr","k":"","q":"Your turn: This is who I lived with / live with — This is who I live with now. I live with"},{"id":"q310_3","L":3,"t":"fr","k":"","q":"Your turn: This is who I lived with / live with — in the country of"},{"id":"cv_q311","L":3,"t":"draw","k":"","q":"Draw your family. Write each person’s name next to them."},{"id":"q312","L":3,"t":"exit","k":"","q":"Exit ticket: write one sentence using ’s (for example: My brother’s name is …)."},{"id":"q401","L":4,"t":"see","k":"","q":"What do you see? Write 3–5 sentences."},{"id":"q402","L":4,"t":"short","k":"","q":"How do the boys play in Italy? Write a complete sentence."},{"id":"q403","L":4,"t":"short","k":"","q":"In what country do the children play soccer?"},{"id":"q404","L":4,"t":"short","k":"","q":"What game do the children play in Japan?"},{"id":"q405","L":4,"t":"short","k":"","q":"In what country do the children go horseback riding?"},{"id":"q406","L":4,"t":"short","k":"","q":"Have you ever ridden a horse?"},{"id":"q407","L":4,"t":"short","k":"","q":"Do children play freeze tag in your country? What do they call it?"},{"id":"g4_0","L":4,"t":"mc","k":1,"q":"Kei ___ tag with her friends."},{"id":"g4_1","L":4,"t":"mc","k":0,"q":"The boys in Italy ___ soccer after school."},{"id":"g4_2","L":4,"t":"mc","k":1,"q":"Oleg ___ to school by bus."},{"id":"g4_3","L":4,"t":"mc","k":0,"q":"Ananya and her cousin ___ outside every evening."},{"id":"q408_0","L":4,"t":"fr","k":"","q":"Your turn: This is how I played / how I play — This is how I played in my home country. I played"},{"id":"q408_1","L":4,"t":"fr","k":"","q":"Your turn: This is how I played / how I play — with"},{"id":"q408_2","L":4,"t":"fr","k":"","q":"Your turn: This is how I played / how I play — in"},{"id":"q408_3","L":4,"t":"fr","k":"","q":"Your turn: This is how I played / how I play — This is how I play in the United States. I play"},{"id":"q408_4","L":4,"t":"fr","k":"","q":"Your turn: This is how I played / how I play — with"},{"id":"q408_5","L":4,"t":"fr","k":"","q":"Your turn: This is how I played / how I play — in"},{"id":"cv_q409","L":4,"t":"draw","k":"","q":"Draw the game you played most when you were small."},{"id":"q410","L":4,"t":"exit","k":"","q":"Exit ticket: write one sentence with plays and one with play."},{"id":"q501","L":5,"t":"see","k":"","q":"What do you see? Write 3–5 sentences."},{"id":"q502","L":5,"t":"short","k":"bosco","q":"Who is from Mexico? Write a complete sentence."},{"id":"q503","L":5,"t":"short","k":"","q":"Who waters the plants?"},{"id":"q504","L":5,"t":"short","k":"","q":"Who hangs clothes to dry or helps with the laundry?"},{"id":"q505","L":5,"t":"short","k":"","q":"In Japan, what does Kei do to help?"},{"id":"q506","L":5,"t":"short","k":"","q":"In Iran, what does Kian do to help?"},{"id":"q507","L":5,"t":"short","k":"","q":"In Peru, what does Ribaldo do to help?"},{"id":"g5_0","L":5,"t":"mc","k":1,"q":"Yesterday I ___ my mother in the kitchen."},{"id":"g5_1","L":5,"t":"mc","k":2,"q":"In my country I ___ to school on foot."},{"id":"g5_2","L":5,"t":"mc","k":1,"q":"She ___ the dishes last night."},{"id":"g5_3","L":5,"t":"mc","k":2,"q":"We ___ rice and beans for dinner."},{"id":"q508_0","L":5,"t":"fr","k":"","q":"Your turn: This is how I helped / how I help — This is how I helped in my home country. I helped when I"},{"id":"q508_1","L":5,"t":"fr","k":"","q":"Your turn: This is how I helped / how I help — This is how I help now. Now I help out when I"},{"id":"cv_q509","L":5,"t":"draw","k":"","q":"Draw yourself doing one chore at home."},{"id":"q510","L":5,"t":"exit","k":"","q":"Exit ticket: write one past-tense sentence about something you did to help yesterday."},{"id":"q601","L":6,"t":"see","k":"","q":"What do you see? Write 3–5 sentences."},{"id":"q602","L":6,"t":"short","k":"","q":"Which child walks to school?"},{"id":"q603","L":6,"t":"short","k":"","q":"Which child rides in a car or a bus?"},{"id":"q604","L":6,"t":"short","k":"","q":"Who has the longest trip to school? How do you know?"},{"id":"q605","L":6,"t":"short","k":"","q":"Who has the shortest trip to school?"},{"id":"q606","L":6,"t":"short","k":"","q":"How do you get to Galileo?"},{"id":"g6_0","L":6,"t":"mc","k":0,"q":"Kian gets to school ___ car."},{"id":"g6_1","L":6,"t":"mc","k":1,"q":"Daphine walks to school ___ foot."},{"id":"g6_2","L":6,"t":"mc","k":1,"q":"How ___ Oleg get to school?"},{"id":"g6_3","L":6,"t":"mc","k":0,"q":"They ___ the bus every morning."},{"id":"q607_0","L":6,"t":"fr","k":"","q":"Your turn: how I went / how I go to school — In my home country I went to school"},{"id":"q607_1","L":6,"t":"fr","k":"","q":"Your turn: how I went / how I go to school — It took about"},{"id":"q607_2","L":6,"t":"fr","k":"","q":"Your turn: how I went / how I go to school — Now I go to school"},{"id":"q607_3","L":6,"t":"fr","k":"","q":"Your turn: how I went / how I go to school — It takes about"},{"id":"cv_q608","L":6,"t":"draw","k":"","q":"Draw your trip to school. Show the streets, the bus, or the people you see."},{"id":"q609","L":6,"t":"exit","k":"","q":"Exit ticket: answer in one sentence — How do you get to school?"},{"id":"q701","L":7,"t":"mc","k":1,"q":"Which country appears in both books?"},{"id":"q702","L":7,"t":"short","k":"","q":"Name the child from Peru in This Is How We Do It and the child from Peru in This Is How I Do It."},{"id":"q703","L":7,"t":"long","k":"","q":"Write three things that are the same in both books."},{"id":"q704","L":7,"t":"long","k":"","q":"Write three things that are different between the two books."},{"id":"q705","L":7,"t":"long","k":"","q":"Which book do you like more, and why? Write 4 sentences with reasons from the books."},{"id":"g7_0","L":7,"t":"mc","k":0,"q":"I eat bread for breakfast, ___ my friend eats rice."},{"id":"g7_1","L":7,"t":"mc","k":0,"q":"Peru is in the first book. Peru is ___ in the second book."},{"id":"g7_2","L":7,"t":"mc","k":1,"q":"My school is ___ than the school in the book."},{"id":"g7_3","L":7,"t":"mc","k":1,"q":"Both books ___ about one day in a child’s life."},{"id":"q706","L":7,"t":"long","k":"","q":"Paragraph. Choose one child from each book. Compare their day to your day. Write 6–8 sentences."},{"id":"q707","L":7,"t":"exit","k":"","q":"Exit ticket: write one sentence with while comparing two children from the books."},{"id":"q801_0","L":8,"t":"fr","k":"","q":"Panel 1 — This is where I live — I live in a(n)"},{"id":"q801_1","L":8,"t":"fr","k":"","q":"Panel 1 — This is where I live — in"},{"id":"q801_2","L":8,"t":"fr","k":"","q":"Panel 1 — This is where I live — My favorite room is"},{"id":"cv_q802","L":8,"t":"draw","k":"","q":"Draw your home."},{"id":"q803_0","L":8,"t":"fr","k":"","q":"Panel 2 — This is who I live with — I live with"},{"id":"q803_1","L":8,"t":"fr","k":"","q":"Panel 2 — This is who I live with — The person I talk to most is"},{"id":"cv_q804","L":8,"t":"draw","k":"","q":"Draw the people you live with."},{"id":"q805_0","L":8,"t":"fr","k":"","q":"Panel 3 — This is how I get to school — I get to school"},{"id":"q805_1","L":8,"t":"fr","k":"","q":"Panel 3 — This is how I get to school — On the way I see"},{"id":"q806_0","L":8,"t":"fr","k":"","q":"Panel 4 — This is what I eat — For breakfast I eat"},{"id":"q806_1","L":8,"t":"fr","k":"","q":"Panel 4 — This is what I eat — My favorite food from my country is"},{"id":"cv_q807","L":8,"t":"draw","k":"","q":"Draw your favorite meal."},{"id":"q808_0","L":8,"t":"fr","k":"","q":"Panel 5 — This is how I play — After school I"},{"id":"q808_1","L":8,"t":"fr","k":"","q":"Panel 5 — This is how I play — I play with"},{"id":"q809_0","L":8,"t":"fr","k":"","q":"Panel 6 — This is how I help — At home I help when I"},{"id":"q809_1","L":8,"t":"fr","k":"","q":"Panel 6 — This is how I help — I also help my family by"},{"id":"q810_0","L":8,"t":"fr","k":"","q":"Panel 7 — This is what I learn — At school I am learning"},{"id":"q810_1","L":8,"t":"fr","k":"","q":"Panel 7 — This is what I learn — The hardest thing for me is"},{"id":"q811_0","L":8,"t":"fr","k":"","q":"Panel 8 — This is how I go to sleep — At night I"},{"id":"q811_1","L":8,"t":"fr","k":"","q":"Panel 8 — This is how I go to sleep — Before I sleep I think about"},{"id":"cv_q812","L":8,"t":"draw","k":"","q":"Draw yourself at the end of your day."},{"id":"q813","L":8,"t":"long","k":"","q":"Write a short paragraph (5–6 sentences): what do you want readers of this book to know about your life?"},{"id":"gym0_0","L":9,"t":"mc","k":2,"q":"Of all the children, Kian has the ___ family."},{"id":"gym0_1","L":9,"t":"mc","k":1,"q":"This book is ___ than that book."},{"id":"gym0_2","L":9,"t":"mc","k":2,"q":"That is the ___ house on the street."},{"id":"gym1_0","L":9,"t":"mc","k":1,"q":"___ two windows in my bedroom."},{"id":"gym1_1","L":9,"t":"mc","k":0,"q":"___ one bathroom in the apartment."},{"id":"gym1_2","L":9,"t":"mc","k":1,"q":"How many people ___ in your family?"},{"id":"gym2_0","L":9,"t":"mc","k":1,"q":"___ mother works at a market."},{"id":"gym2_1","L":9,"t":"mc","k":1,"q":"Kei rides ___ bike to school."},{"id":"gym2_2","L":9,"t":"mc","k":0,"q":"The two ___ rooms are upstairs."},{"id":"gym3_0","L":9,"t":"mc","k":1,"q":"My sister ___ the dishes every night."},{"id":"gym3_1","L":9,"t":"mc","k":0,"q":"We ___ soccer on Saturday."},{"id":"gym3_2","L":9,"t":"mc","k":1,"q":"Ribaldo ___ his family on the farm."},{"id":"gym4_0","L":9,"t":"mc","k":1,"q":"Last year we ___ in another country."},{"id":"gym4_1","L":9,"t":"mc","k":1,"q":"I ___ my homework before dinner."},{"id":"gym4_2","L":9,"t":"mc","k":1,"q":"She ___ the floor this morning."},{"id":"gym5_0","L":9,"t":"mc","k":0,"q":"I come to Galileo ___ bus."},{"id":"gym5_1","L":9,"t":"mc","k":1,"q":"He goes to school ___ foot."},{"id":"gym5_2","L":9,"t":"mc","k":0,"q":"How ___ you get home?"},{"id":"gym6_0","L":9,"t":"mc","k":0,"q":"___ children go to school in the morning."},{"id":"gym6_1","L":9,"t":"mc","k":0,"q":"Oleg lives in Russia, ___ Kei lives in Japan."},{"id":"gym6_2","L":9,"t":"mc","k":1,"q":"My city is ___ than my old city."},{"id":"t0","L":10,"t":"mc","k":0,"q":"Who wrote both books?"},{"id":"t1","L":10,"t":"mc","k":1,"q":"How many children are in This Is How We Do It?"},{"id":"t2","L":10,"t":"mc","k":2,"q":"How many children are in This Is How I Do It?"},{"id":"t3","L":10,"t":"mc","k":1,"q":"Which country is in both books?"},{"id":"t4","L":10,"t":"mc","k":0,"q":"Kei lives in …"},{"id":"t5","L":10,"t":"mc","k":1,"q":"Daphine lives in …"},{"id":"t6","L":10,"t":"mc","k":0,"q":"Kian lives in …"},{"id":"t7","L":10,"t":"mc","k":0,"q":"Susadh lives in …"},{"id":"t8","L":10,"t":"mc","k":1,"q":"Bosco lives in …"},{"id":"t9","L":10,"t":"mc","k":0,"q":"Neyser lives in …"},{"id":"t10","L":10,"t":"mc","k":1,"q":"Chores means …"},{"id":"t11","L":10,"t":"mc","k":1,"q":"To infer means …"},{"id":"t12","L":10,"t":"mc","k":1,"q":"On foot means …"},{"id":"t13","L":10,"t":"mc","k":0,"q":"To tend the cornfields means …"},{"id":"t14","L":10,"t":"mc","k":1,"q":"She ___ to school by bus."},{"id":"t15","L":10,"t":"mc","k":1,"q":"___ three bedrooms in my house."},{"id":"t16","L":10,"t":"mc","k":2,"q":"Last year I ___ in Mexico."},{"id":"t17","L":10,"t":"mc","k":1,"q":"This is ___ book."},{"id":"t18","L":10,"t":"mc","k":1,"q":"My brother is ___ than me."},{"id":"t19","L":10,"t":"mc","k":1,"q":"Romeo and his friends ___ soccer after school."},{"id":"twrite","L":10,"t":"long","k":"","q":"Unit test paragraph"}];
+
+var ROWS=[], KEY={}, sortBy='name', sortDir=1;
+
+function $(s){return document.querySelector(s);}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function norm(s){return String(s||'').toLowerCase().replace(/[^a-z0-9\u00c0-\u024f ]/g,'').replace(/\s+/g,' ').trim();}
+function hdrs(x){var h={apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY,'Content-Type':'application/json'};if(x)for(var k in x)h[k]=x[k];return h;}
+/* an answer counts as correct if it matches the key, or if one contains the
+   other and the shorter of the two is a real word (4+ characters) */
+function matches(ans,key){
+  var a=norm(ans),k=norm(key);
+  if(!a||!k) return false;
+  if(a===k) return true;
+  var shorter=a.length<k.length?a:k;
+  if(shorter.length<4) return false;
+  return a.indexOf(k)>-1||k.indexOf(a)>-1;
+}
+
+/* ---------- gate ---------- */
+$('#go').addEventListener('click',function(){
+  if($('#pw').value===PASS){ $('#gate').classList.add('off'); loadAll(); }
+  else $('#pwErr').textContent='That password is not right.';
+});
+$('#pw').addEventListener('keydown',function(e){ if(e.key==='Enter') $('#go').click(); });
+
+/* ---------- tabs ---------- */
+document.querySelector('nav.tabs').addEventListener('click',function(e){
+  var b=e.target.closest('button'); if(!b) return;
+  var bs=document.querySelectorAll('nav.tabs button');
+  for(var i=0;i<bs.length;i++) bs[i].setAttribute('aria-selected', bs[i]===b?'true':'false');
+  var ss=document.querySelectorAll('main section');
+  for(var j=0;j<ss.length;j++) ss[j].classList.toggle('on', ss[j].id===b.dataset.tab);
+  if(b.dataset.tab==='byq') renderByQ();
+  if(b.dataset.tab==='stats') renderStats();
+});
+
+/* ---------- load ---------- */
+function loadAll(){
+  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?select=*&order=name.asc',{headers:hdrs()})
+  .then(function(r){return r.json();})
+  .then(function(rows){
+    if(!Array.isArray(rows)){ $('#rosterNote').textContent='Could not read the table. Check that tih_work exists.'; return; }
+    var kr=rows.filter(function(r){return r.email===KEY_EMAIL;})[0];
+    KEY=(kr&&kr.data)||{};
+    ROWS=rows.filter(function(r){return r.email!==KEY_EMAIL;});
+    $('#count').textContent=ROWS.length+' students';
+    fillPeriods(); renderRoster(); fillQPicker(); renderKey();
+  })
+  .catch(function(){ $('#rosterNote').textContent='Network problem. Try Refresh.'; });
+}
+$('#btnRefresh').addEventListener('click',loadAll);
+
+function fillPeriods(){
+  var ps={}; ROWS.forEach(function(r){ if(r.period) ps[r.period]=1; });
+  var opts='<option value="">All periods</option>';
+  Object.keys(ps).sort().forEach(function(p){ opts+='<option>'+esc(p)+'</option>'; });
+  $('#fPeriod').innerHTML=opts; $('#qPeriod').innerHTML=opts;
+}
+
+/* ---------- scoring helpers ---------- */
+function openItems(){ return QMETA.filter(function(q){return q.t==='short'&&KEY[q.id]&&String(KEY[q.id]).trim();}); }
+
+function openScore(row){
+  var items=openItems(), got=0;
+  items.forEach(function(q){
+    if(matches((row.data||{})[q.id], KEY[q.id])) got++;
+  });
+  return {got:got,total:items.length};
+}
+
+function progress(row){
+  var d=row.data||{}, ids=QMETA.filter(function(q){return q.L<=8;}), done=0;
+  ids.forEach(function(q){ var v=d[q.id]; if(v!=null&&String(v).trim()!=='') done++; });
+  return ids.length?Math.round(done/ids.length*100):0;
+}
+
+/* ---------- roster ---------- */
+function rosterData(){
+  var p=$('#fPeriod').value, t=$('#fTurn').value, n=norm($('#fName').value);
+  var out=ROWS.filter(function(r){
+    if(p&&r.period!==p) return false;
+    if(t==='1'&&!r.turned_in) return false;
+    if(t==='0'&&r.turned_in) return false;
+    if(n&&norm(r.name).indexOf(n)<0) return false;
+    return true;
+  }).map(function(r){
+    var o=openScore(r);
+    return {r:r,name:r.name||r.email,period:r.period||'',level:({e:'Easier',s:'On level',c:'Challenge'})[r.level]||'',
+            pct:progress(r),auto:r.auto_score||0,autoT:r.auto_total||0,open:o.got,openT:o.total,
+            test:r.test_score==null?'':r.test_score,teacher:r.teacher_score==null?'':r.teacher_score,turned:!!r.turned_in};
+  });
+  out.sort(function(a,b){
+    var x=a[sortBy],y=b[sortBy];
+    if(typeof x==='string') return x.localeCompare(y)*sortDir;
+    return (x===y?0:(x<y?-1:1))*sortDir;
+  });
+  return out;
+}
+
+function renderRoster(){
+  var data=rosterData(),h='';
+  data.forEach(function(d,i){
+    h+='<tr><td><b>'+esc(d.name)+'</b><br><span class="small">'+esc(d.r.email)+'</span></td>'+
+       '<td>'+esc(d.period)+'</td><td>'+esc(d.level)+'</td>'+
+       '<td><div class="pbar"><i style="width:'+d.pct+'%"></i></div><span class="small">'+d.pct+'%</span></td>'+
+       '<td>'+d.auto+' / '+d.autoT+'</td>'+
+       '<td>'+(d.openT?d.open+' / '+d.openT:'<span class="small">no key yet</span>')+'</td>'+
+       '<td>'+(d.test===''?'&mdash;':d.test+' / 20')+'</td>'+
+       '<td><input class="ts" data-em="'+esc(d.r.email)+'" style="width:64px" value="'+esc(d.teacher)+'" placeholder="/100"></td>'+
+       '<td>'+(d.turned?'<span class="pill in">Turned in</span>':'<span class="pill out">Working</span>')+'</td>'+
+       '<td><button class="btn" data-open="'+esc(d.r.email)+'" style="background:#eef4f1">Open</button></td></tr>'+
+       '<tr id="det_'+i+'" style="display:none"><td colspan="10"><div class="det" data-det="'+esc(d.r.email)+'"></div></td></tr>';
+  });
+  document.querySelector('#tbl tbody').innerHTML=h||'<tr><td colspan="10" class="small">No students match this filter.</td></tr>';
+  $('#rosterNote').textContent=data.length+' shown';
+}
+
+document.querySelectorAll('#tbl th[data-s]').forEach(function(th){
+  th.addEventListener('click',function(){
+    if(sortBy===th.dataset.s) sortDir*=-1; else {sortBy=th.dataset.s;sortDir=1;}
+    renderRoster();
+  });
+});
+['fPeriod','fTurn','fName'].forEach(function(id){ $('#'+id).addEventListener('input',renderRoster); });
+
+document.addEventListener('click',function(e){
+  var b=e.target.closest('[data-open]'); if(!b) return;
+  var tr=b.closest('tr'), det=tr.nextElementSibling;
+  if(det.style.display==='none'){ det.style.display=''; renderDetail(b.dataset.open); } else det.style.display='none';
+});
+
+function renderDetail(email){
+  var row=ROWS.filter(function(r){return r.email===email;})[0]; if(!row) return;
+  var d=row.data||{},h='';
+  var byL={};
+  QMETA.forEach(function(q){ (byL[q.L]=byL[q.L]||[]).push(q); });
+  Object.keys(byL).sort(function(a,b){return a-b;}).forEach(function(L){
+    var label = L==='9'?'Grammar gym':(L==='10'?'Unit test':'Lesson '+L);
+    h+='<h3 style="margin-top:12px">'+label+'</h3>';
+    byL[L].forEach(function(q){
+      var v=d[q.id];
+      if(q.t==='draw'){
+        h+='<div class="qa'+(v?'':' blank')+'"><div class="q">'+esc(q.q)+'</div>'+(v?'<img class="dw" src="'+v+'">':'<div class="a small">not drawn</div>')+'</div>';
+        return;
+      }
+      var cls='', shown=(v==null||v==='')?'':v;
+      if(q.t==='mc'){
+        var opts=null; shown=(v===''||v==null)?'':('choice '+(Number(v)+1));
+        if(v!=null&&v!=='') cls=Number(v)===q.k?' right':' wrong';
+        if(cls===' wrong') shown+=' (correct: choice '+(q.k+1)+')';
+      } else if(q.t==='mt'){
+        if(v) cls=norm(v)===norm(q.k)?' right':' wrong';
+        if(cls===' wrong') shown=v+' (correct: '+q.k+')';
+      } else if(q.t==='short'&&KEY[q.id]){
+        if(v) cls=matches(v,KEY[q.id])?' right':' wrong';
+        if(cls===' wrong') shown=v+'  \u2192 key: '+KEY[q.id];
+      }
+      if(!shown) cls=' blank';
+      h+='<div class="qa'+cls+'"><div class="q">'+esc(q.q)+'</div><div class="a">'+esc(shown||'\u2014')+'</div></div>';
+    });
+  });
+  h+='<div style="margin-top:12px"><b>Note to student</b><br><textarea class="tn" data-em="'+esc(email)+'" rows="3" style="width:100%">'+esc(row.teacher_note||'')+'</textarea></div>';
+  document.querySelector('[data-det="'+email+'"]').innerHTML=h;
+}
+
+/* save teacher score / note */
+var tTimer=null;
+document.addEventListener('input',function(e){
+  var t=e.target;
+  if(!t.classList) return;
+  if(t.classList.contains('ts')||t.classList.contains('tn')){
+    clearTimeout(tTimer);
+    var em=t.dataset.em, field=t.classList.contains('ts')?'teacher_score':'teacher_note';
+    var val=t.classList.contains('ts')?(t.value===''?null:Number(t.value)):t.value;
+    tTimer=setTimeout(function(){
+      var body={}; body[field]=val;
+      fetch(SUPA_URL+'/rest/v1/'+TABLE+'?email=eq.'+encodeURIComponent(em),
+        {method:'PATCH',headers:hdrs({Prefer:'return=minimal'}),body:JSON.stringify(body)})
+      .then(function(){ var r=ROWS.filter(function(x){return x.email===em;})[0]; if(r) r[field]=val; });
+    },900);
+  }
+});
+
+/* ---------- by question ---------- */
+function fillQPicker(){
+  var h='';
+  QMETA.forEach(function(q){
+    if(q.t==='draw') return;
+    var label = q.L===9?'Gym':(q.L===10?'Test':'L'+q.L);
+    h+='<option value="'+q.id+'">'+label+' \u00b7 '+esc(q.q)+'</option>';
+  });
+  $('#qPick').innerHTML=h;
+}
+$('#qPick').addEventListener('change',renderByQ);
+$('#qPeriod').addEventListener('change',renderByQ);
+
+function renderByQ(){
+  var id=$('#qPick').value, p=$('#qPeriod').value;
+  var q=QMETA.filter(function(x){return x.id===id;})[0]; if(!q) return;
+  var h='<h3>'+esc(q.q)+'</h3>';
+  if(q.t==='mc'||q.t==='mt') h+='<p class="small">Correct answer: '+(q.t==='mc'?('choice '+(q.k+1)):esc(q.k))+'</p>';
+  if(q.t==='short') h+='<p class="small">Key: '+(KEY[id]?esc(KEY[id]):'not set \u2014 add it on the Answer key tab')+'</p>';
+  h+='<table><thead><tr><th>Student</th><th>Answer</th></tr></thead><tbody>';
+  var n=0;
+  ROWS.forEach(function(r){
+    if(p&&r.period!==p) return;
+    var v=(r.data||{})[id]; if(v==null||v==='') return;
+    n++;
+    var show=v, cls='';
+    if(q.t==='mc'){ show='choice '+(Number(v)+1); cls=Number(v)===q.k?'right':'wrong'; }
+    if(q.t==='mt') cls=norm(v)===norm(q.k)?'right':'wrong';
+    if(q.t==='short'&&KEY[id]) cls=matches(v,KEY[id])?'right':'wrong';
+    h+='<tr class="'+cls+'"><td>'+esc(r.name||r.email)+'</td><td class="qa '+cls+'" style="border:0">'+esc(show)+'</td></tr>';
+  });
+  h+='</tbody></table><p class="small">'+n+' students answered.</p>';
+  $('#qOut').innerHTML=h;
+}
+
+/* ---------- answer key ---------- */
+function renderKey(){
+  var items=QMETA.filter(function(q){return q.t==='short'&&!q.k;});
+  var h='';
+  var lastL=null;
+  items.forEach(function(q){
+    if(q.L!==lastL){ h+='<h3 style="margin-top:14px">Lesson '+q.L+'</h3>'; lastL=q.L; }
+    h+='<div class="kgrid"><div>'+esc(q.q)+'</div><div><input class="k kf" data-id="'+q.id+'" value="'+esc(KEY[q.id]||'')+'" placeholder="correct answer"></div></div>';
+  });
+  $('#keyList').innerHTML=h;
+}
+$('#btnSaveKey').addEventListener('click',function(){
+  var obj={};
+  document.querySelectorAll('.kf').forEach(function(i){ if(i.value.trim()) obj[i.dataset.id]=i.value.trim(); });
+  KEY=obj;
+  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email',{
+    method:'POST',headers:hdrs({Prefer:'resolution=merge-duplicates,return=minimal'}),
+    body:JSON.stringify({email:KEY_EMAIL,name:'ANSWER KEY',period:'',level:'s',data:obj,updated_at:new Date().toISOString()})
+  }).then(function(r){ $('#keyMsg').textContent=r.ok?'Answer key saved. Scores updated.':'Could not save.'; renderRoster(); })
+    .catch(function(){ $('#keyMsg').textContent='Network problem.'; });
+});
+
+/* ---------- stats ---------- */
+function renderStats(){
+  var n=ROWS.length||1;
+  var turned=ROWS.filter(function(r){return r.turned_in;}).length;
+  var avgP=Math.round(ROWS.reduce(function(s,r){return s+progress(r);},0)/n);
+  var tested=ROWS.filter(function(r){return r.test_score!=null;});
+  var avgT=tested.length?Math.round(tested.reduce(function(s,r){return s+r.test_score;},0)/tested.length*10)/10:'\u2014';
+  $('#statTop').innerHTML=
+    '<span class="stat"><b>'+ROWS.length+'</b>students</span>'+
+    '<span class="stat"><b>'+turned+'</b>turned in</span>'+
+    '<span class="stat"><b>'+avgP+'%</b>average progress</span>'+
+    '<span class="stat"><b>'+avgT+'</b>average unit test (of 20)</span>';
+
+  var auto=QMETA.filter(function(q){return q.t==='mc'||q.t==='mt';});
+  var rates=auto.map(function(q){
+    var att=0,got=0;
+    ROWS.forEach(function(r){ var v=(r.data||{})[q.id]; if(v==null||v==='') return; att++;
+      if(q.t==='mc'){ if(Number(v)===q.k) got++; } else if(norm(v)===norm(q.k)) got++; });
+    return {q:q,att:att,pct:att?Math.round(got/att*100):null};
+  }).filter(function(x){return x.pct!==null&&x.att>=3;}).sort(function(a,b){return a.pct-b.pct;}).slice(0,12);
+  $('#statBars').innerHTML = rates.length ? rates.map(function(x){
+    return '<div><span>'+esc(x.q.q.slice(0,60))+'</span><div class="pbar"><i style="width:'+x.pct+'%;background:'+(x.pct<60?'var(--bad)':(x.pct<80?'var(--gold)':'var(--ok)'))+'"></i></div><span>'+x.pct+'%</span></div>';
+  }).join('') : '<p class="small">Not enough answers yet.</p>';
+
+  var ls='';
+  for(var L=1;L<=8;L++){
+    var ids=QMETA.filter(function(q){return q.L===L;});
+    var tot=0;
+    ROWS.forEach(function(r){ var d=r.data||{},done=0;
+      ids.forEach(function(q){ if(d[q.id]!=null&&String(d[q.id]).trim()!=='') done++; });
+      tot+=ids.length?done/ids.length:0; });
+    var pct=Math.round(tot/n*100);
+    ls+='<div><span>Lesson '+L+'</span><div class="pbar"><i style="width:'+pct+'%"></i></div><span>'+pct+'%</span></div>';
+  }
+  $('#statLessons').innerHTML=ls;
+}
+
+/* ---------- csv ---------- */
+$('#btnCSV').addEventListener('click',function(){
+  var cols=['name','email','period','level','progress','auto_score','auto_total','open_score','open_total','test_score','teacher_score','turned_in','updated_at'];
+  var qids=QMETA.filter(function(q){return q.t!=='draw';}).map(function(q){return q.id;});
+  var head=cols.concat(qids);
+  var lines=[head.map(cq).join(',')];
+  ROWS.forEach(function(r){
+    var o=openScore(r), d=r.data||{};
+    var base=[r.name,r.email,r.period,r.level,progress(r)+'%',r.auto_score,r.auto_total,o.got,o.total,r.test_score,r.teacher_score,r.turned_in?'yes':'no',r.updated_at];
+    lines.push(base.concat(qids.map(function(id){return d[id];})).map(cq).join(','));
+  });
+  var blob=new Blob(['\ufeff'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='this-is-how-unit-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+});
+function cq(v){ var s=String(v==null?'':v); if(s.length>600) s=s.slice(0,600); return '"'+s.replace(/"/g,'""')+'"'; }
+</script>
+</body>
+</html>
