@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>My Favorite Things — Mr. Toby</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pine:#15573b;
+  --pine-dk:#0e3b28;
+  --pine-lt:#2d7a56;
+  --paper:#fffdf8;
+  --ink:#2c2c29;
+  --ink-soft:#6b6b64;
+  --line:#e3ded2;
+  --gold:#e0a336;
+  --rose:#d0697a;
+  --ok:#2e8b57;
+  --warn:#c9762f;
+  --r:14px;
+  --shadow:0 2px 10px rgba(20,40,30,.09);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:'Nunito',system-ui,-apple-system,sans-serif;
+  background:var(--paper); color:var(--ink);
+  font-size:17px; line-height:1.5;
+  -webkit-text-size-adjust:100%;
+}
+h1,h2,h3{margin:0 0 .4em; line-height:1.2; font-weight:800}
+button{font-family:inherit;font-size:inherit;cursor:pointer}
+input,textarea{font-family:inherit;font-size:inherit}
+
+/* ---------- toolbar ---------- */
+#bar{
+  position:sticky; top:0; z-index:60;
+  background:var(--pine); color:#fff;
+  padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px));
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  box-shadow:0 2px 8px rgba(0,0,0,.18);
+}
+#bar .brand{font-weight:800; font-size:18px; letter-spacing:.2px; margin-right:2px}
+#bar .who{font-size:14px; opacity:.9}
+#bar .spacer{flex:1}
+#bar button{
+  background:rgba(255,255,255,.14); color:#fff; border:1px solid rgba(255,255,255,.3);
+  border-radius:999px; padding:6px 13px; font-weight:700; font-size:14px;
+}
+#bar button:hover{background:rgba(255,255,255,.26)}
+#bar button.primary{background:var(--gold); border-color:var(--gold); color:#3a2a06}
+#bar select{
+  background:rgba(255,255,255,.14); color:#fff; border:1px solid rgba(255,255,255,.3);
+  border-radius:999px; padding:6px 10px; font-weight:700; font-size:14px;
+}
+#bar select option{color:#000}
+#dot{width:10px;height:10px;border-radius:50%;background:#8fbfa6;transition:background .3s}
+#dot.saving{background:var(--gold)}
+#dot.saved{background:#7ee2a8}
+#dot.err{background:#ff8080}
+
+/* ---------- step tabs ---------- */
+#steps{
+  position:sticky; top:53px; z-index:55;
+  display:flex; gap:0; background:var(--pine-dk);
+  overflow-x:auto; -webkit-overflow-scrolling:touch;
+}
+#steps button{
+  flex:1 0 auto; background:none; border:none; color:#cfe4d8;
+  padding:11px 16px; font-weight:700; font-size:15px; white-space:nowrap;
+  border-bottom:3px solid transparent;
+}
+#steps button.on{color:#fff; border-bottom-color:var(--gold)}
+
+main{max-width:1000px; margin:0 auto; padding:22px 16px 80px}
+.screen{display:none}
+.screen.on{display:block}
+
+.lede{color:var(--ink-soft); margin:0 0 20px; max-width:58ch}
+
+/* ---------- login ---------- */
+#login{max-width:440px; margin:8vh auto; padding:26px 24px;
+  border:1px solid var(--line); border-radius:20px; background:#fff; box-shadow:var(--shadow)}
+#login h1{font-family:'Caveat','Segoe Print','Bradley Hand',cursive; font-size:46px; font-weight:700; text-align:center; color:var(--pine)}
+#login label{display:block; font-weight:700; font-size:14px; margin:14px 0 5px}
+#login input,#login select{width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:10px; background:#fffdf8}
+#login button{width:100%; margin-top:20px; padding:13px; border:none; border-radius:12px;
+  background:var(--pine); color:#fff; font-weight:800; font-size:17px}
+
+/* ---------- organizer grid ---------- */
+.grid10{display:grid; grid-template-columns:repeat(2,1fr); gap:13px}
+@media(max-width:640px){.grid10{grid-template-columns:1fr}}
+.cell{
+  border:2px solid var(--c,#ccc); border-radius:var(--r);
+  background:var(--cb,#fff); padding:12px 13px 13px;
+}
+.cell .top{display:flex; align-items:baseline; gap:7px; margin-bottom:7px}
+.cell .num{font-weight:800; color:var(--c); font-size:15px; min-width:19px}
+.cell .lab{font-weight:800; font-size:17px}
+.cell .emo{font-size:17px; letter-spacing:2px}
+.cell .tr{
+  display:block; font-size:14px; color:var(--ink-soft); margin:-3px 0 7px 26px;
+  font-weight:600; min-height:1.2em;
+}
+.cell input{
+  width:100%; padding:10px 11px; border:1px solid var(--line); border-radius:9px;
+  background:#fff; font-weight:600;
+}
+.cell input:focus{outline:2px solid var(--c); outline-offset:1px}
+
+/* ---------- sentences ---------- */
+.frame{
+  background:#fff; border:1px solid var(--line); border-radius:var(--r);
+  padding:14px 15px; margin-bottom:11px;
+}
+.frame .stem{font-weight:700; color:var(--pine); margin-bottom:6px; font-size:15px}
+.frame textarea{
+  width:100%; padding:10px 11px; border:1px solid var(--line); border-radius:9px;
+  min-height:52px; resize:vertical; font-weight:600; line-height:1.45;
+}
+.frame textarea:focus{outline:2px solid var(--pine-lt); outline-offset:1px}
+.hintbar{
+  background:#f4f7f2; border:1px dashed var(--pine-lt); border-radius:var(--r);
+  padding:13px 15px; margin-bottom:20px; font-weight:700; color:var(--pine);
+}
+.hintbar span{font-family:'Caveat','Segoe Print','Bradley Hand',cursive; font-size:26px; font-weight:700}
+
+/* ---------- poster ---------- */
+#poster{
+  background:#fff; border:1px solid var(--line); border-radius:18px;
+  padding:26px 20px 30px; box-shadow:var(--shadow);
+}
+#poster h2.ptitle{
+  font-family:'Caveat','Segoe Print','Bradley Hand',cursive; font-weight:700; font-size:46px;
+  text-align:center; margin:0 0 22px; color:var(--ink);
+}
+.pgrid{display:grid; grid-template-columns:repeat(5,1fr); gap:18px 12px}
+@media(max-width:900px){.pgrid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:600px){.pgrid{grid-template-columns:repeat(2,1fr)}}
+.pcell{text-align:center}
+.pcell .art{
+  width:100%; aspect-ratio:1/1; border:1px dashed var(--line); border-radius:12px;
+  background:#fff; display:block; cursor:pointer; object-fit:contain;
+}
+.pcell .art.empty{
+  display:flex; align-items:center; justify-content:center;
+  color:#c3bdb0; font-size:13px; font-weight:700; text-align:center; padding:8px;
+}
+.pcell .cap{
+  font-family:'Caveat','Segoe Print','Bradley Hand',cursive; font-size:25px; font-weight:700;
+  margin-top:7px; line-height:1.15; word-break:break-word;
+}
+.pcell .catlab{font-size:11px; color:var(--ink-soft); font-weight:700; letter-spacing:.3px}
+
+/* ---------- draw modal ---------- */
+#modal{
+  position:fixed; inset:0; z-index:100; background:rgba(20,30,25,.55);
+  display:none; align-items:center; justify-content:center; padding:14px;
+}
+#modal.on{display:flex}
+#modalBox{
+  background:#fff; border-radius:18px; padding:16px; width:100%; max-width:430px;
+  max-height:94vh; overflow:auto;
+  box-shadow:0 12px 40px rgba(0,0,0,.3);
+}
+#modalBox h3{font-size:19px; margin-bottom:3px}
+#modalBox .sub{color:var(--ink-soft); font-size:14px; margin-bottom:11px; font-weight:600}
+#pad{width:100%; max-height:54vh; aspect-ratio:1/1; border:1px solid var(--line); border-radius:12px; touch-action:none; background:#fff; display:block}
+.tools{display:flex; align-items:center; gap:7px; flex-wrap:wrap; margin:11px 0}
+.sw{width:27px;height:27px;border-radius:50%;border:2px solid #fff; box-shadow:0 0 0 1px var(--line); cursor:pointer}
+.sw.on{box-shadow:0 0 0 3px var(--pine)}
+.tools .sz{width:34px;height:30px;border-radius:8px;border:1px solid var(--line);background:#fff;display:grid;place-items:center}
+.tools .sz.on{border-color:var(--pine); background:#eef5f0}
+.tools .sz i{display:block;background:#333;border-radius:50%}
+.mbtns{display:flex; gap:8px}
+.mbtns button{flex:1; padding:11px; border-radius:11px; border:1px solid var(--line); background:#fff; font-weight:700}
+.mbtns button.save{background:var(--pine); color:#fff; border-color:var(--pine)}
+
+/* ---------- class gallery ---------- */
+.gal{display:grid; grid-template-columns:repeat(auto-fill,minmax(215px,1fr)); gap:16px}
+.gcard{border:1px solid var(--line); border-radius:15px; background:#fff; padding:13px; box-shadow:var(--shadow)}
+.gcard h4{margin:0 0 9px; font-size:16px}
+.gmini{display:grid; grid-template-columns:repeat(5,1fr); gap:4px}
+.gmini div{aspect-ratio:1/1; border-radius:5px; background:#f6f4ee; background-size:contain; background-position:center; background-repeat:no-repeat}
+.tally{background:#fff; border:1px solid var(--line); border-radius:var(--r); padding:15px 17px; margin-bottom:22px}
+.tally .row{display:flex; gap:10px; padding:6px 0; border-bottom:1px solid #f1ede4; align-items:baseline}
+.tally .row:last-child{border-bottom:none}
+.tally .k{font-weight:800; min-width:120px; color:var(--pine)}
+.tally .v{font-weight:600}
+.tally .n{color:var(--ink-soft); font-size:14px}
+
+/* ---------- teacher ---------- */
+table.t{width:100%; border-collapse:collapse; background:#fff; font-size:15px}
+table.t th,table.t td{border:1px solid var(--line); padding:7px 9px; text-align:left}
+table.t th{background:#f3f6f2; font-weight:800}
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:800}
+.pill.yes{background:#dcf3e4;color:#1d6b3f}
+.pill.no{background:#f6ece0;color:#8a5a22}
+
+.btn{
+  border:1px solid var(--line); background:#fff; border-radius:11px;
+  padding:10px 16px; font-weight:700;
+}
+.btn.go{background:var(--pine); color:#fff; border-color:var(--pine)}
+.actions{display:flex; gap:9px; flex-wrap:wrap; margin-top:24px}
+
+/* ---------- present mode ---------- */
+body.present #bar,body.present #steps,body.present .lede,body.present .actions{display:none}
+body.present main{max-width:none;padding:0}
+body.present .screen{display:none !important}
+body.present #s-poster h2:not(.ptitle){display:none}
+body.present #s-poster{display:block !important}
+body.present #poster{border:none;box-shadow:none;border-radius:0;padding:18px 14px}
+body.present .pcell .art{cursor:default;border-style:solid;border-color:#f0ece2}
+#exitPresent{display:none; position:fixed; top:10px; right:10px; z-index:90;
+  background:var(--pine); color:#fff; border:none; border-radius:999px; padding:9px 16px; font-weight:800}
+body.present #exitPresent{display:block}
+#saidIt{display:none; position:fixed; left:0; right:0; bottom:0; z-index:90;
+  background:var(--pine); color:#fff; padding:16px 18px calc(16px + env(safe-area-inset-bottom,0px));
+  font-family:'Caveat','Segoe Print','Bradley Hand',cursive; font-size:31px; font-weight:700; text-align:center}
+body.present #saidIt.on{display:block}
+
+@media print{
+  #bar,#steps,.lede,.actions,#exitPresent,#saidIt,.hintbar{display:none !important}
+  .screen{display:none !important}
+  #s-poster{display:block !important}
+  #poster{border:none;box-shadow:none;padding:0}
+  .pcell .art{border:1px solid #ddd}
+  body{background:#fff}
+  .pgrid{grid-template-columns:repeat(5,1fr) !important}
+}
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<div id="login">
+  <h1>My Favorite Things</h1>
+  <label for="inName">Your name</label>
+  <input id="inName" autocomplete="name" placeholder="First and last name">
+  <label for="inPeriod">Class period</label>
+  <select id="inPeriod">
+    <option value="">Choose…</option>
+    <option>Period 1</option><option>Period 2</option><option>Period 3</option>
+    <option>Period 4</option><option>Period 5</option><option>Period 6</option>
+  </select>
+  <label for="inLang">Your language</label>
+  <select id="inLang">
+    <option value="none">English only</option>
+    <option value="es">Español</option>
+    <option value="zh">中文</option>
+    <option value="ar">العربية</option>
+    <option value="vi">Tiếng Việt</option>
+    <option value="th">ไทย</option>
+    <option value="ne">नेपाली</option>
+  </select>
+  <button id="btnStart">Start</button>
+</div>
+
+<!-- ================= APP ================= -->
+<div id="app" style="display:none">
+
+<div id="bar">
+  <span class="brand">My Favorite Things</span>
+  <span id="dot" title="Saving status"></span>
+  <span class="who" id="whoLbl"></span>
+  <span class="spacer"></span>
+  <select id="langSel" aria-label="Language">
+    <option value="none">English</option>
+    <option value="es">Español</option>
+    <option value="zh">中文</option>
+    <option value="ar">العربية</option>
+    <option value="vi">Tiếng Việt</option>
+    <option value="th">ไทย</option>
+    <option value="ne">नेपाली</option>
+  </select>
+  <button id="btnPresent">Present</button>
+  <button id="btnPrint">Print</button>
+  <button id="btnTurnIn" class="primary">Turn in</button>
+</div>
+
+<div id="steps">
+  <button data-s="words" class="on">1. My words</button>
+  <button data-s="sent">2. My sentences</button>
+  <button data-s="poster">3. My poster</button>
+  <button data-s="class">Our class</button>
+  <button data-s="teacher">Teacher</button>
+</div>
+
+<main>
+
+  <!-- STEP 1 -->
+  <section class="screen on" id="s-words">
+    <h2>Write your favorite things</h2>
+    <p class="lede">One word or a few words in each box. You can write in English. If you don't know the English word yet, write it in your language and we'll fix it together.</p>
+    <div class="grid10" id="grid10"></div>
+    <div class="frame" style="margin-top:13px">
+      <div class="stem">11. Other favorites (anything you want)</div>
+      <textarea id="other" rows="2" placeholder="Anything else you love…"></textarea>
+    </div>
+    <div class="actions">
+      <button class="btn go" data-go="sent">Next: my sentences →</button>
+    </div>
+  </section>
+
+  <!-- STEP 2 -->
+  <section class="screen" id="s-sent">
+    <h2>Write your sentences</h2>
+    <p class="lede">Each sentence is already started for you. Finish it, and check that it ends with a period.</p>
+    <div class="hintbar">Sentence frame: <span>My favorite ______ is ______.</span></div>
+    <div id="frames"></div>
+    <div class="actions">
+      <button class="btn" data-go="words">← Back to my words</button>
+      <button class="btn go" data-go="poster">Next: my poster →</button>
+    </div>
+  </section>
+
+  <!-- STEP 3 -->
+  <section class="screen" id="s-poster">
+    <h2>Make your poster</h2>
+    <p class="lede">Tap a square to draw your picture. Color it in. Then use Present to show your poster to the class.</p>
+    <div id="poster">
+      <h2 class="ptitle" id="posterTitle">My Favorite Things</h2>
+      <div class="pgrid" id="pgrid"></div>
+    </div>
+    <div class="actions">
+      <button class="btn" data-go="sent">← Back to my sentences</button>
+      <button class="btn go" id="btnPresent2">Present my poster</button>
+    </div>
+  </section>
+
+  <!-- CLASS -->
+  <section class="screen" id="s-class">
+    <h2>Our class</h2>
+    <p class="lede">Everyone's posters, and what our class picked most often.</p>
+    <button class="btn" id="btnRefresh" style="margin-bottom:16px">Refresh</button>
+    <div id="tally"></div>
+    <div class="gal" id="gal"></div>
+  </section>
+
+  <!-- TEACHER -->
+  <section class="screen" id="s-teacher">
+    <h2>Teacher</h2>
+    <div id="tGate">
+      <p class="lede">Enter the password to see student work.</p>
+      <input id="tPass" type="password" placeholder="Password" style="padding:11px;border:1px solid var(--line);border-radius:10px">
+      <button class="btn go" id="tGo">Open</button>
+    </div>
+    <div id="tPanel" style="display:none">
+      <div class="actions" style="margin:0 0 16px">
+        <select id="tPeriod" class="btn"><option value="">All periods</option></select>
+        <button class="btn" id="tRefresh">Refresh</button>
+        <button class="btn" id="tCsv">Export CSV</button>
+      </div>
+      <div id="tOut"></div>
+    </div>
+  </section>
+
+</main>
+
+<button id="exitPresent">Done presenting</button>
+<div id="saidIt"></div>
+</div>
+
+<!-- ================= DRAW MODAL ================= -->
+<div id="modal">
+  <div id="modalBox">
+    <h3 id="mTitle">Draw</h3>
+    <div class="sub" id="mSub"></div>
+    <canvas id="pad"></canvas>
+    <div class="tools" id="swatches"></div>
+    <div class="tools" id="sizes"></div>
+    <div class="mbtns">
+      <button id="mUndo">Undo</button>
+      <button id="mClear">Clear</button>
+      <button id="mCancel">Cancel</button>
+      <button id="mSave" class="save">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   CONFIG
+   ========================================================= */
+var SUPA_URL = 'https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var TABLE = 'favorites_work';
+var TEACHER_PASS = 'galileo2026';
+var LSKEY = 'favthings_v1';
+
+/* =========================================================
+   CATEGORIES  (order matches the paper organizer)
+   ========================================================= */
+var CATS = [
+  {k:'color',    en:'color',            emo:'🌈',          c:'#e0533f'},
+  {k:'food',     en:'food',             emo:'🍕🍲',        c:'#d98324'},
+  {k:'animal',   en:'animal',           emo:'🐱🦈',        c:'#c9a227'},
+  {k:'place',    en:'place',            emo:'🏙️🏞️',        c:'#5a9e3f'},
+  {k:'drink',    en:'drink',            emo:'🥤☕',        c:'#2e8b70'},
+  {k:'activity', en:'activity',         emo:'🎮💃🎤',      c:'#2f7fa8'},
+  {k:'sport',    en:'sport',            emo:'⚽🏀',        c:'#3f5fae'},
+  {k:'class',    en:'class',            emo:'🏫',          c:'#7150a8'},
+  {k:'show',     en:'movie / TV show',  emo:'📺🎬',        c:'#a8479a'},
+  {k:'music',    en:'music / artist',   emo:'🎶',          c:'#c2456b'}
+];
+
+/* Fixed translations — small closed set, so no network call needed. */
+var TR = {
+  color:{es:'color',zh:'颜色',ar:'لون',vi:'màu sắc',th:'สี',ne:'रङ'},
+  food:{es:'comida',zh:'食物',ar:'طعام',vi:'món ăn',th:'อาหาร',ne:'खाना'},
+  animal:{es:'animal',zh:'动物',ar:'حيوان',vi:'con vật',th:'สัตว์',ne:'जनावर'},
+  place:{es:'lugar',zh:'地方',ar:'مكان',vi:'nơi chốn',th:'สถานที่',ne:'ठाउँ'},
+  drink:{es:'bebida',zh:'饮料',ar:'مشروب',vi:'đồ uống',th:'เครื่องดื่ม',ne:'पेय'},
+  activity:{es:'actividad',zh:'活动',ar:'نشاط',vi:'hoạt động',th:'กิจกรรม',ne:'गतिविधि'},
+  sport:{es:'deporte',zh:'运动',ar:'رياضة',vi:'môn thể thao',th:'กีฬา',ne:'खेल'},
+  class:{es:'clase',zh:'课',ar:'حصة دراسية',vi:'môn học',th:'วิชา',ne:'कक्षा'},
+  show:{es:'película / programa de TV',zh:'电影 / 电视节目',ar:'فيلم / برنامج تلفزيوني',vi:'phim / chương trình TV',th:'ภาพยนตร์ / รายการทีวี',ne:'चलचित्र / टिभी कार्यक्रम'},
+  music:{es:'música / artista',zh:'音乐 / 歌手',ar:'موسيقى / فنان',vi:'âm nhạc / ca sĩ',th:'เพลง / ศิลปิน',ne:'संगीत / कलाकार'}
+};
+
+/* =========================================================
+   STATE
+   ========================================================= */
+var S = {
+  name:'', period:'', lang:'none',
+  answers:{}, other:'', sentences:{}, drawings:{}, turnedIn:false
+};
+var dirty = false, saveTimer = null;
+
+function $(id){ return document.getElementById(id); }
+function esc(s){
+  return String(s==null?'':s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+function tint(hex,a){
+  var r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return 'rgba('+r+','+g+','+b+','+a+')';
+}
+function markDirty(){
+  dirty = true;
+  setDot('saving');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(save, 2500);
+  try{ localStorage.setItem(LSKEY, JSON.stringify(S)); }catch(e){}
+}
+function setDot(cls){
+  var d=$('dot'); if(!d) return;
+  d.className = cls || '';
+}
+
+/* =========================================================
+   SUPABASE
+   ========================================================= */
+function headers(extra){
+  var h = {
+    'apikey': SUPA_KEY,
+    'Authorization': 'Bearer ' + SUPA_KEY,
+    'Content-Type': 'application/json'
+  };
+  if(extra){ for(var k in extra) h[k]=extra[k]; }
+  return h;
+}
+
+function save(){
+  if(!S.name || !S.period) return;
+  var row = {
+    student_name: S.name,
+    class_period: S.period,
+    data: {
+      lang:S.lang, answers:S.answers, other:S.other,
+      sentences:S.sentences, drawings:S.drawings
+    },
+    turned_in: S.turnedIn,
+    updated_at: new Date().toISOString()
+  };
+  fetch(SUPA_URL + '/rest/v1/' + TABLE + '?on_conflict=student_name,class_period', {
+    method:'POST',
+    headers: headers({'Prefer':'resolution=merge-duplicates,return=minimal'}),
+    body: JSON.stringify(row)
+  }).then(function(r){
+    if(r.ok){ dirty=false; setDot('saved'); }
+    else { setDot('err'); r.text().then(function(t){ console.warn('save failed', r.status, t); }); }
+  }).catch(function(e){ setDot('err'); console.warn(e); });
+}
+
+function load(){
+  var q = SUPA_URL + '/rest/v1/' + TABLE
+    + '?student_name=eq.' + encodeURIComponent(S.name)
+    + '&class_period=eq.' + encodeURIComponent(S.period)
+    + '&select=*';
+  return fetch(q, {headers:headers()})
+    .then(function(r){ return r.ok ? r.json() : []; })
+    .then(function(rows){
+      if(rows && rows.length){
+        var d = rows[0].data || {};
+        S.answers   = d.answers   || {};
+        S.other     = d.other     || '';
+        S.sentences = d.sentences || {};
+        S.drawings  = d.drawings  || {};
+        if(d.lang) S.lang = d.lang;
+        S.turnedIn = !!rows[0].turned_in;
+      }
+    })
+    .catch(function(){});
+}
+
+function fetchClass(period){
+  var q = SUPA_URL + '/rest/v1/' + TABLE + '?select=*&order=student_name.asc';
+  if(period) q += '&class_period=eq.' + encodeURIComponent(period);
+  return fetch(q, {headers:headers()})
+    .then(function(r){ return r.ok ? r.json() : []; })
+    .catch(function(){ return []; });
+}
+
+/* =========================================================
+   STEP 1 — organizer
+   ========================================================= */
+function buildGrid(){
+  var h = '';
+  for(var i=0;i<CATS.length;i++){
+    var c = CATS[i];
+    h += '<div class="cell" style="--c:'+c.c+';--cb:'+tint(c.c,.055)+'">'
+       +   '<div class="top">'
+       +     '<span class="num">'+(i+1)+'.</span>'
+       +     '<span class="lab">Favorite '+esc(c.en)+'</span>'
+       +     '<span class="emo">'+c.emo+'</span>'
+       +   '</div>'
+       +   '<span class="tr" id="tr-'+c.k+'"></span>'
+       +   '<input id="in-'+c.k+'" data-k="'+c.k+'" placeholder="Write here…" autocomplete="off">'
+       + '</div>';
+  }
+  $('grid10').innerHTML = h;
+
+  CATS.forEach(function(c){
+    var el = $('in-'+c.k);
+    el.value = S.answers[c.k] || '';
+    el.addEventListener('input', function(){
+      S.answers[c.k] = el.value;
+      markDirty();
+      syncSentence(c.k);
+      renderPoster();
+    });
+  });
+  $('other').value = S.other || '';
+  $('other').addEventListener('input', function(){ S.other = $('other').value; markDirty(); });
+  paintTranslations();
+}
+
+function paintTranslations(){
+  CATS.forEach(function(c){
+    var el = $('tr-'+c.k);
+    if(!el) return;
+    if(S.lang === 'none'){ el.textContent = ''; return; }
+    var t = (TR[c.k]||{})[S.lang] || '';
+    el.textContent = t;
+    el.dir = (S.lang === 'ar') ? 'rtl' : 'ltr';
+  });
+}
+
+/* =========================================================
+   STEP 2 — sentences
+   ========================================================= */
+function stemFor(c){ return 'My favorite ' + c.en + ' is '; }
+
+function syncSentence(k){
+  /* If the student hasn't customised the sentence, keep it in step with box 1. */
+  var c = null;
+  for(var i=0;i<CATS.length;i++){ if(CATS[i].k===k) c=CATS[i]; }
+  if(!c) return;
+  var ta = $('sen-'+k);
+  var auto = stemFor(c) + (S.answers[k]||'') + (S.answers[k] ? '.' : '');
+  var cur = S.sentences[k];
+  var wasAuto = !cur || cur === stemFor(c) || cur.indexOf(stemFor(c)) === 0;
+  if(wasAuto){
+    S.sentences[k] = auto;
+    if(ta) ta.value = auto;
+  }
+}
+
+function buildFrames(){
+  var h='';
+  for(var i=0;i<CATS.length;i++){
+    var c=CATS[i];
+    h += '<div class="frame">'
+       +   '<div class="stem">'+(i+1)+'. '+esc(stemFor(c))+'______.</div>'
+       +   '<textarea id="sen-'+c.k+'" rows="2"></textarea>'
+       + '</div>';
+  }
+  $('frames').innerHTML = h;
+  CATS.forEach(function(c){
+    var ta = $('sen-'+c.k);
+    ta.value = S.sentences[c.k] || (stemFor(c) + (S.answers[c.k]||'') + (S.answers[c.k]?'.':''));
+    S.sentences[c.k] = ta.value;
+    ta.addEventListener('input', function(){ S.sentences[c.k] = ta.value; markDirty(); });
+  });
+}
+
+/* =========================================================
+   STEP 3 — poster
+   ========================================================= */
+function renderPoster(){
+  var h='';
+  for(var i=0;i<CATS.length;i++){
+    var c = CATS[i];
+    var word = (S.answers[c.k]||'').trim();
+    var img = S.drawings[c.k];
+    if(img){
+      h += '<div class="pcell"><img class="art" src="'+img+'" data-k="'+c.k+'" alt="'+esc(word)+'">';
+    } else {
+      h += '<div class="pcell"><div class="art empty" data-k="'+c.k+'">Tap to draw</div>';
+    }
+    h += '<div class="cap">'+ (word ? esc(word) : '—') +'</div>'
+       + '<div class="catlab">'+esc(c.en)+'</div></div>';
+  }
+  $('pgrid').innerHTML = h;
+  $('posterTitle').textContent = S.name ? (S.name.split(' ')[0] + "'s Favorite Things") : 'My Favorite Things';
+
+  var arts = $('pgrid').querySelectorAll('.art');
+  for(var j=0;j<arts.length;j++){
+    arts[j].addEventListener('click', function(){
+      if(document.body.classList.contains('present')){ speakCell(this.getAttribute('data-k')); return; }
+      openPad(this.getAttribute('data-k'));
+    });
+  }
+}
+
+/* =========================================================
+   DRAW PAD
+   ========================================================= */
+var PAL = ['#222222','#e0533f','#d98324','#c9a227','#3f8f3f','#2f7fa8','#3f5fae','#7150a8','#c2456b','#8a5a3b','#ffffff'];
+var SIZES = [3,7,14];
+var padState = { key:null, ctx:null, color:'#222222', size:7, drawing:false, strokes:[], cur:null };
+
+function setupPad(){
+  var sw='';
+  for(var i=0;i<PAL.length;i++){
+    sw += '<span class="sw'+(i===0?' on':'')+'" data-c="'+PAL[i]+'" style="background:'+PAL[i]+'"></span>';
+  }
+  $('swatches').innerHTML = sw + '<span style="font-size:12px;color:var(--ink-soft);font-weight:700;margin-left:4px">last one erases</span>';
+
+  var sz='';
+  for(var j=0;j<SIZES.length;j++){
+    sz += '<button class="sz'+(j===1?' on':'')+'" data-s="'+SIZES[j]+'"><i style="width:'+SIZES[j]+'px;height:'+SIZES[j]+'px"></i></button>';
+  }
+  $('sizes').innerHTML = sz;
+
+  $('swatches').addEventListener('click', function(e){
+    var t = e.target; if(!t.classList.contains('sw')) return;
+    padState.color = t.getAttribute('data-c');
+    var all=$('swatches').querySelectorAll('.sw');
+    for(var i=0;i<all.length;i++) all[i].classList.remove('on');
+    t.classList.add('on');
+  });
+  $('sizes').addEventListener('click', function(e){
+    var t = e.target.closest ? e.target.closest('.sz') : null; if(!t) return;
+    padState.size = parseInt(t.getAttribute('data-s'),10);
+    var all=$('sizes').querySelectorAll('.sz');
+    for(var i=0;i<all.length;i++) all[i].classList.remove('on');
+    t.classList.add('on');
+  });
+
+  var pad = $('pad');
+  pad.addEventListener('pointerdown', padDown);
+  pad.addEventListener('pointermove', padMove);
+  window.addEventListener('pointerup', padUp);
+
+  $('mUndo').addEventListener('click', function(){ padState.strokes.pop(); redraw(); });
+  $('mClear').addEventListener('click', function(){ padState.strokes=[]; redraw(); });
+  $('mCancel').addEventListener('click', closePad);
+  $('mSave').addEventListener('click', savePad);
+}
+
+function openPad(k){
+  var c=null; for(var i=0;i<CATS.length;i++){ if(CATS[i].k===k) c=CATS[i]; }
+  padState.key = k;
+  padState.strokes = [];
+  $('mTitle').textContent = 'Draw your favorite ' + (c?c.en:'thing');
+  $('mSub').textContent = (S.answers[k]||'').trim() ? ('You wrote: ' + S.answers[k]) : 'Tip: write your word in box 1 first.';
+  $('modal').classList.add('on');
+
+  var pad = $('pad');
+  var w = pad.clientWidth || 340;
+  pad.width = 560; pad.height = 560;
+  padState.ctx = pad.getContext('2d');
+  padState.scale = 560 / w;
+
+  /* if there is an existing drawing, load it as a background layer */
+  padState.bg = null;
+  if(S.drawings[k]){
+    var im = new Image();
+    im.onload = function(){ padState.bg = im; redraw(); };
+    im.src = S.drawings[k];
+  }
+  redraw();
+}
+function closePad(){ $('modal').classList.remove('on'); padState.key=null; }
+
+function padPos(e){
+  var r = $('pad').getBoundingClientRect();
+  return { x:(e.clientX-r.left)*(560/r.width), y:(e.clientY-r.top)*(560/r.height) };
+}
+function padDown(e){
+  e.preventDefault();
+  padState.drawing = true;
+  padState.cur = { c:padState.color, w:padState.size*2, pts:[padPos(e)] };
+  padState.strokes.push(padState.cur);
+  redraw();
+}
+function padMove(e){
+  if(!padState.drawing) return;
+  e.preventDefault();
+  padState.cur.pts.push(padPos(e));
+  redraw();
+}
+function padUp(){ padState.drawing=false; padState.cur=null; }
+
+function redraw(){
+  var ctx = padState.ctx; if(!ctx) return;
+  ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,560,560);
+  if(padState.bg){ ctx.drawImage(padState.bg,0,0,560,560); }
+  ctx.lineCap='round'; ctx.lineJoin='round';
+  for(var i=0;i<padState.strokes.length;i++){
+    var s = padState.strokes[i];
+    ctx.strokeStyle = s.c; ctx.lineWidth = s.w;
+    ctx.beginPath();
+    for(var j=0;j<s.pts.length;j++){
+      var p = s.pts[j];
+      if(j===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y);
+    }
+    if(s.pts.length===1) ctx.lineTo(s.pts[0].x+.1, s.pts[0].y+.1);
+    ctx.stroke();
+  }
+}
+
+function savePad(){
+  var data = $('pad').toDataURL('image/jpeg', 0.72);
+  S.drawings[padState.key] = data;
+  markDirty();
+  renderPoster();
+  closePad();
+}
+
+/* =========================================================
+   PRESENT MODE
+   ========================================================= */
+function present(on){
+  document.body.classList.toggle('present', !!on);
+  $('saidIt').classList.remove('on');
+  if(on){ showScreen('poster'); window.scrollTo(0,0); }
+}
+function speakCell(k){
+  var el = $('saidIt');
+  el.textContent = S.sentences[k] || '';
+  el.classList.add('on');
+  if(window.speechSynthesis && el.textContent){
+    try{
+      var u = new SpeechSynthesisUtterance(el.textContent);
+      u.lang='en-US'; u.rate=0.85;
+      speechSynthesis.cancel(); speechSynthesis.speak(u);
+    }catch(e){}
+  }
+}
+
+/* =========================================================
+   CLASS VIEW
+   ========================================================= */
+function renderClass(){
+  $('gal').innerHTML = '<p class="lede">Loading…</p>';
+  $('tally').innerHTML = '';
+  fetchClass(S.period).then(function(rows){
+    if(!rows.length){ $('gal').innerHTML = '<p class="lede">Nobody has saved work yet.</p>'; return; }
+
+    /* tally */
+    var th = '<div class="tally"><h3 style="margin-bottom:8px">What our class picked most</h3>';
+    for(var i=0;i<CATS.length;i++){
+      var c=CATS[i], counts={};
+      for(var r=0;r<rows.length;r++){
+        var v = ((rows[r].data||{}).answers||{})[c.k];
+        if(!v) continue;
+        var key = String(v).trim().toLowerCase();
+        if(!key) continue;
+        counts[key] = (counts[key]||0)+1;
+      }
+      var best='', bestN=0;
+      for(var kk in counts){ if(counts[kk]>bestN){ bestN=counts[kk]; best=kk; } }
+      th += '<div class="row"><span class="k">'+esc(c.en)+'</span>'
+          + '<span class="v">'+(best?esc(best):'—')+'</span>'
+          + '<span class="n">'+(bestN>1?('('+bestN+' of us)'):(bestN===1?'(1)':''))+'</span></div>';
+    }
+    th += '</div>';
+    $('tally').innerHTML = th;
+
+    /* gallery */
+    var g='';
+    for(var m=0;m<rows.length;m++){
+      var d = rows[m].data||{}, dr = d.drawings||{}, an = d.answers||{};
+      g += '<div class="gcard"><h4>'+esc(rows[m].student_name)+'</h4><div class="gmini">';
+      for(var q=0;q<CATS.length;q++){
+        var src = dr[CATS[q].k];
+        g += '<div title="'+esc(an[CATS[q].k]||'')+'"'
+           + (src ? (' style="background-image:url('+src+')"') : '')
+           + '></div>';
+      }
+      g += '</div></div>';
+    }
+    $('gal').innerHTML = g;
+  });
+}
+
+/* =========================================================
+   TEACHER VIEW
+   ========================================================= */
+var tRows = [];
+function renderTeacher(){
+  var per = $('tPeriod').value;
+  $('tOut').innerHTML = '<p class="lede">Loading…</p>';
+  fetchClass(per).then(function(rows){
+    tRows = rows;
+    if(!rows.length){ $('tOut').innerHTML = '<p class="lede">No work saved yet.</p>'; return; }
+    var h = '<table class="t"><tr><th>Student</th><th>Period</th><th>Words</th><th>Sentences</th><th>Drawings</th><th>Turned in</th><th>Updated</th></tr>';
+    for(var i=0;i<rows.length;i++){
+      var d = rows[i].data||{};
+      var nw = countFilled(d.answers), ns = countSentences(d.sentences), nd = countFilled(d.drawings);
+      h += '<tr><td>'+esc(rows[i].student_name)+'</td>'
+         + '<td>'+esc(rows[i].class_period)+'</td>'
+         + '<td>'+nw+' / 10</td><td>'+ns+' / 10</td><td>'+nd+' / 10</td>'
+         + '<td><span class="pill '+(rows[i].turned_in?'yes':'no')+'">'+(rows[i].turned_in?'yes':'not yet')+'</span></td>'
+         + '<td>'+esc(String(rows[i].updated_at||'').slice(0,16).replace('T',' '))+'</td></tr>';
+    }
+    h += '</table>';
+    $('tOut').innerHTML = h;
+  });
+}
+function countFilled(o){
+  if(!o) return 0; var n=0;
+  for(var i=0;i<CATS.length;i++){ if(o[CATS[i].k] && String(o[CATS[i].k]).trim()) n++; }
+  return n;
+}
+function countSentences(o){
+  if(!o) return 0; var n=0;
+  for(var i=0;i<CATS.length;i++){
+    var c=CATS[i], v=o[c.k];
+    if(v && String(v).trim().length > stemFor(c).length + 1) n++;
+  }
+  return n;
+}
+function exportCsv(){
+  var cols = ['student_name','class_period','turned_in','updated_at'];
+  for(var i=0;i<CATS.length;i++) cols.push(CATS[i].k);
+  for(var j=0;j<CATS.length;j++) cols.push('sentence_'+CATS[j].k);
+  cols.push('other');
+  var lines = [cols.join(',')];
+  for(var r=0;r<tRows.length;r++){
+    var row = tRows[r], d = row.data||{}, a=d.answers||{}, s=d.sentences||{};
+    var out = [q(row.student_name), q(row.class_period), q(row.turned_in), q(row.updated_at)];
+    for(var m=0;m<CATS.length;m++) out.push(q(a[CATS[m].k]));
+    for(var n=0;n<CATS.length;n++) out.push(q(s[CATS[n].k]));
+    out.push(q(d.other));
+    lines.push(out.join(','));
+  }
+  var blob = new Blob([lines.join('\n')], {type:'text/csv'});
+  var a2 = document.createElement('a');
+  a2.href = URL.createObjectURL(blob);
+  a2.download = 'favorite_things.csv';
+  a2.click();
+}
+function q(v){
+  var s = String(v==null?'':v).replace(/"/g,'""');
+  return '"' + s + '"';
+}
+
+/* =========================================================
+   NAV
+   ========================================================= */
+function showScreen(name){
+  var secs = document.querySelectorAll('.screen');
+  for(var i=0;i<secs.length;i++) secs[i].classList.remove('on');
+  var target = $('s-'+name);
+  if(target) target.classList.add('on');
+  var btns = $('steps').querySelectorAll('button');
+  for(var j=0;j<btns.length;j++) btns[j].classList.toggle('on', btns[j].getAttribute('data-s')===name);
+  if(name==='sent') buildFrames();
+  if(name==='poster') renderPoster();
+  if(name==='class') renderClass();
+  window.scrollTo(0,0);
+}
+
+/* =========================================================
+   BOOT
+   ========================================================= */
+function boot(){
+  $('whoLbl').textContent = S.name + ' · ' + S.period;
+  $('langSel').value = S.lang;
+  $('login').style.display='none';
+  $('app').style.display='block';
+  buildGrid();
+  renderPoster();
+  setupPad();
+  if(S.turnedIn) $('btnTurnIn').textContent = 'Turned in ✓';
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+
+  /* restore a local draft so a dropped connection never loses work */
+  try{
+    var cached = JSON.parse(localStorage.getItem(LSKEY)||'null');
+    if(cached && cached.name){
+      $('inName').value = cached.name;
+      $('inPeriod').value = cached.period || '';
+      $('inLang').value = cached.lang || 'none';
+    }
+  }catch(e){}
+
+  $('btnStart').addEventListener('click', function(){
+    var n = $('inName').value.trim(), p = $('inPeriod').value;
+    if(!n){ $('inName').focus(); return; }
+    if(!p){ $('inPeriod').focus(); return; }
+    S.name = n; S.period = p; S.lang = $('inLang').value;
+    load().then(boot);
+  });
+  $('inName').addEventListener('keydown', function(e){ if(e.key==='Enter') $('btnStart').click(); });
+
+  $('steps').addEventListener('click', function(e){
+    var b = e.target.closest ? e.target.closest('button') : null;
+    if(b && b.getAttribute('data-s')) showScreen(b.getAttribute('data-s'));
+  });
+  document.addEventListener('click', function(e){
+    var b = e.target.closest ? e.target.closest('[data-go]') : null;
+    if(b) showScreen(b.getAttribute('data-go'));
+  });
+
+  $('langSel').addEventListener('change', function(){
+    S.lang = $('langSel').value; paintTranslations(); markDirty();
+  });
+
+  $('btnPresent').addEventListener('click', function(){ present(true); });
+  $('btnPresent2').addEventListener('click', function(){ present(true); });
+  $('exitPresent').addEventListener('click', function(){ present(false); });
+  $('btnPrint').addEventListener('click', function(){ renderPoster(); window.print(); });
+
+  $('btnTurnIn').addEventListener('click', function(){
+    S.turnedIn = true;
+    $('btnTurnIn').textContent = 'Turned in ✓';
+    clearTimeout(saveTimer); save();
+  });
+
+  $('btnRefresh').addEventListener('click', renderClass);
+
+  $('tGo').addEventListener('click', function(){
+    if($('tPass').value !== TEACHER_PASS){ $('tPass').value=''; $('tPass').placeholder='Try again'; return; }
+    $('tGate').style.display='none';
+    $('tPanel').style.display='block';
+    var sel = $('tPeriod');
+    for(var i=1;i<=6;i++){
+      var o=document.createElement('option'); o.value='Period '+i; o.textContent='Period '+i; sel.appendChild(o);
+    }
+    renderTeacher();
+  });
+  $('tPass').addEventListener('keydown', function(e){ if(e.key==='Enter') $('tGo').click(); });
+  $('tRefresh').addEventListener('click', renderTeacher);
+  $('tPeriod').addEventListener('change', renderTeacher);
+  $('tCsv').addEventListener('click', exportCsv);
+
+  window.addEventListener('beforeunload', function(e){
+    if(dirty){ e.preventDefault(); e.returnValue=''; }
+  });
+});
+</script>
+</body>
+</html>
