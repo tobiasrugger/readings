@@ -1,0 +1,1592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Odyssey — ELD Unit | Mr. Toby</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pine:#14532d; --pine-dk:#0b3a1f; --pine-lt:#dcfce7;
+  --sea:#1d4f6b; --sea-lt:#e3f0f6;
+  --clay:#b4532a; --clay-lt:#fbeade;
+  --gold:#b7862b; --gold-lt:#fdf4e0;
+  --ink:#1c1917; --mute:#6b6560; --line:#ded8cf;
+  --paper:#faf7f1; --card:#ffffff;
+  --ok:#15803d; --warn:#b45309; --bad:#b91c1c;
+  --r:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:'Nunito',system-ui,sans-serif;background:var(--paper);color:var(--ink);line-height:1.6;font-size:17px}
+.wrap{max-width:980px;margin:0 auto;padding:0 16px 120px}
+
+/* ---------- toolbar ---------- */
+#bar{position:sticky;top:0;z-index:60;background:var(--pine);color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.18)}
+#bar .in{max-width:980px;margin:0 auto;padding:8px 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#bar b{font-size:18px;letter-spacing:.2px}
+#bar .sp{flex:1}
+.btn{font-family:inherit;font-size:14px;font-weight:700;border:0;border-radius:999px;padding:7px 14px;cursor:pointer;background:#fff;color:var(--pine);transition:transform .08s}
+.btn:active{transform:scale(.96)}
+.btn.ghost{background:rgba(255,255,255,.16);color:#fff}
+.btn.sm{font-size:13px;padding:5px 11px}
+.btn.clay{background:var(--clay);color:#fff}
+.btn.sea{background:var(--sea);color:#fff}
+.btn:focus-visible,a:focus-visible,select:focus-visible,textarea:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+#dot{width:11px;height:11px;border-radius:50%;background:#94a3b8;display:inline-block;flex:none}
+#dot.on{background:#4ade80} #dot.save{background:#fbbf24} #dot.err{background:#f87171}
+#who{font-size:13px;opacity:.9}
+
+/* ---------- level switch ---------- */
+#levelbar{background:var(--pine-dk);color:#fff}
+#levelbar .in{max-width:980px;margin:0 auto;padding:6px 12px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:13px}
+.lvl{border:0;border-radius:999px;padding:5px 13px;font-family:inherit;font-weight:700;font-size:13px;cursor:pointer;background:rgba(255,255,255,.15);color:#fff}
+.lvl.on{background:#fff;color:var(--pine-dk)}
+
+/* ---------- nav ---------- */
+#nav{position:sticky;top:47px;z-index:50;background:var(--paper);border-bottom:1px solid var(--line)}
+#nav .in{max-width:980px;margin:0 auto;padding:8px 12px;display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tab{white-space:nowrap;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;padding:6px 13px;font-family:inherit;font-weight:700;font-size:13.5px;cursor:pointer}
+.tab.on{background:var(--pine);color:#fff;border-color:var(--pine)}
+.tab .pip{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--gold);margin-left:6px;vertical-align:middle}
+.tab.on .pip{background:#fff}
+
+/* ---------- sections ---------- */
+section{display:none;animation:fade .18s ease-out}
+section.on{display:block}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){section{animation:none}}
+h1{font-size:30px;line-height:1.2;margin:22px 0 6px}
+h2{font-size:23px;margin:28px 0 8px;line-height:1.25}
+h3{font-size:19px;margin:20px 0 6px}
+.lede{color:var(--mute);margin:0 0 18px;font-size:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;margin:14px 0}
+.card.sea{border-left:5px solid var(--sea);background:var(--sea-lt)}
+.card.clay{border-left:5px solid var(--clay);background:var(--clay-lt)}
+.card.gold{border-left:5px solid var(--gold);background:var(--gold-lt)}
+.card.pine{border-left:5px solid var(--pine);background:var(--pine-lt)}
+.kicker{font-weight:800;color:var(--sea);font-size:14px;margin:0 0 4px}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.row>*{flex:1;min-width:230px}
+.muted{color:var(--mute);font-size:14.5px}
+hr{border:0;border-top:1px solid var(--line);margin:26px 0}
+
+/* ---------- reading text ---------- */
+.story{font-size:18.5px;line-height:1.85;max-width:66ch}
+.story p{margin:0 0 15px}
+.story p.big{font-size:20px}
+.gl{border-bottom:2px dotted var(--clay);cursor:pointer;font-weight:600;color:var(--clay)}
+.gl:active{background:var(--clay-lt)}
+#tip{position:fixed;z-index:200;max-width:300px;background:#231f1c;color:#fff;border-radius:12px;padding:11px 13px;font-size:15px;line-height:1.45;box-shadow:0 8px 28px rgba(0,0,0,.3);display:none}
+#tip b{color:#fcd34d}
+#tip .tr{display:block;margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.2);font-size:15px}
+.stopbox{background:var(--gold-lt);border:2px dashed var(--gold);border-radius:var(--r);padding:14px 16px;margin:18px 0}
+.stopbox .kicker{color:var(--gold)}
+
+/* ---------- questions ---------- */
+.q{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;margin:12px 0}
+.q .num{font-weight:800;color:var(--pine);margin-right:6px}
+.q .prompt{font-weight:600;margin-bottom:8px}
+.q textarea{width:100%;min-height:76px;font-family:inherit;font-size:16.5px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:#fffdf9;resize:vertical}
+.q textarea:focus{border-color:var(--sea);background:#fff}
+.frames{display:flex;gap:6px;flex-wrap:wrap;margin:7px 0}
+.frame{font-size:13px;border:1px dashed var(--sea);color:var(--sea);background:#fff;border-radius:999px;padding:4px 10px;cursor:pointer;font-family:inherit}
+.frame:hover{background:var(--sea-lt)}
+.opts{display:flex;flex-direction:column;gap:7px;margin-top:4px}
+.opt{display:flex;gap:9px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:9px 11px;cursor:pointer;background:#fff}
+.opt:hover{background:var(--sea-lt)}
+.opt.sel{border-color:var(--sea);background:var(--sea-lt)}
+.opt.right{border-color:var(--ok);background:#ecfdf5}
+.opt.wrong{border-color:var(--bad);background:#fef2f2}
+.opt input{margin-top:4px;flex:none}
+.fb{font-size:14.5px;margin-top:8px;padding:8px 11px;border-radius:9px;display:none}
+.fb.show{display:block}
+.fb.good{background:#ecfdf5;color:#065f46} .fb.bad{background:#fef2f2;color:#991b1b}
+.hint{font-size:14px;color:var(--mute);margin-top:6px;display:none}
+.hint.show{display:block}
+.lvl-only{display:none} .lvl-only.show{display:block}
+
+/* ---------- misc widgets ---------- */
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0}
+.chip{background:var(--pine-lt);border:1px solid #bbf7d0;color:var(--pine-dk);border-radius:999px;padding:5px 12px;font-size:14px;font-weight:700}
+.chip.drag{cursor:grab;background:#fff;border-color:var(--line);color:var(--ink)}
+.chip.drag:active{cursor:grabbing}
+.bins{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px}
+.bin{flex:1;min-width:190px;border:2px dashed var(--line);border-radius:var(--r);padding:12px;min-height:110px;background:#fff}
+.bin.over{border-color:var(--sea);background:var(--sea-lt)}
+.bin h4{margin:0 0 8px;font-size:15px;color:var(--sea)}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:15.5px}
+th,td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top}
+th{background:var(--pine-lt);font-weight:800;font-size:14.5px}
+.ring{--p:0;width:54px;height:54px;border-radius:50%;flex:none;
+  background:conic-gradient(var(--pine) calc(var(--p)*1%), #e7e2d9 0);display:grid;place-items:center}
+.ring i{width:42px;height:42px;border-radius:50%;background:#fff;display:grid;place-items:center;font-style:normal;font-weight:800;font-size:13px;color:var(--pine)}
+.hero{background:linear-gradient(160deg,#0f3a4d,#1d4f6b 55%,#2d6d84);color:#fff;border-radius:18px;padding:24px;margin:18px 0}
+.hero h1{margin:0 0 6px;color:#fff;font-size:34px}
+.hero p{margin:0;opacity:.92;max-width:56ch}
+.gridcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin:14px 0}
+.gc{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:14px;cursor:pointer;text-align:left;font-family:inherit;font-size:16px}
+.gc:hover{border-color:var(--sea);box-shadow:0 3px 14px rgba(0,0,0,.07)}
+.gc b{display:block;font-size:17px;margin-bottom:3px}
+.gc span{font-size:14px;color:var(--mute)}
+.gc .bar{height:6px;background:#eee9e0;border-radius:99px;margin-top:10px;overflow:hidden}
+.gc .bar i{display:block;height:100%;background:var(--pine);width:0}
+.vid{position:relative;padding-bottom:56.25%;height:0;border-radius:var(--r);overflow:hidden;background:#000;margin:12px 0}
+.vid iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.ts{display:inline-block;background:var(--sea);color:#fff;border-radius:6px;padding:1px 7px;font-size:13px;font-weight:800;margin-right:6px}
+details{border:1px solid var(--line);border-radius:var(--r);padding:10px 14px;margin:9px 0;background:#fff}
+details summary{cursor:pointer;font-weight:700}
+details[open] summary{margin-bottom:8px}
+.tag{display:inline-block;font-size:12px;font-weight:800;border-radius:5px;padding:1px 7px;margin-right:5px}
+.tag.e{background:var(--pine-lt);color:var(--pine-dk)}
+.tag.s{background:var(--sea-lt);color:var(--sea)}
+.tag.c{background:var(--clay-lt);color:var(--clay)}
+.svgart{width:100%;max-width:520px;display:block;margin:16px auto;border:1px solid var(--line);border-radius:var(--r);background:#fffdf7}
+
+/* ---------- login ---------- */
+#login{position:fixed;inset:0;background:rgba(20,20,18,.94);z-index:300;display:grid;place-items:center;padding:20px}
+#login .box{background:#fff;border-radius:18px;padding:26px;max-width:400px;width:100%}
+#login h2{margin:0 0 4px} #login p{margin:0 0 16px;color:var(--mute);font-size:15px}
+#login input,#login select{width:100%;font-family:inherit;font-size:16px;padding:11px;border:1px solid var(--line);border-radius:10px;margin-bottom:10px}
+#login .btn{width:100%;padding:12px;font-size:16px;background:var(--pine);color:#fff}
+
+#printmenu{display:none;position:fixed;top:52px;right:14px;z-index:90;background:#fff;border:1px solid var(--line);
+  border-radius:var(--r);box-shadow:0 10px 32px rgba(0,0,0,.18);padding:10px;min-width:210px}
+#printmenu b{display:block;font-size:13px;color:var(--mute);padding:2px 8px 6px}
+#printmenu button{display:block;width:100%;text-align:left;border:0;background:none;font-family:inherit;font-size:15px;
+  padding:8px 10px;border-radius:9px;cursor:pointer}
+#printmenu button:hover{background:var(--pine-lt)}
+
+/* ---------- footer / print ---------- */
+#foot{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);padding:9px 14px;display:flex;gap:9px;align-items:center;justify-content:center;flex-wrap:wrap;z-index:55}
+.byline{text-align:center;color:var(--mute);font-size:13px;margin:36px 0 0}
+
+@media print{
+  #bar,#nav,#foot,#login,#levelbar,#tip,.frames,.btn,.no-print{display:none !important}
+  body{background:#fff;font-size:12pt}
+  .wrap{max-width:none;padding:0}
+  section{display:none !important}
+  section.printme{display:block !important}
+  .card,.q,details{break-inside:avoid;box-shadow:none}
+  .q textarea{min-height:70px;border:1px solid #999;background:#fff}
+  .gl{border-bottom:1px dotted #666;color:#000}
+  .story{max-width:none;font-size:11.5pt;line-height:1.7}
+  .hero{background:#fff !important;color:#000;border:2px solid #000}
+  .hero h1{color:#000}
+  a[href]:after{content:""}
+  .printonly{display:block !important}
+  h2{page-break-after:avoid}
+}
+.printonly{display:none}
+</style>
+</head>
+<body>
+
+<div id="bar"><div class="in">
+  <b>The Odyssey</b>
+  <span class="sp"></span>
+  <span id="who"></span>
+  <span id="dot" title="Save status"></span>
+  <button class="btn ghost sm" onclick="doPrint()">Print</button>
+  <button class="btn sm" id="turnin" onclick="turnIn()">Turn in</button>
+</div></div>
+
+<div id="levelbar"><div class="in">
+  <span style="opacity:.8">Reading level:</span>
+  <button class="lvl" data-lv="e">Easier</button>
+  <button class="lvl on" data-lv="s">Standard</button>
+  <button class="lvl" data-lv="c">Challenge</button>
+  <span class="sp" style="flex:1"></span>
+  <span style="opacity:.8">Translate:</span>
+  <select id="lang" style="font-family:inherit;font-size:13px;border-radius:999px;border:0;padding:4px 9px">
+    <option value="">off</option>
+    <option value="Spanish">Español</option>
+    <option value="Chinese (Simplified)">简体中文</option>
+    <option value="Arabic">العربية</option>
+    <option value="Vietnamese">Tiếng Việt</option>
+    <option value="Thai">ไทย</option>
+    <option value="Nepali">नेपाली</option>
+  </select>
+</div></div>
+
+<div id="nav"><div class="in" id="tabs"></div></div>
+
+<div id="tip"></div>
+
+<div id="printmenu" class="no-print">
+  <b>Print…</b>
+  <button onclick="printPick('this')">This page</button>
+  <button onclick="printPick('guides')">All 5 reading guides</button>
+  <button onclick="printPick('gram')">Grammar gym</button>
+  <button onclick="printPick('essay')">Essay planner + rubric</button>
+  <button onclick="printPick('debate')">Debate task cards</button>
+  <button onclick="printPick('test')">Unit test</button>
+  <button onclick="printPick('all')">The whole packet</button>
+</div>
+
+<div class="wrap" id="main"></div>
+
+<div id="foot">
+  <span class="muted" id="progtxt">Progress</span>
+  <div style="width:170px;height:9px;background:#eee9e0;border-radius:99px;overflow:hidden"><i id="progbar" style="display:block;height:100%;background:var(--pine);width:0"></i></div>
+  <button class="btn sm sea" onclick="saveNow()">Save</button>
+</div>
+
+<div id="login"><div class="box">
+  <h2>The Odyssey</h2>
+  <p>Sign in so your work saves. Use your school email.</p>
+  <input id="li-name" placeholder="First and last name" autocomplete="name">
+  <input id="li-email" placeholder="you@sfusd.edu" autocomplete="email" inputmode="email">
+  <select id="li-per">
+    <option value="">Class period…</option>
+    <option>Period 1</option><option>Period 2</option><option>Period 3</option>
+    <option>Period 4</option><option>Period 5</option><option>Period 6</option>
+  </select>
+  <button class="btn" onclick="login()">Start</button>
+  <p style="margin-top:12px;font-size:13px" id="li-msg"></p>
+</div></div>
+
+<script>
+/* ============ UNIT DATA ============ */
+var CH = {};
+
+CH.ch1 = {
+  id:"ch1", n:1, title:"The Trojan War", theme:"When is it right to go to war?",
+  before:{
+    q:"Before you read: Why do people start wars? Write at least two reasons.",
+    frames:["People start wars because…","One reason is…","Another reason is…"]
+  },
+  glossary:[
+    {w:"furious", d:"extremely angry"},
+    {w:"allies", d:"friends or countries that agree to help each other, especially in war"},
+    {w:"obligated", d:"feeling that you must do something, even if you don't want to"},
+    {w:"reluctantly", d:"slowly and unhappily, because you don't want to do it"},
+    {w:"lay siege", d:"surrounded a city and waited, so no food or help could get in"},
+    {w:"surrender", d:"to stop fighting and say the other side has won"},
+    {w:"against her will", d:"forced; not what she wanted"},
+    {w:"sacrifices", d:"gifts (often animals) given to the gods"},
+    {w:"crept", d:"moved very quietly and slowly, so nobody would hear"},
+    {w:"launched", d:"sent ships out onto the water; started something"},
+    {w:"defeat", d:"to beat someone; to win against someone"},
+    {w:"beware", d:"be careful of"}
+  ],
+  text:{
+    e:[
+"Long ago in Greece, a king named Menelaus married a woman named Helen. People said Helen was the most beautiful woman in the world. Menelaus was very proud.",
+"Across the sea was a city called Troy. A man from Troy named Paris also wanted Helen. Paris sailed to Greece. Menelaus invited him into his home as a guest.",
+"One night, Paris left secretly. He took Helen with him to Troy. Nobody knows the truth. Maybe Paris took Helen [[against her will]]. Maybe Helen loved Paris.",
+"Menelaus was [[furious]]. He asked the other Greek kings for help. These kings were his [[allies]]. Long ago they promised to help each other, so they felt [[obligated]]. One thousand Greek ships sailed to Troy. People still say Helen had \"the face that [[launched]] a thousand ships.\"",
+"One of the kings was Odysseus. He was the king of a small island called Ithaca. Odysseus did not want to go to war. But Menelaus was his ally, so he could not say no. [[Reluctantly]], Odysseus said goodbye to his wife Penelope and his baby son Telemachus. Then he sailed to Troy.",
+"The Greeks thought the war would be short — a few months, maybe one year. Troy had a big wall around it. The Greek army [[lay siege]] to the city. They camped outside and waited. They thought the Trojans would run out of food and [[surrender]].",
+"But the Trojans were strong. Every day the Trojan soldiers came out and fought. Every evening, nobody had won. The Trojans went back inside the walls.",
+"Ten years passed. Many soldiers died. The Greeks were tired. They wanted to go home to their families. They were ready to give up.",
+"Then Odysseus had a famous idea. He made a plan to trick the Trojans.",
+"One morning, the Trojans looked out. The Greek ships were gone! The Greek soldiers were gone! But on the beach there was a huge wooden horse.",
+"The people of Troy argued. Some said it was a monster. A few said it was a trap. But the priests said it was a gift for the gods. They did not want to make the gods angry. So they brought the horse into the city.",
+"That night, the Trojans had a big party. They ate, drank, danced, and sang. They made [[sacrifices]] to the gods. Finally they all fell asleep on the floors and tables.",
+"When the city was silent, a secret door opened in the horse. A rope came down. Odysseus and ten soldiers climbed out. Ten soldiers could not fight a whole army. So Odysseus [[crept]] to the city gates and opened them. The rest of the Greek army was waiting outside. They ran in.",
+"The Greeks won the war. Odysseus was called a hero. People still tell this story. And people still say, \"[[Beware]] of Greeks bearing gifts.\"",
+"Helen went back to Menelaus. After ten years, it was time to go home. Odysseus told his men they could see their families again. They sailed for Ithaca. They thought they would arrive in one month."
+    ],
+    s:[
+"This story begins in Greece when one of the Greek kings, Menelaus, married a beautiful woman named Helen. At that time, Helen was said to be \"the most beautiful woman in the world.\" Menelaus felt very proud to have her as his wife.",
+"But there was another man in the city of Troy, across the sea from Greece, who wanted Helen for his wife. His name was Paris. So he sailed to Greece and visited King Menelaus, who invited him into his home as a guest. Then one night, Paris secretly left with Helen and returned with her to Troy. No one knows if Helen was taken [[against her will]] or if she had fallen in love with Paris.",
+"When Menelaus discovered that his wife was gone, he was [[furious]]. He demanded that all the other Greek kings, his [[allies]], give him an army strong and mighty enough to [[defeat]] Troy and bring Helen home. The other kings had all sworn to defend each other, so they felt [[obligated]] to help Menelaus. A thousand Greek ships set sail for Troy. For this reason, beautiful Helen has come to be remembered as \"the face that [[launched]] a thousand ships.\"",
+"Many men set off to fight in the war, and one of them was Odysseus. Odysseus was the king of a Greek island called Ithaca. He did not want to go to war, but Menelaus was his ally, so he could not refuse. [[Reluctantly]] Odysseus said goodbye to his wife Penelope and their young son Telemachus. He and many men from Ithaca boarded ships to sail for Troy.",
+"The Greeks, including Odysseus, expected that the war would be short. A few months, perhaps a year. Once they had crossed the sea they reached the city of Troy and [[lay siege]] to it. Troy was a walled city. The Greeks camped outside the walls and waited for the Trojans to run out of food and supplies. Then, they thought, the Trojans would give up and [[surrender]].",
+"However, the Trojans turned out to be much tougher than the Greeks had thought. They did not surrender. Every day, the Trojan soldiers came out of their city to fight the Greeks. But every evening, neither army had beaten the other, and the Trojans returned inside the city walls.",
+"Ten years later, the Greeks were still fighting the war against the Trojans. Many great and lesser soldiers had died. The remaining soldiers were tired of constant war and wished only to return home to their loved ones. The Greeks were ready to give up and go home, defeated and without Helen.",
+"It was then that Odysseus had his brilliant idea, which is still famous today. He made a plan to trick the Trojans and win the war.",
+"One morning, the Trojans looked out of their city and saw that all the Greek soldiers and ships were gone. The Trojans thought the Greeks must have given up and gone home. But on the beach outside the city, where the Greeks had been camped, there was now a huge wooden horse standing in front of the city gates. What was it? Why was it there?",
+"The people of Troy could not agree about what the horse was. Some thought it was a monster. A few thought it was a trap. But the priests and princes of Troy decided it must be a gift from the Greeks to the gods. The priests did not want to anger the gods, so they decided they must take the horse into the city.",
+"The very next day, the people of Troy brought the wooden horse into the city. The next thing they did was to celebrate the end of the war and the defeat of the Greeks, making sure to honor the gods with gifts and [[sacrifices]]. They danced, drank, ate, and sang, and eventually they all lay asleep and exhausted on the floors and tables of the city.",
+"Once the city was silent, a secret trap door opened in the horse. A rope dropped down. Odysseus and ten of the best Greek soldiers came down the rope, out of the horse. Of course, ten soldiers could not fight the whole Trojan army. So Odysseus [[crept]] to the city gates and opened them. The rest of the Greek army had returned during the night and was waiting outside the gates. They charged in through the gates.",
+"After that, it didn't take long for the Greek army to capture or kill the Trojans and finally win the war against Troy. That day Odysseus was called a hero, and the story of his plan and the Greek victory over the Trojans is still being told. And today there is a very famous saying that comes from this story: \"[[Beware]] of Greeks bearing gifts.\"",
+"The Greeks had won and Helen was Menelaus's wife again. After ten long years of war it was finally time for the Greeks to return home. Odysseus stood before his men and told them that they were now able to return to their families. They set sail for Ithaca, expecting to be there in a month or less."
+    ]
+  },
+  closeup:{
+    title:"Language close-up: \"the face that launched a thousand ships\"",
+    body:"This famous phrase makes Helen's face the subject of a verb that normally belongs to kings and admirals. A face cannot launch anything. The writer gives Helen credit — or blame — for ten years of war and thousands of deaths, all in eight words. Notice what the phrase hides: it never says who decided, who gave the orders, or who benefited. Ask yourself who is really responsible in that sentence, and who disappears from it."
+  },
+  qs:[
+   {t:"short",lv:"all",p:"Who was Helen?",fr:["Helen was…","She was married to…"]},
+   {t:"mc",lv:"e",p:"Why did Odysseus go to war?",o:["He wanted Helen for himself.","He had promised to help Menelaus, so he felt he had to go.","He loved fighting.","The gods ordered him to go."],a:1,fb:"He was an ally. He didn't want to go, but he felt obligated."},
+   {t:"short",lv:"all",p:"The text says, \"No one knows if Helen was taken against her will or if she had fallen in love with Paris.\" Which do you think is more likely? Why?",fr:["I think Helen was…","I think this because…","The text says…"]},
+   {t:"short",lv:"all",p:"People from the United States are called Americans. People from Canada are called Canadians. People from Greece are called ______. People from Troy are called ______.",fr:["People from Greece are called…","People from Troy are called…"]},
+   {t:"short",lv:"all",p:"Why did the Greeks start a war with Troy? Who did the war help?",fr:["The Greeks went to war because…","The war helped…","The war did not help…"]},
+   {t:"short",lv:"all",p:"Think about the Trojan War. (a) What were the costs — the bad results? (b) What were the gains — the good results?",fr:["The costs were…","The gains were…","On the other hand…"]},
+   {t:"short",lv:"s",p:"Other than war, what are some ways Menelaus and the Greeks could have solved their problem with Troy? Would any of these have worked?",fr:["Instead of war, they could have…","This might have worked because…","This would not have worked because…"]},
+   {t:"short",lv:"c",p:"Odysseus won the war by lying. Was the Trojan Horse a clever plan or a dishonest one? Can an action be both?",fr:["The Trojan Horse was…","On the one hand…; on the other hand…","This matters because…"]},
+   {t:"short",lv:"c",p:"The Trojans chose to bring the horse inside because their priests feared the gods. Who is responsible for the fall of Troy — Odysseus, the priests, or Paris? Defend your choice.",fr:["I hold ______ responsible because…","Although some would say…, I believe…"]},
+   {t:"short",lv:"all",p:"In your opinion, what reasons make it right for a country to start a war?",fr:["I think it is right for a country to start a war if…","It is never right to start a war because…"]}
+  ]
+};
+
+CH.ch2 = {
+  id:"ch2", n:2, title:"The Lotus Eaters", theme:"Happiness today, or happiness for a whole life?",
+  before:{
+    q:"Before you read: Imagine a drink that makes you feel perfectly happy — but you forget your family. Would you drink it? Why or why not?",
+    frames:["I would / would not drink it because…","If I drank it, I would…","Forgetting my family would…"]
+  },
+  glossary:[
+    {w:"rage", d:"to happen with great force and violence"},
+    {w:"repair", d:"to fix something that is broken"},
+    {w:"explore", d:"to travel around a new place to learn about it"},
+    {w:"spear", d:"a long stick with a sharp metal point, used as a weapon"},
+    {w:"tracked", d:"followed the marks or footprints someone left behind"},
+    {w:"meadow", d:"a wide, flat, open field of grass"},
+    {w:"legend", d:"an old story that many people tell, which may or may not be true"},
+    {w:"urged", d:"strongly told someone to do something"},
+    {w:"tempted", d:"wanting to do something that you know you should not do"},
+    {w:"intense", d:"very strong, very powerful"},
+    {w:"satisfaction", d:"the good feeling you get when you have what you wanted"},
+    {w:"desperate", d:"needing something so badly that you will do anything to get it"},
+    {w:"overboard", d:"over the side of a ship, into the water"},
+    {w:"lookout", d:"the sailor whose job is to watch for land or danger"}
+  ],
+  text:{
+    e:[
+"Soon after they left Troy, the sky got dark. A big storm started. It did not stop for many days. The storm broke the ships. The men also needed fresh water. On a ship, fresh water is the most important thing.",
+"Finally the ships came to an island. Nobody knew this island. Most of the men stayed to [[repair]] the ships. A small group went to [[explore]] and look for water. Odysseus gave them an order: \"Come back to the ships before night, even if you do not find water.\"",
+"Night came. The men did not come back.",
+"In the morning, Odysseus took his [[spear]] and his shield. He took another small group to look for the lost men. He did not know that a spear and a shield could not protect him on this island.",
+"They followed the footprints into the forest. In the forest they felt strange. They felt that someone was watching them. They saw leaves move. They heard something in the trees. But they saw nobody.",
+"After a few hours they came to an open field of grass — a [[meadow]]. In the middle they saw the lost men. The men were lying on the grass, sleeping. Next to them were empty wooden cups.",
+"Odysseus kicked the men. \"Get up!\" he shouted. But the men did not seem to hear him. One man reached for the empty cups. \"More juice! More juice!\" he said.",
+"One of Odysseus's men had studied this part of the world. He said: \"I think I know this place. I thought it was only a sailors' story — a [[legend]]. But I believe this is the island of the Lotus Eaters. A special fruit grows here. It grows nowhere else. If you drink the juice of this fruit, you feel completely happy. After that, you only think about getting more juice. You care about nothing else. These men do not remember their families. And if they did remember, they would not care. The juice makes you always happy. It has the power to make you forget your worries and everything that makes you sad.\"",
+"While he was talking, people in masks came out of the forest. They put more cups of juice on the grass. One man on the grass shouted, \"Give me that!\" Odysseus wanted to see what would happen, so he gave him a cup. The man drank it fast. Juice ran down his face. Then he fell back on the grass. His face showed [[intense]] happiness.",
+"Then the man stood up. He offered a cup to Odysseus. \"You must drink this. You will lose all your worries. You will feel only pleasure. It is wonderful! Drink!\" he [[urged]]. \"Drink!\"",
+"Odysseus held the cup to his nose. He smelled it. A wave of pleasure went through his body. Now he had to decide: drink, or not drink?"
+    ],
+    s:[
+"Not long after leaving Troy, the sky darkened and a storm began to [[rage]]. The storm went on for days. The ships were damaged and in need of [[repair]]. Odysseus and his men also needed fresh water, which is very important on any ship at sea.",
+"Eventually the ships washed up on an unknown island. Most of the men set to work repairing the ships, while a small group of men set out to [[explore]] the island and look for water. Odysseus ordered the men to return to the ships before night, whether or not they had found water.",
+"Night fell, but the men did not return. In the morning, Odysseus took up his [[spear]] and shield and led another small group of men to search for the men who were missing. Little did he know that spears and shields would not protect him from the dangers on that island.",
+"They [[tracked]] the other men deep into the forest, following their footprints. In the forest they had a strange feeling that they were being watched. They saw leaves move and heard the sound of something in the trees but saw nothing more.",
+"After a few hours of searching they came to a grassy opening in the forest. In the middle of the [[meadow]] they saw the lost men lying on the grass sleeping next to empty wooden cups. Odysseus immediately went to the sleeping men and kicked them, ordering them to get on their feet, but the men seemed not to notice him. One man reached out for the empty cups saying, \"More juice! More juice!\"",
+"One of the men with Odysseus had studied the geography and history of this part of the world, and now he said to Odysseus, \"I think I know where we are. I thought it was only a sailors' [[legend]], but now I believe we have landed on the island of the Lotus Eaters. A fruit grows here that does not grow anywhere else. A person who drinks the juice of this fruit will feel completely happy and will think only about how to get another cup of juice. They care about nothing else. These men before us have no memory of their families, and even if they did, they would care nothing for them. Drinking the juice makes you always happy, and it has the power to make you forget your worries and everything that makes you unhappy.\"",
+"While he was talking, many people wearing masks had come out of the forest. They placed more cups filled with juice on the grass. Seeing the cups, one of the men lying on the grass shouted, \"Give me that!\" Odysseus wanted to see what would happen, so he handed the man the cup. The man drank it in an instant, the juice running down his face. Once he had finished it he fell back onto the grass with a look of [[intense]] happiness and [[satisfaction]]. Then he stood up and offered another cup to Odysseus himself, saying, \"You must drink this. You will lose all your worries and will feel only pleasure. It is wonderful! Drink!\" he [[urged]]. \"Drink!\"",
+"Odysseus held the drink to his nose and smelled it. He felt a wave of pleasure at the smell. He had to decide whether to drink the juice or not."
+    ]
+  },
+  stop:{
+    q:"Stop. Should Odysseus drink the juice, or not?",
+    body:"Take a side. Then list your reasons. Your class will hold a split debate before you read the ending.",
+    frames:["Odysseus should drink the juice because…","Odysseus should not drink because…","If he drinks, then…","If he refuses, then…"]
+  },
+  text2:{
+    e:[
+"He was [[tempted]]. But he thought about his wife and his son. He thought about how much he wanted to see them again. So he threw the cup away. His friends did the same.",
+"Then they picked up the sleeping men and ran back to the ships as fast as they could. On the ships, they tied up all the men who had drunk the juice. Then they sailed away quickly.",
+"Four days later, the tied-up men were still [[desperate]]. All they said was, \"More juice! Must have more juice!\"",
+"On the fifth day, the men seemed calmer. Odysseus untied one man to see what he would do. The man waited until he was free. Then he threw himself [[overboard]], shouting, \"More juice! More juice!\" He swam away into the open ocean. Soon they could not see him or hear him any more.",
+"They kept sailing. They still had no fresh water. They were becoming worried and desperate. Odysseus told the [[lookout]] to shout the moment he saw land."
+    ],
+    s:[
+"Though he was [[tempted]] to drink, he thought about his wife and son and about how important it was to him to see them again, so he threw the cup away. His friends followed his example. Then they picked up the sleeping men and ran back to their ships as fast as they could.",
+"When they reached the ships, they took all of the men who had drunk the juice and tied them up inside the ships. Then they set sail as quickly as they could.",
+"Four days later, the men who were tied up were still [[desperate]] to get more juice. All they said was, \"More juice! Must have more juice!\" On the fifth day, the men seemed calmer. Odysseus untied one man, just to see what he would do. The man waited until he was free and then threw himself [[overboard]], shouting, \"More juice! More juice!\" He swam away into the open ocean, until they could not hear or see him any more.",
+"They continued sailing. They still had not found any fresh water, and they were becoming worried and [[desperate]]. Odysseus ordered the [[lookout]] to let him know the moment he sighted land."
+    ]
+  },
+  closeup:{
+    title:"Language close-up: what the juice takes away",
+    body:"The man who explains the lotus does not say the juice makes you forget. He says it \"has the power to make you forget your worries and everything that makes you unhappy.\" That sounds like a cure, not a poison. Read it again and notice what is missing from that list: your family is not a worry, and your son is not something that makes you unhappy — yet they vanish too. The sentence is written from inside the temptation. Ask why the writer lets the offer sound so good."
+  },
+  qs:[
+   {t:"mc",lv:"all",p:"What does the lotus juice do to a person?",o:["It makes them fall asleep forever.","It makes them feel completely happy and want only more juice.","It makes them strong in battle.","It makes them able to see the future."],a:1,fb:"It gives total pleasure and erases everything else — including family."},
+   {t:"short",lv:"all",p:"Why did Odysseus decide not to drink the juice?",fr:["Odysseus did not drink because…","He thought about…"]},
+   {t:"short",lv:"e",p:"One man threw himself into the ocean to get more juice. What does this show about the juice?",fr:["This shows that the juice…","It is dangerous because…"]},
+   {t:"short",lv:"all",p:"The men who drank the juice were happy. Odysseus, who refused, was worried and thirsty. So who made the better choice? Explain.",fr:["I think ______ made the better choice because…","Being happy is not the same as…"]},
+   {t:"sort",lv:"all",p:"Sort these examples of happiness. Drag each one into the right box.",
+     items:["eating your favorite food","finishing school","a good night of sleep","raising your children well","winning a video game","keeping a promise for years","a cold drink on a hot day","becoming the person you want to be"],
+     bins:["Happiness for today (Epicurus)","Happiness for a whole life (Aristotle)"]},
+   {t:"short",lv:"s",p:"Aristotle said real happiness (eudaimonia) means living a good life over many years. Epicurus said happiness is pleasure right now. Which kind of happiness does the lotus juice give? Which kind did Odysseus choose?",fr:["The lotus juice gives…","Odysseus chose…","I know this because…"]},
+   {t:"short",lv:"c",p:"If the lotus eaters are genuinely happy and never suffer, what exactly has Odysseus saved his men from? Is a life of pure pleasure actually a loss?",fr:["He saved them from…","A life of pure pleasure loses…","Some would argue…, but…"]},
+   {t:"short",lv:"c",p:"Is there anything in the world today that works like lotus juice? Explain the comparison carefully — where does it fit, and where does it break down?",fr:["______ is like the lotus because…","However, the comparison breaks down because…"]},
+   {t:"short",lv:"all",p:"Is it more important to be happy for today, or happy for your whole life? Write your opinion with one reason and one example.",fr:["In my opinion, it is more important to…","One reason is…","For example…"]}
+  ]
+};
+
+CH.ch3 = {
+  id:"ch3", n:3, title:"Scylla, Charybdis, and Helios", theme:"Is it ever right to lie to protect people?",
+  before:{
+    q:"Before you read: If something bad is going to happen to you, do you want to know in advance, or would you rather be surprised? Why?",
+    frames:["I would rather know because…","I would rather be surprised because…","It depends on…"]
+  },
+  glossary:[
+    {w:"prophet", d:"a person who can see and tell the future"},
+    {w:"riddle", d:"a message that is hard to understand; a puzzle made of words"},
+    {w:"apprehensive", d:"worried and afraid about something that might happen"},
+    {w:"interpreting", d:"explaining what something difficult really means"},
+    {w:"narrow pass", d:"a thin space between two rocks or cliffs that a ship must go through"},
+    {w:"whirlpool", d:"water that spins in a fast circle and pulls things down"},
+    {w:"devour", d:"to eat something quickly and completely"},
+    {w:"majority", d:"more than half of a group; most of the people"},
+    {w:"betrayed", d:"broke someone's trust; was not loyal to someone"},
+    {w:"anguished", d:"feeling very great pain in your mind or heart"},
+    {w:"cattle", d:"cows"},
+    {w:"herd", d:"a large group of animals that live together"},
+    {w:"feast", d:"a very large meal, usually a celebration"},
+    {w:"despair", d:"the feeling that there is no hope at all"},
+    {w:"mast", d:"the tall wooden pole on a ship that holds the sail"}
+  ],
+  text:{
+    e:[
+"In the fires of Hades, the land of the dead, Odysseus met Tiresias. Tiresias was a blind [[prophet]]. He could see the future.",
+"Tiresias told Odysseus what would happen after he left Hades. But he spoke in a [[riddle]]. Odysseus did not understand all of it. He felt worried and did not know why.",
+"Odysseus left Hades feeling [[apprehensive]]. He did not tell his men about the riddle. Instead, he sailed back to Circe's island. He asked Circe to help him understand.",
+"Circe understood the riddle. But her explanation did not make Odysseus feel better. It made him feel worse.",
+"This is what Circe said:",
+"\"In a day or two, your ship will come to a [[narrow pass]] between two cliffs. You must go through it. There is no other way home.",
+"\"On the right side is a cliff with bare rocks. Below it is a terrible [[whirlpool]]. It pulls in everything that comes close. This whirlpool is the mouth of the monster Charybdis. If you go too close, your ship will be pulled down. You and all your men will die.",
+"\"On the left side is another cliff. In that cliff there is a cave. The monster Scylla lives in the cave. Scylla has six heads. She waits in secret. When ships pass close to her, her six heads [[devour]] six men.",
+"\"You must choose one danger. Charybdis: everyone dies. Scylla: six men die, and you cannot know which six. But Scylla is your best chance to live.",
+"\"Do not tell your men about Scylla. If you tell them, they will be too afraid, and their fear will put everyone in danger. The men will see Charybdis themselves and steer away from her. When they do, they will pass close to Scylla. It is sad to lose six men. But it is the only way to save the [[majority]].\""
+    ],
+    s:[
+"In the fires of Hades, Odysseus met Tiresias, the blind [[prophet]]. Tiresias predicted what would happen to Odysseus and his men after they left Hades. But Tiresias spoke in a [[riddle]], and Odysseus did not completely understand his words. He felt worried and anxious without understanding why.",
+"Confused and [[apprehensive]], Odysseus left Hades. He did not tell his men what Tiresias had said, but instead returned to Circe's island to ask for her help in [[interpreting]] Tiresias's words. Indeed, Circe was able to explain Tiresias's warnings. But what she told Odysseus about the dangers ahead did not make him feel better. No, he felt worse and more anxious as he and the men set out on the rest of their journey.",
+"Here is what Circe explained to Odysseus: \"In a day or two, your ship will come to a [[narrow pass]] between two cliffs. It is necessary that you pass through here. There is no other way home.",
+"\"To the right of the pass is a cliff with bare rocks, and below it a terrible [[whirlpool]] that will suck in anything that gets close to it. This whirlpool is the mouth of the monster Charybdis. If you pass too close to this whirlpool, your ship will be sucked into it, and you and all your men will die.",
+"\"If you steer close to the other cliff, you face a different danger. In this cliff there is a cave, and in the cave lives the monster Scylla. Scylla has six heads and waits in secret for ships to pass near her as they try to avoid the whirlpool. If you pass close to Scylla, her six heads will suddenly [[devour]] six of your men.",
+"\"You must choose one of these dangers. On one side, with Charybdis, all of you will die. On the other side, with Scylla, six of you will die, and you can't know which six it will be. But Scylla is your best chance to survive.",
+"\"Don't tell your men about Scylla. If you tell them, they will be too scared and will put all your lives at risk. The men will be able to see the whirlpool Charybdis for themselves, and they will try to avoid her. When they do, they will pass close to where Scylla is. It will be sad to lose six men, but it is the only way to save the [[majority]] of the men.\""
+    ]
+  },
+  stop:{
+    q:"Stop. Should Odysseus tell his men about Scylla — yes or no?",
+    body:"He has two choices. Tell them, and risk panic that could kill everyone. Stay silent, and six men die without ever knowing why. Take a side and list your reasons before you read on.",
+    frames:["He should tell them because…","He should stay silent because…","If he tells them, then…","If he says nothing, then…"]
+  },
+  text2:{
+    e:[
+"So Odysseus had a very hard choice. Should he tell the men about Scylla and risk their fear? Or should he stay silent, and let six men die by surprise, so most of the men could live? The choice filled him with horror. But he had to decide.",
+"Horrified and [[anguished]], Odysseus followed Circe's advice. He decided it was better for a few to die so that most could live. He set a course toward Scylla. He said nothing to his men.",
+"The men saw Charybdis clearly and steered away from her. To do that, they passed close to Scylla's cave. They knew nothing about the monster inside. A moment later, Scylla's six heads snapped up six of Odysseus's men. The men screamed as the monster's teeth closed on them.",
+"Terrified, Odysseus and the rest of the men steered as fast as they could past the cliffs.",
+"Most of his men lived. But Odysseus was sorry he had not told them. He felt he had [[betrayed]] his men. He heard their dying screams in his dreams that night, and many nights after.",
+"Past Scylla and Charybdis was the island of Helios, the sun god. Helios kept his special [[cattle]] there. Odysseus remembered the words of Tiresias:",
+"<i>Do not eat the cattle of Helios. If you harm the cattle in any way, your ship and men will be destroyed, and you will come home late and broken.</i>",
+"\"We cannot stop on this island,\" said Odysseus. But his men begged him. They were tired. They were deeply sad about their six dead friends. In the end, Odysseus changed his mind and landed. But he made all the men promise not to touch the cattle. He did not tell them the words of Tiresias.",
+"Days passed. The weather was foggy and wet. They could not leave in such bad weather. Odysseus began to worry. Their food was running out. The men were hungry.",
+"One day, while Odysseus was sleeping, the men killed the best cows in the [[herd]] and cooked them. They had a great [[feast]].",
+"When Odysseus woke up and saw it, he fell to his knees in [[despair]]. \"What have you done?\" he cried. \"Now Helios will have his revenge.\"",
+"The next day the weather cleared. The men were happy. Odysseus was not. Still, he set sail.",
+"Soon the weather turned bad, then worse. A hurricane hit the ship. Lightning struck it and broke it in two. All the men were thrown into the sea. Only Odysseus caught hold of the ship's [[mast]]. He floated, finally alone, on the wide sea."
+    ],
+    s:[
+"So Odysseus faced a very difficult choice. Should he tell the men about Scylla and risk their fear, which could put everyone in danger? Or should he be silent and not warn them, letting them be surprised when Scylla killed six of them suddenly, because this way most of them would escape? The choice filled Odysseus with horror and anxiety. But he knew he needed to decide.",
+"Horrified and [[anguished]], Odysseus chose to follow Circe's advice. He reasoned that it was better for a few to die so that the majority could survive. The death of six men would be sad, but worth it if it meant that all the others would live. He set a course for Scylla and Charybdis and did not tell his men what he knew.",
+"The men saw Charybdis clearly and tried to avoid her. To do so, they steered close to Scylla's cave, knowing nothing about the monster who lived there. A moment later, Scylla's six heads snapped up six of Odysseus's men. The men screamed as the monster's teeth closed on them, tearing them limb from limb. Terrified, Odysseus and the surviving men steered as fast as they could past the cliffs and out of Scylla's reach.",
+"Although most of his men survived, Odysseus regretted his decision not to tell the men about Scylla. He felt he had [[betrayed]] his men. He heard their dying screams in his nightmares that night and many after.",
+"Beyond Scylla and Charybdis was the island of Helios, the sun god. This was the island where the god kept his precious [[cattle]]. Odysseus remembered the words of Tiresias:",
+"<i>Do not eat the cattle of Helios. If you harm the cattle in any way, your ship and men will be destroyed, and you will come home late and broken.</i>",
+"\"We cannot stop on this island,\" said Odysseus, but his men begged to be able to stop and rest. They were tired and deeply sad after the deaths of their six companions. Eventually Odysseus changed his mind and landed on the island. But he made all the men promise not to touch any of Helios's cattle. He did not tell them about the words of Tiresias.",
+"The days passed, and the weather was foggy and wet. They could not leave the island in such bad weather. Odysseus began to worry, for they were running out of food and the men were getting hungry.",
+"One day, while Odysseus was sleeping, the men killed the finest cows in the [[herd]] and roasted them. They had a great [[feast]]. When Odysseus awoke and saw what they had done, he fell to his knees in [[despair]]. \"What have you done?\" he cried. \"Now Helios will have his revenge.\"",
+"The next day, the weather cleared. The men were delighted, but Odysseus did not share their optimism. Nevertheless, he set sail in the good weather. But sure enough, the weather quickly turned bad and then worse. A hurricane battered the ship. Lightning struck the ship, breaking it in two, and all the men were thrown overboard into the sea. Only Odysseus was able to catch hold of the ship's [[mast]]. He floated, finally alone, on the wide sea."
+    ]
+  },
+  closeup:{
+    title:"Language close-up: \"He reasoned that…\"",
+    body:"The writer does not say Odysseus decided, chose, or wanted. The verb is reasoned — the language of mathematics. Six is a smaller number than all. Put that next to the sentence four lines later: \"He heard their dying screams in his nightmares.\" Reasoning gave him the answer; it did not give him peace. Watch how the chapter separates what is logically correct from what a person can live with."
+  },
+  qs:[
+   {t:"mc",lv:"all",p:"What is Charybdis?",o:["A six-headed monster in a cave","A giant whirlpool that pulls ships down","A blind prophet","The sun god's island"],a:1,fb:"Charybdis is the whirlpool; Scylla is the six-headed monster."},
+   {t:"mc",lv:"all",p:"Why did Circe tell Odysseus to keep Scylla a secret?",o:["She wanted the men to die.","She thought fear would make the men panic and kill everyone.","She did not trust Odysseus.","She had forgotten about Scylla."],a:1,fb:"Her argument is about panic: fear would put all of them at risk."},
+   {t:"short",lv:"all",p:"What was Odysseus's dilemma? Explain both choices and what was bad about each one.",fr:["Odysseus had to choose between…","If he chose Scylla, then…","If he chose Charybdis, then…"]},
+   {t:"short",lv:"e",p:"Six men died. How did Odysseus feel afterward? Find the words in the text that show his feelings.",fr:["Odysseus felt…","The text says…"]},
+   {t:"short",lv:"all",p:"Why didn't Odysseus tell his men about Scylla? Do you think he was being honest? Was honesty important here?",fr:["He didn't tell them because…","I think he was / was not honest because…","Honesty matters here because…"]},
+   {t:"short",lv:"s",p:"What do you think would have happened if he HAD told them? Does Odysseus trust his men? Does trust matter in this situation?",fr:["If he had told them, I think…","He does / does not trust his men because…"]},
+   {t:"short",lv:"c",p:"Circe's argument is that six deaths are better than everyone dying. This is a numbers argument. What does the numbers argument leave out? Is a person a number?",fr:["The numbers argument leaves out…","Treating people as numbers means…","However, when everyone might die…"]},
+   {t:"short",lv:"c",p:"Odysseus also hides Tiresias's warning about the cattle. He hides information twice, and both times men die. Is Odysseus a leader who protects his men, or one who controls them?",fr:["Odysseus is a leader who…","Evidence for this is…","On the other hand…"]},
+   {t:"short",lv:"all",p:"The men ate the cattle when they were starving and Odysseus was asleep. Whose fault was the shipwreck — the men's, or Odysseus's? Explain.",fr:["I blame ______ because…","Odysseus was responsible because…","The men were responsible because…"]},
+   {t:"short",lv:"all",p:"In your opinion: is it ever right to lie to someone in order to protect them? Give one example.",fr:["I think it is / is not right to lie to protect someone because…","For example…"]}
+  ]
+};
+
+CH.ch4 = {
+  id:"ch4", n:4, title:"Kalypso", theme:"Can a person learn to love?",
+  before:{
+    q:"Before you read: Is it possible to learn to love someone or something that you did not love at first? Why or why not?",
+    frames:["I think it is / is not possible because…","For example, when I first…","Love is something that…"]
+  },
+  glossary:[
+    {w:"drifted", d:"floated slowly on the water with no control"},
+    {w:"delirious", d:"so sick or tired that your mind stops working clearly"},
+    {w:"hallucinations", d:"seeing or hearing things that are not really there"},
+    {w:"collapsed", d:"fell down suddenly because he had no strength left"},
+    {w:"nymph", d:"a female nature spirit in Greek stories; less powerful than a god"},
+    {w:"concealer", d:"someone who hides things"},
+    {w:"gazed", d:"looked at something for a long time without stopping"},
+    {w:"mortal", d:"a human being; someone who will die one day"},
+    {w:"hospitality", d:"being kind and generous to a guest"},
+    {w:"yearn", d:"to want something very badly, with a feeling of pain"},
+    {w:"immortality", d:"living forever and never dying"},
+    {w:"tempt", d:"to try to make someone want something they should not have"},
+    {w:"determined", d:"having decided something and refusing to change your mind"},
+    {w:"persuade", d:"to make someone agree to do something by giving them reasons"},
+    {w:"pitied", d:"felt sad for someone because of their suffering"}
+  ],
+  text:{
+    e:[
+"After Odysseus lost his ship and all his men, he [[drifted]] on the sea for nine days. When it rained, he drank the rain. Other than that, he had no food and no water. He was barely alive.",
+"Each day he became more [[delirious]]. He began to see and hear things that were not there.",
+"His [[hallucinations]] were worst on the tenth day. Then his raft made the sound of hitting a beach. He put out his hand. He felt an island. This was strange. One minute earlier he had looked around and seen no island.",
+"Odysseus stepped onto sand and [[collapsed]]. There really was an island. And it was also true that he had not been able to see it before. A strange power hid the island. It belonged to the sea [[nymph]] Kalypso. Her nickname was \"the [[Concealer]].\" She used magic to make her island invisible.",
+"While Odysseus lay helpless on the beach, two women came and carried him to Kalypso's cave. There, Kalypso saw Odysseus for the first time. His face was rough and sick, but when she looked at it, love entered her heart.",
+"For several days she [[gazed]] at this [[mortal]] man while he slept. Her maids took care of him. Some days later he woke up, confused and hungry. The women brought him food and water. Slowly he came back to life. And slowly he remembered how sad his situation was.",
+"\"I am Kalypso, the ruler of this island,\" she told him. \"You are welcome as my guest. I will give you anything you want or need. I want you to be happy here. I hope you will stay as my guest.\"",
+"\"Thank you for your [[hospitality]],\" said Odysseus. \"But as soon as I am well, I must return to my wife and son.\"",
+"\"Your wife?\" asked Kalypso.",
+"\"Yes,\" said Odysseus. \"I have not seen her for many years. I [[yearn]] to hold her in my arms again before it is too late.\"",
+"\"That is one wish I cannot help you with,\" said Kalypso. \"But you may love me instead. I will make you happy. I will give you a new home if you become my husband.\"",
+"She looked at him as if trying to read his thoughts. She could not. Finally she said: \"Then here is your choice, Odysseus. Either you will learn to love me and be my husband, or you will stay on this island as my guest until the day you die. Think about it. Give me your decision soon.\"",
+"So Odysseus was trapped on the island. He was held prisoner by someone who said she loved him.",
+"He could have anything he wanted on that beautiful island. But every day he walked down to the beach. He sat and stared out at the sea, hour after hour. His heart ached. Kalypso watched him, hidden in the trees. She wondered what he was thinking about. She guessed he was not thinking about her.",
+"Every day, he wanted to go home more. And every day, Kalypso was more [[determined]] to keep him. \"He will learn to love me. I can wait,\" she said to herself.",
+"Days passed. Then years. After three years, Kalypso offered Odysseus the gift of [[immortality]] in return for his love. She tried to [[tempt]] him with her beauty that would never fade. She reminded him that Penelope was growing old, but that she, Kalypso, would never grow old.",
+"But Odysseus preferred to grow old with Penelope — if he could ever get back to her — than to stay with Kalypso, no matter how beautiful and young she was.",
+"More years passed. Kalypso was still waiting. She would have waited until Odysseus died. But finally the goddess Athena stepped in to help.",
+"Poseidon was very glad that Odysseus was trapped and sad. Odysseus had blinded Poseidon's son, the Cyclops, and Poseidon wanted revenge. He wanted Odysseus to suffer. But one day Poseidon travelled far away to Ethiopia. Athena used his absence. She sent Hermes, the messenger god, to talk to Kalypso.",
+"Hermes talked to Kalypso for hours. Her heart, full of love, did not want to listen to reason. But at last Hermes was able to [[persuade]] her to let Odysseus go. He told her that letting him go would be her greatest act of love.",
+"So Kalypso gave Odysseus a boat. It made her happy to see him finally happy. But it hurt her to see that he did not care about leaving her. Odysseus said goodbye. He told her that he had learned to love her in some way — but not in the way she wanted. He was not angry with her. He [[pitied]] her.",
+"He sailed away in a small boat. But the end of the journey was not easy. When Poseidon came home from Ethiopia, he was furious to learn that Odysseus was free. He sent a terrible storm that sank the boat. Odysseus was floating in the sea again, desperate and barely able to swim.",
+"This time, though, he was close to another island. Not Ithaca — Phaeacia. It was his last stop before home."
+    ],
+    s:[
+"After the loss of his ship and men, Odysseus [[drifted]] for nine days on the sea. He drank the rain when it rained, but otherwise he had no water or food. He was barely alive. As each day passed he became more and more [[delirious]] and crazy. He began to see and hear things that were not there.",
+"His [[hallucinations]] and craziness were at their worst when, on the tenth day, his raft made the sound of hitting a beach. He put out his hand and felt that there was an island there. This was strange because a minute earlier he had looked around and seen no island.",
+"Odysseus stepped onto sandy ground and [[collapsed]]. There really was an island there, but it was true he had not been able to see it before. This was because the island was hidden by a strange power. It belonged to the sea [[nymph]] Kalypso, nicknamed \"the [[Concealer]],\" who used her magic powers to hide the island, making it invisible.",
+"While Odysseus's helpless body lay on the beach, two women came and carried him to a cave where Kalypso lived. There, Kalypso saw Odysseus for the first time. When her eyes saw the face of Odysseus, even though it was rough and sickly, love entered her heart. For several days she [[gazed]] upon this [[mortal]] man while he slept deeply, his troubles temporarily forgotten. Her maids took care of him, and some days later he awoke, confused and hungry. The women brought him food and water, and he came slowly back to life. As he did so, he remembered his sad situation.",
+"\"I am Kalypso, the ruler of this island,\" the nymph told Odysseus. \"You are most welcome as my guest. I will provide whatever you want or need. I wish you to be happy here and I hope that you will remain here as my guest.\"",
+"\"Thank you for your [[hospitality]],\" said Odysseus. \"But as soon as I am well I must return to my wife and son.\"",
+"\"Your wife?\" asked Kalypso. \"Yes,\" said Odysseus. \"I have not seen her now for many years and I [[yearn]] to hold her in my arms again before it is too late.\"",
+"\"I am afraid that is one desire I cannot help you with,\" said Kalypso. \"Yet you may love me instead. I will make you happy. I will offer you a new home if you will become my husband.\"",
+"She looked at Odysseus as if trying to read his thoughts, but she could not. Finally she said, \"Then here is your choice, Odysseus. Either you will learn to love me and be my husband, or you will stay on this island as my guest until the day of your death. Think about it and give me your decision soon.\"",
+"So Odysseus found himself trapped on the island, held prisoner by someone who claimed to love him. Although he could have anything he wanted on this beautiful island, each day he walked down to the beach and sat and stared out to sea hour after hour. His heart ached. While he sat, Kalypso watched him, hidden in the trees. She wondered what he was thinking about and guessed he was not thinking about her.",
+"With each day that passed, he wanted to go home more, and with each passing day, Kalypso was also more [[determined]] to keep him on her island. \"He will learn to love me. I can wait,\" she said to herself each day.",
+"In this way, days passed, and then years. After three years, Kalypso tried to offer Odysseus the gift of [[immortality]] in return for her love. She tried to [[tempt]] him with her undying beauty and reminded him that his wife Penelope was growing old, but that she, Kalypso, was immortal and would never get old. But Odysseus preferred to grow old with Penelope — if he could ever get back to her — than to remain with Kalypso, no matter how beautiful and young she was.",
+"More years passed. Kalypso was still waiting, and she would have waited until Odysseus died. But finally the goddess Athena stepped in to help Odysseus.",
+"Poseidon was very glad that Odysseus was trapped and sad. The god had his revenge for Odysseus's hubris and for the blinding of the Cyclops. He wanted Odysseus to suffer. However, one day Poseidon went far away to receive a sacrifice in Ethiopia, and Athena took the chance of his absence to help Odysseus. She sent Hermes, the messenger god, to talk to Kalypso.",
+"Hermes talked to Kalypso for hours. Her love-struck heart did not want to listen to reason, but at last Hermes was able to [[persuade]] Kalypso to let Odysseus go. He said that this would be her greatest act of love towards Odysseus.",
+"So Kalypso gave Odysseus a boat. It pleased her to see him finally happy, but it hurt and pained her to see that he did not care about leaving her. Odysseus said goodbye to Kalypso and told her that he had learned to love her in some way, though not the way she wanted him to love her. He was not angry with her, but rather [[pitied]] her.",
+"He set sail in a small boat, but the end of the journey was not easy. When Poseidon returned home from Ethiopia, he was furious to learn that Odysseus was free. He sent a terrible storm that sank Odysseus's ship. Odysseus found himself floating in the sea again, desperate and barely able to swim. This time, however, he was close to another island — not Ithaca, but Phaeacia, his last stop before he would reach his home."
+    ]
+  },
+  closeup:{
+    title:"Language close-up: \"held prisoner by someone who claimed to love him\"",
+    body:"One sentence holds two words that should not fit together: prisoner and love. The writer also chooses claimed, not said or felt — a word that quietly doubts her. Yet the chapter never lets us call Kalypso a villain. She feeds him, heals him, waits years, and in the end lets him go. Decide for yourself whether the word claimed is fair to her."
+  },
+  qs:[
+   {t:"mc",lv:"all",p:"Why could Odysseus not see Kalypso's island at first?",o:["He was blind.","It was night.","Kalypso used magic to hide it.","It was behind a storm."],a:2,fb:"Her nickname \"the Concealer\" means the one who hides."},
+   {t:"short",lv:"all",p:"What did Kalypso want? What did Odysseus want?",fr:["Kalypso wanted…","Odysseus wanted…","They could not both have…"]},
+   {t:"short",lv:"e",p:"Kalypso offered Odysseus immortality — life forever. He said no. Why?",fr:["He said no because…","He preferred…"]},
+   {t:"sort",lv:"all",p:"The Greeks had four words for love. Sort these examples into the right kind of love.",
+     items:["a husband and wife","two best friends","giving food to a stranger","a grandmother and grandchild","loving to play soccer","brothers and sisters","a first crush","helping people you will never meet"],
+     bins:["Eros (romantic)","Philos (friendship)","Agape (all humankind)","Storge (family)"]},
+   {t:"short",lv:"all",p:"Which kind of love does Kalypso feel for Odysseus? Which kind does Odysseus feel for Penelope and Telemachus? Use the Greek words.",fr:["Kalypso feels ______ because…","Odysseus feels ______ and ______ because…"]},
+   {t:"short",lv:"all",p:"Should Odysseus have learned to love Kalypso? Why or why not?",fr:["He should / should not have because…","If he had loved her, then…"]},
+   {t:"short",lv:"s",p:"Is it possible to learn to love someone or something you don't love at first? Think about eros, philos, agape, and storge. Is it easier with some kinds than others?",fr:["I think it is possible with ______ because…","It is harder with ______ because…"]},
+   {t:"short",lv:"c",p:"Odysseus tells Kalypso that he did learn to love her \"in some way, though not the way she wanted.\" Is that an act of kindness, or a way of avoiding the truth?",fr:["This is kindness because…","This avoids the truth because…","What he really means is…"]},
+   {t:"short",lv:"c",p:"Hermes persuades Kalypso that letting Odysseus go is her greatest act of love. Does love require giving the other person freedom? Can you love someone and keep them?",fr:["Love requires freedom because…","Someone might argue that…","Kalypso's case shows…"]},
+   {t:"short",lv:"all",p:"How do you know if someone really loves you? Can you control who you love?",fr:["You know someone loves you when…","I think you can / cannot control who you love because…"]}
+  ]
+};
+
+CH.ch5 = {
+  id:"ch5", n:5, title:"Odysseus's Return", theme:"Is revenge ever right?",
+  before:{
+    q:"Before you read: Explain what revenge is. Then: was there ever a time you wanted revenge? What happened?",
+    frames:["Revenge is when…","One time I wanted revenge because…","In the end…"]
+  },
+  glossary:[
+    {w:"suitors", d:"men who want to marry a woman"},
+    {w:"tormented", d:"made someone suffer again and again on purpose"},
+    {w:"loyal", d:"always faithful; never turning against someone"},
+    {w:"disloyal", d:"not faithful; betraying someone"},
+    {w:"delayed", d:"made something happen later than planned"},
+    {w:"disguise", d:"clothes or a change of appearance that hides who you are"},
+    {w:"beggar", d:"a very poor person who asks strangers for money or food"},
+    {w:"reunion", d:"a happy meeting after a long time apart"},
+    {w:"weaving", d:"making cloth by crossing threads over and under each other"},
+    {w:"bow", d:"a curved weapon that shoots arrows"},
+    {w:"axes", d:"tools with sharp metal blades for cutting wood"},
+    {w:"dread", d:"a heavy feeling of fear about something that is coming"},
+    {w:"scar", d:"a permanent mark on the skin left by an old cut"},
+    {w:"rags", d:"old, torn, dirty clothes"},
+    {w:"mercy", d:"kindness shown to someone you have the power to hurt"},
+    {w:"brutal", d:"extremely violent and cruel"}
+  ],
+  text:{
+    e:[
+"Finally Odysseus arrived on the shore of Ithaca. Athena met him there.",
+"\"Odysseus, welcome home,\" she said. \"But I must warn you. You have been gone for twenty years. Three years ago, a gang of [[suitors]] came to your palace. They demand that Penelope choose one of them to marry. Your son tried to stop them, but he could not. For three years they have lived in your home. They eat your food. They drink your wine. They spend your money. They have [[tormented]] your son and your [[loyal]] servants. Some [[disloyal]] servants have been sleeping with them. Penelope has [[delayed]] them as long as she can. But tomorrow she must choose one of them.\"",
+"Odysseus felt desperate. \"Help me, Athena. Give me courage to fight these men and get revenge.\"",
+"\"Of course I will be with you,\" said Athena. \"I know you will make the suitors regret stealing from you. Here — I will give you a [[disguise]], so no one will recognize you.\"",
+"Then Athena turned Odysseus into an old [[beggar]]. She told him to go to the hut of Eumaeus, an old shepherd who was loyal and could be trusted. \"I will send your son to find you there.\"",
+"Disguised as an old beggar, Odysseus went to Eumaeus's hut. Eumaeus gave him food and water. He did not know who the old man was. Soon Telemachus arrived.",
+"\"Who is this old beggar?\" Telemachus asked.",
+"\"He says he has messages for you and your mother.\"",
+"Telemachus invited the beggar outside to talk in private. A moment later he was smiling and hugging the dirty old man. Father and son sat down together. With joy in their hearts at their [[reunion]], they told each other everything that had happened in twenty years. Then they made a plan.",
+"Later that day they went to the palace. As soon as they entered the gates, the suitors began to abuse the old beggar. They kicked him, insulted him, and spat on him.",
+"At that moment Penelope came out to speak to the suitors. She did not notice the old beggar. She did not guess that it was her lost husband.",
+"In a sad voice she said: \"Tomorrow, my lords and princes, I will marry one of you. I have finished [[weaving]] my cloth. But I love none of you, so I cannot choose. Instead I will hold a competition, and I will marry the winner. Here is the competition: you must put the string on Odysseus's [[bow]] and shoot one arrow through twelve [[axes]] lined up in a row. Whoever can do it, I will marry.\"",
+"With her head down, she went back inside. Telemachus followed with the beggar. \"This old man has a message for you,\" he told his mother.",
+"\"What is your message?\" asked Penelope.",
+"\"A message from Odysseus, your husband. He told me to tell you that he is alive and will return soon.\"",
+"\"This cannot be!\" cried Penelope. \"How do you know Odysseus?\"",
+"\"I met him on my travels,\" said the beggar.",
+"Penelope's feelings were confused. She felt sadness and [[dread]] about marrying a suitor — but now, a small hope. \"Old man,\" she said, \"thank you. You have traveled far to tell me. Let my maid Eurycleia give you a bath.\"",
+"Eurycleia was an old family servant. She had washed Odysseus when he was a boy. Now, as she washed the beggar, she saw a [[scar]] on his leg — the same scar she remembered. She gasped. Could it be true? The beggar looked at her and put one finger to his lips.",
+"Then the axes and the bow were brought into a large room. First the suitors tried to put the string on the bow. It takes huge strength to do this. One by one they tried. One by one they failed.",
+"While they were trying, Odysseus spoke quietly to Eumaeus. Eumaeus nodded. He locked all the doors of the room. He took Penelope and the loyal servants to her room and locked them in, too.",
+"When the last suitor failed, Telemachus stood up. \"Let the beggar try.\"",
+"\"The beggar?!\" said the suitors, looking at the weak old man. \"He can't do it.\"",
+"\"Then it won't hurt to let him try,\" said Telemachus.",
+"The beggar stepped forward. He took the bow that only Odysseus had ever been able to use. He put the string in one hand, put his weight on the bow, and strung it easily. Then he lifted it and shot an arrow smoothly through all twelve axes. The men watched in shock.",
+"Then Odysseus threw off his [[rags]]. Every man saw who he was. \"You suitors have robbed this house long enough!\" he said. \"Now the time has come for my revenge.\"",
+"He took another arrow and shot it through the neck of one of the suitors. Telemachus joined the fight. Some suitors panicked. Others fought hard. It was a long, bloody, [[brutal]] battle inside the locked room. Odysseus and his son did not listen to the suitors' cries for [[mercy]]. They killed every man in the room. The floor was a sea of blood.",
+"When all the suitors were dead, Odysseus opened the door. The disloyal servants — the women who had slept with the suitors — ran in crying, horrified. Odysseus had no pity on them either. \"Clean up the mess,\" he ordered. After they cleaned the blood, Odysseus ordered these servants to be killed too.",
+"And so at last Odysseus was home. His palace was his. His son was his. His wife would soon be his again. He put down his bow, thanked the servants who had been loyal, and made a sacrifice to Athena. Then, with a full heart, he went upstairs to see Penelope."
+    ],
+    s:[
+"Finally Odysseus arrived on the shores of Ithaca. Athena met him there. She said, \"Odysseus, welcome home. I must warn you about what is happening in your country. You have been gone for twenty years. Three years ago, a gang of [[suitors]] arrived at your palace, demanding that Penelope choose one of them to marry. Your son tried to stop them, but he could not. For three years they have been living in your home, eating your food, drinking your wine, and spending your money. They have [[tormented]] your son and your [[loyal]] servants, while some [[disloyal]] servants have been sleeping with them. Penelope has [[delayed]] them as long as she can, but tomorrow she must choose one of them to marry.\"",
+"Odysseus felt desperate at this news. \"Help me, Athena. Give me courage to fight these men and get revenge on them.\"",
+"Athena said, \"Of course I will be with you. I know you will make the suitors regret stealing from you. Here, I will give you a [[disguise]], so no one will recognize you.\" Then Athena turned Odysseus into an old [[beggar]]. She told him to go to the hut of Eumaeus, an old shepherd who was loyal to Odysseus and could be trusted. \"I will send your son to find you there.\"",
+"Disguised as an old beggar, Odysseus went to Eumaeus's hut. Eumaeus gave him food and water without knowing who he was. Soon Telemachus, Odysseus's son, arrived at the hut. The old beggar stood up suddenly when he saw Telemachus.",
+"\"Who is this old beggar?\" Telemachus asked Eumaeus.",
+"\"He says he has messages for you and your mother. He has been asking many questions about what is happening at the palace.\"",
+"Telemachus invited the old beggar outside to talk with him in private. Soon he was smiling and hugging the old man, despite how dirty and smelly he was. With joy in their hearts at their [[reunion]], Odysseus and his son sat down to tell each other all that had happened to them in the last twenty years. Then they made a plan.",
+"Later that day, they went together to the palace. Immediately after they entered the gates, the suitors began to abuse the old beggar. They kicked, insulted, and spat on the smelly old man.",
+"At that moment Penelope came out to speak to the suitors. She did not then notice the old beggar or guess that it was really her lost husband. In a sad tone, she announced that she had finished [[weaving]] her cloth. \"Tomorrow, my lords and princes, I will marry one of you. But loving none of you, I cannot choose among you. Instead, I will hold a competition, and I will marry the winner. This is the competition: you must put the string in Odysseus's [[bow]] and shoot an arrow through twelve [[axes]] put together in a row. Whoever can do it is the man I will marry.\"",
+"With her head bowed, she went back inside the palace. Telemachus followed with the beggar. Telemachus told his mother, \"This old man says he has a message for you.\"",
+"\"What is your message?\" asked Penelope.",
+"The beggar said, \"I have a message from Odysseus, your husband. He told me to tell you that he is alive and will return soon.\"",
+"\"This cannot be!\" exclaimed Penelope emotionally. \"How do you know Odysseus?\"",
+"\"I met him on my travels,\" said the beggar.",
+"Penelope's emotions were very confused. She felt sadness and [[dread]] about marrying one of the suitors, but now a slim hope at the words of the beggar. \"Old man,\" she said, \"thank you for your message. You have traveled far to tell me. Now let my maid Eurycleia give you a bath.\"",
+"Eurycleia ran the water and helped the old beggar wash himself. Eurycleia was an old family servant who had washed Odysseus when he was a boy. Now to her shock, she saw on the old beggar's leg the very same [[scar]] that she remembered on Odysseus's leg. She gasped. Could it be true? The old beggar looked at her and put a finger to his lips to tell her not to speak.",
+"Then Penelope had the axes and bow brought into a large room for the competition. First, the suitors needed to try to put the string on the bow. It would take a huge amount of strength to do this. One by one, the suitors tried to do it, but they could not.",
+"While the suitors were trying the bow, Odysseus spoke quietly to Eumaeus. Eumaeus nodded, then quietly locked all the doors to the room. He took Penelope and her loyal servants to her room and locked them inside, too.",
+"When the last suitor tried but could not put the string in the bow, Telemachus stood up and said, \"Let the beggar try.\"",
+"\"The beggar?!\" exclaimed the suitors, looking at the weak old man. \"He can't do it.\"",
+"\"Then it won't hurt to let him try,\" said Telemachus.",
+"So the beggar stepped forward and took the bow that only Odysseus was ever able to use. He took the string in one hand, put his weight on the bow, and quickly strung the bow. Then he lifted it and shot an arrow smoothly through the twelve axes. The crowd of men watched in amazement and shock.",
+"Then Odysseus threw off his [[rags]], and all the men saw that he was Odysseus. \"You suitors have robbed this house long enough!\" he said. \"Now the time has come for me to have my revenge.\"",
+"Then Odysseus took another arrow and shot it through the neck of one of the suitors. Telemachus joined him in the fight. Some suitors panicked, while others fought hard. It was a long, bloody, [[brutal]] battle inside the locked room of the palace. Odysseus and his son did not listen to the suitors' cries for [[mercy]]. They killed every man in the room, so that the floor was a sea of blood.",
+"When finally all the suitors were dead, Odysseus opened the door of the room. The servants who had been disloyal to him and Penelope — women who had slept with the suitors — ran in crying, horrified to see what had happened to the men. Odysseus had no pity on these women either. \"Clean up the mess,\" he ordered. After they cleaned up the blood and gore, Odysseus then ordered these disloyal servants to be killed, too.",
+"And so at last Odysseus was home. His palace was his, his son was his, and his wife would soon be his again. He put down his bow, said thanks to the servants who had been loyal to him, and made a sacrifice to Athena. Then, with a full heart, he went upstairs to see Penelope."
+    ]
+  },
+  closeup:{
+    title:"Language close-up: \"his palace was his, his son was his, and his wife would soon be his again\"",
+    body:"Three things in one list: a building, a person, a person. The same verb covers all three. The writer is showing you how Odysseus sees his household at this moment — as property that was stolen and has now been recovered. Notice that Penelope, who held the palace together for twenty years and outsmarted a hundred men, appears in this sentence only as something owned. Decide whether the writer agrees with Odysseus here, or is showing us something about him."
+  },
+  qs:[
+   {t:"mc",lv:"all",p:"Why did Penelope announce the competition with the bow?",o:["She wanted to marry the strongest man.","She loved one of the suitors.","She could not choose, and she was delaying as long as possible.","Athena told her to."],a:2,fb:"She had run out of ways to delay. Only Odysseus could ever string that bow."},
+   {t:"short",lv:"all",p:"How did Eurycleia know the beggar was really Odysseus?",fr:["She knew because…","She remembered…"]},
+   {t:"short",lv:"e",p:"Who did Odysseus take revenge on? Make a list.",fr:["He took revenge on…","He also killed…"]},
+   {t:"short",lv:"all",p:"Why did Odysseus take revenge on the suitors? What had they done?",fr:["He took revenge because the suitors…","For three years they…"]},
+   {t:"short",lv:"all",p:"In your opinion, was Odysseus right to take revenge on the suitors? If not, what should he have done instead?",fr:["I think he was / was not right because…","Instead, he should have…"]},
+   {t:"short",lv:"s",p:"Odysseus also had the disloyal servant women killed. Was that the same as killing the suitors, or different? Explain your thinking.",fr:["It was the same because…","It was different because…","The servants had less power because…"]},
+   {t:"short",lv:"c",p:"When is revenge the right thing? Can revenge ever make a situation better, or does it only continue the harm?",fr:["Revenge is justified when…","Revenge makes things worse because…","In this story, revenge…"]},
+   {t:"short",lv:"c",p:"What would happen to Odysseus if he did this in the United States today? Can an action be right in one society (ancient Greece) and wrong in another (the USA in 2026)?",fr:["Today, Odysseus would…","An action can / cannot be right in one society and wrong in another because…"]},
+   {t:"short",lv:"all",p:"After twenty years, was Odysseus still the same person who left Ithaca? What changed him most?",fr:["He was / was not the same person because…","What changed him most was…"]}
+  ]
+};
+
+/* ---------- MOVIE GUIDES ---------- */
+var MOVIE = [
+ {id:"mv1", title:"Part 1 — Leaving Ithaca and the war", clock:"0:00 – 27:00",
+  qs:[
+   {t:"short",lv:"all",p:"What do you see at the very beginning? Describe the place and the people.",ts:"0:00"},
+   {t:"short",lv:"all",p:"Odysseus does not want to leave. What does he do or say that shows this?",ts:"~8:00"},
+   {t:"short",lv:"all",p:"Penelope and Telemachus stay behind. What do you think their life will be like for the next twenty years?",ts:"~14:00"},
+   {t:"mc",lv:"all",p:"How does Odysseus win the Trojan War?",o:["He kills the strongest Trojan in a duel.","He builds a wooden horse and hides soldiers inside.","He burns the Trojan ships.","He makes peace with Troy."],a:1,ts:"~22:00"},
+   {t:"short",lv:"all",p:"Write two things in the movie that are DIFFERENT from the chapter you read.",fr:["In the movie…, but in the book…"],ts:"—"}
+  ]},
+ {id:"mv2", title:"Part 2 — The Cyclops and Circe", clock:"30:00 – 1:07:00",
+  qs:[
+   {t:"short",lv:"all",p:"What happens when Odysseus and his men enter the Cyclops's cave?",ts:"~32:00"},
+   {t:"short",lv:"all",p:"Odysseus tells the Cyclops his name is \"Nobody.\" Why is that clever?",ts:"~40:00"},
+   {t:"short",lv:"all",p:"As he sails away, Odysseus shouts his real name at the Cyclops. Why does he do it? Was it a mistake?",fr:["He shouts his name because…","This was a mistake because…"],ts:"~47:00"},
+   {t:"mc",lv:"all",p:"What does Circe do to Odysseus's men?",o:["She feeds them and lets them go.","She turns them into pigs.","She kills them.","She puts them to sleep for a year."],a:1,ts:"~55:00"},
+   {t:"short",lv:"s",p:"Odysseus stays on Circe's island much longer than he plans to. What does this show about him?",ts:"~1:02"}
+  ]},
+ {id:"mv3", title:"Part 3 — Hades, Scylla, Charybdis", clock:"1:07:00 – 1:40:00",
+  qs:[
+   {t:"short",lv:"all",p:"The young man trying to use Odysseus's bow is ______. He is not strong enough to string it.",ts:"~1:08"},
+   {t:"short",lv:"all",p:"Odysseus discovers he has been on Circe's island for ______. Because of her magic, it felt like only days.",ts:"~1:12"},
+   {t:"short",lv:"all",p:"Eurymachus and Antinous say to Telemachus that ______.",ts:"~1:15"},
+   {t:"short",lv:"all",p:"To speak with Tiresias, Odysseus must go ______.",ts:"~1:20"},
+   {t:"mc",lv:"all",p:"Penelope tells the suitors she will choose after she finishes weaving. Why?",o:["It is her plan to make the suitors wait so Odysseus has more time to come home.","She wants nice clothes for the wedding.","She thinks Odysseus is dead and is weaving clothes for his body.","She is following a religious rule."],a:0,ts:"~1:25"},
+   {t:"short",lv:"all",p:"Odysseus chooses not to tell his men about Scylla. Why do you think he does not tell them?",fr:["I think he does not tell them because…","If he told them…"],ts:"~1:33"},
+   {t:"short",lv:"all",p:"How does this part of the story end?",ts:"~1:40"}
+  ]},
+ {id:"mv4", title:"Part 4 — Kalypso and the homecoming", clock:"1:40:00 – end",
+  qs:[
+   {t:"short",lv:"all",p:"How does the movie show Kalypso's island? What does it look and sound like?",ts:"~1:45"},
+   {t:"short",lv:"all",p:"How does Penelope act toward the suitors in the movie? Does she seem weak or strong to you? Give evidence from what you saw.",fr:["She seems ______ because…","For example, when…"],ts:"~2:00"},
+   {t:"short",lv:"all",p:"Describe the moment Penelope recognizes Odysseus. How do the actors show what they feel?",ts:"~2:40"},
+   {t:"mc",lv:"all",p:"In the fight with the suitors, who helps Odysseus?",o:["Nobody — he fights alone.","Telemachus and loyal servants.","The Cyclops.","The other Greek kings."],a:1,ts:"~2:30"},
+   {t:"short",lv:"c",p:"The movie shows the killing of the suitors on screen. Does seeing it change how you judge Odysseus, compared with reading it? Explain.",fr:["Seeing it made me…","Reading it made me…"],ts:"~2:35"}
+  ]}
+];
+
+/* ---------- ETHICS STRAND ---------- */
+var ETHICS = {
+ happiness:{
+  title:"What is happiness?",
+  intro:"The ancient Greeks argued about happiness for hundreds of years. Before you read their ideas, write your own.",
+  pre:[
+   {t:"short",lv:"all",p:"Describe a time when you were really happy. What happened? Write lots of details.",fr:["One time I was really happy was when…","I remember that…","I felt…"]},
+   {t:"short",lv:"all",p:"With your group: write as many definitions or examples of happiness as you can.",fr:["Happiness is…","Happiness is when…","People are happy when…"]}
+  ],
+  two:[
+   {name:"Happiness for life — Aristotle", gk:"eudaimonia (you-die-MON-ee-ya)", meaning:"\"having a good spirit\"",
+    body:"Aristotle thought happiness was about more than how you feel. It was about how you live your life. To be happy, you have to be a good person and live a good life. You cannot decide whether you are happy from one moment. You have to look at your whole life."},
+   {name:"Happiness for today — Epicurus", gk:"hēdonē (hay-doh-NAY)", meaning:"\"pleasure\"",
+    body:"Epicurus believed happiness is pleasure — things that make people feel good. Food, comfort, friends, and fun can make a person happy. This kind of happiness is about one moment, not a whole life."}
+  ],
+  post:[
+   {t:"short",lv:"all",p:"Explain these two ideas in your own words, or in your first language.",fr:["Aristotle thinks…","Epicurus thinks…","The difference is…"]},
+   {t:"short",lv:"all",p:"Look at the examples of happiness you wrote before. Which kind is each one? Sort them.",fr:["______ is happiness for today because…","______ is happiness for life because…"]},
+   {t:"short",lv:"s",p:"Which idea about happiness do you like more? Why?",fr:["I prefer ______'s idea because…","However, the problem with this idea is…"]},
+   {t:"short",lv:"c",p:"Can a person be happy for a whole life without being happy on many single days? Can the two kinds of happiness conflict?",fr:["They can conflict when…","For example…"]},
+   {t:"short",lv:"all",p:"The Lotus Eaters are always happy. Which philosopher would say they are truly happy? Which one would say they are not? Explain both.",fr:["Epicurus would say…","Aristotle would say…","I agree with…"]}
+  ]
+ },
+ love:{
+  title:"What is love?",
+  intro:"The ancient Greeks did not have one word for love. They had four. Before you read them, write your own idea.",
+  pre:[
+   {t:"short",lv:"all",p:"Write about something or someone you really love. What makes you love this person or thing?",fr:["I really love…","I love this because…","When I am with…"]},
+   {t:"short",lv:"all",p:"With your group: write as many examples of love as you can.",fr:["Love is…","An example of love is…"]}
+  ],
+  four:[
+   {gk:"Eros", say:"e-ROSS", def:"Romantic love, like between a boyfriend and girlfriend, or a husband and wife."},
+   {gk:"Philos", say:"FEE-loss", def:"Friendship love — between friends, or love of activities like football, singing, food, or learning."},
+   {gk:"Agape", say:"a-ga-PAY", def:"Love of all humankind — the kind talked about when people say \"love your neighbor.\""},
+   {gk:"Storge", say:"STOR-gay", def:"Family love — between parents and children, grandparents and grandchildren, brothers and sisters."}
+  ],
+  post:[
+   {t:"short",lv:"all",p:"Explain each kind of love in your own words or your first language. Then put your examples into the four groups.",fr:["Eros means…","Philos means…","Agape means…","Storge means…"]},
+   {t:"short",lv:"all",p:"Which kind of love keeps Odysseus going for twenty years? Use evidence from the chapters.",fr:["I think it is ______ because…","In Chapter ______, Odysseus…"]},
+   {t:"short",lv:"s",p:"Kalypso says she loves Odysseus, but she keeps him prisoner for years. Is that love? Which kind?",fr:["I think this is / is not love because…","Real love would…"]},
+   {t:"short",lv:"c",p:"Can two kinds of love conflict with each other? Find a moment in The Odyssey where they do, and explain the conflict.",fr:["______ and ______ conflict when…","Odysseus has to choose between…"]},
+   {t:"short",lv:"all",p:"Is it possible to learn to love someone or something that you did not love at first? Think about all four kinds.",fr:["With philos, I think…","With eros, I think…","In my experience…"]}
+  ]
+ }
+};
+
+/* ---------- GRAMMAR GYM ---------- */
+var GRAM = [
+ {id:"g1", title:"Telling the story: past simple", ch:"Chapter 1",
+  rule:{e:"To tell a story about the past, use the past simple.<br>Regular verbs add <b>-ed</b>: <i>walk → walked</i>, <i>want → wanted</i>.<br>Many important verbs are irregular. You must learn them: <i>go → went</i>, <i>take → took</i>, <i>build → built</i>, <i>fight → fought</i>, <i>win → won</i>.",
+        s:"Narrative is built on the past simple. Regular verbs take <b>-ed</b>; high-frequency verbs are usually irregular and must be memorised. Negatives use <b>did not + base verb</b> — the <i>-ed</i> disappears: <i>He did not want to go</i>, never <i>He did not wanted</i>.",
+        c:"Narrative uses the past simple for completed actions in sequence. Note that after <b>did</b> the verb returns to its base form, because <i>did</i> already carries the tense: <i>He did not refuse</i>. Watch for verbs that look regular but are not: <i>lay siege → laid siege</i>, <i>creep → crept</i>, <i>fall → fell</i>."},
+  ex:["Paris <b>sailed</b> to Greece.","The Greeks <b>built</b> a wooden horse.","Odysseus <b>did not want</b> to go to war."],
+  items:[
+   {p:"Menelaus ______ (marry) a woman named Helen.",a:["married"]},
+   {p:"Paris ______ (take) Helen to Troy.",a:["took"]},
+   {p:"The Greek kings ______ (feel) obligated to help.",a:["felt"]},
+   {p:"Odysseus ______ (say) goodbye to Penelope.",a:["said"]},
+   {p:"The Trojans ______ (not surrender).",a:["did not surrender","didn't surrender","did not surrender."]},
+   {p:"The Greeks ______ (fight) for ten years.",a:["fought"]},
+   {p:"Odysseus ______ (creep) to the city gates.",a:["crept"]},
+   {p:"The soldiers ______ (come) down the rope.",a:["came"]}
+  ],
+  prod:{p:"Write three sentences about Chapter 1 using past simple. Use at least one irregular verb and one negative.",fr:["Odysseus did not…","The Greeks built…","Then the Trojans…"]}},
+
+ {id:"g2", title:"Reasons and results: because / so", ch:"Chapters 1–2",
+  rule:{e:"Use <b>because</b> before a <u>reason</u>.<br>Use <b>so</b> before a <u>result</u>.<br><i>He was tired <b>because</b> he fought for ten years.</i> (reason)<br><i>He was tired, <b>so</b> he went home.</i> (result)",
+        s:"<b>Because</b> introduces the cause; <b>so</b> introduces the effect. The same two facts can go in either order — you just change the connector: <i>Odysseus refused the juice <b>because</b> he loved his family</i> = <i>Odysseus loved his family, <b>so</b> he refused the juice.</i>",
+        c:"<b>Because</b> and <b>so</b> reverse the order of cause and effect. In formal writing you will also use <b>since</b>, <b>as</b>, <b>therefore</b>, <b>as a result</b>, and <b>consequently</b>. Note the punctuation: <i>therefore</i> and <i>as a result</i> begin a new sentence or follow a semicolon, while <i>so</i> follows a comma."},
+  ex:["The men could not walk <b>because</b> they had drunk the juice.","Odysseus thought about his son, <b>so</b> he threw the cup away."],
+  items:[
+   {p:"Menelaus was furious ______ Paris had taken Helen.",a:["because"]},
+   {p:"Troy had strong walls, ______ the Greeks could not get in.",a:["so"]},
+   {p:"Odysseus tied up his men ______ they wanted more juice.",a:["because"]},
+   {p:"The ships were damaged, ______ the men stopped to repair them.",a:["so"]},
+   {p:"Odysseus refused the drink ______ he wanted to see his family.",a:["because"]},
+   {p:"The men had no fresh water, ______ they were becoming desperate.",a:["so"]}
+  ],
+  prod:{p:"Write two sentences about the Lotus Eaters: one with <i>because</i> and one with <i>so</i>.",fr:["Odysseus refused the juice because…","The men drank the juice, so…"]}},
+
+ {id:"g3", title:"Consequences: if + will", ch:"Chapter 3",
+  rule:{e:"To talk about a future result, use:<br><b>If</b> + present simple, <b>will</b> + verb.<br><i><b>If</b> you pass close to Charybdis, your ship <b>will sink</b>.</i><br>Remember: no <i>will</i> in the <i>if</i> part!",
+        s:"First conditional: <b>If</b> + present simple, <b>will</b> + base verb. The <i>if</i>-clause takes the present even though it points at the future. The two halves can swap: <i>Six men will die if you sail past Scylla.</i> No comma when <i>if</i> comes second.",
+        c:"The first conditional presents a real, likely future consequence. Compare the second conditional — <b>If</b> + past simple, <b>would</b> + base verb — which marks the situation as unlikely or imaginary: <i>If Odysseus told his men, they would panic.</i> Circe uses the first conditional because she is stating what <i>will</i> happen, not what might."},
+  ex:["<b>If</b> you tell them, they <b>will be</b> too scared.","<b>If</b> you harm the cattle, your ship <b>will be</b> destroyed."],
+  items:[
+   {p:"If the ship ______ (go) close to Charybdis, everyone will die.",a:["goes"]},
+   {p:"If Odysseus sails past Scylla, six men ______ (die).",a:["will die"]},
+   {p:"If the men ______ (eat) the cattle, Helios will take revenge.",a:["eat"]},
+   {p:"If you tell the crew about the monster, they ______ (panic).",a:["will panic"]},
+   {p:"The gods ______ (punish) him if he breaks his promise.",a:["will punish"]}
+  ],
+  prod:{p:"Write two <i>if</i> sentences about Odysseus's choice between Scylla and Charybdis.",fr:["If Odysseus chooses Scylla, …","If he tells his men, …"]}},
+
+ {id:"g4", title:"Advice and regret: should / should have", ch:"Chapter 3",
+  rule:{e:"<b>should</b> + verb = good advice now.<br><i>He <b>should tell</b> his men.</i><br><b>should have</b> + past participle = something was a mistake in the past.<br><i>He <b>should have told</b> his men.</i> (but he didn't)",
+        s:"<b>Should</b> + base verb gives advice about the present or future. <b>Should have</b> + past participle looks back and judges a past action — it always means the person did the opposite. <i>He should have warned them</i> tells you he did not warn them.",
+        c:"<b>Should have</b> + past participle carries a built-in counterfactual: the action did not occur. Compare <b>could have</b> (it was possible) and <b>would have</b> (it was the likely result). In an ethics essay, <i>should have</i> is your verb of moral judgment: <i>Odysseus should have told his men, even at the risk of panic.</i>"},
+  ex:["Odysseus <b>should have told</b> his men about Scylla.","The men <b>should not have eaten</b> the cattle of Helios."],
+  items:[
+   {p:"Odysseus ______ (tell) his men the truth. It was a mistake to hide it.",a:["should have told"]},
+   {p:"The men ______ (not eat) the cattle. They broke their promise.",a:["should not have eaten","shouldn't have eaten"]},
+   {p:"In my opinion, a leader ______ (be) honest with the people who trust him.",a:["should be"]},
+   {p:"Menelaus ______ (not start) a ten-year war over one person.",a:["should not have started","shouldn't have started"]},
+   {p:"We ______ (think) about the costs before we judge Odysseus.",a:["should think"]}
+  ],
+  prod:{p:"Write one <i>should</i> sentence and one <i>should have</i> sentence about a decision Odysseus made.",fr:["A good leader should…","Odysseus should have…"]}},
+
+ {id:"g5", title:"Reporting what people said", ch:"Chapter 4",
+  rule:{e:"When you report someone's words, the verb usually moves back one tense.<br>\"I <b>am</b> the ruler.\" → She said that she <b>was</b> the ruler.<br>\"I <b>will</b> stay.\" → He said that he <b>would</b> stay.<br>Use <b>told</b> + person: <i>She <b>told him</b> that…</i>",
+        s:"In reported speech the tense shifts back: present → past, <i>will</i> → <i>would</i>, <i>can</i> → <i>could</i>. Pronouns shift too: <i>I</i> → <i>he/she</i>, <i>my</i> → <i>his/her</i>. Use <b>said that</b> (no person) or <b>told + person + that</b>.",
+        c:"Backshift is the default, though a speaker may keep the present tense when the statement is still true. Reporting verbs carry attitude: <i>claimed</i>, <i>admitted</i>, <i>insisted</i>, <i>warned</i>, and <i>begged</i> all report the same words differently. Choosing the verb is an act of interpretation — useful in essay evidence."},
+  ex:["Kalypso said that she <b>would</b> give him immortality.","Circe <b>told</b> Odysseus that he <b>had to</b> choose."],
+  items:[
+   {p:"\"I am the ruler of this island.\" → Kalypso said that she ______ the ruler of the island.",a:["was"]},
+   {p:"\"I must return to my wife.\" → Odysseus said that he ______ return to his wife.",a:["had to","must"]},
+   {p:"\"You will never grow old.\" → She told him that he ______ never grow old.",a:["would"]},
+   {p:"\"I can wait.\" → Kalypso said that she ______ wait.",a:["could"]},
+   {p:"\"Don't tell your men.\" → Circe ______ Odysseus not to tell his men.",a:["told","warned"]}
+  ],
+  prod:{p:"Report three things characters say in Chapter 4. Use <i>said that</i>, <i>told</i>, and one stronger verb (warned, begged, claimed, promised).",fr:["Kalypso told Odysseus that…","Odysseus said that…","Hermes warned Kalypso that…"]}},
+
+ {id:"g6", title:"Background in a story: past perfect", ch:"Chapter 5",
+  rule:{e:"Use <b>had</b> + past participle for something that happened <u>before</u> the main past story.<br><i>The suitors <b>had lived</b> in his house for three years</i> — before Odysseus arrived.",
+        s:"The past perfect (<b>had</b> + past participle) marks an earlier past — the backstory behind the main events. Use it when the order of events matters: <i>Eurycleia recognised the scar because she <b>had washed</b> him as a boy.</i>",
+        c:"The past perfect signals anteriority: it places one past event before another. Writers use it to fold twenty years of backstory into a present scene without stopping the narrative. Notice how much of Chapter 5 is past perfect — the return only makes sense because of what <i>had</i> already happened."},
+  ex:["Penelope <b>had delayed</b> the suitors for three years.","Eurycleia <b>had washed</b> Odysseus when he was a boy."],
+  items:[
+   {p:"Odysseus ______ (be) gone for twenty years when he returned.",a:["had been"]},
+   {p:"The suitors ______ (eat) his food for three years.",a:["had eaten"]},
+   {p:"She recognised the scar because she ______ (see) it before.",a:["had seen"]},
+   {p:"Penelope ______ (finish) weaving the cloth, so she had to choose.",a:["had finished"]},
+   {p:"Nobody ______ (string) the bow before Odysseus tried.",a:["had strung"]}
+  ],
+  prod:{p:"Write three past perfect sentences about what had happened in Ithaca before Odysseus came home.",fr:["Before Odysseus returned, the suitors had…","Penelope had…","Telemachus had…"]}},
+
+ {id:"g7", title:"Opinion and evidence language", ch:"Essay and debate",
+  rule:{e:"To give an opinion: <b>I think…</b>, <b>In my opinion…</b><br>To give proof: <b>For example…</b>, <b>The text says…</b><br>To explain: <b>This shows that…</b>, <b>This is important because…</b>",
+        s:"An argument has three moves. State the claim (<i>In my opinion…</i>), give the evidence (<i>According to the text…</i>), then explain it (<i>This shows that…</i>). The explanation is the part students skip — and the part that earns the score.",
+        c:"Strong argument writing also concedes: <b>Although</b>, <b>While it is true that</b>, <b>Some would argue that… ; however…</b>. Conceding a real point before answering it makes your position harder to dismiss. Avoid hedges that weaken your claim without adding nuance (<i>maybe</i>, <i>kind of</i>, <i>I guess</i>)."},
+  ex:["<b>In my opinion</b>, Odysseus was not a good leader.","<b>The text says</b>, \"He felt he had betrayed his men.\"","<b>This shows that</b> he knew his choice was wrong."],
+  items:[
+   {p:"______ opinion, revenge is never the right answer.",a:["In my"]},
+   {p:"The text ______, \"He heard their dying screams in his nightmares.\"",a:["says"]},
+   {p:"This ______ that Odysseus regretted his decision.",a:["shows","proves"]},
+   {p:"______ it is true that he saved most of his men, he betrayed the six who died.",a:["Although","While"]},
+   {p:"Some would argue that Odysseus was a hero; ______, he lied to the men who trusted him.",a:["however"]}
+  ],
+  prod:{p:"Write a three-sentence argument: claim, evidence, explanation. Choose any moment from The Odyssey.",fr:["In my opinion, Odysseus…","The text says…","This shows that…"]}}
+];
+
+/* ---------- DEBATE ---------- */
+var DEBATE = {
+ motion:"This house believes that Odysseus was a good person.",
+ roles:[
+  {n:1,t:"Define the terms",job:["Welcome the audience and say what the debate is about.","Explain what your team means by \"a good person.\" Think about moral codes, moral absolutism and relativism, and the definition of happiness.","Connect your definition to Odysseus.","State your team's position clearly."],ex:"Hello, ladies and gentlemen. Today we will be debating an important question: was Odysseus a good person? Before my team presents its evidence, I would like to explain what we mean by \"a good person.\" For us, a good person is…"},
+  {n:2,t:"Overview",job:["Say again what your team believes.","Give an overview of your most important evidence. Your team must agree on this evidence first.","Be ready to answer questions from the other team."],ex:"Before I begin, let me say again that Odysseus was definitely a good person. Today we will show you why. The most important evidence to prove our point is…"},
+  {n:3,t:"First questions",job:["Listen carefully to the other team's overview.","Ask them three or more questions about their ideas.","Every question must connect to whether Odysseus was a good person."],ex:"You say that Odysseus was not a good person. But how is that possible, if it was his idea that ended the Trojan War and stopped so many people from dying?"},
+  {n:4,t:"Evidence: the journey",job:["Present and explain all your evidence from Odysseus's journey home.","Be ready to answer questions from the other team."],ex:"Odysseus faced many challenges on his journey. It was not always easy to be a good person. But many times, Odysseus showed that he was. For example…"},
+  {n:5,t:"Evidence: Ithaca",job:["Present your evidence about Odysseus at home in Ithaca — before he left and after he returned.","Be ready to answer questions."],ex:"Odysseus was at his best when he was at home in Ithaca, with his family and his citizens. There is much evidence to show that he was a good king, family member, and person. For example…"},
+  {n:6,t:"Evidence: character traits",job:["Present evidence about Odysseus's character traits.","Go deep on two very important traits rather than listing many.","Be ready to answer questions."],ex:"To complete our argument, it is important to consider his character traits. Odysseus had many positive traits, such as…"},
+  {n:7,t:"Second questions",job:["Listen to the other team's evidence.","Ask three or more questions.","Try to ask one about the journey, one about Ithaca, and one about his character."],ex:"You say Odysseus was not a good person. But do you think it's possible that he was a good person for his time, even if he is not a good person for today?"},
+  {n:8,t:"Conclusion and team leader",job:["Before writing your own speech, help your team write theirs.","Help the team agree on a definition of a good person and on the best evidence.","Check that no two speeches repeat each other.","Show the team the rubric and make sure everyone understands it.","Speak last: restate your position, review your best evidence, and answer the other team's arguments — this part you cannot plan in advance."],ex:"First let me say thank you for listening to our arguments. This has been a good debate. To conclude, I want to review why my team says Odysseus was a good person. I'd also like to answer some of the opposing team's main points…"}
+ ],
+ evidence:[
+  {ch:"Ch 1", pro:"He ended a ten-year war and stopped more deaths.", con:"He won by lying. He agreed to fight in a war he thought was wrong."},
+  {ch:"Ch 2", pro:"He refused the lotus juice and saved his men from it.", con:"He gave a cup to a man just to see what would happen."},
+  {ch:"Ch 3", pro:"He chose the option that saved most of his crew.", con:"He hid Scylla and Tiresias's warning. Six men died not knowing why."},
+  {ch:"Ch 4", pro:"He stayed loyal to Penelope for years, refusing immortality.", con:"He stayed with Circe for a year and did not fight harder to leave."},
+  {ch:"Ch 5", pro:"He rewarded the servants who stayed loyal to his family.", con:"He killed every suitor, ignored their cries for mercy, and executed the servant women."}
+ ]
+};
+
+/* ---------- ESSAY (HOTPEARC) ---------- */
+var ESSAY = {
+ prompt:"Was Odysseus a good person?",
+ parts:[
+  {k:"H",n:"Hook",g:"Get the reader's attention with an interesting question or idea about being a good person.",
+   fr:["If you met Odysseus today, would you say he was a good person?","Odysseus is remembered as a hero, but was he a good person?","Do good people really exist?","What do we mean when we talk about ______?"],min:15},
+  {k:"O",n:"Overview",g:"Explain the background: what does it mean to be a good person, and what do we need to know about The Odyssey?",
+   fr:["Being a good person is about ______.","To be a good person, it is important to ______.","The ancient Greeks believed a good person was ______.","To judge if Odysseus was a good person, we need to think about ______."],min:40},
+  {k:"T",n:"Thesis",g:"Answer the prompt. State the main idea of your whole essay in one clear sentence.",
+   fr:["Because of ______, Odysseus was / was not a good person.","It is clear that Odysseus was / was not a good person because ______.","On the one hand, Odysseus ______; on the other hand, he ______.","Being a good person is about ______, not ______, so Odysseus ______."],min:15},
+  {k:"P1",n:"Point 1",g:"Your first main reason. One idea only.",
+   fr:["One important reason why Odysseus was / was not a good person is ______.","One of Odysseus's major virtues / failings is ______."],min:12},
+  {k:"E1",n:"Evidence 1",g:"Two or more pieces of evidence from the text. In your own words, or a short quote.",
+   fr:["One example is ______.","The text says, \"______.\"","According to the text, ______.","A part of the text that shows this is ______."],min:30},
+  {k:"A1",n:"Analysis 1",g:"Explain why your evidence matters and how it proves your point.",
+   fr:["This is important because ______.","This shows that Odysseus was / was not a good person because ______.","As a result, ______."],min:30},
+  {k:"E1b",n:"Evidence 2 (same point)",g:"A second, different piece of evidence for the same point.",
+   fr:["Another example is ______.","This is also illustrated by ______."],min:25},
+  {k:"A1b",n:"Analysis 2",g:"Explain this second piece of evidence.",
+   fr:["This confirms that ______.","This proves that ______."],min:25},
+  {k:"P2",n:"Point 2",g:"Your second main reason. It must be different from Point 1.",
+   fr:["Another of Odysseus's good / bad qualities is ______.","Odysseus ______, so he was / was not a good person."],min:12},
+  {k:"E2",n:"Evidence 3",g:"Evidence from the text for your second point.",
+   fr:["One example is ______.","The text says, \"______.\""],min:30},
+  {k:"A2",n:"Analysis 3",g:"Explain how this evidence supports Point 2 and your thesis.",
+   fr:["This shows that ______.","This is proof that ______."],min:30},
+  {k:"E2b",n:"Evidence 4 (same point)",g:"A second piece of evidence for Point 2.",
+   fr:["Another example is ______.","As stated by the author, \"______.\""],min:25},
+  {k:"A2b",n:"Analysis 4",g:"Explain it.",
+   fr:["This is important because ______.","As a result, ______."],min:25},
+  {k:"R",n:"Restate",g:"Remind the reader of your thesis and summarise your two points.",
+   fr:["Due to ______, Odysseus was / was not a good person.","His main positive / negative qualities were ______ and ______.","A good person is ______, and Odysseus clearly does / does not meet this definition."],min:30},
+  {k:"C",n:"Connection",g:"Why does this matter today? Connect to your life, another text, or the world.",
+   fr:["This matters for us today because ______.","A connection to my life is ______.","There is a lot to learn from The Odyssey that is useful today. For example, ______."],min:30}
+ ],
+ rubric:[
+  {o:"I can make an argument and support it with textual evidence.",
+   x:"Varied textual evidence supports the thesis and all points. Analysis explains the value of the evidence and how it supports the thesis.",
+   d:"Uses text, movie, and class artifacts. Varied evidence tries to support the thesis. Analysis tries to explain the value of the evidence.",
+   b:"Uses the movie and class artifacts. Limited evidence in own words is related to the thesis.",
+   e:"Uses the movie and class artifacts. Some evidence is copied from a document."},
+  {o:"I can organize an essay.",
+   x:"Uses the HOTPEARC toolkit. Detailed overview. Thesis answers the prompt. Each body paragraph has a point. Evidence and analysis in logical order. Conclusion restates, summarises, and connects.",
+   d:"Uses HOTPEARC. Introduction tries to explain what a good person is. Thesis tries to answer the prompt. Most paragraphs have a point. Conclusion tries to restate and connect.",
+   b:"Uses sentence frames. Follows the order of the frames. Conclusion tries to restate and connect.",
+   e:"Uses sentence frames. Tries to follow the order but may be missing parts or clear paragraphs."},
+  {o:"I can use correct English grammar and spelling.",
+   x:"Vocabulary is appropriate to purpose. Sentences are understandable. Mostly correct punctuation, capitalization, and spelling.",
+   d:"Uses some content-specific vocabulary. May omit endings or words, or have word-order difficulty. Mostly correct mechanics.",
+   b:"Limited or repetitive vocabulary. Some errors make the writing hard to understand.",
+   e:"Single words and patterned phrases. Limited awareness of punctuation, capitalization, and spelling."},
+  {o:"I can revise my work to make it better.",
+   x:"Makes all changes suggested and adds new ideas.", d:"Makes all changes suggested.", b:"Makes most changes suggested.", e:"Makes some changes suggested."}
+ ]
+};
+
+/* ---------- UNIT TEST ---------- */
+var TEST = [
+ {t:"mc",p:"Why did the Greek kings agree to fight at Troy?",o:["They wanted Trojan gold.","They had sworn to defend each other, so they felt obligated.","The gods commanded them.","They wanted to explore new land."],a:1},
+ {t:"mc",p:"How did Odysseus finally defeat Troy?",o:["He challenged the Trojan king to single combat.","He starved the city for ten years.","He hid soldiers inside a wooden horse.","He set fire to the city walls."],a:2},
+ {t:"mc",p:"What happens to a person who drinks lotus juice?",o:["They fall asleep for a year.","They become completely happy and want only more juice.","They turn into an animal.","They can see the future."],a:1},
+ {t:"mc",p:"Why did Odysseus refuse the lotus juice?",o:["It smelled bad.","He was not thirsty.","He thought about his wife and son.","Circe warned him not to."],a:2},
+ {t:"mc",p:"Charybdis is…",o:["a six-headed monster.","a whirlpool.","a sea nymph.","the sun god."],a:1},
+ {t:"mc",p:"Scylla is…",o:["a six-headed monster.","a whirlpool.","a sea nymph.","a blind prophet."],a:0},
+ {t:"mc",p:"Why did Odysseus not tell his men about Scylla?",o:["He forgot.","He did not know about her.","He believed their fear would put everyone at risk.","He wanted six men to die."],a:2},
+ {t:"mc",p:"What did the men do on the island of Helios?",o:["They stole his gold.","They killed and ate his cattle.","They burned his temple.","They freed his prisoners."],a:1},
+ {t:"mc",p:"What is Kalypso's nickname, and why?",o:["\"The Singer,\" because she sang to sailors.","\"The Concealer,\" because she hid her island with magic.","\"The Weaver,\" because she made cloth.","\"The Healer,\" because she cured Odysseus."],a:1},
+ {t:"mc",p:"What did Kalypso offer Odysseus in exchange for his love?",o:["A ship and a crew.","Immortality.","Safe passage to Ithaca.","Revenge on Poseidon."],a:1},
+ {t:"mc",p:"Who finally persuaded Kalypso to release Odysseus?",o:["Poseidon","Penelope","Hermes, sent by Athena","Circe"],a:2},
+ {t:"mc",p:"How long had the suitors been living in Odysseus's palace?",o:["Twenty years","Ten years","Three years","One year"],a:2},
+ {t:"mc",p:"How did Eurycleia recognise Odysseus?",o:["By his voice","By a scar on his leg","By his ring","Athena told her"],a:1},
+ {t:"mc",p:"What was Penelope's competition?",o:["A running race","A singing contest","Stringing Odysseus's bow and shooting through twelve axes","A wrestling match"],a:2},
+ {t:"mc",p:"Aristotle's idea of happiness (eudaimonia) means…",o:["pleasure right now.","living a good life over many years.","having a lot of money.","never feeling pain."],a:1},
+ {t:"mc",p:"Which Greek word means family love?",o:["Eros","Philos","Agape","Storge"],a:3},
+ {t:"mc",p:"Which Greek word means love of all humankind?",o:["Eros","Philos","Agape","Storge"],a:2},
+ {t:"mc",p:"Choose the correct sentence.",o:["He should have told his men.","He should told his men.","He should have tell his men.","He should has told his men."],a:0},
+ {t:"mc",p:"Choose the correct sentence.",o:["If he will sail near Scylla, six men die.","If he sails near Scylla, six men will die.","If he sail near Scylla, six men will die.","If he sails near Scylla, six men die will."],a:1},
+ {t:"mc",p:"\"I can wait,\" said Kalypso. Report her words correctly.",o:["Kalypso said that she can wait.","Kalypso said that she could wait.","Kalypso said that she will wait.","Kalypso said she waits."],a:1},
+ {t:"short",p:"Explain Odysseus's dilemma with Scylla and Charybdis. What were his two choices, and what was bad about each one? (4–6 sentences)",fr:["Odysseus had to choose between…","If he chose Charybdis, …","If he chose Scylla, …","Both choices were bad because…"],pts:6},
+ {t:"short",p:"Choose ONE decision Odysseus made in this unit. Was it right or wrong? Give evidence from the text and explain it. (5–8 sentences)",fr:["In my opinion, Odysseus was right / wrong when he…","The text says…","This shows that…","Although some would argue…, I believe…"],pts:8},
+ {t:"short",p:"Was Odysseus a good person? State your position and give your two strongest reasons. (5–8 sentences)",fr:["In my opinion, Odysseus was / was not a good person.","One reason is…","Another reason is…","Therefore, …"],pts:8}
+];
+
+/* ============ CONFIG ============ */
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var TABLE='odyssey_work';
+var TRANS='https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
+var MEDIA_KEY='odyssey_media_url';
+function LS(k,v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v); }catch(e){ return null; } }
+
+/* ============ STATE ============ */
+var S = { name:'', email:'', period:'', level:'s', ans:{}, sorts:{}, turned:false };
+var GLOSS = {};           // word(lower) -> definition
+var TCACHE = {};          // "word|lang" -> translation
+var dirty=false, cur='map';
+
+function $(s,r){return (r||document).querySelector(s)}
+function $$(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
+function esc(t){return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function norm(t){return String(t||'').toLowerCase().replace(/[.,!?;:'"]/g,'').replace(/\s+/g,' ').trim()}
+
+/* ============ SVG ART ============ */
+var ART = {
+ch1:'<svg class="svgart" viewBox="0 0 520 260" role="img" aria-label="The wooden horse outside the walls of Troy"><g fill="none" stroke="#1d4f6b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 220h500"/><path d="M330 220V95h160v125" /><path d="M330 120h160M330 145h160M330 170h160M330 195h160"/><path d="M350 120v100M380 120v100M410 120v100M440 120v100M470 120v100"/><path d="M395 220v-42a18 18 0 0 1 36 0v42"/><path d="M120 220v-58l-22-14 14-40 40-16 14-38 26 10 8 28 34 14-6 34-26 18v62"/><path d="M168 54l10-26 20 10-6 24"/><path d="M188 66c8-4 18-2 22 6"/><circle cx="164" cy="80" r="3.5" fill="#1d4f6b"/><path d="M112 148h86"/><path d="M120 220h84"/><path d="M96 200l-26 20M226 200l26 20"/></g><g fill="none" stroke="#b4532a" stroke-width="2"><path d="M40 232q30-10 60 0t60 0 60 0 60 0 60 0 60 0"/></g></svg>',
+ch2:'<svg class="svgart" viewBox="0 0 520 240" role="img" aria-label="Empty cups on a meadow of grass"><g fill="none" stroke="#1d4f6b" stroke-width="2.2" stroke-linecap="round"><path d="M10 195h500"/><g><path d="M120 195v-36h44v36zM120 159h44M128 159l-4 36M156 159l4 36"/><path d="M164 168h14a8 8 0 0 1 0 16h-14"/></g><g><path d="M230 195v-28h34v28zM230 167h34"/><path d="M264 174h11a6 6 0 0 1 0 12h-11"/></g><g><path d="M320 195v-40h48v40zM320 155h48M330 155l-4 40M358 155l4 40"/><path d="M368 165h15a9 9 0 0 1 0 18h-15"/></g></g><g fill="none" stroke="#15803d" stroke-width="1.7" stroke-linecap="round" opacity=".85"><path d="M20 195q6-30 12-38M44 195q4-26 2-36M70 195q8-24 6-34M96 195q5-28 10-34M196 195q6-26 4-34M290 195q7-24 4-32M400 195q5-30 12-36M428 195q4-24 0-34M456 195q9-26 6-34M484 195q4-28 10-34"/></g><g fill="none" stroke="#b7862b" stroke-width="2"><circle cx="188" cy="126" r="8"/><circle cx="298" cy="118" r="8"/><circle cx="402" cy="130" r="8"/><path d="M188 134v12M298 126v12M402 138v12"/></g></svg>',
+ch3:'<svg class="svgart" viewBox="0 0 520 260" role="img" aria-label="A ship passing between a whirlpool and a cliff with a cave"><g fill="none" stroke="#1d4f6b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M0 200h520"/><path d="M10 200V70l34-26 30 40 24-18 26 46v88"/><path d="M124 200V96l30-20 22 30v94"/><path d="M60 150a26 20 0 0 1 46 10 26 20 0 0 1-46-10z"/><path d="M396 200V60l40-30 34 44 40-24v150"/><path d="M230 178l24 22h58l24-22z"/><path d="M282 178V92"/><path d="M282 100l58 60h-58"/><path d="M282 112l-46 48h46"/></g><g fill="none" stroke="#b4532a" stroke-width="2.2" stroke-linecap="round"><path d="M404 206q22 6 34 22 12 16 34 16"/><path d="M418 218q16 6 24 18 10 14 26 14"/><path d="M432 230q12 4 18 12 8 10 18 10"/><path d="M448 240q8 3 12 8"/></g><g fill="none" stroke="#15803d" stroke-width="1.8"><path d="M74 152c6-8 6-16 0-22M84 154c8-10 8-20 0-28M64 150c4-6 4-12 0-16"/></g><g fill="none" stroke="#1d4f6b" stroke-width="1.6" opacity=".6"><path d="M150 216q22-8 44 0t44 0M150 232q22-8 44 0t44 0"/></g></svg>',
+ch4:'<svg class="svgart" viewBox="0 0 520 240" role="img" aria-label="A figure sitting alone on a beach looking out to sea"><g fill="none" stroke="#1d4f6b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M0 186q60-14 130 0t130 0 130 0 130 0"/><path d="M0 206q60-14 130 0t130 0 130 0 130 0"/><path d="M0 226q60-14 130 0t130 0 130 0 130 0"/><circle cx="122" cy="120" r="13"/><path d="M122 133v34l-22 18M122 148l24 14M122 167l-10 20M136 162l6 25"/><path d="M60 187q30-20 62-20"/></g><g fill="none" stroke="#15803d" stroke-width="2" stroke-linecap="round"><path d="M400 186V116"/><path d="M400 118q-26-16-40-2 20 6 40 12M400 118q26-16 40-2-20 6-40 12M400 136q-24-12-36 0 18 6 36 6M400 136q24-12 36 0-18 6-36 6"/><path d="M452 186v-52M452 136q-20-12-30-2 16 5 30 10M452 136q20-12 30-2-16 5-30 10"/></g><g fill="none" stroke="#b7862b" stroke-width="1.8" opacity=".75"><circle cx="452" cy="46" r="16"/><path d="M452 18v-10M452 84v-10M480 46h10M414 46h10M472 26l7-7M425 67l7-7M472 66l7 7M425 25l7 7"/></g></svg>',
+ch5:'<svg class="svgart" viewBox="0 0 520 240" role="img" aria-label="A great bow and twelve axes lined up in a row"><g fill="none" stroke="#1d4f6b" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M70 30q-44 80 0 180"/><path d="M70 30q14 6 16 20M70 210q14-6 16-20"/><path d="M86 50q10 76 0 140"/><path d="M86 120h380"/><path d="M452 108l24 12-24 12z"/><path d="M86 112l-14 8 14 8"/></g><g fill="none" stroke="#b4532a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><g id="ax"><path d="M140 210V60"/><path d="M140 70q-16-14-4-28 14 6 20 18M140 70q16-14 4-28-14 6-20 18"/></g></g><g fill="none" stroke="#b4532a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M140 210V62M166 210V62M192 210V62M218 210V62M244 210V62M270 210V62M296 210V62M322 210V62M348 210V62M374 210V62M400 210V62M426 210V62"/><path d="M140 74q-14-12-4-24 12 5 18 15M166 74q-14-12-4-24 12 5 18 15M192 74q-14-12-4-24 12 5 18 15M218 74q-14-12-4-24 12 5 18 15M244 74q-14-12-4-24 12 5 18 15M270 74q-14-12-4-24 12 5 18 15M296 74q-14-12-4-24 12 5 18 15M322 74q-14-12-4-24 12 5 18 15M348 74q-14-12-4-24 12 5 18 15M374 74q-14-12-4-24 12 5 18 15M400 74q-14-12-4-24 12 5 18 15M426 74q-14-12-4-24 12 5 18 15"/></g><path d="M20 212h480" fill="none" stroke="#1d4f6b" stroke-width="2.2"/></svg>',
+map:'<svg class="svgart" style="max-width:640px" viewBox="0 0 660 300" role="img" aria-label="Map of the route from Troy back to Ithaca"><g fill="none" stroke="#1d4f6b" stroke-width="1.5" opacity=".35"><path d="M0 40h660M0 90h660M0 140h660M0 190h660M0 240h660M60 0v300M160 0v300M260 0v300M360 0v300M460 0v300M560 0v300"/></g><path d="M600 60 C 520 40, 470 110, 400 100 S 290 60, 240 130 S 170 210, 110 190 S 60 230, 60 240" fill="none" stroke="#b4532a" stroke-width="3" stroke-dasharray="7 6" stroke-linecap="round"/><g fill="#14532d" font-family="Nunito,sans-serif" font-size="13" font-weight="700"><circle cx="600" cy="60" r="6"/><text x="574" y="42">Troy</text><circle cx="400" cy="100" r="6"/><text x="356" y="84">Lotus Eaters</text><circle cx="240" cy="130" r="6"/><text x="196" y="114">Cyclops · Circe</text><circle cx="170" cy="200" r="6"/><text x="112" y="226">Scylla · Helios</text><circle cx="110" cy="190" r="6"/><circle cx="60" cy="240" r="7"/><text x="26" y="264">Ithaca</text></g><g fill="#1d4f6b" font-family="Nunito,sans-serif" font-size="11" opacity=".7"><text x="470" y="140">Kalypso — 7 years</text></g><circle cx="330" cy="170" r="6" fill="#b7862b"/></svg>'
+};
+
+/* ============ TEXT + GLOSSARY ============ */
+function buildGloss(){
+  Object.keys(CH).forEach(function(k){
+    (CH[k].glossary||[]).forEach(function(g){ GLOSS[g.w.toLowerCase()]=g.d; });
+  });
+}
+function mark(p){
+  return p.replace(/\[\[(.+?)\]\]/g, function(_,w){
+    return '<span class="gl" data-w="'+esc(w.toLowerCase())+'" tabindex="0" role="button">'+esc(w)+'</span>';
+  });
+}
+function showTip(el){
+  var w=el.getAttribute('data-w'), d=GLOSS[w]||'';
+  var t=$('#tip');
+  t.innerHTML='<b>'+esc(el.textContent)+'</b><br>'+esc(d)+'<span class="tr" id="trline"></span>';
+  t.style.display='block';
+  var r=el.getBoundingClientRect();
+  var top=r.bottom+8, left=Math.max(10,Math.min(r.left, window.innerWidth-320));
+  if(top+140>window.innerHeight) top=Math.max(10,r.top-150);
+  t.style.top=top+'px'; t.style.left=left+'px';
+  var lang=$('#lang').value;
+  if(!lang){ $('#trline').textContent=''; return; }
+  var key=w+'|'+lang;
+  if(TCACHE[key]){ $('#trline').textContent=TCACHE[key]; return; }
+  $('#trline').textContent='…';
+  translate(el.textContent+' — '+d, lang).then(function(x){
+    TCACHE[key]=x; var l=$('#trline'); if(l) l.textContent=x;
+  }).catch(function(){ var l=$('#trline'); if(l) l.textContent='(translation unavailable)'; });
+}
+function translate(text,lang){
+  return fetch(TRANS+'?text='+encodeURIComponent(text)+'&lang='+encodeURIComponent(lang))
+    .then(function(r){return r.text()})
+    .then(function(t){ try{ var j=JSON.parse(t); return j.translation||j.text||t; }catch(e){ return t; } });
+}
+document.addEventListener('click',function(e){
+  var g=e.target.closest ? e.target.closest('.gl') : null;
+  if(g){ showTip(g); e.stopPropagation(); return; }
+  if(!e.target.closest || !e.target.closest('#tip')) $('#tip').style.display='none';
+});
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape') $('#tip').style.display='none';
+  if((e.key==='Enter'||e.key===' ') && e.target.classList && e.target.classList.contains('gl')){ e.preventDefault(); showTip(e.target); }
+});
+
+/* ============ QUESTION RENDERING ============ */
+function qid(sec,i){ return sec+'_q'+i; }
+function showQ(q){ return q.lv==='all' || !q.lv || q.lv===S.level || (S.level==='c' && q.lv==='s'); }
+
+function renderQ(q,i,sec){
+  var id=qid(sec,i), v=S.ans[id]||'';
+  var h='<div class="q'+(showQ(q)?'':' hide-lvl')+'" data-lv="'+(q.lv||'all')+'" id="w_'+id+'">';
+  var tagmap={e:'<span class="tag e">Easier</span>',s:'<span class="tag s">Standard</span>',c:'<span class="tag c">Challenge</span>'};
+  h+='<div class="prompt"><span class="num">'+(i+1)+'.</span>'+(q.lv&&q.lv!=='all'?tagmap[q.lv]:'')+(q.ts?'<span class="ts">'+esc(q.ts)+'</span>':'')+mark(q.p)+'</div>';
+
+  if(q.t==='mc'){
+    h+='<div class="opts" data-id="'+id+'">';
+    q.o.forEach(function(o,j){
+      var sel = (v===String(j));
+      h+='<label class="opt'+(sel?' sel':'')+'" data-j="'+j+'"><input type="radio" name="'+id+'" value="'+j+'"'+(sel?' checked':'')+'><span>'+esc(o)+'</span></label>';
+    });
+    h+='</div><div class="fb" id="fb_'+id+'"></div>';
+    h+='<button class="btn sm sea no-print" style="margin-top:8px" onclick="checkMC(\''+id+'\','+q.a+',this)">Check</button>';
+    if(q.fb) h+='<div class="hint" id="hn_'+id+'">'+esc(q.fb)+'</div>';
+  } else if(q.t==='sort'){
+    h+=renderSort(q,id,v);
+  } else {
+    if(q.fr && q.fr.length){
+      h+='<div class="frames no-print">';
+      q.fr.forEach(function(f){ h+='<button class="frame" onclick="pushFrame(\''+id+'\',this)">'+esc(f)+'</button>'; });
+      h+='</div>';
+    }
+    h+='<textarea id="'+id+'" oninput="mark_dirty()" placeholder="Write your answer here…">'+esc(v)+'</textarea>';
+  }
+  h+='</div>';
+  return h;
+}
+function renderSort(q,id,v){
+  var placed = S.sorts[id]||{};
+  var h='<div class="sortw" data-id="'+id+'"><div class="chips" id="pool_'+id+'">';
+  q.items.forEach(function(it,k){
+    if(placed[k]===undefined) h+='<button class="chip drag" data-k="'+k+'" onclick="pickChip(\''+id+'\','+k+',this)">'+esc(it)+'</button>';
+  });
+  h+='</div><div class="bins">';
+  q.bins.forEach(function(b,bi){
+    h+='<div class="bin" data-b="'+bi+'" onclick="dropChip(\''+id+'\','+bi+')"><h4>'+esc(b)+'</h4><div class="chips" id="bin_'+id+'_'+bi+'">';
+    q.items.forEach(function(it,k){ if(placed[k]===bi) h+='<button class="chip drag" onclick="unplace(\''+id+'\','+k+')">'+esc(it)+'</button>'; });
+    h+='</div></div>';
+  });
+  h+='</div><p class="muted no-print">Tap a word, then tap a box. Tap it again to send it back.</p></div>';
+  return h;
+}
+var picked={};
+function pickChip(id,k,el){ picked[id]=k; $$('#pool_'+id+' .chip').forEach(function(c){c.style.outline=''}); el.style.outline='3px solid var(--gold)'; }
+function dropChip(id,bi){
+  if(picked[id]===undefined) return;
+  S.sorts[id]=S.sorts[id]||{}; S.sorts[id][picked[id]]=bi; picked[id]=undefined; mark_dirty(); render();
+}
+function unplace(id,k){ if(S.sorts[id]) delete S.sorts[id][k]; mark_dirty(); render(); }
+function pushFrame(id,btn){
+  var ta=document.getElementById(id); if(!ta) return;
+  var t=btn.textContent.replace(/…$/,' ');
+  ta.value = (ta.value? ta.value.replace(/\s*$/,'')+' ' : '') + t;
+  ta.focus(); mark_dirty();
+}
+function checkMC(id,a,btn){
+  var box=document.querySelector('[data-id="'+id+'"]'); if(!box) return;
+  var sel=box.querySelector('input:checked'); if(!sel){ return; }
+  var ok = Number(sel.value)===a;
+  $$('.opt',box).forEach(function(o){ o.classList.remove('right','wrong'); });
+  sel.closest('.opt').classList.add(ok?'right':'wrong');
+  if(!ok) $$('.opt',box)[a].classList.add('right');
+  var fb=document.getElementById('fb_'+id);
+  fb.className='fb show '+(ok?'good':'bad');
+  fb.textContent = ok? 'Correct.' : 'Not yet — the correct answer is highlighted.';
+  var hn=document.getElementById('hn_'+id); if(hn) hn.classList.add('show');
+  btn.textContent='Checked';
+}
+document.addEventListener('change',function(e){
+  if(e.target.type==='radio'){
+    var box=e.target.closest('.opts'); if(!box) return;
+    $$('.opt',box).forEach(function(o){o.classList.remove('sel')});
+    e.target.closest('.opt').classList.add('sel');
+    S.ans[box.getAttribute('data-id')]=e.target.value; mark_dirty();
+  }
+});
+document.addEventListener('input',function(e){
+  var t=e.target, id=t.id||'';
+  if(id.indexOf('li-')===0 || id==='pw' || id==='mediaurl') return;
+  if((t.tagName==='TEXTAREA'||t.tagName==='INPUT') && id){ S.ans[id]=t.value; }
+  dirty=true; $('#dot').className='save'; updateProgress();
+});
+
+/* ============ PROGRESS ============ */
+function allQIds(){
+  var ids=[];
+  Object.keys(CH).forEach(function(k){
+    var c=CH[k];
+    ids.push(qid(c.id+'_pre',0));
+    if(c.stop) ids.push(qid(c.id+'_stop',0));
+    c.qs.forEach(function(q,i){ if(showQ(q)) ids.push(qid(c.id,i)); });
+  });
+  MOVIE.forEach(function(m){ m.qs.forEach(function(q,i){ if(showQ(q)) ids.push(qid(m.id,i)); }); });
+  ['happiness','love'].forEach(function(k){
+    ETHICS[k].pre.forEach(function(q,i){ ids.push(qid('eth_'+k+'_pre',i)); });
+    ETHICS[k].post.forEach(function(q,i){ if(showQ(q)) ids.push(qid('eth_'+k+'_post',i)); });
+  });
+  GRAM.forEach(function(g){ g.items.forEach(function(x,i){ ids.push('gr_'+g.id+'_'+i); }); ids.push('gr_'+g.id+'_prod'); });
+  ESSAY.parts.forEach(function(p){ ids.push('es_'+p.k); });
+  TEST.forEach(function(t,i){ ids.push('tst_'+i); });
+  return ids;
+}
+function progress(){
+  var ids=allQIds(), done=0;
+  ids.forEach(function(i){ var v=S.ans[i]; if(v&&String(v).trim().length>1) done++; });
+  Object.keys(S.sorts).forEach(function(k){ if(Object.keys(S.sorts[k]).length) done++; });
+  return {done:done, total:ids.length};
+}
+function updateProgress(){
+  var p=progress(), pct = p.total? Math.round(p.done/p.total*100):0;
+  $('#progbar').style.width=pct+'%';
+  $('#progtxt').textContent = p.done+' of '+p.total+' answered';
+  $$('#tabs .tab').forEach(function(t){
+    var s=t.getAttribute('data-s'), n=secDone(s);
+    var pip=t.querySelector('.pip');
+    if(n>0 && !pip){ var i=document.createElement('span'); i.className='pip'; t.appendChild(i); }
+    if(n===0 && pip) pip.remove();
+  });
+}
+function secDone(sec){
+  var n=0;
+  Object.keys(S.ans).forEach(function(k){ if(k.indexOf(sec)===0 && String(S.ans[k]).trim().length>1) n++; });
+  return n;
+}
+
+/* ============ SAVE ============ */
+function mark_dirty(){ dirty=true; $('#dot').className='save'; updateProgress(); }
+function collect(){
+  $$('textarea').forEach(function(t){ if(t.id) S.ans[t.id]=t.value; });
+  return {email:S.email.toLowerCase(), name:S.name, period:S.period, level:S.level,
+          data:{ans:S.ans, sorts:S.sorts}, turned_in:S.turned, updated_at:new Date().toISOString()};
+}
+function saveNow(){
+  if(!S.email){ return; }
+  var body=collect();
+  return fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email',{
+    method:'POST',
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json',
+             'Prefer':'resolution=merge-duplicates,return=minimal'},
+    body:JSON.stringify([body])
+  }).then(function(r){
+    if(!r.ok) throw new Error(r.status);
+    dirty=false; $('#dot').className='on';
+    LS('odyssey_local', JSON.stringify(body));
+  }).catch(function(){
+    $('#dot').className='err';
+    LS('odyssey_local', JSON.stringify(body));
+  });
+}
+setInterval(function(){ if(dirty) saveNow(); }, 2500);
+window.addEventListener('beforeunload',function(e){ if(dirty){ saveNow(); } });
+
+function turnIn(){
+  if(!confirm('Turn in your work? You can still keep editing, but Mr. Toby will see it as finished.')) return;
+  S.turned=true; saveNow().then(function(){ alert('Turned in. Nice work.'); });
+}
+
+function login(){
+  var n=$('#li-name').value.trim(), e=$('#li-email').value.trim(), p=$('#li-per').value;
+  if(!n||!e||!p){ $('#li-msg').textContent='Please fill in all three boxes.'; return; }
+  if(e.indexOf('@')<0){ $('#li-msg').textContent='That email does not look right.'; return; }
+  S.name=n; S.email=e; S.period=p;
+  $('#li-msg').textContent='Loading your work…';
+  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?email=eq.'+encodeURIComponent(e.toLowerCase())+'&select=*',{
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}
+  }).then(function(r){return r.json()}).then(function(rows){
+    if(rows && rows[0] && rows[0].data){ S.ans=rows[0].data.ans||{}; S.sorts=rows[0].data.sorts||{}; S.level=rows[0].level||'s'; S.turned=!!rows[0].turned_in; }
+    start();
+  }).catch(function(){
+    try{ var l=JSON.parse(LS('odyssey_local')||'null');
+      if(l && l.email===e.toLowerCase()){ S.ans=l.data.ans||{}; S.sorts=l.data.sorts||{}; }
+    }catch(x){}
+    start();
+  });
+}
+function start(){
+  $('#login').style.display='none';
+  $('#who').textContent=S.name.split(' ')[0]+' · '+S.period;
+  $$('#levelbar .lvl').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-lv')===S.level); });
+  render(); $('#dot').className='on';
+}
+
+/* ============ LEVEL ============ */
+$$('#levelbar .lvl').forEach(function(b){
+  b.onclick=function(){
+    S.level=b.getAttribute('data-lv');
+    $$('#levelbar .lvl').forEach(function(x){x.classList.toggle('on',x===b)});
+    mark_dirty(); render();
+  };
+});
+
+/* ============ PRINT ============ */
+function doPrint(){
+  var m=document.getElementById('printmenu');
+  m.style.display = m.style.display==='block' ? 'none' : 'block';
+}
+function printPick(which){
+  document.getElementById('printmenu').style.display='none';
+  $$('section').forEach(function(s){s.classList.remove('printme')});
+  var pick;
+  if(which==='guides') pick=['ch1','ch2','ch3','ch4','ch5'];
+  else if(which==='all') pick=SECS.map(function(s){return s.id});
+  else if(which==='this') pick=[cur];
+  else pick=[which];
+  pick.forEach(function(p){ var el=document.getElementById('sec_'+p); if(el) el.classList.add('printme'); });
+  setTimeout(function(){ window.print(); setTimeout(function(){ $$('section').forEach(function(s){s.classList.remove('printme')}); },500); },120);
+}
+
+/* ============ NAV ============ */
+var SECS=[
+ {id:'map', t:'Unit map'},
+ {id:'ch1', t:'1 · Trojan War'},
+ {id:'ch2', t:'2 · Lotus Eaters'},
+ {id:'ch3', t:'3 · Scylla'},
+ {id:'ch4', t:'4 · Kalypso'},
+ {id:'ch5', t:'5 · The Return'},
+ {id:'movie', t:'Movie'},
+ {id:'eth_happiness', t:'Happiness'},
+ {id:'eth_love', t:'Love'},
+ {id:'gram', t:'Grammar gym'},
+ {id:'debate', t:'Debate'},
+ {id:'essay', t:'Essay'},
+ {id:'test', t:'Unit test'}
+];
+function go(id){
+  cur=id;
+  $$('section').forEach(function(s){ s.classList.toggle('on', s.id==='sec_'+id); });
+  $$('#tabs .tab').forEach(function(t){ t.classList.toggle('on', t.getAttribute('data-s')===id); });
+  window.scrollTo(0,0);
+}
+
+/* ============ RENDERERS ============ */
+function secOpen(id){ return '<section id="sec_'+id+'"'+(cur===id?' class="on"':'')+'>'; }
+
+function rMap(){
+  var h=secOpen('map');
+  h+='<div class="hero"><h1>The Odyssey</h1><p>A soldier tries to get home. It takes him twenty years. Along the way he has to decide, again and again, what kind of person he is going to be — and the story never tells you whether he got it right.</p></div>';
+  h+='<p class="lede">Five chapters, four movie sessions, two big Greek ideas, a debate, and an essay. Pick your reading level at the top of the screen at any time. Everything you type saves by itself.</p>';
+  h+=ART.map;
+  h+='<h2>The five chapters</h2><div class="gridcards">';
+  [['ch1','1. The Trojan War','When is it right to go to war?'],
+   ['ch2','2. The Lotus Eaters','Happiness today, or for a whole life?'],
+   ['ch3','3. Scylla, Charybdis, Helios','Is it ever right to lie to protect people?'],
+   ['ch4','4. Kalypso','Can a person learn to love?'],
+   ['ch5','5. Odysseus\u2019s Return','Is revenge ever right?']].forEach(function(c){
+    var n=secDone(c[0]);
+    h+='<button class="gc" onclick="go(\''+c[0]+'\')"><b>'+c[1]+'</b><span>'+c[2]+'</span><div class="bar"><i style="width:'+Math.min(100,n*10)+'%"></i></div></button>';
+  });
+  h+='</div>';
+  h+='<h2>Everything else</h2><div class="gridcards">';
+  [['movie','Movie guide','Four viewing sessions with questions'],
+   ['eth_happiness','What is happiness?','Aristotle and Epicurus'],
+   ['eth_love','What is love?','The four Greek words for love'],
+   ['gram','Grammar gym','Seven workouts, all from the text'],
+   ['debate','The debate','Was Odysseus a good person?'],
+   ['essay','Essay planner','HOTPEARC, step by step'],
+   ['test','Unit test','Twenty questions and three paragraphs']].forEach(function(c){
+    h+='<button class="gc" onclick="go(\''+c[0]+'\')"><b>'+c[1]+'</b><span>'+c[2]+'</span></button>';
+  });
+  h+='</div>';
+  h+='<div class="card gold"><p class="kicker" style="color:var(--gold)">How to use this</p><p style="margin:0">Tap any <span class="gl">orange dotted word</span> to see what it means. Pick a language at the top and the meaning appears in your language too. The grey dot in the green bar turns green when your work is saved.</p></div>';
+  h+='<p class="byline">Mr. Toby · Galileo Academy of Science and Technology</p>';
+  return h+'</section>';
+}
+
+function rChapter(c){
+  var h=secOpen(c.id);
+  h+='<h1>Chapter '+c.n+': '+esc(c.title)+'</h1>';
+  h+='<p class="lede">'+esc(c.theme)+'</p>';
+
+  h+='<div class="card gold"><p class="kicker" style="color:var(--gold)">Before you read</p><p style="margin:0 0 6px">'+esc(c.before.q)+'</p>';
+  h+='<div class="frames no-print">'+c.before.frames.map(function(f){return '<button class="frame" onclick="pushFrame(\''+qid(c.id+'_pre',0)+'\',this)">'+esc(f)+'</button>'}).join('')+'</div>';
+  h+='<textarea id="'+qid(c.id+'_pre',0)+'" oninput="mark_dirty()" style="width:100%;min-height:70px;font-family:inherit;font-size:16.5px;padding:9px 11px;border:1px solid var(--line);border-radius:10px">'+esc(S.ans[qid(c.id+'_pre',0)]||'')+'</textarea></div>';
+
+  h+=ART[c.id]||'';
+
+  var t = c.text[S.level==='e'?'e':'s'];
+  h+='<div class="story">'+t.map(function(p){return '<p>'+mark(p)+'</p>'}).join('')+'</div>';
+
+  if(c.stop){
+    var sid=qid(c.id+'_stop',0);
+    h+='<div class="stopbox"><p class="kicker">'+esc(c.stop.q)+'</p><p style="margin:0 0 8px">'+esc(c.stop.body)+'</p>';
+    h+='<div class="frames no-print">'+c.stop.frames.map(function(f){return '<button class="frame" onclick="pushFrame(\''+sid+'\',this)">'+esc(f)+'</button>'}).join('')+'</div>';
+    h+='<textarea id="'+sid+'" oninput="mark_dirty()" style="width:100%;min-height:80px;font-family:inherit;font-size:16.5px;padding:9px 11px;border:1px solid var(--line);border-radius:10px">'+esc(S.ans[sid]||'')+'</textarea></div>';
+    var t2=c.text2[S.level==='e'?'e':'s'];
+    h+='<div class="story">'+t2.map(function(p){return '<p>'+mark(p)+'</p>'}).join('')+'</div>';
+  }
+
+  if(S.level==='c' && c.closeup){
+    h+='<div class="card clay"><p class="kicker" style="color:var(--clay)">'+esc(c.closeup.title)+'</p><p style="margin:0">'+esc(c.closeup.body)+'</p></div>';
+  }
+
+  h+='<details class="no-print"><summary>Word list for this chapter ('+c.glossary.length+' words)</summary><table><tr><th style="width:30%">Word</th><th>Meaning</th></tr>';
+  c.glossary.forEach(function(g){ h+='<tr><td><b>'+esc(g.w)+'</b></td><td>'+esc(g.d)+'</td></tr>'; });
+  h+='</table></details>';
+  h+='<div class="printonly"><h3>Word list</h3><table><tr><th style="width:30%">Word</th><th>Meaning</th></tr>'+c.glossary.map(function(g){return '<tr><td><b>'+esc(g.w)+'</b></td><td>'+esc(g.d)+'</td></tr>'}).join('')+'</table></div>';
+
+  h+='<h2>Reading guide</h2>';
+  h+='<p class="muted no-print">Questions change with your reading level. You are on <b>'+({e:'Easier',s:'Standard',c:'Challenge'}[S.level])+'</b>.</p>';
+  c.qs.forEach(function(q,i){ if(showQ(q)) h+=renderQ(q,i,c.id); });
+  return h+'</section>';
+}
+
+function rMovie(){
+  var h=secOpen('movie');
+  h+='<h1>Movie guide</h1><p class="lede">Four viewing sessions. Answer as you watch — you can pause and go back.</p>';
+  var url = LS(MEDIA_KEY)||'';
+  h+='<div class="card no-print"><p class="kicker">Video</p>';
+  if(url){ h+='<div class="vid"><iframe src="'+esc(url)+'" allowfullscreen title="The Odyssey"></iframe></div>'; }
+  else { h+='<p style="margin:0 0 8px">No video link set yet. Mr. Toby will play the film in class, or paste a link below.</p>'; }
+  h+='<div style="display:flex;gap:8px;flex-wrap:wrap"><input id="mediaurl" placeholder="Paste embed URL (teacher)" value="'+esc(url)+'" style="flex:1;min-width:200px;font-family:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:9px"><button class="btn sm sea" onclick="setMedia()">Set video</button></div></div>';
+  MOVIE.forEach(function(m){
+    h+='<h2>'+esc(m.title)+' <span class="ts">'+esc(m.clock)+'</span></h2>';
+    m.qs.forEach(function(q,i){ if(showQ(q)) h+=renderQ(q,i,m.id); });
+  });
+  return h+'</section>';
+}
+function setMedia(){
+  var v=$('#mediaurl').value.trim();
+  if(v && v.indexOf('watch?v=')>-1) v=v.replace('watch?v=','embed/').split('&')[0];
+  if(v && v.indexOf('youtu.be/')>-1) v='https://www.youtube.com/embed/'+v.split('youtu.be/')[1].split('?')[0];
+  LS(MEDIA_KEY,v); render();
+}
+
+function rEthics(key){
+  var E=ETHICS[key], h=secOpen('eth_'+key);
+  h+='<h1>'+esc(E.title)+'</h1><p class="lede">'+esc(E.intro)+'</p>';
+  E.pre.forEach(function(q,i){ h+=renderQ(q,i,'eth_'+key+'_pre'); });
+  h+='<hr>';
+  if(key==='happiness'){
+    h+='<h2>Two Greek answers</h2><div class="row">';
+    E.two.forEach(function(t,i){
+      h+='<div class="card '+(i===0?'pine':'clay')+'"><p class="kicker" style="color:'+(i===0?'var(--pine)':'var(--clay)')+'">'+esc(t.name)+'</p>';
+      h+='<p style="margin:0 0 6px"><b>'+esc(t.gk)+'</b> — '+esc(t.meaning)+'</p><p style="margin:0">'+esc(t.body)+'</p></div>';
+    });
+    h+='</div>';
+  } else {
+    h+='<h2>Four Greek words for love</h2><div class="gridcards">';
+    E.four.forEach(function(f){
+      h+='<div class="card sea" style="margin:0"><p class="kicker">'+esc(f.gk)+' <span class="muted" style="font-weight:400">('+esc(f.say)+')</span></p><p style="margin:0">'+esc(f.def)+'</p></div>';
+    });
+    h+='</div>';
+  }
+  h+='<h2>Now think</h2>';
+  E.post.forEach(function(q,i){ if(showQ(q)) h+=renderQ(q,i,'eth_'+key+'_post'); });
+  return h+'</section>';
+}
+
+function rGram(){
+  var h=secOpen('gram');
+  h+='<h1>Grammar gym</h1><p class="lede">Seven workouts. Every sentence comes from The Odyssey, so the grammar and the story practise each other.</p>';
+  GRAM.forEach(function(g){
+    h+='<div class="card"><h3 style="margin-top:0">'+esc(g.title)+' <span class="muted" style="font-size:14px;font-weight:400">· '+esc(g.ch)+'</span></h3>';
+    h+='<div class="card pine" style="margin:10px 0"><p style="margin:0">'+(g.rule[S.level]||g.rule.s)+'</p></div>';
+    h+='<p class="muted" style="margin:0 0 4px">From the text:</p><ul style="margin:0 0 12px">'+g.ex.map(function(e){return '<li>'+e+'</li>'}).join('')+'</ul>';
+    g.items.forEach(function(it,i){
+      var id='gr_'+g.id+'_'+i, v=S.ans[id]||'';
+      h+='<div style="margin:9px 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap">';
+      h+='<span style="flex:1;min-width:220px">'+(i+1)+'. '+it.p+'</span>';
+      h+='<input id="'+id+'" value="'+esc(v)+'" oninput="S.ans[this.id]=this.value;mark_dirty()" style="font-family:inherit;font-size:16px;padding:6px 10px;border:1px solid var(--line);border-radius:9px;min-width:150px">';
+      h+='<button class="btn sm sea no-print" onclick="checkGram(\''+g.id+'\','+i+',this)">Check</button>';
+      h+='<span id="gv_'+id+'" style="font-weight:800"></span></div>';
+    });
+    h+='<div class="q" style="background:var(--gold-lt);border-color:var(--gold)"><div class="prompt">Write it yourself: '+g.prod.p+'</div>';
+    h+='<div class="frames no-print">'+g.prod.fr.map(function(f){return '<button class="frame" onclick="pushFrame(\'gr_'+g.id+'_prod\',this)">'+esc(f)+'</button>'}).join('')+'</div>';
+    h+='<textarea id="gr_'+g.id+'_prod" oninput="mark_dirty()">'+esc(S.ans['gr_'+g.id+'_prod']||'')+'</textarea></div>';
+    h+='<button class="btn sm no-print" style="background:var(--pine);color:#fff" onclick="checkAllGram(\''+g.id+'\')">Check this whole workout</button>';
+    h+='</div>';
+  });
+  return h+'</section>';
+}
+function gramOf(gid){ for(var i=0;i<GRAM.length;i++) if(GRAM[i].id===gid) return GRAM[i]; }
+function checkGram(gid,i,btn){
+  var g=gramOf(gid), id='gr_'+gid+'_'+i;
+  var v=norm(document.getElementById(id).value);
+  var ok = g.items[i].a.some(function(a){ return norm(a)===v; });
+  var m=document.getElementById('gv_'+id);
+  m.textContent = ok? '✓' : '✗  ' + g.items[i].a[0];
+  m.style.color = ok? 'var(--ok)' : 'var(--bad)';
+  if(btn) btn.textContent='Check';
+}
+function checkAllGram(gid){ var g=gramOf(gid); g.items.forEach(function(_,i){ checkGram(gid,i,null); }); }
+
+function rDebate(){
+  var h=secOpen('debate');
+  h+='<h1>The debate</h1><p class="lede">'+esc(DEBATE.motion)+'</p>';
+  h+='<div class="card sea"><p class="kicker">How it works</p><p style="margin:0">Two teams, eight jobs each. One team argues that Odysseus was a good person; the other argues that he was not. You do not choose your side. Everyone speaks once. Your team leader checks that nobody repeats anybody else.</p></div>';
+  h+='<h2>Evidence bank</h2><p class="muted">Both columns are real. Your job is to argue one and be ready for the other.</p>';
+  h+='<table><tr><th>Chapter</th><th>He was a good person</th><th>He was not a good person</th></tr>';
+  DEBATE.evidence.forEach(function(e){ h+='<tr><td><b>'+esc(e.ch)+'</b></td><td>'+esc(e.pro)+'</td><td>'+esc(e.con)+'</td></tr>'; });
+  h+='</table>';
+  h+='<h2>Your notes</h2>';
+  ['My team\u2019s definition of a good person','My three strongest pieces of evidence','Questions I will ask the other team','What the other team will say, and my answer'].forEach(function(p,i){
+    var id='db_'+i;
+    h+='<div class="q"><div class="prompt"><span class="num">'+(i+1)+'.</span>'+esc(p)+'</div><textarea id="'+id+'" oninput="mark_dirty()">'+esc(S.ans[id]||'')+'</textarea></div>';
+  });
+  h+='<h2>Task cards</h2><p class="muted">Find your number. Open your card.</p>';
+  DEBATE.roles.forEach(function(r){
+    h+='<details><summary>'+r.n+'. '+esc(r.t)+'</summary><ul>'+r.job.map(function(j){return '<li>'+esc(j)+'</li>'}).join('')+'</ul>';
+    h+='<div class="card gold"><p class="kicker" style="color:var(--gold)">How to start</p><p style="margin:0;font-style:italic">'+esc(r.ex)+'</p></div>';
+    h+='<div class="q"><div class="prompt">My speech</div><textarea id="db_sp_'+r.n+'" oninput="mark_dirty()" style="min-height:150px">'+esc(S.ans['db_sp_'+r.n]||'')+'</textarea></div></details>';
+  });
+  h+='<div class="card no-print"><p class="kicker">Speech timer</p><p style="margin:0 0 8px">Two minutes per speaker.</p><div style="display:flex;gap:10px;align-items:center"><span id="tclock" style="font-size:34px;font-weight:800;font-variant-numeric:tabular-nums">2:00</span><button class="btn sm sea" onclick="tToggle()" id="tbtn">Start</button><button class="btn sm ghost" style="background:var(--line);color:var(--ink)" onclick="tReset()">Reset</button></div></div>';
+  return h+'</section>';
+}
+var tLeft=120,tInt=null;
+function tDraw(){ var m=Math.floor(tLeft/60),s=tLeft%60; var el=$('#tclock'); if(el){el.textContent=m+':'+(s<10?'0':'')+s; el.style.color = tLeft<=15?'var(--bad)':'var(--ink)';} }
+function tToggle(){ if(tInt){ clearInterval(tInt); tInt=null; $('#tbtn').textContent='Start'; return; }
+  $('#tbtn').textContent='Pause';
+  tInt=setInterval(function(){ tLeft--; if(tLeft<=0){ tLeft=0; clearInterval(tInt); tInt=null; $('#tbtn').textContent='Start'; } tDraw(); },1000); }
+function tReset(){ if(tInt){clearInterval(tInt);tInt=null;} tLeft=120; $('#tbtn').textContent='Start'; tDraw(); }
+
+function rEssay(){
+  var h=secOpen('essay');
+  h+='<h1>Essay planner</h1><p class="lede">'+esc(ESSAY.prompt)+'</p>';
+  h+='<div class="card sea"><p class="kicker">HOTPEARC</p><p style="margin:0"><b>H</b>ook · <b>O</b>verview · <b>T</b>hesis — then two body paragraphs of <b>P</b>oint, <b>E</b>vidence, <b>A</b>nalysis, <b>E</b>vidence, <b>A</b>nalysis — then <b>R</b>estate · <b>C</b>onnection.</p></div>';
+  ESSAY.parts.forEach(function(p){
+    var id='es_'+p.k, v=S.ans[id]||'';
+    h+='<div class="q"><div class="prompt"><span class="num">'+p.k+'</span>'+esc(p.n)+'</div><p class="muted" style="margin:0 0 7px">'+esc(p.g)+'</p>';
+    if(S.level!=='c'){
+      h+='<div class="frames no-print">'+p.fr.map(function(f){return '<button class="frame" onclick="pushFrame(\''+id+'\',this)">'+esc(f)+'</button>'}).join('')+'</div>';
+    } else {
+      h+='<details class="no-print" style="margin:0 0 8px"><summary style="font-size:14px">Sentence starters (you may not need them)</summary><div class="frames">'+p.fr.map(function(f){return '<button class="frame" onclick="pushFrame(\''+id+'\',this)">'+esc(f)+'</button>'}).join('')+'</div></details>';
+    }
+    h+='<textarea id="'+id+'" oninput="wc(this,'+p.min+')" style="min-height:90px">'+esc(v)+'</textarea>';
+    h+='<p class="muted" id="wc_'+id+'" style="margin:5px 0 0"></p></div>';
+  });
+  h+='<div class="card pine no-print"><p class="kicker" style="color:var(--pine)">Your whole essay</p><p style="margin:0 0 8px">When every box is filled, press this to see it as one piece of writing. Copy it into a document to type and revise.</p><button class="btn sea" onclick="buildEssay()">Put it together</button><div id="essayout" style="margin-top:12px"></div></div>';
+  h+='<h2>Rubric</h2><table><tr><th>Objective</th><th>Expanding (10)</th><th>Developing (9)</th><th>Beginning (8)</th><th>Emerging (7)</th></tr>';
+  ESSAY.rubric.forEach(function(r){ h+='<tr><td><b>'+esc(r.o)+'</b></td><td>'+esc(r.x)+'</td><td>'+esc(r.d)+'</td><td>'+esc(r.b)+'</td><td>'+esc(r.e)+'</td></tr>'; });
+  h+='</table>';
+  return h+'</section>';
+}
+function wc(ta,min){
+  S.ans[ta.id]=ta.value; mark_dirty();
+  var n=ta.value.trim()? ta.value.trim().split(/\s+/).length : 0;
+  var el=document.getElementById('wc_'+ta.id);
+  if(el){ el.textContent=n+' words'+(n<min?' · aim for about '+min:' · good length'); el.style.color = n<min?'var(--mute)':'var(--ok)'; }
+}
+function buildEssay(){
+  var g=function(k){ return (S.ans['es_'+k]||'').trim(); };
+  var p1=[g('H'),g('O'),g('T')].filter(Boolean).join(' ');
+  var p2=[g('P1'),g('E1'),g('A1'),g('E1b'),g('A1b')].filter(Boolean).join(' ');
+  var p3=[g('P2'),g('E2'),g('A2'),g('E2b'),g('A2b')].filter(Boolean).join(' ');
+  var p4=[g('R'),g('C')].filter(Boolean).join(' ');
+  var all=[p1,p2,p3,p4].filter(Boolean);
+  var words=all.join(' ').trim().split(/\s+/).filter(Boolean).length;
+  $('#essayout').innerHTML='<div class="card" style="background:#fff"><p class="muted">'+words+' words · 4 paragraphs</p>'+
+    all.map(function(p){return '<p>'+esc(p)+'</p>'}).join('')+'</div>';
+}
+
+function rTest(){
+  var h=secOpen('test');
+  h+='<h1>Unit test</h1><p class="lede">Twenty questions about the story, the ideas, and the grammar. Then three paragraphs. Take your time.</p>';
+  h+='<div class="card gold no-print"><p style="margin:0">You may use your reading guides and your word lists. You may not use a classmate\u2019s answers.</p></div>';
+  TEST.forEach(function(q,i){
+    var id='tst_'+i, v=S.ans[id]||'';
+    h+='<div class="q"><div class="prompt"><span class="num">'+(i+1)+'.</span>'+esc(q.p)+(q.pts?' <span class="muted">('+q.pts+' points)</span>':'')+'</div>';
+    if(q.t==='mc'){
+      h+='<div class="opts" data-id="'+id+'">';
+      q.o.forEach(function(o,j){ h+='<label class="opt'+(v===String(j)?' sel':'')+'"><input type="radio" name="'+id+'" value="'+j+'"'+(v===String(j)?' checked':'')+'><span>'+esc(o)+'</span></label>'; });
+      h+='</div>';
+    } else {
+      if(q.fr && S.level!=='c'){ h+='<div class="frames no-print">'+q.fr.map(function(f){return '<button class="frame" onclick="pushFrame(\''+id+'\',this)">'+esc(f)+'</button>'}).join('')+'</div>'; }
+      h+='<textarea id="'+id+'" oninput="mark_dirty()" style="min-height:120px">'+esc(v)+'</textarea>';
+    }
+    h+='</div>';
+  });
+  h+='<div class="card no-print" style="text-align:center"><button class="btn clay" style="font-size:17px;padding:12px 26px" onclick="scoreTest()">Score my multiple choice</button><div id="testout" style="margin-top:12px"></div></div>';
+  return h+'</section>';
+}
+function scoreTest(){
+  var got=0,tot=0;
+  TEST.forEach(function(q,i){
+    if(q.t!=='mc') return; tot++;
+    var box=document.querySelector('[data-id="tst_'+i+'"]'); if(!box) return;
+    var sel=box.querySelector('input:checked');
+    $$('.opt',box).forEach(function(o){o.classList.remove('right','wrong')});
+    if(sel){ var ok=Number(sel.value)===q.a; if(ok) got++; sel.closest('.opt').classList.add(ok?'right':'wrong'); if(!ok) $$('.opt',box)[q.a].classList.add('right'); }
+    else { $$('.opt',box)[q.a].classList.add('right'); }
+  });
+  S.ans.test_score=got+'/'+tot; mark_dirty();
+  $('#testout').innerHTML='<p style="font-size:22px;font-weight:800;margin:0;color:var(--pine)">'+got+' out of '+tot+'</p><p class="muted" style="margin:4px 0 0">Your written answers are scored by Mr. Toby.</p>';
+}
+
+/* ============ MAIN RENDER ============ */
+function render(){
+  var h='';
+  h+=rMap();
+  ['ch1','ch2','ch3','ch4','ch5'].forEach(function(k){ h+=rChapter(CH[k]); });
+  h+=rMovie();
+  h+=rEthics('happiness');
+  h+=rEthics('love');
+  h+=rGram();
+  h+=rDebate();
+  h+=rEssay();
+  h+=rTest();
+  $('#main').innerHTML=h;
+  go(cur);
+  updateProgress();
+  ESSAY.parts.forEach(function(p){ var ta=document.getElementById('es_'+p.k); if(ta) wc(ta,p.min); });
+  tDraw();
+}
+
+/* ============ INIT ============ */
+buildGloss();
+$('#tabs').innerHTML = SECS.map(function(s){
+  return '<button class="tab'+(s.id===cur?' on':'')+'" data-s="'+s.id+'" onclick="go(\''+s.id+'\')">'+esc(s.t)+'</button>';
+}).join('');
+$('#lang').onchange=function(){ TCACHE={}; };
+try{
+  var saved=JSON.parse(LS('odyssey_local')||'null');
+  if(saved){ $('#li-name').value=saved.name||''; $('#li-email').value=saved.email||''; if(saved.period) $('#li-per').value=saved.period; }
+}catch(e){}
+$('#li-email').addEventListener('keydown',function(e){ if(e.key==='Enter') login(); });
+$('#li-name').addEventListener('keydown',function(e){ if(e.key==='Enter') $('#li-email').focus(); });
+
+</script>
+</body>
+</html>
