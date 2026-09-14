@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ELD 103 Writing — Teacher Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--pine:#1b4332;--pine2:#2d6a4f;--moss:#40916c;--sage:#95d5b2;--paper:#faf7f0;
+      --line:#dfe4dd;--ink:#1f2421;--muted:#5c6b62;--gold:#d4a017;--rust:#b5451b;--sky:#e8f3ee}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Nunito',system-ui,sans-serif;background:var(--paper);color:var(--ink);font-size:16px}
+#bar{position:sticky;top:0;z-index:40;background:var(--pine);color:#fff;padding:9px 14px;
+     display:flex;gap:9px;align-items:center;flex-wrap:wrap;box-shadow:0 2px 10px rgba(0,0,0,.18)}
+#bar .brand{font-weight:800;margin-right:auto}
+#bar .brand small{display:block;font-weight:600;font-size:.68rem;opacity:.75;letter-spacing:.6px}
+#bar button{font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer;background:rgba(255,255,255,.14);
+  color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:6px 12px}
+#bar button:hover{background:rgba(255,255,255,.26)}
+main{max-width:1180px;margin:0 auto;padding:18px 14px 70px}
+.gate{max-width:380px;margin:12vh auto;background:#fff;border:1px solid var(--line);border-radius:14px;padding:26px;text-align:center}
+.gate input{font-family:inherit;font-size:1.05rem;padding:10px 13px;border:1px solid var(--line);
+  border-radius:9px;width:100%;margin:12px 0;text-align:center}
+.btn{font-family:inherit;font-size:.88rem;font-weight:800;cursor:pointer;border:none;border-radius:9px;
+     padding:9px 16px;background:var(--pine2);color:#fff;margin:3px 5px 3px 0}
+.btn:hover{background:var(--pine)}
+.btn.ghost{background:#fff;color:var(--pine2);border:2px solid var(--pine2)}
+.btn.small{font-size:.76rem;padding:5px 11px}
+.stats{display:flex;gap:11px;flex-wrap:wrap;margin:14px 0}
+.stat{background:#fff;border:1px solid var(--line);border-radius:11px;padding:11px 17px;min-width:118px}
+.stat b{display:block;font-size:1.7rem;color:var(--pine);line-height:1.15}
+.stat span{font-size:.76rem;color:var(--muted);font-weight:700}
+table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:11px;overflow:hidden}
+th{background:var(--pine);color:#fff;font-size:.72rem;font-weight:800;padding:8px 6px;text-align:center;white-space:nowrap}
+th.l,td.l{text-align:left;padding-left:12px}
+td{padding:7px 6px;text-align:center;border-top:1px solid var(--line);font-size:.86rem;font-weight:700}
+tr.row{cursor:pointer}
+tr.row:hover td{background:var(--sky)}
+.pct{display:inline-block;min-width:38px;padding:2px 6px;border-radius:12px;font-size:.78rem;font-weight:800}
+.p100{background:#d8f0e2;color:#1b4332}
+.p70{background:#fdf6e3;color:#7a5c00}
+.p0{background:#fbeae5;color:#8a2f10}
+.pna{background:#f0f2ef;color:#98a49c}
+.name{font-weight:800;color:var(--pine)}
+#detail{background:#fff;border:1px solid var(--line);border-radius:13px;padding:20px 22px;margin-top:16px;display:none}
+#detail.show{display:block}
+#detail h2{margin:0 0 3px;color:var(--pine)}
+#detail h3{margin:20px 0 6px;color:var(--pine2);font-size:1rem;border-bottom:2px solid var(--sage);padding-bottom:3px}
+.wrongitem{background:#fdf3f0;border-left:4px solid #e3a58f;border-radius:7px;padding:7px 12px;margin:5px 0;font-size:.88rem}
+.wrongitem .gave{color:var(--rust);font-weight:800}
+.wrongitem .want{color:var(--moss);font-weight:800}
+.para{background:#fffef7;border:1px solid var(--line);border-radius:9px;padding:16px 22px;line-height:1.95;
+      font-size:1rem;white-space:pre-wrap;margin:7px 0}
+.para .pt{text-align:center;font-weight:800;margin-bottom:11px}
+.para .body{text-indent:2.4em}
+.mono{font-size:.85rem;color:var(--muted);white-space:pre-wrap;background:#f6f8f5;border-radius:8px;padding:11px 14px;line-height:1.6}
+.pill{display:inline-block;background:var(--sky);border:1px solid var(--sage);border-radius:14px;
+      padding:3px 10px;margin:3px 5px 3px 0;font-size:.79rem;font-weight:700;color:var(--pine)}
+.pill.no{background:#fbeae5;border-color:#e3a58f;color:#8a2f10}
+.msg{padding:11px 15px;border-radius:9px;margin:12px 0;font-weight:700}
+.msg.err{background:#fbeae5;color:#8a2f10;border:1px solid #e3a58f}
+.msg.info{background:var(--sky);color:var(--pine);border:1px solid var(--sage)}
+.tip{font-size:.83rem;color:var(--muted);font-weight:600}
+@media print{#bar,.btn,#roster{display:none}#detail{display:block!important;border:none}}
+@media(max-width:700px){th.opt,td.opt{display:none}}
+</style>
+</head>
+<body>
+
+<div id="gate" class="gate">
+  <h2 style="margin:0;color:#1b4332">ELD 103 Writing</h2>
+  <p class="tip">Teacher dashboard</p>
+  <input id="pw" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')unlock()">
+  <button class="btn" onclick="unlock()" style="width:100%">Open</button>
+  <div id="gateErr" class="tip" style="color:#b5451b;margin-top:9px"></div>
+</div>
+
+<div id="app" style="display:none">
+<div id="bar">
+  <div class="brand">ELD 103 · Academic Writing<small>CHAPTERS 1–2 · TEACHER VIEW</small></div>
+  <button onclick="loadAll()">Refresh</button>
+  <button onclick="exportCSV()">Download CSV</button>
+  <button onclick="window.print()">Print</button>
+</div>
+<main>
+  <div id="msg"></div>
+  <div class="stats" id="stats"></div>
+  <div id="roster"></div>
+  <div id="detail"></div>
+</main>
+</div>
+
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var TABLE='eld103_work';
+var PW='galileo2026';
+
+function unlock(){
+  if(document.getElementById('pw').value===PW){
+    document.getElementById('gate').style.display='none';
+    document.getElementById('app').style.display='block';
+    try{sessionStorage.setItem('eld103_dash','1')}catch(e){}
+    loadAll();
+  } else document.getElementById('gateErr').textContent='Not the right password.';
+}
+try{if(sessionStorage.getItem('eld103_dash')==='1'){
+  document.getElementById('gate').style.display='none';
+  document.getElementById('app').style.display='block';
+}}catch(e){}
+
+/* ============ ANSWER KEYS (must match the student page) ============ */
+var CAPTEXT="My friend Linh Tran comes from Da Nang, a city on the coast of Vietnam. She moved to San Francisco last August. Linh speaks Vietnamese, English, and a little French. On Tuesdays she studies Chemistry 101 at City College. Her favorite book is The Little Prince, and her favorite holiday is Tet. Next summer she wants to visit the Golden Gate Bridge with her cousin, who works for the Red Cross. Linh says that the Pacific Ocean here is much colder than the water at home.";
+var CAPW=CAPTEXT.split(' ');
+var SVDATA=[
+ {t:'My older brother repairs motorcycles.',S:[2],V:[3]},
+ {t:'The students in the library study quietly.',S:[1],V:[5]},
+ {t:'Amina and Hassan walked to the market.',S:[0,2],V:[3]},
+ {t:'My phone fell and broke.',S:[1],V:[2,4]},
+ {t:'The coach and the players cheered and celebrated.',S:[1,4],V:[5,7]},
+ {t:'Rain fell all night.',S:[0],V:[1]},
+ {t:'My cousins in Oakland sell fruit at the farmers market.',S:[1],V:[4]},
+ {t:'The old dog slept and dreamed.',S:[2],V:[3,5]}];
+var SVA=[['One of my cousins ___ in Daly City.',['live','lives'],1],
+ ['Both of my parents ___ at night.',['work','works'],0],
+ ['There ___ four new students in our class.',['is','are'],1],
+ ['Each of the desks ___ a broken leg.',['has','have'],0],
+ ['Some of the water ___ still frozen.',['was','were'],0],
+ ['Some of the players ___ still warming up.',['was','were'],1],
+ ['Neither of my sisters ___ Tagalog.',['speak','speaks'],1],
+ ['The noise from the construction trucks ___ me up every morning.',['wake','wakes'],1],
+ ['Many of my classmates ___ the bus.',['take','takes'],0],
+ ['None of the homework ___ finished.',['was','were'],0],
+ ['A lot of my friends ___ in the Excelsior.',['live','lives'],0],
+ ['There ___ any milk in the refrigerator.',["wasn't","weren't"],0]];
+var FRAG=[['Is very difficult to find parking downtown.',['Complete','No subject','No verb'],1],
+ ['The bus driver waved at us.',['Complete','No subject','No verb'],0],
+ ['My neighbors always friendly in the morning.',['Complete','No subject','No verb'],2],
+ ['They practice every afternoon.',['Complete','No subject','No verb'],0],
+ ['Was raining hard when the game started.',['Complete','No subject','No verb'],1],
+ ['Mrs. Okafor, our chemistry teacher, from Nigeria.',['Complete','No subject','No verb'],2],
+ ['The little boy in the red jacket.',['Complete','No subject','No verb'],2],
+ ['Close the window.',['Complete','No subject','No verb'],0]];
+var FIXPROMPT=['Is very difficult to find parking downtown.','My neighbors always friendly in the morning.','The little boy in the red jacket.'];
+var TOS=[['finally','w'],['at last','p'],['next','w'],['after a while','p'],['meanwhile','w'],
+ ['the next morning','p'],['soon','w'],['at 7:30','p'],['later','w'],['after that','p'],
+ ['then','w'],['before the test','p']];
+var STORY=['Last winter my family drove to Lake Tahoe for the first time.',
+ 'We left San Francisco at five in the morning so we could beat the traffic.',
+ 'After about three hours, my little sister announced that she felt sick.',
+ 'We pulled over at a rest stop, and she felt better in ten minutes.',
+ 'When we finally reached the lake, none of us could believe how blue it was.',
+ 'My father took a picture of us standing in snow up to our knees.',
+ 'That photograph is still taped to our refrigerator door.'];
+var CLOZEB=[{opts:['Finally','During the night','After that','At last'],a:1},
+ {opts:['In the morning','Before that','Meanwhile','Two years ago'],a:0},
+ {opts:['At 7:15','Yesterday','Finally','Before school started'],a:0},
+ {opts:['Later','First','Meanwhile','The next day'],a:1},
+ {opts:['Next','At last','Before that','Now'],a:0},
+ {opts:['A minute later','The next morning','Before the bus came','Two hours later'],a:0},
+ {opts:['Soon','Finally','Meanwhile','First'],a:1}];
+var CONJ=[['I studied for three hours, ___ I still failed the quiz.',['and','but','so','or'],1],
+ ['The restaurant was closed, ___ we ate at my aunt\u2019s house.',['and','but','so','or'],2],
+ ['My brother plays soccer, ___ my sister plays basketball.',['and','but','so','or'],0],
+ ['You can take the N train, ___ you can take the 22 bus.',['and','but','so','or'],3],
+ ['It rained all weekend, ___ the game was canceled.',['and','but','so','or'],2],
+ ['She speaks Arabic at home, ___ she does not write it well.',['and','but','so','or'],1],
+ ['We arrived early, ___ the doors were already locked.',['and','but','so','or'],1],
+ ['Ask your counselor about it, ___ send her an email.',['and','but','so','or'],3],
+ ['My phone battery died, ___ I could not call anyone.',['and','but','so','or'],2],
+ ['The soup was hot, ___ the bread was fresh.',['and','but','so','or'],0]];
+var CSDATA=[['We cleaned the kitchen and washed the car.',0],
+ ['We cleaned the kitchen and my brother washed the car.',1],
+ ['The movie was long but it was worth it.',1],
+ ['The movie was long but interesting.',0],
+ ['You can pay now or you can pay later.',1],
+ ['You can pay now or later.',0],
+ ['My father works nights so he sleeps during the day.',1],
+ ['My father works nights and sleeps during the day.',0]];
+var COMMA=[['Finally the rain stopped.',[0]],['Then the rain stopped.',[]],
+ ['I packed my books my laptop and my lunch.',[3,5]],
+ ['The bus was late so I missed first period.',[3]],
+ ['At 6:00 my father starts making breakfast.',[1]],
+ ['We studied and we passed.',[1]],['We studied and passed.',[]],
+ ['After the game we ate pizza drank soda and told stories until midnight.',[2,5,7]]];
+var CHECKS=['Centered, capitalized title','First line indented','Topic sentence names the event',
+ 'Events in real order','Four or more time signals','Comma after opening signals',
+ 'No fragments','Two or more compound sentences','Subject-verb agreement','Concluding sentence'];
+
+/* ============ SCORING ============ */
+function attempted(o){return o && Object.keys(o).length>0}
+function scoreCap(p){
+  var need=[],got=p.cap||[];
+  CAPW.forEach(function(w,i){if(/[A-Z]/.test(w.charAt(0)))need.push(i)});
+  if(!got.length) return null;
+  var right=0,extra=0;
+  got.forEach(function(i){need.indexOf(i)>-1?right++:extra++});
+  return {n:right,d:need.length,extra:extra,missed:need.filter(function(i){return got.indexOf(i)<0})};
+}
+function scoreSV(p){
+  if(!attempted(p.sv))return null;
+  var n=0,wrong=[];
+  SVDATA.forEach(function(q,qi){
+    var a=(p.sv||{})[qi]||{},ok=true;
+    q.t.split(' ').forEach(function(w,wi){
+      var want=q.S.indexOf(wi)>-1?'S':(q.V.indexOf(wi)>-1?'V':'');
+      if((a[wi]||'')!==want)ok=false;
+    });
+    if(ok)n++; else wrong.push(q.t);
+  });
+  return {n:n,d:8,wrong:wrong};
+}
+function scoreMC(ans,key,ki){
+  if(!attempted(ans))return null;
+  var n=0,wrong=[];
+  key.forEach(function(q,qi){
+    var pick=ans[qi];
+    if(pick===q[ki])n++;
+    else wrong.push({q:q[0],gave:(pick===undefined?'(blank)':q[1][pick]),want:q[1][q[ki]]});
+  });
+  return {n:n,d:key.length,wrong:wrong};
+}
+function scoreCS(ans){
+  if(!attempted(ans))return null;
+  var n=0,wrong=[],lab=['Simple','Compound'];
+  CSDATA.forEach(function(q,qi){
+    if(ans[qi]===q[1])n++;
+    else wrong.push({q:q[0],gave:(ans[qi]===undefined?'(blank)':lab[ans[qi]]),want:lab[q[1]]});
+  });
+  return {n:n,d:8,wrong:wrong};
+}
+function scoreTOS(ans){
+  if(!attempted(ans))return null;
+  var n=0,wrong=[];
+  TOS.forEach(function(t,i){
+    if((ans[i]||'')===t[1])n++;
+    else wrong.push({q:t[0],gave:(ans[i]==='w'?'word':(ans[i]==='p'?'phrase':'(blank)')),want:t[1]==='w'?'word':'phrase'});
+  });
+  return {n:n,d:12,wrong:wrong};
+}
+function scoreOrder(arr){
+  if(!arr||!arr.length)return null;
+  var n=0; arr.forEach(function(v,i){if(v===i)n++});
+  return {n:n,d:7,seq:arr};
+}
+function scoreCloze(ans){
+  if(!attempted(ans))return null;
+  var n=0,wrong=[];
+  CLOZEB.forEach(function(b,i){
+    var v=parseInt(ans[i],10);
+    if(v===b.a)n++;
+    else wrong.push({q:'Blank '+(i+1),gave:(isNaN(v)||v<0?'(blank)':b.opts[v]),want:b.opts[b.a]});
+  });
+  return {n:n,d:7,wrong:wrong};
+}
+function scoreComma(ans){
+  if(!attempted(ans))return null;
+  var n=0,wrong=[];
+  COMMA.forEach(function(q,qi){
+    var got=(ans[qi]||[]).slice().sort(function(a,b){return a-b}).join(',');
+    var want=q[1].slice().sort(function(a,b){return a-b}).join(',');
+    if(got===want)n++;
+    else{
+      var ws=q[0].split(' '),show='';
+      ws.forEach(function(w,wi){show+=w+((ans[qi]||[]).indexOf(wi)>-1?',':'')+' '});
+      wrong.push({q:show.trim(),want:q[1].length?q[1].length+' comma'+(q[1].length>1?'s':''):'no comma'});
+    }
+  });
+  return {n:n,d:8,wrong:wrong};
+}
+var SIGNALS=['first','second','third','next','then','later','soon','now','meanwhile','finally',
+ 'at last','after that','after a while','the next day','the next morning','in the morning',
+ 'in the afternoon','at night','before','after','during','suddenly','one day','last','yesterday','when'];
+function wc(s){return ((s||'').trim().match(/\S+/g)||[]).length}
+function draftStats(p){
+  var d=p.draft||'';
+  if(!d.trim())return null;
+  var low=' '+d.toLowerCase()+' ',sig=[];
+  SIGNALS.forEach(function(s){if(low.indexOf(' '+s+' ')>-1||low.indexOf(' '+s+',')>-1)sig.push(s)});
+  var sents=d.split(/[.!?]+\s/).filter(function(x){return x.trim().length});
+  return {
+    words:wc(d), title:(p.title||'').trim(),
+    signals:sig, compound:(d.match(/,\s+(and|but|so|or)\s/g)||[]).length,
+    lowI:(d.match(/\bi\b/g)||[]).length,
+    badStart:sents.filter(function(x){var c=x.trim().charAt(0);return c&&c===c.toLowerCase()&&/[a-z]/.test(c)}).length,
+    sents:sents.length, breaks:/\n\s*\S/.test(d.trim())
+  };
+}
+function pct(s){return s?Math.round(s.n/s.d*100):null}
+function cell(s){
+  if(s===null||s===undefined)return '<span class="pct pna">—</span>';
+  var v=pct(s),c=v>=90?'p100':(v>=60?'p70':'p0');
+  return '<span class="pct '+c+'" title="'+s.n+' of '+s.d+'">'+v+'%</span>';
+}
+
+/* ============ LOAD ============ */
+var ROWS=[];
+function loadAll(){
+  var m=document.getElementById('msg');
+  m.innerHTML='<div class="msg info">Loading…</div>';
+  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?select=*&order=updated_at.desc',
+    {headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}})
+  .then(function(r){return r.ok?r.json():r.text().then(function(t){throw new Error(t)})})
+  .then(function(data){
+    ROWS=data.map(function(r){
+      var p=r.payload||{};
+      return {name:r.student_name,when:r.updated_at,p:p,
+        s:{cap:scoreCap(p),sv:scoreSV(p),sva:scoreMC(p.sva||{},SVA,2),
+           frag:scoreMC(p.frag||{},FRAG,2),tos:scoreTOS(p.tos||{}),ord:scoreOrder(p.order),
+           cloze:scoreCloze(p.cloze||{}),conj:scoreMC(p.conj||{},CONJ,2),
+           cs:scoreCS(p.cs||{}),comma:scoreComma(p.comma||{}),draft:draftStats(p)}};
+    });
+    m.innerHTML=ROWS.length?'':'<div class="msg info">No work turned in yet. Students only appear here after they tap <b>Turn in</b>.</div>';
+    render();
+  })
+  .catch(function(e){
+    m.innerHTML='<div class="msg err">Could not read the table.<br><span class="tip">'+
+      String(e.message).slice(0,300)+'</span><br><span class="tip">If it says the relation does not exist, run eld103_schema.sql in the Supabase SQL editor first.</span></div>';
+  });
+}
+function render(){
+  var st=document.getElementById('stats');
+  var n=ROWS.length;
+  var withDraft=ROWS.filter(function(r){return r.s.draft}).length;
+  var avg=function(k){var a=ROWS.map(function(r){return pct(r.s[k])}).filter(function(x){return x!==null});
+    return a.length?Math.round(a.reduce(function(x,y){return x+y},0)/a.length)+'%':'—';};
+  st.innerHTML=
+   '<div class="stat"><b>'+n+'</b><span>TURNED IN</span></div>'+
+   '<div class="stat"><b>'+withDraft+'</b><span>WROTE A PARAGRAPH</span></div>'+
+   '<div class="stat"><b>'+avg('sv')+'</b><span>AVG SUBJECT + VERB</span></div>'+
+   '<div class="stat"><b>'+avg('sva')+'</b><span>AVG AGREEMENT</span></div>'+
+   '<div class="stat"><b>'+avg('comma')+'</b><span>AVG COMMAS</span></div>';
+
+  var h='<table><tr><th class="l">Student</th><th>2 Caps</th><th>3 S+V</th><th>4 Agr</th><th>5 Frag</th>'+
+        '<th class="opt">6 Sort</th><th class="opt">6 Order</th><th class="opt">7 Signals</th>'+
+        '<th>8 Conj</th><th class="opt">8 S/C</th><th>9 Comma</th><th>Words</th><th class="opt">Updated</th></tr>';
+  ROWS.forEach(function(r,i){
+    h+='<tr class="row" onclick="showDetail('+i+')"><td class="l name">'+esc(r.name)+'</td>'+
+      cellTd(r.s.cap)+cellTd(r.s.sv)+cellTd(r.s.sva)+cellTd(r.s.frag)+
+      cellTd(r.s.tos,1)+cellTd(r.s.ord,1)+cellTd(r.s.cloze,1)+
+      cellTd(r.s.conj)+cellTd(r.s.cs,1)+cellTd(r.s.comma)+
+      '<td>'+(r.s.draft?r.s.draft.words:'—')+'</td>'+
+      '<td class="opt" style="font-weight:600;font-size:.76rem">'+when(r.when)+'</td></tr>';
+  });
+  h+='</table>';
+  document.getElementById('roster').innerHTML=ROWS.length?h:'';
+}
+function cellTd(s,opt){return '<td'+(opt?' class="opt"':'')+'>'+cell(s)+'</td>'}
+function when(t){if(!t)return '—';var d=new Date(t);return (d.getMonth()+1)+'/'+d.getDate()+' '+
+  d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+
+/* ============ DETAIL ============ */
+function showDetail(i){
+  var r=ROWS[i],p=r.p,s=r.s,d=document.getElementById('detail');
+  var h='<h2>'+esc(r.name)+'</h2><div class="tip">Turned in '+when(r.when)+'</div>';
+
+  if(s.draft){
+    h+='<h3>The paragraph</h3>';
+    h+='<div class="para">'+(p.title?'<div class="pt">'+esc(p.title)+'</div>':'<div class="pt tip">(no title)</div>')+
+       '<div class="body">'+esc(p.draft)+'</div></div>';
+    var f=s.draft,pills='';
+    pills+='<span class="pill'+(f.words>=150&&f.words<=230?'':' no')+'">'+f.words+' words</span>';
+    pills+='<span class="pill'+(f.signals.length>=4?'':' no')+'">'+f.signals.length+' time signals</span>';
+    pills+='<span class="pill'+(f.compound>=2?'':' no')+'">'+f.compound+' compound</span>';
+    pills+='<span class="pill'+(f.lowI?' no':'')+'">'+f.lowI+' lowercase i</span>';
+    pills+='<span class="pill'+(f.badStart?' no':'')+'">'+f.badStart+' uncapitalized starts</span>';
+    pills+='<span class="pill">'+f.sents+' sentences</span>';
+    var t=f.title;
+    if(!t) pills+='<span class="pill no">no title</span>';
+    else if(/\.$/.test(t)) pills+='<span class="pill no">title ends in a period</span>';
+    else if(t.charAt(0)!==t.charAt(0).toUpperCase()) pills+='<span class="pill no">title not capitalized</span>';
+    if(f.breaks)pills+='<span class="pill no">has line breaks</span>';
+    h+=pills;
+    if(f.signals.length)h+='<div class="tip" style="margin-top:7px">Signals used: '+esc(f.signals.join(', '))+'</div>';
+  } else h+='<h3>The paragraph</h3><div class="tip">Nothing written yet.</div>';
+
+  if(p.free&&p.free.trim()){h+='<h3>Freewriting ('+wc(p.free)+' words)</h3><div class="mono">'+esc(p.free)+'</div>';}
+  if(p.listing&&p.listing.trim()){h+='<h3>Event list</h3><div class="mono">'+esc(p.listing)+'</div>';}
+
+  var ck=p.check||{},done=Object.keys(ck).filter(function(k){return ck[k]}).length;
+  h+='<h3>Self-editing checklist ('+done+' of 10)</h3>';
+  CHECKS.forEach(function(c,ci){h+='<span class="pill'+(ck[ci]?'':' no')+'">'+(ck[ci]?'✓ ':'· ')+c+'</span>'});
+
+  if(p.fragfix&&Object.keys(p.fragfix).length){
+    h+='<h3>Fragment repairs</h3>';
+    FIXPROMPT.forEach(function(q,qi){
+      var a=(p.fragfix||{})[qi];
+      h+='<div class="wrongitem" style="border-left-color:var(--sage);background:#f3faf6">'+
+         '<span class="tip">'+esc(q)+'</span><br>'+(a?esc(a):'<i class="tip">(blank)</i>')+'</div>';
+    });
+  }
+
+  h+='<h3>What they got wrong</h3>';
+  var any=false;
+  function block(label,sc,fmt){
+    if(!sc)return;
+    if(sc.wrong&&sc.wrong.length){
+      any=true;
+      h+='<div style="margin:11px 0"><b>'+label+' — '+sc.n+' of '+sc.d+'</b>';
+      sc.wrong.slice(0,12).forEach(function(w){h+=fmt(w)});
+      h+='</div>';
+    }
+  }
+  var std=function(w){return '<div class="wrongitem">'+esc(w.q)+'<br>wrote <span class="gave">'+esc(w.gave)+
+    '</span> · should be <span class="want">'+esc(w.want)+'</span></div>'};
+  if(s.cap&&(s.cap.missed.length||s.cap.extra)){
+    any=true;
+    h+='<div style="margin:11px 0"><b>Activity 2 Capitals — '+s.cap.n+' of '+s.cap.d+'</b>';
+    if(s.cap.missed.length)h+='<div class="wrongitem">missed: <span class="want">'+
+      esc(s.cap.missed.map(function(i){return CAPW[i].replace(/[.,]$/,'')}).join(', '))+'</span></div>';
+    if(s.cap.extra)h+='<div class="wrongitem">capitalized <span class="gave">'+s.cap.extra+
+      '</span> word(s) that should stay lowercase</div>';
+    h+='</div>';
+  }
+  if(s.sv&&s.sv.wrong.length){any=true;
+    h+='<div style="margin:11px 0"><b>Activity 3 Subjects and verbs — '+s.sv.n+' of 8</b>';
+    s.sv.wrong.forEach(function(t){h+='<div class="wrongitem">'+esc(t)+'</div>'});h+='</div>';}
+  block('Activity 4 Agreement',s.sva,std);
+  block('Activity 5 Fragments',s.frag,std);
+  block('Activity 6 Word or phrase',s.tos,std);
+  if(s.ord&&s.ord.n<7){any=true;
+    h+='<div style="margin:11px 0"><b>Activity 6 Story order — '+s.ord.n+' of 7</b>';
+    s.ord.seq.forEach(function(v,pos){if(v!==pos)h+='<div class="wrongitem">put <i>'+
+      esc(STORY[v].slice(0,55))+'…</i> in position '+(pos+1)+'</div>'});h+='</div>';}
+  block('Activity 7 Signals',s.cloze,std);
+  block('Activity 8 Joining words',s.conj,std);
+  block('Activity 8 Simple or compound',s.cs,std);
+  if(s.comma&&s.comma.wrong.length){any=true;
+    h+='<div style="margin:11px 0"><b>Activity 9 Commas — '+s.comma.n+' of 8</b>';
+    s.comma.wrong.forEach(function(w){h+='<div class="wrongitem">'+esc(w.q)+
+      '<br>needs <span class="want">'+esc(w.want)+'</span></div>'});h+='</div>';}
+  if(!any)h+='<div class="tip">Nothing wrong on any activity they attempted.</div>';
+
+  h+='<div style="margin-top:20px"><button class="btn ghost small" onclick="document.getElementById(\'detail\').classList.remove(\'show\')">Close</button>'+
+     '<button class="btn small" onclick="window.print()">Print this student</button></div>';
+  d.innerHTML=h; d.classList.add('show');
+  if(d.scrollIntoView)d.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+/* ============ CSV ============ */
+function exportCSV(){
+  var head=['Student','Turned in','Caps','SubjVerb','Agreement','Fragments','WordPhrase','StoryOrder',
+            'Signals','JoiningWords','SimpleCompound','Commas','DraftWords','TimeSignals','CompoundSents','ChecklistDone','Title'];
+  var lines=[head.join(',')];
+  ROWS.forEach(function(r){
+    var f=r.s.draft,ck=r.p.check||{};
+    var row=[r.name,when(r.when),pct(r.s.cap),pct(r.s.sv),pct(r.s.sva),pct(r.s.frag),pct(r.s.tos),
+      pct(r.s.ord),pct(r.s.cloze),pct(r.s.conj),pct(r.s.cs),pct(r.s.comma),
+      f?f.words:'',f?f.signals.length:'',f?f.compound:'',
+      Object.keys(ck).filter(function(k){return ck[k]}).length, r.p.title||''];
+    lines.push(row.map(function(v){
+      v=(v===null||v===undefined)?'':String(v);
+      return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;
+    }).join(','));
+  });
+  var blob=new Blob([lines.join('\n')],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='eld103_writing_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+</script>
+</body>
+</html>
