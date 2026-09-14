@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Romeo and Juliet — Teacher Dashboard | Mr. Toby</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--pine:#1d4e3f;--pine-lt:#2f6f57;--ink:#14241f;--paper:#f6f3ea;--card:#fffdf7;--line:#ddd6c4;--cap:#8c2f2a;--gold:#c8a24a;--muted:#6b6558}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:Nunito,system-ui,sans-serif;line-height:1.5}
+.bar{position:sticky;top:0;z-index:50;background:var(--pine);color:#fff;padding:9px 14px;display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.bar h1{font-size:1rem;margin:0;font-weight:800}
+.bar .sp{flex:1}
+.bar button,.bar select,.bar a{background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.32);border-radius:8px;padding:5px 11px;font:inherit;font-size:.84rem;font-weight:700;cursor:pointer;text-decoration:none}
+.bar select option{color:#000}
+.wrap{max-width:1180px;margin:0 auto;padding:18px 14px 70px}
+#gate{max-width:360px;margin:80px auto;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px;text-align:center}
+#gate input{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font:inherit;margin:10px 0}
+#gate button{width:100%;background:var(--pine);color:#fff;border:none;border-radius:8px;padding:10px;font:inherit;font-weight:800;cursor:pointer}
+#app{display:none}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px}
+.stat{background:var(--card);border:1px solid var(--line);border-top:4px solid var(--pine-lt);border-radius:10px;padding:11px 14px}
+.stat b{display:block;font-size:1.7rem;line-height:1.1;color:var(--pine)}
+.stat span{font-size:.84rem;color:var(--muted)}
+table{width:100%;border-collapse:collapse;background:var(--card);font-size:.9rem}
+th,td{border:1px solid var(--line);padding:6px 9px;text-align:left}
+th{background:#eae5d6;position:sticky;top:46px;cursor:pointer}
+tr.row:hover{background:#f2f7f4;cursor:pointer}
+.pb{background:#e4e0d2;border-radius:99px;height:9px;width:110px;overflow:hidden;display:inline-block;vertical-align:middle}
+.pb i{display:block;height:100%;background:var(--pine-lt)}
+.chip{font-size:.72rem;font-weight:800;padding:1px 7px;border-radius:99px;border:1px solid}
+.chip.in{background:#e2f4e9;color:#1d6b45;border-color:#8fcaa9}
+.chip.out{background:#f4efe2;color:#7a5c14;border-color:#e0cf9e}
+#detail{position:fixed;top:0;right:0;width:min(560px,100%);height:100%;background:#fff;border-left:2px solid var(--pine);box-shadow:-6px 0 24px rgba(0,0,0,.2);overflow:auto;padding:18px;display:none;z-index:80}
+#detail h2{margin:0 0 2px;font-size:1.2rem}
+#detail .meta{color:var(--muted);font-size:.88rem;margin:0 0 14px}
+#detail .close{position:absolute;top:12px;right:14px;background:var(--pine);color:#fff;border:none;border-radius:8px;padding:5px 11px;font:inherit;font-weight:700;cursor:pointer}
+.ansblk{border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:8px;padding:9px 11px;margin-bottom:8px}
+.ansblk b{font-size:.8rem;color:var(--muted);display:block}
+.ansblk p{margin:3px 0 0;white-space:pre-wrap}
+.sec{margin:16px 0 6px;font-weight:800;color:var(--pine);border-bottom:1px solid var(--line);padding-bottom:3px}
+.note{color:var(--muted);font-size:.88rem}
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <h2 style="margin:0 0 4px;font-size:1.2rem">Teacher dashboard</h2>
+  <p class="note" style="margin:0">Romeo and Juliet unit</p>
+  <input id="pw" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')unlock()">
+  <button onclick="unlock()">Open</button>
+  <p class="note" id="gm"></p>
+</div>
+
+<div id="app">
+<div class="bar">
+  <h1>R+J · Dashboard</h1>
+  <select id="fPeriod" onchange="draw()"><option value="">All periods</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select>
+  <select id="fPage" onchange="draw()"><option value="">All pages</option><option value="scenes">Scenes</option><option value="grammar">Grammar</option><option value="assess">Assessment</option></select>
+  <span class="sp"></span>
+  <button onclick="load()">Refresh</button>
+  <button onclick="csv()">Export CSV</button>
+  <a href="index.html">Unit</a>
+</div>
+
+<div class="wrap">
+  <div class="stats" id="stats"></div>
+  <table id="tbl"></table>
+  <p class="note" id="status"></p>
+</div>
+</div>
+
+<div id="detail"><button class="close" onclick="document.getElementById('detail').style.display='none'">Close</button><div id="dbody"></div></div>
+
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var TABLE='rj_work';
+var PW='galileo2026';
+var ROWS=[], sortKey='student_name', sortDir=1;
+
+var MAXQ={scenes:60, grammar:71, assess:110};
+
+function unlock(){
+  if(document.getElementById('pw').value===PW){
+    document.getElementById('gate').style.display='none';
+    document.getElementById('app').style.display='block';
+    load();
+  } else { document.getElementById('gm').textContent='Not that one.'; }
+}
+
+function load(){
+  document.getElementById('status').textContent='Loading…';
+  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?select=*&order=student_name.asc',{
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}
+  }).then(function(r){return r.json();}).then(function(d){
+    if(!Array.isArray(d)){ document.getElementById('status').textContent='Error: '+JSON.stringify(d); return; }
+    ROWS=d; draw();
+    document.getElementById('status').textContent = d.length + ' records · last checked ' + new Date().toLocaleTimeString();
+  }).catch(function(e){ document.getElementById('status').textContent='Could not reach Supabase: '+e; });
+}
+
+function filtered(){
+  var p=document.getElementById('fPeriod').value, pg=document.getElementById('fPage').value;
+  return ROWS.filter(function(r){
+    if(p && String(r.period)!==p) return false;
+    if(pg && r.page!==pg) return false;
+    return true;
+  });
+}
+
+function countAnswers(r){
+  var d=r.data||{};
+  var n=0;
+  if(r.page==='scenes'){ var a=d.ans||{}; for(var k in a){ if(a[k]!==''&&a[k]!==undefined) n++; } }
+  else if(r.page==='grammar'){ var a2=d.ans||{}; for(var k2 in a2){ if(a2[k2]!==''&&a2[k2]!==undefined) n++; } }
+  else { for(var k3 in d){ if(String(k3).indexOf('score_')===0) continue; if(d[k3]!==''&&d[k3]!==undefined) n++; } }
+  return n;
+}
+
+function draw(){
+  var rows=filtered().slice();
+  rows.sort(function(a,b){
+    var x=a[sortKey], y=b[sortKey];
+    if(x===undefined||x===null)x=''; if(y===undefined||y===null)y='';
+    return (x>y?1:x<y?-1:0)*sortDir;
+  });
+  var h='<tr>'+
+   th('student_name','Student')+th('period','Per')+th('page','Page')+
+   '<th>Progress</th>'+th('score','Auto-score')+th('turned_in','Status')+th('updated_at','Last saved')+'</tr>';
+  for(var i=0;i<rows.length;i++){
+    var r=rows[i];
+    var max=MAXQ[r.page]||60, n=countAnswers(r), pct=Math.min(100,Math.round(n/max*100));
+    h+='<tr class="row" onclick="detail('+i+')">'+
+      '<td>'+esc(r.student_name||'(no name)')+'<br><span class="note">'+esc(r.email||'')+'</span></td>'+
+      '<td>'+esc(r.period||'')+'</td>'+
+      '<td>'+esc(r.page||'')+'</td>'+
+      '<td><span class="pb"><i style="width:'+pct+'%"></i></span> '+pct+'%<br><span class="note">'+n+' items</span></td>'+
+      '<td>'+(r.score!==null&&r.score!==undefined?r.score:'—')+'</td>'+
+      '<td>'+(r.turned_in?'<span class="chip in">Turned in</span>':'<span class="chip out">In progress</span>')+'</td>'+
+      '<td class="note">'+(r.updated_at?new Date(r.updated_at).toLocaleString():'')+'</td></tr>';
+  }
+  document.getElementById('tbl').innerHTML=h;
+  window.__view=rows;
+  stats(rows);
+}
+function th(k,label){ return '<th onclick="sortBy(\''+k+'\')">'+label+(sortKey===k?(sortDir===1?' ▲':' ▼'):'')+'</th>'; }
+function sortBy(k){ if(sortKey===k) sortDir*=-1; else {sortKey=k;sortDir=1;} draw(); }
+
+function stats(rows){
+  var students={}, turned=0, scoreSum=0, scoreN=0;
+  rows.forEach(function(r){
+    students[r.email]=1;
+    if(r.turned_in) turned++;
+    if(typeof r.score==='number'){ scoreSum+=r.score; scoreN++; }
+  });
+  var h='';
+  h+='<div class="stat"><b>'+Object.keys(students).length+'</b><span>students with work</span></div>';
+  h+='<div class="stat"><b>'+rows.length+'</b><span>page records</span></div>';
+  h+='<div class="stat"><b>'+turned+'</b><span>turned in</span></div>';
+  h+='<div class="stat"><b>'+(scoreN?(scoreSum/scoreN).toFixed(1):'—')+'</b><span>mean auto-score</span></div>';
+  document.getElementById('stats').innerHTML=h;
+}
+
+function detail(i){
+  var r=window.__view[i], d=r.data||{};
+  var h='<h2>'+esc(r.student_name||'(no name)')+'</h2>';
+  h+='<p class="meta">'+esc(r.email||'')+' · Period '+esc(r.period||'—')+' · '+esc(r.page)+' · '+(r.turned_in?'turned in':'in progress')+'</p>';
+
+  if(r.page==='scenes'){
+    var a=d.ans||{};
+    h+='<div class="sec">Reading level chosen: '+esc(d.level||'—')+'</div>';
+    h+='<div class="sec">Written responses</div>';
+    var any=false;
+    for(var k in a){ if(typeof a[k]==='string' && a[k].trim()){ any=true; h+=blk(k,a[k]); } }
+    if(!any) h+='<p class="note">No written responses yet.</p>';
+    h+='<div class="sec">Multiple choice picked</div><p class="note">';
+    for(var k2 in a){ if(typeof a[k2]==='number'){ h+=k2+':'+a[k2]+'  '; } }
+    h+='</p>';
+  } else if(r.page==='grammar'){
+    var a3=d.ans||{}, res=d.results||{};
+    var right=0,wrong=[];
+    for(var k3 in res){ if(res[k3]) right++; else wrong.push(k3); }
+    h+='<div class="sec">Auto-checked: '+right+' correct</div>';
+    h+='<p class="note">Missed: '+(wrong.length?wrong.join(', '):'none')+'</p>';
+    h+='<div class="sec">Written responses</div>';
+    for(var k4 in a3){ if(typeof a3[k4]==='string' && a3[k4].trim().length>25) h+=blk(k4,a3[k4]); }
+  } else {
+    h+='<div class="sec">Quiz scores</div><p class="note">';
+    ['q1','q2','q3','ft'].forEach(function(q){ h+= q+': '+(d['score_'+q]!==undefined?d['score_'+q]:'—')+'  '; });
+    h+='</p>';
+    h+='<div class="sec">Anticipation guide — moves between Before and After</div><p class="note">';
+    var moves=0;
+    for(var i2=0;i2<12;i2++){ var b=d['ag_b_'+i2], aa=d['ag_a_'+i2]; if(b&&aa&&b!==aa){ moves++; h+='#'+(i2+1)+' ('+b+'→'+aa+')  '; } }
+    if(!moves) h+='no recorded changes';
+    h+='</p>';
+    h+='<div class="sec">Essay and reflection</div>';
+    ['es_thesis','es_b1','es_b2','es_cc','es_cn','ft_w1','ft_w2','pf_choice','pf_1','pf_2','pf_3','pf_4','pf_5','pf_6','ag_why1','ag_why2','ag_change'].forEach(function(k5){
+      if(d[k5] && String(d[k5]).trim()) h+=blk(k5, d[k5]);
+    });
+  }
+  document.getElementById('dbody').innerHTML=h;
+  document.getElementById('detail').style.display='block';
+}
+function blk(k,v){ return '<div class="ansblk"><b>'+esc(k)+'</b><p>'+esc(String(v))+'</p></div>'; }
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function csv(){
+  var rows=window.__view||[];
+  var out=[['name','email','period','page','items_answered','auto_score','turned_in','updated_at'].join(',')];
+  rows.forEach(function(r){
+    out.push([q(r.student_name),q(r.email),q(r.period),q(r.page),countAnswers(r),(r.score!==null&&r.score!==undefined?r.score:''),(r.turned_in?'yes':'no'),q(r.updated_at)].join(','));
+  });
+  var blob=new Blob([out.join('\n')],{type:'text/csv'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='romeo_juliet_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+function q(s){ s=(s===null||s===undefined)?'':String(s); return '"'+s.replace(/"/g,'""')+'"'; }
+</script>
+</body>
+</html>
