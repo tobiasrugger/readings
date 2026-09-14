@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unit Assessment — The Grasshopper and the Ant</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Nunito,system-ui,sans-serif;color:#16241d;background:#f4f7f5;line-height:1.6}
+.bar{position:sticky;top:0;z-index:60;background:#1b4d3e;color:#eaf3ee;padding:8px 14px;display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.bar h1{font-size:1rem;margin:0;font-weight:800}
+.bar .sp{flex:1}
+.bar button{font-family:inherit;font-weight:800;font-size:.8rem;border-radius:8px;border:1px solid #3f8f6f;background:#24624f;color:#eaf3ee;padding:6px 10px;cursor:pointer}
+.bar button:hover{background:#2e7a62}
+#dot{width:10px;height:10px;border-radius:50%;background:#8aa79a;display:inline-block}
+#dot.ok{background:#5fd39b}#dot.busy{background:#f0c35c}#dot.err{background:#e07a6b}
+.wrap{max-width:820px;margin:0 auto;padding:16px 16px 90px}
+h2{font-size:1.22rem;margin:26px 0 4px;color:#14402f}
+.lede{color:#4c6259;font-size:.95rem;margin:2px 0 8px}
+.card{background:#fff;border:1px solid #d8e3dc;border-radius:12px;padding:15px 17px;margin:12px 0}
+.item{display:flex;gap:9px;align-items:flex-start;padding:9px 0;border-top:1px solid #eef2f0;flex-wrap:wrap}
+.item:first-child{border-top:0}
+.n{font-weight:800;color:#8aa093;min-width:22px}
+.body{flex:1;min-width:250px}
+.star{color:#c08a2e;font-weight:800}
+select,input.blank{font-family:inherit;font-size:.96rem;font-weight:700;border:1px solid #c9d7d0;border-radius:8px;padding:5px 8px;background:#fbfdfc}
+select{max-width:100%}
+input.blank{border:0;border-bottom:2px solid #c08a2e;border-radius:0;background:#fdf9ef;min-width:150px;text-align:center}
+.ok{border-color:#2f9e6a!important;background:#effaf4!important}
+.no{border-color:#d1655a!important;background:#fdf0ee!important}
+.opts{display:flex;flex-direction:column;gap:5px;margin-top:5px}
+.opt{border:1px solid #c9d7d0;background:#fbfdfc;border-radius:8px;padding:6px 11px;cursor:pointer;font-family:inherit;font-size:.94rem;text-align:left}
+.opt:hover{background:#eef5f1}
+.opt.sel{background:#1b4d3e;color:#fff;border-color:#1b4d3e}
+.opt.right{outline:2px solid #2f9e6a}
+.opt.wrong{outline:2px solid #d1655a}
+.seq{display:grid;grid-template-columns:56px 1fr;gap:8px;align-items:center;margin:5px 0}
+.seq input{width:100%;text-align:center;font-weight:800;font-family:inherit;font-size:1rem;border:1px solid #c9d7d0;border-radius:8px;padding:5px}
+.seq .txt{background:#fbfdfc;border:1px solid #e2eae6;border-radius:8px;padding:6px 10px;font-size:.94rem}
+textarea{width:100%;font-family:inherit;font-size:.97rem;border:1px solid #c9d7d0;border-radius:8px;padding:8px 10px;background:#fbfdfc;min-height:110px;resize:vertical}
+.frames{background:#eef5f1;border-radius:8px;padding:8px 12px;font-size:.9rem;margin:6px 0}
+.btn{font-family:inherit;font-weight:800;border-radius:9px;border:1px solid #1b4d3e;background:#1b4d3e;color:#fff;padding:11px 20px;cursor:pointer;font-size:.95rem}
+.btn.ghost{background:#fff;color:#1b4d3e}
+.result{display:none;background:#14402f;color:#eaf3ee;border-radius:12px;padding:18px;margin:14px 0;text-align:center}
+.result.show{display:block}
+.result .big{font-size:2.2rem;font-weight:800;line-height:1.1}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th,td{border:1px solid #d8e3dc;padding:6px 8px;text-align:left;vertical-align:top}
+th{background:#eef5f1;font-weight:800}
+.gate{position:fixed;inset:0;background:#16241d;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
+.gate .box{background:#fff;border-radius:14px;padding:22px;max-width:380px;width:100%}
+.gate input{width:100%;margin:6px 0;font-family:inherit;font-size:1rem;border:1px solid #c9d7d0;border-radius:8px;padding:8px 10px}
+.note{font-size:.85rem;color:#63776d}
+.printonly{display:none}
+@media print{
+ .bar,.noprint,.gate,.result{display:none!important}
+ body{background:#fff;font-size:11.5pt}
+ .wrap{max-width:100%;padding:0}
+ .card{break-inside:avoid;border-color:#aaa}
+ select,input.blank,textarea{background:#fff}
+ .opt.sel{background:#fff;color:#000;border:2px solid #000}
+ .printonly{display:block}
+}
+</style>
+</head>
+<body>
+
+<div class="bar noprint">
+  <h1>Unit Assessment</h1>
+  <span class="sp"></span>
+  <button onclick="window.print()">Print</button>
+  <button onclick="submitTest()">Submit</button>
+  <span id="dot"></span>
+</div>
+
+<div class="gate" id="gate">
+  <div class="box">
+    <h2 style="margin:0 0 4px">Sign in</h2>
+    <p class="lede">Write your real name. This one is graded.</p>
+    <input type="text" id="gName" placeholder="First and last name">
+    <input type="text" id="gMail" placeholder="school email">
+    <p style="margin:10px 0 0"><button class="btn" onclick="signIn()">Start</button>
+    <button class="btn ghost" onclick="document.getElementById('gate').style.display='none'">Just print it</button></p>
+  </div>
+</div>
+
+<div class="wrap">
+<p class="lede" id="who"></p>
+<p class="lede">Answer every question you can. Questions with a <span class="star">&#9733;</span> are <b>challenge</b> questions — they are extra credit, not required.</p>
+
+<div class="result" id="result">
+  <div class="big" id="rBig">—</div>
+  <div id="rSmall"></div>
+</div>
+
+<h2>Part A &middot; Vocabulary <span class="note">(10 points)</span></h2>
+<div class="card"><p class="lede">Choose the best meaning for each word.</p><div id="pA"></div></div>
+
+<h2>Part B &middot; Order of events <span class="note">(8 points)</span></h2>
+<div class="card"><p class="lede">Write <b>1</b> to <b>8</b>. Number 1 happened first.</p><div id="pB"></div></div>
+
+<h2>Part C &middot; Understanding the story <span class="note">(6 points)</span></h2>
+<div class="card"><div id="pC"></div></div>
+
+<h2>Part D &middot; Grammar <span class="note">(8 points)</span></h2>
+<div class="card"><p class="lede">Write the correct form of the verb.</p><div id="pD"></div></div>
+
+<h2>Part E &middot; Writing <span class="note">(8 points — your teacher scores this)</span></h2>
+<div class="card">
+  <p style="font-weight:800;margin:0 0 4px">1. What is the moral of <i>The Grasshopper and the Ant</i>, and do you agree with it?</p>
+  <p class="lede">Write 4–6 sentences. Use one detail from the story.</p>
+  <div class="frames">The moral of the fable is that ___ . I agree / disagree because ___ . In the story, ___ . This shows ___ .</div>
+  <textarea data-q="e1"></textarea>
+
+  <p style="font-weight:800;margin:16px 0 4px">2. Give the grasshopper <b>two</b> pieces of advice about the past. Use <b>should have</b> + past participle.</p>
+  <div class="frames">Grasshopper, you should have ___ . You shouldn't have ___ .</div>
+  <textarea data-q="e2" style="min-height:70px"></textarea>
+
+  <p style="font-weight:800;margin:16px 0 4px"><span class="star">&#9733;</span> 3. Bonnie Tsui says the grasshopper was really an artist doing invisible work. Defend the grasshopper. Why might rest and music be as valuable as saving food?</p>
+  <textarea data-q="e3" style="min-height:90px"></textarea>
+</div>
+
+<h2>How Part E is scored</h2>
+<div class="card">
+<table>
+<thead><tr><th style="width:20%"></th><th>2 points</th><th>1 point</th><th>0</th></tr></thead>
+<tbody>
+<tr><th>Answers the question</th><td>Clear, complete, on topic</td><td>Partly answers it</td><td>Off topic or blank</td></tr>
+<tr><th>Uses the story</th><td>Uses a real detail from the fable</td><td>General reference only</td><td>No reference</td></tr>
+<tr><th>Grammar target</th><td><i>should have</i> + past participle used correctly, twice</td><td>Attempted once, or small errors</td><td>Not attempted</td></tr>
+<tr><th>Clarity</th><td>Easy to read; capitals and periods</td><td>A few errors</td><td>Hard to follow</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="card noprint" style="text-align:center">
+  <button class="btn" onclick="submitTest()">Submit my test</button>
+  <p class="note" style="margin:10px 0 0">You can only submit once. Check your answers first.</p>
+</div>
+
+<p class="note noprint" style="margin-top:22px">Mr. Toby &middot; <a href="index.html">Back to the unit</a></p>
+<p class="printonly" style="margin-top:18px">Name: ___________________________  Class: ________  Date: ________ &nbsp;&nbsp; Mr. Toby</p>
+</div>
+
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var TABLE='ga_work';
+var PAGE='assessment';
+
+/* ---------- items ---------- */
+var VOCAB=[
+ ['lazy','not wanting to work'],
+ ['warn','to tell someone that something bad may happen'],
+ ['ignore','to hear someone but pay no attention'],
+ ['gather','to collect things and bring them together'],
+ ['protect','to keep someone or something safe'],
+ ['save','to keep something now to use it later'],
+ ['autumn','the season after summer'],
+ ['moral','the lesson a story teaches'],
+ ['generous','happy to give and share'],
+ ['fable','a short story with animals that teaches a lesson']
+];
+var CHOICES=['the season after summer','to keep someone or something safe','a short story with animals that teaches a lesson','to hear someone but pay no attention','happy to give and share','not wanting to work','the lesson a story teaches','to collect things and bring them together','to keep something now to use it later','to tell someone that something bad may happen'];
+
+var SEQ=[
+ ['The ant works all summer and saves food.',1],
+ ['The grasshopper sings and plays music in the sun.',2],
+ ['Autumn comes and the leaves fall.',3],
+ ['The ant warns the grasshopper to save food.',4],
+ ['The grasshopper ignores the ant.',5],
+ ['Winter comes and the days grow cold.',6],
+ ['The grasshopper knocks on the ant\u2019s door.',7],
+ ['The ant says no, and the grasshopper leaves.',8]
+];
+
+/* [prompt, options, keyIndex, bonus] */
+var MC=[
+ ['Why did the ant save food in the summer?',['Because he did not like the food','Because he knew winter was coming','Because the grasshopper asked him to'],1,0],
+ ['What did the grasshopper do all summer and autumn?',['He built a house','He gathered food','He sang and played music'],2,0],
+ ['How many times did the ant warn the grasshopper?',['One time','Two times','He never warned him'],1,0],
+ ['At the end, the grasshopper —',['moves into the ant\u2019s house','gets food but no house','has no food and no house'],2,0],
+ ['Which sentence best states the moral?',['Music is more important than food','Prepare today for the problems of tomorrow','Never talk to insects'],1,0],
+ ['A reader could criticize the ant because —',['she worked too hard in the summer','she had enough to share but refused','she did not warn the grasshopper'],1,0],
+ ['Bonnie Tsui argues that the grasshopper —',['was lazy and deserved the ending','was an artist whose work was invisible','never really existed'],1,1],
+ ['In La Fontaine\u2019s French version, the insect is a —',['bee','cicada','butterfly'],1,1]
+];
+
+/* [sentence with ___, accepted answers, cue, bonus] */
+var GRAM=[
+ ['The ant ___ hard all summer.',['worked'],'work',0],
+ ['He ___ a lovely house.',['made'],'make',0],
+ ['The grasshopper ___ the warning.',['ignored'],'ignore',0],
+ ['Then autumn ___ .',['came'],'come',0],
+ ['"You ___ a house," said the ant.',['should have built','should have made'],'should have + build/make',0],
+ ['"You ___ for food," said the ant.',['should have looked'],'should have + look',0],
+ ['"You ___ music all summer."',['should not have played','shouldn\u2019t have played','shouldnt have played',"shouldn't have played"],'should not have + play',0],
+ ['Every day, the ant ___ and look for food.',['would work'],'would + work',0],
+ ['When he was young, he ___ music all day.',['used to play','would play'],'used to / would + play',1],
+ ['Many readers think the ant ___ so cold.',['should not have been','shouldn\u2019t have been','shouldnt have been',"shouldn't have been"],'should not have + be',1]
+];
+
+/* ---------- render ---------- */
+(function(){
+ var a=document.getElementById('pA');
+ VOCAB.forEach(function(v,i){
+  var o='<option value="">— choose —</option>';
+  CHOICES.forEach(function(c,j){o+='<option value="'+j+'">'+c+'</option>'});
+  var d=document.createElement('div');d.className='item';
+  d.innerHTML='<span class="n">'+(i+1)+'.</span><span class="body"><b style="font-size:1.05rem">'+v[0]+'</b><br>'+
+   '<select data-q="v'+i+'" data-key="'+CHOICES.indexOf(v[1])+'">'+o+'</select></span>';
+  a.appendChild(d);
+ });
+ var b=document.getElementById('pB');
+ [4,0,7,2,6,1,5,3].forEach(function(idx){
+  var d=document.createElement('div');d.className='seq';d.dataset.key=SEQ[idx][1];
+  d.innerHTML='<input type="text" inputmode="numeric" maxlength="1" data-q="s'+idx+'"><div class="txt">'+SEQ[idx][0]+'</div>';
+  b.appendChild(d);
+ });
+ var c=document.getElementById('pC');
+ MC.forEach(function(m,i){
+  var o='';m[1].forEach(function(t,j){o+='<button class="opt" data-v="'+j+'">'+t+'</button>'});
+  var d=document.createElement('div');d.className='item';
+  d.innerHTML='<span class="n">'+(i+1)+'.</span><span class="body">'+(m[3]?'<span class="star">&#9733;</span> ':'')+m[0]+
+   '<span class="opts" data-q="m'+i+'" data-key="'+m[2]+'" data-bonus="'+m[3]+'">'+o+'</span></span>';
+  c.appendChild(d);
+ });
+ var dd=document.getElementById('pD');
+ GRAM.forEach(function(g,i){
+  var parts=g[0].split('___');
+  var d=document.createElement('div');d.className='item';
+  d.innerHTML='<span class="n">'+(i+1)+'.</span><span class="body">'+(g[3]?'<span class="star">&#9733;</span> ':'')+parts[0]+
+   '<input class="blank" type="text" data-q="g'+i+'" data-bonus="'+g[3]+'" data-ans=\''+JSON.stringify(g[1])+'\'>'+(parts[1]||'')+
+   ' <span class="note">('+g[2]+')</span></span>';
+  dd.appendChild(d);
+ });
+})();
+
+/* ---------- clicks ---------- */
+document.addEventListener('click',function(e){
+ var b=e.target.closest('.opt');
+ if(b&&!locked){var g=b.closest('.opts');g.querySelectorAll('.opt').forEach(function(x){x.classList.remove('sel')});b.classList.add('sel');dirty=true}
+});
+document.addEventListener('input',function(){dirty=true});
+document.addEventListener('change',function(){dirty=true});
+
+/* ---------- scoring ---------- */
+function norm(s){return s.toLowerCase().replace(/[\u2019']/g,"'").replace(/\s+/g,' ').replace(/[.?!"]+$/,'').trim()}
+function grade(mark){
+ var core=0,coreMax=0,bonus=0,bonusMax=0;
+ document.querySelectorAll('select[data-key]').forEach(function(el){
+  coreMax++;var right=el.value!==''&&el.value===el.dataset.key;
+  if(right)core++;
+  if(mark){el.classList.remove('ok','no');el.classList.add(right?'ok':'no')}
+ });
+ document.querySelectorAll('.seq').forEach(function(d){
+  coreMax++;var el=d.querySelector('input');
+  var right=el.value.trim()===d.dataset.key;
+  if(right)core++;
+  if(mark){el.classList.remove('ok','no');el.classList.add(right?'ok':'no')}
+ });
+ document.querySelectorAll('.opts[data-key]').forEach(function(g){
+  var isB=g.dataset.bonus==='1';
+  if(isB)bonusMax++;else coreMax++;
+  var s=g.querySelector('.opt.sel');
+  var right=s&&s.dataset.v===g.dataset.key;
+  if(right){if(isB)bonus++;else core++}
+  if(mark){
+   g.querySelectorAll('.opt').forEach(function(b){b.classList.remove('right','wrong');
+    if(b.dataset.v===g.dataset.key)b.classList.add('right')});
+   if(s&&!right)s.classList.add('wrong');
+  }
+ });
+ document.querySelectorAll('input.blank').forEach(function(el){
+  var isB=el.dataset.bonus==='1';
+  if(isB)bonusMax++;else coreMax++;
+  var ans=JSON.parse(el.dataset.ans).map(norm);
+  var right=el.value.trim()!==''&&ans.indexOf(norm(el.value))>-1;
+  if(right){if(isB)bonus++;else core++}
+  if(mark){el.classList.remove('ok','no');el.classList.add(right?'ok':'no')}
+ });
+ return {core:core,coreMax:coreMax,bonus:bonus,bonusMax:bonusMax};
+}
+
+var locked=false;
+function submitTest(){
+ if(locked){alert('You already submitted this test.');return}
+ if(!U||!U.email){alert('Sign in with your name and email first.');return}
+ if(!confirm('Submit your test? You cannot change your answers after this.'))return;
+ locked=true;
+ var g=grade(true);
+ document.getElementById('result').classList.add('show');
+ document.getElementById('rBig').textContent=g.core+' / '+g.coreMax;
+ document.getElementById('rSmall').textContent='Parts A–D auto-scored. Bonus: '+g.bonus+' / '+g.bonusMax+
+  '. Part E will be scored by Mr. Toby.';
+ document.querySelectorAll('select,input.blank,.seq input').forEach(function(el){el.disabled=true});
+ save(function(){
+  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?email=eq.'+encodeURIComponent(U.email)+'&page=eq.'+PAGE,
+   {method:'PATCH',headers:hdr({'Prefer':'return=minimal'}),body:JSON.stringify({turned_in:true})});
+ });
+ window.scrollTo(0,0);
+}
+
+/* ---------- save ---------- */
+var U=null,dirty=false,dot=document.getElementById('dot');
+try{U=JSON.parse(localStorage.getItem('ga_user')||'null')}catch(e){U=null}
+if(U&&U.email){document.getElementById('gate').style.display='none';document.getElementById('who').textContent=U.name+' \u00b7 '+U.email;pull();}
+function signIn(){
+ var n=document.getElementById('gName').value.trim(),m=document.getElementById('gMail').value.trim().toLowerCase();
+ if(n.length<2||m.indexOf('@')<0){alert('Please write your full name and your school email.');return}
+ U={name:n,email:m};localStorage.setItem('ga_user',JSON.stringify(U));
+ document.getElementById('gate').style.display='none';
+ document.getElementById('who').textContent=n+' \u00b7 '+m;pull();
+}
+function collect(){
+ var o={};
+ document.querySelectorAll('textarea[data-q],input[data-q]').forEach(function(el){if(el.value)o[el.dataset.q]=el.value});
+ document.querySelectorAll('select[data-q]').forEach(function(el){if(el.value!=='')o[el.dataset.q]=el.value});
+ document.querySelectorAll('.opts[data-q]').forEach(function(g){var s=g.querySelector('.opt.sel');if(s)o[g.dataset.q]=s.dataset.v});
+ return o;
+}
+function restore(o){
+ if(!o)return;
+ document.querySelectorAll('textarea[data-q],input[data-q]').forEach(function(el){if(o[el.dataset.q]!==undefined)el.value=o[el.dataset.q]});
+ document.querySelectorAll('select[data-q]').forEach(function(el){if(o[el.dataset.q]!==undefined)el.value=o[el.dataset.q]});
+ document.querySelectorAll('.opts[data-q]').forEach(function(g){
+  var v=o[g.dataset.q];if(v===undefined)return;
+  g.querySelectorAll('.opt').forEach(function(b){if(b.dataset.v===v)b.classList.add('sel')});
+ });
+}
+function hdr(x){var h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};if(x)for(var k in x)h[k]=x[k];return h}
+function save(cb){
+ try{localStorage.setItem('ga_'+PAGE,JSON.stringify(collect()))}catch(e){}
+ if(!U||!U.email){if(cb)cb(false);return}
+ dot.className='busy';var g=grade(false);
+ fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email,page',{method:'POST',
+  headers:hdr({'Prefer':'resolution=merge-duplicates,return=minimal'}),
+  body:JSON.stringify([{email:U.email,name:U.name,page:PAGE,data:collect(),score:g.core,max_score:g.coreMax,updated_at:new Date().toISOString()}])
+ }).then(function(r){dot.className=r.ok?'ok':'err';if(cb)cb(r.ok)}).catch(function(){dot.className='err';if(cb)cb(false)});
+}
+function pull(){
+ try{var l=JSON.parse(localStorage.getItem('ga_'+PAGE)||'null');if(l)restore(l)}catch(e){}
+ if(!U||!U.email)return;
+ fetch(SUPA_URL+'/rest/v1/'+TABLE+'?select=data,turned_in&email=eq.'+encodeURIComponent(U.email)+'&page=eq.'+PAGE,{headers:hdr()})
+  .then(function(r){return r.json()})
+  .then(function(j){
+   if(j&&j[0]){
+    if(j[0].data)restore(j[0].data);
+    if(j[0].turned_in){locked=true;
+     document.querySelectorAll('select,input,textarea').forEach(function(el){el.disabled=true});
+     document.getElementById('result').classList.add('show');
+     document.getElementById('rBig').textContent='Submitted';
+     document.getElementById('rSmall').textContent='You already turned in this test.';
+    }
+   }
+  }).catch(function(){});
+}
+setInterval(function(){if(dirty&&!locked){dirty=false;save()}},2500);
+window.addEventListener('beforeunload',function(){if(dirty&&!locked)save()});
+</script>
+</body>
+</html>

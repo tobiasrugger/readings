@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grammar — The Grasshopper and the Ant</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Nunito,system-ui,sans-serif;color:#16241d;background:#f4f7f5;line-height:1.6}
+.bar{position:sticky;top:0;z-index:60;background:#1b4d3e;color:#eaf3ee;padding:8px 14px;display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.bar h1{font-size:1rem;margin:0;font-weight:800}
+.bar .sp{flex:1}
+.bar button{font-family:inherit;font-weight:800;font-size:.8rem;border-radius:8px;border:1px solid #3f8f6f;background:#24624f;color:#eaf3ee;padding:6px 10px;cursor:pointer}
+.bar button:hover{background:#2e7a62}
+.bar button.sel{background:#eaf3ee;color:#1b4d3e}
+#dot{width:10px;height:10px;border-radius:50%;background:#8aa79a;display:inline-block}
+#dot.ok{background:#5fd39b}#dot.busy{background:#f0c35c}#dot.err{background:#e07a6b}
+.wrap{max-width:840px;margin:0 auto;padding:16px 16px 90px}
+h2{font-size:1.3rem;margin:28px 0 4px;color:#14402f}
+h3{font-size:1.02rem;margin:16px 0 4px;color:#14402f}
+.lede{color:#4c6259;font-size:.95rem;margin:2px 0 8px}
+.card{background:#fff;border:1px solid #d8e3dc;border-radius:12px;padding:15px 17px;margin:13px 0}
+.notice{background:#fdf6e6;border:1px solid #e8d6a8;border-radius:12px;padding:14px 16px;margin:12px 0}
+.notice h4{margin:0 0 6px;font-size:.78rem;letter-spacing:.9px;color:#8a6a1e;text-transform:uppercase}
+.notice p{margin:4px 0}
+.notice .ex{font-size:1.02rem}
+.notice b{color:#7a4c00}
+.rule{background:#eef5f1;border-left:5px solid #1b4d3e;border-radius:8px;padding:10px 14px;margin:10px 0;font-size:.95rem}
+.item{display:flex;gap:9px;align-items:flex-start;padding:8px 0;border-top:1px solid #eef2f0;flex-wrap:wrap}
+.item:first-child{border-top:0}
+.n{font-weight:800;color:#8aa093;min-width:20px}
+.body{flex:1;min-width:240px}
+input.blank{font-family:inherit;font-size:.98rem;font-weight:700;border:0;border-bottom:2px solid #c08a2e;background:#fdf9ef;padding:2px 6px;min-width:110px;width:130px;text-align:center}
+input.blank.ok{border-color:#2f9e6a;background:#effaf4}
+input.blank.no{border-color:#d1655a;background:#fdf0ee}
+input.blank.wide{width:220px}
+.cue{color:#63776d;font-size:.9rem;font-style:italic}
+.opts{display:flex;gap:6px;flex-wrap:wrap;margin-top:5px}
+.opt{border:1px solid #c9d7d0;background:#fbfdfc;border-radius:8px;padding:5px 11px;cursor:pointer;font-family:inherit;font-size:.92rem;font-weight:700}
+.opt:hover{background:#eef5f1}
+.opt.sel{background:#1b4d3e;color:#fff;border-color:#1b4d3e}
+.opt.right{outline:2px solid #2f9e6a}
+.opt.wrong{outline:2px solid #d1655a}
+textarea{width:100%;font-family:inherit;font-size:.97rem;border:1px solid #c9d7d0;border-radius:8px;padding:8px 10px;background:#fbfdfc;min-height:58px;resize:vertical}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{border:1px solid #d8e3dc;padding:5px 8px;text-align:left}
+th{background:#eef5f1;font-weight:800}
+.btn{font-family:inherit;font-weight:800;border-radius:9px;border:1px solid #1b4d3e;background:#1b4d3e;color:#fff;padding:9px 15px;cursor:pointer;font-size:.9rem}
+.btn.ghost{background:#fff;color:#1b4d3e}
+.sec[data-lvl]{display:none}
+.sec.show{display:block}
+.scorebox{font-weight:800;color:#14402f}
+.frames{background:#eef5f1;border-radius:8px;padding:9px 12px;font-size:.92rem;margin:6px 0}
+.frames b{color:#14402f}
+.gate{position:fixed;inset:0;background:#16241d;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
+.gate .box{background:#fff;border-radius:14px;padding:22px;max-width:380px;width:100%}
+.gate input{width:100%;margin:6px 0;font-family:inherit;font-size:1rem;border:1px solid #c9d7d0;border-radius:8px;padding:8px 10px}
+.note{font-size:.85rem;color:#63776d}
+.printonly{display:none}
+@media print{
+ .bar,.noprint,.gate{display:none!important}
+ body{background:#fff;font-size:11.5pt}
+ .wrap{max-width:100%;padding:0}
+ .card,.notice{break-inside:avoid;border-color:#aaa}
+ .sec[data-lvl]{display:block!important}
+ input.blank{border-bottom:1px solid #000;background:#fff}
+ .printonly{display:block}
+}
+</style>
+</head>
+<body>
+
+<div class="bar noprint">
+  <h1>Grammar from the Fable</h1>
+  <span id="lvlbtns">
+    <button data-lvl="1" class="sel">1 &middot; Past</button>
+    <button data-lvl="2">2 &middot; would</button>
+    <button data-lvl="3">3 &middot; should have</button>
+    <button data-lvl="all">All</button>
+  </span>
+  <span class="sp"></span>
+  <button onclick="checkAll()">Check</button>
+  <button onclick="window.print()">Print</button>
+  <button onclick="turnIn()">Turn in</button>
+  <span id="dot"></span>
+</div>
+
+<div class="gate" id="gate">
+  <div class="box">
+    <h2 style="margin:0 0 4px">Sign in</h2>
+    <p class="lede">Your work saves automatically.</p>
+    <input type="text" id="gName" placeholder="First and last name">
+    <input type="text" id="gMail" placeholder="school email">
+    <p style="margin:10px 0 0"><button class="btn" onclick="signIn()">Start</button>
+    <button class="btn ghost" onclick="document.getElementById('gate').style.display='none'">Just print it</button></p>
+  </div>
+</div>
+
+<div class="wrap">
+<p class="lede" id="who"></p>
+<p class="lede">Every sentence on this page comes from <b>The Grasshopper and the Ant</b>. <span class="noprint">Choose a level at the top.</span></p>
+
+<!-- ================= LEVEL 1 ================= -->
+<div class="sec show" data-lvl="1">
+<h2>Level 1 &middot; The simple past</h2>
+
+<div class="notice">
+  <h4>Notice it</h4>
+  <p class="ex">The ant <b>worked</b> very hard. He <b>looked</b> for food.</p>
+  <p class="ex">The ant <b>made</b> a lovely house. "Save your food," <b>said</b> the ant.</p>
+  <p class="note">Some past verbs add <b>-ed</b>. Some verbs change completely. You have to learn those.</p>
+</div>
+
+<div class="rule">
+  <b>Regular:</b> work &rarr; work<b>ed</b> &nbsp;&middot;&nbsp; play &rarr; play<b>ed</b><br>
+  <b>Irregular:</b> make &rarr; <b>made</b> &nbsp;&middot;&nbsp; say &rarr; <b>said</b> &nbsp;&middot;&nbsp; eat &rarr; <b>ate</b><br>
+  <b>Negative:</b> He <b>did not</b> (didn't) <b>work</b>. &larr; after <i>did</i>, the verb goes back to normal.
+</div>
+
+<h3>A. Build the past forms</h3>
+<div class="card"><div id="exA"></div></div>
+
+<h3>B. Finish the sentences from the story</h3>
+<div class="card"><div id="exB"></div></div>
+
+<h3>C. Negatives and questions</h3>
+<div class="card"><div id="exC"></div></div>
+
+<h3>D. Your turn</h3>
+<div class="card">
+  <p class="lede">Write <b>three</b> sentences about what you did last weekend. Use at least one irregular past verb.</p>
+  <div class="frames"><b>Frames:</b> Last weekend I ___ . On Saturday I ___ . I did not ___ .</div>
+  <textarea data-q="w1"></textarea>
+</div>
+</div>
+
+<!-- ================= LEVEL 2 ================= -->
+<div class="sec" data-lvl="2">
+<h2>Level 2 &middot; <i>would</i> and <i>used to</i> for repeated past actions</h2>
+
+<div class="notice">
+  <h4>Notice it</h4>
+  <p class="ex">Every day, the ant <b>would work</b> and look for bread or food.</p>
+  <p class="ex">Every time he got a piece of food, he <b>would eat</b> just a little.</p>
+  <p class="ex">The grasshopper <b>would</b> just <b>sing</b> and play music.</p>
+  <p class="note">Here <i>would</i> does not mean the future. It means <b>this happened again and again in the past</b>.</p>
+</div>
+
+<div class="rule">
+  <b>would</b> + base verb &rarr; a repeated past action: <i>He would sing every day.</i><br>
+  <b>used to</b> + base verb &rarr; a repeated past action <b>or</b> a past situation: <i>He used to be lazy.</i><br>
+  <b>Careful:</b> for something that happened <b>one time</b>, use the simple past: <i>He knocked on the door.</i> (NOT <i>he would knock</i>)
+</div>
+
+<h3>A. One time, or again and again?</h3>
+<div class="card"><p class="lede">Choose the better sentence.</p><div id="exD"></div></div>
+
+<h3>B. Rewrite with <i>would</i></h3>
+<div class="card"><p class="lede">Keep the same meaning.</p><div id="exE"></div></div>
+
+<h3>C. Your turn</h3>
+<div class="card">
+  <p class="lede">Write <b>two</b> sentences about when you were a small child.</p>
+  <div class="frames"><b>Frames:</b> When I was small, I <b>would</b> ___ every ___ . I <b>used to</b> ___ , but now I ___ .</div>
+  <textarea data-q="w2"></textarea>
+</div>
+</div>
+
+<!-- ================= LEVEL 3 ================= -->
+<div class="sec" data-lvl="3">
+<h2>Level 3 &middot; <i>should have</i> + past participle</h2>
+
+<div class="notice">
+  <h4>Notice it</h4>
+  <p class="ex">"You <b>should have made</b> a house," said the ant.</p>
+  <p class="ex">"You <b>should have looked</b> for food," replied the ant.</p>
+  <p class="note">The ant is talking about the past. It is too late now. This is the grammar of <b>regret</b> and <b>criticism</b> — one of the most useful structures in English, and it is sitting right there in the last four lines of the fable.</p>
+</div>
+
+<div class="rule">
+  <b>should have</b> + past participle &rarr; it was a good idea, but you did not do it.<br>
+  <b>should not have</b> (shouldn't have) + past participle &rarr; you did it, but it was a bad idea.<br>
+  In speaking it sounds like <i>should've</i> / <i>shoulda</i>. In writing, always: <b>should have</b>.<br>
+  <b>Compare:</b> You <b>should build</b> a house. (now / future) &nbsp;vs.&nbsp; You <b>should have built</b> a house. (past — too late)
+</div>
+
+<h3>A. Complete the ant's criticism</h3>
+<div class="card"><div id="exF"></div></div>
+
+<h3>B. <i>should</i> or <i>should have</i>?</h3>
+<div class="card"><div id="exG"></div></div>
+
+<h3>C. Give advice to both characters</h3>
+<div class="card">
+  <p class="lede">Write <b>three</b> sentences. Two to the grasshopper, one to the ant.</p>
+  <div class="frames"><b>Frames:</b> Grasshopper, you <b>should have</b> ___ . You <b>shouldn't have</b> ___ .<br>
+  Ant, you <b>should have</b> ___ , because ___ .</div>
+  <textarea data-q="w3"></textarea>
+</div>
+</div>
+
+<!-- ================= BONUS ================= -->
+<div class="sec show" data-lvl="bonus">
+<h2>Bonus &middot; Joining ideas (for your essay)</h2>
+<div class="notice">
+  <h4>Notice it</h4>
+  <p class="ex">The grasshopper, <b>on the other hand</b>, was very lazy.</p>
+  <p class="ex">He had no house, <b>so</b> he knocked on the ant's door.</p>
+  <p class="ex">The ant said no <b>because</b> the grasshopper had not worked.</p>
+</div>
+<div class="card"><div id="exH"></div></div>
+</div>
+
+<div class="card noprint" style="text-align:center">
+  <button class="btn" onclick="checkAll()">Check my answers</button>
+  <p class="scorebox" id="scoreMsg" style="margin:10px 0 0"></p>
+</div>
+
+<p class="note noprint" style="margin-top:24px">Mr. Toby &middot; <a href="index.html">Back to the unit</a></p>
+<p class="printonly" style="margin-top:18px">Name: ___________________________  Class: ________  Date: ________ &nbsp;&nbsp; Mr. Toby</p>
+</div>
+
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var TABLE='ga_work';
+var PAGE='grammar';
+
+/* ---------- exercise data ---------- */
+/* fill: [id, textWith___, [accepted...], cue] */
+var A=[
+ ['a1','work &rarr; ___',['worked']],
+ ['a2','look &rarr; ___',['looked']],
+ ['a3','play &rarr; ___',['played']],
+ ['a4','relax &rarr; ___',['relaxed']],
+ ['a5','ignore &rarr; ___',['ignored']],
+ ['a6','knock &rarr; ___',['knocked']],
+ ['a7','make &rarr; ___',['made']],
+ ['a8','say &rarr; ___',['said']],
+ ['a9','eat &rarr; ___',['ate']],
+ ['a10','grow &rarr; ___',['grew']],
+ ['a11','sing &rarr; ___',['sang']],
+ ['a12','leave &rarr; ___',['left']]
+];
+var B=[
+ ['b1','The ant ___ very hard all summer.',['worked'],'work'],
+ ['b2','He ___ a lovely house.',['made'],'make'],
+ ['b3','Every time he got food, he ___ just a little.',['ate'],'eat'],
+ ['b4','The grasshopper ___ songs in the sun.',['sang'],'sing'],
+ ['b5','Then autumn ___ and the leaves fell.',['came'],'come'],
+ ['b6','"Save your food," ___ the ant.',['warned'],'warn'],
+ ['b7','The grasshopper ___ the ant\u2019s warning.',['ignored'],'ignore'],
+ ['b8','The days ___ cold.',['grew'],'grow'],
+ ['b9','He ___ on the ant\u2019s door.',['knocked'],'knock'],
+ ['b10','The grasshopper ___ with no food and no house.',['left'],'leave']
+];
+var C=[
+ ['c1','The grasshopper ___ for food in the summer.',['did not look','didn\u2019t look','didnt look',"didn't look"],'not / look'],
+ ['c2','The ant ___ the grasshopper into her house.',['did not let','didn\u2019t let','didnt let',"didn't let"],'not / let'],
+ ['c3','"What ___ you doing all summer?" asked the ant.',['were'],'be'],
+ ['c4','___ the grasshopper build a house? No, he did not.',['did'],'do']
+];
+/* mc: [id, prompt, [options], keyIndex, why] */
+var D=[
+ ['d1','The ant did this every single day all summer.',['The ant worked one day.','Every day, the ant would work and look for food.'],1],
+ ['d2','This happened only once, at the end of the story.',['The grasshopper would knock on the door.','The grasshopper knocked on the door.'],1],
+ ['d3','This was his habit all summer long.',['He would sing and play music.','He sang one song.'],0],
+ ['d4','This happened one time, in autumn.',['Autumn would come.','Autumn came.'],1],
+ ['d5','Which sentence is correct English?',['He used to be lazy.','He used to was lazy.'],0],
+ ['d6','Which sentence is correct English?',['Every day he would ate a little.','Every day he would eat a little.'],1]
+];
+var E=[
+ ['e1','Every day the ant worked. &rarr; Every day the ant ___ .',['would work'],'would'],
+ ['e2','Every summer the grasshopper sang. &rarr; Every summer the grasshopper ___ .',['would sing'],'would'],
+ ['e3','The ant saved food every week. &rarr; The ant ___ food every week.',['would save'],'would'],
+ ['e4','When he was young, he played music all day. &rarr; When he was young, he ___ music all day.',['used to play','would play'],'used to / would']
+];
+var F=[
+ ['f1','You ___ a house before the winter.',['should have built','should have made'],'build / make'],
+ ['f2','You ___ for food in the autumn.',['should have looked'],'look'],
+ ['f3','You ___ to the ant\u2019s warning.',['should have listened'],'listen'],
+ ['f4','You ___ all summer.',['should not have played','shouldn\u2019t have played','shouldnt have played',"shouldn't have played"],'not / play'],
+ ['f5','I ___ my food. Now I have nothing.',['should have saved'],'save']
+];
+var G=[
+ ['g1','It is now December and the grasshopper is cold. He ___ a warm place today.',['should find'],'find — now'],
+ ['g2','It is too late. He ___ a house in the summer.',['should have built','should have made'],'build — past'],
+ ['g3','The ant has extra food. Maybe she ___ a little with him.',['should share'],'share — now'],
+ ['g4','Many readers think the ant ___ so cold to him.',['should not have been','shouldn\u2019t have been','shouldnt have been',"shouldn't have been"],'not / be — past']
+];
+var H=[
+ ['h1','The grasshopper had no food, ___ he knocked on the ant\u2019s door.',['so'],'so / because'],
+ ['h2','The ant said no ___ the grasshopper had not worked.',['because'],'so / because'],
+ ['h3','The ant was hardworking. The grasshopper, ___ , was lazy.',['on the other hand'],'on the other hand'],
+ ['h4','The grasshopper was cold, ___ he kept his music.',['but'],'but / so']
+];
+
+/* ---------- render ---------- */
+function renderFill(list,target){
+ var host=document.getElementById(target);
+ list.forEach(function(it,i){
+  var d=document.createElement('div');d.className='item';
+  var parts=it[1].split('___');
+  d.innerHTML='<span class="n">'+(i+1)+'.</span><span class="body">'+parts[0]+
+   '<input class="blank'+(it[1].length>50?' wide':'')+'" type="text" data-q="'+it[0]+'" data-ans=\''+JSON.stringify(it[2])+'\'>'+
+   (parts[1]||'')+(it[3]?' <span class="cue">('+it[3]+')</span>':'')+'</span>';
+  host.appendChild(d);
+ });
+}
+function renderMC(list,target){
+ var host=document.getElementById(target);
+ list.forEach(function(it,i){
+  var d=document.createElement('div');d.className='item';
+  var o='';it[2].forEach(function(t,j){o+='<button class="opt" data-v="'+j+'">'+t+'</button>'});
+  d.innerHTML='<span class="n">'+(i+1)+'.</span><span class="body">'+it[1]+
+   '<span class="opts" data-q="'+it[0]+'" data-key="'+it[3]+'">'+o+'</span></span>';
+  host.appendChild(d);
+ });
+}
+renderFill(A,'exA');renderFill(B,'exB');renderFill(C,'exC');
+renderMC(D,'exD');
+renderFill(E,'exE');renderFill(F,'exF');renderFill(G,'exG');renderFill(H,'exH');
+
+/* ---------- level switch ---------- */
+document.querySelectorAll('#lvlbtns button').forEach(function(b){
+ b.addEventListener('click',function(){
+  var l=b.dataset.lvl;
+  document.querySelectorAll('#lvlbtns button').forEach(function(x){x.classList.remove('sel')});
+  b.classList.add('sel');
+  document.querySelectorAll('.sec').forEach(function(s){
+   s.classList.toggle('show', l==='all' || s.dataset.lvl===l || s.dataset.lvl==='bonus');
+  });
+  localStorage.setItem('ga_gram_lvl',l);
+  window.scrollTo(0,0);
+ });
+});
+
+(function(){
+ var l=localStorage.getItem('ga_gram_lvl')||'1';
+ var b=document.querySelector('#lvlbtns button[data-lvl="'+l+'"]');
+ if(b)b.click();
+})();
+
+/* ---------- clicks ---------- */
+document.addEventListener('click',function(e){
+ var b=e.target.closest('.opt');
+ if(b){var g=b.closest('.opts');g.querySelectorAll('.opt').forEach(function(x){x.classList.remove('sel','right','wrong')});b.classList.add('sel');dirty=true}
+});
+document.addEventListener('input',function(){dirty=true});
+
+/* ---------- check ---------- */
+function norm(s){return s.toLowerCase().replace(/[\u2019']/g,"'").replace(/\s+/g,' ').replace(/[.?!]+$/,'').trim()}
+function checkAll(){
+ var r=0,t=0;
+ document.querySelectorAll('input.blank').forEach(function(el){
+  t++;el.classList.remove('ok','no');
+  var ans=JSON.parse(el.dataset.ans).map(norm);
+  if(!el.value.trim())return;
+  if(ans.indexOf(norm(el.value))>-1){el.classList.add('ok');r++}else{el.classList.add('no')}
+ });
+ document.querySelectorAll('.opts[data-key]').forEach(function(g){
+  t++;var s=g.querySelector('.opt.sel');
+  g.querySelectorAll('.opt').forEach(function(b){b.classList.remove('right','wrong')});
+  if(!s)return;
+  if(s.dataset.v===g.dataset.key){s.classList.add('right');r++}else{s.classList.add('wrong');
+   g.querySelectorAll('.opt').forEach(function(b){if(b.dataset.v===g.dataset.key)b.classList.add('right')})}
+ });
+ document.getElementById('scoreMsg').textContent=r+' of '+t+' correct. Green = right. Red = try again.';
+ save();
+ window.scrollBy(0,1);
+}
+function score(){
+ var r=0,t=0;
+ document.querySelectorAll('input.blank').forEach(function(el){
+  t++;var ans=JSON.parse(el.dataset.ans).map(norm);
+  if(el.value.trim()&&ans.indexOf(norm(el.value))>-1)r++;
+ });
+ document.querySelectorAll('.opts[data-key]').forEach(function(g){
+  t++;var s=g.querySelector('.opt.sel');if(s&&s.dataset.v===g.dataset.key)r++;
+ });
+ return [r,t];
+}
+
+/* ---------- save (shared pattern) ---------- */
+var U=null,dirty=false,dot=document.getElementById('dot');
+try{U=JSON.parse(localStorage.getItem('ga_user')||'null')}catch(e){U=null}
+if(U&&U.email){document.getElementById('gate').style.display='none';document.getElementById('who').textContent=U.name+' \u00b7 '+U.email;pull();}
+function signIn(){
+ var n=document.getElementById('gName').value.trim(),m=document.getElementById('gMail').value.trim().toLowerCase();
+ if(n.length<2||m.indexOf('@')<0){alert('Please write your full name and your school email.');return}
+ U={name:n,email:m};localStorage.setItem('ga_user',JSON.stringify(U));
+ document.getElementById('gate').style.display='none';
+ document.getElementById('who').textContent=n+' \u00b7 '+m;pull();
+}
+function collect(){
+ var o={};
+ document.querySelectorAll('textarea[data-q],input[data-q]').forEach(function(el){if(el.value)o[el.dataset.q]=el.value});
+ document.querySelectorAll('.opts[data-q]').forEach(function(g){var s=g.querySelector('.opt.sel');if(s)o[g.dataset.q]=s.dataset.v});
+ return o;
+}
+function restore(o){
+ if(!o)return;
+ document.querySelectorAll('textarea[data-q],input[data-q]').forEach(function(el){if(o[el.dataset.q]!==undefined)el.value=o[el.dataset.q]});
+ document.querySelectorAll('.opts[data-q]').forEach(function(g){
+  var v=o[g.dataset.q];if(v===undefined)return;
+  g.querySelectorAll('.opt').forEach(function(b){if(b.dataset.v===v)b.classList.add('sel')});
+ });
+}
+function hdr(x){var h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};if(x)for(var k in x)h[k]=x[k];return h}
+function save(cb){
+ try{localStorage.setItem('ga_'+PAGE,JSON.stringify(collect()))}catch(e){}
+ if(!U||!U.email){if(cb)cb(false);return}
+ dot.className='busy';var s=score();
+ fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email,page',{method:'POST',
+  headers:hdr({'Prefer':'resolution=merge-duplicates,return=minimal'}),
+  body:JSON.stringify([{email:U.email,name:U.name,page:PAGE,data:collect(),score:s[0],max_score:s[1],updated_at:new Date().toISOString()}])
+ }).then(function(r){dot.className=r.ok?'ok':'err';if(cb)cb(r.ok)}).catch(function(){dot.className='err';if(cb)cb(false)});
+}
+function pull(){
+ try{var l=JSON.parse(localStorage.getItem('ga_'+PAGE)||'null');if(l)restore(l)}catch(e){}
+ if(!U||!U.email)return;
+ fetch(SUPA_URL+'/rest/v1/'+TABLE+'?select=data&email=eq.'+encodeURIComponent(U.email)+'&page=eq.'+PAGE,{headers:hdr()})
+  .then(function(r){return r.json()}).then(function(j){if(j&&j[0]&&j[0].data)restore(j[0].data)}).catch(function(){});
+}
+setInterval(function(){if(dirty){dirty=false;save()}},2500);
+window.addEventListener('beforeunload',function(){if(dirty)save()});
+function turnIn(){
+ if(!U||!U.email){alert('Sign in first.');return}
+ save(function(ok){
+  if(!ok){alert('Could not reach the server. Try again in a moment.');return}
+  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?email=eq.'+encodeURIComponent(U.email)+'&page=eq.'+PAGE,
+   {method:'PATCH',headers:hdr({'Prefer':'return=minimal'}),body:JSON.stringify({turned_in:true})})
+   .then(function(){alert('Turned in.')});
+ });
+}
+</script>
+</body>
+</html>

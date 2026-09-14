@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teacher Dashboard — Grasshopper &amp; Ant</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Nunito,system-ui,sans-serif;color:#eaf1ed;background:#101c17;line-height:1.55}
+.bar{position:sticky;top:0;z-index:60;background:#1b4d3e;padding:9px 14px;display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.bar h1{font-size:1rem;margin:0;font-weight:800}
+.bar .sp{flex:1}
+button,select{font-family:inherit;font-weight:800;font-size:.8rem;border-radius:8px;border:1px solid #3f8f6f;background:#24624f;color:#eaf3ee;padding:6px 10px;cursor:pointer}
+button:hover{background:#2e7a62}
+.wrap{max-width:1100px;margin:0 auto;padding:16px 14px 70px}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th,td{border:1px solid #2b4a3c;padding:6px 8px;text-align:left;vertical-align:middle}
+th{background:#1c3129;font-weight:800;position:sticky;top:47px}
+tr:hover td{background:#18291f}
+.prog{height:8px;background:#22392f;border-radius:5px;overflow:hidden;min-width:64px;margin-top:3px}
+.prog i{display:block;height:100%;background:#3f9e73}
+.prog i.low{background:#c9573f}.prog i.mid{background:#d9a441}
+.chk{color:#5fd39b;font-weight:800}
+.muted{color:#93a89d}
+.pill{font-size:.68rem;font-weight:800;border-radius:20px;padding:2px 8px;background:#22392f;color:#93a89d}
+.gate{position:fixed;inset:0;background:#0c1512;z-index:100;display:flex;align-items:center;justify-content:center}
+.gate .box{background:#1c3129;border:1px solid #2b4a3c;border-radius:14px;padding:24px;max-width:340px;width:90%}
+.gate input{width:100%;font-family:inherit;font-size:1rem;padding:9px;border-radius:8px;border:1px solid #2b4a3c;background:#101c17;color:#eaf1ed;margin:8px 0}
+#panel{position:fixed;top:0;right:0;bottom:0;width:min(560px,100%);background:#16261f;border-left:1px solid #2b4a3c;overflow:auto;padding:18px;transform:translateX(100%);transition:transform .2s;z-index:70}
+#panel.open{transform:none}
+#panel h2{margin:0 0 2px;font-size:1.15rem}
+.ans{border-top:1px solid #2b4a3c;padding:8px 0}
+.ans .k{font-size:.74rem;font-weight:800;color:#93a89d;text-transform:uppercase;letter-spacing:.5px}
+.ans .v{white-space:pre-wrap}
+.ans.wrong .v{color:#e8a79b}
+.ans.right .v{color:#8fe0b6}
+.grp{margin-top:16px;font-size:.8rem;font-weight:800;letter-spacing:.8px;color:#3f9e73;text-transform:uppercase}
+.note{color:#93a89d;font-size:.85rem}
+</style>
+</head>
+<body>
+
+<div class="gate" id="gate">
+  <div class="box">
+    <h2 style="margin:0">Teacher access</h2>
+    <input type="password" id="pw" placeholder="password" onkeydown="if(event.key==='Enter')unlock()">
+    <button onclick="unlock()">Enter</button>
+  </div>
+</div>
+
+<div class="bar">
+  <h1>Grasshopper &amp; Ant — Dashboard</h1>
+  <span class="sp"></span>
+  <select id="pageSel" onchange="render()">
+    <option value="all">All work</option>
+    <option value="reading">Reading guide</option>
+    <option value="grammar">Grammar</option>
+    <option value="writing">Writing</option>
+    <option value="assessment">Assessment</option>
+  </select>
+  <button onclick="load()">Refresh</button>
+  <button onclick="csv()">Export CSV</button>
+</div>
+
+<div class="wrap">
+  <p class="note" id="stat">Loading…</p>
+  <div id="tableWrap"></div>
+</div>
+
+<div id="panel">
+  <button style="float:right" onclick="document.getElementById('panel').classList.remove('open')">Close</button>
+  <h2 id="pName"></h2>
+  <p class="note" id="pMeta"></p>
+  <div id="pBody"></div>
+</div>
+
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var TABLE='ga_work';
+var PAGES=['reading','grammar','writing','assessment'];
+var ROWS=[],BY={};
+
+function unlock(){
+ if(document.getElementById('pw').value==='galileo2026'){
+  document.getElementById('gate').style.display='none';load();
+ }else{alert('Nope.')}
+}
+function hdr(){return {'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}}
+
+function load(){
+ document.getElementById('stat').textContent='Loading…';
+ fetch(SUPA_URL+'/rest/v1/'+TABLE+'?select=*&order=updated_at.desc',{headers:hdr()})
+  .then(function(r){return r.json()})
+  .then(function(j){
+   if(!Array.isArray(j)){document.getElementById('stat').textContent='Error: '+JSON.stringify(j);return}
+   ROWS=j;BY={};
+   j.forEach(function(r){
+    var k=r.email;
+    if(!BY[k])BY[k]={name:r.name,email:r.email,pages:{},last:r.updated_at};
+    BY[k].pages[r.page]=r;
+    if(r.name&&r.name.length>BY[k].name.length)BY[k].name=r.name;
+    if(r.updated_at>BY[k].last)BY[k].last=r.updated_at;
+   });
+   render();
+  }).catch(function(e){document.getElementById('stat').textContent='Could not load: '+e});
+}
+
+function bar(r){
+ if(!r)return '<span class="muted">—</span>';
+ var s=r.score||0,m=r.max_score||0;
+ var pct=m?Math.round(s/m*100):0;
+ var cls=pct>=80?'':(pct>=50?'mid':'low');
+ var lbl=(r.page==='writing')?(s+' words'):(s+'/'+m);
+ return '<div>'+lbl+(r.turned_in?' <span class="chk">&#10003;</span>':'')+'</div>'+
+  '<div class="prog"><i class="'+cls+'" style="width:'+Math.min(100,pct)+'%"></i></div>';
+}
+
+function render(){
+ var sel=document.getElementById('pageSel').value;
+ var keys=Object.keys(BY).sort(function(a,b){return BY[a].name.localeCompare(BY[b].name)});
+ var cols=sel==='all'?PAGES:[sel];
+ var h='<table><thead><tr><th>Student</th>';
+ cols.forEach(function(c){h+='<th>'+c+'</th>'});
+ h+='<th>Last active</th></tr></thead><tbody>';
+ var shown=0;
+ keys.forEach(function(k){
+  var st=BY[k];
+  if(sel!=='all'&&!st.pages[sel])return;
+  shown++;
+  h+='<tr onclick="openS(\''+k.replace(/'/g,"\\'")+'\')" style="cursor:pointer"><td><b>'+esc(st.name)+'</b><br><span class="muted" style="font-size:.78rem">'+esc(st.email)+'</span></td>';
+  cols.forEach(function(c){h+='<td>'+bar(st.pages[c])+'</td>'});
+  h+='<td class="muted">'+when(st.last)+'</td></tr>';
+ });
+ h+='</tbody></table>';
+ document.getElementById('tableWrap').innerHTML=h;
+ document.getElementById('stat').textContent=shown+' student'+(shown===1?'':'s')+' \u00b7 '+ROWS.length+' saved records \u00b7 click a row to read the work';
+}
+function esc(s){return String(s==null?'':s).replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})}
+function when(t){
+ if(!t)return '—';
+ var d=new Date(t),n=new Date(),diff=(n-d)/60000;
+ if(diff<60)return Math.round(diff)+' min ago';
+ if(diff<1440)return Math.round(diff/60)+' h ago';
+ return d.toLocaleDateString();
+}
+
+var LABELS={
+ pred:'Prediction',q1:'Q1 ant\u2019s daily work (MC)',q2:'Q2 two things with food',q3:'Q3 why happy',
+ q4:'Q4 two warnings',q5:'Q5 ignored (MC)',q6:'Q6 predict winter',q7:'Q7 why go to the door',
+ q8:'Q8 how he feels (MC)',q9:'Q9 exact words',q10:'Q10 ending (MC)',q11:'Q11 was the ant right?',
+ q12:'Q12 the moral',q13:'Q13 bigger mistake',q14:'Q14 Tsui counter-argument',
+ w1:'Writing: last weekend',w2:'Writing: when I was small',w3:'Writing: advice to both',
+ s_why:'Survey: why',t_ant:'T-chart ANT',t_grass:'T-chart GRASSHOPPER',qprac:'Quote practice',
+ a1:'a. saver / spender',a2:'b. his mistake',a3:'c. "turn cold"',a4:'d. why not lazy',a5:'e. agree with?',
+ p1:'Plan: claim',p2:'Plan: reason',p3:'Plan: example',p4:'Plan: quote',p5:'Plan: closing',
+ final:'FINAL PARAGRAPH',
+ e1:'E1 moral + agree/disagree',e2:'E2 should have advice',e3:'E3 \u2605 defend the grasshopper'
+};
+function label(k){
+ if(LABELS[k])return LABELS[k];
+ if(/^b\d+$/.test(k))return 'Anticipation BEFORE '+(+k.slice(1)+1);
+ if(/^a\d+$/.test(k))return 'Anticipation AFTER '+(+k.slice(1)+1);
+ if(/^seq\d+$/.test(k))return 'Sequence item '+(+k.slice(3)+1);
+ if(/^s\d+$/.test(k))return 'Survey '+(+k.slice(1)+1);
+ if(/^v\d+$/.test(k))return 'Vocab '+(+k.slice(1)+1);
+ if(/^m\d+$/.test(k))return 'MC '+(+k.slice(1)+1);
+ if(/^g\d+$/.test(k))return 'Grammar '+(+k.slice(1)+1);
+ if(/^c\d+$/.test(k))return 'Checklist '+(+k.slice(1)+1);
+ return k;
+}
+function openS(email){
+ var st=BY[email];if(!st)return;
+ document.getElementById('pName').textContent=st.name;
+ document.getElementById('pMeta').textContent=st.email+' \u00b7 last active '+when(st.last);
+ var h='';
+ PAGES.forEach(function(p){
+  var r=st.pages[p];if(!r)return;
+  h+='<div class="grp">'+p+' \u2014 '+(p==='writing'?(r.score+' words'):(r.score+'/'+r.max_score))+(r.turned_in?' \u2713 turned in':' (in progress)')+'</div>';
+  var d=r.data||{};
+  Object.keys(d).forEach(function(k){
+   var v=d[k];
+   if(v===true)v='\u2713';
+   h+='<div class="ans"><div class="k">'+esc(label(k))+'</div><div class="v">'+esc(v)+'</div></div>';
+  });
+ });
+ document.getElementById('pBody').innerHTML=h||'<p class="note">No saved work yet.</p>';
+ document.getElementById('panel').classList.add('open');
+}
+
+function csv(){
+ var keys=Object.keys(BY).sort(function(a,b){return BY[a].name.localeCompare(BY[b].name)});
+ var out=[['Name','Email','Reading','Reading max','Grammar','Grammar max','Writing words','Assessment','Assessment max','Turned in','Last active'].join(',')];
+ keys.forEach(function(k){
+  var s=BY[k],p=s.pages;
+  function g(n,f){return p[n]?(p[n][f]||0):''}
+  var ti=PAGES.filter(function(n){return p[n]&&p[n].turned_in}).join(' ');
+  out.push([q(s.name),q(s.email),g('reading','score'),g('reading','max_score'),
+   g('grammar','score'),g('grammar','max_score'),g('writing','score'),
+   g('assessment','score'),g('assessment','max_score'),q(ti),q(s.last)].join(','));
+ });
+ var b=new Blob([out.join('\n')],{type:'text/csv'});
+ var a=document.createElement('a');a.href=URL.createObjectURL(b);
+ a.download='grasshopper_ant_scores.csv';a.click();
+}
+function q(s){return '"'+String(s==null?'':s).replace(/"/g,'""')+'"'}
+</script>
+</body>
+</html>

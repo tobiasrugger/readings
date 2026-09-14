@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Are You an Ant or a Grasshopper? — Read &amp; Write</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Nunito,system-ui,sans-serif;color:#16241d;background:#f4f7f5;line-height:1.6}
+.bar{position:sticky;top:0;z-index:60;background:#1b4d3e;color:#eaf3ee;padding:8px 14px;display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.bar h1{font-size:1rem;margin:0;font-weight:800}
+.bar .sp{flex:1}
+.bar button,.bar select{font-family:inherit;font-weight:800;font-size:.8rem;border-radius:8px;border:1px solid #3f8f6f;background:#24624f;color:#eaf3ee;padding:6px 10px;cursor:pointer}
+.bar button:hover{background:#2e7a62}
+.bar button.sel{background:#eaf3ee;color:#1b4d3e}
+#dot{width:10px;height:10px;border-radius:50%;background:#8aa79a;display:inline-block}
+#dot.ok{background:#5fd39b}#dot.busy{background:#f0c35c}#dot.err{background:#e07a6b}
+.wrap{max-width:840px;margin:0 auto;padding:16px 16px 90px}
+h2{font-size:1.3rem;margin:28px 0 4px;color:#14402f}
+h3{font-size:1.03rem;margin:16px 0 4px;color:#14402f}
+.lede{color:#4c6259;font-size:.95rem;margin:2px 0 8px}
+.card{background:#fff;border:1px solid #d8e3dc;border-radius:12px;padding:15px 17px;margin:13px 0}
+.card.tint{background:#eef5f1;border-color:#c8ded3}
+.src{font-size:.83rem;color:#63776d;font-style:italic;margin-top:8px}
+.gl{border-bottom:2px dotted #c08a2e;cursor:pointer;font-weight:700}
+.gl:hover{background:#fdf2d9}
+#pop{position:fixed;z-index:90;max-width:300px;background:#fff;border:1px solid #1b4d3e;border-radius:10px;padding:10px 12px;box-shadow:0 8px 24px rgba(0,0,0,.18);display:none;font-size:.9rem}
+#pop b{display:block;font-size:1rem;color:#14402f}
+#pop .tr{margin-top:6px;font-size:1.02rem;color:#7a4c00;font-weight:700}
+textarea,input[type=text]{width:100%;font-family:inherit;font-size:.97rem;border:1px solid #c9d7d0;border-radius:8px;padding:8px 10px;background:#fbfdfc}
+textarea{min-height:62px;resize:vertical}
+.surv{display:grid;grid-template-columns:1fr 108px;gap:8px;align-items:center;padding:7px 0;border-top:1px solid #e6ece9}
+.surv:first-child{border-top:0}
+.tog{display:flex;gap:4px;justify-content:flex-end}
+.tog button{font-family:inherit;font-weight:800;font-size:.74rem;border:1px solid #c9d7d0;background:#fbfdfc;border-radius:7px;padding:4px 9px;cursor:pointer}
+.tog button.sel{background:#1b4d3e;color:#fff;border-color:#1b4d3e}
+.meter{height:26px;border-radius:13px;background:#e3ebe7;overflow:hidden;border:1px solid #c8ded3;margin-top:10px;position:relative}
+.meter i{display:block;height:100%;background:linear-gradient(90deg,#2f7f63,#5fb98e);width:0;transition:width .5s}
+.meter span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.85rem;color:#16241d}
+.tchart{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tchart h4{margin:0 0 6px;font-size:.92rem;color:#14402f}
+.quote{border-left:5px solid #c08a2e;background:#fdf9ef;padding:8px 12px;margin:8px 0;border-radius:0 8px 8px 0;cursor:pointer}
+.quote.sel{border-color:#1b4d3e;background:#eef5f1}
+.quote p{margin:0;font-size:.97rem}
+.quote .who{font-size:.8rem;color:#7a6a45;font-weight:800;margin-top:4px}
+.frames{background:#eef5f1;border-radius:8px;padding:9px 12px;font-size:.92rem;margin:6px 0}
+.frames b{color:#14402f}
+.plan{display:grid;grid-template-columns:130px 1fr;gap:8px;align-items:start;padding:8px 0;border-top:1px solid #eef2f0}
+.plan:first-child{border-top:0}
+.plan .lab{font-weight:800;font-size:.86rem;color:#14402f}
+.plan .lab small{display:block;font-weight:600;color:#63776d}
+.wc{font-size:.84rem;color:#63776d;font-weight:800;text-align:right}
+.check{display:flex;gap:8px;align-items:flex-start;padding:5px 0}
+.check input{margin-top:5px;transform:scale(1.2)}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th,td{border:1px solid #d8e3dc;padding:6px 8px;text-align:left;vertical-align:top}
+th{background:#eef5f1;font-weight:800}
+.btn{font-family:inherit;font-weight:800;border-radius:9px;border:1px solid #1b4d3e;background:#1b4d3e;color:#fff;padding:9px 15px;cursor:pointer;font-size:.9rem}
+.btn.ghost{background:#fff;color:#1b4d3e}
+.art[data-lvl]{display:none}.art.show{display:block}
+.gate{position:fixed;inset:0;background:#16241d;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
+.gate .box{background:#fff;border-radius:14px;padding:22px;max-width:380px;width:100%}
+.gate input{width:100%;margin:6px 0}
+.note{font-size:.85rem;color:#63776d}
+.printonly{display:none}
+@media print{
+ .bar,.noprint,#pop,.gate{display:none!important}
+ body{background:#fff;font-size:11.5pt}
+ .wrap{max-width:100%;padding:0}
+ .card{break-inside:avoid;border-color:#aaa}
+ .art[data-lvl]{display:block!important}
+ textarea{min-height:70px;background:#fff}
+ .printonly{display:block}
+}
+</style>
+</head>
+<body>
+
+<div class="bar noprint">
+  <h1>Ant or Grasshopper?</h1>
+  <span id="lvlbtns">
+    <button data-lvl="a">Easier</button>
+    <button data-lvl="b" class="sel">Standard</button>
+    <button data-lvl="c">Challenge</button>
+  </span>
+  <span class="sp"></span>
+  <select id="lang">
+    <option value="en">English only</option>
+    <option value="es">Español</option>
+    <option value="zh">中文</option>
+    <option value="ar">العربية</option>
+    <option value="vi">Tiếng Việt</option>
+    <option value="th">ไทย</option>
+    <option value="ne">नेपाली</option>
+  </select>
+  <button onclick="window.print()">Print</button>
+  <button onclick="turnIn()">Turn in</button>
+  <span id="dot"></span>
+</div>
+
+<div class="gate" id="gate">
+  <div class="box">
+    <h2 style="margin:0 0 4px">Sign in</h2>
+    <p class="lede">Your writing saves automatically.</p>
+    <input type="text" id="gName" placeholder="First and last name">
+    <input type="text" id="gMail" placeholder="school email">
+    <p style="margin:10px 0 0"><button class="btn" onclick="signIn()">Start</button>
+    <button class="btn ghost" onclick="document.getElementById('gate').style.display='none'">Just print it</button></p>
+  </div>
+</div>
+
+<div class="wrap">
+<p class="lede" id="who"></p>
+
+<!-- ========== 1. SURVEY ========== -->
+<h2>1. Which one are you?</h2>
+<div class="card tint">
+  <p class="lede">Be honest. There is no right answer. Choose <b>Ant</b> or <b>Grasshopper</b> for each sentence.</p>
+  <div id="survWrap"></div>
+  <div class="meter"><i id="meterFill"></i><span id="meterTxt">Answer the questions</span></div>
+  <div class="frames" style="margin-top:12px"><b>Say it:</b> I am mostly a(n) ___ because I usually ___ .</div>
+  <textarea data-q="s_why" placeholder="I am mostly a ... because ..."></textarea>
+</div>
+
+<!-- ========== 2. ARTICLE 1 ========== -->
+<h2>2. Read: Savers and Spenders</h2>
+<p class="lede noprint">Tap any <span class="gl" data-w="saver">underlined word</span>. Use the buttons at the top to change the level.</p>
+
+<div class="card">
+ <div class="art show" data-lvl="a">
+  <h3>Are You an Ant or a Grasshopper? <span class="note">(easier)</span></h3>
+  <p>Some people are <span class="gl" data-w="saver">savers</span>. Some people are <span class="gl" data-w="spender">spenders</span>.</p>
+  <p>A spender lives for today. He spends his money fast. He buys a new phone. He eats in restaurants. He buys a nice car. Then the money is gone.</p>
+  <p>A saver lives with less. She keeps some money in the bank. She keeps it for a bad day.</p>
+  <p>When I was young, I was a spender. I told myself, "I will save later, when I am older." Then I was older — and I had no money saved.</p>
+  <p>The ant works in the good times, because he knows the bad times will come. When winter comes, his food is gone from the field. He can only eat what he saved.</p>
+  <p>Bad things happen when we do not expect them. So it is smart to get ready early. Start now. The winter of your life will come faster than you think.</p>
+  <p class="src">Adapted for ELD from "Are You an Ant or a Grasshopper?" by Jason White.</p>
+ </div>
+
+ <div class="art" data-lvl="b">
+  <h3>Are You an Ant or a Grasshopper? <span class="note">(standard)</span></h3>
+  <p>This old fable shows the basic difference between <span class="gl" data-w="saver">savers</span> and <span class="gl" data-w="spender">spenders</span>. Spenders live for the moment. They spend their <span class="gl" data-w="earnings">earnings</span> on technology, on eating out, and on the payments they have created for nice cars and expensive homes. Savers prefer to live on less and keep the extra money for a hard day later.</p>
+  <p><b>The Grasshopper.</b> Most of us have lived the grasshopper's life at some point. When I was young I spent almost everything I earned, and I explained it to myself by saying I would start saving "when I got older." Well, I got older — and I still had no emergency money and almost nothing saved for retirement. I should have been storing my own food away while the finding was easy.</p>
+  <p><b>The Ant.</b> Of course the ant is the hard worker. The <span class="gl" data-w="ethic">work ethic</span> of ants is famous. Unlike the grasshopper, the ant works through the good times to prepare for the bad times. He knows that when winter comes, his food in the field will disappear, and he will live on whatever he put away in the warm months.</p>
+  <p><b>The moral.</b> When we are young and times are good, it is hard to imagine ever needing savings, or a retirement that is decades away. But bad things arrive when we least expect them, so it makes sense to prepare before they come. Start <span class="gl" data-w="stockpile">stockpiling</span> for the winter of your life — it will turn cold before you know it.</p>
+  <p class="src">Adapted for ELD from "Are You an Ant or a Grasshopper?" by Jason White.</p>
+ </div>
+
+ <div class="art" data-lvl="c">
+  <h3>Are You an Ant or a Grasshopper? <span class="note">(challenge)</span></h3>
+  <p>This old fable shows the basic difference between <span class="gl" data-w="saver">savers</span> and <span class="gl" data-w="spender">spenders</span>. Spenders live for the moment, spending their <span class="gl" data-w="earnings">earnings</span> on gadgets, on restaurants, and on the monthly bills they have built for themselves — the nicer car, the bigger apartment. Savers choose to get by on less and put the rest away for a rainy day.</p>
+  <p><b>The Grasshopper.</b> At some point, most of us have lived the grasshopper's life. When I was young I spent most of what I earned and <span class="gl" data-w="justify">justified</span> it by telling myself that I would start saving "when I got older." Well, before I knew it I was older, I still had no emergency fund, and my retirement savings were thin at best. I should have been storing my own kernels away while the getting was good.</p>
+  <p><b>The Ant.</b> It is no surprise that the ant is used to describe the harder worker of the two. The <span class="gl" data-w="ethic">work ethic</span> of ants is well documented. Unlike the grasshopper, the ant works through the good times to prepare for the bad times. He knows that when winter arrives his source of food disappears, and he must survive on what he managed to store away in the warmer months. The fable never tells us the <span class="gl" data-w="fate">fate</span> of the grasshopper — though I suspect the ant would share some of his <span class="gl" data-w="reserves">reserves</span>, assuming the grasshopper had learned his lesson.</p>
+  <p><b>The moral.</b> When we are young and times are good, it is hard to imagine living off savings, or needing a retirement that is still decades away. But bad things happen when we least expect them, and it makes sense to prepare for their arrival. That idea sits at the very core of a <span class="gl" data-w="frugal">frugal</span> life. Begin <span class="gl" data-w="stockpile">stockpiling</span> for the winter season of your life — it will turn cold before you know it.</p>
+  <p class="src">Adapted for ELD from "Are You an Ant or a Grasshopper?" by Jason White.</p>
+ </div>
+</div>
+
+<div class="card">
+  <p style="font-weight:700;margin:0 0 4px">Check your understanding</p>
+  <p style="font-weight:700;margin:10px 0 4px">a. In your own words: what is a <b>spender</b>? What is a <b>saver</b>?</p>
+  <textarea data-q="a1"></textarea>
+  <p style="font-weight:700;margin:10px 0 4px">b. The writer says he made a mistake when he was young. What was it?</p>
+  <textarea data-q="a2"></textarea>
+  <p style="font-weight:700;margin:10px 0 4px">c. The writer says, "It will turn cold before you know it." He is not talking about the weather. What does he mean?</p>
+  <textarea data-q="a3"></textarea>
+</div>
+
+<!-- ========== 3. ARTICLE 2 ========== -->
+<h2>3. Read the other side: "Doing nothing" <span class="note">(everyone)</span></h2>
+<div class="card">
+  <p class="lede">A writer named Bonnie Tsui read the same fable and disagreed with it.</p>
+  <p>Tsui remembers the fable this way: the grasshopper played all summer while the ants worked, and when autumn came the ants refused to share. The lesson everyone learns is simple — there is a time for work and a time for play.</p>
+  <p>But she asks a different question. <b>What if the grasshopper only <i>looked</i> like he wasn't working?</b> He is a musician. Music is his work. Nobody paid him and nobody saw him practice, so nobody counted it.</p>
+  <p>Tsui argues for what she calls <span class="gl" data-w="fallow">fallow time</span> — time when a field is left empty so that it can grow food again later. People need it too. To do good work, she says, we need to rest, to read, and to reconnect. That quiet time is the invisible work that makes creative work possible.</p>
+  <p>She admits this is hard. Our culture says that if you are not visibly producing something, you are not worth much. Sitting in a park on a Tuesday looks lazy. People walk by and ask why you don't have a job.</p>
+  <p>Her answer: &ldquo;It looks like I&rsquo;m doing nothing. But it&rsquo;s the hidden something I&rsquo;m after.&rdquo;</p>
+  <p class="src">Summarized for ELD from Bonnie Tsui, "You Are Doing Something Important When You Aren't Doing Anything," <i>The New York Times</i>, June 21, 2019.</p>
+  <p style="font-weight:700;margin:12px 0 4px">d. According to Tsui, why is the grasshopper <b>not</b> lazy?</p>
+  <textarea data-q="a4"></textarea>
+  <p style="font-weight:700;margin:10px 0 4px">e. Do you agree with Tsui, or with the ant? Why?</p>
+  <textarea data-q="a5"></textarea>
+</div>
+
+<!-- ========== 4. T-CHART ========== -->
+<h2>4. Collect your reasons</h2>
+<div class="card">
+  <p class="lede">Write at least two reasons on each side. Use the articles <b>and</b> your own life.</p>
+  <div class="tchart">
+    <div><h4>🐜 Be more like the ANT</h4><textarea data-q="t_ant" style="min-height:120px"></textarea></div>
+    <div><h4>🦗 Be more like the GRASSHOPPER</h4><textarea data-q="t_grass" style="min-height:120px"></textarea></div>
+  </div>
+</div>
+
+<!-- ========== 5. QUOTES ========== -->
+<h2>5. Choose a quote</h2>
+<div class="card">
+  <p class="lede">Click the quote you want to use in your paragraph.</p>
+  <div id="qbank"></div>
+  <div class="frames" style="margin-top:12px">
+    <b>How to use a quote in three steps:</b><br>
+    1. <b>Introduce it:</b> One quote that supports my idea is, "___."<br>
+    2. <b>Explain it:</b> This means that ___ .<br>
+    3. <b>Connect it:</b> This is important because ___ .
+  </div>
+  <p style="font-weight:700;margin:12px 0 4px">Practice the three steps here before you write your paragraph:</p>
+  <textarea data-q="qprac" style="min-height:90px"></textarea>
+</div>
+
+<!-- ========== 6. PLAN ========== -->
+<h2>6. Plan your paragraph</h2>
+<div class="card">
+  <div class="plan"><span class="lab">Claim<small>your opinion</small></span>
+    <div><div class="frames">I am more of a(n) ___ than a(n) ___ .</div><textarea data-q="p1"></textarea></div></div>
+  <div class="plan"><span class="lab">Reason 1<small>why?</small></span>
+    <div><div class="frames">One reason is that ___ .</div><textarea data-q="p2"></textarea></div></div>
+  <div class="plan"><span class="lab">Example<small>from your life</small></span>
+    <div><div class="frames">For example, last ___ I ___ .</div><textarea data-q="p3"></textarea></div></div>
+  <div class="plan"><span class="lab">Quote<small>from an article</small></span>
+    <div><div class="frames">One quote that supports my idea is, "___." This means ___ .</div><textarea data-q="p4"></textarea></div></div>
+  <div class="plan"><span class="lab">Closing<small>so what?</small></span>
+    <div><div class="frames">In the future, I want to ___ , because ___ .</div><textarea data-q="p5"></textarea></div></div>
+</div>
+
+<!-- ========== 7. DRAFT ========== -->
+<h2>7. Write your paragraph</h2>
+<div class="card">
+  <p class="lede">Put your plan together into <b>5–7 sentences</b> (or more). Use at least one quote and at least one <b>should have</b> sentence.</p>
+  <textarea data-q="final" id="final" style="min-height:200px"></textarea>
+  <p class="wc" id="wc">0 words</p>
+</div>
+
+<h2>8. Check your own work</h2>
+<div class="card">
+  <label class="check"><input type="checkbox" data-q="c1"><span>My paragraph has <b>5 or more</b> sentences.</span></label>
+  <label class="check"><input type="checkbox" data-q="c2"><span>My first sentence says clearly whether I am an ant or a grasshopper.</span></label>
+  <label class="check"><input type="checkbox" data-q="c3"><span>I gave a <b>reason</b> and an <b>example from my own life</b>.</span></label>
+  <label class="check"><input type="checkbox" data-q="c4"><span>I used a <b>quote</b>, introduced it, and explained it.</span></label>
+  <label class="check"><input type="checkbox" data-q="c5"><span>I used <b>should have</b> + past participle at least once.</span></label>
+  <label class="check"><input type="checkbox" data-q="c6"><span>Every sentence starts with a capital letter and ends with punctuation.</span></label>
+  <label class="check"><input type="checkbox" data-q="c7"><span>I read my paragraph out loud to myself or to a partner.</span></label>
+</div>
+
+<h2>Writing rubric</h2>
+<div class="card">
+<table>
+<thead><tr><th style="width:22%"></th><th>4 — Strong</th><th>3 — Getting there</th><th>2 — Beginning</th></tr></thead>
+<tbody>
+<tr><th>Opinion</th><td>Clear claim; stays on it all the way through</td><td>Clear claim; wanders a little</td><td>Hard to tell what the opinion is</td></tr>
+<tr><th>Evidence</th><td>Quote + own example, both explained</td><td>Quote or example, partly explained</td><td>No evidence, or a quote dropped in with no explanation</td></tr>
+<tr><th>Language</th><td>Uses <i>should have</i> and linking words correctly</td><td>Attempts them with small errors</td><td>Not attempted</td></tr>
+<tr><th>Conventions</th><td>Capitals, periods, and quotation marks are correct</td><td>A few errors; meaning is still clear</td><td>Errors make it hard to read</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2>Glossary</h2>
+<div class="card">
+  <table id="glTable"><thead><tr><th style="width:22%">Word</th><th style="width:44%">Meaning</th><th>Your language</th></tr></thead><tbody></tbody></table>
+</div>
+
+<p class="note noprint" style="margin-top:24px">Mr. Toby &middot; <a href="index.html">Back to the unit</a></p>
+<p class="printonly" style="margin-top:18px">Name: ___________________________  Class: ________  Date: ________ &nbsp;&nbsp; Mr. Toby</p>
+</div>
+
+<div id="pop"></div>
+
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var TABLE='ga_work';
+var PAGE='writing';
+
+var GLOSS={
+ saver:{en:'a person who keeps money instead of spending it',es:'ahorrador',zh:'储蓄者',ar:'شخص يدَّخر',vi:'người tiết kiệm',th:'คนที่เก็บออม',ne:'बचत गर्ने व्यक्ति'},
+ spender:{en:'a person who spends money quickly',es:'gastador',zh:'花钱多的人',ar:'شخص ينفق كثيراً',vi:'người tiêu xài',th:'คนที่ใช้จ่ายเก่ง',ne:'खर्च गर्ने व्यक्ति'},
+ earnings:{en:'the money you get from working',es:'ingresos / ganancias',zh:'收入',ar:'الدخل / الأرباح',vi:'thu nhập',th:'รายได้',ne:'आम्दानी'},
+ ethic:{en:'work ethic = the belief that hard work matters',es:'ética de trabajo',zh:'职业道德；勤劳的态度',ar:'أخلاقيات العمل',vi:'đạo đức làm việc',th:'จริยธรรมในการทำงาน',ne:'कार्य नैतिकता'},
+ stockpile:{en:'to store a large amount for the future',es:'acumular / almacenar',zh:'囤积；储备',ar:'يخزّن كمية كبيرة',vi:'tích trữ',th:'สะสมไว้',ne:'भण्डारण गर्नु'},
+ frugal:{en:'careful with money; spending very little',es:'frugal / ahorrativo',zh:'节俭的',ar:'مقتصد',vi:'tiết kiệm',th:'ประหยัด',ne:'मितव्ययी'},
+ fate:{en:'what finally happens to someone',es:'destino / suerte',zh:'命运；结局',ar:'المصير',vi:'số phận',th:'ชะตากรรม',ne:'नियति'},
+ reserves:{en:'the extra you have saved and kept',es:'reservas',zh:'储备',ar:'الاحتياطي',vi:'phần dự trữ',th:'สิ่งที่สำรองไว้',ne:'सञ्चिति'},
+ justify:{en:'to give a reason that makes something seem okay',es:'justificar',zh:'为…找理由',ar:'يبرِّر',vi:'biện minh',th:'หาเหตุผลมาอ้าง',ne:'औचित्य दिनु'},
+ fallow:{en:'fallow time = a rest period when nothing is grown, so the field can grow well later',es:'tiempo en barbecho (descanso)',zh:'休耕期；休整期',ar:'فترة راحة (أرض بور)',vi:'thời gian nghỉ ngơi (đất bỏ hoang)',th:'ช่วงพักฟื้น (ที่ดินพักไว้)',ne:'बाँझो/विश्राम समय'}
+};
+
+var SURVEY=[
+ 'When I get money, I usually spend it soon.',
+ 'I start my homework on the first day, not the last night.',
+ 'I have a plan for next year.',
+ 'I would rather relax now and work later.',
+ 'I keep my things organized and ready.',
+ 'I make music, art, videos, or stories in my free time.'
+];
+/* which answer counts as "ant" */
+var ANTKEY=['G','A','A','G','A','G'];
+
+var QUOTES=[
+ ['The ant works through the good times to prepare for the bad times.','Jason White'],
+ ['Bad things happen when we least expect them.','Jason White'],
+ ['Start stockpiling for the winter season of your life.','Jason White'],
+ ['To do the work, we need to rest, to read, to reconnect.','Bonnie Tsui'],
+ ['It looks like I\u2019m doing nothing. But it\u2019s the hidden something I\u2019m after.','Bonnie Tsui'],
+ ['"You should have made a house," said the ant.','Aesop']
+];
+
+/* ---------- build ---------- */
+(function(){
+ var w=document.getElementById('survWrap');
+ SURVEY.forEach(function(s,i){
+  var d=document.createElement('div');d.className='surv';
+  d.innerHTML='<span>'+(i+1)+'. '+s+'</span><span class="tog" data-q="s'+i+'"><button data-v="A">🐜 Ant</button><button data-v="G">🦗 Hop</button></span>';
+  w.appendChild(d);
+ });
+ var qb=document.getElementById('qbank');
+ QUOTES.forEach(function(q,i){
+  var d=document.createElement('div');d.className='quote';d.dataset.i=i;
+  d.innerHTML='<p>&ldquo;'+q[0]+'&rdquo;</p><div class="who">&mdash; '+q[1]+'</div>';
+  qb.appendChild(d);
+ });
+})();
+
+function meter(){
+ var ant=0,done=0;
+ document.querySelectorAll('.tog[data-q^="s"]').forEach(function(g,i){
+  var s=g.querySelector('button.sel');if(!s)return;done++;
+  if(s.dataset.v===ANTKEY[i])ant++;
+ });
+ var f=document.getElementById('meterFill'),t=document.getElementById('meterTxt');
+ if(!done){t.textContent='Answer the questions';f.style.width='0';return}
+ var pct=Math.round(ant/done*100);
+ f.style.width=pct+'%';
+ t.textContent=pct+'% ant \u00b7 '+(100-pct)+'% grasshopper'+(done<SURVEY.length?' (so far)':'');
+}
+
+/* ---------- clicks ---------- */
+document.addEventListener('click',function(e){
+ var t=e.target.closest('.tog button');
+ if(t){var g=t.closest('.tog');g.querySelectorAll('button').forEach(function(x){x.classList.remove('sel')});t.classList.add('sel');meter();dirty=true;return}
+ var q=e.target.closest('.quote');
+ if(q){document.querySelectorAll('.quote').forEach(function(x){x.classList.remove('sel')});q.classList.add('sel');
+   dirty=true;return}
+ var g2=e.target.closest('.gl');
+ if(g2){showPop(g2);return}
+ document.getElementById('pop').style.display='none';
+});
+document.addEventListener('input',function(){dirty=true;wc()});
+document.addEventListener('change',function(){dirty=true});
+
+function wc(){
+ var v=document.getElementById('final').value.trim();
+ var n=v?v.split(/\s+/).length:0;
+ document.getElementById('wc').textContent=n+' words'+(n>=60?' \u2713':'');
+}
+
+/* ---------- glossary ---------- */
+function showPop(el){
+ var d=GLOSS[el.dataset.w];if(!d)return;
+ var lang=document.getElementById('lang').value,p=document.getElementById('pop');
+ p.innerHTML='<b>'+el.textContent+'</b>'+d.en+(lang!=='en'?'<div class="tr">'+d[lang]+'</div>':'');
+ p.style.display='block';
+ var r=el.getBoundingClientRect(),top=r.bottom+8,left=Math.min(r.left,window.innerWidth-320);
+ if(top+150>window.innerHeight)top=Math.max(8,r.top-150);
+ p.style.top=top+'px';p.style.left=Math.max(8,left)+'px';
+}
+function renderGloss(){
+ var lang=document.getElementById('lang').value,tb=document.querySelector('#glTable tbody');tb.innerHTML='';
+ var labels={ethic:'work ethic',fallow:'fallow time'};
+ Object.keys(GLOSS).forEach(function(k){
+  var d=GLOSS[k],tr=document.createElement('tr');
+  tr.innerHTML='<td><b>'+(labels[k]||k)+'</b></td><td>'+d.en+'</td><td style="font-size:1.02rem">'+(lang==='en'?'':d[lang])+'</td>';
+  tb.appendChild(tr);
+ });
+}
+document.getElementById('lang').addEventListener('change',function(){localStorage.setItem('ga_lang',this.value);renderGloss()});
+var sl=localStorage.getItem('ga_lang');if(sl)document.getElementById('lang').value=sl;
+renderGloss();
+
+/* ---------- level ---------- */
+function setLevel(l){
+ document.querySelectorAll('.art[data-lvl]').forEach(function(s){s.classList.toggle('show',s.dataset.lvl===l)});
+ document.querySelectorAll('#lvlbtns button').forEach(function(b){b.classList.toggle('sel',b.dataset.lvl===l)});
+ localStorage.setItem('ga_level',l);
+}
+document.querySelectorAll('#lvlbtns button').forEach(function(b){b.addEventListener('click',function(){setLevel(b.dataset.lvl)})});
+setLevel(localStorage.getItem('ga_level')||'b');
+
+/* ---------- save ---------- */
+var U=null,dirty=false,dot=document.getElementById('dot');
+try{U=JSON.parse(localStorage.getItem('ga_user')||'null')}catch(e){U=null}
+if(U&&U.email){document.getElementById('gate').style.display='none';document.getElementById('who').textContent=U.name+' \u00b7 '+U.email;pull();}
+function signIn(){
+ var n=document.getElementById('gName').value.trim(),m=document.getElementById('gMail').value.trim().toLowerCase();
+ if(n.length<2||m.indexOf('@')<0){alert('Please write your full name and your school email.');return}
+ U={name:n,email:m};localStorage.setItem('ga_user',JSON.stringify(U));
+ document.getElementById('gate').style.display='none';
+ document.getElementById('who').textContent=n+' \u00b7 '+m;pull();
+}
+function collect(){
+ var o={};
+ document.querySelectorAll('textarea[data-q],input[type=text][data-q]').forEach(function(el){if(el.value)o[el.dataset.q]=el.value});
+ document.querySelectorAll('input[type=checkbox][data-q]').forEach(function(el){if(el.checked)o[el.dataset.q]=true});
+ document.querySelectorAll('.tog[data-q]').forEach(function(g){var s=g.querySelector('button.sel');if(s)o[g.dataset.q]=s.dataset.v});
+ var q=document.querySelector('.quote.sel');if(q)o.qchoice=q.dataset.i;
+ return o;
+}
+function restore(o){
+ if(!o)return;
+ document.querySelectorAll('textarea[data-q],input[type=text][data-q]').forEach(function(el){if(o[el.dataset.q]!==undefined)el.value=o[el.dataset.q]});
+ document.querySelectorAll('input[type=checkbox][data-q]').forEach(function(el){el.checked=!!o[el.dataset.q]});
+ document.querySelectorAll('.tog[data-q]').forEach(function(g){
+  var v=o[g.dataset.q];if(!v)return;
+  g.querySelectorAll('button').forEach(function(b){if(b.dataset.v===v)b.classList.add('sel')});
+ });
+ if(o.qchoice!==undefined){var q=document.querySelector('.quote[data-i="'+o.qchoice+'"]');if(q)q.classList.add('sel')}
+ meter();wc();
+}
+function hdr(x){var h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};if(x)for(var k in x)h[k]=x[k];return h}
+function save(cb){
+ try{localStorage.setItem('ga_'+PAGE,JSON.stringify(collect()))}catch(e){}
+ if(!U||!U.email){if(cb)cb(false);return}
+ dot.className='busy';
+ var f=document.getElementById('final').value.trim();
+ var words=f?f.split(/\s+/).length:0;
+ fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email,page',{method:'POST',
+  headers:hdr({'Prefer':'resolution=merge-duplicates,return=minimal'}),
+  body:JSON.stringify([{email:U.email,name:U.name,page:PAGE,data:collect(),score:words,max_score:60,updated_at:new Date().toISOString()}])
+ }).then(function(r){dot.className=r.ok?'ok':'err';if(cb)cb(r.ok)}).catch(function(){dot.className='err';if(cb)cb(false)});
+}
+function pull(){
+ try{var l=JSON.parse(localStorage.getItem('ga_'+PAGE)||'null');if(l)restore(l)}catch(e){}
+ if(!U||!U.email)return;
+ fetch(SUPA_URL+'/rest/v1/'+TABLE+'?select=data&email=eq.'+encodeURIComponent(U.email)+'&page=eq.'+PAGE,{headers:hdr()})
+  .then(function(r){return r.json()}).then(function(j){if(j&&j[0]&&j[0].data)restore(j[0].data)}).catch(function(){});
+}
+setInterval(function(){if(dirty){dirty=false;save()}},2500);
+window.addEventListener('beforeunload',function(){if(dirty)save()});
+function turnIn(){
+ if(!U||!U.email){alert('Sign in first.');return}
+ save(function(ok){
+  if(!ok){alert('Could not reach the server. Try again in a moment.');return}
+  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?email=eq.'+encodeURIComponent(U.email)+'&page=eq.'+PAGE,
+   {method:'PATCH',headers:hdr({'Prefer':'return=minimal'}),body:JSON.stringify({turned_in:true})})
+   .then(function(){alert('Turned in. Nice work.')});
+ });
+}
+</script>
+</body>
+</html>

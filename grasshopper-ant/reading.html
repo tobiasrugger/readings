@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Grasshopper and the Ant — Reading Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Nunito,system-ui,sans-serif;color:#16241d;background:#f4f7f5;line-height:1.6}
+.bar{position:sticky;top:0;z-index:60;background:#1b4d3e;color:#eaf3ee;padding:8px 14px;display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.bar h1{font-size:1rem;margin:0;font-weight:800}
+.bar .sp{flex:1}
+.bar button,.bar select{font-family:inherit;font-weight:800;font-size:.8rem;border-radius:8px;border:1px solid #3f8f6f;background:#24624f;color:#eaf3ee;padding:6px 10px;cursor:pointer}
+.bar button:hover{background:#2e7a62}
+#dot{width:10px;height:10px;border-radius:50%;background:#8aa79a;display:inline-block}
+#dot.ok{background:#5fd39b}#dot.busy{background:#f0c35c}#dot.err{background:#e07a6b}
+.wrap{max-width:840px;margin:0 auto;padding:16px 16px 90px}
+h2{font-size:1.3rem;margin:30px 0 6px;color:#14402f}
+h3{font-size:1.05rem;margin:18px 0 4px;color:#14402f}
+.card{background:#fff;border:1px solid #d8e3dc;border-radius:12px;padding:15px 17px;margin:13px 0}
+.card.tint{background:#eef5f1;border-color:#c8ded3}
+.lede{color:#4c6259;font-size:.95rem}
+.pill{display:inline-block;font-size:.66rem;font-weight:800;letter-spacing:.6px;background:#1b4d3e;color:#eaf3ee;border-radius:20px;padding:3px 9px;vertical-align:middle}
+.q{margin:13px 0 0;padding-top:12px;border-top:1px dashed #d8e3dc}
+.q:first-child{border-top:0;padding-top:0}
+.q p{margin:0 0 6px;font-weight:700}
+.q .hint{font-weight:400;color:#63776d;font-size:.86rem;margin:0 0 6px}
+textarea,input[type=text]{width:100%;font-family:inherit;font-size:.97rem;border:1px solid #c9d7d0;border-radius:8px;padding:8px 10px;background:#fbfdfc}
+textarea{min-height:64px;resize:vertical}
+.opts{display:flex;flex-direction:column;gap:6px}
+.opt{border:1px solid #c9d7d0;background:#fbfdfc;border-radius:8px;padding:7px 11px;cursor:pointer;font-family:inherit;font-size:.95rem;text-align:left}
+.opt:hover{background:#eef5f1}
+.opt.sel{background:#1b4d3e;color:#fff;border-color:#1b4d3e}
+.opt.right{outline:2px solid #2f9e6a}
+.opt.wrong{outline:2px solid #d1655a}
+.gl{border-bottom:2px dotted #c08a2e;cursor:pointer;font-weight:700}
+.gl:hover{background:#fdf2d9}
+#pop{position:fixed;z-index:90;max-width:300px;background:#fff;border:1px solid #1b4d3e;border-radius:10px;padding:10px 12px;box-shadow:0 8px 24px rgba(0,0,0,.18);display:none;font-size:.9rem}
+#pop b{display:block;font-size:1rem;color:#14402f}
+#pop .tr{margin-top:6px;font-size:1.02rem;color:#7a4c00;font-weight:700}
+.story p{margin:0 0 10px}
+.num{color:#8aa093;font-weight:800;font-size:.8rem;margin-right:4px}
+.ill{display:block;margin:4px auto 10px;max-width:300px;width:60%}
+.ill path,.ill circle,.ill ellipse,.ill line,.ill polyline{stroke:#1b4d3e;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ill .fillx{fill:#1b4d3e;stroke:none}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{border:1px solid #d8e3dc;padding:6px 8px;text-align:left;vertical-align:top}
+th{background:#eef5f1;font-weight:800}
+.ad{display:grid;grid-template-columns:1fr 92px 92px;gap:6px;align-items:center;border-top:1px solid #e6ece9;padding:8px 0}
+.ad:first-of-type{border-top:0}
+.adh{font-size:.72rem;font-weight:800;color:#63776d;text-align:center}
+.tog{display:flex;gap:4px;justify-content:center}
+.tog button{font-family:inherit;font-weight:800;font-size:.74rem;border:1px solid #c9d7d0;background:#fbfdfc;border-radius:7px;padding:4px 7px;cursor:pointer}
+.tog button.sel{background:#1b4d3e;color:#fff;border-color:#1b4d3e}
+.seq{display:grid;grid-template-columns:60px 1fr;gap:8px;align-items:center;margin:6px 0}
+.seq input{width:100%;text-align:center;font-weight:800}
+.seq .txt{background:#fbfdfc;border:1px solid #e2eae6;border-radius:8px;padding:7px 10px;font-size:.95rem}
+.seq.ok .txt{border-color:#2f9e6a;background:#effaf4}
+.seq.no .txt{border-color:#d1655a;background:#fdf0ee}
+.btn{font-family:inherit;font-weight:800;border-radius:9px;border:1px solid #1b4d3e;background:#1b4d3e;color:#fff;padding:9px 15px;cursor:pointer;font-size:.9rem}
+.btn.ghost{background:#fff;color:#1b4d3e}
+.gate{position:fixed;inset:0;background:#16241d;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
+.gate .box{background:#fff;border-radius:14px;padding:22px;max-width:380px;width:100%}
+.gate h2{margin:0 0 4px}
+.gate input{margin:6px 0}
+.lvlbtns{display:flex;gap:5px}
+.lvlbtns button{font-size:.76rem}
+.lvlbtns button.sel{background:#eaf3ee;color:#1b4d3e}
+.note{font-size:.85rem;color:#63776d}
+.printonly{display:none}
+@media print{
+ .bar,.noprint,#pop,.gate{display:none!important}
+ body{background:#fff;font-size:11.5pt}
+ .wrap{max-width:100%;padding:0}
+ .card{break-inside:avoid;border-color:#aaa}
+ .printonly{display:block}
+ textarea,input[type=text]{min-height:54px;background:#fff}
+ .opt.sel{background:#fff;color:#000;border:2px solid #000}
+ h2{break-after:avoid}
+}
+</style>
+</head>
+<body>
+
+<div class="bar noprint">
+  <h1>The Grasshopper &amp; the Ant</h1>
+  <span class="lvlbtns">
+    <button data-lvl="a">Easier</button>
+    <button data-lvl="b" class="sel">Standard</button>
+    <button data-lvl="c">Challenge</button>
+  </span>
+  <span class="sp"></span>
+  <select id="lang" title="Glossary language">
+    <option value="en">English only</option>
+    <option value="es">Español</option>
+    <option value="zh">中文</option>
+    <option value="ar">العربية</option>
+    <option value="vi">Tiếng Việt</option>
+    <option value="th">ไทย</option>
+    <option value="ne">नेपाली</option>
+  </select>
+  <button onclick="checkAll()">Check</button>
+  <button onclick="window.print()">Print</button>
+  <button onclick="turnIn()">Turn in</button>
+  <span id="dot" title="save status"></span>
+</div>
+
+<div class="gate" id="gate">
+  <div class="box">
+    <h2>Sign in</h2>
+    <p class="lede">Your work saves automatically.</p>
+    <input type="text" id="gName" placeholder="First and last name">
+    <input type="text" id="gMail" placeholder="school email">
+    <p style="margin:10px 0 0"><button class="btn" onclick="signIn()">Start</button>
+    <button class="btn ghost" onclick="document.getElementById('gate').style.display='none'">Just print it</button></p>
+  </div>
+</div>
+
+<div class="wrap">
+
+<p class="lede" id="who"></p>
+
+<h2>Before you read</h2>
+
+<div class="card tint">
+  <p style="margin:0 0 6px;font-weight:800">Do you agree or disagree?</p>
+  <p class="hint" style="margin:0 0 8px;color:#63776d;font-size:.86rem">Answer the <b>Before</b> column now. You will answer the <b>After</b> column at the end of the unit.</p>
+  <div class="ad"><span></span><span class="adh">BEFORE</span><span class="adh">AFTER</span></div>
+  <div id="adWrap"></div>
+</div>
+
+<div class="card">
+  <div class="q">
+    <p>Look at the title and the pictures. What do you think will happen in this story?</p>
+    <p class="hint">Try: <i>I think the grasshopper will ___ because ___.</i></p>
+    <textarea data-q="pred"></textarea>
+  </div>
+</div>
+
+<h2>The story</h2>
+<p class="lede noprint">Tap any <span class="gl" data-w="fable">underlined word</span> to see what it means in your language.</p>
+
+<!-- ============ PART 1 ============ -->
+<div class="card">
+  <h3>Part 1 &middot; Summer <span class="pill">SUMMER</span></h3>
+  <svg class="ill" viewBox="0 0 220 110" aria-label="An ant carrying food under the sun">
+    <circle cx="188" cy="24" r="13"/>
+    <line x1="188" y1="4" x2="188" y2="-1"/><line x1="206" y1="10" x2="211" y2="5"/>
+    <line x1="210" y1="24" x2="216" y2="24"/><line x1="206" y1="38" x2="211" y2="43"/>
+    <ellipse cx="46" cy="66" rx="11" ry="10"/><ellipse cx="72" cy="66" rx="12" ry="11"/><ellipse cx="104" cy="66" rx="18" ry="14"/>
+    <circle cx="42" cy="63" r="2" class="fillx"/>
+    <path d="M39 57 L28 44"/><path d="M42 55 L36 41"/>
+    <path d="M66 75 L57 92"/><path d="M74 77 L74 94"/><path d="M82 74 L94 91"/>
+    <path d="M62 57 L52 46"/>
+    <ellipse cx="34" cy="30" rx="13" ry="9" transform="rotate(-18 34 30)"/>
+    <path d="M0 96 L220 96"/>
+    <path d="M126 96 q6 -10 12 0"/><path d="M146 96 q5 -8 10 0"/>
+  </svg>
+
+  <div class="story" data-lvl="a" hidden>
+    <p>It was summer. The sun was hot.</p>
+    <p>The ant worked. He worked all day. He looked for food. He found food. He ate a little. He <span class="gl" data-w="save">saved</span> a lot.</p>
+    <p>The ant made a house. It was a good house.</p>
+    <p>The grasshopper did not work. He sang songs. He played music. He sat in the sun. He was happy.</p>
+  </div>
+
+  <div class="story" data-lvl="b">
+    <p><span class="num">1</span>Once upon a time there was an ant and a grasshopper.</p>
+    <p><span class="num">2</span>The ant worked very hard. He worked and worked all day.</p>
+    <p><span class="num">3</span>The ant made a lovely house.</p>
+    <p><span class="num">4</span>Every day, the ant would work and look for bread or food.</p>
+    <p><span class="num">5</span>Every time he got a piece of food, he would eat just a little, then <span class="gl" data-w="save">save</span> the rest for winter.</p>
+    <p><span class="num">6</span>The grasshopper, <span class="gl" data-w="onthe">on the other hand</span>, was very <span class="gl" data-w="lazy">lazy</span>.</p>
+    <p><span class="num">7</span>The grasshopper liked to sing and <span class="gl" data-w="relax">relax</span> every day. The grasshopper didn't work to save food.</p>
+    <p><span class="num">8</span>The grasshopper would just sing and play music. He would relax in the sun.</p>
+  </div>
+
+  <div class="story" data-lvl="c" hidden>
+    <p>Long ago, in a field of tall grass, an ant and a grasshopper lived side by side.</p>
+    <p>All summer the ant labored. From sunrise until the light turned orange, she carried seeds and crumbs of bread — some of them twice her own size — down into the neat rooms of her house beneath the ground. Whenever she found food, she ate only a little and <span class="gl" data-w="save">stored</span> the rest away, because she knew what the cold months would ask of her.</p>
+    <p>The grasshopper, <span class="gl" data-w="onthe">on the other hand</span>, did nothing of the kind. He had a fiddle and a fine voice, and he used them. He sang to the heat and to the long afternoons. To anyone watching, he looked completely <span class="gl" data-w="lazy">lazy</span>.</p>
+  </div>
+
+  <div class="q">
+    <p>1. What did the ant do every day in the summer?</p>
+    <div class="opts" data-q="q1" data-key="b">
+      <button class="opt" data-v="a">He sang songs and played music.</button>
+      <button class="opt" data-v="b">He worked and looked for food.</button>
+      <button class="opt" data-v="c">He slept in his house.</button>
+    </div>
+  </div>
+  <div class="q">
+    <p>2. When the ant found food, he did <b>two</b> things. What were they?</p>
+    <p class="hint">First he ___ . Then he ___ .</p>
+    <textarea data-q="q2"></textarea>
+  </div>
+  <div class="q">
+    <p>3. The grasshopper was happy in the summer. <b>Why?</b></p>
+    <textarea data-q="q3"></textarea>
+  </div>
+</div>
+
+<!-- ============ PART 2 ============ -->
+<div class="card">
+  <h3>Part 2 &middot; Autumn <span class="pill">AUTUMN</span></h3>
+  <svg class="ill" viewBox="0 0 220 110" aria-label="Falling leaves in autumn">
+    <path d="M20 92 q10 -30 4 -62"/><path d="M24 62 q16 -6 22 -20"/><path d="M22 76 q-14 -4 -20 -18"/>
+    <path d="M96 26 q10 -8 16 2 q4 10 -8 14 q-12 2 -8 -16" transform="rotate(-20 104 30)"/>
+    <path d="M136 54 q10 -8 16 2 q4 10 -8 14 q-12 2 -8 -16" transform="rotate(35 144 58)"/>
+    <path d="M172 22 q10 -8 16 2 q4 10 -8 14 q-12 2 -8 -16" transform="rotate(70 180 26)"/>
+    <path d="M110 84 q10 -8 16 2 q4 10 -8 14 q-12 2 -8 -16" transform="rotate(15 118 88)"/>
+    <path d="M0 100 L220 100"/>
+    <ellipse cx="184" cy="90" rx="6" ry="5"/><ellipse cx="196" cy="90" rx="8" ry="6"/>
+    <path d="M180 95 L176 100"/><path d="M190 96 L190 101"/>
+  </svg>
+
+  <div class="story" data-lvl="a" hidden>
+    <p>Then autumn came. The leaves fell. The days were short.</p>
+    <p>The ants <span class="gl" data-w="gather">gathered</span> food. They worked hard.</p>
+    <p>The ant said, "Save your food! Winter is coming!"</p>
+    <p>The ant said, "Build a house!"</p>
+    <p>The grasshopper did not listen. He played music in the sun.</p>
+  </div>
+
+  <div class="story" data-lvl="b">
+    <p><span class="num">9</span>Then <span class="gl" data-w="autumn">autumn</span> came. The leaves were falling.</p>
+    <p><span class="num">10</span>In autumn, the little ants were <span class="gl" data-w="gather">gathering</span> food before there was no more. The ant worked very hard.</p>
+    <p><span class="num">11</span>"Save your food," <span class="gl" data-w="warn">warned</span> the ant. But the grasshopper was lazy and didn't look for food.</p>
+    <p><span class="num">12</span>"Build a house. Winter is coming," said the ant. But again the grasshopper <span class="gl" data-w="ignore">ignored</span> the ant. He just relaxed and played music in the autumn sun.</p>
+  </div>
+
+  <div class="story" data-lvl="c" hidden>
+    <p>Then <span class="gl" data-w="autumn">autumn</span> arrived. The leaves let go of the trees one by one, and the light came later each morning. Everywhere in the field, ants were <span class="gl" data-w="gather">gathering</span> what was left before it disappeared.</p>
+    <p>"Save your food," the ant <span class="gl" data-w="warn">warned</span> him. "Build a house. Winter is coming."</p>
+    <p>The grasshopper <span class="gl" data-w="ignore">ignored</span> her — twice. He stretched out in the last warm sun and went on playing, as if the season would hold still for him.</p>
+  </div>
+
+  <div class="q">
+    <p>4. The ant gave the grasshopper <b>two</b> warnings. Write them.</p>
+    <p class="hint">The ant said, "___." The ant also said, "___."</p>
+    <textarea data-q="q4"></textarea>
+  </div>
+  <div class="q">
+    <p>5. <b>Ignored</b> means —</p>
+    <div class="opts" data-q="q5" data-key="c">
+      <button class="opt" data-v="a">listened carefully</button>
+      <button class="opt" data-v="b">answered politely</button>
+      <button class="opt" data-v="c">did not listen; paid no attention</button>
+    </div>
+  </div>
+  <div class="q">
+    <p>6. <b>Predict:</b> The grasshopper ignored the warning. What will happen to him in winter?</p>
+    <textarea data-q="q6"></textarea>
+  </div>
+</div>
+
+<!-- ============ PART 3 ============ -->
+<div class="card">
+  <h3>Part 3 &middot; Winter <span class="pill">WINTER</span></h3>
+  <svg class="ill" viewBox="0 0 220 110" aria-label="A cold grasshopper in the snow">
+    <path d="M0 96 L220 96"/>
+    <circle cx="26" cy="20" r="2.5" class="fillx"/><circle cx="60" cy="34" r="2.5" class="fillx"/>
+    <circle cx="100" cy="14" r="2.5" class="fillx"/><circle cx="152" cy="30" r="2.5" class="fillx"/>
+    <circle cx="196" cy="16" r="2.5" class="fillx"/><circle cx="176" cy="52" r="2.5" class="fillx"/>
+    <circle cx="44" cy="60" r="2.5" class="fillx"/><circle cx="128" cy="60" r="2.5" class="fillx"/>
+    <ellipse cx="96" cy="74" rx="26" ry="11"/>
+    <ellipse cx="128" cy="68" rx="10" ry="9"/>
+    <circle cx="132" cy="66" r="2" class="fillx"/>
+    <path d="M136 60 L152 46"/><path d="M137 63 L154 55"/>
+    <path d="M92 80 L78 60 L64 90"/>
+    <path d="M104 84 L100 95"/><path d="M114 82 L114 95"/>
+    <path d="M76 68 q22 -14 44 -2"/>
+  </svg>
+
+  <div class="story" data-lvl="a" hidden>
+    <p>Then winter came. The days were cold. The sun was not enough.</p>
+    <p>The grasshopper was cold. He was hungry. He had no food. He had no house.</p>
+    <p>He went to the ant's house. He <span class="gl" data-w="knock">knocked</span> on the door.</p>
+  </div>
+
+  <div class="story" data-lvl="b">
+    <p><span class="num">13</span>Then the days grew cold. The grasshopper was unhappy and cold. The grasshopper needed a house to <span class="gl" data-w="protect">protect</span> him from the winter.</p>
+    <p><span class="num">14</span>He <span class="gl" data-w="knock">knocked</span> on the ant's door. "Please let me stay in your house for winter."</p>
+  </div>
+
+  <div class="story" data-lvl="c" hidden>
+    <p>Then the days grew cold, and the sun was no longer enough. The grasshopper's music stopped. He had nothing to eat and nowhere to go, and nothing at all to <span class="gl" data-w="protect">protect</span> him from the winter.</p>
+    <p>So he crossed the frozen field and <span class="gl" data-w="knock">knocked</span> on the ant's door. "Please," he said, "let me stay in your house for the winter."</p>
+  </div>
+
+  <div class="q">
+    <p>7. Why did the grasshopper go to the ant's house?</p>
+    <p class="hint">He went to the ant's house because ___.</p>
+    <textarea data-q="q7"></textarea>
+  </div>
+  <div class="q">
+    <p>8. In Part 3, the grasshopper feels —</p>
+    <div class="opts" data-q="q8" data-key="b">
+      <button class="opt" data-v="a">proud and strong</button>
+      <button class="opt" data-v="b">cold, hungry, and afraid</button>
+      <button class="opt" data-v="c">angry at the weather</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PART 4 ============ -->
+<div class="card">
+  <h3>Part 4 &middot; The Door <span class="pill">THE ENDING</span></h3>
+  <svg class="ill" viewBox="0 0 220 110" aria-label="The grasshopper knocking on the ant's door">
+    <path d="M0 100 L220 100"/>
+    <rect x="20" y="26" width="74" height="74" rx="3"/>
+    <rect x="34" y="40" width="20" height="18" rx="2"/>
+    <circle cx="82" cy="66" r="3.5"/>
+    <ellipse cx="44" cy="49" rx="5" ry="4.5"/><ellipse cx="44" cy="49" rx="1.5" ry="1.5" class="fillx"/>
+    <ellipse cx="150" cy="74" rx="24" ry="10"/>
+    <ellipse cx="122" cy="66" rx="9" ry="8"/>
+    <circle cx="118" cy="64" r="2" class="fillx"/>
+    <path d="M114 58 L100 44"/><path d="M113 62 L98 54"/>
+    <path d="M154 80 L166 60 L180 90"/>
+    <path d="M140 84 L142 96"/><path d="M130 82 L128 96"/>
+    <path d="M112 70 L100 62"/>
+    <path d="M94 46 q6 -6 0 -12"/><path d="M100 50 q10 -10 0 -20"/>
+  </svg>
+
+  <div class="story" data-lvl="a" hidden>
+    <p>"Please, let me stay in your house," said the grasshopper.</p>
+    <p>"What did you do in the summer?" asked the ant.</p>
+    <p>"I played music. I relaxed in the sun," said the grasshopper.</p>
+    <p>"No. You can not come in. You <b>should have</b> built a house," said the ant.</p>
+    <p>"Please give me some food," said the grasshopper.</p>
+    <p>"No. You <b>should have</b> looked for food," said the ant.</p>
+    <p>The grasshopper walked away. He had no food and no house.</p>
+  </div>
+
+  <div class="story" data-lvl="b">
+    <p><span class="num">15</span>"What were you doing all summer and autumn?" asked the ant.</p>
+    <p><span class="num">16</span>"Playing music and relaxing in the sun," said the grasshopper.</p>
+    <p><span class="num">17</span>"No, you can not come in. You <b>should have</b> made a house," said the ant.</p>
+    <p><span class="num">18</span>"Please give me some food <span class="gl" data-w="atleast">at least</span>," said the grasshopper.</p>
+    <p><span class="num">19</span>"No, you <b>should have</b> looked for food," replied the ant.</p>
+    <p><span class="num">20</span>The grasshopper left the ant's house. He had no food and no house for the winter.</p>
+  </div>
+
+  <div class="story" data-lvl="c" hidden>
+    <p>"What were you doing all summer and autumn?" the ant asked.</p>
+    <p>"Playing music. Relaxing in the sun."</p>
+    <p>"Then no. You cannot come in. You <b>should have</b> built a house."</p>
+    <p>"Give me some food, <span class="gl" data-w="atleast">at least</span>."</p>
+    <p>"No. You <b>should have</b> looked for food."</p>
+    <p>The door closed. The grasshopper left with no food and no house for the winter.</p>
+    <p>The fable does not tell us what happened to him after that. It only tells us that he left.</p>
+    <p class="note">In the French version by La Fontaine, the insect is a <b>cicada</b>, not a grasshopper — and the poem says plainly that the ant is <i>not <span class="gl" data-w="generous">generous</span></i>. That is the writer's opinion about the ant, not about the cicada.</p>
+  </div>
+
+  <div class="q">
+    <p>9. Write the ant's exact words when she says "no" the first time.</p>
+    <p class="hint">Use quotation marks: The ant said, "___."</p>
+    <textarea data-q="q9"></textarea>
+  </div>
+  <div class="q">
+    <p>10. At the end of the story, the grasshopper is —</p>
+    <div class="opts" data-q="q10" data-key="c">
+      <button class="opt" data-v="a">inside the ant's house, warm and safe</button>
+      <button class="opt" data-v="b">back in the sun, still playing music</button>
+      <button class="opt" data-v="c">outside, with no food and no house</button>
+    </div>
+  </div>
+  <div class="q">
+    <p>11. Was the ant right to say no? <b>Explain your opinion.</b></p>
+    <p class="hint">I think the ant was / was not right because ___. Also, ___.</p>
+    <textarea data-q="q11"></textarea>
+  </div>
+</div>
+
+<!-- ============ SEQUENCE ============ -->
+<h2>Put the story in order</h2>
+<div class="card">
+  <p class="lede">Write the numbers <b>1</b> to <b>8</b>. Number 1 happened first.</p>
+  <div id="seqWrap"></div>
+  <p class="noprint" style="margin-top:10px"><button class="btn ghost" onclick="checkSeq()">Check my order</button> <span id="seqMsg" style="font-weight:800"></span></p>
+</div>
+
+<!-- ============ AFTER ============ -->
+<h2>After you read</h2>
+
+<div class="card">
+  <div class="q">
+    <p>12. What is the <span class="gl" data-w="moral">moral</span> of this fable? Write it in one sentence.</p>
+    <p class="hint">The moral of this fable is that ___.</p>
+    <textarea data-q="q12"></textarea>
+  </div>
+  <div class="q">
+    <p>13. Who do you think made the bigger mistake — the grasshopper (he did not prepare) or the ant (she did not share)? Use a detail from the story.</p>
+    <p class="hint">In my opinion, ___ made the bigger mistake. In the story, ___. This shows ___.</p>
+    <textarea data-q="q13"></textarea>
+  </div>
+  <div class="q">
+    <p>14. <b>Think again.</b> The writer Bonnie Tsui says the grasshopper was not lazy — he was an <b>artist</b>, and making music <i>was</i> his work. Nobody saw it, so nobody counted it. Does that change your opinion of the story? Why or why not?</p>
+    <textarea data-q="q14"></textarea>
+  </div>
+</div>
+
+<h2>Glossary</h2>
+<div class="card">
+  <p class="lede noprint">Choose your language at the top of the page.</p>
+  <table id="glTable"><thead><tr><th style="width:22%">Word</th><th style="width:44%">Meaning</th><th>Your language</th></tr></thead><tbody></tbody></table>
+</div>
+
+<p class="note noprint" style="margin-top:26px">Mr. Toby &middot; <a href="index.html">Back to the unit</a></p>
+<p class="printonly" style="margin-top:18px">Name: ___________________________  Class: ________  Date: ________ &nbsp;&nbsp; Mr. Toby</p>
+
+</div>
+
+<div id="pop"></div>
+
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var TABLE='ga_work';
+var PAGE='reading';
+
+/* ---------- glossary data ---------- */
+var GLOSS={
+ fable:{en:'a short story that teaches a lesson, usually with animals',es:'fábula',zh:'寓言',ar:'حكاية على لسان الحيوان (خرافة)',vi:'truyện ngụ ngôn',th:'นิทานสอนใจ',ne:'दन्त्यकथा'},
+ moral:{en:'the lesson that a story teaches',es:'la moraleja',zh:'寓意；教训',ar:'العِبرة',vi:'bài học đạo đức',th:'คติสอนใจ',ne:'नैतिक शिक्षा'},
+ lazy:{en:'not wanting to work',es:'perezoso / flojo',zh:'懒惰的',ar:'كسول',vi:'lười biếng',th:'ขี้เกียจ',ne:'अल्छी'},
+ save:{en:'to keep something now so you can use it later',es:'guardar / ahorrar',zh:'储存；节省',ar:'يدَّخِر',vi:'để dành',th:'เก็บออม',ne:'बचत गर्नु'},
+ gather:{en:'to collect many things and bring them together',es:'recoger / juntar',zh:'收集',ar:'يجمع',vi:'thu gom',th:'รวบรวม',ne:'जम्मा गर्नु'},
+ warn:{en:'to tell someone that something bad may happen',es:'advertir',zh:'警告',ar:'يحذِّر',vi:'cảnh báo',th:'เตือน',ne:'चेतावनी दिनु'},
+ ignore:{en:'to hear someone but pay no attention',es:'ignorar',zh:'忽视；不理会',ar:'يتجاهل',vi:'phớt lờ',th:'เพิกเฉย',ne:'बेवास्ता गर्नु'},
+ protect:{en:'to keep someone or something safe',es:'proteger',zh:'保护',ar:'يحمي',vi:'bảo vệ',th:'ปกป้อง',ne:'जोगाउनु'},
+ relax:{en:'to rest and do nothing stressful',es:'relajarse / descansar',zh:'放松',ar:'يسترخي',vi:'thư giãn',th:'ผ่อนคลาย',ne:'आराम गर्नु'},
+ autumn:{en:'the season after summer (also called "fall")',es:'el otoño',zh:'秋天',ar:'الخريف',vi:'mùa thu',th:'ฤดูใบไม้ร่วง',ne:'शरद ऋतु'},
+ knock:{en:'to hit a door with your hand so someone opens it',es:'tocar / llamar a la puerta',zh:'敲门',ar:'يطرق الباب',vi:'gõ cửa',th:'เคาะประตู',ne:'ढोका ढक्ढक्याउनु'},
+ atleast:{en:'the smallest amount you will accept',es:'al menos / por lo menos',zh:'至少',ar:'على الأقل',vi:'ít nhất',th:'อย่างน้อย',ne:'कम्तीमा'},
+ onthe:{en:'a phrase that shows a difference between two things',es:'por otro lado',zh:'另一方面',ar:'من ناحية أخرى',vi:'mặt khác',th:'ในทางกลับกัน',ne:'अर्कोतर्फ'},
+ generous:{en:'happy to give and share with others',es:'generoso',zh:'慷慨的',ar:'كريم / سخيّ',vi:'hào phóng',th:'ใจกว้าง',ne:'उदार'}
+};
+
+/* ---------- statements ---------- */
+var STATEMENTS=[
+ 'It is always better to work than to rest.',
+ 'If you do not prepare, it is your own fault.',
+ 'People who have enough should share with people who do not.',
+ 'Making music, art, or stories is real work.'
+];
+
+var SEQ=[
+ ['The ant works all summer and saves food.',1],
+ ['The grasshopper sings and plays music in the sun.',2],
+ ['Autumn comes and the leaves fall.',3],
+ ['The ant warns the grasshopper to save food and build a house.',4],
+ ['The grasshopper ignores the ant.',5],
+ ['Winter comes and the days grow cold.',6],
+ ['The grasshopper knocks on the ant\u2019s door.',7],
+ ['The ant says no, and the grasshopper leaves.',8]
+];
+
+/* ---------- build dynamic bits ---------- */
+(function(){
+ var w=document.getElementById('adWrap');
+ STATEMENTS.forEach(function(s,i){
+  var row=document.createElement('div');row.className='ad';
+  row.innerHTML='<span>'+(i+1)+'. '+s+'</span>'+
+   '<span class="tog" data-q="b'+i+'"><button data-v="A">Agree</button><button data-v="D">Disagree</button></span>'+
+   '<span class="tog" data-q="a'+i+'"><button data-v="A">Agree</button><button data-v="D">Disagree</button></span>';
+  w.appendChild(row);
+ });
+ var sw=document.getElementById('seqWrap');
+ var order=[3,0,6,1,5,2,7,4];
+ order.forEach(function(idx){
+  var d=document.createElement('div');d.className='seq';d.dataset.key=SEQ[idx][1];
+  d.innerHTML='<input type="text" inputmode="numeric" maxlength="1" data-q="seq'+idx+'"><div class="txt">'+SEQ[idx][0]+'</div>';
+  sw.appendChild(d);
+ });
+})();
+
+/* ---------- user ---------- */
+var U=null;
+try{U=JSON.parse(localStorage.getItem('ga_user')||'null')}catch(e){U=null}
+if(U&&U.email){document.getElementById('gate').style.display='none';document.getElementById('who').textContent=U.name+' \u00b7 '+U.email;pull();}
+function signIn(){
+ var n=document.getElementById('gName').value.trim(),m=document.getElementById('gMail').value.trim().toLowerCase();
+ if(n.length<2||m.indexOf('@')<0){alert('Please write your full name and your school email.');return}
+ U={name:n,email:m};localStorage.setItem('ga_user',JSON.stringify(U));
+ document.getElementById('gate').style.display='none';
+ document.getElementById('who').textContent=n+' \u00b7 '+m;
+ pull();
+}
+
+/* ---------- collect / restore ---------- */
+function collect(){
+ var o={};
+ document.querySelectorAll('textarea[data-q],input[data-q]').forEach(function(el){if(el.value)o[el.dataset.q]=el.value});
+ document.querySelectorAll('.opts[data-q]').forEach(function(g){var s=g.querySelector('.opt.sel');if(s)o[g.dataset.q]=s.dataset.v});
+ document.querySelectorAll('.tog[data-q]').forEach(function(g){var s=g.querySelector('button.sel');if(s)o[g.dataset.q]=s.dataset.v});
+ return o;
+}
+function restore(o){
+ if(!o)return;
+ document.querySelectorAll('textarea[data-q],input[data-q]').forEach(function(el){if(o[el.dataset.q]!==undefined)el.value=o[el.dataset.q]});
+ document.querySelectorAll('.opts[data-q]').forEach(function(g){
+  var v=o[g.dataset.q];if(!v)return;
+  g.querySelectorAll('.opt').forEach(function(b){if(b.dataset.v===v)b.classList.add('sel')});
+ });
+ document.querySelectorAll('.tog[data-q]').forEach(function(g){
+  var v=o[g.dataset.q];if(!v)return;
+  g.querySelectorAll('button').forEach(function(b){if(b.dataset.v===v)b.classList.add('sel')});
+ });
+}
+
+/* ---------- click handlers ---------- */
+document.addEventListener('click',function(e){
+ var b=e.target.closest('.opt');
+ if(b){var g=b.closest('.opts');g.querySelectorAll('.opt').forEach(function(x){x.classList.remove('sel','right','wrong')});b.classList.add('sel');dirty=true;return}
+ var t=e.target.closest('.tog button');
+ if(t){var gg=t.closest('.tog');gg.querySelectorAll('button').forEach(function(x){x.classList.remove('sel')});t.classList.add('sel');dirty=true;return}
+ var g2=e.target.closest('.gl');
+ if(g2){showPop(g2);return}
+ document.getElementById('pop').style.display='none';
+});
+document.addEventListener('input',function(){dirty=true});
+
+/* ---------- glossary popover ---------- */
+function showPop(el){
+ var w=el.dataset.w,d=GLOSS[w];if(!d)return;
+ var lang=document.getElementById('lang').value;
+ var p=document.getElementById('pop');
+ p.innerHTML='<b>'+el.textContent+'</b>'+d.en+(lang!=='en'?'<div class="tr">'+d[lang]+'</div>':'');
+ p.style.display='block';
+ var r=el.getBoundingClientRect();
+ var top=r.bottom+8,left=Math.min(r.left,window.innerWidth-320);
+ if(top+140>window.innerHeight)top=Math.max(8,r.top-150);
+ p.style.top=top+'px';p.style.left=Math.max(8,left)+'px';
+}
+
+/* ---------- language + glossary table ---------- */
+function renderGloss(){
+ var lang=document.getElementById('lang').value;
+ var tb=document.querySelector('#glTable tbody');tb.innerHTML='';
+ Object.keys(GLOSS).forEach(function(k){
+  var d=GLOSS[k];
+  var label=k==='onthe'?'on the other hand':(k==='atleast'?'at least':k);
+  var tr=document.createElement('tr');
+  tr.innerHTML='<td><b>'+label+'</b></td><td>'+d.en+'</td><td style="font-size:1.02rem">'+(lang==='en'?'':d[lang])+'</td>';
+  tb.appendChild(tr);
+ });
+}
+document.getElementById('lang').addEventListener('change',function(){
+ localStorage.setItem('ga_lang',this.value);renderGloss();
+});
+var savedLang=localStorage.getItem('ga_lang');if(savedLang)document.getElementById('lang').value=savedLang;
+renderGloss();
+
+/* ---------- level switch ---------- */
+function setLevel(l){
+ document.querySelectorAll('.story').forEach(function(s){s.hidden=(s.dataset.lvl!==l)});
+ document.querySelectorAll('.lvlbtns button').forEach(function(b){b.classList.toggle('sel',b.dataset.lvl===l)});
+ localStorage.setItem('ga_level',l);
+}
+document.querySelectorAll('.lvlbtns button').forEach(function(b){
+ b.addEventListener('click',function(){setLevel(b.dataset.lvl)});
+});
+setLevel(localStorage.getItem('ga_level')||'b');
+
+/* ---------- checking ---------- */
+function checkAll(){
+ var right=0,tot=0;
+ document.querySelectorAll('.opts[data-key]').forEach(function(g){
+  tot++;var s=g.querySelector('.opt.sel');
+  g.querySelectorAll('.opt').forEach(function(b){b.classList.remove('right','wrong')});
+  if(!s)return;
+  if(s.dataset.v===g.dataset.key){s.classList.add('right');right++}else{s.classList.add('wrong');
+   g.querySelectorAll('.opt').forEach(function(b){if(b.dataset.v===g.dataset.key)b.classList.add('right')});}
+ });
+ var sq=checkSeq(true);
+ alert('Multiple choice: '+right+' of '+tot+' correct.\nSequence: '+sq[0]+' of '+sq[1]+' in the right place.');
+ save();
+}
+function checkSeq(quiet){
+ var r=0,t=0;
+ document.querySelectorAll('.seq').forEach(function(d){
+  t++;d.classList.remove('ok','no');
+  var v=d.querySelector('input').value.trim();
+  if(!v)return;
+  if(v===d.dataset.key){d.classList.add('ok');r++}else{d.classList.add('no')}
+ });
+ if(!quiet)document.getElementById('seqMsg').textContent=r+' / '+t+' correct';
+ return [r,t];
+}
+function score(){
+ var right=0,tot=0;
+ document.querySelectorAll('.opts[data-key]').forEach(function(g){
+  tot++;var s=g.querySelector('.opt.sel');
+  if(s&&s.dataset.v===g.dataset.key)right++;
+ });
+ document.querySelectorAll('.seq').forEach(function(d){
+  tot++;if(d.querySelector('input').value.trim()===d.dataset.key)right++;
+ });
+ return [right,tot];
+}
+
+/* ---------- save ---------- */
+var dirty=false,dot=document.getElementById('dot');
+function hdr(extra){
+ var h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};
+ if(extra)for(var k in extra)h[k]=extra[k];
+ return h;
+}
+function save(cb){
+ if(!U||!U.email)return;
+ dot.className='busy';
+ var s=score();
+ var body=[{email:U.email,name:U.name,page:PAGE,data:collect(),score:s[0],max_score:s[1],updated_at:new Date().toISOString()}];
+ fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email,page',{
+  method:'POST',headers:hdr({'Prefer':'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify(body)
+ }).then(function(r){dot.className=r.ok?'ok':'err';if(cb)cb(r.ok)})
+  .catch(function(){dot.className='err';if(cb)cb(false)});
+ try{localStorage.setItem('ga_'+PAGE,JSON.stringify(collect()))}catch(e){}
+}
+function pull(){
+ try{var loc=JSON.parse(localStorage.getItem('ga_'+PAGE)||'null');if(loc)restore(loc)}catch(e){}
+ if(!U||!U.email)return;
+ fetch(SUPA_URL+'/rest/v1/'+TABLE+'?select=data&email=eq.'+encodeURIComponent(U.email)+'&page=eq.'+PAGE,{headers:hdr()})
+  .then(function(r){return r.json()})
+  .then(function(j){if(j&&j[0]&&j[0].data)restore(j[0].data)})
+  .catch(function(){});
+}
+setInterval(function(){if(dirty){dirty=false;save()}},2500);
+window.addEventListener('beforeunload',function(){if(dirty)save()});
+
+function turnIn(){
+ if(!U||!U.email){alert('Sign in first.');return}
+ save(function(ok){
+  if(!ok){alert('Could not reach the server. Try again in a moment.');return}
+  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?email=eq.'+encodeURIComponent(U.email)+'&page=eq.'+PAGE,{
+   method:'PATCH',headers:hdr({'Prefer':'return=minimal'}),body:JSON.stringify({turned_in:true})
+  }).then(function(){alert('Turned in. Nice work, '+U.name.split(' ')[0]+'.')});
+ });
+}
+</script>
+</body>
+</html>
