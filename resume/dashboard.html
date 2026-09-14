@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Résumé Unit — Teacher Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--pine:#1F4D3D;--pine2:#2E6B54;--pine-lt:#E8F1ED;--gold:#C9A227;--mut:#667;--line:#d8e2dd;--bg:#F7FAF8}
+*{box-sizing:border-box}
+body{margin:0;font-family:Nunito,system-ui,sans-serif;background:var(--bg);color:#1a1a1a;font-size:16px}
+header{background:var(--pine);color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+header h1{margin:0;font-size:1.15rem}
+.wrap{max-width:1200px;margin:0 auto;padding:16px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
+.btn{background:var(--pine);color:#fff;border:none;border-radius:9px;padding:9px 15px;font-family:inherit;font-weight:700;cursor:pointer;font-size:.92rem}
+.btn.ghost{background:#fff;color:var(--pine);border:2px solid var(--pine)}
+.btn.sm{padding:5px 11px;font-size:.82rem}
+input,select{font-family:inherit;font-size:1rem;padding:9px 11px;border:2px solid var(--line);border-radius:9px;background:#fff}
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+th{background:var(--pine);color:#fff;text-align:left;padding:9px 10px;position:sticky;top:0;font-size:.82rem;text-transform:uppercase;letter-spacing:.4px}
+td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:hover td{background:#f6faf8}
+.bar{height:9px;background:#e6ece9;border-radius:6px;width:100px;overflow:hidden;display:inline-block;vertical-align:middle}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--pine2),var(--gold))}
+.tag{display:inline-block;border-radius:14px;padding:2px 9px;font-size:.74rem;font-weight:800}
+.tag.green{background:#e7f6ed;color:#1d6b42}
+.tag.amber{background:#fff6d9;color:#7a5c00}
+.tag.grey{background:#eee;color:#666}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;text-align:center}
+.stat b{display:block;font-size:1.8rem;color:var(--pine)}
+.stat span{font-size:.8rem;color:var(--mut);font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.tabs button{background:#fff;border:2px solid var(--line);border-radius:10px;padding:9px 15px;font-family:inherit;font-weight:700;color:var(--mut);cursor:pointer}
+.tabs button.on{background:var(--pine);color:#fff;border-color:var(--pine)}
+.view{display:none}.view.on{display:block}
+#gate{position:fixed;inset:0;background:var(--pine);display:flex;align-items:center;justify-content:center;z-index:200;padding:20px}
+#gate .g{background:#fff;border-radius:18px;padding:26px;max-width:360px;width:100%;text-align:center}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:150;padding:16px}
+#modal.on{display:flex}
+#modal .m{background:#fff;border-radius:14px;max-width:760px;width:100%;max-height:88vh;overflow:auto;padding:24px}
+.paper{font-size:13.5px;line-height:1.42}
+.paper .n{text-align:center;font-size:22px;font-weight:800;margin:0}
+.paper .c{text-align:center;font-size:12.5px;color:#333;margin:4px 0 14px}
+.paper h4{font-size:11.5px;text-transform:uppercase;letter-spacing:1.4px;border-bottom:1.5px solid #111;padding-bottom:2px;margin:14px 0 7px}
+.paper .l{display:flex;justify-content:space-between;font-weight:700;gap:10px}
+.paper .i{font-style:italic;font-size:12.5px;color:#333}
+.paper ul{margin:3px 0 9px;padding-left:18px}
+.ans{border-left:4px solid var(--pine2);background:#fdfefd;padding:9px 12px;border-radius:8px;margin-bottom:9px;font-size:.9rem}
+.ans b{color:var(--pine);display:block;font-size:.8rem;text-transform:uppercase;letter-spacing:.4px}
+@media print{header,.tabs,.btn,#gate,.stats{display:none!important}}
+</style>
+</head>
+<body>
+
+<div id="gate"><div class="g">
+  <h2 style="margin:0 0 12px;color:var(--pine)">Teacher Dashboard</h2>
+  <input id="pw" type="password" placeholder="Password" style="width:100%" onkeydown="if(event.key==='Enter')unlock()">
+  <div style="margin-top:12px"><button class="btn" style="width:100%" onclick="unlock()">Enter</button></div>
+  <p id="pwErr" style="color:#c0392b;font-weight:700;font-size:.85rem"></p>
+</div></div>
+
+<header>
+  <h1>Résumé Unit — Teacher Dashboard</h1>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <select id="periodF" onchange="draw()"><option value="">All periods</option></select>
+    <input id="search" placeholder="Search name…" oninput="draw()" style="width:170px">
+    <button class="btn ghost sm" onclick="loadAll()">↻ Refresh</button>
+    <button class="btn ghost sm" onclick="exportCSV()">⬇ CSV</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="stats" id="stats"></div>
+
+  <div class="tabs">
+    <button class="on" data-v="res">Résumés</button>
+    <button data-v="l1">Lesson 1</button>
+    <button data-v="l2">Lesson 2</button>
+    <button data-v="l3">Lesson 3</button>
+  </div>
+
+  <div class="view on" id="v-res"><div class="card" style="padding:0;overflow:auto"><table id="tRes"></table></div></div>
+  <div class="view" id="v-l1"><div class="card" style="padding:0;overflow:auto"><table id="tL1"></table></div></div>
+  <div class="view" id="v-l2"><div class="card" style="padding:0;overflow:auto"><table id="tL2"></table></div></div>
+  <div class="view" id="v-l3"><div class="card" style="padding:0;overflow:auto"><table id="tL3"></table></div></div>
+</div>
+
+<div id="modal" onclick="if(event.target.id==='modal')modal.classList.remove('on')">
+  <div class="m">
+    <div style="display:flex;justify-content:space-between;margin-bottom:14px">
+      <button class="btn ghost sm" onclick="window.print()">Print</button>
+      <button class="btn ghost sm" onclick="modal.classList.remove('on')">Close</button>
+    </div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+const SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+const H={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY};
+const PW='galileo2026';
+let PROFILES=[],WORK=[];
+
+function unlock(){
+  if(pw.value===PW){gate.style.display='none';loadAll();}
+  else pwErr.textContent='Wrong password.';
+}
+
+const VERBS=['managed','supervised','led','organized','coordinated','directed','oversaw','scheduled','assisted','supported','helped','collaborated','served','cared','guided','created','built','developed','designed','prepared','cooked','repaired','installed','taught','trained','tutored','explained','demonstrated','mentored','communicated','greeted','answered','translated','interpreted','sold','persuaded','improved','increased','raised','achieved','earned','won','completed','maintained','handled','tracked','cleaned','sorted','packed','restocked'];
+
+async function loadAll(){
+  const [a,b]=await Promise.all([
+    fetch(SUPA_URL+'/rest/v1/resume_profiles?select=*&order=full_name.asc',{headers:H}).then(r=>r.json()),
+    fetch(SUPA_URL+'/rest/v1/resume_work?select=*&order=full_name.asc',{headers:H}).then(r=>r.json())
+  ]);
+  PROFILES=Array.isArray(a)?a:[]; WORK=Array.isArray(b)?b:[];
+  const ps=[...new Set(PROFILES.map(p=>p.class_period).filter(Boolean))].sort();
+  periodF.innerHTML='<option value="">All periods</option>'+ps.map(p=>'<option>'+p+'</option>').join('');
+  draw();
+}
+
+function strength(d){
+  d=d||{};
+  const allB=[...(d.work||[]),...(d.activities||[])].flatMap(e=>(e.bullets||[]).filter(b=>b&&b.trim()));
+  const verbs=new Set(allB.map(b=>b.trim().split(' ')[0].toLowerCase().replace(/[^a-z]/g,'')).filter(v=>VERBS.includes(v)));
+  const txt=strings(d);
+  const filled=[...(d.work||[]),...(d.activities||[])].filter(e=>e.a);
+  const dated=['education','work','activities','awards'].flatMap(k=>(d[k]||[]).filter(e=>e.a));
+  const c=[
+    !!(d.name&&d.email&&d.phone),
+    txt.length>0&&!/[\[\]]/.test(txt),
+    (d.education||[]).some(e=>e.a),
+    (d.work||[]).some(e=>e.a)||(d.activities||[]).some(e=>e.a),
+    filled.length>0&&filled.every(e=>(e.bullets||[]).some(b=>b&&b.trim())),
+    allB.length>0&&allB.every(b=>VERBS.includes(b.trim().split(' ')[0].toLowerCase().replace(/[^a-z]/g,''))),
+    verbs.size>=5,
+    allB.length>0&&!allB.some(b=>/^i\s/i.test(b.trim())),
+    dated.length>0&&dated.every(e=>e.c),
+    (d.languages||[]).filter(Boolean).length>=1,
+    (d.skills||[]).filter(Boolean).length>=2,
+    allB.length>0&&allB.length<=18
+  ];
+  return {got:c.filter(Boolean).length,of:c.length,bullets:allB.length,verbs:verbs.size};
+}
+
+function filt(list){
+  const p=periodF.value, q=(search.value||'').toLowerCase();
+  return list.filter(r=>(!p||r.class_period===p)&&(!q||(r.full_name||'').toLowerCase().includes(q)));
+}
+
+function draw(){
+  const P=filt(PROFILES);
+  const done=P.filter(p=>strength(p.data).got>=10).length;
+  const stale=P.filter(p=>p.updated_at&&(Date.now()-new Date(p.updated_at))/86400000>60).length;
+  const t1=WORK.filter(w=>w.lesson==='lesson1'&&w.turned_in).length;
+  stats.innerHTML=
+   stat(P.length,'Résumés started')+stat(done,'Nearly complete')+
+   stat(stale,'Not updated 60+ days')+
+   stat(WORK.filter(w=>w.turned_in).length,'Lessons turned in');
+
+  tRes.innerHTML='<tr><th>Student</th><th>Period</th><th>Strength</th><th>Entries</th><th>Check-ins</th><th>Last updated</th><th></th></tr>'+
+   P.map(p=>{
+     const s=strength(p.data),d=p.data||{};
+     const n=(d.education||[]).length+(d.work||[]).length+(d.activities||[]).length+(d.awards||[]).length;
+     const days=p.updated_at?Math.floor((Date.now()-new Date(p.updated_at))/86400000):null;
+     const tag=days===null?'<span class="tag grey">—</span>':days>60?'<span class="tag amber">'+days+'d ago</span>':'<span class="tag green">'+days+'d ago</span>';
+     return '<tr><td><b>'+esc(p.full_name||p.email)+'</b><br><span style="color:var(--mut);font-size:.82rem">'+esc(p.email)+'</span></td>'+
+      '<td>'+esc(p.class_period||'')+'</td>'+
+      '<td><span class="bar"><i style="width:'+Math.round(s.got/s.of*100)+'%"></i></span> '+s.got+'/'+s.of+'</td>'+
+      '<td>'+n+' entries<br><span style="color:var(--mut);font-size:.8rem">'+s.bullets+' lines · '+s.verbs+' verbs</span></td>'+
+      '<td>'+(p.checkins||0)+'</td><td>'+tag+'</td>'+
+      '<td><button class="btn sm" onclick=\'showResume("'+p.email+'")\'>View</button></td></tr>';
+   }).join('');
+
+  [['lesson1',tL1],['lesson2',tL2],['lesson3',tL3]].forEach(([L,tbl])=>drawLesson(L,tbl));
+}
+function stat(n,l){return '<div class="stat"><b>'+n+'</b><span>'+l+'</span></div>';}
+
+function drawLesson(L,tbl){
+  const rows=filt(WORK.filter(w=>w.lesson===L).map(w=>{
+    const p=PROFILES.find(x=>x.email===w.email);
+    return Object.assign({},w,{class_period:p?p.class_period:''});
+  }));
+  tbl.innerHTML='<tr><th>Student</th><th>Period</th><th>Score</th><th>Status</th><th>Updated</th><th></th></tr>'+
+   (rows.length?rows.map(w=>
+    '<tr><td><b>'+esc(w.full_name||w.email)+'</b></td><td>'+esc(w.class_period||'')+'</td>'+
+    '<td>'+(w.score!=null?w.score+' / '+(w.max_score||'?'):'—')+'</td>'+
+    '<td>'+(w.turned_in?'<span class="tag green">Turned in</span>':'<span class="tag amber">In progress</span>')+'</td>'+
+    '<td>'+(w.updated_at?new Date(w.updated_at).toLocaleDateString():'')+'</td>'+
+    '<td><button class="btn sm" onclick=\'showWork("'+w.email+'","'+L+'")\'>Read</button></td></tr>').join('')
+    :'<tr><td colspan="6" style="padding:20px;color:var(--mut)">No submissions yet.</td></tr>');
+}
+
+function showResume(email){
+  const p=PROFILES.find(x=>x.email===email); if(!p)return;
+  const d=p.data||{},out=[];
+  out.push('<div class="paper"><p class="n">'+esc(d.name||p.full_name)+'</p>');
+  out.push('<p class="c">'+esc([d.city,d.email,d.phone].filter(Boolean).join('  •  '))+'</p>');
+  if(d.obj)out.push('<h4>Objective</h4><div>'+esc(d.obj)+'</div>');
+  [['education','Education'],['work','Work Experience'],['activities','Activities &amp; Volunteer Experience'],['awards','Awards &amp; Honors']].forEach(([k,t])=>{
+    const it=(d[k]||[]).filter(e=>e.a||e.b); if(!it.length)return;
+    out.push('<h4>'+t+'</h4>');
+    it.forEach(e=>{
+      out.push('<div class="l"><span>'+esc(e.a)+(e.b?', <span style="font-weight:400">'+esc(e.b)+'</span>':'')+'</span><span>'+esc(e.c)+'</span></div>');
+      if(e.d)out.push('<div class="i">'+esc(e.d)+'</div>');
+      const bs=(e.bullets||[]).filter(x=>x&&x.trim());
+      if(bs.length)out.push('<ul>'+bs.map(b=>'<li>'+esc(b)+'</li>').join('')+'</ul>');
+    });
+  });
+  const sk=(d.languages||[]).filter(Boolean).concat((d.skills||[]).filter(Boolean));
+  if(sk.length)out.push('<h4>Skills &amp; Languages</h4><ul>'+sk.map(s=>'<li>'+esc(s)+'</li>').join('')+'</ul>');
+  out.push('</div>');
+  if((d.brag||[]).length){
+    out.push('<h4 style="margin-top:22px;color:var(--pine)">Brag Bank ('+d.brag.length+' notes)</h4>');
+    out.push(d.brag.map(b=>'<div class="ans"><b>'+new Date(b.d).toLocaleDateString()+(b.used?' · used':'')+'</b>'+esc(b.t)+'</div>').join(''));
+  }
+  modalBody.innerHTML=out.join(''); modal.classList.add('on');
+}
+
+function showWork(email,L){
+  const w=WORK.find(x=>x.email===email&&x.lesson===L); if(!w)return;
+  const a=w.answers||{},out=['<h3 style="color:var(--pine);margin-top:0">'+esc(w.full_name)+' — '+L+'</h3>'];
+  const skip=['hunt','check','sort','order','surg','mine','counts','vocab','sortScore','orderScore','vocabScore','stars'];
+  Object.entries(a).forEach(([k,v])=>{
+    if(skip.includes(k))return;
+    if(typeof v==='string'&&v.trim())out.push('<div class="ans"><b>'+k+'</b>'+esc(v).replace(/\n/g,'<br>')+'</div>');
+  });
+  if(a.counts)out.push('<div class="ans"><b>"What counts" selected</b>'+a.counts.length+' items</div>');
+  if(a.surg){out.push('<div class="ans"><b>One-liner rewrites</b>'+Object.values(a.surg).filter(Boolean).map(esc).join('<br>')+'</div>');}
+  if(a.mine){out.push('<div class="ans"><b>Own one-liners</b>'+Object.values(a.mine).filter(Boolean).map(esc).join('<br>')+'</div>');}
+  if(a.check){const n=Object.values(a.check).filter(Boolean).length;out.push('<div class="ans"><b>Peer checklist</b>'+n+' of 15 boxes checked for '+esc(a.partner||'partner')+'</div>');}
+  if(a.stars)out.push('<div class="ans"><b>Delivery rating</b>'+'★'.repeat(a.stars)+'</div>');
+  if(out.length===1)out.push('<p style="color:var(--mut)">No written responses yet.</p>');
+  modalBody.innerHTML=out.join(''); modal.classList.add('on');
+}
+
+function exportCSV(){
+  const rows=[['Name','Email','Period','Strength','Of','Entries','Lines','Verbs','Check-ins','Last updated','L1','L2','L3']];
+  filt(PROFILES).forEach(p=>{
+    const s=strength(p.data),d=p.data||{};
+    const n=(d.education||[]).length+(d.work||[]).length+(d.activities||[]).length+(d.awards||[]).length;
+    const sc=L=>{const w=WORK.find(x=>x.email===p.email&&x.lesson===L);return w?(w.score+'/'+w.max_score+(w.turned_in?' ✓':'')):'';};
+    rows.push([p.full_name,p.email,p.class_period||'',s.got,s.of,n,s.bullets,s.verbs,p.checkins||0,
+      p.updated_at?new Date(p.updated_at).toLocaleDateString():'',sc('lesson1'),sc('lesson2'),sc('lesson3')]);
+  });
+  const csv=rows.map(r=>r.map(c=>'"'+String(c==null?'':c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download='resume-unit-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+}
+
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
+  document.getElementById('v-'+b.dataset.v).classList.add('on');
+});
+function strings(o){const out=[];(function w(v){if(typeof v==='string')out.push(v);else if(v&&typeof v==='object')Object.values(v).forEach(w);})(o);return out.join(' ').trim();}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+</script>
+</body>
+</html>
