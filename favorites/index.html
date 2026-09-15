@@ -241,6 +241,9 @@ body.present #saidIt.on{display:block}
   <h1>My Favorite Things</h1>
   <label for="inName">Your name</label>
   <input id="inName" autocomplete="name" placeholder="First and last name">
+  <label for="inEmail">School email</label>
+  <input id="inEmail" type="email" inputmode="email" autocapitalize="off" spellcheck="false"
+         autocomplete="email" placeholder="name@s.sfusd.edu">
   <label for="inPeriod">Class period</label>
   <select id="inPeriod">
     <option value="">Choose…</option>
@@ -257,6 +260,7 @@ body.present #saidIt.on{display:block}
     <option value="th">ไทย</option>
     <option value="ne">नेपाली</option>
   </select>
+  <p id="loginErr" style="color:#c4453f;font-weight:700;margin:12px 0 0;font-size:14px"></p>
   <button id="btnStart">Start</button>
 </div>
 
@@ -426,7 +430,7 @@ var TR = {
    STATE
    ========================================================= */
 var S = {
-  name:'', period:'', lang:'none',
+  name:'', email:'', period:'', lang:'none',
   answers:{}, other:'', sentences:{}, drawings:{}, turnedIn:false
 };
 var dirty = false, saveTimer = null;
@@ -456,6 +460,33 @@ function setDot(cls){
 /* =========================================================
    SUPABASE
    ========================================================= */
+var CANON_DOMAIN='@s.sfusd.edu';
+var ROSTER=[];
+function cleanMail(x){ return String(x||'').trim().toLowerCase(); }
+function localPart(e){ return cleanMail(e).split('@')[0]; }
+function validMail(e){ return /^[^@\s]+@(s\.)?sfusd\.edu$/.test(cleanMail(e)); }
+function canonMail(raw){
+  var lp=localPart(raw), i;
+  for(i=0;i<ROSTER.length;i++) if(localPart(ROSTER[i].email)===lp) return cleanMail(ROSTER[i].email);
+  return lp+CANON_DOMAIN;
+}
+function recordAlias(alias,canon){
+  if(!alias||alias===canon) return;
+  fetch(SUPA_URL+'/rest/v1/student_aliases?on_conflict=alias_email',{
+    method:'POST',headers:headers({'Prefer':'resolution=merge-duplicates,return=minimal'}),
+    body:JSON.stringify([{alias_email:alias,email:canon}])}).catch(function(){});
+}
+function seedStudent(name,email,period){
+  fetch(SUPA_URL+'/rest/v1/students?on_conflict=email',{
+    method:'POST',headers:headers({'Prefer':'resolution=ignore-duplicates,return=minimal'}),
+    body:JSON.stringify([{email:email,name:name,period:period}])}).catch(function(){});
+}
+function loadRoster(){
+  return fetch(SUPA_URL+'/rest/v1/students?select=name,email,period&order=name',{headers:headers()})
+    .then(function(r){return r.ok?r.json():[];})
+    .then(function(rows){ ROSTER=rows||[]; }).catch(function(){});
+}
+
 function headers(extra){
   var h = {
     'apikey': SUPA_KEY,
@@ -467,8 +498,9 @@ function headers(extra){
 }
 
 function save(){
-  if(!S.name || !S.period) return;
+  if(!S.email) return;
   var row = {
+    email: S.email,
     student_name: S.name,
     class_period: S.period,
     data: {
@@ -478,7 +510,7 @@ function save(){
     turned_in: S.turnedIn,
     updated_at: new Date().toISOString()
   };
-  fetch(SUPA_URL + '/rest/v1/' + TABLE + '?on_conflict=student_name,class_period', {
+  fetch(SUPA_URL + '/rest/v1/' + TABLE + '?on_conflict=email', {
     method:'POST',
     headers: headers({'Prefer':'resolution=merge-duplicates,return=minimal'}),
     body: JSON.stringify(row)
@@ -490,8 +522,7 @@ function save(){
 
 function load(){
   var q = SUPA_URL + '/rest/v1/' + TABLE
-    + '?student_name=eq.' + encodeURIComponent(S.name)
-    + '&class_period=eq.' + encodeURIComponent(S.period)
+    + '?email=eq.' + encodeURIComponent(S.email)
     + '&select=*';
   return fetch(q, {headers:headers()})
     .then(function(r){ return r.ok ? r.json() : []; })
@@ -822,11 +853,12 @@ function renderTeacher(){
   fetchClass(per).then(function(rows){
     tRows = rows;
     if(!rows.length){ $('tOut').innerHTML = '<p class="lede">No work saved yet.</p>'; return; }
-    var h = '<table class="t"><tr><th>Student</th><th>Period</th><th>Words</th><th>Sentences</th><th>Drawings</th><th>Turned in</th><th>Updated</th></tr>';
+    var h = '<table class="t"><tr><th>Student</th><th>Email</th><th>Period</th><th>Words</th><th>Sentences</th><th>Drawings</th><th>Turned in</th><th>Updated</th></tr>';
     for(var i=0;i<rows.length;i++){
       var d = rows[i].data||{};
       var nw = countFilled(d.answers), ns = countSentences(d.sentences), nd = countFilled(d.drawings);
       h += '<tr><td>'+esc(rows[i].student_name)+'</td>'
+         + '<td>'+esc(rows[i].email||'')+'</td>'
          + '<td>'+esc(rows[i].class_period)+'</td>'
          + '<td>'+nw+' / 10</td><td>'+ns+' / 10</td><td>'+nd+' / 10</td>'
          + '<td><span class="pill '+(rows[i].turned_in?'yes':'no')+'">'+(rows[i].turned_in?'yes':'not yet')+'</span></td>'
@@ -850,14 +882,14 @@ function countSentences(o){
   return n;
 }
 function exportCsv(){
-  var cols = ['student_name','class_period','turned_in','updated_at'];
+  var cols = ['student_name','email','class_period','turned_in','updated_at'];
   for(var i=0;i<CATS.length;i++) cols.push(CATS[i].k);
   for(var j=0;j<CATS.length;j++) cols.push('sentence_'+CATS[j].k);
   cols.push('other');
   var lines = [cols.join(',')];
   for(var r=0;r<tRows.length;r++){
     var row = tRows[r], d = row.data||{}, a=d.answers||{}, s=d.sentences||{};
-    var out = [q(row.student_name), q(row.class_period), q(row.turned_in), q(row.updated_at)];
+    var out = [q(row.student_name), q(row.email), q(row.class_period), q(row.turned_in), q(row.updated_at)];
     for(var m=0;m<CATS.length;m++) out.push(q(a[CATS[m].k]));
     for(var n=0;n<CATS.length;n++) out.push(q(s[CATS[n].k]));
     out.push(q(d.other));
@@ -912,18 +944,39 @@ document.addEventListener('DOMContentLoaded', function(){
     if(cached && cached.name){
       $('inName').value = cached.name;
       $('inPeriod').value = cached.period || '';
+      if(cached.email) $('inEmail').value = cached.email;
       $('inLang').value = cached.lang || 'none';
+    }
+  }catch(e){}
+  try{
+    if(!$('inEmail').value){
+      var g = localStorage.getItem('gal_student_email');
+      if(g) $('inEmail').value = g;
     }
   }catch(e){}
 
   $('btnStart').addEventListener('click', function(){
-    var n = $('inName').value.trim(), p = $('inPeriod').value;
-    if(!n){ $('inName').focus(); return; }
-    if(!p){ $('inPeriod').focus(); return; }
-    S.name = n; S.period = p; S.lang = $('inLang').value;
-    load().then(boot);
+    var n = $('inName').value.trim();
+    var raw = cleanMail($('inEmail').value);
+    var p = $('inPeriod').value;
+    var err = $('loginErr');
+    if(!n){ err.textContent='Please write your first and last name.'; $('inName').focus(); return; }
+    if(!validMail(raw)){
+      err.textContent='Please use your school email — it ends with @s.sfusd.edu';
+      $('inEmail').focus(); return; }
+    if(!p){ err.textContent='Please choose your class period.'; $('inPeriod').focus(); return; }
+    err.textContent='';
+    loadRoster().then(function(){
+      var canon = canonMail(raw);
+      recordAlias(raw, canon);
+      seedStudent(n, canon, p);
+      S.name = n; S.email = canon; S.period = p; S.lang = $('inLang').value;
+      try{ localStorage.setItem('gal_student_email', canon); }catch(e){}
+      return load();
+    }).then(boot);
   });
   $('inName').addEventListener('keydown', function(e){ if(e.key==='Enter') $('btnStart').click(); });
+  $('inEmail').addEventListener('keydown', function(e){ if(e.key==='Enter') $('btnStart').click(); });
 
   $('steps').addEventListener('click', function(e){
     var b = e.target.closest ? e.target.closest('button') : null;
