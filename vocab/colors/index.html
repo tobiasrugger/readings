@@ -138,12 +138,22 @@ input.txt:focus,textarea.txt:focus{outline:2px solid var(--pine);outline-offset:
   <div class="card">
     <h2>Colors</h2>
     <p>Sign in so your work saves.</p>
+    <div id="grosterwrap" style="display:none">
+      <label for="groster">Find your name</label>
+      <select class="txt" id="groster"><option value="">— choose your name —</option></select>
+      <div style="text-align:center;color:var(--muted);font-weight:700;font-size:.8rem;margin:8px 0">or type it in</div>
+    </div>
     <label for="gname">Your name</label>
-    <input class="txt" id="gname" autocomplete="name">
+    <input class="txt" id="gname" autocomplete="name" placeholder="First and last name">
     <label for="gmail">School email</label>
-    <input class="txt" id="gmail" type="email" autocomplete="email">
-    <label for="gper">Period</label>
-    <input class="txt" id="gper" inputmode="numeric">
+    <input class="txt" id="gmail" type="email" inputmode="email" autocapitalize="off"
+           spellcheck="false" autocomplete="email" placeholder="name@s.sfusd.edu">
+    <label for="gper">Class period</label>
+    <select class="txt" id="gper">
+      <option value="">— choose —</option>
+      <option>1</option><option>2</option><option>3</option>
+      <option>4</option><option>5</option><option>6</option>
+    </select>
     <div class="row"><button class="btn" id="gbtn">Start</button></div>
     <p id="gerr" style="color:#c1442f;font-weight:700;margin-top:10px"></p>
   </div>
@@ -273,21 +283,109 @@ function shuffle(a){ var r=a.slice(),i,j,t; for(i=r.length-1;i>0;i--){ j=Math.fl
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 /* ---------- sign in ---------- */
+
+/* ---------- school email identity (shared standard) ----------
+   Students were told two different domains, so accept both and resolve
+   to ONE canonical address. Otherwise the same student gets two rows. */
+var CANON_DOMAIN='@s.sfusd.edu';
+var ROSTER=[];
+function cleanMail(x){ return String(x||'').trim().toLowerCase(); }
+function localPart(e){ return cleanMail(e).split('@')[0]; }
+function validMail(e){ return /^[^@\s]+@(s\.)?sfusd\.edu$/.test(cleanMail(e)); }
+function canonMail(raw){
+  var lp=localPart(raw), i;
+  for(i=0;i<ROSTER.length;i++){
+    if(localPart(ROSTER[i].email)===lp) return cleanMail(ROSTER[i].email);
+  }
+  return lp+CANON_DOMAIN;
+}
+function sbHead(pref){
+  var h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};
+  if(pref) h['Prefer']=pref;
+  return h;
+}
+function recordAlias(alias, canon){
+  if(!alias || alias===canon) return;
+  fetch(SUPA_URL+'/rest/v1/student_aliases?on_conflict=alias_email',{
+    method:'POST', headers:sbHead('resolution=merge-duplicates,return=minimal'),
+    body:JSON.stringify([{alias_email:alias, email:canon}])
+  }).catch(function(){});
+}
+function seedStudent(name, email, period){
+  fetch(SUPA_URL+'/rest/v1/students?on_conflict=email',{
+    method:'POST', headers:sbHead('resolution=ignore-duplicates,return=minimal'),
+    body:JSON.stringify([{email:email, name:name, period:period}])
+  }).catch(function(){});
+}
+/* if they already worked on this device under the other spelling, bring it forward */
+function adoptLocal(canon, typed){
+  try{
+    var k='vocab_'+SET.slug+'_';
+    if(localStorage.getItem(k+canon)) return;
+    var lp=localPart(canon);
+    var tries=[typed, lp+'@sfusd.edu', lp+'@s.sfusd.edu'], i, d;
+    for(i=0;i<tries.length;i++){
+      d=localStorage.getItem(k+tries[i]);
+      if(d){ localStorage.setItem(k+canon, d); return; }
+    }
+  }catch(err){}
+}
+function fillRoster(){
+  var sel=$('groster'); if(!sel) return;
+  if(!ROSTER.length){ $('grosterwrap').style.display='none'; return; }
+  var h='<option value="">— choose your name —</option>', i;
+  for(i=0;i<ROSTER.length;i++){
+    h+='<option value="'+i+'">'+esc(ROSTER[i].name||ROSTER[i].email)+'</option>';
+  }
+  sel.innerHTML=h;
+  $('grosterwrap').style.display='';
+}
+function loadRoster(){
+  fetch(SUPA_URL+'/rest/v1/students?select=name,email,period&order=name',{headers:sbHead()})
+  .then(function(r){ return r.ok ? r.json() : []; })
+  .then(function(rows){ ROSTER=rows||[]; fillRoster(); })
+  .catch(function(){});
+}
+
 function signIn(){
-  var n=$('gname').value.trim(), e=$('gmail').value.trim().toLowerCase(), p=$('gper').value.trim();
-  if(!n||!e){ $('gerr').textContent='Please write your name and your school email.'; return; }
-  me.name=n; me.email=e; me.period=p;
-  try{ localStorage.setItem('vocab_me', JSON.stringify(me)); }catch(err){}
+  var n=$('gname').value.trim(), raw=cleanMail($('gmail').value), p=$('gper').value.trim();
+  if(!n){ $('gerr').textContent='Please write your first and last name.'; return; }
+  if(!validMail(raw)){
+    $('gerr').textContent='Please use your school email — it ends with @s.sfusd.edu'; return; }
+  if(!p){ $('gerr').textContent='Please choose your class period.'; return; }
+
+  var canon = canonMail(raw);
+  recordAlias(raw, canon);
+  seedStudent(n, canon, p);
+  adoptLocal(canon, raw);
+
+  me.name=n; me.email=canon; me.period=p;
+  try{
+    localStorage.setItem('vocab_me', JSON.stringify(me));
+    localStorage.setItem('gal_student_email', canon);   /* profile page reads this */
+  }catch(err){}
   $('gate').style.display='none';
   load();
 }
 $('gbtn').addEventListener('click', signIn);
 $('gper').addEventListener('keydown', function(ev){ if(ev.key==='Enter') signIn(); });
+$('groster').addEventListener('change', function(){
+  var r=ROSTER[this.value]; if(!r) return;
+  $('gname').value = r.name || '';
+  $('gmail').value = cleanMail(r.email);
+  if(r.period) $('gper').value = String(r.period).replace(/[^0-9]/g,'');
+});
+$('gmail').addEventListener('keydown', function(ev){ if(ev.key==='Enter') signIn(); });
 (function(){
   try{
     var s=JSON.parse(localStorage.getItem('vocab_me')||'null');
-    if(s&&s.email){ $('gname').value=s.name; $('gmail').value=s.email; $('gper').value=s.period||''; }
+    if(s&&s.email){ $('gname').value=s.name||''; $('gmail').value=s.email; $('gper').value=String(s.period||'').replace(/[^0-9]/g,''); }
+    else {
+      var g=localStorage.getItem('gal_student_email');   /* signed in elsewhere already */
+      if(g) $('gmail').value=g;
+    }
   }catch(err){}
+  loadRoster();
 })();
 
 /* ---------- save / load ---------- */
