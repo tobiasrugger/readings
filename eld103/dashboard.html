@@ -88,6 +88,7 @@ tr.row:hover td{background:var(--sky)}
 <main>
   <div id="msg"></div>
   <div class="stats" id="stats"></div>
+  <div id="dupwarn"></div>
   <div id="filters" style="margin:4px 0 12px"></div>
   <div id="roster"></div>
   <div id="detail"></div>
@@ -334,6 +335,19 @@ function render(){
   var fh='<button class="btn '+(PFILTER?'ghost ':'')+'small" onclick="setFilter(\'\')">All periods</button>';
   periods.forEach(function(p){fh+='<button class="btn '+(PFILTER===p?'':'ghost ')+'small" onclick="setFilter(\''+p+'\')">Period '+p+'</button>'});
   document.getElementById('filters').innerHTML=periods.length>1?fh:'';
+  // warn about split identities (same username, two domains)
+  var seen={},dupes=[];
+  ROWS.forEach(function(r){
+    var lp=String(r.email||'').split('@')[0];
+    if(!lp)return;
+    if(seen[lp]&&dupes.indexOf(lp)<0)dupes.push(lp);
+    seen[lp]=true;
+  });
+  var dw=document.getElementById('dupwarn');
+  if(dupes.length)dw.innerHTML='<div class="msg err">'+dupes.length+
+    ' student'+(dupes.length>1?'s have':' has')+' two rows under different email domains: <b>'+
+    dupes.map(esc).join(', ')+'</b>.<br><span class="tip">Run steps A–D at the bottom of eld103_schema.sql to merge them.</span></div>';
+  else dw.innerHTML='';
   var ROWS_ALL=ROWS; ROWS=shown();
   renderInner();
   ROWS=ROWS_ALL;

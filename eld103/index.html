@@ -542,7 +542,7 @@ I Went To Ocean Beach Last Saturday. The Water Was Freezing Cold. I Stayed For T
 
     <label>School email</label>
     <input id="emailIn" type="email" inputmode="email" autocapitalize="off" spellcheck="false"
-           autocomplete="email" placeholder="name@sfusd.edu"
+           autocomplete="email" placeholder="name@s.sfusd.edu"
            onkeydown="if(event.key==='Enter')saveName()">
 
     <label>Class period</label>
@@ -622,6 +622,7 @@ select.blank.wrong{background:#fbeae5;border-bottom-color:#e07a5f}
 var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
 var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
 var TABLE='eld103_work';
+var CANON_DOMAIN='@s.sfusd.edu'; // used only when the roster has no match
 var PROXY='https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
 
 var ST={name:'',email:'',period:'',act:0,cap:[],sv:{},sva:{},frag:{},fragfix:{},tos:{},order:[],cloze:{},
@@ -672,21 +673,31 @@ function askName(){
   document.getElementById('nameErr').textContent='';
   document.getElementById('namewrap').classList.add('show');
   loadRoster();
-  setTimeout(function(){document.getElementById('rosterSel').focus()},80);
+  setTimeout(function(){
+    var sel=document.getElementById('rosterSel');
+    (sel && sel.style.display!=='none' ? sel : document.getElementById('nameIn')).focus();
+  },120);
 }
 function setName(){askName()}
 function lastEmail(){try{return localStorage.getItem('gal_student_email')||''}catch(e){return ''}}
 
 /* roster dropdown, same source the student profile page uses */
-var rosterLoaded=false;
+var rosterLoaded=false, ROSTER=[];
 function loadRoster(){
   if(rosterLoaded) return; rosterLoaded=true;
   fetch(SUPA_URL+'/rest/v1/students?select=email,first_name,last_name&order=last_name.asc',
     {headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}})
   .then(function(r){return r.ok?r.json():[]})
   .then(function(list){
+    ROSTER=list||[];
     var sel=document.getElementById('rosterSel');
-    (list||[]).forEach(function(s){
+    if(!ROSTER.length){ // no roster in the database — just show the typed fields
+      sel.style.display='none';
+      var lb=document.querySelector('#namebox label'); if(lb)lb.style.display='none';
+      var or=document.querySelector('#namebox .or'); if(or)or.style.display='none';
+      return;
+    }
+    ROSTER.forEach(function(s){
       var o=document.createElement('option');
       o.value=s.email;
       o.textContent=((s.first_name||'')+' '+(s.last_name||'')).trim()||s.email;
@@ -701,21 +712,77 @@ function pickRoster(){
   document.getElementById('nameIn').value=sel.options[sel.selectedIndex].textContent;
   document.getElementById('nameErr').textContent='';
 }
+/* Students are @s.sfusd.edu. Some were told to use @sfusd.edu, so accept both
+   and resolve to ONE canonical address, preferring whatever the roster holds. */
+function localPart(e){return clean(e).split('@')[0]}
+function canonEmail(raw){
+  var e=clean(raw), lp=localPart(e);
+  for(var i=0;i<ROSTER.length;i++){
+    if(localPart(ROSTER[i].email)===lp) return clean(ROSTER[i].email);
+  }
+  return lp+CANON_DOMAIN;
+}
+function recordAlias(alias,canon){
+  if(!alias||alias===canon) return;
+  fetch(SUPA_URL+'/rest/v1/student_aliases?on_conflict=alias_email',{
+    method:'POST',
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json',
+             'Prefer':'resolution=merge-duplicates,return=minimal'},
+    body:JSON.stringify([{alias_email:alias,email:canon}])
+  }).catch(function(){});
+}
+/* if they already worked under the other spelling on this device, bring it forward */
+function adoptLocalWork(canon,typed){
+  try{
+    var canonKey='eld103_'+canon.replace(/[^a-z0-9]+/g,'_');
+    if(localStorage.getItem(canonKey)) return;
+    var alt='eld103_'+clean(typed).replace(/[^a-z0-9]+/g,'_');
+    var d=localStorage.getItem(alt);
+    if(!d){
+      var lp=localPart(canon);
+      [lp+'@sfusd.edu',lp+'@s.sfusd.edu'].forEach(function(v){
+        if(d) return;
+        d=localStorage.getItem('eld103_'+v.replace(/[^a-z0-9]+/g,'_'));
+      });
+    }
+    if(d){var o=JSON.parse(d); o.email=canon; ST=Object.assign(ST,o);
+          localStorage.setItem(canonKey,JSON.stringify(ST));}
+  }catch(e){}
+}
+
 function saveName(){
   var err=document.getElementById('nameErr');
   var n=document.getElementById('nameIn').value.trim().replace(/\s+/g,' ');
   var e=clean(document.getElementById('emailIn').value);
   var pd=document.getElementById('periodIn').value;
   if(n.length<3||n.indexOf(' ')<0){err.textContent='Please type your first name AND your last name.';return;}
-  if(!/^[^@\s]+@sfusd\.edu$/.test(e)){err.textContent='Please use your school email that ends with @sfusd.edu';return;}
+  if(!/^[^@\s]+@(s\.)?sfusd\.edu$/.test(e)){
+    err.textContent='Please use your school email — it ends with @s.sfusd.edu';return;}
   if(!pd){err.textContent='Please choose your class period.';return;}
+  var typed=e, canon=canonEmail(e);
   var oldKey=ST.email?key():null;
-  ST.name=n; ST.email=e; ST.period=pd;
+  adoptLocalWork(canon,typed);
+  recordAlias(typed,canon);
+  ST.name=n; ST.email=canon; ST.period=pd;
   document.getElementById('whoami').textContent=n+' · P'+pd;
   document.getElementById('namewrap').classList.remove('show');
-  try{localStorage.setItem('gal_student_email',e)}catch(e2){}
+  try{localStorage.setItem('gal_student_email',canon)}catch(e2){}
   if(oldKey&&oldKey!==key()){try{localStorage.setItem(key(),JSON.stringify(ST))}catch(e2){}}
+  seedRoster(canon,n,pd);
   save(); push(true);
+}
+
+/* Add this student to `students` if they are not there yet.
+   ignore-duplicates means an existing row is never overwritten. */
+function seedRoster(email,fullName,period){
+  var parts=fullName.split(' ');
+  var first=parts.shift()||'', last=parts.join(' ')||'';
+  fetch(SUPA_URL+'/rest/v1/students?on_conflict=email',{
+    method:'POST',
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json',
+             'Prefer':'resolution=ignore-duplicates,return=minimal'},
+    body:JSON.stringify([{email:email,first_name:first,last_name:last,period:period}])
+  }).catch(function(){});
 }
 
 /* background sync every 20 seconds */
