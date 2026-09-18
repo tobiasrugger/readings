@@ -1,0 +1,1660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ELD 103 — Paragraph Structure</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pine:#1b4332; --pine2:#2d6a4f; --moss:#40916c; --sage:#95d5b2;
+  --paper:#faf7f0; --card:#ffffff; --ink:#1f2421; --muted:#5c6b62;
+  --line:#dfe4dd; --gold:#d4a017; --rust:#b5451b; --sky:#e8f3ee;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:'Nunito',system-ui,sans-serif;
+  background:var(--paper); color:var(--ink);
+  font-size:17px; line-height:1.6;
+}
+/* ============ TOOLBAR ============ */
+#bar{
+  position:sticky; top:0; z-index:60; background:var(--pine); color:#fff;
+  padding:8px 12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+  box-shadow:0 2px 10px rgba(0,0,0,.18);
+}
+#bar .brand{font-weight:800; font-size:1.02rem; margin-right:auto; letter-spacing:.2px}
+#bar .brand small{display:block; font-weight:600; font-size:.68rem; opacity:.75; letter-spacing:.6px}
+#bar button, #bar select{
+  font-family:inherit; font-size:.82rem; font-weight:700; cursor:pointer;
+  background:rgba(255,255,255,.14); color:#fff; border:1px solid rgba(255,255,255,.3);
+  border-radius:8px; padding:6px 11px;
+}
+#bar button:hover{background:rgba(255,255,255,.26)}
+#bar select option{color:#000}
+#saveDot{width:10px;height:10px;border-radius:50%;background:#7d8a83;display:inline-block;margin-right:4px;vertical-align:middle}
+#saveDot.on{background:var(--sage)}
+#saveDot.busy{background:var(--gold)}
+#saveDot.err{background:#e07a5f}
+#whoami{font-size:.78rem;opacity:.85;font-weight:700}
+
+/* ============ PROGRESS RAIL ============ */
+#rail{
+  position:sticky; top:46px; z-index:55; background:#fff; border-bottom:1px solid var(--line);
+  overflow-x:auto; white-space:nowrap; padding:7px 10px; -webkit-overflow-scrolling:touch;
+}
+#rail button{
+  font-family:inherit; font-size:.76rem; font-weight:700; cursor:pointer;
+  background:#f0f2ef; color:var(--muted); border:1px solid var(--line);
+  border-radius:20px; padding:5px 12px; margin-right:5px;
+}
+#rail button.active{background:var(--pine); color:#fff; border-color:var(--pine)}
+#rail button.done{background:var(--sage); color:var(--pine); border-color:var(--moss)}
+#rail button.done::before{content:"✓ "}
+
+/* ============ LAYOUT ============ */
+main{max-width:780px; margin:0 auto; padding:18px 16px 90px}
+section.act{display:none}
+section.act.show{display:block}
+h1{font-size:1.6rem; line-height:1.25; margin:.2em 0 .1em}
+h2{font-size:1.3rem; margin:0 0 .1em; color:var(--pine)}
+h3{font-size:1.02rem; margin:1.4em 0 .4em; color:var(--pine2)}
+.step-tag{
+  display:inline-block; font-size:.72rem; font-weight:800; letter-spacing:.8px;
+  color:var(--moss); border-bottom:2px solid var(--sage); padding-bottom:2px; margin-bottom:6px;
+}
+.lede{color:var(--muted); margin:.3em 0 1.2em; font-size:.96rem}
+
+.card{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin:14px 0;
+      box-shadow:0 1px 3px rgba(27,67,50,.06)}
+.rulebox{background:var(--sky); border:1px solid var(--sage); border-left:5px solid var(--moss);
+         border-radius:10px; padding:13px 16px; margin:14px 0}
+.rulebox h4{margin:0 0 .4em; font-size:.95rem; color:var(--pine)}
+.rulebox p{margin:.35em 0}
+.ex{color:var(--pine2); font-style:italic}
+.tip{font-size:.86rem; color:var(--muted)}
+
+/* ============ BUTTONS ============ */
+.btn{font-family:inherit; font-size:.88rem; font-weight:800; cursor:pointer; border-radius:9px;
+     padding:9px 16px; border:none; background:var(--pine2); color:#fff; margin:4px 6px 4px 0}
+.btn:hover{background:var(--pine)}
+.btn.ghost{background:#fff; color:var(--pine2); border:2px solid var(--pine2)}
+.btn.ghost:hover{background:var(--sky)}
+.btn.small{font-size:.78rem; padding:6px 11px}
+.navrow{display:flex; justify-content:space-between; gap:10px; margin:26px 0 10px; align-items:center}
+
+/* ============ FEEDBACK ============ */
+.score{font-weight:800; padding:9px 13px; border-radius:9px; margin:12px 0; display:none}
+.score.show{display:block}
+.score.good{background:#e3f4e9; color:#1b4332; border:1px solid var(--moss)}
+.score.mid{background:#fdf6e3; color:#7a5c00; border:1px solid var(--gold)}
+.score.bad{background:#fbeae5; color:#8a2f10; border:1px solid #e3a58f}
+
+/* ============ ACT 1 : format diagram ============ */
+.papersheet{background:#fff; border:1px solid #cdd5cf; border-radius:6px; padding:26px 30px 30px;
+  box-shadow:2px 3px 0 #e6eae5; position:relative; font-size:.95rem; line-height:1.95}
+.papersheet .pgtitle{text-align:center; font-weight:800; margin:0 0 14px}
+.papersheet p{margin:0; text-indent:2.4em}
+.hot{background:#fff3cd; border-bottom:2px dashed var(--gold); cursor:pointer; border-radius:3px}
+.hot:hover{background:#ffe89a}
+.hot.found{background:var(--sage); border-bottom:2px solid var(--moss)}
+.hotmark{display:inline-block; width:19px;height:19px;line-height:19px;text-align:center;
+  background:var(--gold); color:#fff; border-radius:50%; font-size:.68rem; font-weight:800;
+  cursor:pointer; vertical-align:super; margin:0 1px}
+.hotmark.found{background:var(--moss)}
+#hotout{margin-top:12px}
+.hotcard{background:var(--sky); border-left:4px solid var(--moss); border-radius:8px; padding:9px 13px; margin:7px 0; font-size:.9rem}
+.hotcard b{color:var(--pine)}
+
+.choicerow{display:grid; gap:12px; margin:12px 0}
+.choicebox{border:2px solid var(--line); border-radius:10px; padding:13px 15px; cursor:pointer; background:#fff}
+.choicebox:hover{border-color:var(--moss)}
+.choicebox.sel{border-color:var(--pine2); background:var(--sky)}
+.choicebox.right{border-color:var(--moss); background:#e3f4e9}
+.choicebox.wrong{border-color:#e07a5f; background:#fbeae5}
+.choicebox .lbl{font-weight:800; font-size:.78rem; color:var(--moss); display:block; margin-bottom:5px}
+.choicebox .mini{font-size:.86rem; line-height:1.7; white-space:pre-wrap}
+
+/* ============ tappable word grids ============ */
+.tapdoc{font-size:1.02rem; line-height:2.3}
+.w{cursor:pointer; padding:1px 2px; border-radius:4px; border-bottom:2px solid transparent}
+.w:hover{background:#f0f2ef}
+.w.cap{background:#fff3cd; font-weight:700}
+.w.ok{background:#d8f0e2; border-bottom-color:var(--moss)}
+.w.no{background:#fbeae5; border-bottom-color:#e07a5f}
+.w.miss{background:#fdf0c4; border-bottom:2px solid var(--gold)}
+
+/* ============ S / V tagging ============ */
+.svline{border-bottom:1px solid var(--line); padding:12px 0; font-size:1.03rem; line-height:2.4}
+.svline:last-child{border-bottom:none}
+.num{color:var(--moss); font-weight:800; font-size:.82rem; margin-right:7px}
+.sv{cursor:pointer; padding:2px 3px; border-radius:4px; position:relative}
+.sv:hover{background:#f0f2ef}
+.sv.S{border-bottom:3px solid var(--pine2); font-weight:700}
+.sv.V{border-bottom:3px double var(--rust); font-weight:700; box-shadow:inset 0 -7px 0 -5px var(--rust)}
+.svline.correct{background:#effaf3}
+.svline.incorrect{background:#fdf3f0}
+.svmark{font-size:.75rem; font-weight:800; margin-left:8px}
+.svmark.y{color:var(--moss)} .svmark.n{color:var(--rust)}
+.legend{font-size:.83rem; color:var(--muted); background:#f4f6f3; border-radius:8px; padding:8px 12px; margin:8px 0}
+.legend b.s{border-bottom:3px solid var(--pine2)}
+.legend b.v{border-bottom:3px double var(--rust)}
+
+/* ============ glossary ============ */
+.g{border-bottom:2px dotted var(--gold); cursor:pointer; font-weight:700; color:var(--pine2)}
+#gloss{position:fixed; left:50%; transform:translateX(-50%); bottom:0; z-index:90; width:100%; max-width:560px;
+  background:#fff; border:1px solid var(--line); border-bottom:none; border-radius:14px 14px 0 0;
+  box-shadow:0 -6px 24px rgba(0,0,0,.16); padding:14px 18px 18px; display:none}
+#gloss.show{display:block}
+#gloss .gw{font-weight:800; font-size:1.12rem; color:var(--pine)}
+#gloss .gd{margin:5px 0 9px; font-size:.94rem}
+#gloss .gt{font-size:1rem; color:var(--pine2); min-height:1.4em; font-weight:700}
+#gloss .x{float:right; cursor:pointer; font-size:1.3rem; color:var(--muted); line-height:1; font-weight:700}
+
+#canary{position:absolute;left:-9999px;top:-9999px;height:1px;overflow:hidden}
+#wtip{position:fixed;z-index:210;background:#1b4332;color:#fff;border-radius:10px;
+  padding:9px 14px;box-shadow:0 6px 22px rgba(0,0,0,.3);display:none;max-width:280px;
+  font-size:.95rem;line-height:1.45}
+#wtip.show{display:block}
+#wtip #wtipW{display:block;font-weight:800;font-size:.8rem;opacity:.72;letter-spacing:.4px}
+#wtip #wtipT{font-weight:700;font-size:1.06rem}
+body.wt [translate="no"]{background:#fffbe8;outline:2px dashed var(--gold);outline-offset:3px;border-radius:6px}
+body.wt [translate="no"] *{cursor:help !important}
+#bar button#wtBtn.on{background:var(--gold);border-color:var(--gold);color:#3d2c00}
+#xlbanner{position:fixed;left:0;right:0;bottom:0;z-index:180;background:#b5451b;color:#fff;
+  padding:13px 18px;display:none;font-size:.9rem;line-height:1.5}
+#xlbanner.show{display:block}
+#xlbanner span{display:block;margin:3px 0 8px;opacity:.95}
+#xlbanner button{font-family:inherit;font-weight:800;background:#fff;color:#b5451b;border:none;
+  border-radius:8px;padding:6px 15px;cursor:pointer}
+#namewrap{position:fixed;inset:0;z-index:200;background:rgba(27,67,50,.94);display:none;
+  align-items:center;justify-content:center;padding:20px}
+#namewrap.show{display:flex}
+#namebox{background:#fff;border-radius:16px;padding:28px 26px;max-width:380px;width:100%;text-align:center}
+#namebox h2{margin:0 0 6px;color:var(--pine)}
+#namebox p{margin:0 0 14px;font-size:.9rem;color:var(--muted)}
+#namebox{text-align:left}
+#namebox h2,#namebox p{text-align:center}
+#namebox label{display:block;font-size:.76rem;font-weight:800;color:var(--moss);
+  letter-spacing:.5px;text-transform:uppercase;margin:0 0 4px}
+#namebox input,#namebox select{font-family:'Nunito',sans-serif;font-size:1.04rem;padding:11px 13px;
+  width:100%;border:2px solid var(--line);border-radius:10px;margin-bottom:13px;background:#fff;color:var(--ink)}
+#namebox input:focus,#namebox select:focus{outline:none;border-color:var(--moss)}
+#namebox .or{text-align:center;font-size:.78rem;color:var(--muted);font-weight:700;margin:-4px 0 11px}
+#namebox .btn{width:100%;margin:0;font-size:1rem;padding:11px}
+#nameErr{color:var(--rust);font-size:.84rem;font-weight:700;margin-top:9px;min-height:1.1em}
+.sandwich{margin:12px 0}
+.sandwich .bread{background:#e8c37a;border:2px solid #c9974a;border-radius:16px;
+  padding:11px;text-align:center;font-weight:800;font-size:.8rem;letter-spacing:1px;color:#5a3d10}
+.sandwich .meat{background:var(--sage);border:2px solid var(--moss);border-radius:8px;
+  padding:19px 11px;text-align:center;font-weight:800;font-size:.8rem;letter-spacing:1px;
+  color:var(--pine);margin:5px 0}
+.pgtitle{text-align:center;font-weight:800;margin:0 0 12px}
+.sentdoc{line-height:2.35}
+.sent{cursor:pointer;padding:2px 5px;border-radius:6px;border-bottom:2px solid transparent}
+.sent:hover{background:#f0f2ef}
+.sent.mT{background:#fde8c8;border-bottom-color:#c9974a}
+.sent.mS{background:#e2f2e8;border-bottom-color:var(--moss)}
+.sent.mC{background:#e6e2f4;border-bottom-color:#6a5acd}
+.sent.okm{background:#d8f0e2;border-bottom:2px solid var(--moss)}
+.sent.nom{background:#fbeae5;border-bottom:2px solid #e07a5f}
+.sent.flag{background:#fff3cd;border-bottom:2px solid var(--gold)}
+.sent.flagwrong{background:#fdeee9;border-bottom:2px dashed #e07a5f}
+.slab{font-size:.6rem;font-weight:800;letter-spacing:.6px;margin-left:5px;opacity:.7;vertical-align:super}
+.legend b.t3{border-bottom:3px solid #c9974a}
+.legend b.s3{border-bottom:3px solid var(--moss)}
+.legend b.c3{border-bottom:3px solid #6a5acd}
+.sv.mT{background:#fde8c8;border-bottom:3px solid #c9974a;font-weight:700}
+.sv.mC{background:#e6e2f4;border-bottom:3px solid #6a5acd;font-weight:700}
+.multi{display:block;width:100%;text-align:left;font-family:'Nunito',sans-serif;font-size:.9rem;
+  font-weight:600;cursor:pointer;background:#fff;color:var(--ink);border:2px solid var(--line);
+  border-radius:9px;padding:9px 13px;margin:5px 0;line-height:1.45}
+.multi:hover{border-color:var(--moss)}
+.multi.sel{border-color:var(--pine2);background:var(--sky);font-weight:700}
+.multi.right{border-color:var(--moss);background:#d8f0e2;font-weight:700}
+.multi.wrong{border-color:#e07a5f;background:#fbeae5}
+.tsline{font-weight:800;color:var(--pine);line-height:1.5;margin-bottom:3px}
+.para3{background:#fffef7;border:1px solid var(--line);border-radius:9px;padding:13px 17px;
+  line-height:1.95;margin-bottom:9px;text-indent:1.6em}
+.blankts{background:#fff3cd;border-bottom:2px dashed var(--gold);font-weight:700;padding:0 4px}
+.outlinemodel{white-space:pre;font-family:'Nunito',monospace;background:#f6f8f5;border-radius:8px;
+  padding:13px 17px;font-size:.88rem;line-height:1.75;font-weight:700;color:var(--pine);overflow-x:auto}
+.typerow{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid #eef1ee;flex-wrap:wrap}
+.typerow:last-child{border-bottom:none}
+.typerow .src{flex:0 1 auto;font-style:italic;color:var(--muted)}
+.typerow .arrow{color:var(--moss);font-weight:800}
+.tin{font-family:'Nunito',sans-serif;font-size:1rem;font-weight:700;padding:7px 11px;
+  border:2px solid var(--line);border-radius:8px;width:150px;background:#fffef9}
+.tin.wide{width:230px;flex:1 1 200px}
+.tin:focus{outline:none;border-color:var(--moss)}
+.tin.okin{background:#d8f0e2;border-color:var(--moss)}
+.tin.noin{background:#fbeae5;border-color:#e07a5f}
+.ofield{margin:9px 0}
+.ofield label{display:block;font-size:.74rem;font-weight:800;color:var(--moss);
+  letter-spacing:.4px;text-transform:uppercase;margin-bottom:3px}
+.ofield.lvl1{margin-left:14px}
+.ofield.lvl2{margin-left:34px}
+.ofield.lvl2 label{color:var(--muted)}
+@media print{
+  #bar,#rail,#gloss,#namewrap,.btn,.navrow{display:none !important}
+  section.act{display:block !important; page-break-after:always}
+  body{background:#fff; font-size:12pt}
+  main{max-width:100%}
+  .card{box-shadow:none; break-inside:avoid}
+}
+</style>
+</head>
+<body>
+
+<div id="bar">
+  <div class="brand">ELD 103 · Paragraph Structure<small>CHAPTER 3 · MR. TOBY</small></div>
+  <span id="whoami"></span>
+  <button onclick="setName()"><span id="saveDot"></span>Name</button>
+  <button id="wtBtn" onclick="toggleWT()">Tap words: off</button>
+  <select id="lang" onchange="setLang(this.value)">
+    <option value="">Language…</option>
+    <option value="es">Español</option>
+    <option value="zh-CN">中文</option>
+    <option value="ar">العربية</option>
+    <option value="vi">Tiếng Việt</option>
+    <option value="th">ไทย</option>
+    <option value="ne">नेपाली</option>
+  </select>
+  <button onclick="window.print()">Print</button>
+  <button onclick="turnIn()">Turn in</button>
+</div>
+
+<div id="rail"></div>
+
+<main>
+
+<!-- ================= ACT 0 : START ================= -->
+<section class="act" id="a0">
+  <span class="step-tag">START HERE</span>
+  <h1>The three parts of a paragraph</h1>
+  <p class="lede">In Chapters 1 and 2 you learned what a paragraph looks like and how to tell a story in one. Now you learn how a paragraph is built on the inside. Ten activities, in order, ending with a paragraph you plan and write yourself.</p>
+
+  <div class="card">
+    <h3 style="margin-top:0">Think of a paragraph as a sandwich</h3>
+    <div class="sandwich" translate="no">
+      <div class="bread">TOPIC SENTENCE</div>
+      <div class="meat">SUPPORTING SENTENCES</div>
+      <div class="bread">CONCLUDING SENTENCE</div>
+    </div>
+    <p class="tip">The topic sentence and the concluding sentence are the two pieces of bread. The supporting sentences are the filling — and the filling is the part people actually come for.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0">What you'll be able to do</h3>
+    <ul>
+      <li>Find the three parts in any paragraph, and know which is which.</li>
+      <li>Split a topic sentence into its <b>topic</b> and its <b>controlling idea</b>.</li>
+      <li>Judge whether a topic sentence is too general, too specific, or just right.</li>
+      <li>Spot the sentence that does not belong in a paragraph.</li>
+      <li>Write a concluding sentence that closes instead of just stopping.</li>
+      <li>Use apostrophes correctly, including the <span class="ex">it's / its</span> trap.</li>
+      <li>Build a detailed outline before you write a single sentence.</li>
+    </ul>
+  </div>
+
+  <div class="card" style="text-align:center">
+    <div class="tip" style="letter-spacing:.6px;font-weight:800">YOUR SCORE SO FAR</div>
+    <div id="unit_score" style="font-size:1.9rem;font-weight:800;color:var(--pine)">0 / 0</div>
+    <div class="tip">This counts every activity you have checked. It goes up as you work.</div>
+  </div>
+
+  <div class="rulebox">
+    <h4>Two things before you start</h4>
+    <p>Sign in with your school email so this work reaches your student page.</p>
+    <p>Keep this page in <b>English</b>. If you need a word in your language, use the <b>Tap words</b> button in the green bar. If your browser translates the activities, the answers stop making sense.</p>
+  </div>
+
+  <div class="navrow"><span></span><button class="btn" onclick="go(1)">Start Activity 1 →</button></div>
+</section>
+
+<!-- ============ 1. THREE PARTS ============ -->
+<section class="act" id="a1">
+  <span class="step-tag">ACTIVITY 1 OF 10</span>
+  <h2>Find the three parts</h2>
+  <p class="lede">Every academic paragraph has a topic sentence, several supporting sentences, and a concluding sentence. Read the paragraph below, then label each sentence.</p>
+
+  <div class="rulebox">
+    <h4>What each part does</h4>
+    <p><b>Topic sentence</b> — tells the reader what the paragraph will discuss. Usually first.</p>
+    <p><b>Supporting sentences</b> — give the details, examples, and reasons. This is most of the paragraph.</p>
+    <p><b>Concluding sentence</b> — closes the paragraph by summarizing or restating the main idea in different words. Usually last.</p>
+  </div>
+
+  <div class="legend">Tap a sentence once to mark it <b class="t3">TOPIC</b>. Tap again for <b class="s3">SUPPORTING</b>. Again for <b class="c3">CONCLUDING</b>. Once more to clear it.</div>
+  <div class="card" id="partsDoc" translate="no"></div>
+  <button class="btn" onclick="checkParts()">Check my labels</button>
+  <button class="btn ghost small" onclick="resetParts()">Start over</button>
+  <div class="score" id="partsScore"></div>
+
+  <div class="navrow"><button class="btn ghost" onclick="go(0)">← Back</button><button class="btn" onclick="go(2)">Activity 2 →</button></div>
+</section>
+
+<!-- ============ 2. TOPIC + CONTROLLING IDEA ============ -->
+<section class="act" id="a2">
+  <span class="step-tag">ACTIVITY 2 OF 10</span>
+  <h2>Topic and controlling idea</h2>
+  <p class="lede">A topic sentence has two jobs. The <b>topic</b> names the subject. The <b>controlling idea</b> tells the reader what the paragraph will say about that subject — and it limits the paragraph to that one point.</p>
+
+  <div class="rulebox">
+    <h4>Same topic, different controlling ideas</h4>
+    <p class="ex">Street food in Bangkok <b>is cheaper than cooking at home</b>.<br>
+    Street food in Bangkok <b>is safer than most tourists expect</b>.<br>
+    Street food in Bangkok <b>disappears after midnight</b>.</p>
+    <p class="tip">Same topic three times. Three completely different paragraphs, because the controlling idea decides what goes in the middle.</p>
+  </div>
+
+  <div class="legend">Tap a word once to mark it part of the <b class="t3">TOPIC</b>. Tap again for the <b class="c3">CONTROLLING IDEA</b>. Again to clear.</div>
+  <div class="card" id="tciDoc" translate="no"></div>
+  <button class="btn" onclick="checkTCI()">Check my answers</button>
+  <button class="btn ghost small" onclick="resetTCI()">Start over</button>
+  <div class="score" id="tciScore"></div>
+
+  <div class="navrow"><button class="btn ghost" onclick="go(1)">← Back</button><button class="btn" onclick="go(3)">Activity 3 →</button></div>
+</section>
+
+<!-- ============ 3. PREDICTING CONTENT ============ -->
+<section class="act" id="a3">
+  <span class="step-tag">ACTIVITY 3 OF 10</span>
+  <h2>What belongs in the paragraph?</h2>
+  <p class="lede">The controlling idea is a promise. Every supporting sentence has to keep that promise. Here are three topic sentences — choose only the details that belong.</p>
+  <div class="card" id="predDoc" translate="no"></div>
+  <button class="btn" onclick="checkPred()">Check my answers</button>
+  <div class="score" id="predScore"></div>
+  <div class="navrow"><button class="btn ghost" onclick="go(2)">← Back</button><button class="btn" onclick="go(4)">Activity 4 →</button></div>
+</section>
+
+<!-- ============ 4. TOO GENERAL / TOO SPECIFIC ============ -->
+<section class="act" id="a4">
+  <span class="step-tag">ACTIVITY 4 OF 10</span>
+  <h2>Too general, too specific, or just right</h2>
+  <p class="lede">A topic sentence sits in the middle. Too wide and the reader learns nothing. Too narrow and you have already used up your only detail.</p>
+
+  <div class="rulebox">
+    <h4>The three cases</h4>
+    <p><b>Too general</b> — <span class="ex">Phones are useful.</span> No controlling idea. The paragraph could go anywhere.</p>
+    <p><b>Too specific</b> — <span class="ex">My phone battery lasted nine hours yesterday.</span> That is a detail. It belongs in the middle of the paragraph, not at the top.</p>
+    <p><b>Just right</b> — <span class="ex">A phone can replace three things a student used to carry.</span> It tells the reader what is coming without giving away the details.</p>
+  </div>
+
+  <div class="card" id="genDoc" translate="no"></div>
+  <button class="btn" onclick="checkGen()">Check my answers</button>
+  <div class="score" id="genScore"></div>
+  <div class="navrow"><button class="btn ghost" onclick="go(3)">← Back</button><button class="btn" onclick="go(5)">Activity 5 →</button></div>
+</section>
+
+<!-- ============ 5. CHOOSE THE TOPIC SENTENCE ============ -->
+<section class="act" id="a5">
+  <span class="step-tag">ACTIVITY 5 OF 10</span>
+  <h2>Choose the missing topic sentence</h2>
+  <p class="lede">Each paragraph below has lost its first sentence. Read the supporting sentences carefully — they tell you what the topic sentence has to promise.</p>
+  <div class="card" id="pickDoc" translate="no"></div>
+  <button class="btn" onclick="checkPick()">Check my answers</button>
+  <div class="score" id="pickScore"></div>
+  <div class="navrow"><button class="btn ghost" onclick="go(4)">← Back</button><button class="btn" onclick="go(6)">Activity 6 →</button></div>
+</section>
+
+<!-- ============ 6. UNITY ============ -->
+<section class="act" id="a6">
+  <span class="step-tag">ACTIVITY 6 OF 10</span>
+  <h2>The sentence that does not belong</h2>
+  <p class="lede">A paragraph has <b>unity</b> when every sentence supports the topic sentence. One sentence in each paragraph below wanders off. Tap it.</p>
+  <div class="rulebox">
+    <h4>How to find it</h4>
+    <p>Read the topic sentence again, then ask of each sentence: <i>does this help prove that?</i> The intruder is often true and often interesting. That is what makes it hard. Being true is not enough — it has to be relevant.</p>
+  </div>
+  <div class="card" id="unityDoc" translate="no"></div>
+  <button class="btn" onclick="checkUnity()">Check my answers</button>
+  <div class="score" id="unityScore"></div>
+  <div class="navrow"><button class="btn ghost" onclick="go(5)">← Back</button><button class="btn" onclick="go(7)">Activity 7 →</button></div>
+</section>
+
+<!-- ============ 7. CONCLUDING SENTENCES ============ -->
+<section class="act" id="a7">
+  <span class="step-tag">ACTIVITY 7 OF 10</span>
+  <h2>Closing the paragraph</h2>
+  <p class="lede">A concluding sentence signals the end and reminds the reader of the main idea. It does not add new information, and it does not copy the topic sentence word for word.</p>
+
+  <div class="rulebox">
+    <h4>Conclusion signals</h4>
+    <p><b>These take a comma:</b> All in all, · In brief, · In conclusion, · In short, · In summary, · Indeed, · To conclude, · To summarize, · To sum up,</p>
+    <p><b>These take no comma</b>, because the sentence continues through them: It is clear that… · These examples show that… · You can see that…</p>
+  </div>
+
+  <h3>Part A — Comma or no comma?</h3>
+  <p>Tap each signal until it lands in the right group.</p>
+  <div class="card" id="sigDoc" translate="no"></div>
+  <button class="btn" onclick="checkSig()">Check</button>
+  <div class="score" id="sigScore"></div>
+
+  <h3>Part B — Choose the best ending</h3>
+  <div class="card" id="concDoc" translate="no"></div>
+  <button class="btn" onclick="checkConc()">Check my answers</button>
+  <div class="score" id="concScore"></div>
+
+  <div class="navrow"><button class="btn ghost" onclick="go(6)">← Back</button><button class="btn" onclick="go(8)">Activity 8 →</button></div>
+</section>
+
+<!-- ============ 8. APOSTROPHES: CONTRACTIONS ============ -->
+<section class="act" id="a8">
+  <span class="step-tag">ACTIVITY 8 OF 10</span>
+  <h2>Apostrophes, part one: contractions</h2>
+  <p class="lede">An apostrophe has three jobs in English. The first is to show where letters have been removed.</p>
+
+  <div class="rulebox">
+    <h4>The apostrophe marks the missing letters</h4>
+    <p class="ex">is not → isn't &nbsp;·&nbsp; they are → they're &nbsp;·&nbsp; she is → she's &nbsp;·&nbsp; will not → won't</p>
+    <p class="tip">Notice <i>won't</i>. It does not follow the pattern, and you simply have to remember it.</p>
+    <p>We use contractions when we speak and when we write to friends. We usually <b>do not</b> use them in academic writing. Ask your teacher what he wants.</p>
+  </div>
+
+  <div class="rulebox" style="background:#fdf6e3;border-color:var(--gold)">
+    <h4>The trap that catches everyone</h4>
+    <p><b>it's</b> = it is. <b>its</b> = belonging to it.</p>
+    <p class="ex">It's raining. &nbsp;→&nbsp; It is raining. ✓<br>The dog lost its collar. &nbsp;→&nbsp; The dog lost it is collar. ✗</p>
+    <p><b>The test:</b> say <i>it is</i> out loud. If the sentence still works, use <b>it's</b>. If it sounds wrong, use <b>its</b> with no apostrophe.</p>
+    <p class="tip">Possessive pronouns never take an apostrophe: my, your, his, her, <b>its</b>, our, their.</p>
+  </div>
+
+  <h3>Part A — Write the contraction</h3>
+  <div class="card" id="contDoc" translate="no"></div>
+  <button class="btn" onclick="checkCont()">Check my answers</button>
+  <div class="score" id="contScore"></div>
+
+  <h3>Part B — it's or its?</h3>
+  <div class="card" id="itsDoc" translate="no"></div>
+  <button class="btn" onclick="checkIts()">Check my answers</button>
+  <div class="score" id="itsScore"></div>
+
+  <div class="navrow"><button class="btn ghost" onclick="go(7)">← Back</button><button class="btn" onclick="go(9)">Activity 9 →</button></div>
+</section>
+
+<!-- ============ 9. APOSTROPHES: POSSESSIVES ============ -->
+<section class="act" id="a9">
+  <span class="step-tag">ACTIVITY 9 OF 10</span>
+  <h2>Apostrophes, part two: possessives</h2>
+  <p class="lede">The second job of the apostrophe is to show ownership. English gives you two ways to say it, and the rule for where the apostrophe goes depends on one question: does the word already end in s?</p>
+
+  <div class="rulebox">
+    <h4>Two ways to show ownership</h4>
+    <p class="ex">the orders of the doctor &nbsp;=&nbsp; the doctor's orders</p>
+    <p>Use <b>'s</b> more often for living owners. Use <b>of the</b> more often for objects: <span class="ex">the leg of the table</span>, not <s>the table's leg</s>.</p>
+    <p>When the owner is named, you have no choice — you must use the apostrophe: <span class="ex">Maria's book</span>, never <s>the book of Maria</s>.</p>
+  </div>
+
+  <div class="rulebox">
+    <h4>Where does the apostrophe go?</h4>
+    <p><b>Add 's</b> — to singular nouns, and to plurals that don't end in s.<br>
+    <span class="ex">a child's toy · the children's game · the men's team · my boss's office</span></p>
+    <p><b>Add the apostrophe alone</b> — to plural nouns that already end in s.<br>
+    <span class="ex">the students' club · the teachers' lounge · the Smiths' house</span></p>
+    <p class="tip">So <i>the girl's bag</i> is one girl. <i>The girls' bag</i> is several girls. The apostrophe is doing real work — it tells the reader how many people there are.</p>
+  </div>
+
+  <h3>Part A — Rewrite with an apostrophe</h3>
+  <p>Type the short form. The first one is done for you.</p>
+  <div class="card" id="possDoc" translate="no"></div>
+  <button class="btn" onclick="checkPoss()">Check my answers</button>
+  <div class="score" id="possScore"></div>
+
+  <h3>Part B — One owner or more than one?</h3>
+  <div class="card" id="numDoc" translate="no"></div>
+  <button class="btn" onclick="checkNum()">Check my answers</button>
+  <div class="score" id="numScore"></div>
+
+  <div class="navrow"><button class="btn ghost" onclick="go(8)">← Back</button><button class="btn" onclick="go(10)">Activity 10 →</button></div>
+</section>
+
+<!-- ============ 10. OUTLINE + WRITE ============ -->
+<section class="act" id="a10">
+  <span class="step-tag">ACTIVITY 10 OF 10</span>
+  <h2>Outline it, then write it</h2>
+  <p class="lede">An outline is an architect's plan. Nobody builds a house and works out where the kitchen goes afterward. Plan first, and the paragraph almost writes itself.</p>
+
+  <div class="rulebox">
+    <h4>What a detailed outline looks like</h4>
+    <div class="outlinemodel" translate="no">Topic sentence
+  A. Supporting point
+     1. Detail
+     2. Detail
+  B. Supporting point
+     1. Detail
+     2. Detail
+  C. Supporting point
+     1. Detail
+     2. Detail
+Concluding sentence</div>
+    <p class="tip">Capital letters are the supporting points. Numbers are the details that prove them. Each level is indented further than the one above.</p>
+  </div>
+
+  <h3>Step 1 — Choose a topic</h3>
+  <p>Pick one, or tap <b>My own</b> and write your own.</p>
+  <div class="card" id="topicPick"></div>
+
+  <h3>Step 2 — Build your outline</h3>
+  <div class="card" id="outlineBuild"></div>
+
+  <h3>Step 3 — Write the paragraph</h3>
+  <p>Now turn your outline into sentences. Do not add anything that is not in your outline.</p>
+  <div class="card">
+    <input id="pgTitle" class="ta" style="height:auto;font-weight:800;text-align:center" placeholder="Your title, centered and capitalized">
+    <textarea id="draft" class="ta" rows="14" placeholder="Write the whole paragraph as one block. Do not press Enter between sentences."></textarea>
+  </div>
+
+  <h3>Step 4 — Check it</h3>
+  <button class="btn" onclick="checkDraft()">Check my paragraph</button>
+  <div id="draftReport"></div>
+
+  <h3>Self-editing checklist</h3>
+  <div class="card" id="checklist"></div>
+
+  <div class="navrow"><button class="btn ghost" onclick="go(9)">← Back</button><button class="btn" onclick="turnIn()">Turn in my work</button></div>
+</section>
+</main>
+
+<div id="namewrap">
+  <div id="namebox">
+    <h2>Sign in</h2>
+    <p>Use your school email so your work shows up on your own student page.</p>
+
+    <label>Find your name</label>
+    <select id="rosterSel" onchange="pickRoster()"><option value="">— choose your name —</option></select>
+    <div class="or">or type it in</div>
+
+    <label>Your name</label>
+    <input id="nameIn" autocomplete="name" placeholder="First and last name">
+
+    <label>School email</label>
+    <input id="emailIn" type="email" inputmode="email" autocapitalize="off" spellcheck="false"
+           autocomplete="email" placeholder="name@s.sfusd.edu"
+           onkeydown="if(event.key==='Enter')saveName()">
+
+    <label>Class period</label>
+    <select id="periodIn">
+      <option value="">— choose —</option>
+      <option>1</option><option>2</option><option>3</option><option>4</option>
+      <option>5</option><option>6</option><option>7</option><option>8</option>
+    </select>
+
+    <button class="btn" onclick="saveName()">Start</button>
+    <div id="nameErr"></div>
+  </div>
+</div>
+
+<div id="wtip"><span id="wtipW"></span><span id="wtipT"></span></div>
+<div id="xlbanner" translate="no">
+  <b>This page is being translated by your browser.</b>
+  <span>The activities need to stay in English or they will not work.
+  Turn the browser translation off, then use <b>Tap words</b> in the green bar to translate one word at a time.</span>
+  <button onclick="this.parentNode.classList.remove('show')">OK</button>
+</div>
+<div id="canary" aria-hidden="true">the quick brown fox jumps over the lazy dog</div>
+
+<div id="gloss">
+  <span class="x" onclick="document.getElementById('gloss').classList.remove('show')">×</span>
+  <div class="gw" id="gw"></div>
+  <div class="gd" id="gd"></div>
+  <div class="gt" id="gt"></div>
+</div>
+
+<style>
+.ta{width:100%;font-family:'Nunito',sans-serif;font-size:1rem;line-height:1.7;padding:11px 13px;
+    border:1px solid var(--line);border-radius:9px;background:#fffef9;resize:vertical;margin:6px 0}
+.ta:focus{outline:2px solid var(--moss);border-color:var(--moss)}
+.qrow{border-bottom:1px solid var(--line);padding:11px 0}
+.qrow:last-child{border-bottom:none}
+.qtext{margin-bottom:6px}
+.opt{font-family:'Nunito',sans-serif;font-size:.86rem;font-weight:700;cursor:pointer;
+     border:2px solid var(--line);background:#fff;color:var(--muted);border-radius:20px;
+     padding:5px 13px;margin:3px 5px 3px 0}
+.opt:hover{border-color:var(--moss)}
+.opt.sel{background:var(--pine2);color:#fff;border-color:var(--pine2)}
+.opt.right{background:#d8f0e2;color:var(--pine);border-color:var(--moss)}
+.opt.wrong{background:#fbeae5;color:#8a2f10;border-color:#e07a5f}
+.why{font-size:.83rem;color:var(--muted);margin-top:5px;display:none;padding-left:10px;border-left:3px solid var(--sage)}
+.why.show{display:block}
+.bucket{border:2px dashed var(--line);border-radius:10px;padding:10px 12px;margin:8px 0;min-height:54px}
+.bucket h5{margin:0 0 6px;font-size:.82rem;color:var(--moss);font-weight:800}
+.chip{display:inline-block;border:2px solid var(--line);border-radius:18px;padding:5px 12px;margin:4px 5px 4px 0;
+      cursor:pointer;font-weight:700;font-size:.87rem;background:#fff}
+.chip.w{border-color:var(--pine2);background:var(--sky)}
+.chip.p{border-color:var(--gold);background:#fdf6e3}
+.chip.right{border-color:var(--moss);background:#d8f0e2}
+.chip.wrong{border-color:#e07a5f;background:#fbeae5}
+.chip .tag{font-size:.68rem;font-weight:800;opacity:.7;margin-left:6px}
+.orow{display:flex;align-items:center;gap:9px;border:1px solid var(--line);border-radius:9px;
+      padding:8px 10px;margin:6px 0;background:#fff}
+.orow .txt{flex:1;font-size:.93rem;line-height:1.5}
+.orow .ar{display:flex;flex-direction:column;gap:2px}
+.orow .ar button{font-family:inherit;cursor:pointer;border:1px solid var(--line);background:#f4f6f3;
+  border-radius:5px;width:29px;height:21px;font-size:.7rem;line-height:1;color:var(--pine2);font-weight:800}
+.orow.right{background:#e9f7ef;border-color:var(--moss)}
+.orow.wrong{background:#fdf0ec;border-color:#e3a58f}
+.orow .pos{font-weight:800;color:var(--moss);width:20px;text-align:center}
+select.blank{font-family:'Nunito',sans-serif;font-size:.92rem;font-weight:700;color:var(--pine2);
+  border:none;border-bottom:2px solid var(--gold);background:#fdf6e3;border-radius:5px 5px 0 0;padding:3px 5px;margin:0 2px}
+select.blank.right{background:#d8f0e2;border-bottom-color:var(--moss)}
+select.blank.wrong{background:#fbeae5;border-bottom-color:#e07a5f}
+.gap{display:inline-block;width:11px;cursor:pointer;border-radius:3px;text-align:center;color:var(--rust);font-weight:800}
+.gap:hover{background:#fff3cd}
+.gap.has{width:auto;padding:0 1px}
+.cline{padding:11px 0;border-bottom:1px solid var(--line);font-size:1.02rem;line-height:2.1}
+.cline:last-child{border-bottom:none}
+.cline.right{background:#effaf3}.cline.wrong{background:#fdf3f0}
+.rep{border-radius:9px;padding:9px 13px;margin:7px 0;font-size:.9rem;font-weight:600}
+.rep.ok{background:#e3f4e9;border-left:4px solid var(--moss)}
+.rep.warn{background:#fdf6e3;border-left:4px solid var(--gold)}
+.rep.bad{background:#fbeae5;border-left:4px solid #e07a5f}
+.chk{display:flex;gap:9px;align-items:flex-start;padding:7px 0;border-bottom:1px solid #eef1ee;cursor:pointer}
+.chk:last-child{border-bottom:none}
+.chk input{margin-top:5px;width:17px;height:17px;accent-color:var(--pine2)}
+</style>
+
+<script>
+/* ===================== CONFIG ===================== */
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var TABLE='eld103_ch3';
+var CANON_DOMAIN='@s.sfusd.edu'; // used only when the roster has no match
+var PROXY='https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
+
+var ST={name:'',email:'',period:'',act:0,parts:{},tci:{},pred:{},gen:{},pick:{},unity:{},
+        sig:{},conc:{},cont:{},its:{},poss:{},num:{},topic:null,ownTopic:'',outline:{},
+        title:'',draft:'',check:{}};
+
+/* ===================== NAV ===================== */
+var TITLES=['Start','1 Three parts','2 Topic + idea','3 What belongs','4 Too general',
+            '5 Best topic','6 Unity','7 Concluding','8 Contractions','9 Possessives','10 Write'];
+function buildRail(){
+  var r=document.getElementById('rail'); r.innerHTML='';
+  TITLES.forEach(function(t,i){
+    var b=document.createElement('button'); b.textContent=t;
+    b.onclick=function(){go(i)}; b.id='rb'+i; r.appendChild(b);
+  });
+}
+function go(i){
+  ST.act=i;
+  document.querySelectorAll('section.act').forEach(function(s){s.classList.remove('show')});
+  var el=document.getElementById('a'+i); if(el) el.classList.add('show');
+  document.querySelectorAll('#rail button').forEach(function(b){b.classList.remove('active')});
+  var rb=document.getElementById('rb'+i); if(rb){rb.classList.add('active'); if(rb.scrollIntoView)rb.scrollIntoView({inline:"center",block:"nearest"});}
+  window.scrollTo(0,0); save();
+}
+function markDone(i){var b=document.getElementById('rb'+i); if(b)b.classList.add('done');}
+
+/* ===================== SAVE ===================== */
+function dot(cls){var d=document.getElementById('saveDot'); d.className=''; if(cls)d.classList.add(cls);}
+function key(){return 'eld103_'+(ST.email||'guest').toLowerCase().replace(/[^a-z0-9]+/g,'_');}
+var saveT, dirty=false, pushing=false, pushSeq=0;
+function save(){
+  dirty=true; paintTotal();
+  clearTimeout(saveT); saveT=setTimeout(function(){
+    try{localStorage.setItem(key(),JSON.stringify(ST)); localStorage.setItem('eld103_last',key());}catch(e){}
+    dot(dirty?'busy':'on');
+  },400);
+}
+function load(){
+  try{
+    var k=localStorage.getItem('eld103_last'); if(!k)return;
+    var d=JSON.parse(localStorage.getItem(k)); if(d) ST=Object.assign(ST,d);
+  }catch(e){}
+}
+function clean(s){return String(s||'').trim().toLowerCase()}
+function askName(){
+  document.getElementById('nameIn').value=ST.name||'';
+  document.getElementById('emailIn').value=ST.email||lastEmail()||'';
+  document.getElementById('periodIn').value=ST.period||'';
+  document.getElementById('nameErr').textContent='';
+  document.getElementById('namewrap').classList.add('show');
+  loadRoster();
+  setTimeout(function(){
+    var sel=document.getElementById('rosterSel');
+    (sel && sel.style.display!=='none' ? sel : document.getElementById('nameIn')).focus();
+  },120);
+}
+function setName(){askName()}
+function lastEmail(){try{return localStorage.getItem('gal_student_email')||''}catch(e){return ''}}
+
+/* roster dropdown, same source the student profile page uses */
+var rosterLoaded=false, ROSTER=[];
+function loadRoster(){
+  if(rosterLoaded) return; rosterLoaded=true;
+  fetch(SUPA_URL+'/rest/v1/students?select=email,first_name,last_name&order=last_name.asc',
+    {headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}})
+  .then(function(r){return r.ok?r.json():[]})
+  .then(function(list){
+    ROSTER=list||[];
+    var sel=document.getElementById('rosterSel');
+    if(!ROSTER.length){ // no roster in the database — just show the typed fields
+      sel.style.display='none';
+      var lb=document.querySelector('#namebox label'); if(lb)lb.style.display='none';
+      var or=document.querySelector('#namebox .or'); if(or)or.style.display='none';
+      return;
+    }
+    ROSTER.forEach(function(s){
+      var o=document.createElement('option');
+      o.value=s.email;
+      o.textContent=((s.first_name||'')+' '+(s.last_name||'')).trim()||s.email;
+      sel.appendChild(o);
+    });
+  }).catch(function(){});
+}
+function pickRoster(){
+  var sel=document.getElementById('rosterSel');
+  if(!sel.value) return;
+  document.getElementById('emailIn').value=sel.value;
+  document.getElementById('nameIn').value=sel.options[sel.selectedIndex].textContent;
+  document.getElementById('nameErr').textContent='';
+}
+/* Students are @s.sfusd.edu. Some were told to use @sfusd.edu, so accept both
+   and resolve to ONE canonical address, preferring whatever the roster holds. */
+function localPart(e){return clean(e).split('@')[0]}
+function canonEmail(raw){
+  var e=clean(raw), lp=localPart(e);
+  for(var i=0;i<ROSTER.length;i++){
+    if(localPart(ROSTER[i].email)===lp) return clean(ROSTER[i].email);
+  }
+  return lp+CANON_DOMAIN;
+}
+function recordAlias(alias,canon){
+  if(!alias||alias===canon) return;
+  fetch(SUPA_URL+'/rest/v1/student_aliases?on_conflict=alias_email',{
+    method:'POST',
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json',
+             'Prefer':'resolution=merge-duplicates,return=minimal'},
+    body:JSON.stringify([{alias_email:alias,email:canon}])
+  }).catch(function(){});
+}
+/* if they already worked under the other spelling on this device, bring it forward */
+function adoptLocalWork(canon,typed){
+  try{
+    var canonKey='eld103_'+canon.replace(/[^a-z0-9]+/g,'_');
+    if(localStorage.getItem(canonKey)) return;
+    var alt='eld103_'+clean(typed).replace(/[^a-z0-9]+/g,'_');
+    var d=localStorage.getItem(alt);
+    if(!d){
+      var lp=localPart(canon);
+      [lp+'@sfusd.edu',lp+'@s.sfusd.edu'].forEach(function(v){
+        if(d) return;
+        d=localStorage.getItem('eld103_'+v.replace(/[^a-z0-9]+/g,'_'));
+      });
+    }
+    if(d){var o=JSON.parse(d); o.email=canon; ST=Object.assign(ST,o);
+          localStorage.setItem(canonKey,JSON.stringify(ST));}
+  }catch(e){}
+}
+
+function saveName(){
+  var err=document.getElementById('nameErr');
+  var n=document.getElementById('nameIn').value.trim().replace(/\s+/g,' ');
+  var e=clean(document.getElementById('emailIn').value);
+  var pd=document.getElementById('periodIn').value;
+  if(n.length<3||n.indexOf(' ')<0){err.textContent='Please type your first name AND your last name.';return;}
+  if(!/^[^@\s]+@(s\.)?sfusd\.edu$/.test(e)){
+    err.textContent='Please use your school email — it ends with @s.sfusd.edu';return;}
+  if(!pd){err.textContent='Please choose your class period.';return;}
+  var typed=e, canon=canonEmail(e);
+  var oldKey=ST.email?key():null;
+  adoptLocalWork(canon,typed);
+  recordAlias(typed,canon);
+  ST.name=n; ST.email=canon; ST.period=pd;
+  document.getElementById('whoami').textContent=n+' · P'+pd;
+  document.getElementById('namewrap').classList.remove('show');
+  try{localStorage.setItem('gal_student_email',canon)}catch(e2){}
+  if(oldKey&&oldKey!==key()){try{localStorage.setItem(key(),JSON.stringify(ST))}catch(e2){}}
+  seedRoster(canon,n,pd);
+  save(); push(true);
+}
+
+/* Add this student to `students` if they are not there yet.
+   ignore-duplicates means an existing row is never overwritten. */
+function seedRoster(email,fullName,period){
+  var parts=fullName.split(' ');
+  var first=parts.shift()||'', last=parts.join(' ')||'';
+  fetch(SUPA_URL+'/rest/v1/students?on_conflict=email',{
+    method:'POST',
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json',
+             'Prefer':'resolution=ignore-duplicates,return=minimal'},
+    body:JSON.stringify([{email:email,first_name:first,last_name:last,period:period}])
+  }).catch(function(){});
+}
+
+/* background sync every 20 seconds */
+function push(force){
+  if(!ST.email) return;
+  if(!dirty && !force) return;
+  if(pushing) return;
+  pushing=true; dot('busy');
+  var mySeq=++pushSeq;
+  setTimeout(function(){ // a hung request must not kill the sync loop forever
+    if(pushing && mySeq===pushSeq){pushing=false; dirty=true; dot('err');}
+  },15000);
+  ST.title=val('pgTitle'); ST.draft=val('draft');
+  var snapshot=JSON.stringify(ST);
+  dirty=false;
+  var body=[{email:ST.email, name:ST.name, period:ST.period, unit:'ch3',
+             slug:'eld103-ch3', score:totalScore().n, max_score:totalScore().d,
+             turned_in:!!ST.turnedIn, payload:JSON.parse(snapshot),
+             updated_at:new Date().toISOString()}];
+  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email',{
+    method:'POST', keepalive:true,
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json',
+             'Prefer':'resolution=merge-duplicates,return=minimal'},
+    body:JSON.stringify(body)
+  }).then(function(r){
+    pushing=false;
+    if(r.ok) dot(dirty?'busy':'on'); else {dirty=true; dot('err');}
+  }).catch(function(){pushing=false; dirty=true; dot('err');});
+}
+function val(id){var e=document.getElementById(id); return e?e.value:''}
+function turnIn(){
+  if(!ST.email){askName();return;}
+  ST.turnedIn=new Date().toISOString();
+  dirty=true; pushing=false;
+  push(true);
+  setTimeout(function(){
+    if(document.getElementById('saveDot').classList.contains('err'))
+      alert('Could not reach the server. Your work is saved on this device — try Turn in again when you have a connection.');
+    else alert('Turned in. Thank you, '+ST.name+'.');
+  },1400);
+}
+
+/* ============ WORD TAP TRANSLATE ============ */
+var WT=false, wtCache={};
+function setLang(v){
+  try{localStorage.setItem('eld103_lang',v)}catch(e){}
+  wtCache={};
+  if(!v && WT) toggleWT();
+}
+function toggleWT(){
+  var L=document.getElementById('lang').value;
+  if(!WT && !L){
+    alert('First choose your language in the green bar, then turn on Tap words.');
+    return;
+  }
+  WT=!WT;
+  document.body.classList.toggle('wt',WT);
+  var b=document.getElementById('wtBtn');
+  b.textContent='Tap words: '+(WT?'ON':'off');
+  b.classList.toggle('on',WT);
+  hideTip();
+  if(WT) alert('Tap any word in a yellow box to see it in your language. The activity is paused until you turn this off.');
+}
+function hideTip(){document.getElementById('wtip').classList.remove('show')}
+
+/* While ON, a tap inside protected content translates instead of answering. */
+document.addEventListener('click',function(ev){
+  if(!WT) return;
+  var host=ev.target.closest && ev.target.closest('[translate="no"]');
+  if(!host) return;
+  if(/^(TEXTAREA|INPUT|SELECT|BUTTON)$/.test(ev.target.tagName)) return;
+  ev.preventDefault(); ev.stopPropagation();
+  var word=pickWord(ev);
+  if(word) showWord(word,ev.clientX,ev.clientY);
+},true);
+
+function pickWord(ev){
+  var t=ev.target;
+  // a leaf element with a single word is the common case here
+  var txt=(t.textContent||'').trim();
+  if(txt && txt.split(/\s+/).length===1) return txt.replace(/^[^\w']+|[^\w']+$/g,'');
+  // otherwise work out which word was tapped inside a longer run of text
+  var r=null;
+  if(document.caretRangeFromPoint) r=document.caretRangeFromPoint(ev.clientX,ev.clientY);
+  else if(document.caretPositionFromPoint){
+    var cp=document.caretPositionFromPoint(ev.clientX,ev.clientY);
+    if(cp){r=document.createRange(); r.setStart(cp.offsetNode,cp.offset);}
+  }
+  if(!r||!r.startContainer||r.startContainer.nodeType!==3) return '';
+  var s=r.startContainer.textContent, i=r.startOffset;
+  var a=i,b=i;
+  while(a>0 && /[\w']/.test(s.charAt(a-1))) a--;
+  while(b<s.length && /[\w']/.test(s.charAt(b))) b++;
+  return s.slice(a,b);
+}
+function showWord(word,x,y){
+  var tip=document.getElementById('wtip');
+  document.getElementById('wtipW').textContent=word;
+  document.getElementById('wtipT').textContent='…';
+  tip.classList.add('show');
+  var w=tip.offsetWidth||220, h=tip.offsetHeight||60;
+  tip.style.left=Math.max(8,Math.min(x-w/2,window.innerWidth-w-8))+'px';
+  tip.style.top=(y-h-14<8 ? y+18 : y-h-14)+'px';
+  var L=document.getElementById('lang').value;
+  var ck=L+'|'+word.toLowerCase();
+  if(wtCache[ck]){document.getElementById('wtipT').textContent=wtCache[ck]; return;}
+  translateWord(word,L,function(t){
+    wtCache[ck]=t;
+    document.getElementById('wtipT').textContent=t;
+  });
+}
+document.addEventListener('scroll',hideTip,true);
+
+/* Apps Script proxy — the canonical GET contract */
+function translateWord(word,lang,cb){
+  fetch(PROXY+'?action=translate&idiom='+encodeURIComponent(word)+
+        '&meaning=&lang='+encodeURIComponent(lang))
+  .then(function(r){return r.json()})
+  .then(function(d){
+    var t=(d&&d.translation&&(d.translation.equiv||d.translation.meaning))||d.translation||d.text||'';
+    if(typeof t==='object') t=t.equiv||JSON.stringify(t);
+    cb(t||'(not found)');
+  }).catch(function(){cb('(no connection)')});
+}
+
+/* ============ browser-translation canary ============ */
+var CANARY='the quick brown fox jumps over the lazy dog';
+function checkCanary(){
+  var c=document.getElementById('canary');
+  if(!c) return;
+  if((c.textContent||'').trim().toLowerCase()!==CANARY){
+    document.getElementById('xlbanner').classList.add('show');
+    ST.browserTranslated=true; save();
+  }
+}
+
+/* ===================== GLOSSARY + TRANSLATE ===================== */
+function bindGloss(){
+  document.querySelectorAll('.g').forEach(function(g){
+    g.onclick=function(){
+      document.getElementById('gw').textContent=g.dataset.w;
+      document.getElementById('gd').textContent=g.dataset.d;
+      document.getElementById('gt').textContent='';
+      document.getElementById('gloss').classList.add('show');
+      var L=document.getElementById('lang').value;
+      if(L) translate(g.dataset.d,L);
+    };
+  });
+}
+function translate(text,lang){
+  var box=document.getElementById('gt'); box.textContent='…';
+  translateWord(text,lang,function(t){box.textContent=t||'(translation unavailable)'});
+}
+
+/* ===================== ACT 1 : THREE PARTS ===================== */
+var PARTS=[
+ ['Taking the bus to school turned out to be better than getting a ride.','T'],
+ ['The bus gives me forty quiet minutes that I never had before.','S'],
+ ['I finish most of my reading homework before first period even starts.','S'],
+ ['I also save my mother the twenty minutes she used to spend driving me.','S'],
+ ['On the bus I met three students from my own building who I had never spoken to.','S'],
+ ['In short, the ride I complained about all summer has become the best part of my morning.','C']
+];
+var PLAB={'':'','T':'TOPIC','S':'SUPPORTING','C':'CONCLUDING'};
+function initParts(){
+  var d=document.getElementById('partsDoc');
+  d.innerHTML='<div class="pgtitle">Why I Ride the Bus</div><div id="partsBody" class="sentdoc"></div>';
+  var b=document.getElementById('partsBody');
+  PARTS.forEach(function(p,i){
+    var s=document.createElement('span'); s.className='sent'; s.dataset.i=i;
+    s.innerHTML=p[0]+'<span class="slab"></span>';
+    var cur=ST.parts[i]||''; if(cur){s.classList.add('m'+cur); s.querySelector('.slab').textContent=PLAB[cur];}
+    s.onclick=function(){
+      var v=ST.parts[i]||'', nx={'':'T','T':'S','S':'C','C':''}[v];
+      s.className='sent'+(nx?' m'+nx:'');
+      s.querySelector('.slab').textContent=PLAB[nx];
+      if(nx)ST.parts[i]=nx; else delete ST.parts[i]; save();
+    };
+    b.appendChild(s); b.appendChild(document.createTextNode(' '));
+  });
+}
+function resetParts(){ST.parts={};save();initParts();document.getElementById('partsScore').className='score';}
+function checkParts(){
+  var good=0;
+  document.querySelectorAll('#partsBody .sent').forEach(function(s){
+    var i=+s.dataset.i, want=PARTS[i][1], got=ST.parts[i]||'';
+    s.classList.remove('okm','nom');
+    if(got===want){s.classList.add('okm'); good++;}
+    else{s.classList.add('nom'); s.querySelector('.slab').textContent=PLAB[want];}
+  });
+  var sc=document.getElementById('partsScore');
+  sc.className='score show '+(good===6?'good':(good>=4?'mid':'bad'));
+  sc.innerHTML=good===6
+    ? '<b>All six correct.</b> Notice the shape: one sentence of bread, four of filling, one of bread. That is the normal proportion — most of a paragraph is support.'
+    : '<b>'+good+' of 6.</b> The correct label now shows on the ones you missed. Remember: the concluding sentence adds no new information, it only closes.';
+  if(good===6)markDone(1);
+  save();
+}
+
+/* ===================== ACT 2 : TOPIC + CONTROLLING IDEA ===================== */
+var TCI=[
+ {t:'Learning to drive in San Francisco is harder than learning anywhere else.',T:[0,1,2,3,4,5],C:[6,7,8,9,10,11]},
+ {t:"My grandmother's kitchen was the center of our family.",T:[0,1,2],C:[3,4,5,6,7,8]},
+ {t:'Cell phones have changed the way students cheat.',T:[0,1],C:[2,3,4,5,6,7]},
+ {t:'The winters in Chicago last far longer than newcomers expect.',T:[0,1,2,3],C:[4,5,6,7,8,9]},
+ {t:'Video games can teach patience.',T:[0,1],C:[2,3,4]}
+];
+function initTCI(){
+  var d=document.getElementById('tciDoc'); d.innerHTML='';
+  TCI.forEach(function(q,qi){
+    var line=document.createElement('div'); line.className='svline'; line.id='tcl'+qi;
+    var n=document.createElement('span'); n.className='num'; n.textContent=(qi+1)+'.'; line.appendChild(n);
+    q.t.split(' ').forEach(function(w,wi){
+      var s=document.createElement('span'); s.className='sv'; s.textContent=w;
+      s.dataset.q=qi; s.dataset.w=wi;
+      var sv=(ST.tci[qi]||{})[wi]; if(sv)s.classList.add('m'+sv);
+      s.onclick=function(){
+        var cur=(ST.tci[qi]||{})[wi]||'', nx={'':'T','T':'C','C':''}[cur];
+        s.className='sv'+(nx?' m'+nx:'');
+        ST.tci[qi]=ST.tci[qi]||{}; if(nx)ST.tci[qi][wi]=nx; else delete ST.tci[qi][wi];
+        save();
+      };
+      line.appendChild(s); line.appendChild(document.createTextNode(' '));
+    });
+    var m=document.createElement('span'); m.className='svmark'; m.id='tcm'+qi; line.appendChild(m);
+    d.appendChild(line);
+  });
+}
+function resetTCI(){ST.tci={};save();initTCI();document.getElementById('tciScore').className='score';}
+function checkTCI(){
+  var good=0;
+  TCI.forEach(function(q,qi){
+    var a=ST.tci[qi]||{}, ok=true;
+    q.t.split(' ').forEach(function(w,wi){
+      var want=q.T.indexOf(wi)>-1?'T':(q.C.indexOf(wi)>-1?'C':'');
+      if((a[wi]||'')!==want)ok=false;
+    });
+    document.getElementById('tcl'+qi).className='svline '+(ok?'correct':'incorrect');
+    var mk=document.getElementById('tcm'+qi);
+    mk.className='svmark '+(ok?'y':'n');
+    mk.textContent=ok?'correct':('controlling idea starts at "'+q.t.split(' ')[q.C[0]]+'"');
+    if(ok)good++;
+  });
+  var s=document.getElementById('tciScore');
+  s.className='score show '+(good===5?'good':(good>=3?'mid':'bad'));
+  s.innerHTML='<b>'+good+' of 5.</b>'+(good===5
+    ? ' The topic is the noun you could put in a title. Everything after it is the promise you have to keep.'
+    : ' A hint is shown at the end of each line you missed.');
+  if(good===5)markDone(2);
+  save();
+}
+
+/* ===================== ACT 3 : PREDICTING CONTENT ===================== */
+var PRED=[
+ {ts:'Riding a bicycle in this city is more dangerous than it looks.',
+  opts:[['Drivers often open car doors without checking the bike lane.',1],
+        ['A good bicycle costs less than a monthly transit pass.',0],
+        ['Many bike lanes simply end in the middle of an intersection.',1],
+        ['Cycling burns more calories than walking does.',0],
+        ['Riders here are hit by cars more often than the city admits.',1],
+        ['My uncle has repaired bicycles for thirty years.',0]]},
+ {ts:'My first job taught me things school never did.',
+  opts:[['The restaurant was on Clement Street.',0],
+        ['I learned to speak to angry customers without losing my temper.',1],
+        ['I worked there for eight months.',0],
+        ['I found out how long an hour feels when you are on your feet.',1],
+        ['My manager was twenty-four years old.',0],
+        ['I understood for the first time where my mother\u2019s tiredness came from.',1]]},
+ {ts:'Learning English as a teenager is harder than learning it as a child.',
+  opts:[['Teenagers are more afraid of sounding foolish in front of other people.',1],
+        ['English has more words than most other languages.',0],
+        ['A child hears the language all day without ever sitting down to study it.',1],
+        ['My little sister started kindergarten last year.',0],
+        ['By thirteen the mouth has already settled into the sounds of one language.',1],
+        ['Spanish and English share thousands of similar words.',0]]}
+];
+function initPred(){
+  var d=document.getElementById('predDoc'); d.innerHTML='';
+  PRED.forEach(function(q,qi){
+    var box=document.createElement('div'); box.style.padding='10px 0';
+    box.innerHTML='<div class="tsline">'+(qi+1)+'. '+q.ts+'</div>'+
+      '<div class="tip" style="margin:4px 0 7px">Choose the three sentences that keep this promise.</div>';
+    q.opts.forEach(function(o,oi){
+      var b=document.createElement('button'); b.className='multi'; b.id='pd'+qi+'_'+oi;
+      b.textContent=o[0];
+      if((ST.pred[qi]||[]).indexOf(oi)>-1)b.classList.add('sel');
+      b.onclick=function(){
+        ST.pred[qi]=ST.pred[qi]||[];
+        var p=ST.pred[qi].indexOf(oi);
+        if(p>-1){ST.pred[qi].splice(p,1); b.classList.remove('sel');}
+        else{ST.pred[qi].push(oi); b.classList.add('sel');}
+        save();
+      };
+      box.appendChild(b);
+    });
+    var w=document.createElement('div'); w.className='why'; w.id='pdw'+qi;
+    w.innerHTML='The three that belong all prove the controlling idea. The others are true, but they are about a different subject.';
+    box.appendChild(w);
+    d.appendChild(box);
+  });
+}
+function checkPred(){
+  var good=0;
+  PRED.forEach(function(q,qi){
+    var picked=(ST.pred[qi]||[]).slice().sort().join(',');
+    var want=q.opts.map(function(o,i){return o[1]?i:-1}).filter(function(i){return i>=0}).join(',');
+    q.opts.forEach(function(o,oi){
+      var b=document.getElementById('pd'+qi+'_'+oi);
+      b.className='multi';
+      if(o[1])b.classList.add('right');
+      else if((ST.pred[qi]||[]).indexOf(oi)>-1)b.classList.add('wrong');
+    });
+    if(picked===want)good++; else document.getElementById('pdw'+qi).classList.add('show');
+  });
+  var s=document.getElementById('predScore');
+  s.className='score show '+(good===3?'good':(good>=2?'mid':'bad'));
+  s.innerHTML='<b>'+good+' of 3 paragraphs</b> exactly right. Green marks every sentence that belongs.';
+  if(good===3)markDone(3);
+  save();
+}
+
+/* generic multiple choice renderer */
+function renderMC(id,data,store){
+  var d=document.getElementById(id); d.innerHTML='';
+  data.forEach(function(q,qi){
+    var row=document.createElement('div'); row.className='qrow'; row.id=store+'r'+qi;
+    var t=document.createElement('div'); t.className='qtext';
+    t.innerHTML='<span class="num">'+(qi+1)+'.</span>'+q[0].replace('___','<b>_____</b>');
+    row.appendChild(t);
+    q[1].forEach(function(o,oi){
+      var b=document.createElement('button'); b.className='opt'; b.textContent=o;
+      if(ST[store][qi]===oi) b.classList.add('sel');
+      b.onclick=function(){
+        row.querySelectorAll('.opt').forEach(function(x){x.className='opt'});
+        b.classList.add('sel'); ST[store][qi]=oi; save();
+      };
+      row.appendChild(b);
+    });
+    var w=document.createElement('div'); w.className='why'; w.id=store+'w'+qi; w.innerHTML=q[3]||'';
+    row.appendChild(w); d.appendChild(row);
+  });
+}
+function gradeMC(id,data,store,scoreId,actNum){
+  var good=0;
+  data.forEach(function(q,qi){
+    var row=document.getElementById(store+'r'+qi);
+    var opts=row.querySelectorAll('.opt');
+    var pick=ST[store][qi];
+    opts.forEach(function(b,bi){
+      b.className='opt';
+      if(bi===q[2]) b.classList.add('right');
+      if(pick===bi&&bi!==q[2]) b.classList.add('wrong');
+    });
+    if(pick===q[2]) good++; else document.getElementById(store+'w'+qi).classList.add('show');
+  });
+  var s=document.getElementById(scoreId);
+  s.className='score show '+(good===data.length?'good':(good>=data.length*0.6?'mid':'bad'));
+  s.innerHTML='<b>'+good+' of '+data.length+'</b> correct.'+(good===data.length?'':' The green answer is the correct one. Read the note under each mistake.');
+  if(good===data.length&&actNum)markDone(actNum);
+  save();
+}
+
+/* ===================== ACT 4 : GENERAL / SPECIFIC ===================== */
+var GEN=[
+ ['Food is important.',['Too general','Too specific','Good'],0,'No controlling idea at all. What about food?'],
+ ['Our cafeteria serves 1,240 lunches every day.',['Too general','Too specific','Good'],1,'That is one fact. It belongs in the middle of the paragraph.'],
+ ['The lunch line at our school wastes a surprising amount of time.',['Too general','Too specific','Good'],2,'Names the topic, promises one point, keeps the details back.'],
+ ['Dogs are animals.',['Too general','Too specific','Good'],0,'True, and completely empty.'],
+ ['A golden retriever makes a good first dog for a family.',['Too general','Too specific','Good'],2,'Clear promise: it will give reasons.'],
+ ['My dog Bruno weighs sixty-two pounds.',['Too general','Too specific','Good'],1,'A single measurement is a supporting detail.'],
+ ['Social media has changed how teenagers make friends.',['Too general','Too specific','Good'],2,'A real claim that a paragraph can prove.'],
+ ['Social media exists.',['Too general','Too specific','Good'],0,'There is nothing to say after this.'],
+ ['I posted a photo on Tuesday and it got fourteen likes.',['Too general','Too specific','Good'],1,'One event, one number. Too small to build on.'],
+ ['There are three good reasons to learn a second language.',['Too general','Too specific','Good'],2,'It even tells the reader how many supporting points are coming.'],
+ ['Languages are interesting.',['Too general','Too specific','Good'],0,'Interesting how? To whom? No direction.'],
+ ['Mandarin has four tones.',['Too general','Too specific','Good'],1,'A fact you would use to support a bigger claim.']
+];
+function initGen(){renderMC('genDoc',GEN,'gen')}
+function checkGen(){gradeMC('genDoc',GEN,'gen','genScore',4)}
+
+/* ===================== ACT 5 : CHOOSE THE TOPIC SENTENCE ===================== */
+var PICK=[
+ {body:'The first is walking, which costs nothing but only works if you live close. The second is the bus, which costs money but reaches the whole city. The third is getting a ride, which is fastest but depends entirely on somebody else\u2019s schedule.',
+  opts:['Walking to school is good exercise.',
+        'Students at our school get here in three main ways.',
+        'Public transportation in San Francisco is expensive.'],
+  a:1, why:'The paragraph lists three ways. Only option 2 promises a list of ways. Option 1 covers just the first sentence, and option 3 is about cost, which is only part of it.'},
+ {body:'She never raised her voice, even when the whole room was shouting. She learned all thirty-four of our names in the first week. When I failed the first test, she asked me to stay after school and explained the entire unit again without once making me feel stupid.',
+  opts:['My chemistry teacher was the best teacher I have ever had.',
+        'Chemistry is a difficult subject.',
+        'My chemistry teacher had thirty-four students.'],
+  a:0, why:'Every sentence is evidence that she was excellent. Option 3 is true but it is a detail, not a promise. Option 2 is about the subject, not the teacher.'},
+ {body:'In the morning it is so crowded that you have to turn sideways to move between the stalls. By two o\u2019clock the tables are empty and the staff are mopping the floor. At six the whole place fills again with families, and the noise is nothing like the morning noise.',
+  opts:['The market sells fruit, vegetables, and fish.',
+        'Markets are common in many countries.',
+        'The market near my house changes character three times a day.'],
+  a:2, why:'Three times of day, three different moods. Only option 3 promises change over a day. Option 2 is far too general.'}
+];
+function initPick(){
+  var d=document.getElementById('pickDoc'); d.innerHTML='';
+  PICK.forEach(function(q,qi){
+    var box=document.createElement('div'); box.style.padding='12px 0';
+    box.style.borderBottom=qi<PICK.length-1?'1px solid var(--line)':'none';
+    box.innerHTML='<div class="para3"><span class="blankts" id="pkts'+qi+'">_________________________</span> '+q.body+'</div>';
+    q.opts.forEach(function(o,oi){
+      var b=document.createElement('button'); b.className='multi'; b.id='pk'+qi+'_'+oi; b.textContent=o;
+      if(ST.pick[qi]===oi)b.classList.add('sel');
+      b.onclick=function(){
+        box.querySelectorAll('.multi').forEach(function(x){x.className='multi'});
+        b.classList.add('sel'); ST.pick[qi]=oi;
+        document.getElementById('pkts'+qi).textContent=o; save();
+      };
+      box.appendChild(b);
+    });
+    var w=document.createElement('div'); w.className='why'; w.id='pkw'+qi; w.innerHTML=q.why;
+    box.appendChild(w); d.appendChild(box);
+    if(ST.pick[qi]!==undefined)document.getElementById('pkts'+qi).textContent=q.opts[ST.pick[qi]];
+  });
+}
+function checkPick(){
+  var good=0;
+  PICK.forEach(function(q,qi){
+    q.opts.forEach(function(o,oi){
+      var b=document.getElementById('pk'+qi+'_'+oi); b.className='multi';
+      if(oi===q.a)b.classList.add('right');
+      else if(ST.pick[qi]===oi)b.classList.add('wrong');
+    });
+    document.getElementById('pkts'+qi).textContent=q.opts[q.a];
+    if(ST.pick[qi]===q.a)good++; else document.getElementById('pkw'+qi).classList.add('show');
+  });
+  var s=document.getElementById('pickScore');
+  s.className='score show '+(good===3?'good':(good>=2?'mid':'bad'));
+  s.innerHTML='<b>'+good+' of 3.</b> The correct topic sentence is now filled into each blank so you can read the whole paragraph.';
+  if(good===3)markDone(5);
+  save();
+}
+
+/* ===================== ACT 6 : UNITY ===================== */
+var UNITY=[
+ {ts:'Working night shifts damaged my father\u2019s health in ways we did not notice at first.',
+  s:['He slept four hours at a time, never more.',
+     'His doctor said his blood pressure had climbed every year since he started.',
+     'The warehouse where he worked was on the south side of the city.',
+     'He stopped eating real meals and lived on whatever was in the break room.'],
+  bad:2, why:'Where the warehouse was located has nothing to do with his health. It is background, not support.'},
+ {ts:'Our apartment building has almost no privacy.',
+  s:['I hear my neighbor\u2019s alarm clock through the wall every morning at five.',
+     'The mail arrives at about eleven every day.',
+     'The stairwell windows look directly into three other apartments.',
+     'Anyone standing in the courtyard can hear every argument on the first floor.'],
+  bad:1, why:'The mail time is a fact about the building, but it says nothing about privacy.'},
+ {ts:'Learning to cook saved me more money than I expected.',
+  s:['I used to spend about twelve dollars a day on lunch near school.',
+     'Now I bring food from home and spend closer to three.',
+     'I learned to make soup from vegetables that were about to go bad.',
+     'My grandmother\u2019s apartment in Guangzhou had a very small kitchen.'],
+  bad:3, why:'A memory of your grandmother\u2019s kitchen is lovely, but the promise was about money.'}
+];
+function initUnity(){
+  var d=document.getElementById('unityDoc'); d.innerHTML='';
+  UNITY.forEach(function(q,qi){
+    var box=document.createElement('div'); box.style.padding='13px 0';
+    box.style.borderBottom=qi<UNITY.length-1?'1px solid var(--line)':'none';
+    box.innerHTML='<div class="tsline">'+(qi+1)+'. '+q.ts+'</div>';
+    var body=document.createElement('div'); body.className='sentdoc';
+    q.s.forEach(function(t,si){
+      var s=document.createElement('span'); s.className='sent pick'; s.textContent=t;
+      if(ST.unity[qi]===si)s.classList.add('flag');
+      s.onclick=function(){
+        body.querySelectorAll('.sent').forEach(function(x){x.classList.remove('flag')});
+        s.classList.add('flag'); ST.unity[qi]=si; save();
+      };
+      body.appendChild(s); body.appendChild(document.createTextNode(' '));
+    });
+    box.appendChild(body);
+    var w=document.createElement('div'); w.className='why'; w.id='unw'+qi; w.innerHTML=q.why;
+    box.appendChild(w); d.appendChild(box);
+  });
+}
+function checkUnity(){
+  var good=0;
+  UNITY.forEach(function(q,qi){
+    var body=document.getElementById('unityDoc').children[qi].querySelector('.sentdoc');
+    body.querySelectorAll('.sent').forEach(function(s,si){
+      s.classList.remove('flag','okm','nom');
+      if(si===q.bad)s.classList.add('nom');
+      else if(ST.unity[qi]===si)s.classList.add('flagwrong');
+    });
+    if(ST.unity[qi]===q.bad)good++; else document.getElementById('unw'+qi).classList.add('show');
+  });
+  var s=document.getElementById('unityScore');
+  s.className='score show '+(good===3?'good':(good>=2?'mid':'bad'));
+  s.innerHTML='<b>'+good+' of 3.</b> The sentence that does not belong is now marked in pink in each paragraph.';
+  if(good===3)markDone(6);
+  save();
+}
+
+/* ===================== ACT 7 : CONCLUDING ===================== */
+var SIG=[['All in all','c'],['It is clear that','n'],['In conclusion','c'],['You can see that','n'],
+         ['In short','c'],['These examples show that','n'],['To summarize','c'],['Indeed','c'],['In brief','c']];
+function initSig(){
+  var d=document.getElementById('sigDoc');
+  d.innerHTML='<div class="tip" style="margin-bottom:9px">Tap once for <b>takes a comma</b>. Tap twice for <b>no comma</b>. Again to clear.</div><div id="sigChips"></div>';
+  var c=document.getElementById('sigChips');
+  SIG.forEach(function(t,i){
+    var s=document.createElement('span'); s.className='chip'; s.dataset.i=i;
+    s.innerHTML=t[0]+'<span class="tag"></span>';
+    var cur=ST.sig[i]||''; if(cur){s.classList.add(cur==='c'?'w':'p'); s.querySelector('.tag').textContent=cur==='c'?'comma':'no comma';}
+    s.onclick=function(){
+      var v=ST.sig[i]||'', nx={'':'c','c':'n','n':''}[v];
+      s.className='chip'+(nx?(nx==='c'?' w':' p'):'');
+      s.querySelector('.tag').textContent=nx==='c'?'comma':(nx==='n'?'no comma':'');
+      if(nx)ST.sig[i]=nx; else delete ST.sig[i]; save();
+    };
+    c.appendChild(s);
+  });
+}
+function checkSig(){
+  var good=0;
+  document.querySelectorAll('#sigChips .chip').forEach(function(s){
+    var i=+s.dataset.i;
+    s.classList.remove('right','wrong');
+    if((ST.sig[i]||'')===SIG[i][1]){s.classList.add('right'); good++;}
+    else{s.classList.add('wrong'); s.querySelector('.tag').textContent=SIG[i][1]==='c'?'comma':'no comma';}
+  });
+  var s=document.getElementById('sigScore');
+  s.className='score show '+(good===9?'good':(good>=6?'mid':'bad'));
+  s.innerHTML='<b>'+good+' of 9.</b>'+(good===9
+    ? ' The pattern: if the signal is a phrase you could lift out of the sentence, it takes a comma. If the sentence runs straight through it, it does not.'
+    : ' The correct label now shows on the ones you missed.');
+  save();
+}
+var CONC=[
+ ['Topic sentence: <i>The lunch line at our school wastes a surprising amount of time.</i>',
+  ['In short, a faster line would hand students back nearly ten minutes of every day.',
+   'The lunch line at our school wastes a surprising amount of time.',
+   'The cafeteria also badly needs new chairs.'],0,
+  'The second copies the topic sentence word for word. The third introduces a new idea, which a conclusion must never do.'],
+ ['Topic sentence: <i>Riding the bus turned out to be better than getting a ride.</i>',
+  ['My mother drives a 2009 Corolla.',
+   'All in all, the ride I dreaded has become the part of my morning I would not give up.',
+   'Riding the bus turned out to be better than getting a ride.'],1,
+  'The first is a new detail and off the point. The third is a copy — say it again in different words, never the same words.'],
+ ['Topic sentence: <i>A golden retriever makes a good first dog for a family.</i>',
+  ['Golden retrievers were first bred in Scotland.',
+   'Dogs are animals that live with people.',
+   'It is clear that a family choosing a first dog could do far worse than a golden retriever.'],2,
+  'The first adds new information. The second is so general it could end any paragraph about anything.'],
+ ['Topic sentence: <i>Learning English as a teenager is harder than learning it as a child.</i>',
+  ['To sum up, the teenager is fighting both fear and time in a way the child never has to.',
+   'Children also learn to read more quickly than teenagers do.',
+   'Learning English as a teenager is harder than learning it as a child.'],0,
+  'The second adds a new claim the paragraph never supported. The third is a straight copy.']
+];
+function initConc(){renderMC('concDoc',CONC,'conc')}
+function checkConc(){gradeMC('concDoc',CONC,'conc','concScore',7)}
+
+/* ===================== ACT 8 : CONTRACTIONS ===================== */
+var CONT=[['is not','isn\u2019t'],['they are','they\u2019re'],['she is','she\u2019s'],['will not','won\u2019t'],
+ ['do not','don\u2019t'],['I am','I\u2019m'],['we have','we\u2019ve'],['cannot','can\u2019t'],
+ ['you are','you\u2019re'],['does not','doesn\u2019t']];
+function normApos(s){return String(s||'').trim().toLowerCase().replace(/[\u2019\u02BC`]/g,"'").replace(/\s+/g,' ');}
+function initCont(){
+  var d=document.getElementById('contDoc'); d.innerHTML='';
+  CONT.forEach(function(q,qi){
+    var row=document.createElement('div'); row.className='typerow'; row.id='ctr'+qi;
+    row.innerHTML='<span class="num">'+(qi+1)+'.</span><span class="src">'+q[0]+'</span><span class="arrow">→</span>';
+    var inp=document.createElement('input'); inp.className='tin'; inp.id='ct'+qi;
+    inp.autocapitalize='off'; inp.spellcheck=false; inp.placeholder='type it';
+    inp.value=ST.cont[qi]||'';
+    inp.oninput=function(){ST.cont[qi]=inp.value; save();};
+    row.appendChild(inp); d.appendChild(row);
+  });
+}
+function checkCont(){
+  var good=0;
+  CONT.forEach(function(q,qi){
+    var inp=document.getElementById('ct'+qi);
+    var ok=normApos(inp.value)===normApos(q[1]);
+    inp.className='tin '+(ok?'okin':'noin');
+    if(ok)good++; else inp.value=q[1];
+  });
+  var s=document.getElementById('contScore');
+  s.className='score show '+(good===10?'good':(good>=6?'mid':'bad'));
+  s.innerHTML='<b>'+good+' of 10.</b>'+(good===10?' Every apostrophe sits exactly where the missing letters were.':' The correct spelling has been filled in for the ones you missed. The apostrophe goes where the letters were removed — not where the two words join.');
+  if(good===10)markDone(8);
+  save();
+}
+var ITS=[
+ ['___ too cold to eat outside today.',['it\u2019s','its'],0,'It is too cold. Use it\u2019s.'],
+ ['The city changed ___ recycling rules again.',['it\u2019s','its'],1,'The rules belong to the city. Possessive, no apostrophe.'],
+ ['___ been raining since Tuesday.',['it\u2019s','its'],0,'It has been raining. Use it\u2019s.'],
+ ['My phone lost ___ signal in the tunnel.',['it\u2019s','its'],1,'The signal belongs to the phone.'],
+ ['___ not my fault that the bus was late.',['it\u2019s','its'],0,'It is not my fault.'],
+ ['The dog buried ___ bone under the steps.',['it\u2019s','its'],1,'The bone belongs to the dog.'],
+ ['I think ___ going to be a long week.',['it\u2019s','its'],0,'It is going to be.'],
+ ['Every country protects ___ borders.',['it\u2019s','its'],1,'The borders belong to the country.']
+];
+function initIts(){renderMC('itsDoc',ITS,'its')}
+function checkIts(){gradeMC('itsDoc',ITS,'its','itsScore')}
+
+/* ===================== ACT 9 : POSSESSIVES ===================== */
+var POSS=[
+ ['the roommate of Joanna',["joanna's roommate"],'Joanna\u2019s roommate'],
+ ['the phone of Carlos',["carlos's phone","carlos' phone"],'Carlos\u2019s phone'],
+ ['the flag of my country',["my country's flag"],'my country\u2019s flag'],
+ ['the feet of the dancers',["the dancers' feet","dancers' feet"],'the dancers\u2019 feet'],
+ ['the school of my child',["my child's school"],'my child\u2019s school'],
+ ['the school of my children',["my children's school"],'my children\u2019s school'],
+ ['the office of the boss',["the boss's office","boss's office"],'the boss\u2019s office'],
+ ['the shoes of the ladies',["the ladies' shoes","ladies' shoes"],'the ladies\u2019 shoes'],
+ ['the sweaters of the men',["the men's sweaters","men's sweaters"],'the men\u2019s sweaters'],
+ ['the films of George Lucas',["george lucas's films","george lucas' films"],'George Lucas\u2019s films']
+];
+function initPoss(){
+  var d=document.getElementById('possDoc'); d.innerHTML='';
+  POSS.forEach(function(q,qi){
+    var row=document.createElement('div'); row.className='typerow';
+    row.innerHTML='<span class="num">'+(qi+1)+'.</span><span class="src">'+q[0]+'</span><span class="arrow">→</span>';
+    var inp=document.createElement('input'); inp.className='tin wide'; inp.id='ps'+qi;
+    inp.autocapitalize='off'; inp.spellcheck=false;
+    if(qi===0){inp.value=q[2]; inp.disabled=true; inp.className='tin wide okin';}
+    else{inp.placeholder='type it'; inp.value=ST.poss[qi]||'';
+         inp.oninput=function(){ST.poss[qi]=inp.value; save();};}
+    row.appendChild(inp); d.appendChild(row);
+  });
+}
+function checkPoss(){
+  var good=0;
+  POSS.forEach(function(q,qi){
+    if(qi===0)return;
+    var inp=document.getElementById('ps'+qi);
+    var v=normApos(inp.value);
+    var ok=q[1].some(function(a){return v===normApos(a)});
+    inp.className='tin wide '+(ok?'okin':'noin');
+    if(ok)good++; else inp.value=q[2];
+  });
+  var s=document.getElementById('possScore');
+  s.className='score show '+(good===9?'good':(good>=6?'mid':'bad'));
+  s.innerHTML='<b>'+good+' of 9.</b>'+(good===9
+    ? ' You have the rule: add \u2019s unless the word already ends in s because it is plural.'
+    : ' The correct form is filled in for the ones you missed. Look at numbers 4 and 8 again — those are plural owners, so the apostrophe goes after the s.');
+  if(good===9)markDone(9);
+  save();
+}
+var NUM=[
+ ['the girl\u2019s backpack',['One owner','More than one'],0,'Apostrophe before the s means one girl.'],
+ ['the girls\u2019 backpack',['One owner','More than one'],1,'Apostrophe after the s means several girls.'],
+ ['the children\u2019s coats',['One owner','More than one'],1,'Children is already plural, so it takes \u2019s.'],
+ ['my brother\u2019s room',['One owner','More than one'],0,'One brother.'],
+ ['the teachers\u2019 lounge',['One owner','More than one'],1,'A lounge for all the teachers.'],
+ ['the woman\u2019s voice',['One owner','More than one'],0,'One woman. The plural would be women\u2019s.'],
+ ['the Smiths\u2019 house',['One owner','More than one'],1,'The whole Smith family.'],
+ ['the boss\u2019s office',['One owner','More than one'],0,'One boss whose name ends in s. Still one person.']
+];
+function initNum(){renderMC('numDoc',NUM,'num')}
+function checkNum(){gradeMC('numDoc',NUM,'num','numScore')}
+
+/* ===================== ACT 10 : OUTLINE + WRITE ===================== */
+var TOPICS=['A place that has changed since I first knew it',
+            'Something my first job taught me',
+            'A skill that saved me money',
+            'Why my neighborhood is misunderstood',
+            'A person who changed how I think'];
+function initTopic(){
+  var d=document.getElementById('topicPick'); d.innerHTML='';
+  TOPICS.concat(['My own topic']).forEach(function(t,i){
+    var b=document.createElement('button'); b.className='multi'; b.textContent=t;
+    if(ST.topic===i)b.classList.add('sel');
+    b.onclick=function(){
+      d.querySelectorAll('.multi').forEach(function(x){x.className='multi'});
+      b.classList.add('sel'); ST.topic=i;
+      document.getElementById('ownWrap').style.display=(i===TOPICS.length)?'block':'none';
+      save();
+    };
+    d.appendChild(b);
+  });
+  var w=document.createElement('div'); w.id='ownWrap';
+  w.style.display=(ST.topic===TOPICS.length)?'block':'none';
+  var inp=document.createElement('input'); inp.className='ta'; inp.id='ownTopic';
+  inp.placeholder='Write your own topic here';
+  inp.value=ST.ownTopic||''; inp.oninput=function(){ST.ownTopic=inp.value; save();};
+  w.appendChild(inp); d.appendChild(w);
+}
+function initOutline(){
+  var d=document.getElementById('outlineBuild'); d.innerHTML='';
+  function field(label,id,ph,cls){
+    var wrap=document.createElement('div'); wrap.className='ofield '+(cls||'');
+    wrap.innerHTML='<label>'+label+'</label>';
+    var inp=document.createElement('input'); inp.className='ta'; inp.id=id; inp.placeholder=ph;
+    inp.value=(ST.outline||{})[id]||'';
+    inp.oninput=function(){ST.outline=ST.outline||{}; ST.outline[id]=inp.value; save();};
+    wrap.appendChild(inp); d.appendChild(wrap);
+  }
+  field('Topic sentence — topic + controlling idea','o_ts','e.g. My first job taught me things school never did.');
+  ['A','B','C'].forEach(function(L){
+    field(L+'. Supporting point','o_'+L,'A reason or example that proves your topic sentence','lvl1');
+    field(L+'1. Detail','o_'+L+'1','Something specific that proves point '+L,'lvl2');
+    field(L+'2. Detail','o_'+L+'2','One more specific thing','lvl2');
+  });
+  field('Concluding sentence — signal + the main idea in new words','o_cs','e.g. All in all, eight months behind a counter taught me more than a year of class.');
+}
+var CONCSIGS=['all in all','in brief','in conclusion','in short','in summary','indeed',
+ 'to conclude','to summarize','to sum up','it is clear that','these examples show that','you can see that'];
+function wordCount(s){return ((s||'').trim().match(/\S+/g)||[]).length}
+function checkDraft(){
+  var t=document.getElementById('pgTitle').value.trim();
+  var d=document.getElementById('draft').value;
+  ST.title=t; ST.draft=d; save();
+  var out=document.getElementById('draftReport'); out.innerHTML='';
+  function rep(c,x){var e=document.createElement('div'); e.className='rep '+c; e.innerHTML=x; out.appendChild(e);}
+  var wc=wordCount(d);
+  var sents=d.split(/(?<=[.!?])\s+/).filter(function(x){return x.trim().length});
+
+  if(!t) rep('bad','<b>No title.</b> Centered and capitalized, no period at the end.');
+  else if(/\.$/.test(t)) rep('warn','<b>Title.</b> Remove the period at the end.');
+  else if(t.charAt(0)!==t.charAt(0).toUpperCase()) rep('bad','<b>Title.</b> Capitalize the first word.');
+  else rep('ok','<b>Title:</b> '+t);
+
+  if(wc<120) rep('bad','<b>'+wc+' words.</b> Aim for 120 to 200. Your outline has six or more points — each one should become a sentence.');
+  else if(wc>230) rep('warn','<b>'+wc+' words.</b> A little long. Cut anything not in your outline.');
+  else rep('ok','<b>'+wc+' words.</b> Good length.');
+
+  if(sents.length<6) rep('warn','<b>'+sents.length+' sentences.</b> A full paragraph needs a topic sentence, at least four supporting sentences, and a conclusion.');
+  else rep('ok','<b>'+sents.length+' sentences.</b>');
+
+  var last=(sents[sents.length-1]||'').toLowerCase();
+  var first=(sents[0]||'').toLowerCase();
+  var hasSig=CONCSIGS.some(function(s){return last.indexOf(s)>-1});
+  if(hasSig) rep('ok','<b>Conclusion signal found</b> in your last sentence.');
+  else rep('warn','<b>No conclusion signal.</b> Start your last sentence with one: <i>All in all, · In short, · To sum up, · It is clear that…</i>');
+
+  var norm=function(s){return s.replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim()};
+  if(sents.length>1 && norm(first)===norm(last))
+    rep('bad','<b>Your last sentence copies your first one exactly.</b> Say the same idea in different words instead.');
+  else if(sents.length>1) rep('ok','<b>Conclusion is not a copy</b> of the topic sentence.');
+
+  var badApos=[];
+  if(/\bits'/.test(d)) badApos.push("its' is never correct");
+  if(/\b(your|her|their|our)'s\b/i.test(d)) badApos.push('possessive pronouns never take an apostrophe');
+  if(/\bit's\s+(own|way|name|color|price|size)\b/i.test(d)) badApos.push("it's before a noun should probably be its");
+  if(badApos.length) rep('bad','<b>Apostrophe problem:</b> '+badApos.join('; ')+'.');
+  else rep('ok','<b>No obvious apostrophe errors.</b>');
+
+  var lowI=(d.match(/\bi\b/g)||[]).length;
+  if(lowI) rep('bad','<b>Lowercase i used '+lowI+' time'+(lowI>1?'s':'')+'.</b> The pronoun I is always capital.');
+  var badStart=sents.filter(function(x){var c=x.trim().charAt(0); return c&&c===c.toLowerCase()&&/[a-z]/.test(c)}).length;
+  if(badStart) rep('bad','<b>'+badStart+' sentence'+(badStart>1?'s':'')+' start with a small letter.</b>');
+  if(/\n\s*\S/.test(d.trim())) rep('warn','<b>Line breaks found.</b> A paragraph is one block of text.');
+  markDone(10);
+}
+var CHECKS=[
+ 'My topic sentence has a topic AND a controlling idea.',
+ 'My topic sentence is not too general and not too specific.',
+ 'Every supporting sentence proves the topic sentence.',
+ 'I removed anything that wandered off the topic.',
+ 'My details are specific — numbers, names, real examples.',
+ 'My concluding sentence starts with a conclusion signal.',
+ 'My conclusion repeats the main idea in DIFFERENT words.',
+ 'My conclusion adds no new information.',
+ 'I checked every apostrophe, especially it\u2019s and its.',
+ 'The title is centered, capitalized, and has no period.'
+];
+function initChecklist(){
+  var d=document.getElementById('checklist'); d.innerHTML='';
+  CHECKS.forEach(function(c,i){
+    var l=document.createElement('label'); l.className='chk';
+    var cb=document.createElement('input'); cb.type='checkbox'; cb.checked=!!ST.check[i];
+    cb.onchange=function(){ST.check[i]=cb.checked; save();};
+    var sp=document.createElement('span'); sp.textContent=c;
+    l.appendChild(cb); l.appendChild(sp); d.appendChild(l);
+  });
+}
+/* ============ running total (also what track.js reads) ============ */
+function totalScore(){
+  var n=0,d=0;
+  d+=PARTS.length; PARTS.forEach(function(p,i){if((ST.parts[i]||'')===p[1])n++});
+  d+=TCI.length; TCI.forEach(function(q,qi){
+    var a=ST.tci[qi]||{},ok=true;
+    q.t.split(' ').forEach(function(w,wi){
+      var want=q.T.indexOf(wi)>-1?'T':(q.C.indexOf(wi)>-1?'C':'');
+      if((a[wi]||'')!==want)ok=false;});
+    if(ok&&Object.keys(a).length)n++;});
+  d+=PRED.length; PRED.forEach(function(q,qi){
+    var got=(ST.pred[qi]||[]).slice().sort().join(',');
+    var want=q.opts.map(function(o,i){return o[1]?i:-1}).filter(function(i){return i>=0}).join(',');
+    if(got&&got===want)n++;});
+  d+=GEN.length;  GEN.forEach(function(q,qi){if(ST.gen[qi]===q[2])n++});
+  d+=PICK.length; PICK.forEach(function(q,qi){if(ST.pick[qi]===q.a)n++});
+  d+=UNITY.length;UNITY.forEach(function(q,qi){if(ST.unity[qi]===q.bad)n++});
+  d+=SIG.length;  SIG.forEach(function(q,i){if((ST.sig[i]||'')===q[1])n++});
+  d+=CONC.length; CONC.forEach(function(q,qi){if(ST.conc[qi]===q[2])n++});
+  d+=CONT.length; CONT.forEach(function(q,qi){if(normApos(ST.cont[qi])===normApos(q[1]))n++});
+  d+=ITS.length;  ITS.forEach(function(q,qi){if(ST.its[qi]===q[2])n++});
+  d+=POSS.length-1; POSS.forEach(function(q,qi){
+    if(qi===0)return;
+    var v=normApos(ST.poss[qi]);
+    if(v&&q[1].some(function(a){return v===normApos(a)}))n++;});
+  d+=NUM.length;  NUM.forEach(function(q,qi){if(ST.num[qi]===q[2])n++});
+  return {n:n,d:d};
+}
+function paintTotal(){
+  var t=totalScore(),el=document.getElementById('unit_score');
+  if(el) el.textContent=t.n+' / '+t.d;
+}
+
+/* ===================== BOOT ===================== */
+function boot(){
+  load();
+  buildRail();
+  document.getElementById('whoami').textContent=ST.name?(ST.name+(ST.period?' · P'+ST.period:'')):'';
+  try{var L=localStorage.getItem('eld103_lang'); if(L)document.getElementById('lang').value=L;}catch(e){}
+  initParts(); initTCI(); initPred(); initGen(); initPick(); initUnity();
+  initSig(); initConc(); initCont(); initIts(); initPoss(); initNum();
+  initTopic(); initOutline(); initChecklist();
+  ['draft','pgTitle'].forEach(function(id){
+    var el=document.getElementById(id), k=(id==='pgTitle'?'title':id);
+    if(ST[k])el.value=ST[k];
+    el.oninput=function(){ST[k]=el.value; save();};
+  });
+  bindGloss();
+  document.querySelectorAll('.ex').forEach(function(e){e.setAttribute('translate','no')});
+  setTimeout(checkCanary,2500);
+  setInterval(checkCanary,20000);
+  go(ST.act||0);
+  dot('on');
+  if(!ST.email) askName();
+  paintTotal();
+  setInterval(function(){push(false)},20000);
+  document.addEventListener('visibilitychange',function(){if(document.hidden)push(false)});
+  window.addEventListener('pagehide',function(){push(false)});
+}
+document.addEventListener('DOMContentLoaded',boot);
+</script>
+</body>
+</html>

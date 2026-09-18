@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ELD 103 Ch.3 — Teacher Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--pine:#1b4332;--pine2:#2d6a4f;--moss:#40916c;--sage:#95d5b2;--paper:#faf7f0;
+      --line:#dfe4dd;--ink:#1f2421;--muted:#5c6b62;--gold:#d4a017;--rust:#b5451b;--sky:#e8f3ee}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Nunito',system-ui,sans-serif;background:var(--paper);color:var(--ink);font-size:16px}
+#bar{position:sticky;top:0;z-index:40;background:var(--pine);color:#fff;padding:9px 14px;
+     display:flex;gap:9px;align-items:center;flex-wrap:wrap;box-shadow:0 2px 10px rgba(0,0,0,.18)}
+#bar .brand{font-weight:800;margin-right:auto}
+#bar .brand small{display:block;font-weight:600;font-size:.68rem;opacity:.75;letter-spacing:.6px}
+#bar button{font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer;background:rgba(255,255,255,.14);
+  color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:6px 12px}
+#bar button:hover{background:rgba(255,255,255,.26)}
+main{max-width:1180px;margin:0 auto;padding:18px 14px 70px}
+.gate{max-width:380px;margin:12vh auto;background:#fff;border:1px solid var(--line);border-radius:14px;padding:26px;text-align:center}
+.gate input{font-family:inherit;font-size:1.05rem;padding:10px 13px;border:1px solid var(--line);
+  border-radius:9px;width:100%;margin:12px 0;text-align:center}
+.btn{font-family:inherit;font-size:.88rem;font-weight:800;cursor:pointer;border:none;border-radius:9px;
+     padding:9px 16px;background:var(--pine2);color:#fff;margin:3px 5px 3px 0}
+.btn:hover{background:var(--pine)}
+.btn.ghost{background:#fff;color:var(--pine2);border:2px solid var(--pine2)}
+.btn.small{font-size:.76rem;padding:5px 11px}
+.stats{display:flex;gap:11px;flex-wrap:wrap;margin:14px 0}
+.stat{background:#fff;border:1px solid var(--line);border-radius:11px;padding:11px 17px;min-width:118px}
+.stat b{display:block;font-size:1.7rem;color:var(--pine);line-height:1.15}
+.stat span{font-size:.76rem;color:var(--muted);font-weight:700}
+table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:11px;overflow:hidden}
+th{background:var(--pine);color:#fff;font-size:.72rem;font-weight:800;padding:8px 6px;text-align:center;white-space:nowrap}
+th.l,td.l{text-align:left;padding-left:12px}
+td{padding:7px 6px;text-align:center;border-top:1px solid var(--line);font-size:.86rem;font-weight:700}
+tr.row{cursor:pointer}
+tr.row:hover td{background:var(--sky)}
+.pct{display:inline-block;min-width:38px;padding:2px 6px;border-radius:12px;font-size:.78rem;font-weight:800}
+.p100{background:#d8f0e2;color:#1b4332}
+.p70{background:#fdf6e3;color:#7a5c00}
+.p0{background:#fbeae5;color:#8a2f10}
+.pna{background:#f0f2ef;color:#98a49c}
+.stmt{display:inline-block;padding:2px 9px;border-radius:12px;font-size:.72rem;font-weight:800;white-space:nowrap}
+.stmt.done{background:#d8f0e2;color:#1b4332}
+.stmt.wip{background:#fdf6e3;color:#7a5c00}
+.stmt.xl{background:#fbeae5;color:#8a2f10;margin-left:4px}
+.name{font-weight:800;color:var(--pine)}
+#detail{background:#fff;border:1px solid var(--line);border-radius:13px;padding:20px 22px;margin-top:16px;display:none}
+#detail.show{display:block}
+#detail h2{margin:0 0 3px;color:var(--pine)}
+#detail h3{margin:20px 0 6px;color:var(--pine2);font-size:1rem;border-bottom:2px solid var(--sage);padding-bottom:3px}
+.wrongitem{background:#fdf3f0;border-left:4px solid #e3a58f;border-radius:7px;padding:7px 12px;margin:5px 0;font-size:.88rem}
+.wrongitem .gave{color:var(--rust);font-weight:800}
+.wrongitem .want{color:var(--moss);font-weight:800}
+.para{background:#fffef7;border:1px solid var(--line);border-radius:9px;padding:16px 22px;line-height:1.95;
+      font-size:1rem;white-space:pre-wrap;margin:7px 0}
+.para .pt{text-align:center;font-weight:800;margin-bottom:11px}
+.para .body{text-indent:2.4em}
+.mono{font-size:.85rem;color:var(--muted);white-space:pre-wrap;background:#f6f8f5;border-radius:8px;padding:11px 14px;line-height:1.6}
+.pill{display:inline-block;background:var(--sky);border:1px solid var(--sage);border-radius:14px;
+      padding:3px 10px;margin:3px 5px 3px 0;font-size:.79rem;font-weight:700;color:var(--pine)}
+.pill.no{background:#fbeae5;border-color:#e3a58f;color:#8a2f10}
+.msg{padding:11px 15px;border-radius:9px;margin:12px 0;font-weight:700}
+.msg.err{background:#fbeae5;color:#8a2f10;border:1px solid #e3a58f}
+.msg.info{background:var(--sky);color:var(--pine);border:1px solid var(--sage)}
+.tip{font-size:.83rem;color:var(--muted);font-weight:600}
+@media print{#bar,.btn,#roster{display:none}#detail{display:block!important;border:none}}
+@media(max-width:700px){th.opt,td.opt{display:none}}
+</style>
+</head>
+<body>
+
+<div id="gate" class="gate">
+  <h2 style="margin:0;color:#1b4332">ELD 103 · Chapter 3</h2>
+  <p class="tip">Teacher dashboard</p>
+  <input id="pw" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')unlock()">
+  <button class="btn" onclick="unlock()" style="width:100%">Open</button>
+  <div id="gateErr" class="tip" style="color:#b5451b;margin-top:9px"></div>
+</div>
+
+<div id="app" style="display:none">
+<div id="bar">
+  <div class="brand">ELD 103 · Paragraph Structure<small>CHAPTER 3 · TEACHER VIEW</small></div>
+  <button onclick="loadAll()">Refresh</button>
+  <button onclick="exportCSV()">Download CSV</button>
+  <button onclick="window.print()">Print</button>
+</div>
+<main>
+  <div id="msg"></div>
+  <div class="stats" id="stats"></div>
+  <div id="dupwarn"></div>
+  <div id="filters" style="margin:4px 0 12px"></div>
+  <div id="roster"></div>
+  <div id="detail"></div>
+</main>
+</div>
+
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var TABLE='eld103_ch3';
+var PW='galileo2026';
+
+function unlock(){
+  if(document.getElementById('pw').value===PW){
+    document.getElementById('gate').style.display='none';
+    document.getElementById('app').style.display='block';
+    try{sessionStorage.setItem('eld103_ch3_dash','1')}catch(e){}
+    loadAll();
+  } else document.getElementById('gateErr').textContent='Not the right password.';
+}
+try{if(sessionStorage.getItem('eld103_dash')==='1'){
+  document.getElementById('gate').style.display='none';
+  document.getElementById('app').style.display='block';
+}}catch(e){}
+
+var PARTS=[
+ ['Taking the bus to school turned out to be better than getting a ride.','T'],
+ ['The bus gives me forty quiet minutes that I never had before.','S'],
+ ['I finish most of my reading homework before first period even starts.','S'],
+ ['I also save my mother the twenty minutes she used to spend driving me.','S'],
+ ['On the bus I met three students from my own building who I had never spoken to.','S'],
+ ['In short, the ride I complained about all summer has become the best part of my morning.','C']
+];
+var TCI=[
+ {t:'Learning to drive in San Francisco is harder than learning anywhere else.',T:[0,1,2,3,4,5],C:[6,7,8,9,10,11]},
+ {t:"My grandmother's kitchen was the center of our family.",T:[0,1,2],C:[3,4,5,6,7,8]},
+ {t:'Cell phones have changed the way students cheat.',T:[0,1],C:[2,3,4,5,6,7]},
+ {t:'The winters in Chicago last far longer than newcomers expect.',T:[0,1,2,3],C:[4,5,6,7,8,9]},
+ {t:'Video games can teach patience.',T:[0,1],C:[2,3,4]}
+];
+var PRED=[
+ {ts:'Riding a bicycle in this city is more dangerous than it looks.',
+  opts:[['Drivers often open car doors without checking the bike lane.',1],
+        ['A good bicycle costs less than a monthly transit pass.',0],
+        ['Many bike lanes simply end in the middle of an intersection.',1],
+        ['Cycling burns more calories than walking does.',0],
+        ['Riders here are hit by cars more often than the city admits.',1],
+        ['My uncle has repaired bicycles for thirty years.',0]]},
+ {ts:'My first job taught me things school never did.',
+  opts:[['The restaurant was on Clement Street.',0],
+        ['I learned to speak to angry customers without losing my temper.',1],
+        ['I worked there for eight months.',0],
+        ['I found out how long an hour feels when you are on your feet.',1],
+        ['My manager was twenty-four years old.',0],
+        ['I understood for the first time where my mother\u2019s tiredness came from.',1]]},
+ {ts:'Learning English as a teenager is harder than learning it as a child.',
+  opts:[['Teenagers are more afraid of sounding foolish in front of other people.',1],
+        ['English has more words than most other languages.',0],
+        ['A child hears the language all day without ever sitting down to study it.',1],
+        ['My little sister started kindergarten last year.',0],
+        ['By thirteen the mouth has already settled into the sounds of one language.',1],
+        ['Spanish and English share thousands of similar words.',0]]}
+];
+var GEN=[
+ ['Food is important.',['Too general','Too specific','Good'],0,'No controlling idea at all. What about food?'],
+ ['Our cafeteria serves 1,240 lunches every day.',['Too general','Too specific','Good'],1,'That is one fact. It belongs in the middle of the paragraph.'],
+ ['The lunch line at our school wastes a surprising amount of time.',['Too general','Too specific','Good'],2,'Names the topic, promises one point, keeps the details back.'],
+ ['Dogs are animals.',['Too general','Too specific','Good'],0,'True, and completely empty.'],
+ ['A golden retriever makes a good first dog for a family.',['Too general','Too specific','Good'],2,'Clear promise: it will give reasons.'],
+ ['My dog Bruno weighs sixty-two pounds.',['Too general','Too specific','Good'],1,'A single measurement is a supporting detail.'],
+ ['Social media has changed how teenagers make friends.',['Too general','Too specific','Good'],2,'A real claim that a paragraph can prove.'],
+ ['Social media exists.',['Too general','Too specific','Good'],0,'There is nothing to say after this.'],
+ ['I posted a photo on Tuesday and it got fourteen likes.',['Too general','Too specific','Good'],1,'One event, one number. Too small to build on.'],
+ ['There are three good reasons to learn a second language.',['Too general','Too specific','Good'],2,'It even tells the reader how many supporting points are coming.'],
+ ['Languages are interesting.',['Too general','Too specific','Good'],0,'Interesting how? To whom? No direction.'],
+ ['Mandarin has four tones.',['Too general','Too specific','Good'],1,'A fact you would use to support a bigger claim.']
+];
+var PICK=[
+ {body:'The first is walking, which costs nothing but only works if you live close. The second is the bus, which costs money but reaches the whole city. The third is getting a ride, which is fastest but depends entirely on somebody else\u2019s schedule.',
+  opts:['Walking to school is good exercise.',
+        'Students at our school get here in three main ways.',
+        'Public transportation in San Francisco is expensive.'],
+  a:1, why:'The paragraph lists three ways. Only option 2 promises a list of ways. Option 1 covers just the first sentence, and option 3 is about cost, which is only part of it.'},
+ {body:'She never raised her voice, even when the whole room was shouting. She learned all thirty-four of our names in the first week. When I failed the first test, she asked me to stay after school and explained the entire unit again without once making me feel stupid.',
+  opts:['My chemistry teacher was the best teacher I have ever had.',
+        'Chemistry is a difficult subject.',
+        'My chemistry teacher had thirty-four students.'],
+  a:0, why:'Every sentence is evidence that she was excellent. Option 3 is true but it is a detail, not a promise. Option 2 is about the subject, not the teacher.'},
+ {body:'In the morning it is so crowded that you have to turn sideways to move between the stalls. By two o\u2019clock the tables are empty and the staff are mopping the floor. At six the whole place fills again with families, and the noise is nothing like the morning noise.',
+  opts:['The market sells fruit, vegetables, and fish.',
+        'Markets are common in many countries.',
+        'The market near my house changes character three times a day.'],
+  a:2, why:'Three times of day, three different moods. Only option 3 promises change over a day. Option 2 is far too general.'}
+];
+var UNITY=[
+ {ts:'Working night shifts damaged my father\u2019s health in ways we did not notice at first.',
+  s:['He slept four hours at a time, never more.',
+     'His doctor said his blood pressure had climbed every year since he started.',
+     'The warehouse where he worked was on the south side of the city.',
+     'He stopped eating real meals and lived on whatever was in the break room.'],
+  bad:2, why:'Where the warehouse was located has nothing to do with his health. It is background, not support.'},
+ {ts:'Our apartment building has almost no privacy.',
+  s:['I hear my neighbor\u2019s alarm clock through the wall every morning at five.',
+     'The mail arrives at about eleven every day.',
+     'The stairwell windows look directly into three other apartments.',
+     'Anyone standing in the courtyard can hear every argument on the first floor.'],
+  bad:1, why:'The mail time is a fact about the building, but it says nothing about privacy.'},
+ {ts:'Learning to cook saved me more money than I expected.',
+  s:['I used to spend about twelve dollars a day on lunch near school.',
+     'Now I bring food from home and spend closer to three.',
+     'I learned to make soup from vegetables that were about to go bad.',
+     'My grandmother\u2019s apartment in Guangzhou had a very small kitchen.'],
+  bad:3, why:'A memory of your grandmother\u2019s kitchen is lovely, but the promise was about money.'}
+];
+var SIG=[['All in all','c'],['It is clear that','n'],['In conclusion','c'],['You can see that','n'],
+         ['In short','c'],['These examples show that','n'],['To summarize','c'],['Indeed','c'],['In brief','c']];
+var CONC=[
+ ['Topic sentence: <i>The lunch line at our school wastes a surprising amount of time.</i>',
+  ['In short, a faster line would hand students back nearly ten minutes of every day.',
+   'The lunch line at our school wastes a surprising amount of time.',
+   'The cafeteria also badly needs new chairs.'],0,
+  'The second copies the topic sentence word for word. The third introduces a new idea, which a conclusion must never do.'],
+ ['Topic sentence: <i>Riding the bus turned out to be better than getting a ride.</i>',
+  ['My mother drives a 2009 Corolla.',
+   'All in all, the ride I dreaded has become the part of my morning I would not give up.',
+   'Riding the bus turned out to be better than getting a ride.'],1,
+  'The first is a new detail and off the point. The third is a copy — say it again in different words, never the same words.'],
+ ['Topic sentence: <i>A golden retriever makes a good first dog for a family.</i>',
+  ['Golden retrievers were first bred in Scotland.',
+   'Dogs are animals that live with people.',
+   'It is clear that a family choosing a first dog could do far worse than a golden retriever.'],2,
+  'The first adds new information. The second is so general it could end any paragraph about anything.'],
+ ['Topic sentence: <i>Learning English as a teenager is harder than learning it as a child.</i>',
+  ['To sum up, the teenager is fighting both fear and time in a way the child never has to.',
+   'Children also learn to read more quickly than teenagers do.',
+   'Learning English as a teenager is harder than learning it as a child.'],0,
+  'The second adds a new claim the paragraph never supported. The third is a straight copy.']
+];
+var CONT=[['is not','isn\u2019t'],['they are','they\u2019re'],['she is','she\u2019s'],['will not','won\u2019t'],
+ ['do not','don\u2019t'],['I am','I\u2019m'],['we have','we\u2019ve'],['cannot','can\u2019t'],
+ ['you are','you\u2019re'],['does not','doesn\u2019t']];
+var ITS=[
+ ['___ too cold to eat outside today.',['it\u2019s','its'],0,'It is too cold. Use it\u2019s.'],
+ ['The city changed ___ recycling rules again.',['it\u2019s','its'],1,'The rules belong to the city. Possessive, no apostrophe.'],
+ ['___ been raining since Tuesday.',['it\u2019s','its'],0,'It has been raining. Use it\u2019s.'],
+ ['My phone lost ___ signal in the tunnel.',['it\u2019s','its'],1,'The signal belongs to the phone.'],
+ ['___ not my fault that the bus was late.',['it\u2019s','its'],0,'It is not my fault.'],
+ ['The dog buried ___ bone under the steps.',['it\u2019s','its'],1,'The bone belongs to the dog.'],
+ ['I think ___ going to be a long week.',['it\u2019s','its'],0,'It is going to be.'],
+ ['Every country protects ___ borders.',['it\u2019s','its'],1,'The borders belong to the country.']
+];
+var POSS=[
+ ['the roommate of Joanna',["joanna's roommate"],'Joanna\u2019s roommate'],
+ ['the phone of Carlos',["carlos's phone","carlos' phone"],'Carlos\u2019s phone'],
+ ['the flag of my country',["my country's flag"],'my country\u2019s flag'],
+ ['the feet of the dancers',["the dancers' feet","dancers' feet"],'the dancers\u2019 feet'],
+ ['the school of my child',["my child's school"],'my child\u2019s school'],
+ ['the school of my children',["my children's school"],'my children\u2019s school'],
+ ['the office of the boss',["the boss's office","boss's office"],'the boss\u2019s office'],
+ ['the shoes of the ladies',["the ladies' shoes","ladies' shoes"],'the ladies\u2019 shoes'],
+ ['the sweaters of the men',["the men's sweaters","men's sweaters"],'the men\u2019s sweaters'],
+ ['the films of George Lucas',["george lucas's films","george lucas' films"],'George Lucas\u2019s films']
+];
+var NUM=[
+ ['the girl\u2019s backpack',['One owner','More than one'],0,'Apostrophe before the s means one girl.'],
+ ['the girls\u2019 backpack',['One owner','More than one'],1,'Apostrophe after the s means several girls.'],
+ ['the children\u2019s coats',['One owner','More than one'],1,'Children is already plural, so it takes \u2019s.'],
+ ['my brother\u2019s room',['One owner','More than one'],0,'One brother.'],
+ ['the teachers\u2019 lounge',['One owner','More than one'],1,'A lounge for all the teachers.'],
+ ['the woman\u2019s voice',['One owner','More than one'],0,'One woman. The plural would be women\u2019s.'],
+ ['the Smiths\u2019 house',['One owner','More than one'],1,'The whole Smith family.'],
+ ['the boss\u2019s office',['One owner','More than one'],0,'One boss whose name ends in s. Still one person.']
+];
+var CHECKS=[
+ 'My topic sentence has a topic AND a controlling idea.',
+ 'My topic sentence is not too general and not too specific.',
+ 'Every supporting sentence proves the topic sentence.',
+ 'I removed anything that wandered off the topic.',
+ 'My details are specific — numbers, names, real examples.',
+ 'My concluding sentence starts with a conclusion signal.',
+ 'My conclusion repeats the main idea in DIFFERENT words.',
+ 'My conclusion adds no new information.',
+ 'I checked every apostrophe, especially it\u2019s and its.',
+ 'The title is centered, capitalized, and has no period.'
+];
+var CONCSIGS=['all in all','in brief','in conclusion','in short','in summary','indeed',
+ 'to conclude','to summarize','to sum up','it is clear that','these examples show that','you can see that'];
+function normApos(s){return String(s||'').trim().toLowerCase().replace(/[\u2019\u02BC`]/g,"'").replace(/\s+/g,' ');}
+
+/* ============ SCORING ============ */
+function attempted(o){return o && Object.keys(o).length>0}
+function mk(n,d,wrong){return {n:n,d:d,wrong:wrong||[]}}
+
+function scParts(p){
+  if(!attempted(p.parts))return null;
+  var n=0,wr=[],L={T:'TOPIC',S:'SUPPORTING',C:'CONCLUDING'};
+  PARTS.forEach(function(q,i){
+    if((p.parts[i]||'')===q[1])n++;
+    else wr.push({q:q[0],gave:L[p.parts[i]]||'(blank)',want:L[q[1]]});
+  });
+  return mk(n,PARTS.length,wr);
+}
+function scTCI(p){
+  if(!attempted(p.tci))return null;
+  var n=0,wr=[];
+  TCI.forEach(function(q,qi){
+    var a=(p.tci||{})[qi]||{},ok=true;
+    q.t.split(' ').forEach(function(w,wi){
+      var want=q.T.indexOf(wi)>-1?'T':(q.C.indexOf(wi)>-1?'C':'');
+      if((a[wi]||'')!==want)ok=false;
+    });
+    if(ok)n++; else wr.push({q:q.t,gave:'',want:'controlling idea starts at "'+q.t.split(' ')[q.C[0]]+'"'});
+  });
+  return mk(n,TCI.length,wr);
+}
+function scPred(p){
+  if(!attempted(p.pred))return null;
+  var n=0,wr=[];
+  PRED.forEach(function(q,qi){
+    var got=(p.pred[qi]||[]).slice().sort().join(',');
+    var want=q.opts.map(function(o,i){return o[1]?i:-1}).filter(function(i){return i>=0}).join(',');
+    if(got===want)n++;
+    else{
+      var chose=(p.pred[qi]||[]).map(function(i){return q.opts[i]?q.opts[i][0].slice(0,42):'?'});
+      wr.push({q:q.ts,gave:chose.join(' / ')||'(nothing)',want:'the three that prove it'});
+    }
+  });
+  return mk(n,PRED.length,wr);
+}
+function scMC(ans,key,ki,txt){
+  if(!attempted(ans))return null;
+  var n=0,wr=[];
+  key.forEach(function(q,qi){
+    if(ans[qi]===q[ki])n++;
+    else wr.push({q:String(q[0]).replace(/<[^>]+>/g,''),
+      gave:(ans[qi]===undefined?'(blank)':q[1][ans[qi]]),want:q[1][q[ki]]});
+  });
+  return mk(n,key.length,wr);
+}
+function scPick(p){
+  if(!attempted(p.pick))return null;
+  var n=0,wr=[];
+  PICK.forEach(function(q,qi){
+    if(p.pick[qi]===q.a)n++;
+    else wr.push({q:'Paragraph '+(qi+1),gave:(p.pick[qi]===undefined?'(blank)':q.opts[p.pick[qi]]),want:q.opts[q.a]});
+  });
+  return mk(n,PICK.length,wr);
+}
+function scUnity(p){
+  if(!attempted(p.unity))return null;
+  var n=0,wr=[];
+  UNITY.forEach(function(q,qi){
+    if(p.unity[qi]===q.bad)n++;
+    else wr.push({q:q.ts,gave:(p.unity[qi]===undefined?'(blank)':q.s[p.unity[qi]]),want:q.s[q.bad]});
+  });
+  return mk(n,UNITY.length,wr);
+}
+function scSig(p){
+  if(!attempted(p.sig))return null;
+  var n=0,wr=[],L={c:'comma',n:'no comma'};
+  SIG.forEach(function(q,i){
+    if((p.sig[i]||'')===q[1])n++;
+    else wr.push({q:q[0],gave:L[p.sig[i]]||'(blank)',want:L[q[1]]});
+  });
+  return mk(n,SIG.length,wr);
+}
+function scCont(p){
+  if(!attempted(p.cont))return null;
+  var n=0,wr=[];
+  CONT.forEach(function(q,qi){
+    if(normApos(p.cont[qi])===normApos(q[1]))n++;
+    else wr.push({q:q[0],gave:(p.cont[qi]||'(blank)'),want:q[1]});
+  });
+  return mk(n,CONT.length,wr);
+}
+function scPoss(p){
+  if(!attempted(p.poss))return null;
+  var n=0,wr=[];
+  POSS.forEach(function(q,qi){
+    if(qi===0)return;
+    var v=normApos(p.poss[qi]);
+    if(v&&q[1].some(function(a){return v===normApos(a)}))n++;
+    else wr.push({q:q[0],gave:(p.poss[qi]||'(blank)'),want:q[2]});
+  });
+  return mk(n,POSS.length-1,wr);
+}
+function wc(s){return ((s||'').trim().match(/\S+/g)||[]).length}
+function draftStats(p){
+  var d=p.draft||'';
+  if(!d.trim())return null;
+  var sents=d.split(/(?=[A-Z])/).length&&d.split(/[.!?]+\s/).filter(function(x){return x.trim().length});
+  var last=(sents[sents.length-1]||'').toLowerCase();
+  var first=(sents[0]||'').toLowerCase();
+  var norm=function(s){return s.replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim()};
+  return {
+    words:wc(d), title:(p.title||'').trim(), sents:sents.length,
+    concSignal:CONCSIGS.some(function(x){return last.indexOf(x)>-1}),
+    copied:(sents.length>1 && norm(first)===norm(last)),
+    aposBad:(/\bits'/.test(d)||/\b(your|her|their|our)'s\b/i.test(d)),
+    lowI:(d.match(/\bi\b/g)||[]).length,
+    badStart:sents.filter(function(x){var c=x.trim().charAt(0);return c&&c===c.toLowerCase()&&/[a-z]/.test(c)}).length,
+    breaks:/\n\s*\S/.test(d.trim())
+  };
+}
+function outlineFill(p){
+  var o=p.outline||{}, ids=['o_ts','o_A','o_A1','o_A2','o_B','o_B1','o_B2','o_C','o_C1','o_C2','o_cs'];
+  var f=ids.filter(function(k){return (o[k]||'').trim().length}).length;
+  return {n:f,d:ids.length,o:o,ids:ids};
+}
+function pct(s){return s?Math.round(s.n/s.d*100):null}
+function cell(s){
+  if(s===null||s===undefined)return '<span class="pct pna">&mdash;</span>';
+  var v=pct(s),c=v>=90?'p100':(v>=60?'p70':'p0');
+  return '<span class="pct '+c+'" title="'+s.n+' of '+s.d+'">'+v+'%</span>';
+}
+/* ============ LOAD ============ */
+var ROWS=[];
+function loadAll(){
+  var m=document.getElementById('msg');
+  m.innerHTML='<div class="msg info">Loading…</div>';
+  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?select=*&order=updated_at.desc',
+    {headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}})
+  .then(function(r){return r.ok?r.json():r.text().then(function(t){throw new Error(t)})})
+  .then(function(data){
+    ROWS=data.map(function(r){
+      var p=r.payload||{};
+      return {name:r.name||r.student_name||r.email, email:r.email||'', period:r.period||'',
+              when:r.updated_at, turned:r.turned_in?(p.turnedIn||r.updated_at):null, p:p,
+        s:{parts:scParts(p),tci:scTCI(p),pred:scPred(p),gen:scMC(p.gen||{},GEN,2),
+           pick:scPick(p),unity:scUnity(p),sig:scSig(p),conc:scMC(p.conc||{},CONC,2),
+           cont:scCont(p),its:scMC(p.its||{},ITS,2),poss:scPoss(p),num:scMC(p.num||{},NUM,2),
+           outline:outlineFill(p),draft:draftStats(p)}};
+    });
+    m.innerHTML=ROWS.length?'':'<div class="msg info">Nothing here yet. Students appear about 20 seconds after they type their name and start working.</div>';
+    render();
+  })
+  .catch(function(e){
+    m.innerHTML='<div class="msg err">Could not read the table.<br><span class="tip">'+
+      String(e.message).slice(0,300)+'</span><br><span class="tip">If it says the relation does not exist, run eld103_schema.sql in the Supabase SQL editor first.</span></div>';
+  });
+}
+var PFILTER='';
+function setFilter(p){PFILTER=p; render();}
+function shown(){return PFILTER?ROWS.filter(function(r){return String(r.period)===PFILTER}):ROWS}
+function render(){
+  var st=document.getElementById('stats');
+  var periods=[];
+  ROWS.forEach(function(r){if(r.period&&periods.indexOf(String(r.period))<0)periods.push(String(r.period))});
+  periods.sort();
+  var fh='<button class="btn '+(PFILTER?'ghost ':'')+'small" onclick="setFilter(\'\')">All periods</button>';
+  periods.forEach(function(p){fh+='<button class="btn '+(PFILTER===p?'':'ghost ')+'small" onclick="setFilter(\''+p+'\')">Period '+p+'</button>'});
+  document.getElementById('filters').innerHTML=periods.length>1?fh:'';
+  // warn about split identities (same username, two domains)
+  var seen={},dupes=[];
+  ROWS.forEach(function(r){
+    var lp=String(r.email||'').split('@')[0];
+    if(!lp)return;
+    if(seen[lp]&&dupes.indexOf(lp)<0)dupes.push(lp);
+    seen[lp]=true;
+  });
+  var dw=document.getElementById('dupwarn');
+  if(dupes.length)dw.innerHTML='<div class="msg err">'+dupes.length+
+    ' student'+(dupes.length>1?'s have':' has')+' two rows under different email domains: <b>'+
+    dupes.map(esc).join(', ')+'</b>.<br><span class="tip">Run steps A–D at the bottom of eld103_schema.sql to merge them.</span></div>';
+  else dw.innerHTML='';
+  var ROWS_ALL=ROWS; ROWS=shown();
+  renderInner();
+  ROWS=ROWS_ALL;
+}
+function renderInner(){
+  var st=document.getElementById('stats');
+  var n=ROWS.length;
+  var withDraft=ROWS.filter(function(r){return r.s.draft}).length;
+  var turned=ROWS.filter(function(r){return r.turned}).length;
+  var avg=function(k){var a=ROWS.map(function(r){return pct(r.s[k])}).filter(function(x){return x!==null});
+    return a.length?Math.round(a.reduce(function(x,y){return x+y},0)/a.length)+'%':'—';};
+  st.innerHTML=
+   '<div class="stat"><b>'+n+'</b><span>STUDENTS WORKING</span></div>'+
+   '<div class="stat"><b>'+turned+'</b><span>TURNED IN</span></div>'+
+   '<div class="stat"><b>'+withDraft+'</b><span>WROTE A PARAGRAPH</span></div>'+
+   '<div class="stat"><b>'+avg('tci')+'</b><span>AVG TOPIC + IDEA</span></div>'+
+   '<div class="stat"><b>'+avg('unity')+'</b><span>AVG UNITY</span></div>'+
+   '<div class="stat"><b>'+avg('poss')+'</b><span>AVG APOSTROPHES</span></div>';
+
+  var h='<table><tr><th class="l">Student</th><th>P</th><th>Status</th>'+
+        '<th>1 Parts</th><th>2 Topic</th><th class="opt">3 Belongs</th><th>4 Gen/Spec</th>'+
+        '<th class="opt">5 Pick</th><th>6 Unity</th><th class="opt">7a Signals</th><th>7b Concl</th>'+
+        '<th class="opt">8a Contr</th><th>8b it\'s</th><th>9a Poss</th><th class="opt">9b Number</th>'+
+        '<th class="opt">Outline</th><th>Words</th><th class="opt">Updated</th></tr>';
+  ROWS.forEach(function(r,i){
+    h+='<tr class="row" onclick="showDetail(\''+esc(r.email||r.name)+'\')"><td class="l name">'+esc(r.name)+
+      '<br><span class="tip" style="font-weight:600;font-size:.72rem">'+esc(r.email)+'</span></td>'+
+      '<td>'+esc(r.period||'—')+'</td>'+
+      '<td><span class="stmt '+(r.turned?'done':'wip')+'">'+(r.turned?'Turned in':'In progress')+'</span>'+
+      (r.p.browserTranslated?'<span class="stmt xl" title="Browser translation was running on this student\'s page">translated</span>':'')+'</td>'+
+      cellTd(r.s.parts)+cellTd(r.s.tci)+cellTd(r.s.pred,1)+cellTd(r.s.gen)+
+      cellTd(r.s.pick,1)+cellTd(r.s.unity)+cellTd(r.s.sig,1)+cellTd(r.s.conc)+
+      cellTd(r.s.cont,1)+cellTd(r.s.its)+cellTd(r.s.poss)+cellTd(r.s.num,1)+
+      cellTd(r.s.outline,1)+
+      '<td>'+(r.s.draft?r.s.draft.words:'—')+'</td>'+
+      '<td class="opt" style="font-weight:600;font-size:.76rem">'+when(r.when)+'</td></tr>';
+  });
+  h+='</table>';
+  document.getElementById('roster').innerHTML=ROWS.length?h:'';
+}
+function cellTd(s,opt){return '<td'+(opt?' class="opt"':'')+'>'+cell(s)+'</td>'}
+function when(t){if(!t)return '—';var d=new Date(t);return (d.getMonth()+1)+'/'+d.getDate()+' '+
+  d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+
+/* ============ DETAIL ============ */
+function showDetail(id){
+  var r=null;
+  for(var k=0;k<ROWS.length;k++){if((ROWS[k].email||ROWS[k].name)===id){r=ROWS[k];break;}}
+  if(!r)return;
+  var p=r.p,s=r.s,d=document.getElementById('detail');
+  var h='<h2>'+esc(r.name)+'</h2><div class="tip">'+esc(r.email)+
+    (r.period?' · Period '+esc(r.period):'')+'</div><div class="tip">'+
+    (r.turned?'Turned in '+when(r.turned)+' · ':'Still working · ')+'last saved '+when(r.when)+'</div>';
+
+  if(r.p.browserTranslated)
+    h+='<div class="msg err" style="margin-top:10px">Chrome translation was running on this page while they worked. '+
+       'Their English answers may have been auto-translated, so treat the scores with care and have them redo it with translation off.</div>';
+  if(s.draft){
+    h+='<h3>The paragraph</h3>';
+    h+='<div class="para">'+(p.title?'<div class="pt">'+esc(p.title)+'</div>':'<div class="pt tip">(no title)</div>')+
+       '<div class="body">'+esc(p.draft)+'</div></div>';
+    var f=s.draft,pills='';
+    pills+='<span class="pill'+(f.words>=120&&f.words<=230?'':' no')+'">'+f.words+' words</span>';
+    pills+='<span class="pill">'+f.sents+' sentences</span>';
+    pills+='<span class="pill'+(f.concSignal?'':' no')+'">'+(f.concSignal?'has':'no')+' conclusion signal</span>';
+    pills+='<span class="pill'+(f.copied?' no':'')+'">'+(f.copied?'conclusion COPIES topic sentence':'conclusion reworded')+'</span>';
+    pills+='<span class="pill'+(f.aposBad?' no':'')+'">'+(f.aposBad?'apostrophe error':'apostrophes ok')+'</span>';
+    if(f.lowI)pills+='<span class="pill no">'+f.lowI+' lowercase i</span>';
+    if(f.badStart)pills+='<span class="pill no">'+f.badStart+' uncapitalized starts</span>';
+    var t=f.title;
+    if(!t) pills+='<span class="pill no">no title</span>';
+    else if(/\.$/.test(t)) pills+='<span class="pill no">title ends in a period</span>';
+    else if(t.charAt(0)!==t.charAt(0).toUpperCase()) pills+='<span class="pill no">title not capitalized</span>';
+    if(f.breaks)pills+='<span class="pill no">has line breaks</span>';
+    h+=pills;
+  } else h+='<h3>The paragraph</h3><div class="tip">Nothing written yet.</div>';
+
+  var ol=s.outline;
+  if(ol&&ol.n){
+    var LBL={o_ts:'Topic sentence',o_A:'  A. Supporting point',o_A1:'     1. Detail',o_A2:'     2. Detail',
+             o_B:'  B. Supporting point',o_B1:'     1. Detail',o_B2:'     2. Detail',
+             o_C:'  C. Supporting point',o_C1:'     1. Detail',o_C2:'     2. Detail',
+             o_cs:'Concluding sentence'};
+    h+='<h3>Their outline ('+ol.n+' of '+ol.d+' filled)</h3><div class="mono">';
+    ol.ids.forEach(function(k){
+      h+=LBL[k]+': '+(ol.o[k]?esc(ol.o[k]):'—')+'\n';
+    });
+    h+='</div>';
+    if(ol.n<ol.d)h+='<div class="tip">Blank lines mean they skipped planning that part. That usually shows up as a thin paragraph.</div>';
+  } else h+='<h3>Their outline</h3><div class="tip">Nothing planned. They went straight to writing.</div>';
+  if(p.topic!==null&&p.topic!==undefined){
+    h+='<div class="tip" style="margin-top:8px">Topic chosen: <b>'+esc(p.ownTopic||['A place that has changed since I first knew it','Something my first job taught me','A skill that saved me money','Why my neighborhood is misunderstood','A person who changed how I think','(their own)'][p.topic]||'?')+'</b></div>';
+  }
+
+  var ck=p.check||{},done=Object.keys(ck).filter(function(k){return ck[k]}).length;
+  h+='<h3>Self-editing checklist ('+done+' of 10)</h3>';
+  CHECKS.forEach(function(c,ci){h+='<span class="pill'+(ck[ci]?'':' no')+'">'+(ck[ci]?'✓ ':'· ')+c+'</span>'});
+
+  h+='<h3>What they got wrong</h3>';
+  var any=false;
+  function block(label,sc,fmt){
+    if(!sc)return;
+    if(sc.wrong&&sc.wrong.length){
+      any=true;
+      h+='<div style="margin:11px 0"><b>'+label+' — '+sc.n+' of '+sc.d+'</b>';
+      sc.wrong.slice(0,12).forEach(function(w){h+=fmt(w)});
+      h+='</div>';
+    }
+  }
+  var std=function(w){return '<div class="wrongitem">'+esc(w.q)+
+    (w.gave?'<br>wrote <span class="gave">'+esc(w.gave)+'</span>':'')+
+    ' · should be <span class="want">'+esc(w.want)+'</span></div>'};
+  block('1. Three parts',s.parts,std);
+  block('2. Topic + controlling idea',s.tci,std);
+  block('3. What belongs',s.pred,std);
+  block('4. Too general / too specific',s.gen,std);
+  block('5. Best topic sentence',s.pick,std);
+  block('6. Unity — the intruder',s.unity,std);
+  block('7a. Conclusion signals',s.sig,std);
+  block('7b. Best ending',s.conc,std);
+  block('8a. Contractions',s.cont,std);
+  block("8b. it's / its",s.its,std);
+  block('9a. Possessives',s.poss,std);
+  block('9b. One owner or more',s.num,std);
+  if(!any)h+='<div class="tip">Nothing wrong on any activity they attempted.</div>';
+
+  h+='<div style="margin-top:20px"><button class="btn ghost small" onclick="document.getElementById(\'detail\').classList.remove(\'show\')">Close</button>'+
+     '<button class="btn small" onclick="window.print()">Print this student</button></div>';
+  d.innerHTML=h; d.classList.add('show');
+  if(d.scrollIntoView)d.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+/* ============ CSV ============ */
+function exportCSV(){
+  var head=['Student','Email','Period','Status','Last saved','ThreeParts','TopicIdea','WhatBelongs',
+            'GenSpec','PickTS','Unity','ConcSignals','BestEnding','Contractions','ItsIts','Possessives',
+            'OneOrMany','OutlineFilled','DraftWords','ConclusionSignal','ChecklistDone','Title'];
+  var lines=[head.join(',')];
+  ROWS.forEach(function(r){
+    var f=r.s.draft,ck=r.p.check||{};
+    var row=[r.name,r.email,r.period,(r.turned?'Turned in':'In progress'),when(r.when),
+      pct(r.s.parts),pct(r.s.tci),pct(r.s.pred),pct(r.s.gen),pct(r.s.pick),pct(r.s.unity),
+      pct(r.s.sig),pct(r.s.conc),pct(r.s.cont),pct(r.s.its),pct(r.s.poss),pct(r.s.num),
+      pct(r.s.outline), f?f.words:'', f?(f.concSignal?'yes':'no'):'',
+      Object.keys(ck).filter(function(k){return ck[k]}).length, r.p.title||''];
+    lines.push(row.map(function(v){
+      v=(v===null||v===undefined)?'':String(v);
+      return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;
+    }).join(','));
+  });
+  var blob=new Blob([lines.join('\n')],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='eld103_ch3_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+</script>
+</body>
+</html>
