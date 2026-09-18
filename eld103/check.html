@@ -32,12 +32,6 @@ button{font-family:inherit;font-size:.9rem;font-weight:800;background:#2d6a4f;co
 <body>
 <h1>ELD 103 — Supabase check</h1>
 <p class="sub">Runs seven tests against your project and names whatever is broken. Safe: the one row it writes is deleted at the end.</p>
-<label style="font-weight:800;font-size:.85rem">Table:
-<select id="tablePick" onchange="TABLE=this.value;runAll()"
-  style="font-family:inherit;font-size:.9rem;font-weight:700;padding:7px 10px;border:2px solid #dfe4dd;border-radius:8px">
-  <option value="eld103_work">eld103_work — Chapters 1&ndash;2</option>
-  <option value="eld103_ch3">eld103_ch3 — Chapter 3</option>
-</select></label>
 <button onclick="runAll()">Run the check again</button>
 <div id="verdict"></div>
 <div id="out"></div>
@@ -47,9 +41,8 @@ var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
 var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
 var TABLE='eld103_work';
 var TESTMAIL='zz-diagnostic@s.sfusd.edu';
-function tbl(){var e=document.getElementById('tablePick');return e?e.value:TABLE}
 var H={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};
-var fails=[], ROWCOUNT=0;
+var fails=[];
 
 function card(id,title){
   var d=document.createElement('div'); d.className='t run'; d.id=id;
@@ -77,7 +70,6 @@ function runAll(){
   fails=[];
   document.getElementById('out').innerHTML='';
   document.getElementById('verdict').className='verdict';
-  TABLE=tbl();
   var c1=card('c1','1. Can I reach the project at all?');
   sb(TABLE+'?select=email&limit=1').then(function(r){
     if(r.status===0) set(c1,'fail','No response.','Check the internet connection on this machine.');
@@ -100,7 +92,6 @@ function runAll(){
       set(c3,'warn','The read worked but returned <b>zero rows</b>.',
         'Either nobody has signed in yet, OR a SELECT policy is missing and RLS is hiding the rows. Test 6 settles which.');
     } else {
-      ROWCOUNT=r.json.length;
       var cols=Object.keys(r.json[0]).join(', ');
       set(c3,'pass','Yes — <b>'+r.json.length+' row(s)</b> visible. Columns: <code>'+cols+'</code>');
     }
@@ -177,10 +168,7 @@ function finish(){
   } else {
     v.className='verdict show ok';
     v.innerHTML='Everything works. The database is set up correctly.<br>'+
-      (ROWCOUNT
-        ? '<span style="font-weight:600">'+ROWCOUNT+'+ student row'+(ROWCOUNT>1?'s are':' is')+
-          ' already saved. They should be showing on the dashboard right now — open it and hit Refresh.</span>'
-        : '<span style="font-weight:600">The table is empty, so nobody has signed in yet. Sign in on the student page yourself, do one activity, wait 20 seconds, then refresh the dashboard.</span>');
+      '<span style="font-weight:600">So if the dashboard is empty, no student has signed in yet. Sign in on the student page yourself with a fake name, wait 20 seconds, then refresh the dashboard.</span>';
   }
 }
 runAll();
