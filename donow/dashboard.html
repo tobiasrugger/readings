@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Do Now — Teacher View</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--pine:#1b4332;--pine2:#2d6a4f;--moss:#40916c;--sage:#95d5b2;--paper:#faf7f0;
+      --line:#dfe4dd;--ink:#1f2421;--muted:#5c6b62;--gold:#d4a017;--rust:#b5451b;--sky:#e8f3ee}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Nunito',system-ui,sans-serif;background:var(--paper);color:var(--ink);font-size:16px}
+#bar{position:sticky;top:0;z-index:40;background:var(--pine);color:#fff;padding:9px 14px;
+     display:flex;gap:9px;align-items:center;flex-wrap:wrap;box-shadow:0 2px 10px rgba(0,0,0,.18)}
+#bar .brand{font-weight:800;margin-right:auto}
+#bar .brand small{display:block;font-weight:600;font-size:.68rem;opacity:.75;letter-spacing:.6px}
+#bar button{font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer;background:rgba(255,255,255,.14);
+  color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:6px 12px}
+#bar button:hover{background:rgba(255,255,255,.26)}
+main{max-width:1180px;margin:0 auto;padding:18px 14px 70px}
+.gate{max-width:380px;margin:12vh auto;background:#fff;border:1px solid var(--line);border-radius:14px;padding:26px;text-align:center}
+.gate input{font-family:inherit;font-size:1.05rem;padding:10px 13px;border:1px solid var(--line);
+  border-radius:9px;width:100%;margin:12px 0;text-align:center}
+.btn{font-family:inherit;font-size:.88rem;font-weight:800;cursor:pointer;border:none;border-radius:9px;
+     padding:9px 16px;background:var(--pine2);color:#fff;margin:3px 5px 3px 0}
+.btn:hover{background:var(--pine)}
+.btn.ghost{background:#fff;color:var(--pine2);border:2px solid var(--pine2)}
+.btn.small{font-size:.76rem;padding:5px 11px}
+.stats{display:flex;gap:11px;flex-wrap:wrap;margin:14px 0}
+.stat{background:#fff;border:1px solid var(--line);border-radius:11px;padding:11px 17px;min-width:118px}
+.stat b{display:block;font-size:1.7rem;color:var(--pine);line-height:1.15}
+.stat span{font-size:.76rem;color:var(--muted);font-weight:700}
+table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:11px;overflow:hidden}
+th{background:var(--pine);color:#fff;font-size:.72rem;font-weight:800;padding:8px 6px;text-align:center;white-space:nowrap}
+th.l,td.l{text-align:left;padding-left:12px}
+td{padding:7px 6px;text-align:center;border-top:1px solid var(--line);font-size:.86rem;font-weight:700}
+tr.row{cursor:pointer}
+tr.row:hover td{background:var(--sky)}
+.pct{display:inline-block;min-width:38px;padding:2px 6px;border-radius:12px;font-size:.78rem;font-weight:800}
+.p100{background:#d8f0e2;color:#1b4332}
+.p70{background:#fdf6e3;color:#7a5c00}
+.p0{background:#fbeae5;color:#8a2f10}
+.pna{background:#f0f2ef;color:#98a49c}
+.stmt{display:inline-block;padding:2px 9px;border-radius:12px;font-size:.72rem;font-weight:800;white-space:nowrap}
+.stmt.done{background:#d8f0e2;color:#1b4332}
+.stmt.wip{background:#fdf6e3;color:#7a5c00}
+.stmt.xl{background:#fbeae5;color:#8a2f10;margin-left:4px}
+.name{font-weight:800;color:var(--pine)}
+#detail{background:#fff;border:1px solid var(--line);border-radius:13px;padding:20px 22px;margin-top:16px;display:none}
+#detail.show{display:block}
+#detail h2{margin:0 0 3px;color:var(--pine)}
+#detail h3{margin:20px 0 6px;color:var(--pine2);font-size:1rem;border-bottom:2px solid var(--sage);padding-bottom:3px}
+.wrongitem{background:#fdf3f0;border-left:4px solid #e3a58f;border-radius:7px;padding:7px 12px;margin:5px 0;font-size:.88rem}
+.wrongitem .gave{color:var(--rust);font-weight:800}
+.wrongitem .want{color:var(--moss);font-weight:800}
+.para{background:#fffef7;border:1px solid var(--line);border-radius:9px;padding:16px 22px;line-height:1.95;
+      font-size:1rem;white-space:pre-wrap;margin:7px 0}
+.para .pt{text-align:center;font-weight:800;margin-bottom:11px}
+.para .body{text-indent:2.4em}
+.mono{font-size:.85rem;color:var(--muted);white-space:pre-wrap;background:#f6f8f5;border-radius:8px;padding:11px 14px;line-height:1.6}
+.pill{display:inline-block;background:var(--sky);border:1px solid var(--sage);border-radius:14px;
+      padding:3px 10px;margin:3px 5px 3px 0;font-size:.79rem;font-weight:700;color:var(--pine)}
+.pill.no{background:#fbeae5;border-color:#e3a58f;color:#8a2f10}
+.msg{padding:11px 15px;border-radius:9px;margin:12px 0;font-weight:700}
+.msg.err{background:#fbeae5;color:#8a2f10;border:1px solid #e3a58f}
+.msg.info{background:var(--sky);color:var(--pine);border:1px solid var(--sage)}
+.tip{font-size:.83rem;color:var(--muted);font-weight:600}
+@media print{#bar,.btn,#roster{display:none}#detail{display:block!important;border:none}}
+@media(max-width:700px){th.opt,td.opt{display:none}}
+</style>
+</head>
+<body>
+
+<div id="gate" class="gate">
+  <h2 style="margin:0;color:#1b4332">Do Now &mdash; Sept 18</h2>
+  <p class="tip">Teacher dashboard</p>
+  <input id="pw" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')unlock()">
+  <button class="btn" onclick="unlock()" style="width:100%">Open</button>
+  <div id="gateErr" class="tip" style="color:#b5451b;margin-top:9px"></div>
+</div>
+
+<div id="app" style="display:none">
+<div id="bar">
+  <div class="brand">Do Now · Mr. Toby&rsquo;s Weekend<small>FRIDAY, SEPTEMBER 18 · TEACHER VIEW</small></div>
+  <button onclick="loadAll()">Refresh</button>
+  <button onclick="exportCSV()">Download CSV</button>
+  <button onclick="window.print()">Print</button>
+</div>
+<main>
+  <div id="msg"></div>
+  <div class="stats" id="stats"></div>
+  <div id="dupwarn"></div>
+  <div id="filters" style="margin:4px 0 12px"></div>
+  <div id="roster"></div>
+  <div id="detail"></div>
+</main>
+</div>
+
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var TABLE='eld103_donow';
+var UNIT='donow-2026-09-18';   // must match the student page
+var PW='galileo2026';
+
+function unlock(){
+  if(document.getElementById('pw').value===PW){
+    document.getElementById('gate').style.display='none';
+    document.getElementById('app').style.display='block';
+    try{sessionStorage.setItem('eld103_donow_dash','1')}catch(e){}
+    loadAll();
+  } else document.getElementById('gateErr').textContent='Not the right password.';
+}
+try{if(sessionStorage.getItem('eld103_dash')==='1'){
+  document.getElementById('gate').style.display='none';
+  document.getElementById('app').style.display='block';
+}}catch(e){}
+
+var TEXT="This weekend, I will, once again, sleep a lot, but will also be social. Tonight I will have dinner with my son and we will watch TV. Saturday, if I feel motivated, I will also try to do some chores, like cleaning. Saturday night, I will drive to Alameda to see my good friend act in a play. He used to be a teacher, but now is a computer programmer, and actor. I will continue watching the TV show, The Sopranos, and will make lessons for my classes. Sunday, I might go to an event in Golden Gate Park called Flower Piano. It is free for people who live in SF, and is pretty cool \u2014 there are like ten different musicians in different parts of the flower and botanical garden.";
+var FLIPS=[
+ /* [word, which occurrence (0=first), which letter of that word, the rule it teaches] */
+ ['This',0,0,'The first word of a sentence is always capital.'],
+ ['I',0,0,'The pronoun I is always a capital letter, everywhere in the sentence.'],
+ ['Tonight',0,0,'This word starts a new sentence.'],
+ ['TV',0,0,'TV is a short form, so BOTH letters are capital.'],
+ ['TV',0,1,'TV is a short form, so BOTH letters are capital.'],
+ ['Saturday',0,0,'Days of the week are always capital.'],
+ ['motivated',0,0,'An ordinary word in the middle of a sentence stays small.'],
+ ['Alameda',0,0,'Alameda is the name of a city.'],
+ ['He',0,0,'This word starts a new sentence.'],
+ ['Sopranos',0,0,'The name of a TV show is capital.'],
+ ['Sunday',0,0,'Days of the week are always capital.'],
+ ['Golden',0,0,'Golden Gate Park is the name of a place.'],
+ ['Gate',0,0,'Golden Gate Park is the name of a place.'],
+ ['Park',0,0,'Golden Gate Park is the name of a place.'],
+ ['Flower',0,0,'Flower Piano is the name of an event.'],
+ ['Piano',0,0,'Flower Piano is the name of an event.'],
+ ['SF',0,0,'SF is short for San Francisco, so BOTH letters are capital.'],
+ ['SF',0,1,'SF is short for San Francisco, so BOTH letters are capital.'],
+ ['musicians',0,0,'An ordinary word in the middle of a sentence stays small.'],
+ ['botanical',0,0,'A botanical garden is a normal thing, not a name, so it stays small.']
+];
+/* resolve each flip to a character index in TEXT */
+var FLIPIDX=[], FLIPWHY={};
+(function(){
+  FLIPS.forEach(function(f){
+    var word=f[0], occ=f[1], off=f[2];
+    var re=new RegExp('\\b'+word.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','g');
+    var m, seen=0, hit=-1;
+    while((m=re.exec(TEXT))!==null){ if(seen===occ){hit=m.index; break;} seen++; }
+    if(hit<0) return;                              // word not found
+    var idx=hit+off;
+    if(off>=word.length) return;                   // offset past the end of the word
+    if(!/[A-Za-z]/.test(TEXT.charAt(idx))) return; // never target a space or punctuation
+    if(FLIPIDX.indexOf(idx)>-1) return;            // no duplicates
+    FLIPIDX.push(idx); FLIPWHY[idx]=f[3];
+  });
+  FLIPIDX.sort(function(a,b){return a-b});
+})();
+var CLOZE=[
+ ['On Friday night, Mr. Toby will have dinner ___ his son.',['with','for','from'],'with',
+  'We have dinner WITH a person.'],
+ ['On Saturday he will drive ___ Alameda to see a play.',['to','at','in'],'to',
+  'Drive TO a place. We use AT or IN when we are already there.'],
+ ['His friend used to be a teacher, ___ now he writes computer code.',['but','so','because'],'but',
+  'The two halves are opposite, so we use BUT.'],
+ ['Flower Piano is free ___ people who live in San Francisco.',['for','of','by'],'for',
+  'Something is free FOR a group of people.'],
+ ['There ___ about ten musicians in different parts of the garden.',['is','are','was'],'are',
+  'Musicians is plural, and the sentence is about now, so ARE.'],
+ ['Mr. Toby ___ go to the park on Sunday, but he is not sure yet.',['might','must','will'],'might',
+  'MIGHT means it is possible but not certain. WILL is certain.'],
+ ['___ he feels motivated, he will do some cleaning.',['If','So','But'],'If',
+  'IF introduces something that may or may not happen.'],
+ ['This weekend he will continue ___ The Sopranos.',['watching','watch','watched'],'watching',
+  'After CONTINUE we use the -ing form.']
+];
+var RESP=[
+ {id:'r1', q:'What part of Mr. Toby\u2019s weekend sounds most interesting \u2014 or most boring \u2014 to you? Why?',
+  ph:'The most interesting part is\u2026 because\u2026\n\nor\n\nThe most boring part is\u2026 because\u2026',
+  min:2, hint:'Write at least two sentences. Say WHICH part, and then say WHY. You can be honest \u2014 "boring" is a good answer if that is what you think. Mr. Toby will not be offended.'},
+ {id:'r2', q:'What is one question you want to ask Mr. Toby about his weekend?',
+  ph:'Write your question here. Remember the question mark.', min:1, hint:'One good question. It must end with a question mark.'},
+ {id:'r4', q:'Mr. Toby, this weekend I think you should\u2026',
+  ph:'Mr. Toby, this weekend I think you should\u2026 because\u2026',
+  min:2, hint:'Give him advice. Two sentences: what he should do, and why. Keep it friendly and school-appropriate \u2014 advice you could say out loud in class.'},
+ {id:'r3', q:'What will YOU do this weekend? Write 4\u20136 sentences with details.',
+  ph:'This weekend, I will\u2026', min:4, hint:'Four to six sentences. Use I will and I might, and say when.'}
+];
+function flipChar(c){return c===c.toUpperCase()?c.toLowerCase():c.toUpperCase();}
+function normz(s){return String(s||'').trim().toLowerCase().replace(/[.,!?;:]+$/,'');}
+function sentCount(s){return (String(s||'').match(/[^.!?]+[.!?]/g)||[]).length;}
+
+/* ============ SCORING ============ */
+function mk(n,d,wrong){return {n:n,d:d,wrong:wrong||[]}}
+function shownFor(p,i){
+  var base=(FLIPIDX.indexOf(i)>-1)?flipChar(TEXT.charAt(i)):TEXT.charAt(i);
+  return ((p.caps||{})[i])?flipChar(base):base;
+}
+function scCaps(p){
+  if(!p.caps||!Object.keys(p.caps).length)return null;
+  var n=0,wrong=[],extra=0;
+  FLIPIDX.forEach(function(i){
+    if(shownFor(p,i)===TEXT.charAt(i))n++;
+    else wrong.push({q:'…'+TEXT.slice(Math.max(0,i-16),i+16).replace(/\s+/g,' ')+'…',
+                     gave:shownFor(p,i),want:TEXT.charAt(i)});
+  });
+  Object.keys(p.caps).forEach(function(k){
+    var i=+k; if(FLIPIDX.indexOf(i)<0 && shownFor(p,i)!==TEXT.charAt(i))extra++;
+  });
+  var s=mk(n,FLIPIDX.length,wrong); s.extra=extra; return s;
+}
+function scCloze(p){
+  if(!p.cloze||!Object.keys(p.cloze).length)return null;
+  var n=0,wrong=[];
+  CLOZE.forEach(function(q,qi){
+    if(normz(p.cloze[qi])===normz(q[2]))n++;
+    else wrong.push({q:q[0].replace('___','_____'),gave:(p.cloze[qi]||'(blank)'),want:q[2]});
+  });
+  return mk(n,CLOZE.length,wrong);
+}
+function scResp(p){
+  var r=p.resp||{};
+  if(!Object.keys(r).length)return null;
+  var n=0; RESP.forEach(function(q){if(sentCount(r[q.id])>=q.min)n++;});
+  return mk(n,RESP.length,[]);
+}
+function wc(s){return ((s||'').trim().match(/\S+/g)||[]).length}
+function pct(s){return s?Math.round(s.n/s.d*100):null}
+function cell(s){
+  if(s===null||s===undefined)return '<span class="pct pna">&mdash;</span>';
+  var v=pct(s),c=v>=90?'p100':(v>=60?'p70':'p0');
+  return '<span class="pct '+c+'" title="'+s.n+' of '+s.d+'">'+v+'%</span>';
+}
+/* ============ LOAD ============ */
+var ROWS=[];
+function loadAll(){
+  var m=document.getElementById('msg');
+  m.innerHTML='<div class="msg info">Loading…</div>';
+  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?select=*&unit=eq.'+encodeURIComponent(UNIT)+'&order=updated_at.desc',
+    {headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}})
+  .then(function(r){return r.ok?r.json():r.text().then(function(t){throw new Error(t)})})
+  .then(function(data){
+    ROWS=data.map(function(r){
+      var p=r.payload||{};
+      return {name:r.name||r.student_name||r.email, email:r.email||'', period:r.period||'',
+              when:r.updated_at, turned:r.turned_in?(p.turnedIn||r.updated_at):null, p:p,
+        s:{caps:scCaps(p),cloze:scCloze(p),resp:scResp(p)}};
+    });
+    m.innerHTML=ROWS.length?'':'<div class="msg info">Nothing here yet. Students appear about 20 seconds after they type their name and start working.</div>';
+    render();
+  })
+  .catch(function(e){
+    m.innerHTML='<div class="msg err">Could not read the table.<br><span class="tip">'+
+      String(e.message).slice(0,300)+'</span><br><span class="tip">If it says the relation does not exist, run eld103_schema.sql in the Supabase SQL editor first.</span></div>';
+  });
+}
+var PFILTER='';
+function setFilter(p){PFILTER=p; render();}
+function shown(){return PFILTER?ROWS.filter(function(r){return String(r.period)===PFILTER}):ROWS}
+function render(){
+  var st=document.getElementById('stats');
+  var periods=[];
+  ROWS.forEach(function(r){if(r.period&&periods.indexOf(String(r.period))<0)periods.push(String(r.period))});
+  periods.sort();
+  var fh='<button class="btn '+(PFILTER?'ghost ':'')+'small" onclick="setFilter(\'\')">All periods</button>';
+  periods.forEach(function(p){fh+='<button class="btn '+(PFILTER===p?'':'ghost ')+'small" onclick="setFilter(\''+p+'\')">Period '+p+'</button>'});
+  document.getElementById('filters').innerHTML=periods.length>1?fh:'';
+  // warn about split identities (same username, two domains)
+  var seen={},dupes=[];
+  ROWS.forEach(function(r){
+    var lp=String(r.email||'').split('@')[0];
+    if(!lp)return;
+    if(seen[lp]&&dupes.indexOf(lp)<0)dupes.push(lp);
+    seen[lp]=true;
+  });
+  var dw=document.getElementById('dupwarn');
+  if(dupes.length)dw.innerHTML='<div class="msg err">'+dupes.length+
+    ' student'+(dupes.length>1?'s have':' has')+' two rows under different email domains: <b>'+
+    dupes.map(esc).join(', ')+'</b>.<br><span class="tip">Run steps A–D at the bottom of eld103_schema.sql to merge them.</span></div>';
+  else dw.innerHTML='';
+  var ROWS_ALL=ROWS; ROWS=shown();
+  renderInner();
+  ROWS=ROWS_ALL;
+}
+function renderInner(){
+  var st=document.getElementById('stats');
+  var n=ROWS.length;
+  var withDraft=ROWS.filter(function(r){return r.s.resp&&r.s.resp.n===RESP.length}).length;
+  var turned=ROWS.filter(function(r){return r.turned}).length;
+  var avg=function(k){var a=ROWS.map(function(r){return pct(r.s[k])}).filter(function(x){return x!==null});
+    return a.length?Math.round(a.reduce(function(x,y){return x+y},0)/a.length)+'%':'—';};
+  st.innerHTML=
+   '<div class="stat"><b>'+n+'</b><span>STUDENTS WORKING</span></div>'+
+   '<div class="stat"><b>'+turned+'</b><span>TURNED IN</span></div>'+
+   '<div class="stat"><b>'+withDraft+'</b><span>ANSWERED ALL 3</span></div>'+
+   '<div class="stat"><b>'+avg('caps')+'</b><span>AVG CAPITALS</span></div>'+
+   '<div class="stat"><b>'+avg('cloze')+'</b><span>AVG SENTENCES</span></div>';
+
+  var h='<table><tr><th class="l">Student</th><th>P</th><th>Status</th>'+
+        '<th>Capitals</th><th>Sentences</th><th>Answered</th><th>Words</th><th class="opt">Updated</th></tr>';
+  ROWS.forEach(function(r,i){
+    h+='<tr class="row" onclick="showDetail(\''+esc(r.email||r.name)+'\')"><td class="l name">'+esc(r.name)+
+      '<br><span class="tip" style="font-weight:600;font-size:.72rem">'+esc(r.email)+'</span></td>'+
+      '<td>'+esc(r.period||'—')+'</td>'+
+      '<td><span class="stmt '+(r.turned?'done':'wip')+'">'+(r.turned?'Turned in':'In progress')+'</span>'+
+      (r.p.browserTranslated?'<span class="stmt xl" title="Browser translation was running on this student\'s page">translated</span>':'')+'</td>'+
+      cellTd(r.s.caps)+cellTd(r.s.cloze)+cellTd(r.s.resp)+
+      '<td>'+(function(){var t=0;RESP.forEach(function(q){t+=wc((r.p.resp||{})[q.id])});return t||'—'})()+'</td>'+
+      '<td class="opt" style="font-weight:600;font-size:.76rem">'+when(r.when)+'</td></tr>';
+  });
+  h+='</table>';
+  document.getElementById('roster').innerHTML=ROWS.length?h:'';
+}
+function cellTd(s,opt){return '<td'+(opt?' class="opt"':'')+'>'+cell(s)+'</td>'}
+function when(t){if(!t)return '—';var d=new Date(t);return (d.getMonth()+1)+'/'+d.getDate()+' '+
+  d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+
+/* ============ DETAIL ============ */
+function showDetail(id){
+  var r=null;
+  for(var k=0;k<ROWS.length;k++){if((ROWS[k].email||ROWS[k].name)===id){r=ROWS[k];break;}}
+  if(!r)return;
+  var p=r.p,s=r.s,d=document.getElementById('detail');
+  var h='<h2>'+esc(r.name)+'</h2><div class="tip">'+esc(r.email)+
+    (r.period?' · Period '+esc(r.period):'')+'</div><div class="tip">'+
+    (r.turned?'Turned in '+when(r.turned)+' · ':'Still working · ')+'last saved '+when(r.when)+'</div>';
+
+  if(r.p.browserTranslated)
+    h+='<div class="msg err" style="margin-top:10px">Chrome translation was running while they worked.</div>';
+
+  h+='<h3>What they wrote back</h3>';
+  RESP.forEach(function(q,i){
+    var v=((r.p.resp)||{})[q.id]||'';
+    var sc=sentCount(v);
+    h+='<div style="margin:12px 0"><div style="font-weight:800;color:var(--pine2)">'+(i+1)+'. '+esc(q.q)+'</div>'+
+       '<div class="para">'+(v?esc(v):'<span class="tip">(nothing written)</span>')+'</div>'+
+       '<span class="pill'+(sc>=q.min?'':' no')+'">'+sc+' sentence'+(sc===1?'':'s')+' · needs '+q.min+'</span>'+
+       '<span class="pill">'+wc(v)+' words</span>'+
+       (/\bi\b/.test(v)?'<span class="pill no">lowercase i</span>':'')+
+       ((q.id==='r2'&&v&&v.indexOf('?')<0)?'<span class="pill no">no question mark</span>':'')+
+       '</div>';
+  });
+
+  h+='<h3>What they got wrong</h3>';
+  var any=false;
+  function block(label,sc,fmt){
+    if(!sc)return;
+    if(sc.wrong&&sc.wrong.length){
+      any=true;
+      h+='<div style="margin:11px 0"><b>'+label+' — '+sc.n+' of '+sc.d+'</b>';
+      sc.wrong.slice(0,20).forEach(function(w){h+=fmt(w)});
+      h+='</div>';
+    }
+  }
+  var std=function(w){return '<div class="wrongitem">'+esc(w.q)+
+    '<br>wrote <span class="gave">'+esc(w.gave)+'</span> · should be <span class="want">'+esc(w.want)+'</span></div>'};
+  block('Capital letters',s.caps,std);
+  if(s.caps&&s.caps.extra)
+    h+='<div class="wrongitem">Also changed <span class="gave">'+s.caps.extra+
+       '</span> letter(s) that were already correct.</div>';
+  block('Finish the sentence',s.cloze,std);
+  if(!any)h+='<div class="tip">Nothing wrong on what they attempted.</div>';
+
+  h+='<div style="margin-top:20px"><button class="btn ghost small" onclick="document.getElementById(\'detail\').classList.remove(\'show\')">Close</button>'+
+     '<button class="btn small" onclick="window.print()">Print this student</button></div>';
+  d.innerHTML=h; d.classList.add('show');
+  if(d.scrollIntoView)d.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+/* ============ CSV ============ */
+function exportCSV(){
+  var LBL={r1:'Interesting_or_Boring',r2:'TheirQuestion',r4:'TheirAdvice',r3:'TheirWeekend'};
+  var head=['Student','Email','Period','Status','Last saved','Capitals','Sentences','Answered','TotalWords']
+           .concat(RESP.map(function(q){return LBL[q.id]||q.id}));
+  var lines=[head.join(',')];
+  ROWS.forEach(function(r){
+    var rs=r.p.resp||{}, tot=0;
+    RESP.forEach(function(q){tot+=wc(rs[q.id])});
+    var row=[r.name,r.email,r.period,(r.turned?'Turned in':'In progress'),when(r.when),
+      pct(r.s.caps),pct(r.s.cloze),pct(r.s.resp),tot]
+      .concat(RESP.map(function(q){return rs[q.id]||''}));
+    lines.push(row.map(function(v){
+      v=(v===null||v===undefined)?'':String(v);
+      return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;
+    }).join(','));
+  });
+  var blob=new Blob([lines.join('\n')],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='donow_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+</script>
+</body>
+</html>

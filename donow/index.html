@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Do Now — Mr. Toby’s Weekend</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pine:#1b4332; --pine2:#2d6a4f; --moss:#40916c; --sage:#95d5b2;
+  --paper:#faf7f0; --card:#ffffff; --ink:#1f2421; --muted:#5c6b62;
+  --line:#dfe4dd; --gold:#d4a017; --rust:#b5451b; --sky:#e8f3ee;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:'Nunito',system-ui,sans-serif;
+  background:var(--paper); color:var(--ink);
+  font-size:17px; line-height:1.6;
+}
+/* ============ TOOLBAR ============ */
+#bar{
+  position:sticky; top:0; z-index:60; background:var(--pine); color:#fff;
+  padding:8px 12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+  box-shadow:0 2px 10px rgba(0,0,0,.18);
+}
+#bar .brand{font-weight:800; font-size:1.02rem; margin-right:auto; letter-spacing:.2px}
+#bar .brand small{display:block; font-weight:600; font-size:.68rem; opacity:.75; letter-spacing:.6px}
+#bar button, #bar select{
+  font-family:inherit; font-size:.82rem; font-weight:700; cursor:pointer;
+  background:rgba(255,255,255,.14); color:#fff; border:1px solid rgba(255,255,255,.3);
+  border-radius:8px; padding:6px 11px;
+}
+#bar button:hover{background:rgba(255,255,255,.26)}
+#bar select option{color:#000}
+#saveDot{width:10px;height:10px;border-radius:50%;background:#7d8a83;display:inline-block;margin-right:4px;vertical-align:middle}
+#saveDot.on{background:var(--sage)}
+#saveDot.busy{background:var(--gold)}
+#saveDot.err{background:#e07a5f}
+#whoami{font-size:.78rem;opacity:.85;font-weight:700}
+
+/* ============ PROGRESS RAIL ============ */
+#rail{
+  position:sticky; top:46px; z-index:55; background:#fff; border-bottom:1px solid var(--line);
+  overflow-x:auto; white-space:nowrap; padding:7px 10px; -webkit-overflow-scrolling:touch;
+}
+#rail button{
+  font-family:inherit; font-size:.76rem; font-weight:700; cursor:pointer;
+  background:#f0f2ef; color:var(--muted); border:1px solid var(--line);
+  border-radius:20px; padding:5px 12px; margin-right:5px;
+}
+#rail button.active{background:var(--pine); color:#fff; border-color:var(--pine)}
+#rail button.done{background:var(--sage); color:var(--pine); border-color:var(--moss)}
+#rail button.done::before{content:"✓ "}
+
+/* ============ LAYOUT ============ */
+main{max-width:780px; margin:0 auto; padding:18px 16px 90px}
+section.act{display:none}
+section.act.show{display:block}
+h1{font-size:1.6rem; line-height:1.25; margin:.2em 0 .1em}
+h2{font-size:1.3rem; margin:0 0 .1em; color:var(--pine)}
+h3{font-size:1.02rem; margin:1.4em 0 .4em; color:var(--pine2)}
+.step-tag{
+  display:inline-block; font-size:.72rem; font-weight:800; letter-spacing:.8px;
+  color:var(--moss); border-bottom:2px solid var(--sage); padding-bottom:2px; margin-bottom:6px;
+}
+.lede{color:var(--muted); margin:.3em 0 1.2em; font-size:.96rem}
+
+.card{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin:14px 0;
+      box-shadow:0 1px 3px rgba(27,67,50,.06)}
+.rulebox{background:var(--sky); border:1px solid var(--sage); border-left:5px solid var(--moss);
+         border-radius:10px; padding:13px 16px; margin:14px 0}
+.rulebox h4{margin:0 0 .4em; font-size:.95rem; color:var(--pine)}
+.rulebox p{margin:.35em 0}
+.ex{color:var(--pine2); font-style:italic}
+.tip{font-size:.86rem; color:var(--muted)}
+
+/* ============ BUTTONS ============ */
+.btn{font-family:inherit; font-size:.88rem; font-weight:800; cursor:pointer; border-radius:9px;
+     padding:9px 16px; border:none; background:var(--pine2); color:#fff; margin:4px 6px 4px 0}
+.btn:hover{background:var(--pine)}
+.btn.ghost{background:#fff; color:var(--pine2); border:2px solid var(--pine2)}
+.btn.ghost:hover{background:var(--sky)}
+.btn.small{font-size:.78rem; padding:6px 11px}
+.navrow{display:flex; justify-content:space-between; gap:10px; margin:26px 0 10px; align-items:center}
+
+/* ============ FEEDBACK ============ */
+.score{font-weight:800; padding:9px 13px; border-radius:9px; margin:12px 0; display:none}
+.score.show{display:block}
+.score.good{background:#e3f4e9; color:#1b4332; border:1px solid var(--moss)}
+.score.mid{background:#fdf6e3; color:#7a5c00; border:1px solid var(--gold)}
+.score.bad{background:#fbeae5; color:#8a2f10; border:1px solid #e3a58f}
+
+/* ============ ACT 1 : format diagram ============ */
+.papersheet{background:#fff; border:1px solid #cdd5cf; border-radius:6px; padding:26px 30px 30px;
+  box-shadow:2px 3px 0 #e6eae5; position:relative; font-size:.95rem; line-height:1.95}
+.papersheet .pgtitle{text-align:center; font-weight:800; margin:0 0 14px}
+.papersheet p{margin:0; text-indent:2.4em}
+.hot{background:#fff3cd; border-bottom:2px dashed var(--gold); cursor:pointer; border-radius:3px}
+.hot:hover{background:#ffe89a}
+.hot.found{background:var(--sage); border-bottom:2px solid var(--moss)}
+.hotmark{display:inline-block; width:19px;height:19px;line-height:19px;text-align:center;
+  background:var(--gold); color:#fff; border-radius:50%; font-size:.68rem; font-weight:800;
+  cursor:pointer; vertical-align:super; margin:0 1px}
+.hotmark.found{background:var(--moss)}
+#hotout{margin-top:12px}
+.hotcard{background:var(--sky); border-left:4px solid var(--moss); border-radius:8px; padding:9px 13px; margin:7px 0; font-size:.9rem}
+.hotcard b{color:var(--pine)}
+
+.choicerow{display:grid; gap:12px; margin:12px 0}
+.choicebox{border:2px solid var(--line); border-radius:10px; padding:13px 15px; cursor:pointer; background:#fff}
+.choicebox:hover{border-color:var(--moss)}
+.choicebox.sel{border-color:var(--pine2); background:var(--sky)}
+.choicebox.right{border-color:var(--moss); background:#e3f4e9}
+.choicebox.wrong{border-color:#e07a5f; background:#fbeae5}
+.choicebox .lbl{font-weight:800; font-size:.78rem; color:var(--moss); display:block; margin-bottom:5px}
+.choicebox .mini{font-size:.86rem; line-height:1.7; white-space:pre-wrap}
+
+/* ============ tappable word grids ============ */
+.tapdoc{font-size:1.02rem; line-height:2.3}
+.w{cursor:pointer; padding:1px 2px; border-radius:4px; border-bottom:2px solid transparent}
+.w:hover{background:#f0f2ef}
+.w.cap{background:#fff3cd; font-weight:700}
+.w.ok{background:#d8f0e2; border-bottom-color:var(--moss)}
+.w.no{background:#fbeae5; border-bottom-color:#e07a5f}
+.w.miss{background:#fdf0c4; border-bottom:2px solid var(--gold)}
+
+/* ============ S / V tagging ============ */
+.svline{border-bottom:1px solid var(--line); padding:12px 0; font-size:1.03rem; line-height:2.4}
+.svline:last-child{border-bottom:none}
+.num{color:var(--moss); font-weight:800; font-size:.82rem; margin-right:7px}
+.sv{cursor:pointer; padding:2px 3px; border-radius:4px; position:relative}
+.sv:hover{background:#f0f2ef}
+.sv.S{border-bottom:3px solid var(--pine2); font-weight:700}
+.sv.V{border-bottom:3px double var(--rust); font-weight:700; box-shadow:inset 0 -7px 0 -5px var(--rust)}
+.svline.correct{background:#effaf3}
+.svline.incorrect{background:#fdf3f0}
+.svmark{font-size:.75rem; font-weight:800; margin-left:8px}
+.svmark.y{color:var(--moss)} .svmark.n{color:var(--rust)}
+.legend{font-size:.83rem; color:var(--muted); background:#f4f6f3; border-radius:8px; padding:8px 12px; margin:8px 0}
+.legend b.s{border-bottom:3px solid var(--pine2)}
+.legend b.v{border-bottom:3px double var(--rust)}
+
+/* ============ glossary ============ */
+.g{border-bottom:2px dotted var(--gold); cursor:pointer; font-weight:700; color:var(--pine2)}
+#gloss{position:fixed; left:50%; transform:translateX(-50%); bottom:0; z-index:90; width:100%; max-width:560px;
+  background:#fff; border:1px solid var(--line); border-bottom:none; border-radius:14px 14px 0 0;
+  box-shadow:0 -6px 24px rgba(0,0,0,.16); padding:14px 18px 18px; display:none}
+#gloss.show{display:block}
+#gloss .gw{font-weight:800; font-size:1.12rem; color:var(--pine)}
+#gloss .gd{margin:5px 0 9px; font-size:.94rem}
+#gloss .gt{font-size:1rem; color:var(--pine2); min-height:1.4em; font-weight:700}
+#gloss .x{float:right; cursor:pointer; font-size:1.3rem; color:var(--muted); line-height:1; font-weight:700}
+
+#canary{position:absolute;left:-9999px;top:-9999px;height:1px;overflow:hidden}
+#wtip{position:fixed;z-index:210;background:#1b4332;color:#fff;border-radius:10px;
+  padding:9px 14px;box-shadow:0 6px 22px rgba(0,0,0,.3);display:none;max-width:280px;
+  font-size:.95rem;line-height:1.45}
+#wtip.show{display:block}
+#wtip #wtipW{display:block;font-weight:800;font-size:.8rem;opacity:.72;letter-spacing:.4px}
+#wtip #wtipT{font-weight:700;font-size:1.06rem}
+body.wt [translate="no"]{background:#fffbe8;outline:2px dashed var(--gold);outline-offset:3px;border-radius:6px}
+body.wt [translate="no"] *{cursor:help !important}
+#bar button#wtBtn.on{background:var(--gold);border-color:var(--gold);color:#3d2c00}
+#xlbanner{position:fixed;left:0;right:0;bottom:0;z-index:180;background:#b5451b;color:#fff;
+  padding:13px 18px;display:none;font-size:.9rem;line-height:1.5}
+#xlbanner.show{display:block}
+#xlbanner span{display:block;margin:3px 0 8px;opacity:.95}
+#xlbanner button{font-family:inherit;font-weight:800;background:#fff;color:#b5451b;border:none;
+  border-radius:8px;padding:6px 15px;cursor:pointer}
+#namewrap{position:fixed;inset:0;z-index:200;background:rgba(27,67,50,.94);display:none;
+  align-items:center;justify-content:center;padding:20px}
+#namewrap.show{display:flex}
+#namebox{background:#fff;border-radius:16px;padding:28px 26px;max-width:380px;width:100%;text-align:center}
+#namebox h2{margin:0 0 6px;color:var(--pine)}
+#namebox p{margin:0 0 14px;font-size:.9rem;color:var(--muted)}
+#namebox{text-align:left}
+#namebox h2,#namebox p{text-align:center}
+#namebox label{display:block;font-size:.76rem;font-weight:800;color:var(--moss);
+  letter-spacing:.5px;text-transform:uppercase;margin:0 0 4px}
+#namebox input,#namebox select{font-family:'Nunito',sans-serif;font-size:1.04rem;padding:11px 13px;
+  width:100%;border:2px solid var(--line);border-radius:10px;margin-bottom:13px;background:#fff;color:var(--ink)}
+#namebox input:focus,#namebox select:focus{outline:none;border-color:var(--moss)}
+#namebox .or{text-align:center;font-size:.78rem;color:var(--muted);font-weight:700;margin:-4px 0 11px}
+#namebox .btn{width:100%;margin:0;font-size:1rem;padding:11px}
+#nameErr{color:var(--rust);font-size:.84rem;font-weight:700;margin-top:9px;min-height:1.1em}
+.readpara{font-size:1.08rem;line-height:2.05;text-indent:2em}
+.scenes{display:grid;gap:14px;grid-template-columns:1fr;margin:16px 0}
+@media(min-width:620px){.scenes{grid-template-columns:repeat(3,1fr)}}
+.scene{margin:0;background:#fff;border:1px solid var(--line);border-radius:12px;padding:9px;
+  box-shadow:0 1px 3px rgba(27,67,50,.06)}
+.scene svg{width:100%;height:auto;display:block;border-radius:8px}
+.scene figcaption{font-size:.83rem;font-weight:700;color:var(--muted);text-align:center;margin-top:7px;line-height:1.4}
+.capdoc{font-size:1.12rem;line-height:2.15;letter-spacing:.2px}
+.L{cursor:pointer;border-radius:3px;padding:0 .5px}
+.L:hover{background:#fff3cd;outline:1px solid var(--gold)}
+.L.touched{background:#eef4f0}
+.L.okL{background:#d8f0e2;font-weight:800}
+.L.noL{background:#fbeae5;font-weight:800;color:#8a2f10}
+.L.missL{background:#fdf0c4;font-weight:800;box-shadow:0 2px 0 var(--gold)}
+.whylist{margin-top:9px;font-weight:600}
+.whyline{background:rgba(255,255,255,.65);border-left:3px solid var(--gold);border-radius:6px;
+  padding:5px 10px;margin:4px 0;font-size:.87rem}
+.czrow{padding:13px 0;border-bottom:1px solid var(--line)}
+.czrow:last-child{border-bottom:none}
+.czline{font-size:1.04rem;line-height:2.1}
+.czin{font-family:'Nunito',sans-serif;font-size:1rem;font-weight:800;color:var(--pine2);
+  width:118px;padding:4px 9px;margin:0 4px;border:none;border-bottom:2px solid var(--gold);
+  background:#fdf6e3;border-radius:6px 6px 0 0;text-align:center}
+.czin:focus{outline:none;background:#fff8dd;border-bottom-color:var(--moss)}
+.czin.okin{background:#d8f0e2;border-bottom-color:var(--moss)}
+.czin.noin{background:#fbeae5;border-bottom-color:#e07a5f}
+.czchips{margin-top:5px;padding-left:22px}
+.czchip{display:inline-block;background:#f2f5f2;border:1px solid var(--line);border-radius:14px;
+  padding:3px 12px;margin:3px 6px 0 0;font-size:.85rem;font-weight:700;color:var(--muted)}
+.qq{font-weight:800;color:var(--pine);font-size:1.04rem;line-height:1.5;margin-bottom:3px}
+@media print{
+  #bar,#rail,#gloss,#namewrap,.btn,.navrow{display:none !important}
+  section.act{display:block !important; page-break-after:always}
+  body{background:#fff; font-size:12pt}
+  main{max-width:100%}
+  .card{box-shadow:none; break-inside:avoid}
+}
+</style>
+</head>
+<body>
+
+<div id="bar">
+  <div class="brand">Do Now · Mr. Toby’s Weekend<small>ELD 103 · FRIDAY, SEPTEMBER 18</small></div>
+  <span id="whoami"></span>
+  <button onclick="setName()"><span id="saveDot"></span>Name</button>
+  <button id="wtBtn" onclick="toggleWT()">Tap words: off</button>
+  <select id="lang" onchange="setLang(this.value)">
+    <option value="">Language…</option>
+    <option value="es">Español</option>
+    <option value="zh-CN">中文</option>
+    <option value="ar">العربية</option>
+    <option value="vi">Tiếng Việt</option>
+    <option value="th">ไทย</option>
+    <option value="ne">नेपाली</option>
+  </select>
+  <button onclick="window.print()">Print</button>
+  <button onclick="turnIn()">Turn in</button>
+</div>
+
+<div id="rail"></div>
+
+<main>
+
+<!-- ================= ACT 0 : START ================= -->
+<section class="act" id="a0">
+  <span class="step-tag">DO NOW · FRIDAY, SEPTEMBER 18</span>
+  <h1>Mr. Toby's Weekend</h1>
+  <p class="lede">Four short parts. About fifteen minutes. Read what Mr. Toby wrote, fix his capital letters, finish some sentences, and then write back to him.</p>
+  <div class="card" style="text-align:center">
+    <div class="tip" style="letter-spacing:.6px;font-weight:800">YOUR SCORE SO FAR</div>
+    <div id="unit_score" style="font-size:1.9rem;font-weight:800;color:var(--pine)">0 / 0</div>
+  </div>
+  <div class="rulebox">
+    <h4>Before you start</h4>
+    <p>Sign in with your school email. Your work saves by itself every few seconds.</p>
+    <p>Keep this page in <b>English</b>. If you need a word in your language, use <b>Tap words</b> in the green bar.</p>
+  </div>
+  <div class="navrow"><span></span><button class="btn" onclick="go(1)">Part 1 →</button></div>
+</section>
+
+<!-- ============ 1. READ ============ -->
+<section class="act" id="a1">
+  <span class="step-tag">PART 1 OF 4 · READING</span>
+  <h2>What Mr. Toby will do this weekend</h2>
+  <p class="lede">Read it once for the story. Then read it again and look at the pictures. Tap any <span class="g" data-w="motivated" data-d="Feeling ready and willing to do something.">underlined word</span> you do not know.</p>
+
+  <div class="card">
+    <div class="readpara" id="readPara" translate="no"></div>
+  </div>
+
+  <div class="scenes" id="scenes"></div>
+
+  <div class="rulebox">
+    <h4>Words to know</h4>
+    <p><span class="g" data-w="social" data-d="Spending time with other people.">social</span> ·
+       <span class="g" data-w="motivated" data-d="Feeling ready and willing to do something.">motivated</span> ·
+       <span class="g" data-w="chores" data-d="Small jobs you do at home, like cleaning or washing dishes.">chores</span> ·
+       <span class="g" data-w="programmer" data-d="A person whose job is writing computer code.">programmer</span> ·
+       <span class="g" data-w="event" data-d="Something organized that happens at a certain time and place.">event</span> ·
+       <span class="g" data-w="botanical garden" data-d="A large public garden where many kinds of plants are grown.">botanical garden</span></p>
+  </div>
+
+  <div class="navrow"><button class="btn ghost" onclick="go(0)">← Back</button><button class="btn" onclick="go(2)">Part 2 →</button></div>
+</section>
+
+<!-- ============ 2. CAPITALS ============ -->
+<section class="act" id="a2">
+  <span class="step-tag">PART 2 OF 4 · CAPITAL LETTERS</span>
+  <h2>Fix Mr. Toby's capital letters</h2>
+  <p class="lede">Something went wrong with this copy. Some letters that should be capital are small, and some letters that should be small are capital. <b>Tap any letter to change it.</b> Tap it again to change it back.</p>
+
+  <div class="rulebox">
+    <h4>Remember</h4>
+    <p>Capital: the first word of a sentence · the word <b>I</b> · days of the week · names of people and places · short forms like <b>TV</b> and <b>SF</b>.</p>
+    <p>Small: ordinary words in the middle of a sentence, even important ones like <i>weekend</i>, <i>teacher</i>, or <i>garden</i>.</p>
+  </div>
+
+  <div class="card"><div class="capdoc" id="capDoc" translate="no"></div></div>
+  <div class="tip" id="capLeft"></div>
+  <button class="btn" onclick="checkCaps()">Check my answers</button>
+  <button class="btn ghost small" onclick="resetCaps()">Start over</button>
+  <div class="score" id="capScore"></div>
+
+  <div class="navrow"><button class="btn ghost" onclick="go(1)">← Back</button><button class="btn" onclick="go(3)">Part 3 →</button></div>
+</section>
+
+<!-- ============ 3. CLOZE ============ -->
+<section class="act" id="a3">
+  <span class="step-tag">PART 3 OF 4 · SENTENCES</span>
+  <h2>Finish the sentence</h2>
+  <p class="lede">These sentences are about Mr. Toby's weekend, but they are not exactly what he wrote. Choose the right word from the three under each blank, then <b>type it</b> into the space.</p>
+  <div class="card" id="clozeDoc" translate="no"></div>
+  <button class="btn" onclick="checkCloze()">Check my answers</button>
+  <button class="btn ghost small" onclick="resetCloze()">Clear</button>
+  <div class="score" id="clozeScore"></div>
+  <div class="navrow"><button class="btn ghost" onclick="go(2)">← Back</button><button class="btn" onclick="go(4)">Part 4 →</button></div>
+</section>
+
+<!-- ============ 4. RESPOND ============ -->
+<section class="act" id="a4">
+  <span class="step-tag">PART 4 OF 4 · WRITE BACK</span>
+  <h2>Write back to Mr. Toby</h2>
+  <p class="lede">Now it is your turn. Mr. Toby reads every one of these, so write to him the way you would talk to him.</p>
+  <div id="respDoc"></div>
+  <div class="rulebox">
+    <h4>How to use <i>should</i></h4>
+    <p><b>should + the plain verb.</b> No <i>to</i>, and no <i>-s</i> on the verb.</p>
+    <p class="ex">You should go to Flower Piano. &nbsp;✓<br>
+    You should <s>to</s> go to Flower Piano. &nbsp;✗<br>
+    He should <s>goes</s> go early. &nbsp;✗</p>
+    <p><b>To say no:</b> <span class="ex">You should not clean on Saturday.</span> In speaking we say <span class="ex">shouldn’t</span>.</p>
+    <p class="tip">Softer ways to give advice: <span class="ex">Maybe you should… · I think you should… · You could…</span></p>
+  </div>
+
+  <div class="rulebox">
+    <h4>Words for saying what you think</h4>
+    <p><b>You liked it:</b> <span class="ex">That sounds fun. · I would love to… · I have never… · I want to try…</span></p>
+    <p><b>You did not:</b> <span class="ex">That sounds boring to me. · I would rather… · I do not really like… · It is not my thing.</span></p>
+    <p class="tip">Saying something sounds boring is polite in English as long as you give a reason. <i>Cleaning sounds boring to me because I do it every weekend already.</i></p>
+  </div>
+
+  <div class="rulebox" id="respTip">
+    <h4>If you are stuck on the last one</h4>
+    <p>All of these are correct ways to talk about the future. Use whichever sounds best to you:</p>
+    <p class="ex">I will see my friend. · I am going to see my friend. · I&rsquo;m going to see my friend.<br>
+    I might see my friend. (not sure) · I plan to see my friend. · If I feel motivated, I will&hellip;</p>
+    <p>And these to say when: <span class="ex">Tonight… · Saturday… · Saturday night… · Sunday…</span></p>
+  </div>
+  <button class="btn" onclick="checkResp()">Check my writing</button>
+  <div id="respReport"></div>
+  <div class="navrow"><button class="btn ghost" onclick="go(3)">← Back</button><button class="btn" onclick="turnIn()">Turn in my work</button></div>
+</section>
+</main>
+
+<div id="namewrap">
+  <div id="namebox">
+    <h2>Sign in</h2>
+    <p>Use your school email so your work shows up on your own student page.</p>
+
+    <label>Find your name</label>
+    <select id="rosterSel" onchange="pickRoster()"><option value="">— choose your name —</option></select>
+    <div class="or">or type it in</div>
+
+    <label>Your name</label>
+    <input id="nameIn" autocomplete="name" placeholder="First and last name">
+
+    <label>School email</label>
+    <input id="emailIn" type="email" inputmode="email" autocapitalize="off" spellcheck="false"
+           autocomplete="email" placeholder="name@s.sfusd.edu"
+           onkeydown="if(event.key==='Enter')saveName()">
+
+    <label>Class period</label>
+    <select id="periodIn">
+      <option value="">— choose —</option>
+      <option>1</option><option>2</option><option>3</option><option>4</option>
+      <option>5</option><option>6</option><option>7</option><option>8</option>
+    </select>
+
+    <button class="btn" onclick="saveName()">Start</button>
+    <div id="nameErr"></div>
+  </div>
+</div>
+
+<div id="wtip"><span id="wtipW"></span><span id="wtipT"></span></div>
+<div id="xlbanner" translate="no">
+  <b>This page is being translated by your browser.</b>
+  <span>The activities need to stay in English or they will not work.
+  Turn the browser translation off, then use <b>Tap words</b> in the green bar to translate one word at a time.</span>
+  <button onclick="this.parentNode.classList.remove('show')">OK</button>
+</div>
+<div id="canary" aria-hidden="true">the quick brown fox jumps over the lazy dog</div>
+
+<div id="gloss">
+  <span class="x" onclick="document.getElementById('gloss').classList.remove('show')">×</span>
+  <div class="gw" id="gw"></div>
+  <div class="gd" id="gd"></div>
+  <div class="gt" id="gt"></div>
+</div>
+
+<style>
+.ta{width:100%;font-family:'Nunito',sans-serif;font-size:1rem;line-height:1.7;padding:11px 13px;
+    border:1px solid var(--line);border-radius:9px;background:#fffef9;resize:vertical;margin:6px 0}
+.ta:focus{outline:2px solid var(--moss);border-color:var(--moss)}
+.qrow{border-bottom:1px solid var(--line);padding:11px 0}
+.qrow:last-child{border-bottom:none}
+.qtext{margin-bottom:6px}
+.opt{font-family:'Nunito',sans-serif;font-size:.86rem;font-weight:700;cursor:pointer;
+     border:2px solid var(--line);background:#fff;color:var(--muted);border-radius:20px;
+     padding:5px 13px;margin:3px 5px 3px 0}
+.opt:hover{border-color:var(--moss)}
+.opt.sel{background:var(--pine2);color:#fff;border-color:var(--pine2)}
+.opt.right{background:#d8f0e2;color:var(--pine);border-color:var(--moss)}
+.opt.wrong{background:#fbeae5;color:#8a2f10;border-color:#e07a5f}
+.why{font-size:.83rem;color:var(--muted);margin-top:5px;display:none;padding-left:10px;border-left:3px solid var(--sage)}
+.why.show{display:block}
+.bucket{border:2px dashed var(--line);border-radius:10px;padding:10px 12px;margin:8px 0;min-height:54px}
+.bucket h5{margin:0 0 6px;font-size:.82rem;color:var(--moss);font-weight:800}
+.chip{display:inline-block;border:2px solid var(--line);border-radius:18px;padding:5px 12px;margin:4px 5px 4px 0;
+      cursor:pointer;font-weight:700;font-size:.87rem;background:#fff}
+.chip.w{border-color:var(--pine2);background:var(--sky)}
+.chip.p{border-color:var(--gold);background:#fdf6e3}
+.chip.right{border-color:var(--moss);background:#d8f0e2}
+.chip.wrong{border-color:#e07a5f;background:#fbeae5}
+.chip .tag{font-size:.68rem;font-weight:800;opacity:.7;margin-left:6px}
+.orow{display:flex;align-items:center;gap:9px;border:1px solid var(--line);border-radius:9px;
+      padding:8px 10px;margin:6px 0;background:#fff}
+.orow .txt{flex:1;font-size:.93rem;line-height:1.5}
+.orow .ar{display:flex;flex-direction:column;gap:2px}
+.orow .ar button{font-family:inherit;cursor:pointer;border:1px solid var(--line);background:#f4f6f3;
+  border-radius:5px;width:29px;height:21px;font-size:.7rem;line-height:1;color:var(--pine2);font-weight:800}
+.orow.right{background:#e9f7ef;border-color:var(--moss)}
+.orow.wrong{background:#fdf0ec;border-color:#e3a58f}
+.orow .pos{font-weight:800;color:var(--moss);width:20px;text-align:center}
+select.blank{font-family:'Nunito',sans-serif;font-size:.92rem;font-weight:700;color:var(--pine2);
+  border:none;border-bottom:2px solid var(--gold);background:#fdf6e3;border-radius:5px 5px 0 0;padding:3px 5px;margin:0 2px}
+select.blank.right{background:#d8f0e2;border-bottom-color:var(--moss)}
+select.blank.wrong{background:#fbeae5;border-bottom-color:#e07a5f}
+.gap{display:inline-block;width:11px;cursor:pointer;border-radius:3px;text-align:center;color:var(--rust);font-weight:800}
+.gap:hover{background:#fff3cd}
+.gap.has{width:auto;padding:0 1px}
+.cline{padding:11px 0;border-bottom:1px solid var(--line);font-size:1.02rem;line-height:2.1}
+.cline:last-child{border-bottom:none}
+.cline.right{background:#effaf3}.cline.wrong{background:#fdf3f0}
+.rep{border-radius:9px;padding:9px 13px;margin:7px 0;font-size:.9rem;font-weight:600}
+.rep.ok{background:#e3f4e9;border-left:4px solid var(--moss)}
+.rep.warn{background:#fdf6e3;border-left:4px solid var(--gold)}
+.rep.bad{background:#fbeae5;border-left:4px solid #e07a5f}
+.chk{display:flex;gap:9px;align-items:flex-start;padding:7px 0;border-bottom:1px solid #eef1ee;cursor:pointer}
+.chk:last-child{border-bottom:none}
+.chk input{margin-top:5px;width:17px;height:17px;accent-color:var(--pine2)}
+</style>
+
+<script>
+/* ===================== CONFIG ===================== */
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var TABLE='eld103_donow';
+var UNIT='donow-2026-09-18';   // change this for each new Do Now
+var CANON_DOMAIN='@s.sfusd.edu'; // used only when the roster has no match
+var PROXY='https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
+
+var ST={name:'',email:'',period:'',act:0,caps:{},cloze:{},resp:{}};
+
+/* ===================== NAV ===================== */
+var TITLES=['Start','1 Read','2 Capitals','3 Sentences','4 Write back'];
+function buildRail(){
+  var r=document.getElementById('rail'); r.innerHTML='';
+  TITLES.forEach(function(t,i){
+    var b=document.createElement('button'); b.textContent=t;
+    b.onclick=function(){go(i)}; b.id='rb'+i; r.appendChild(b);
+  });
+}
+function go(i){
+  ST.act=i;
+  document.querySelectorAll('section.act').forEach(function(s){s.classList.remove('show')});
+  var el=document.getElementById('a'+i); if(el) el.classList.add('show');
+  document.querySelectorAll('#rail button').forEach(function(b){b.classList.remove('active')});
+  var rb=document.getElementById('rb'+i); if(rb){rb.classList.add('active'); if(rb.scrollIntoView)rb.scrollIntoView({inline:"center",block:"nearest"});}
+  window.scrollTo(0,0); save();
+}
+function markDone(i){var b=document.getElementById('rb'+i); if(b)b.classList.add('done');}
+
+/* ===================== SAVE ===================== */
+function dot(cls){var d=document.getElementById('saveDot'); d.className=''; if(cls)d.classList.add(cls);}
+function key(){return 'donow_'+UNIT+'_'+(ST.email||'guest').toLowerCase().replace(/[^a-z0-9]+/g,'_');}
+var saveT, dirty=false, pushing=false, pushSeq=0;
+function save(){
+  dirty=true; paintTotal();
+  clearTimeout(saveT); saveT=setTimeout(function(){
+    try{localStorage.setItem(key(),JSON.stringify(ST)); localStorage.setItem('eld103_last',key());}catch(e){}
+    dot(dirty?'busy':'on');
+  },400);
+}
+function load(){
+  try{
+    var k=localStorage.getItem('eld103_last'); if(!k)return;
+    var d=JSON.parse(localStorage.getItem(k)); if(d) ST=Object.assign(ST,d);
+  }catch(e){}
+}
+function clean(s){return String(s||'').trim().toLowerCase()}
+function askName(){
+  document.getElementById('nameIn').value=ST.name||'';
+  document.getElementById('emailIn').value=ST.email||lastEmail()||'';
+  document.getElementById('periodIn').value=ST.period||'';
+  document.getElementById('nameErr').textContent='';
+  document.getElementById('namewrap').classList.add('show');
+  loadRoster();
+  setTimeout(function(){
+    var sel=document.getElementById('rosterSel');
+    (sel && sel.style.display!=='none' ? sel : document.getElementById('nameIn')).focus();
+  },120);
+}
+function setName(){askName()}
+function lastEmail(){try{return localStorage.getItem('gal_student_email')||''}catch(e){return ''}}
+
+/* roster dropdown, same source the student profile page uses */
+var rosterLoaded=false, ROSTER=[];
+function loadRoster(){
+  if(rosterLoaded) return; rosterLoaded=true;
+  fetch(SUPA_URL+'/rest/v1/students?select=email,first_name,last_name&order=last_name.asc',
+    {headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}})
+  .then(function(r){return r.ok?r.json():[]})
+  .then(function(list){
+    ROSTER=list||[];
+    var sel=document.getElementById('rosterSel');
+    if(!ROSTER.length){ // no roster in the database — just show the typed fields
+      sel.style.display='none';
+      var lb=document.querySelector('#namebox label'); if(lb)lb.style.display='none';
+      var or=document.querySelector('#namebox .or'); if(or)or.style.display='none';
+      return;
+    }
+    ROSTER.forEach(function(s){
+      var o=document.createElement('option');
+      o.value=s.email;
+      o.textContent=((s.first_name||'')+' '+(s.last_name||'')).trim()||s.email;
+      sel.appendChild(o);
+    });
+  }).catch(function(){});
+}
+function pickRoster(){
+  var sel=document.getElementById('rosterSel');
+  if(!sel.value) return;
+  document.getElementById('emailIn').value=sel.value;
+  document.getElementById('nameIn').value=sel.options[sel.selectedIndex].textContent;
+  document.getElementById('nameErr').textContent='';
+}
+/* Students are @s.sfusd.edu. Some were told to use @sfusd.edu, so accept both
+   and resolve to ONE canonical address, preferring whatever the roster holds. */
+function localPart(e){return clean(e).split('@')[0]}
+function canonEmail(raw){
+  var e=clean(raw), lp=localPart(e);
+  for(var i=0;i<ROSTER.length;i++){
+    if(localPart(ROSTER[i].email)===lp) return clean(ROSTER[i].email);
+  }
+  return lp+CANON_DOMAIN;
+}
+function recordAlias(alias,canon){
+  if(!alias||alias===canon) return;
+  fetch(SUPA_URL+'/rest/v1/student_aliases?on_conflict=alias_email',{
+    method:'POST',
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json',
+             'Prefer':'resolution=merge-duplicates,return=minimal'},
+    body:JSON.stringify([{alias_email:alias,email:canon}])
+  }).catch(function(){});
+}
+/* if they already worked under the other spelling on this device, bring it forward */
+function adoptLocalWork(canon,typed){
+  try{
+    var canonKey='eld103_'+canon.replace(/[^a-z0-9]+/g,'_');
+    if(localStorage.getItem(canonKey)) return;
+    var alt='eld103_'+clean(typed).replace(/[^a-z0-9]+/g,'_');
+    var d=localStorage.getItem(alt);
+    if(!d){
+      var lp=localPart(canon);
+      [lp+'@sfusd.edu',lp+'@s.sfusd.edu'].forEach(function(v){
+        if(d) return;
+        d=localStorage.getItem('eld103_'+v.replace(/[^a-z0-9]+/g,'_'));
+      });
+    }
+    if(d){var o=JSON.parse(d); o.email=canon; ST=Object.assign(ST,o);
+          localStorage.setItem(canonKey,JSON.stringify(ST));}
+  }catch(e){}
+}
+
+function saveName(){
+  var err=document.getElementById('nameErr');
+  var n=document.getElementById('nameIn').value.trim().replace(/\s+/g,' ');
+  var e=clean(document.getElementById('emailIn').value);
+  var pd=document.getElementById('periodIn').value;
+  if(n.length<3||n.indexOf(' ')<0){err.textContent='Please type your first name AND your last name.';return;}
+  if(!/^[^@\s]+@(s\.)?sfusd\.edu$/.test(e)){
+    err.textContent='Please use your school email — it ends with @s.sfusd.edu';return;}
+  if(!pd){err.textContent='Please choose your class period.';return;}
+  var typed=e, canon=canonEmail(e);
+  var oldKey=ST.email?key():null;
+  adoptLocalWork(canon,typed);
+  recordAlias(typed,canon);
+  ST.name=n; ST.email=canon; ST.period=pd;
+  document.getElementById('whoami').textContent=n+' · P'+pd;
+  document.getElementById('namewrap').classList.remove('show');
+  try{localStorage.setItem('gal_student_email',canon)}catch(e2){}
+  if(oldKey&&oldKey!==key()){try{localStorage.setItem(key(),JSON.stringify(ST))}catch(e2){}}
+  seedRoster(canon,n,pd);
+  save(); push(true);
+}
+
+/* Add this student to `students` if they are not there yet.
+   ignore-duplicates means an existing row is never overwritten. */
+function seedRoster(email,fullName,period){
+  var parts=fullName.split(' ');
+  var first=parts.shift()||'', last=parts.join(' ')||'';
+  fetch(SUPA_URL+'/rest/v1/students?on_conflict=email',{
+    method:'POST',
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json',
+             'Prefer':'resolution=ignore-duplicates,return=minimal'},
+    body:JSON.stringify([{email:email,first_name:first,last_name:last,period:period}])
+  }).catch(function(){});
+}
+
+/* background sync every 20 seconds */
+function push(force){
+  if(!ST.email) return;
+  if(!dirty && !force) return;
+  if(pushing) return;
+  pushing=true; dot('busy');
+  var mySeq=++pushSeq;
+  setTimeout(function(){ // a hung request must not kill the sync loop forever
+    if(pushing && mySeq===pushSeq){pushing=false; dirty=true; dot('err');}
+  },15000);
+
+  var snapshot=JSON.stringify(ST);
+  dirty=false;
+  var body=[{email:ST.email, name:ST.name, period:ST.period, unit:UNIT,
+             slug:'donow-weekend', score:totalScore().n, max_score:totalScore().d,
+             turned_in:!!ST.turnedIn, payload:JSON.parse(snapshot),
+             updated_at:new Date().toISOString()}];
+  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email,unit',{
+    method:'POST', keepalive:true,
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json',
+             'Prefer':'resolution=merge-duplicates,return=minimal'},
+    body:JSON.stringify(body)
+  }).then(function(r){
+    pushing=false;
+    if(r.ok) dot(dirty?'busy':'on'); else {dirty=true; dot('err');}
+  }).catch(function(){pushing=false; dirty=true; dot('err');});
+}
+function val(id){var e=document.getElementById(id); return e?e.value:''}
+var turnInWarned=false;
+function turnIn(){
+  if(!ST.email){askName();return;}
+  if(!turnInWarned){
+    go(4);
+    var probs=checkResp();
+    if(probs>0){
+      turnInWarned=true;
+      var el=document.getElementById('respReport');
+      if(el&&el.scrollIntoView)el.scrollIntoView({behavior:'smooth',block:'center'});
+      alert('Wait \u2014 there '+(probs===1?'is 1 thing':'are '+probs+' things')+
+            ' to look at first. They are listed under your answers.\n\n'+
+            'Fix them, or tap Turn in again to send it the way it is.');
+      return;
+    }
+  }
+  ST.turnedIn=new Date().toISOString();
+  dirty=true; pushing=false;
+  push(true);
+  setTimeout(function(){
+    if(document.getElementById('saveDot').classList.contains('err'))
+      alert('Could not reach the server. Your work is saved on this device — try Turn in again when you have a connection.');
+    else alert('Turned in. Thank you, '+ST.name+'.');
+  },1400);
+}
+
+/* ============ WORD TAP TRANSLATE ============ */
+var WT=false, wtCache={};
+function setLang(v){
+  try{localStorage.setItem('eld103_lang',v)}catch(e){}
+  wtCache={};
+  if(!v && WT) toggleWT();
+}
+function toggleWT(){
+  var L=document.getElementById('lang').value;
+  if(!WT && !L){
+    alert('First choose your language in the green bar, then turn on Tap words.');
+    return;
+  }
+  WT=!WT;
+  document.body.classList.toggle('wt',WT);
+  var b=document.getElementById('wtBtn');
+  b.textContent='Tap words: '+(WT?'ON':'off');
+  b.classList.toggle('on',WT);
+  hideTip();
+  if(WT) alert('Tap any word in a yellow box to see it in your language. The activity is paused until you turn this off.');
+}
+function hideTip(){document.getElementById('wtip').classList.remove('show')}
+
+/* While ON, a tap inside protected content translates instead of answering. */
+document.addEventListener('click',function(ev){
+  if(!WT) return;
+  var host=ev.target.closest && ev.target.closest('[translate="no"]');
+  if(!host) return;
+  if(/^(TEXTAREA|INPUT|SELECT|BUTTON)$/.test(ev.target.tagName)) return;
+  ev.preventDefault(); ev.stopPropagation();
+  var word=pickWord(ev);
+  if(word) showWord(word,ev.clientX,ev.clientY);
+},true);
+
+function pickWord(ev){
+  var t=ev.target;
+  // a leaf element with a single word is the common case here
+  var txt=(t.textContent||'').trim();
+  if(txt && txt.split(/\s+/).length===1) return txt.replace(/^[^\w']+|[^\w']+$/g,'');
+  // otherwise work out which word was tapped inside a longer run of text
+  var r=null;
+  if(document.caretRangeFromPoint) r=document.caretRangeFromPoint(ev.clientX,ev.clientY);
+  else if(document.caretPositionFromPoint){
+    var cp=document.caretPositionFromPoint(ev.clientX,ev.clientY);
+    if(cp){r=document.createRange(); r.setStart(cp.offsetNode,cp.offset);}
+  }
+  if(!r||!r.startContainer||r.startContainer.nodeType!==3) return '';
+  var s=r.startContainer.textContent, i=r.startOffset;
+  var a=i,b=i;
+  while(a>0 && /[\w']/.test(s.charAt(a-1))) a--;
+  while(b<s.length && /[\w']/.test(s.charAt(b))) b++;
+  return s.slice(a,b);
+}
+function showWord(word,x,y){
+  var tip=document.getElementById('wtip');
+  document.getElementById('wtipW').textContent=word;
+  document.getElementById('wtipT').textContent='…';
+  tip.classList.add('show');
+  var w=tip.offsetWidth||220, h=tip.offsetHeight||60;
+  tip.style.left=Math.max(8,Math.min(x-w/2,window.innerWidth-w-8))+'px';
+  tip.style.top=(y-h-14<8 ? y+18 : y-h-14)+'px';
+  var L=document.getElementById('lang').value;
+  var ck=L+'|'+word.toLowerCase();
+  if(wtCache[ck]){document.getElementById('wtipT').textContent=wtCache[ck]; return;}
+  translateWord(word,L,function(t){
+    wtCache[ck]=t;
+    document.getElementById('wtipT').textContent=t;
+  });
+}
+document.addEventListener('scroll',hideTip,true);
+
+/* Apps Script proxy — the canonical GET contract */
+function translateWord(word,lang,cb){
+  fetch(PROXY+'?action=translate&idiom='+encodeURIComponent(word)+
+        '&meaning=&lang='+encodeURIComponent(lang))
+  .then(function(r){return r.json()})
+  .then(function(d){
+    var t=(d&&d.translation&&(d.translation.equiv||d.translation.meaning))||d.translation||d.text||'';
+    if(typeof t==='object') t=t.equiv||JSON.stringify(t);
+    cb(t||'(not found)');
+  }).catch(function(){cb('(no connection)')});
+}
+
+/* ============ browser-translation canary ============ */
+var CANARY='the quick brown fox jumps over the lazy dog';
+function checkCanary(){
+  var c=document.getElementById('canary');
+  if(!c) return;
+  if((c.textContent||'').trim().toLowerCase()!==CANARY){
+    document.getElementById('xlbanner').classList.add('show');
+    ST.browserTranslated=true; save();
+  }
+}
+
+/* ===================== GLOSSARY + TRANSLATE ===================== */
+function bindGloss(){
+  document.querySelectorAll('.g').forEach(function(g){
+    g.onclick=function(){
+      document.getElementById('gw').textContent=g.dataset.w;
+      document.getElementById('gd').textContent=g.dataset.d;
+      document.getElementById('gt').textContent='';
+      document.getElementById('gloss').classList.add('show');
+      var L=document.getElementById('lang').value;
+      if(L) translate(g.dataset.d,L);
+    };
+  });
+}
+function translate(text,lang){
+  var box=document.getElementById('gt'); box.textContent='…';
+  translateWord(text,lang,function(t){box.textContent=t||'(translation unavailable)'});
+}
+
+/* generic multiple choice renderer */
+function renderMC(id,data,store){
+  var d=document.getElementById(id); d.innerHTML='';
+  data.forEach(function(q,qi){
+    var row=document.createElement('div'); row.className='qrow'; row.id=store+'r'+qi;
+    var t=document.createElement('div'); t.className='qtext';
+    t.innerHTML='<span class="num">'+(qi+1)+'.</span>'+q[0].replace('___','<b>_____</b>');
+    row.appendChild(t);
+    q[1].forEach(function(o,oi){
+      var b=document.createElement('button'); b.className='opt'; b.textContent=o;
+      if(ST[store][qi]===oi) b.classList.add('sel');
+      b.onclick=function(){
+        row.querySelectorAll('.opt').forEach(function(x){x.className='opt'});
+        b.classList.add('sel'); ST[store][qi]=oi; save();
+      };
+      row.appendChild(b);
+    });
+    var w=document.createElement('div'); w.className='why'; w.id=store+'w'+qi; w.innerHTML=q[3]||'';
+    row.appendChild(w); d.appendChild(row);
+  });
+}
+function gradeMC(id,data,store,scoreId,actNum){
+  var good=0;
+  data.forEach(function(q,qi){
+    var row=document.getElementById(store+'r'+qi);
+    var opts=row.querySelectorAll('.opt');
+    var pick=ST[store][qi];
+    opts.forEach(function(b,bi){
+      b.className='opt';
+      if(bi===q[2]) b.classList.add('right');
+      if(pick===bi&&bi!==q[2]) b.classList.add('wrong');
+    });
+    if(pick===q[2]) good++; else document.getElementById(store+'w'+qi).classList.add('show');
+  });
+  var s=document.getElementById(scoreId);
+  s.className='score show '+(good===data.length?'good':(good>=data.length*0.6?'mid':'bad'));
+  s.innerHTML='<b>'+good+' of '+data.length+'</b> correct.'+(good===data.length?'':' The green answer is the correct one. Read the note under each mistake.');
+  if(good===data.length&&actNum)markDone(actNum);
+  save();
+}
+
+/* ============ original illustrations (no external images) ============ */
+var SCENES=[
+{cap:'Tonight — dinner with my son, and TV.',
+ svg:'<svg viewBox="0 0 320 200" role="img" aria-label="Two people eating dinner in front of a television">'+
+ '<rect x="0" y="0" width="320" height="200" rx="10" fill="#fdf6e8"/>'+
+ '<rect x="0" y="150" width="320" height="50" fill="#e8dcc4"/>'+
+ '<rect x="196" y="34" width="104" height="66" rx="5" fill="#33413c"/>'+
+ '<rect x="202" y="40" width="92" height="54" rx="3" fill="#6fa8dc"><animate attributeName="fill" values="#6fa8dc;#8ec5e8;#6fa8dc" dur="4s" repeatCount="indefinite"/></rect>'+
+ '<rect x="238" y="100" width="20" height="9" fill="#33413c"/><rect x="224" y="109" width="48" height="5" rx="2" fill="#33413c"/>'+
+ '<rect x="26" y="116" width="150" height="9" rx="4" fill="#9c7a4a"/>'+
+ '<rect x="36" y="125" width="8" height="30" fill="#9c7a4a"/><rect x="158" y="125" width="8" height="30" fill="#9c7a4a"/>'+
+ '<ellipse cx="66" cy="112" rx="16" ry="5" fill="#fff"/><ellipse cx="136" cy="112" rx="16" ry="5" fill="#fff"/>'+
+ '<circle cx="101" cy="109" r="9" fill="#e07a5f"/>'+
+ '<circle cx="66" cy="74" r="15" fill="#e0ac7e"/>'+
+ '<path d="M52 74a15 15 0 0 1 28-8l-2 5a13 13 0 0 0-26 3z" fill="#5a4334"/>'+
+ '<path d="M50 116c0-11 7-19 16-19s16 8 16 19z" fill="#40916c"/>'+
+ '<circle cx="136" cy="78" r="13" fill="#d9a06e"/>'+
+ '<path d="M124 76a12 12 0 0 1 24 0l-3 3a10 10 0 0 0-18 0z" fill="#2b2b2b"/>'+
+ '<path d="M122 116c0-10 6-17 14-17s14 7 14 17z" fill="#b5451b"/>'+
+ '<circle cx="290" cy="26" r="9" fill="#f2c14e" opacity=".7"/>'+
+ '</svg>'},
+
+{cap:'Saturday night — my friend acts in a play in Alameda.',
+ svg:'<svg viewBox="0 0 320 200" role="img" aria-label="An actor on a lit theatre stage with red curtains">'+
+ '<rect x="0" y="0" width="320" height="200" rx="10" fill="#241c2c"/>'+
+ '<path d="M0 0h70l-8 150H0z" fill="#8c2b30"/><path d="M320 0h-70l8 150h62z" fill="#8c2b30"/>'+
+ '<path d="M70 0h180l-6 26H76z" fill="#a83840"/>'+
+ '<rect x="0" y="150" width="320" height="50" fill="#3a2d24"/>'+
+ '<rect x="62" y="146" width="196" height="7" fill="#5a4334"/>'+
+ '<path d="M160 44 118 150h84z" fill="#ffe9a8" opacity=".28"><animate attributeName="opacity" values=".18;.34;.18" dur="5s" repeatCount="indefinite"/></path>'+
+ '<circle cx="160" cy="84" r="13" fill="#e0ac7e"/>'+
+ '<path d="M148 82a12 12 0 0 1 24 0l-3 2a10 10 0 0 0-18 0z" fill="#3a2f28"/>'+
+ '<path d="M143 146c0-19 8-31 17-31s17 12 17 31z" fill="#2f6f8f"/>'+
+ '<path d="M146 120l-16 16 5 5 16-13z" fill="#e0ac7e"/>'+
+ '<path d="M174 120l16-20 6 4-15 21z" fill="#e0ac7e"/>'+
+ '<rect x="20" y="164" width="34" height="9" rx="4" fill="#4d3c30"/>'+
+ '<rect x="70" y="164" width="34" height="9" rx="4" fill="#4d3c30"/>'+
+ '<rect x="120" y="164" width="34" height="9" rx="4" fill="#4d3c30"/>'+
+ '<rect x="170" y="164" width="34" height="9" rx="4" fill="#4d3c30"/>'+
+ '<rect x="220" y="164" width="34" height="9" rx="4" fill="#4d3c30"/>'+
+ '<rect x="270" y="164" width="30" height="9" rx="4" fill="#4d3c30"/>'+
+ '</svg>'},
+
+{cap:'Sunday — Flower Piano in Golden Gate Park.',
+ svg:'<svg viewBox="0 0 320 200" role="img" aria-label="A grand piano outdoors in a garden with trees and flowers">'+
+ '<rect x="0" y="0" width="320" height="200" rx="10" fill="#dff0e3"/>'+
+ '<circle cx="268" cy="34" r="17" fill="#f6d365"/>'+
+ '<path d="M0 148h320v52H0z" fill="#79b18a"/>'+
+ '<circle cx="40" cy="120" r="30" fill="#4f8f63"/><rect x="36" y="140" width="8" height="18" fill="#6b5137"/>'+
+ '<circle cx="288" cy="112" r="26" fill="#3f7d54"/><rect x="284" y="130" width="8" height="26" fill="#6b5137"/>'+
+ '<circle cx="86" cy="104" r="19" fill="#5fa373"/><rect x="83" y="120" width="6" height="30" fill="#6b5137"/>'+
+ '<path d="M108 138h104c14 0 24-9 24-20s-10-18-26-18h-78c-14 0-24 8-24 19s8 19 0 19z" fill="#241c22"/>'+
+ '<path d="M118 100l64-24 4 8-62 24z" fill="#3a2f38"/>'+
+ '<rect x="112" y="128" width="96" height="11" rx="2" fill="#fff"/>'+
+ '<rect x="120" y="128" width="3" height="7" fill="#241c22"/><rect x="132" y="128" width="3" height="7" fill="#241c22"/>'+
+ '<rect x="150" y="128" width="3" height="7" fill="#241c22"/><rect x="162" y="128" width="3" height="7" fill="#241c22"/>'+
+ '<rect x="174" y="128" width="3" height="7" fill="#241c22"/><rect x="192" y="128" width="3" height="7" fill="#241c22"/>'+
+ '<rect x="122" y="139" width="6" height="15" fill="#241c22"/><rect x="200" y="139" width="6" height="15" fill="#241c22"/>'+
+ '<circle cx="232" cy="126" r="10" fill="#e0ac7e"/>'+
+ '<path d="M222 152c0-13 5-20 10-20s10 7 10 20z" fill="#b5451b"/>'+
+ '<g opacity=".85">'+
+ '<circle cx="60" cy="160" r="5" fill="#e7657f"/><circle cx="76" cy="168" r="4" fill="#f2b134"/>'+
+ '<circle cx="250" cy="166" r="5" fill="#d05ba8"/><circle cx="268" cy="158" r="4" fill="#e7657f"/>'+
+ '<circle cx="100" cy="172" r="4" fill="#f2b134"/><circle cx="212" cy="174" r="4" fill="#d05ba8"/></g>'+
+ '<g fill="none" stroke="#2f6f4f" stroke-width="2.4" stroke-linecap="round" opacity=".75">'+
+ '<path d="M216 92c0 7 5 7 5 0"><animateTransform attributeName="transform" type="translate" values="0 0;6 -14;0 0" dur="4s" repeatCount="indefinite"/></path>'+
+ '<path d="M236 82c0 7 5 7 5 0"><animateTransform attributeName="transform" type="translate" values="0 0;-5 -16;0 0" dur="5s" repeatCount="indefinite"/></path></g>'+
+ '<circle cx="221" cy="97" r="2.6" fill="#2f6f4f"><animateTransform attributeName="transform" type="translate" values="0 0;6 -14;0 0" dur="4s" repeatCount="indefinite"/></circle>'+
+ '<circle cx="241" cy="87" r="2.6" fill="#2f6f4f"><animateTransform attributeName="transform" type="translate" values="0 0;-5 -16;0 0" dur="5s" repeatCount="indefinite"/></circle>'+
+ '</svg>'}
+];
+/* ============ Mr. Toby's paragraph, exactly as he wrote it ============ */
+var TEXT="This weekend, I will, once again, sleep a lot, but will also be social. Tonight I will have dinner with my son and we will watch TV. Saturday, if I feel motivated, I will also try to do some chores, like cleaning. Saturday night, I will drive to Alameda to see my good friend act in a play. He used to be a teacher, but now is a computer programmer, and actor. I will continue watching the TV show, The Sopranos, and will make lessons for my classes. Sunday, I might go to an event in Golden Gate Park called Flower Piano. It is free for people who live in SF, and is pretty cool \u2014 there are like ten different musicians in different parts of the flower and botanical garden.";
+
+/* words whose first letter gets flipped, with the rule each one teaches */
+var FLIPS=[
+ /* [word, which occurrence (0=first), which letter of that word, the rule it teaches] */
+ ['This',0,0,'The first word of a sentence is always capital.'],
+ ['I',0,0,'The pronoun I is always a capital letter, everywhere in the sentence.'],
+ ['Tonight',0,0,'This word starts a new sentence.'],
+ ['TV',0,0,'TV is a short form, so BOTH letters are capital.'],
+ ['TV',0,1,'TV is a short form, so BOTH letters are capital.'],
+ ['Saturday',0,0,'Days of the week are always capital.'],
+ ['motivated',0,0,'An ordinary word in the middle of a sentence stays small.'],
+ ['Alameda',0,0,'Alameda is the name of a city.'],
+ ['He',0,0,'This word starts a new sentence.'],
+ ['Sopranos',0,0,'The name of a TV show is capital.'],
+ ['Sunday',0,0,'Days of the week are always capital.'],
+ ['Golden',0,0,'Golden Gate Park is the name of a place.'],
+ ['Gate',0,0,'Golden Gate Park is the name of a place.'],
+ ['Park',0,0,'Golden Gate Park is the name of a place.'],
+ ['Flower',0,0,'Flower Piano is the name of an event.'],
+ ['Piano',0,0,'Flower Piano is the name of an event.'],
+ ['SF',0,0,'SF is short for San Francisco, so BOTH letters are capital.'],
+ ['SF',0,1,'SF is short for San Francisco, so BOTH letters are capital.'],
+ ['musicians',0,0,'An ordinary word in the middle of a sentence stays small.'],
+ ['botanical',0,0,'A botanical garden is a normal thing, not a name, so it stays small.']
+];
+/* resolve each flip to a character index in TEXT */
+var FLIPIDX=[], FLIPWHY={};
+(function(){
+  FLIPS.forEach(function(f){
+    var word=f[0], occ=f[1], off=f[2];
+    var re=new RegExp('\\b'+word.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','g');
+    var m, seen=0, hit=-1;
+    while((m=re.exec(TEXT))!==null){ if(seen===occ){hit=m.index; break;} seen++; }
+    if(hit<0) return;                              // word not found
+    var idx=hit+off;
+    if(off>=word.length) return;                   // offset past the end of the word
+    if(!/[A-Za-z]/.test(TEXT.charAt(idx))) return; // never target a space or punctuation
+    if(FLIPIDX.indexOf(idx)>-1) return;            // no duplicates
+    FLIPIDX.push(idx); FLIPWHY[idx]=f[3];
+  });
+  FLIPIDX.sort(function(a,b){return a-b});
+})();
+function flipChar(c){return c===c.toUpperCase()?c.toLowerCase():c.toUpperCase();}
+
+/* ============ PART 1 : read + scenes ============ */
+function initRead(){
+  document.getElementById('readPara').textContent=TEXT;
+  document.getElementById('scenes').innerHTML=SCENES.map(function(s){
+    return '<figure class="scene">'+s.svg+'<figcaption>'+s.cap+'</figcaption></figure>';
+  }).join('');
+}
+
+/* ============ PART 2 : capitals ============ */
+function initCaps(){
+  var d=document.getElementById('capDoc'); d.innerHTML='';
+  for(var i=0;i<TEXT.length;i++){
+    var ch=TEXT.charAt(i);
+    if(!/[A-Za-z]/.test(ch)){ d.appendChild(document.createTextNode(ch)); continue; }
+    var shown = (FLIPIDX.indexOf(i)>-1) ? flipChar(ch) : ch;
+    if(ST.caps && ST.caps[i]) shown=flipChar(shown);
+    var s=document.createElement('span'); s.className='L'; s.dataset.i=i; s.textContent=shown;
+    s.onclick=(function(i,s){return function(){
+      ST.caps=ST.caps||{};
+      ST.caps[i]=!ST.caps[i];
+      if(!ST.caps[i]) delete ST.caps[i];
+      s.textContent=flipChar(s.textContent);
+      s.classList.add('touched');
+      paintLeft(); save();
+    };})(i,s);
+    d.appendChild(s);
+  }
+  paintLeft();
+}
+function shownChar(i){
+  var base=(FLIPIDX.indexOf(i)>-1)?flipChar(TEXT.charAt(i)):TEXT.charAt(i);
+  return (ST.caps&&ST.caps[i])?flipChar(base):base;
+}
+function paintLeft(){
+  var bad=0; FLIPIDX.forEach(function(i){if(shownChar(i)!==TEXT.charAt(i))bad++;});
+  var el=document.getElementById('capLeft');
+  if(el) el.innerHTML='<b>'+FLIPIDX.length+'</b> letters were changed. You have fixed <b>'+
+    (FLIPIDX.length-bad)+'</b> of them so far.';
+}
+function resetCaps(){ST.caps={};save();initCaps();document.getElementById('capScore').className='score';}
+function checkCaps(){
+  var right=0, wrongExtra=0, missed=[];
+  document.querySelectorAll('#capDoc .L').forEach(function(s){
+    var i=+s.dataset.i, want=TEXT.charAt(i), got=shownChar(i);
+    s.classList.remove('okL','noL','missL');
+    if(FLIPIDX.indexOf(i)>-1){
+      if(got===want){s.classList.add('okL'); right++;}
+      else{s.classList.add('missL'); missed.push(i); s.textContent=want;}
+    } else if(got!==want){
+      s.classList.add('noL'); wrongExtra++; s.textContent=want;
+    }
+  });
+  var sc=document.getElementById('capScore');
+  var perfect=(right===FLIPIDX.length&&wrongExtra===0);
+  sc.className='score show '+(perfect?'good':(right>=FLIPIDX.length*0.6?'mid':'bad'));
+  var h='You fixed <b>'+right+' of '+FLIPIDX.length+'</b>.';
+  if(wrongExtra) h+='<br>You also changed <b>'+wrongExtra+'</b> letter'+(wrongExtra>1?'s':'')+
+    (wrongExtra>1?' that were':' that was')+' already correct. '+
+    (wrongExtra>1?'Those are':'That one is')+' marked in red and put back.';
+  if(missed.length){
+    h+='<div class="whylist">';
+    var seen={};
+    missed.forEach(function(i){
+      var why=FLIPWHY[i]; if(seen[why])return; seen[why]=true;
+      h+='<div class="whyline"><b>'+TEXT.charAt(i)+'</b> &nbsp;'+why+'</div>';
+    });
+    h+='</div>';
+  }
+  if(perfect) h+='<br>Every letter is correct now.';
+  sc.innerHTML=h;
+  paintLeft();
+  if(perfect)markDone(2);
+  save();
+}
+
+/* ============ PART 3 : type-in cloze ============ */
+var CLOZE=[
+ ['On Friday night, Mr. Toby will have dinner ___ his son.',['with','for','from'],'with',
+  'We have dinner WITH a person.'],
+ ['On Saturday he will drive ___ Alameda to see a play.',['to','at','in'],'to',
+  'Drive TO a place. We use AT or IN when we are already there.'],
+ ['His friend used to be a teacher, ___ now he writes computer code.',['but','so','because'],'but',
+  'The two halves are opposite, so we use BUT.'],
+ ['Flower Piano is free ___ people who live in San Francisco.',['for','of','by'],'for',
+  'Something is free FOR a group of people.'],
+ ['There ___ about ten musicians in different parts of the garden.',['is','are','was'],'are',
+  'Musicians is plural, and the sentence is about now, so ARE.'],
+ ['Mr. Toby ___ go to the park on Sunday, but he is not sure yet.',['might','must','will'],'might',
+  'MIGHT means it is possible but not certain. WILL is certain.'],
+ ['___ he feels motivated, he will do some cleaning.',['If','So','But'],'If',
+  'IF introduces something that may or may not happen.'],
+ ['This weekend he will continue ___ The Sopranos.',['watching','watch','watched'],'watching',
+  'After CONTINUE we use the -ing form.']
+];
+function normz(s){return String(s||'').trim().toLowerCase().replace(/[.,!?;:]+$/,'');}
+function initCloze(){
+  var d=document.getElementById('clozeDoc'); d.innerHTML='';
+  CLOZE.forEach(function(q,qi){
+    var row=document.createElement('div'); row.className='czrow'; row.id='czr'+qi;
+    var parts=q[0].split('___');
+    var line=document.createElement('div'); line.className='czline';
+    line.innerHTML='<span class="num">'+(qi+1)+'.</span>'+parts[0];
+    var inp=document.createElement('input'); inp.className='czin'; inp.id='cz'+qi;
+    inp.autocapitalize='off'; inp.spellcheck=false; inp.setAttribute('translate','no');
+    inp.value=ST.cloze[qi]||'';
+    inp.oninput=function(){ST.cloze[qi]=inp.value; save();};
+    line.appendChild(inp);
+    line.appendChild(document.createTextNode(parts[1]||''));
+    row.appendChild(line);
+    var chips=document.createElement('div'); chips.className='czchips';
+    q[1].forEach(function(o){
+      var c=document.createElement('span'); c.className='czchip'; c.textContent=o;
+      chips.appendChild(c);
+    });
+    row.appendChild(chips);
+    var w=document.createElement('div'); w.className='why'; w.id='czw'+qi; w.textContent=q[3];
+    row.appendChild(w);
+    d.appendChild(row);
+  });
+}
+function resetCloze(){ST.cloze={};save();initCloze();document.getElementById('clozeScore').className='score';}
+function checkCloze(){
+  var good=0;
+  CLOZE.forEach(function(q,qi){
+    var inp=document.getElementById('cz'+qi);
+    var ok=normz(inp.value)===normz(q[2]);
+    inp.className='czin '+(ok?'okin':'noin');
+    if(ok)good++;
+    else{inp.value=q[2]; document.getElementById('czw'+qi).classList.add('show');}
+  });
+  var s=document.getElementById('clozeScore');
+  s.className='score show '+(good===CLOZE.length?'good':(good>=5?'mid':'bad'));
+  s.innerHTML='<b>'+good+' of '+CLOZE.length+'</b> correct.'+
+    (good===CLOZE.length?' Every one right.':' The correct word is now typed in for you, with the reason underneath.');
+  if(good===CLOZE.length)markDone(3);
+  save();
+}
+
+/* ============ PART 4 : respond ============ */
+var RESP=[
+ {id:'r1', q:'What part of Mr. Toby\u2019s weekend sounds most interesting \u2014 or most boring \u2014 to you? Why?',
+  ph:'The most interesting part is\u2026 because\u2026\n\nor\n\nThe most boring part is\u2026 because\u2026',
+  min:2, hint:'Write at least two sentences. Say WHICH part, and then say WHY. You can be honest \u2014 "boring" is a good answer if that is what you think. Mr. Toby will not be offended.'},
+ {id:'r2', q:'What is one question you want to ask Mr. Toby about his weekend?',
+  ph:'Write your question here. Remember the question mark.', min:1, hint:'One good question. It must end with a question mark.'},
+ {id:'r4', q:'Mr. Toby, this weekend I think you should\u2026',
+  ph:'Mr. Toby, this weekend I think you should\u2026 because\u2026',
+  min:2, hint:'Give him advice. Two sentences: what he should do, and why. Keep it friendly and school-appropriate \u2014 advice you could say out loud in class.'},
+ {id:'r3', q:'What will YOU do this weekend? Write 4\u20136 sentences with details.',
+  ph:'This weekend, I will\u2026', min:4, hint:'Four to six sentences. Use I will and I might, and say when.'}
+];
+function initResp(){
+  var d=document.getElementById('respDoc'); d.innerHTML='';
+  RESP.forEach(function(r,i){
+    var card=document.createElement('div'); card.className='card';
+    card.innerHTML='<div class="qq">'+(i+1)+'. '+r.q+'</div><div class="tip">'+r.hint+'</div>';
+    var ta=document.createElement('textarea'); ta.className='ta'; ta.rows=(r.min>2?7:4);
+    ta.id=r.id; ta.placeholder=r.ph; ta.value=ST.resp[r.id]||'';
+    var cnt=document.createElement('div'); cnt.className='tip'; cnt.id=r.id+'c';
+    ta.oninput=function(){ST.resp[r.id]=ta.value; paintCount(r,cnt); save();};
+    card.appendChild(ta); card.appendChild(cnt); d.appendChild(card);
+    paintCount(r,cnt);
+  });
+}
+function sentCount(s){return (String(s||'').match(/[^.!?]+[.!?]/g)||[]).length;}
+function paintCount(r,el){
+  var v=ST.resp[r.id]||'';
+  var w=((v.trim().match(/\S+/g)||[]).length), sc=sentCount(v);
+  el.innerHTML=w+' words · '+sc+' sentence'+(sc===1?'':'s')+
+    (sc>=r.min?' <b style="color:var(--moss)">✓</b>':' <span style="color:var(--muted)">(need '+r.min+')</span>');
+}
+/* these really are plain verbs that end in s */
+var BASE_S=['focus','pass','miss','dress','discuss','express','guess','cross','address',
+            'process','press','toss','bless','rinse','practise','practice','rest','relax'];
+var IRREG=['went','ate','saw','bought','made','took','did','had','was','were','came','got',
+ 'said','gave','found','told','became','left','felt','brought','began','kept','held','wrote',
+ 'stood','heard','met','ran','paid','sat','spoke','led','grew','lost','fell','sent','built',
+ 'understood','drew','broke','spent','rose','drove','wore','chose','slept','slept','flew','swam'];
+/* checks that apply after should / will / might. Returns a list of problems. */
+function modalProblems(v,modal,nice){
+  var out=[], re=new RegExp('\\b'+modal+'(?:n\u2019t|n\'t)?\\b','i');
+  if(!re.test(v)) return out;   // caller decides whether that is itself a problem
+  var mrx='\\b'+modal+'(?:n\u2019t|n\'t)?\\s+';
+  if(new RegExp(mrx+'to\\b','i').test(v))
+    out.push('<i>'+nice+' to</i> is not correct. Take out the word <i>to</i>.');
+  var ing=v.match(new RegExp(mrx+'([A-Za-z]+ing)\\b','i'));
+  if(ing) out.push('after <i>'+nice+'</i> use the plain verb \u2014 <i>'+nice+' '+
+    ing[1].toLowerCase().replace(/ing$/,'')+'</i>, not <i>'+nice+' '+ing[1].toLowerCase()+'</i>.');
+  var past=v.match(new RegExp(mrx+'([A-Za-z]+ed)\\b','i'));
+  if(past) out.push('<i>'+nice+'</i> is about the future, so do not use a past verb like <i>'+
+    past[1].toLowerCase()+'</i>.');
+  var irr=v.match(new RegExp(mrx+'([A-Za-z]+)\\b','i'));
+  if(irr && IRREG.indexOf(irr[1].toLowerCase())>-1)
+    out.push('<i>'+irr[1].toLowerCase()+'</i> is a past verb. After <i>'+nice+'</i> use the plain form.');
+  var m=v.match(new RegExp(mrx+'(?:not\\s+|never\\s+|always\\s+|really\\s+|just\\s+|maybe\\s+|also\\s+|probably\\s+|still\\s+)?([A-Za-z]+s)\\b','i'));
+  if(m && BASE_S.indexOf(m[1].toLowerCase())<0)
+    out.push('after <i>'+nice+'</i> use the plain verb \u2014 <i>'+nice+' '+
+      m[1].toLowerCase().replace(/e?s$/,'')+'</i>, not <i>'+nice+' '+m[1].toLowerCase()+'</i>.');
+  return out;
+}
+
+function checkResp(){
+  var out=document.getElementById('respReport'); out.innerHTML='';
+  var problems=0;
+  function rep(c,t){
+    if(c!=='ok')problems++;
+    var e=document.createElement('div'); e.className='rep '+c; e.innerHTML=t; out.appendChild(e);}
+  var allGood=true;
+  RESP.forEach(function(r,i){
+    var v=(ST.resp[r.id]||'').trim();
+    var sc=sentCount(v);
+    if(!v){rep('bad','<b>Question '+(i+1)+'</b> is empty.'); allGood=false; return;}
+    if(sc<r.min){rep('warn','<b>Question '+(i+1)+':</b> '+sc+' sentence'+(sc===1?'':'s')+
+      '. You need at least '+r.min+'. Check that every sentence ends with a period or a question mark.'); allGood=false;}
+    else rep('ok','<b>Question '+(i+1)+':</b> '+sc+' sentence'+(sc===1?'':'s')+'. Good.');
+    if(r.id==='r2'&&v.indexOf('?')<0){rep('bad','<b>Question 2</b> needs a question mark at the end.'); allGood=false;}
+    if(r.id==='r4'){
+      if(!/\bshould(n\u2019t|n't)?\b/i.test(v)){
+        rep('bad','<b>Question '+(i+1)+':</b> use the word <i>should</i> to give your advice.'); allGood=false;}
+      modalProblems(v,'should','should').forEach(function(t){
+        rep('bad','<b>Question '+(i+1)+':</b> '+t); allGood=false;});
+    }
+    if(r.id==='r3'){
+      /* English has many correct ways to talk about the future. Accept all of them —
+         the point is only to catch someone writing the whole thing in simple present. */
+      var hasFuture =
+           /\b(will|shall|might|may)\b/i.test(v)                       // I will see
+        || /(?:\u2019|')(?:ll)\b/i.test(v)                             // I'll see
+        || /\bwon(?:\u2019|')?t\b/i.test(v)                           // I won't
+        || /\b(going\s+to|gonna)\b/i.test(v)                          // I'm going to see
+        || /\b(am|is|are|was|were)\s+[A-Za-z]+ing\b/i.test(v)         // I am seeing my friend
+        || /(?:\u2019|')(?:m|re|s)\s+[A-Za-z]+ing\b/i.test(v)         // I'm seeing my friend
+        || /\b(plan|plans|planning|hope|hopes|hoping|want|wants|wanting|expect|expects)\s+to\b/i.test(v)
+        || /\bwould\s+like\s+to\b/i.test(v);
+      if(!hasFuture){
+        rep('bad','<b>Question '+(i+1)+':</b> this is about the future, so say so \u2014 '+
+          '<i>I will\u2026</i>, <i>I am going to\u2026</i>, <i>I might\u2026</i>, or <i>I plan to\u2026</i>'); allGood=false;}
+      ['will','might'].forEach(function(mod){
+        modalProblems(v,mod,mod).forEach(function(t){
+          rep('bad','<b>Question '+(i+1)+':</b> '+t); allGood=false;});
+      });
+      if(/(^|[^a-z])i\s+going\s+to\b/i.test(v)){
+        rep('bad','<b>Question '+(i+1)+':</b> <i>I going to</i> needs a <i>be</i> verb \u2014 '+
+          'write <i>I am going to</i>.'); allGood=false;}
+      if(/\bgonna\b/i.test(v)){
+        rep('warn','<b>Question '+(i+1)+':</b> <i>gonna</i> is fine when you speak, but write '+
+          '<i>going to</i> in school work.');}
+    }
+    if(/\bi\b/.test(v)){rep('bad','<b>Question '+(i+1)+':</b> you used a small <i>i</i>. The word I is always capital.'); allGood=false;}
+    var first=v.charAt(0);
+    if(first&&first===first.toLowerCase()&&/[a-z]/.test(first)){
+      rep('bad','<b>Question '+(i+1)+':</b> start with a capital letter.'); allGood=false;}
+  });
+  if(allGood){rep('ok','<b>All four answers look complete.</b> Tap <b>Turn in my work</b> so Mr. Toby can read them.'); markDone(4);}
+  save();
+  return problems;
+}
+/* ============ running total (also what track.js reads) ============ */
+function totalScore(){
+  var n=0,d=FLIPIDX.length+CLOZE.length+RESP.length;
+  FLIPIDX.forEach(function(i){if(shownChar(i)===TEXT.charAt(i))n++;});
+  CLOZE.forEach(function(q,qi){if(normz(ST.cloze[qi])===normz(q[2]))n++;});
+  RESP.forEach(function(r){if(sentCount(ST.resp[r.id])>=r.min)n++;});
+  return {n:n,d:d};
+}
+function paintTotal(){
+  var t=totalScore(),el=document.getElementById('unit_score');
+  if(el) el.textContent=t.n+' / '+t.d;
+}
+
+/* ===================== BOOT ===================== */
+function boot(){
+  load();
+  buildRail();
+  document.getElementById('whoami').textContent=ST.name?(ST.name+(ST.period?' · P'+ST.period:'')):'';
+  try{var L=localStorage.getItem('eld103_lang'); if(L)document.getElementById('lang').value=L;}catch(e){}
+  initRead(); initCaps(); initCloze(); initResp();
+
+  bindGloss();
+  document.querySelectorAll('.ex').forEach(function(e){e.setAttribute('translate','no')});
+  setTimeout(checkCanary,2500);
+  setInterval(checkCanary,20000);
+  go(ST.act||0);
+  dot('on');
+  if(!ST.email) askName();
+  paintTotal();
+  setInterval(function(){push(false)},20000);
+  document.addEventListener('visibilitychange',function(){if(document.hidden)push(false)});
+  window.addEventListener('pagehide',function(){push(false)});
+}
+document.addEventListener('DOMContentLoaded',boot);
+</script>
+</body>
+</html>
