@@ -175,6 +175,57 @@ var CLOZE=[
  ['This weekend he will continue ___ The Sopranos.',['watching','watch','watched'],'watching',
   'After CONTINUE we use the -ing form.']
 ];
+var COMP=[
+ {q:'What will Mr. Toby do on Saturday night?',
+  ph:'He will\u2026',
+  keys:['play','alameda','act','acting','actor','theater','theatre','friend'],
+  spell:'a play in Alameda',
+  ev:'Saturday night, I will drive to Alameda to see my good friend act in a play.'},
+ {q:'What TV show will Mr. Toby continue watching?',
+  ph:'The name of the show',
+  keys:['sopranos','soprano'],
+  spell:'The Sopranos',
+  ev:'I will continue watching the TV show, The Sopranos.'},
+ {q:'What job did Mr. Toby\u2019s friend have before?',
+  ph:'He was a\u2026',
+  keys:['teacher','teach','teaching'],
+  spell:'a teacher',
+  ev:'He used to be a teacher, but now is a computer programmer, and actor.'}
+];
+/* how far apart two words are, so a near-miss spelling still counts */
+function editDist(a,b){
+  a=a||''; b=b||'';
+  var m=a.length,n=b.length,prev=[],cur=[],i,j;
+  for(j=0;j<=n;j++)prev[j]=j;
+  for(i=1;i<=m;i++){
+    cur[0]=i;
+    for(j=1;j<=n;j++){
+      cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a.charAt(i-1)===b.charAt(j-1)?0:1));
+    }
+    prev=cur.slice();
+  }
+  return prev[n];
+}
+/* short key words must match exactly — otherwise "at" would match "act" */
+function tolerance(w){return w.length<=3?0:(w.length<=6?1:2);}
+/* true if the student's answer contains any key word, spelled close enough */
+function compHit(ans,keys){
+  var words=String(ans||'').toLowerCase().replace(/[^a-z\s']/g,' ').split(/\s+/).filter(Boolean);
+  var exact=false, near=false;
+  keys.forEach(function(k){
+    words.forEach(function(w){
+      if(w===k){exact=true; return;}
+      var tol=tolerance(k);
+      /* a near miss must be the same length-ish and start the same way,
+         so a real word like "plan" cannot sneak past as "play" by accident */
+      if(tol>0 && w.length>=3 && Math.abs(w.length-k.length)<=2
+         && w.charAt(0)===k.charAt(0) && editDist(w,k)<=tol) near=true;
+      else if(k.length>5 && w.length>4 && (k.indexOf(w)===0||w.indexOf(k)===0)) near=true;
+    });
+  });
+  return exact?'exact':(near?'near':'');
+}
+
 var RESP=[
  {id:'r1', q:'What part of Mr. Toby\u2019s weekend sounds most interesting \u2014 or most boring \u2014 to you? Why?',
   ph:'The most interesting part is\u2026 because\u2026\n\nor\n\nThe most boring part is\u2026 because\u2026',
@@ -209,6 +260,15 @@ function scCaps(p){
     var i=+k; if(FLIPIDX.indexOf(i)<0 && shownFor(p,i)!==TEXT.charAt(i))extra++;
   });
   var s=mk(n,FLIPIDX.length,wrong); s.extra=extra; return s;
+}
+function scComp(p){
+  if(!p.comp||!Object.keys(p.comp).length)return null;
+  var n=0,wrong=[];
+  COMP.forEach(function(q,qi){
+    if(compHit(p.comp[qi],q.keys))n++;
+    else wrong.push({q:q.q,gave:(p.comp[qi]||'(blank)'),want:q.spell});
+  });
+  return mk(n,COMP.length,wrong);
 }
 function scCloze(p){
   if(!p.cloze||!Object.keys(p.cloze).length)return null;
@@ -245,7 +305,7 @@ function loadAll(){
       var p=r.payload||{};
       return {name:r.name||r.student_name||r.email, email:r.email||'', period:r.period||'',
               when:r.updated_at, turned:r.turned_in?(p.turnedIn||r.updated_at):null, p:p,
-        s:{caps:scCaps(p),cloze:scCloze(p),resp:scResp(p)}};
+        s:{comp:scComp(p),caps:scCaps(p),cloze:scCloze(p),resp:scResp(p)}};
     });
     m.innerHTML=ROWS.length?'':'<div class="msg info">Nothing here yet. Students appear about 20 seconds after they type their name and start working.</div>';
     render();
@@ -294,18 +354,19 @@ function renderInner(){
    '<div class="stat"><b>'+n+'</b><span>STUDENTS WORKING</span></div>'+
    '<div class="stat"><b>'+turned+'</b><span>TURNED IN</span></div>'+
    '<div class="stat"><b>'+withDraft+'</b><span>ANSWERED ALL 3</span></div>'+
+   '<div class="stat"><b>'+avg('comp')+'</b><span>AVG COMPREHENSION</span></div>'+
    '<div class="stat"><b>'+avg('caps')+'</b><span>AVG CAPITALS</span></div>'+
    '<div class="stat"><b>'+avg('cloze')+'</b><span>AVG SENTENCES</span></div>';
 
   var h='<table><tr><th class="l">Student</th><th>P</th><th>Status</th>'+
-        '<th>Capitals</th><th>Sentences</th><th>Answered</th><th>Words</th><th class="opt">Updated</th></tr>';
+        '<th>Read it?</th><th>Capitals</th><th>Sentences</th><th>Answered</th><th>Words</th><th class="opt">Updated</th></tr>';
   ROWS.forEach(function(r,i){
     h+='<tr class="row" onclick="showDetail(\''+esc(r.email||r.name)+'\')"><td class="l name">'+esc(r.name)+
       '<br><span class="tip" style="font-weight:600;font-size:.72rem">'+esc(r.email)+'</span></td>'+
       '<td>'+esc(r.period||'—')+'</td>'+
       '<td><span class="stmt '+(r.turned?'done':'wip')+'">'+(r.turned?'Turned in':'In progress')+'</span>'+
       (r.p.browserTranslated?'<span class="stmt xl" title="Browser translation was running on this student\'s page">translated</span>':'')+'</td>'+
-      cellTd(r.s.caps)+cellTd(r.s.cloze)+cellTd(r.s.resp)+
+      cellTd(r.s.comp)+cellTd(r.s.caps)+cellTd(r.s.cloze)+cellTd(r.s.resp)+
       '<td>'+(function(){var t=0;RESP.forEach(function(q){t+=wc((r.p.resp||{})[q.id])});return t||'—'})()+'</td>'+
       '<td class="opt" style="font-weight:600;font-size:.76rem">'+when(r.when)+'</td></tr>';
   });
@@ -331,6 +392,17 @@ function showDetail(id){
   if(r.p.browserTranslated)
     h+='<div class="msg err" style="margin-top:10px">Chrome translation was running while they worked.</div>';
 
+  if(p.comp&&Object.keys(p.comp).length){
+    h+='<h3>Did they read it?</h3>';
+    COMP.forEach(function(q,qi){
+      var v=p.comp[qi]||'', hit=compHit(v,q.keys);
+      h+='<div class="wrongitem" style="border-left-color:'+(hit?'var(--moss)':'#e3a58f')+
+         ';background:'+(hit?'#f3faf6':'#fdf3f0')+'">'+
+         '<span class="tip">'+esc(q.q)+'</span><br>'+(v?esc(v):'<i class="tip">(blank)</i>')+
+         (hit==='near'?' <span class="pill">spelling close</span>':'')+
+         (hit?'':' <span class="pill no">looking for: '+esc(q.spell)+'</span>')+'</div>';
+    });
+  }
   h+='<h3>What they wrote back</h3>';
   RESP.forEach(function(q,i){
     var v=((r.p.resp)||{})[q.id]||'';
@@ -357,6 +429,7 @@ function showDetail(id){
   }
   var std=function(w){return '<div class="wrongitem">'+esc(w.q)+
     '<br>wrote <span class="gave">'+esc(w.gave)+'</span> · should be <span class="want">'+esc(w.want)+'</span></div>'};
+  block('Comprehension',s.comp,std);
   block('Capital letters',s.caps,std);
   if(s.caps&&s.caps.extra)
     h+='<div class="wrongitem">Also changed <span class="gave">'+s.caps.extra+
@@ -373,14 +446,14 @@ function showDetail(id){
 /* ============ CSV ============ */
 function exportCSV(){
   var LBL={r1:'Interesting_or_Boring',r2:'TheirQuestion',r4:'TheirAdvice',r3:'TheirWeekend'};
-  var head=['Student','Email','Period','Status','Last saved','Capitals','Sentences','Answered','TotalWords']
+  var head=['Student','Email','Period','Status','Last saved','Comprehension','Capitals','Sentences','Answered','TotalWords']
            .concat(RESP.map(function(q){return LBL[q.id]||q.id}));
   var lines=[head.join(',')];
   ROWS.forEach(function(r){
     var rs=r.p.resp||{}, tot=0;
     RESP.forEach(function(q){tot+=wc(rs[q.id])});
     var row=[r.name,r.email,r.period,(r.turned?'Turned in':'In progress'),when(r.when),
-      pct(r.s.caps),pct(r.s.cloze),pct(r.s.resp),tot]
+      pct(r.s.comp),pct(r.s.caps),pct(r.s.cloze),pct(r.s.resp),tot]
       .concat(RESP.map(function(q){return rs[q.id]||''}));
     lines.push(row.map(function(v){
       v=(v===null||v===undefined)?'':String(v);

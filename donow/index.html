@@ -213,6 +213,17 @@ body.wt [translate="no"] *{cursor:help !important}
 .czchips{margin-top:5px;padding-left:22px}
 .czchip{display:inline-block;background:#f2f5f2;border:1px solid var(--line);border-radius:14px;
   padding:3px 12px;margin:3px 6px 0 0;font-size:.85rem;font-weight:700;color:var(--muted)}
+.vrow{display:flex;align-items:center;gap:11px;padding:8px 0;border-bottom:1px solid #eef1ee;flex-wrap:wrap}
+.vrow:last-child{border-bottom:none}
+.vword{font-weight:800;color:var(--pine);min-width:130px;font-size:1.02rem}
+.vsel{flex:1 1 230px;font-family:'Nunito',sans-serif;font-size:.95rem;font-weight:600;
+  padding:8px 11px;border:2px solid var(--line);border-radius:9px;background:#fffef9;color:var(--ink)}
+.vsel:focus{outline:none;border-color:var(--moss)}
+.vsel.vy{background:#d8f0e2;border-color:var(--moss);font-weight:800}
+.vsel.vn{background:#fbeae5;border-color:#e07a5f}
+.cshort{font-size:1rem;font-weight:700;margin-top:5px}
+.cshort.okin{background:#d8f0e2;border-color:var(--moss)}
+.cshort.noin{background:#fbeae5;border-color:#e07a5f}
 .qq{font-weight:800;color:var(--pine);font-size:1.04rem;line-height:1.5;margin-bottom:3px}
 @media print{
   #bar,#rail,#gloss,#namewrap,.btn,.navrow{display:none !important}
@@ -276,15 +287,19 @@ body.wt [translate="no"] *{cursor:help !important}
 
   <div class="scenes" id="scenes"></div>
 
-  <div class="rulebox">
-    <h4>Words to know</h4>
-    <p><span class="g" data-w="social" data-d="Spending time with other people.">social</span> ·
-       <span class="g" data-w="motivated" data-d="Feeling ready and willing to do something.">motivated</span> ·
-       <span class="g" data-w="chores" data-d="Small jobs you do at home, like cleaning or washing dishes.">chores</span> ·
-       <span class="g" data-w="programmer" data-d="A person whose job is writing computer code.">programmer</span> ·
-       <span class="g" data-w="event" data-d="Something organized that happens at a certain time and place.">event</span> ·
-       <span class="g" data-w="botanical garden" data-d="A large public garden where many kinds of plants are grown.">botanical garden</span></p>
-  </div>
+  <h3>Did you read it?</h3>
+  <p>Three questions. Look back at the paragraph if you need to — that is what good readers do.</p>
+  <div class="card" id="compDoc" translate="no"></div>
+  <button class="btn" onclick="checkComp()">Check my answers</button>
+  <div class="score" id="compScore"></div>
+
+  <h3>Words from the paragraph</h3>
+  <p>Choose the meaning of each word. The box turns green as soon as you get it right.</p>
+  <div class="card" id="vocabDoc" translate="no"></div>
+  <button class="btn" id="vcheck" onclick="checkVocab()">Check</button>
+  <button class="btn ghost small" onclick="resetVocab()">Start over</button>
+  <div class="tip" id="vout"></div>
+  <div class="score" id="vocabScore"></div>
 
   <div class="navrow"><button class="btn ghost" onclick="go(0)">← Back</button><button class="btn" onclick="go(2)">Part 2 →</button></div>
 </section>
@@ -465,7 +480,7 @@ var UNIT='donow-2026-09-18';   // change this for each new Do Now
 var CANON_DOMAIN='@s.sfusd.edu'; // used only when the roster has no match
 var PROXY='https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
 
-var ST={name:'',email:'',period:'',act:0,caps:{},cloze:{},resp:{}};
+var ST={name:'',email:'',period:'',act:0,comp:{},vocab:{},caps:{},cloze:{},resp:{}};
 
 /* ===================== NAV ===================== */
 var TITLES=['Start','1 Read','2 Capitals','3 Sentences','4 Write back'];
@@ -947,6 +962,177 @@ var FLIPIDX=[], FLIPWHY={};
 })();
 function flipChar(c){return c===c.toUpperCase()?c.toLowerCase():c.toUpperCase();}
 
+/* ============ PART 1 : comprehension (short answer, spelling-tolerant) ============ */
+var COMP=[
+ {q:'What will Mr. Toby do on Saturday night?',
+  ph:'He will\u2026',
+  keys:['play','alameda','act','acting','actor','theater','theatre','friend'],
+  spell:'a play in Alameda',
+  ev:'Saturday night, I will drive to Alameda to see my good friend act in a play.'},
+ {q:'What TV show will Mr. Toby continue watching?',
+  ph:'The name of the show',
+  keys:['sopranos','soprano'],
+  spell:'The Sopranos',
+  ev:'I will continue watching the TV show, The Sopranos.'},
+ {q:'What job did Mr. Toby\u2019s friend have before?',
+  ph:'He was a\u2026',
+  keys:['teacher','teach','teaching'],
+  spell:'a teacher',
+  ev:'He used to be a teacher, but now is a computer programmer, and actor.'}
+];
+/* how far apart two words are, so a near-miss spelling still counts */
+function editDist(a,b){
+  a=a||''; b=b||'';
+  var m=a.length,n=b.length,prev=[],cur=[],i,j;
+  for(j=0;j<=n;j++)prev[j]=j;
+  for(i=1;i<=m;i++){
+    cur[0]=i;
+    for(j=1;j<=n;j++){
+      cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a.charAt(i-1)===b.charAt(j-1)?0:1));
+    }
+    prev=cur.slice();
+  }
+  return prev[n];
+}
+/* short key words must match exactly — otherwise "at" would match "act" */
+function tolerance(w){return w.length<=3?0:(w.length<=6?1:2);}
+/* true if the student's answer contains any key word, spelled close enough */
+function compHit(ans,keys){
+  var words=String(ans||'').toLowerCase().replace(/[^a-z\s']/g,' ').split(/\s+/).filter(Boolean);
+  var exact=false, near=false;
+  keys.forEach(function(k){
+    words.forEach(function(w){
+      if(w===k){exact=true; return;}
+      var tol=tolerance(k);
+      /* a near miss must be the same length-ish and start the same way,
+         so a real word like "plan" cannot sneak past as "play" by accident */
+      if(tol>0 && w.length>=3 && Math.abs(w.length-k.length)<=2
+         && w.charAt(0)===k.charAt(0) && editDist(w,k)<=tol) near=true;
+      else if(k.length>5 && w.length>4 && (k.indexOf(w)===0||w.indexOf(k)===0)) near=true;
+    });
+  });
+  return exact?'exact':(near?'near':'');
+}
+function initComp(){
+  var d=document.getElementById('compDoc'); d.innerHTML='';
+  COMP.forEach(function(q,qi){
+    var row=document.createElement('div'); row.className='czrow';
+    row.innerHTML='<div class="qq">'+(qi+1)+'. '+q.q+'</div>';
+    var inp=document.createElement('input'); inp.className='ta cshort'; inp.id='cp'+qi;
+    inp.placeholder=q.ph; inp.value=ST.comp[qi]||'';
+    inp.setAttribute('translate','no');
+    inp.oninput=function(){ST.comp[qi]=inp.value; save();};
+    row.appendChild(inp);
+    var w=document.createElement('div'); w.className='why'; w.id='cpw'+qi;
+    row.appendChild(w); d.appendChild(row);
+  });
+}
+function checkComp(){
+  var good=0, spelled=0;
+  COMP.forEach(function(q,qi){
+    var inp=document.getElementById('cp'+qi), why=document.getElementById('cpw'+qi);
+    var hit=compHit(ST.comp[qi],q.keys);
+    inp.className='ta cshort '+(hit?'okin':'noin');
+    why.className='why show';
+    if(hit){
+      good++;
+      why.innerHTML='<b>Yes.</b> Mr. Toby wrote: <i>'+q.ev+'</i>'+
+        (hit==='near'?'<br><b>One small thing:</b> the spelling is <b>'+q.spell+'</b>. Your answer still counts.':'');
+      if(hit==='near')spelled++;
+    } else {
+      why.innerHTML='<b>Look again.</b> Mr. Toby wrote: <i>'+q.ev+'</i>';
+    }
+  });
+  var sc=document.getElementById('compScore');
+  sc.className='score show '+(good===COMP.length?'good':(good>=2?'mid':'bad'));
+  sc.innerHTML='<b>'+good+' of '+COMP.length+'</b>.'+
+    (good===COMP.length
+      ? (spelled?' Spelling does not matter here \u2014 you found the right answers.':' You read it carefully.')
+      : ' The sentence that answers each one is shown underneath. Read it and try again.');
+  if(good===COMP.length)part1Done();
+  save();
+}
+
+/* ============ PART 1 : vocabulary ============ */
+var VOCAB=[
+ ['social',['Spending time with other people','Working alone at home',
+            'Feeling tired and sleepy','Driving somewhere far away'],0],
+ ['motivated',['Feeling ready and wanting to do something','Feeling angry at someone',
+               'Being late for school','Having a lot of money'],0],
+ ['chores',['Small jobs you do at home','Games you play with friends',
+            'Songs you listen to','Places you visit on holiday'],0],
+ ['programmer',['A person who writes computer code','A person who acts in plays',
+                'A person who teaches school','A person who plays piano'],0],
+ ['event',['Something planned that happens at a certain time and place','A small job at home',
+           'A kind of plant','A person you work with'],0],
+ ['botanical garden',['A large public garden with many kinds of plants','A room full of computers',
+                      'A place where people watch plays','A street with many shops'],0],
+ ['continue',['To keep doing something you started','To stop doing something',
+              'To begin something new','To forget something'],0],
+ ['actor',['A person who performs in a play or a movie','A person who writes a play',
+           'A person who sells tickets','A person who cleans the theater'],0]
+];
+/* shuffle the four choices once per load so the answer is not always first */
+var VORDER=[];
+(function(){
+  VOCAB.forEach(function(v,i){
+    var idx=v[1].map(function(_,j){return j});
+    for(var k=idx.length-1;k>0;k--){var r=Math.floor(Math.random()*(k+1));var t=idx[k];idx[k]=idx[r];idx[r]=t;}
+    VORDER[i]=idx;
+  });
+})();
+/* Part 1 counts as finished only when the questions AND the words are done */
+function part1Done(){
+  var compOK=COMP.every(function(q,qi){return compHit(ST.comp[qi],q.keys)});
+  if(compOK && vocabRight()===VOCAB.length) markDone(1);
+}
+function initVocab(){
+  var d=document.getElementById('vocabDoc'); d.innerHTML='';
+  VOCAB.forEach(function(v,vi){
+    var row=document.createElement('div'); row.className='vrow'; row.id='vr'+vi;
+    var w=document.createElement('span'); w.className='vword'; w.textContent=v[0];
+    var sel=document.createElement('select'); sel.className='vsel'; sel.id='vs'+vi;
+    sel.innerHTML='<option value="">choose the meaning…</option>';
+    VORDER[vi].forEach(function(j){
+      var o=document.createElement('option'); o.value=j; o.textContent=v[1][j]; sel.appendChild(o);
+    });
+    if(ST.vocab[vi]!==undefined) sel.value=ST.vocab[vi];
+    sel.onchange=function(){
+      ST.vocab[vi]=sel.value;
+      sel.classList.remove('vy','vn');   /* changing an answer clears the mark */
+      save();
+    };
+    row.appendChild(w); row.appendChild(sel); d.appendChild(row);
+  });
+}
+function checkVocab(){
+  var right=0;
+  VOCAB.forEach(function(v,vi){
+    var sel=document.getElementById('vs'+vi);
+    var ok=(sel.value!=='' && +sel.value===v[2]);
+    sel.classList.toggle('vy',ok);
+    sel.classList.toggle('vn',!ok);
+    if(ok)right++;
+  });
+  document.getElementById('vout').textContent =
+    right+' of '+VOCAB.length+' correct.'+(right<VOCAB.length?' Try the red ones again.':'');
+  var sc=document.getElementById('vocabScore');
+  if(right===VOCAB.length){
+    sc.className='score show good';
+    sc.innerHTML='<b>All '+VOCAB.length+' correct.</b> That is every hard word in Mr. Toby\u2019s paragraph.';
+    part1Done();
+  } else sc.className='score';
+  save();
+}
+function vocabRight(){
+  var n=0; VOCAB.forEach(function(v,vi){if(+ST.vocab[vi]===v[2])n++;}); return n;
+}
+function resetVocab(){
+  ST.vocab={}; save(); initVocab();
+  document.getElementById('vout').textContent='';
+  document.getElementById('vocabScore').className='score';
+}
+
 /* ============ PART 1 : read + scenes ============ */
 function initRead(){
   document.getElementById('readPara').textContent=TEXT;
@@ -1206,7 +1392,9 @@ function checkResp(){
 }
 /* ============ running total (also what track.js reads) ============ */
 function totalScore(){
-  var n=0,d=FLIPIDX.length+CLOZE.length+RESP.length;
+  var n=0,d=COMP.length+VOCAB.length+FLIPIDX.length+CLOZE.length+RESP.length;
+  n+=vocabRight();
+  COMP.forEach(function(q,qi){if(compHit(ST.comp[qi],q.keys))n++;});
   FLIPIDX.forEach(function(i){if(shownChar(i)===TEXT.charAt(i))n++;});
   CLOZE.forEach(function(q,qi){if(normz(ST.cloze[qi])===normz(q[2]))n++;});
   RESP.forEach(function(r){if(sentCount(ST.resp[r.id])>=r.min)n++;});
@@ -1223,7 +1411,7 @@ function boot(){
   buildRail();
   document.getElementById('whoami').textContent=ST.name?(ST.name+(ST.period?' · P'+ST.period:'')):'';
   try{var L=localStorage.getItem('eld103_lang'); if(L)document.getElementById('lang').value=L;}catch(e){}
-  initRead(); initCaps(); initCloze(); initResp();
+  initRead(); initComp(); initVocab(); initCaps(); initCloze(); initResp();
 
   bindGloss();
   document.querySelectorAll('.ex').forEach(function(e){e.setAttribute('translate','no')});
