@@ -175,7 +175,7 @@ ul{margin:0;padding-left:20px} li{margin-bottom:6px;font-weight:700}
   </div>
   <div class="field">
     <label>Or type your SFUSD email</label>
-    <input id="emailIn" type="email" placeholder="name@sfusd.edu" autocapitalize="off" spellcheck="false">
+    <input id="emailIn" placeholder="name@sfusd.edu" autocapitalize="off" spellcheck="false">
   </div>
   <button class="btn" onclick="signIn()">Go to my page</button>
   <p id="siErr" class="note" style="color:var(--red);font-weight:800"></p>
@@ -304,7 +304,7 @@ const TEACHER_PW='galileo2026';
 
 const COUNTRIES=[["SV","El Salvador"],["GT","Guatemala"],["HN","Honduras"],["MX","Mexico"],["NI","Nicaragua"],["CN","China"],["HK","Hong Kong"],["TW","Taiwan"],["YE","Yemen"],["PH","Philippines"],["VN","Vietnam"],["TH","Thailand"],["MM","Myanmar"],["ID","Indonesia"],["JP","Japan"],["KR","South Korea"],["MN","Mongolia"],["IN","India"],["NP","Nepal"],["PK","Pakistan"],["BD","Bangladesh"],["LK","Sri Lanka"],["AF","Afghanistan"],["IR","Iran"],["IQ","Iraq"],["SY","Syria"],["JO","Jordan"],["LB","Lebanon"],["EG","Egypt"],["MA","Morocco"],["DZ","Algeria"],["SD","Sudan"],["ET","Ethiopia"],["ER","Eritrea"],["SO","Somalia"],["KE","Kenya"],["NG","Nigeria"],["GH","Ghana"],["SN","Senegal"],["CI","Côte d'Ivoire"],["CM","Cameroon"],["CD","DR Congo"],["AO","Angola"],["MZ","Mozambique"],["ZA","South Africa"],["BR","Brazil"],["CO","Colombia"],["VE","Venezuela"],["EC","Ecuador"],["PE","Peru"],["BO","Bolivia"],["CL","Chile"],["AR","Argentina"],["PY","Paraguay"],["UY","Uruguay"],["CR","Costa Rica"],["PA","Panama"],["CU","Cuba"],["DO","Dominican Republic"],["HT","Haiti"],["JM","Jamaica"],["PR","Puerto Rico"],["BZ","Belize"],["RU","Russia"],["UA","Ukraine"],["PL","Poland"],["RO","Romania"],["MD","Moldova"],["TR","Turkey"],["GE","Georgia"],["AM","Armenia"],["AZ","Azerbaijan"],["KZ","Kazakhstan"],["UZ","Uzbekistan"],["TJ","Tajikistan"],["KG","Kyrgyzstan"],["ES","Spain"],["PT","Portugal"],["FR","France"],["IT","Italy"],["DE","Germany"],["GB","United Kingdom"],["IE","Ireland"],["GR","Greece"],["AL","Albania"],["RS","Serbia"],["BA","Bosnia and Herzegovina"],["BG","Bulgaria"],["FJ","Fiji"],["WS","Samoa"],["TO","Tonga"],["AU","Australia"],["NZ","New Zealand"],["CA","Canada"],["US","United States"]];
 
-let ME=null, DATA={};
+let ME=null, DATA={}, SELF_SIGNIN=false, NEW_STUDENT=false;
 
 /* ---------- helpers ---------- */
 const clean=e=>(e||'').trim().toLowerCase();
@@ -334,18 +334,25 @@ function signIn(){
   let email=sel?clean(sel):clean(document.getElementById('emailIn').value);
   const err=document.getElementById('siErr');
   if(!email){err.textContent='Please choose your name or type your email.';return;}
-  if(!/^[^@\s]+@(s\.)?sfusd\.edu$/.test(email)){err.textContent='Please use your school email that ends with @sfusd.edu';return;}
-  email=email.replace('@s.sfusd.edu','@sfusd.edu');
+  // "test", "test2", "test rosa" -> a throwaway account on a domain that is
+  // not sfusd.edu, so it can never be confused with a real student
+  var t=email.match(/^test[\s_-]*([a-z0-9]*)$/i);
+  if(t){ email='test'+(t[1]||'')+'@test.local'; }
+  else if(!/^[^@\s]+@(s\.)?sfusd\.edu$/.test(email)){
+    err.textContent='Please use your school email that ends with @sfusd.edu';return;}
+  else email=email.replace('@s.sfusd.edu','@sfusd.edu');
   err.textContent='';
   localStorage.setItem('gal_student_email',email);
+  SELF_SIGNIN=true;
   load(email);
 }
 function signOut(){localStorage.removeItem('gal_student_email');location.href=location.pathname;}
 function teacherLogin(){
   if(prompt('Teacher password:')!==TEACHER_PW)return;
   const e=clean(prompt('Student email to open:'));
-  if(e)load(e);
+  if(e){READ_ONLY=true;load(e);}
 }
+let READ_ONLY=false;
 
 /* ---------- load ---------- */
 async function load(email){
@@ -368,8 +375,10 @@ async function load(email){
   ]);
 
   if(!stu||!stu.length){
-    await upsert('students',{email:email},'email');
+    // viewing by link or teacher view must never invent a student
+    if(SELF_SIGNIN)await upsert('students',{email:email},'email');
     DATA.student={email:email};
+    NEW_STUDENT=!SELF_SIGNIN;
   } else DATA.student=stu[0];
   DATA.facts=facts||[]; DATA.acts=acts||[]; DATA.atts=atts||[]; DATA.skills=skills||[]; DATA.res=res||[]; DATA.work=work||[];
 
@@ -379,7 +388,15 @@ async function load(email){
 }
 
 /* ---------- render ---------- */
-function renderAll(){renderHero();fillForm();renderFacts();renderWork();renderActs();renderSkills();}
+function renderAll(){
+  if(NEW_STUDENT){
+    const h=document.getElementById('hMeta');
+    setTimeout(function(){
+      h.insertAdjacentHTML('beforeend',
+        '<span style="background:#fff;color:var(--plum-dk)">no account yet &mdash; nothing saved</span>');
+    },0);
+  }
+  renderHero();fillForm();renderFacts();renderWork();renderActs();renderSkills();}
 
 function renderWork(){
   var rows=(DATA.work||[]).filter(function(w){return w.text&&String(w.text).trim();});
@@ -443,6 +460,7 @@ function previewPhoto(){
 }
 
 async function saveProfile(){
+  if(READ_ONLY&&!confirm('You are viewing this page as a teacher. Save changes to this student?'))return;
   const g=id=>document.getElementById(id).value.trim()||null;
   const code=g('fCountry');
   const row={email:ME,first_name:g('fFirst'),last_name:g('fLast'),
