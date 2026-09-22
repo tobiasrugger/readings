@@ -261,17 +261,17 @@ function plain(s){
 }
 
 /* ---------- translation via Apps Script proxy ---------- */
+var tcache={};
 function translate(word,meaning,lang,cb){
-  var u=PROXY+'?action=translate&idiom='+encodeURIComponent(word)+'&meaning='+encodeURIComponent(meaning)+'&lang='+encodeURIComponent(lang);
-  fetch(u).then(function(r){return r.text();})
-  .then(function(t){
+  var text=word+' \u2014 '+meaning;
+  var key=lang+'|'+text;
+  if(tcache[key]){cb(tcache[key]);return;}
+  var u=PROXY+'?text='+encodeURIComponent(text)+'&q='+encodeURIComponent(text)+
+        '&target='+encodeURIComponent(lang)+'&lang='+encodeURIComponent(lang)+'&to='+encodeURIComponent(lang);
+  fetch(u).then(function(r){return r.text();}).then(function(t){
     var v=t;
-    try{
-      var j=JSON.parse(t);
-      var w=j.idiom||j.word||'', m=j.meaning||j.translation||j.text||j.result||'';
-      v=(w&&m)?(w+' \u2014 '+m):(w||m||t);
-    }catch(e){}
-    cb(v);
+    try{var j=JSON.parse(t);v=j.translation||j.text||j.result||j.translatedText||t;}catch(e){}
+    tcache[key]=v;cb(v);
   }).catch(function(){cb('(translation unavailable)');});
 }
 
