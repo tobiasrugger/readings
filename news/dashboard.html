@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>This Week's Reading — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--pine:#1d4d3f;--pine-dk:#143528;--paper:#fbfaf6;--ink:#22241f;--rule:#dcd9cf;--ok:#15803d;--no:#b91c1c;--mid:#b45309}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:Nunito,system-ui,sans-serif;font-size:15px}
+.bar{position:sticky;top:0;z-index:20;background:var(--pine);color:#fff;padding:10px 14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.bar h1{font-size:17px;margin:0;font-weight:800;flex:1;min-width:160px}
+select,input{font-family:inherit;font-size:14px;padding:6px 8px;border-radius:7px;border:1px solid var(--rule)}
+.bar select{border:0}
+.btn{font-family:inherit;font-size:14px;font-weight:700;padding:7px 13px;border-radius:8px;border:0;background:#fff;color:var(--pine);cursor:pointer}
+main{max-width:1100px;margin:0 auto;padding:18px 14px 60px}
+.gate{max-width:340px;margin:80px auto;background:#fff;border:1px solid var(--rule);border-radius:12px;padding:20px}
+.gate input{width:100%;margin:8px 0}
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.stat{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:10px 14px;min-width:120px}
+.stat b{display:block;font-size:24px}
+.stat span{color:#7a8075;font-size:13px}
+.wrap{overflow-x:auto;background:#fff;border:1px solid var(--rule);border-radius:12px}
+table{width:100%;border-collapse:collapse}
+th,td{padding:8px 10px;border-bottom:1px solid var(--rule);text-align:left;white-space:nowrap}
+th{background:#eceadf;font-size:13px;position:sticky;top:0;cursor:pointer}
+tr.row{cursor:pointer}
+tr.row:hover{background:#f6f5ef}
+.pill{display:inline-block;padding:1px 9px;border-radius:99px;font-weight:800;font-size:13px}
+.g{background:#dcfce7;color:var(--ok)}.y{background:#fef3c7;color:var(--mid)}.r{background:#fee2e2;color:var(--no)}.n{background:#eee;color:#888}
+tr.detail td{white-space:normal;background:#fbfaf6;padding:14px 18px}
+.qa{margin:0 0 12px}.qa .q{font-weight:700;color:#4a5048}.qa .a{margin-top:3px;white-space:pre-wrap}
+.empty{color:#aaa;font-style:italic}
+h4{margin:16px 0 8px;font-size:14px;text-transform:uppercase;letter-spacing:.04em;color:var(--pine)}
+audio{height:34px;vertical-align:middle}
+.muted{color:#7a8075}
+</style>
+</head>
+<body>
+<div class="bar">
+  <h1>This Week's Reading — Dashboard</h1>
+  <select id="art"></select>
+  <select id="per"><option value="">All periods</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select>
+  <button class="btn" id="reload">Refresh</button>
+  <button class="btn" id="csv">CSV</button>
+</div>
+<div class="gate" id="gate">
+  <b>Teacher password</b>
+  <input type="password" id="pw">
+  <button class="btn" style="background:var(--pine);color:#fff" id="go">Open</button>
+</div>
+<main id="main" style="display:none">
+  <div class="stats" id="stats"></div>
+  <div class="wrap"><table id="tbl"></table></div>
+  <p class="muted" style="margin-top:10px">Tap a student to see every answer and play recordings.</p>
+</main>
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var BUCKET='vocab-recordings';
+var PW='galileo2026';
+var H={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY};
+var ARTS=[],A=null,WORK=[],RECS=[],ROWS=[],SORT='name',OPEN='';
+function $(i){return document.getElementById(i);}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function parseDoc(txt){
+  var out={meta:{},read:[],gram:{note:'',bank:[],practice:[],produce:''},talk:{cols:[],rows:[],frames:[]},qs:[],record:''};
+  var parts=txt.split(/^\s*---([A-Z]+)---\s*$/m);
+  var head=parts[0]||'';
+  head.split(/\n/).forEach(function(l){
+    var m=l.match(/^([A-Z_]+):\s*(.*)$/);
+    if(m) out.meta[m[1]]=m[2].trim();
+  });
+  for(var i=1;i<parts.length;i+=2){
+    var name=parts[i], body=(parts[i+1]||'').trim();
+    if(name==='READ'){
+      out.read=body.split(/\n\s*\n/).map(function(s){return s.trim();}).filter(Boolean);
+    } else if(name==='GRAMMAR'){
+      body.split(/\n/).forEach(function(l){
+        var m;
+        if(m=l.match(/^NOTE:\s*(.*)/)) out.gram.note+=(out.gram.note?'<br>':'')+m[1];
+        else if(m=l.match(/^BANK:\s*(.*)/)) out.gram.bank=m[1].split(/,/).map(function(s){return s.trim();}).filter(Boolean);
+        else if(m=l.match(/^PRACTICE:\s*(.*)/)){
+          var bits=m[1].split('||');
+          out.gram.practice.push({s:bits[0].trim(),a:(bits[1]||'').split(',').map(function(s){return s.trim().toLowerCase();}).filter(Boolean)});
+        }
+        else if(m=l.match(/^PRODUCE:\s*(.*)/)) out.gram.produce=m[1];
+      });
+    } else if(name==='TALK'){
+      body.split(/\n/).forEach(function(l){
+        var m;
+        if(m=l.match(/^COLS:\s*(.*)/)) out.talk.cols=m[1].split('|').map(function(s){return s.trim();});
+        else if(m=l.match(/^ROW:\s*(.*)/)) out.talk.rows.push(m[1].split('|').map(function(s){return s.trim();}));
+        else if(m=l.match(/^FRAME:\s*(.*)/)) out.talk.frames.push(m[1]);
+      });
+    } else if(name==='QUESTIONS'){
+      body.split(/\n/).forEach(function(l){
+        var m=l.match(/^Q:\s*(.*)/); if(m) out.qs.push(m[1]);
+      });
+    } else if(name==='RECORD'){
+      out.record=body;
+    }
+  }
+  return out;
+}
+
+
+function plain(s){
+  return String(s).replace(/\[\[(.+?)\|.+?\]\]/g,'$1').replace(/\(\((.+?)\)\)/g,'$1');
+}
+
+
+function get(path){return fetch(SUPA_URL+'/rest/v1/'+path,{headers:H}).then(function(r){return r.json();});}
+
+$('go').onclick=function(){
+  if($('pw').value!==PW){alert('Wrong password.');return;}
+  sessionStorage.setItem('news_dash','1');open_();
+};
+$('pw').addEventListener('keydown',function(e){if(e.key==='Enter')$('go').click();});
+if(sessionStorage.getItem('news_dash'))open_();
+
+function open_(){
+  $('gate').style.display='none';$('main').style.display='block';
+  get('news_articles?select=slug,title,week_of,doc&order=week_of.desc.nullslast,updated_at.desc').then(function(rows){
+    ARTS=rows||[];
+    $('art').innerHTML=ARTS.map(function(r){return '<option value="'+esc(r.slug)+'">'+esc(r.title||r.slug)+(r.week_of?' ('+esc(r.week_of)+')':'')+'</option>';}).join('');
+    if(!ARTS.length){$('tbl').innerHTML='<tr><td class="empty">No articles published yet.</td></tr>';return;}
+    load();
+  });
+}
+$('art').onchange=load;$('per').onchange=draw;$('reload').onclick=load;
+
+function load(){
+  var slug=$('art').value,art=ARTS.filter(function(a){return a.slug===slug;})[0];
+  A=parseDoc(art.doc||'');OPEN='';
+  $('tbl').innerHTML='<tr><td class="muted">Loading…</td></tr>';
+  Promise.all([
+    get('news_work?select=*&slug=eq.'+encodeURIComponent(slug)),
+    get('fluency_recordings?select=*&slug=eq.'+encodeURIComponent(slug)+'&order=created_at.asc')
+  ]).then(function(r){WORK=r[0]||[];RECS=r[1]||[];build();draw();});
+}
+
+function score(w){
+  var a=w.answers||{},o={};
+  o.qDone=A.qs.filter(function(_,i){return (a['q'+i]||'').trim().length>2;}).length;
+  o.qTot=A.qs.length;
+  o.cRight=0;o.cTot=A.gram.practice.length;
+  A.gram.practice.forEach(function(p,i){if(p.a.indexOf((a['c'+i]||'').trim().toLowerCase())>=0)o.cRight++;});
+  o.prod=(a.produce||'').trim().length>5;
+  o.talk=Object.keys(a).filter(function(k){return /^t\d/.test(k)&&(a[k]||'').trim();}).length;
+  o.turned=a._turnedIn||'';
+  return o;
+}
+function build(){
+  var by={};
+  WORK.forEach(function(w){by[w.email]={email:w.email,name:w.name||'',period:w.period||'',work:w,recs:[],updated:w.updated_at};});
+  RECS.forEach(function(r){
+    if(!by[r.email])by[r.email]={email:r.email,name:r.name||'',period:r.period||'',work:null,recs:[],updated:r.created_at};
+    by[r.email].recs.push(r);
+    if(!by[r.email].name&&r.name)by[r.email].name=r.name;
+    if(!by[r.email].period&&r.period)by[r.email].period=r.period;
+  });
+  ROWS=Object.keys(by).map(function(k){var s=by[k];s.sc=s.work?score(s.work):null;
+    s.best=s.recs.reduce(function(m,r){return Math.max(m,r.wpm||0);},0);return s;});
+}
+function pill(n,d){
+  if(!d)return '<span class="pill n">—</span>';
+  var f=n/d,c=f>=0.99?'g':(f>=0.5?'y':'r');
+  return '<span class="pill '+c+'">'+n+'/'+d+'</span>';
+}
+function when(t){if(!t)return '';var d=new Date(t);return (d.getMonth()+1)+'/'+d.getDate()+' '+d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});}
+
+function draw(){
+  var p=$('per').value;
+  var rows=ROWS.filter(function(r){return !p||String(r.period)===p;});
+  rows.sort(function(a,b){
+    if(SORT==='period')return (a.period+'').localeCompare(b.period+'')||a.name.localeCompare(b.name);
+    if(SORT==='wpm')return b.best-a.best;
+    if(SORT==='updated')return (b.updated||'').localeCompare(a.updated||'');
+    return (a.name||a.email).localeCompare(b.name||b.email);
+  });
+  var turned=rows.filter(function(r){return r.sc&&r.sc.turned;}).length;
+  var withRec=rows.filter(function(r){return r.recs.length;}).length;
+  var wpms=rows.map(function(r){return r.best;}).filter(Boolean).sort(function(a,b){return a-b;});
+  var med=wpms.length?wpms[Math.floor(wpms.length/2)]:0;
+  $('stats').innerHTML=
+    '<div class="stat"><b>'+rows.length+'</b><span>students started</span></div>'+
+    '<div class="stat"><b>'+turned+'</b><span>turned in</span></div>'+
+    '<div class="stat"><b>'+withRec+'</b><span>sent a recording</span></div>'+
+    '<div class="stat"><b>'+(med||'—')+'</b><span>median words/min</span></div>';
+  var h='<tr><th data-s="name">Student</th><th data-s="period">Per.</th><th>Questions</th><th>Grammar</th><th>Your turn</th><th>Talk chart</th><th data-s="wpm">Recording</th><th>Turned in</th><th data-s="updated">Last active</th></tr>';
+  if(!rows.length)h+='<tr><td colspan="9" class="empty">No work yet for this article.</td></tr>';
+  rows.forEach(function(r){
+    var s=r.sc;
+    h+='<tr class="row" data-e="'+esc(r.email)+'"><td><b>'+esc(r.name||'(no name)')+'</b><br><span class="muted">'+esc(r.email)+'</span></td>'+
+      '<td>'+esc(r.period)+'</td>'+
+      '<td>'+(s?pill(s.qDone,s.qTot):pill(0,0))+'</td>'+
+      '<td>'+(s?pill(s.cRight,s.cTot):pill(0,0))+'</td>'+
+      '<td>'+(s?(s.prod?'<span class="pill g">done</span>':'<span class="pill r">no</span>'):'—')+'</td>'+
+      '<td>'+(s?(s.talk?'<span class="pill g">'+s.talk+' cells</span>':'<span class="pill r">empty</span>'):'—')+'</td>'+
+      '<td>'+(r.recs.length?'<b>'+r.best+'</b> wpm <span class="muted">×'+r.recs.length+'</span>':'<span class="pill n">none</span>')+'</td>'+
+      '<td>'+(s&&s.turned?'<span class="pill g">'+when(s.turned)+'</span>':'')+'</td>'+
+      '<td class="muted">'+when(r.updated)+'</td></tr>';
+    if(OPEN===r.email)h+='<tr class="detail"><td colspan="9">'+detail(r)+'</td></tr>';
+  });
+  $('tbl').innerHTML=h;
+}
+function ans(v){v=(v||'').trim();return v?esc(v):'<span class="empty">(blank)</span>';}
+function detail(r){
+  var a=(r.work&&r.work.answers)||{},h='';
+  h+='<h4>Questions</h4>';
+  A.qs.forEach(function(q,i){h+='<div class="qa"><div class="q">'+(i+1)+'. '+esc(plain(q))+'</div><div class="a">'+ans(a['q'+i])+'</div></div>';});
+  h+='<h4>Grammar practice</h4>';
+  A.gram.practice.forEach(function(p,i){
+    var v=(a['c'+i]||'').trim(),ok=p.a.indexOf(v.toLowerCase())>=0;
+    h+='<div class="qa">'+esc(p.s).replace(/_{2,}/,'<b style="color:'+(v?(ok?'var(--ok)':'var(--no)'):'#aaa')+'">'+(v?esc(v):'____')+'</b>')+
+       (v&&!ok?' <span class="muted">(expected: '+esc(p.a.join(' / '))+')</span>':'')+'</div>';
+  });
+  if(A.gram.produce)h+='<h4>Your turn</h4><div class="qa"><div class="q">'+esc(plain(A.gram.produce))+'</div><div class="a">'+ans(a.produce)+'</div></div>';
+  var tk=Object.keys(a).filter(function(k){return /^t\d/.test(k)&&(a[k]||'').trim();});
+  if(tk.length){
+    h+='<h4>Talk chart — what they got from their partner</h4>';
+    tk.forEach(function(k){
+      var m=k.match(/^t(\d+)_(\d+)$/),row=A.talk.rows[+m[1]]||[],col=A.talk.cols[+m[2]]||'';
+      h+='<div class="qa"><span class="q">'+esc(row[0]||'')+' · '+esc(col)+':</span> '+esc(a[k])+'</div>';
+    });
+  }
+  h+='<h4>Recordings</h4>';
+  if(!r.recs.length)h+='<div class="empty">None yet.</div>';
+  r.recs.forEach(function(x){
+    h+='<div class="qa"><audio controls preload="none" data-p="'+esc(x.path)+'" src="'+SUPA_URL+'/storage/v1/object/public/'+BUCKET+'/'+esc(x.path)+'"></audio> '+
+       '<b>'+(x.wpm||'?')+' wpm</b> <span class="muted">'+(x.seconds||'?')+'s · '+(x.word_count||'?')+' words · '+when(x.created_at)+'</span></div>';
+  });
+  return h;
+}
+/* if the bucket is private, swap in a signed URL */
+document.addEventListener('error',function(e){
+  var el=e.target;if(el.tagName!=='AUDIO'||el.dataset.signed)return;
+  el.dataset.signed='1';
+  fetch(SUPA_URL+'/storage/v1/object/sign/'+BUCKET+'/'+el.dataset.p,{method:'POST',headers:Object.assign({'Content-Type':'application/json'},H),body:JSON.stringify({expiresIn:3600})})
+  .then(function(r){return r.json();}).then(function(j){if(j.signedURL)el.src=SUPA_URL+'/storage/v1'+j.signedURL;});
+},true);
+
+$('tbl').addEventListener('click',function(e){
+  var th=e.target.closest('th');if(th&&th.dataset.s){SORT=th.dataset.s;draw();return;}
+  if(e.target.closest('audio'))return;
+  var tr=e.target.closest('tr.row');if(!tr)return;
+  OPEN=OPEN===tr.dataset.e?'':tr.dataset.e;draw();
+});
+
+$('csv').onclick=function(){
+  if(!A)return;
+  var head=['name','email','period','questions_done','grammar_right','your_turn','talk_cells','recordings','best_wpm','turned_in','last_active'];
+  A.qs.forEach(function(_,i){head.push('Q'+(i+1));});
+  head.push('your_turn_text');
+  var lines=[head];
+  ROWS.forEach(function(r){
+    var s=r.sc||{},a=(r.work&&r.work.answers)||{};
+    var row=[r.name,r.email,r.period,s.qDone||0,s.cRight||0,s.prod?'yes':'no',s.talk||0,r.recs.length,r.best||'',s.turned||'',r.updated||''];
+    A.qs.forEach(function(_,i){row.push(a['q'+i]||'');});
+    row.push(a.produce||'');
+    lines.push(row);
+  });
+  var csv=lines.map(function(l){return l.map(function(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var b=new Blob([csv],{type:'text/csv'}),u=URL.createObjectURL(b),ln=document.createElement('a');
+  ln.href=u;ln.download='news_'+$('art').value+'.csv';ln.click();
+};
+</script>
+</body>
+</html>

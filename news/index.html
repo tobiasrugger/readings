@@ -79,15 +79,24 @@
 
 <div class="bar">
   <h1 id="barTitle">This Week's Reading</h1>
-  <input id="email" placeholder="your school email">
+  <button class="btn ghost" id="who">Sign in</button>
   <select id="lang">
     <option value="">Translate…</option>
     <option value="Spanish">Español</option>
-    <option value="Chinese (Simplified)">中文</option>
+    <option value="Cantonese">廣東話</option>
+    <option value="Mandarin">普通话</option>
     <option value="Arabic">العربية</option>
+    <option value="Darija">الدارجة</option>
     <option value="Vietnamese">Tiếng Việt</option>
-    <option value="Thai">ไทย</option>
+    <option value="Russian">Русский</option>
+    <option value="Urdu">اردو</option>
+    <option value="Tagalog">Tagalog</option>
+    <option value="French">Français</option>
+    <option value="Korean">한국어</option>
+    <option value="Hindi">हिन्दी</option>
+    <option value="Somali">Soomaali</option>
     <option value="Nepali">नेपाली</option>
+    <option value="Thai">ไทย</option>
   </select>
   <span class="dot" id="dot" title="save status"></span>
   <button class="btn" id="turnIn">Turn in</button>
@@ -152,6 +161,20 @@
 
 </main>
 
+<div id="signin" style="position:fixed;inset:0;background:rgba(20,40,32,.55);z-index:95;display:none;align-items:center;justify-content:center;padding:16px">
+  <div class="card" style="width:min(400px,100%);margin:0">
+    <h3>Sign in</h3>
+    <label class="q" style="margin-top:6px">Your name</label>
+    <input class="txt" id="siName" autocomplete="name">
+    <label class="q">School email</label>
+    <input class="txt" id="siEmail" placeholder="name@s.sfusd.edu" autocomplete="email">
+    <label class="q">Period</label>
+    <select class="txt" id="siPeriod"><option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select>
+    <p id="siErr" style="color:var(--no);font-weight:700;min-height:22px;margin:8px 0 0"></p>
+    <button class="big" id="siGo" style="width:100%">Start</button>
+  </div>
+</div>
+
 <div class="pop" id="pop">
   <span class="x" onclick="document.getElementById('pop').style.display='none'">✕</span>
   <b id="popW"></b>
@@ -170,6 +193,9 @@ var H={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'appl
 var A=null;        // parsed article
 var ANS={};        // student answers
 var ROLE='';
+var ME={email:'',name:'',period:''};
+var EMAIL_RE=/^[^@\s]+@(s\.)?sfusd\.edu$/;
+function canon(e){e=e.trim().toLowerCase();return e.replace(/@sfusd\.edu$/,'@s.sfusd.edu');}
 var dirty=false;
 
 /* ---------- tiny helpers ---------- */
@@ -234,13 +260,16 @@ function plain(s){
 }
 
 /* ---------- translation via Apps Script proxy ---------- */
-function translate(text,lang,cb){
-  fetch(PROXY,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
-    body:JSON.stringify({text:text,target:lang,targetLang:lang,language:lang})})
-  .then(function(r){return r.text();})
+function translate(word,meaning,lang,cb){
+  var u=PROXY+'?action=translate&idiom='+encodeURIComponent(word)+'&meaning='+encodeURIComponent(meaning)+'&lang='+encodeURIComponent(lang);
+  fetch(u).then(function(r){return r.text();})
   .then(function(t){
     var v=t;
-    try{var j=JSON.parse(t); v=j.translation||j.translated||j.text||j.result||j.output||t;}catch(e){}
+    try{
+      var j=JSON.parse(t);
+      var w=j.idiom||j.word||'', m=j.meaning||j.translation||j.text||j.result||'';
+      v=(w&&m)?(w+' \u2014 '+m):(w||m||t);
+    }catch(e){}
     cb(v);
   }).catch(function(){cb('(translation unavailable)');});
 }
@@ -361,7 +390,7 @@ document.addEventListener('click',function(e){
     $('popT').textContent='';
     $('pop').style.display='block';
     var L=$('lang').value;
-    if(L){$('popT').textContent='…';translate(g.dataset.d,L,function(v){$('popT').textContent=v;});}
+    if(L){$('popT').textContent='…';translate(g.textContent,g.dataset.d,L,function(v){$('popT').textContent=v;});}
     say(g.textContent,false);
     return;
   }
@@ -398,7 +427,7 @@ function wireInputs(){
     }
   });
 }
-function lsKey(){return 'news_'+(A&&A.meta.SLUG||'x')+'_'+($('email').value.trim().toLowerCase()||'anon');}
+function lsKey(){return 'news_'+(A&&A.meta.SLUG||'x')+'_'+(ME.email||'anon');}
 function restore(){
   var raw=localStorage.getItem(lsKey());
   if(raw){try{ANS=JSON.parse(raw);}catch(e){}}
@@ -410,21 +439,54 @@ function restore(){
 /* ---------- autosave ---------- */
 setInterval(function(){
   if(!dirty||!A) return;
-  var em=$('email').value.trim().toLowerCase();
+  var em=ME.email;
   if(!em||em.indexOf('@')<0) return;
   dirty=false;
   fetch(SUPA_URL+'/rest/v1/news_work?on_conflict=email,slug',{
     method:'POST',
     headers:Object.assign({},H,{'Prefer':'resolution=merge-duplicates,return=minimal'}),
-    body:JSON.stringify({email:em,slug:A.meta.SLUG,answers:ANS,updated_at:new Date().toISOString()})
+    body:JSON.stringify({email:em,name:ME.name,period:ME.period,slug:A.meta.SLUG,answers:ANS,updated_at:new Date().toISOString()})
   }).then(function(r){setDot(r.ok?'on':'err'); if(!r.ok) dirty=true;})
    .catch(function(){setDot('err');dirty=true;});
 },2500);
 
-$('email').addEventListener('change',function(){if(A){restore();}});
+function showSignin(){
+  $('siName').value=ME.name||localStorage.getItem('gal_student_name')||'';
+  $('siEmail').value=ME.email||localStorage.getItem('gal_student_email')||'';
+  $('siPeriod').value=ME.period||localStorage.getItem('gal_student_period')||'';
+  $('siErr').textContent='';
+  $('signin').style.display='flex';
+}
+$('who').onclick=showSignin;
+$('siGo').onclick=function(){
+  var n=$('siName').value.trim(), raw=$('siEmail').value.trim().toLowerCase(), p=$('siPeriod').value;
+  if(!n){$('siErr').textContent='Type your name.';return;}
+  if(!EMAIL_RE.test(raw)){$('siErr').textContent='Use your school email (@s.sfusd.edu).';return;}
+  if(!p){$('siErr').textContent='Choose your period.';return;}
+  var c=canon(raw);
+  ME={email:c,name:n,period:p};
+  localStorage.setItem('gal_student_email',c);
+  localStorage.setItem('gal_student_name',n);
+  localStorage.setItem('gal_student_period',p);
+  if(raw!==c){
+    fetch(SUPA_URL+'/rest/v1/student_aliases',{method:'POST',headers:Object.assign({},H,{'Prefer':'resolution=ignore-duplicates,return=minimal'}),
+      body:JSON.stringify({alias:raw,canonical:c})}).catch(function(){});
+  }
+  fetch(SUPA_URL+'/rest/v1/students?on_conflict=email',{method:'POST',headers:Object.assign({},H,{'Prefer':'resolution=ignore-duplicates,return=minimal'}),
+    body:JSON.stringify({email:c,name:n,period:p})}).catch(function(){});
+  $('signin').style.display='none';
+  $('who').textContent=n.split(' ')[0]+' \u00b7 P'+p;
+  if(A){ANS={};restore();wireInputs();}
+  dirty=true;
+};
+(function(){
+  var e=localStorage.getItem('gal_student_email'),n=localStorage.getItem('gal_student_name'),p=localStorage.getItem('gal_student_period');
+  if(e&&n&&p&&EMAIL_RE.test(e)){ME={email:e,name:n,period:p};$('who').textContent=n.split(' ')[0]+' \u00b7 P'+p;}
+  else setTimeout(showSignin,400);
+})();
 $('turnIn').onclick=function(){
-  var em=$('email').value.trim().toLowerCase();
-  if(!em||em.indexOf('@')<0){alert('Type your school email at the top first.');return;}
+  var em=ME.email;
+  if(!em||em.indexOf('@')<0){showSignin();return;}
   dirty=true;
   ANS._turnedIn=new Date().toISOString();
   localStorage.setItem(lsKey(),JSON.stringify(ANS));
@@ -460,8 +522,8 @@ function wireRecorder(wordCount){
   };
 }
 function upload(blob,secs,wc,wpm){
-  var em=$('email').value.trim().toLowerCase();
-  if(!em||em.indexOf('@')<0){alert('Type your school email at the top first.');return;}
+  var em=ME.email;
+  if(!em||em.indexOf('@')<0){showSignin();return;}
   var path='news/'+A.meta.SLUG+'/'+em.replace(/[^a-z0-9]/g,'_')+'_'+Date.now()+'.webm';
   $('upMsg').textContent='Sending…';
   fetch(SUPA_URL+'/storage/v1/object/'+BUCKET+'/'+path,{
@@ -470,7 +532,7 @@ function upload(blob,secs,wc,wpm){
     if(!r.ok) throw 0;
     return fetch(SUPA_URL+'/rest/v1/fluency_recordings',{
       method:'POST',headers:Object.assign({},H,{'Prefer':'return=minimal'}),
-      body:JSON.stringify({email:em,slug:A.meta.SLUG,passage:'main',path:path,
+      body:JSON.stringify({email:em,name:ME.name,period:ME.period,slug:A.meta.SLUG,passage:'main',path:path,
         seconds:Math.round(secs*10)/10,word_count:wc,wpm:wpm})
     });
   }).then(function(){$('upMsg').textContent='Sent.';})
@@ -578,6 +640,5 @@ var SEED=[
 $('doc').value=SEED;
 boot();
 </script>
-<script src="/readings/track.js"></script>
 </body>
 </html>
