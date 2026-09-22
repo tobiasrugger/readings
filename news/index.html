@@ -362,20 +362,18 @@ function render(){
   }
   $('talkBody').innerHTML=ROLE?t:'<p class="muted">Choose A or B above to see your half of the chart.</p>';
 
-  /* RECORD */
+  /* RECORD — hands off to the fluency tracker so everything lands in one growth chart */
   var wc=A.record?plain(A.record).trim().split(/\s+/).length:0;
+  var fslug='news-'+A.meta.SLUG;
   $('recBody').innerHTML=
     '<div class="card"><h3>Read aloud</h3>'+
-    '<p class="muted">Read this passage out loud. Take your time — clear beats fast. You can listen to it first.</p>'+
-    '<div class="passage" id="pass">'+rich(A.record)+'</div>'+
+    '<p class="muted">You will read this passage out loud in the Fluency Tracker. It times you, you mark your own mistakes, and it shows you which sounds to practice.</p>'+
+    '<div class="passage">'+rich(A.record)+'</div>'+
     '<div class="rec"><button class="spk" data-raw="'+esc(plain(A.record)).replace(/"/g,'&quot;')+'" style="font-size:15px;padding:8px 12px">&#128266; Listen first</button>'+
     '<span class="muted">'+wc+' words</span></div>'+
-    '<div class="rec" style="margin-top:16px"><button class="big" id="recBtn">Start recording</button>'+
-    '<span class="clock" id="clock">0.0s</span></div>'+
-    '<div id="playback" style="margin-top:14px"></div>'+
-    '<div id="wpm" style="margin-top:10px;font-weight:800"></div>'+
+    '<a class="big" style="display:block;text-align:center;margin-top:18px;text-decoration:none" href="../fluency/index.html?p='+encodeURIComponent(fslug)+'">Open the Fluency Tracker</a>'+
+    '<p class="muted" style="margin-top:10px">Read it once on Monday and again on Thursday after you practice. The second reading is how you see yourself getting better.</p>'+
     '</div>';
-  wireRecorder(wc);
 
   restore();
   wireInputs();
@@ -493,70 +491,6 @@ $('turnIn').onclick=function(){
   alert('Turned in. You can still make changes — Mr. Toby sees the newest version.');
 };
 
-/* ---------- recorder ---------- */
-var mr=null,chunks=[],t0=0,tick=null;
-function wireRecorder(wordCount){
-  var btn=$('recBtn'); if(!btn) return;
-  btn.onclick=function(){
-    if(mr&&mr.state==='recording'){ mr.stop(); return; }
-    navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
-      chunks=[]; mr=new MediaRecorder(stream);
-      mr.ondataavailable=function(e){chunks.push(e.data);};
-      mr.onstop=function(){
-        clearInterval(tick);
-        stream.getTracks().forEach(function(t){t.stop();});
-        var secs=(Date.now()-t0)/1000;
-        var blob=new Blob(chunks,{type:'audio/webm'});
-        $('playback').innerHTML='<audio controls src="'+URL.createObjectURL(blob)+'" style="width:100%"></audio>'+
-          '<button class="btn" style="background:var(--pine);color:#fff;margin-top:10px" id="up">Send to Mr. Toby</button>'+
-          '<span class="muted" id="upMsg" style="margin-left:8px"></span>';
-        var wpm=Math.round(wordCount/(secs/60));
-        $('wpm').innerHTML='Time: '+secs.toFixed(1)+'s &nbsp;·&nbsp; About '+wpm+' words per minute';
-        btn.textContent='Record again'; btn.classList.remove('stop');
-        $('up').onclick=function(){ upload(blob,secs,wordCount,wpm); };
-      };
-      mr.start(); t0=Date.now();
-      btn.textContent='Stop'; btn.classList.add('stop');
-      tick=setInterval(function(){$('clock').textContent=((Date.now()-t0)/1000).toFixed(1)+'s';},100);
-    }).catch(function(){alert('I could not turn on the microphone. Check that this page is allowed to use it.');});
-  };
-}
-function upload(blob,secs,wc,wpm){
-  var em=ME.email;
-  if(!em||em.indexOf('@')<0){showSignin();return;}
-  var path='news/'+A.meta.SLUG+'/'+em.replace(/[^a-z0-9]/g,'_')+'_'+Date.now()+'.webm';
-  var msg=$('upMsg');
-  msg.style.color=''; msg.textContent='Sending\u2026';
-  fetch(SUPA_URL+'/storage/v1/object/'+BUCKET+'/'+path,{
-    method:'POST',
-    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'audio/webm'},
-    body:blob
-  }).then(function(r){
-    return r.ok ? null : r.text().then(function(t){
-      throw new Error('Audio upload failed \u2014 status '+r.status+'. '+t.slice(0,300));
-    });
-  }).then(function(){
-    msg.textContent='Audio saved. Saving your score\u2026';
-    return fetch(SUPA_URL+'/rest/v1/fluency_recordings',{
-      method:'POST',
-      headers:Object.assign({},H,{'Prefer':'return=minimal'}),
-      body:JSON.stringify({email:em,name:ME.name,period:ME.period,slug:A.meta.SLUG,
-        passage:'main',path:path,seconds:Math.round(secs*10)/10,word_count:wc,wpm:wpm})
-    }).then(function(r){
-      return r.ok ? null : r.text().then(function(t){
-        throw new Error('Your audio saved, but the score row did not \u2014 status '+r.status+'. '+t.slice(0,300));
-      });
-    });
-  }).then(function(){
-    msg.style.color='var(--ok)';
-    msg.textContent='Sent to Mr. Toby.';
-  }).catch(function(e){
-    msg.style.color='var(--no)';
-    msg.textContent=e.message||'Network problem.';
-    console.error('[upload]',e);
-  });
-}
-
 /* ---------- teacher ---------- */
 $('pwGo').onclick=function(){
   if($('pw').value===PW){$('teach').style.display='block';loadList();}
@@ -572,8 +506,18 @@ $('pub').onclick=function(){
     body:JSON.stringify({slug:d.meta.SLUG,title:d.meta.TITLE,week_of:d.meta.WEEK||null,
       doc:$('doc').value,published:true,updated_at:new Date().toISOString()})
   }).then(function(r){
-    $('pubMsg').textContent=r.ok?'Published.':'Did not publish — check the table exists.';
-    if(r.ok){A=d;ROLE='';ANS={};render();loadList();}
+    if(!r.ok){$('pubMsg').textContent='Did not publish — check the table exists.';return;}
+    $('pubMsg').textContent='Published. Adding the read-aloud passage…';
+    var body=plain(d.record||'').trim();
+    if(!body){$('pubMsg').textContent='Published. (No ---RECORD--- passage, so nothing was sent to the fluency tracker.)';A=d;ROLE='';ANS={};render();loadList();return;}
+    return fetch(SUPA_URL+'/rest/v1/fluency_passages?on_conflict=slug',{
+      method:'POST',headers:Object.assign({},H,{'Prefer':'resolution=merge-duplicates,return=minimal'}),
+      body:JSON.stringify({slug:'news-'+d.meta.SLUG,title:d.meta.TITLE,level:'B',body:body,
+        word_count:body.split(/\s+/).length,assigned_week:d.meta.WEEK||null,active:true})
+    }).then(function(r2){
+      $('pubMsg').textContent=r2.ok?'Published, and the passage is now in the Fluency Tracker.':'Published, but the fluency passage did not save.';
+      A=d;ROLE='';ANS={};render();loadList();
+    });
   }).catch(function(){$('pubMsg').textContent='Network problem.';});
 };
 function loadList(){

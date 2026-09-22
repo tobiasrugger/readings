@@ -53,12 +53,12 @@ audio{height:34px;vertical-align:middle}
 <main id="main" style="display:none">
   <div class="stats" id="stats"></div>
   <div class="wrap"><table id="tbl"></table></div>
-  <p class="muted" style="margin-top:10px">Tap a student to see every answer and play recordings.</p>
+  <p class="muted" style="margin-top:10px"><a href="../fluency/dashboard.html">Full fluency dashboard &rarr;</a> &nbsp;·&nbsp; Tap a student to see every answer and play recordings.</p>
 </main>
 <script>
 var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
 var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
-var BUCKET='vocab-recordings';
+var BUCKET='fluency-recordings';
 var PW='galileo2026';
 var H={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY};
 var ARTS=[],A=null,WORK=[],RECS=[],ROWS=[],SORT='name',OPEN='';
@@ -137,7 +137,7 @@ function load(){
   $('tbl').innerHTML='<tr><td class="muted">Loading…</td></tr>';
   Promise.all([
     get('news_work?select=*&slug=eq.'+encodeURIComponent(slug)),
-    get('fluency_recordings?select=*&slug=eq.'+encodeURIComponent(slug)+'&order=created_at.asc')
+    get('fluency_runs?select=*&passage_slug=eq.'+encodeURIComponent('news-'+slug)+'&order=created_at.asc')
   ]).then(function(r){WORK=r[0]||[];RECS=r[1]||[];build();draw();});
 }
 
@@ -158,11 +158,11 @@ function build(){
   RECS.forEach(function(r){
     if(!by[r.email])by[r.email]={email:r.email,name:r.name||'',period:r.period||'',work:null,recs:[],updated:r.created_at};
     by[r.email].recs.push(r);
-    if(!by[r.email].name&&r.name)by[r.email].name=r.name;
+    if(!by[r.email].name&&(r.name||r.student_name))by[r.email].name=r.name||r.student_name;
     if(!by[r.email].period&&r.period)by[r.email].period=r.period;
   });
   ROWS=Object.keys(by).map(function(k){var s=by[k];s.sc=s.work?score(s.work):null;
-    s.best=s.recs.reduce(function(m,r){return Math.max(m,r.wpm||0);},0);return s;});
+    s.best=s.recs.reduce(function(m,r){return Math.max(m,+r.wcpm||0);},0);return s;});
 }
 function pill(n,d){
   if(!d)return '<span class="pill n">—</span>';
@@ -188,7 +188,7 @@ function draw(){
     '<div class="stat"><b>'+rows.length+'</b><span>students started</span></div>'+
     '<div class="stat"><b>'+turned+'</b><span>turned in</span></div>'+
     '<div class="stat"><b>'+withRec+'</b><span>sent a recording</span></div>'+
-    '<div class="stat"><b>'+(med||'—')+'</b><span>median words/min</span></div>';
+    '<div class="stat"><b>'+(med||'—')+'</b><span>median wcpm</span></div>';
   var h='<tr><th data-s="name">Student</th><th data-s="period">Per.</th><th>Questions</th><th>Grammar</th><th>Your turn</th><th>Talk chart</th><th data-s="wpm">Recording</th><th>Turned in</th><th data-s="updated">Last active</th></tr>';
   if(!rows.length)h+='<tr><td colspan="9" class="empty">No work yet for this article.</td></tr>';
   rows.forEach(function(r){
@@ -199,7 +199,7 @@ function draw(){
       '<td>'+(s?pill(s.cRight,s.cTot):pill(0,0))+'</td>'+
       '<td>'+(s?(s.prod?'<span class="pill g">done</span>':'<span class="pill r">no</span>'):'—')+'</td>'+
       '<td>'+(s?(s.talk?'<span class="pill g">'+s.talk+' cells</span>':'<span class="pill r">empty</span>'):'—')+'</td>'+
-      '<td>'+(r.recs.length?'<b>'+r.best+'</b> wpm <span class="muted">×'+r.recs.length+'</span>':'<span class="pill n">none</span>')+'</td>'+
+      '<td>'+(r.recs.length?'<b>'+r.best+'</b> wcpm <span class="muted">×'+r.recs.length+'</span>':'<span class="pill n">none</span>')+'</td>'+
       '<td>'+(s&&s.turned?'<span class="pill g">'+when(s.turned)+'</span>':'')+'</td>'+
       '<td class="muted">'+when(r.updated)+'</td></tr>';
     if(OPEN===r.email)h+='<tr class="detail"><td colspan="9">'+detail(r)+'</td></tr>';
@@ -229,8 +229,8 @@ function detail(r){
   h+='<h4>Recordings</h4>';
   if(!r.recs.length)h+='<div class="empty">None yet.</div>';
   r.recs.forEach(function(x){
-    h+='<div class="qa"><audio controls preload="none" data-p="'+esc(x.path)+'" src="'+SUPA_URL+'/storage/v1/object/public/'+BUCKET+'/'+esc(x.path)+'"></audio> '+
-       '<b>'+(x.wpm||'?')+' wpm</b> <span class="muted">'+(x.seconds||'?')+'s · '+(x.word_count||'?')+' words · '+when(x.created_at)+'</span></div>';
+    h+='<div class="qa"><audio controls preload="none" data-p="'+esc(x.audio_path)+'" src="'+SUPA_URL+'/storage/v1/object/public/'+BUCKET+'/'+esc(x.audio_path)+'"></audio> '+
+       '<b>'+(x.wcpm||'?')+' wcpm</b> <span class="muted">'+(x.accuracy||'?')+'% accuracy · '+(x.errors||0)+' missed · '+(x.attempt==='cold'?'first read':'after practice')+' · '+when(x.created_at)+'</span></div>';
   });
   return h;
 }
