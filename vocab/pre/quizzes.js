@@ -217,6 +217,215 @@ window.QUIZZES = [
       { s:'Saturday and Sunday are the ____.',                                                             w:'weekend',  opts:['morning','holiday','summer'] },
       { s:'Class begins at 9:00. We ____ at 9:00.',                                                        w:'start',    opts:['finish','wait','leave'] }
     ]
+  },
+
+  {
+    id: 'u1-l6-people',
+    title: 'People and Jobs',
+    tag: 'Unit 1, Lesson 6',
+    emoji: '🧑‍🏫',
+    items: [
+      { e:'🧑‍🏫', w:'teacher',        opts:['student','doctor','driver'] },
+      { e:'🧑‍🎓', w:'student',        opts:['teacher','nurse','farmer'] },
+      { e:'👩‍⚕️', w:'nurse',          opts:['teacher','cook','police officer'] },
+      { e:'🧑‍🍳', w:'cook',           opts:['farmer','waiter','doctor'] },
+      { e:'👮', w:'police officer',  opts:['firefighter','driver','nurse'] },
+      { e:'🧑‍🔬', w:'scientist',      opts:['artist','teacher','singer'] },
+      { e:'🧑‍🎨', w:'artist',         opts:['scientist','writer','dancer'] },
+      { e:'🧑‍🌾', w:'farmer',         opts:['cook','builder','driver'] },
+      { e:'🧑‍✈️', w:'pilot',          opts:['driver','sailor','soldier'] },
+      { e:'🧑‍🔧', w:'mechanic',       opts:['builder','cleaner','waiter'] }
+    ]
+  },
+
+  {
+    id: 'u1-l9-places',
+    title: 'Places',
+    tag: 'Unit 1, Lesson 9',
+    emoji: '🏫',
+    items: [
+      { e:'🏫', w:'school',      opts:['house','store','hospital'] },
+      { e:'📚', w:'library',     opts:['bank','school','park'] },
+      { e:'🏥', w:'hospital',    opts:['school','store','bank'] },
+      { e:'🏪', w:'store',       opts:['restaurant','library','park'] },
+      { e:'🏞️', w:'park',        opts:['beach','school','street'] },
+      { e:'🏠', w:'house',       opts:['school','store','office'] },
+      { e:'🏦', w:'bank',        opts:['hospital','library','store'] },
+      { e:'🍽️', w:'restaurant',  opts:['store','park','bank'] },
+      { e:'📮', w:'post office', opts:['bank','library','hospital'] },
+      { e:'🚏', w:'bus stop',    opts:['train station','airport','parking lot'] }
+    ]
+  },
+
+  {
+    id: 'u2-l12-seasons',
+    title: 'Seasons and Memories',
+    tag: 'Unit 2, Lesson 12',
+    emoji: '🍂',
+    items: [
+      { e:'⛄', w:'winter',    opts:['summer','spring','fall'] },
+      { e:'🌷', w:'spring',    opts:['winter','fall','summer'] },
+      { e:'🏖️', w:'summer',    opts:['winter','spring','fall'] },
+      { e:'🍂', w:'fall',      opts:['spring','summer','winter'] },
+      { e:'✈️', w:'vacation',  opts:['homework','practice','meeting'] },
+      { e:'🎉', w:'party',     opts:['class','game','trip'] },
+      { e:'🎂', w:'birthday',  opts:['holiday','weekend','vacation'] },
+      { e:'⛺', w:'camping',   opts:['shopping','swimming','cooking'] },
+      { e:'🧺', w:'picnic',    opts:['party','breakfast','game'] },
+      { e:'🎆', w:'fireworks', opts:['candles','stars','music'] }
+    ]
+  },
+
+  {
+    id: 'u2-l13-senses',
+    title: 'Setting the Scene',
+    tag: 'Unit 2, Lesson 13',
+    emoji: '👀',
+    items: [
+      { e:'👁️', w:'see',    opts:['hear','smell','touch'] },
+      { e:'👂', w:'hear',   opts:['see','taste','smell'] },
+      { e:'👃', w:'smell',  opts:['taste','hear','see'] },
+      { e:'👅', w:'taste',  opts:['smell','touch','hear'] },
+      { e:'✋', w:'touch',  opts:['see','hear','taste'] },
+      { e:'📢', w:'loud',   opts:['quiet','soft','slow'] },
+      { e:'🤫', w:'quiet',  opts:['loud','fast','bright'] },
+      { e:'🍯', w:'sweet',  opts:['sour','salty','spicy'] },
+      { e:'🍋', w:'sour',   opts:['sweet','salty','hot'] },
+      { e:'🧊', w:'cold',   opts:['hot','wet','heavy'] }
+    ]
+  },
+
+  {
+    id: 'u1-l13-directions',
+    title: 'Getting Around School',
+    tag: 'Unit 1, Lesson 13',
+    emoji: '🧭',
+    items: [
+      { s:'The library is on the second floor. Go ____.',                        w:'upstairs',  opts:['downstairs','outside','through'] },
+      { s:'The cafeteria is on the first floor. We are on the third floor. Go ____.', w:'downstairs', opts:['upstairs','inside','straight'] },
+      { s:'It is raining. Please come ____ the building.',                       w:'inside',    opts:['outside','upstairs','around'] },
+      { s:'We eat lunch ____ at the tables in the schoolyard.',                  w:'outside',   opts:['inside','upstairs','under'] },
+      { s:'Do not turn. Walk ____ to the end of the hallway.',                   w:'straight',  opts:['left','right','back'] },
+      { s:'Your locker is number 12. Turn ____ at the water fountain, then look for 12.', w:'left', opts:['straight','back','up'] },
+      { s:'The office door is on your ____ hand, next to the big window.',       w:'right',     opts:['straight','down','under'] },
+      { s:'Walk ____ the double doors and you will see the gym.',                w:'through',   opts:['around','over','under'] },
+      { s:'The nurse is ____ to the office. The two doors are together.',        w:'next',      opts:['far','behind','under'] },
+      { s:'Room 210 is ____ room 209 and room 211.',                             w:'between',   opts:['behind','under','next'] }
+    ]
+  },
+
+  {
+    id: 'u2-l1-greetings',
+    title: 'Getting to Know You',
+    tag: 'Unit 2, Lesson 1',
+    emoji: '👋',
+    items: [
+      { s:'You see your friend in the morning. You say, "____!"',                w:'hello',      opts:['goodbye','sorry','please'] },
+      { s:'Class is over and you are leaving. You say, "____."',                 w:'goodbye',    opts:['hello','welcome','excuse me'] },
+      { s:'Your teacher helps you. You say, "____."',                            w:'thank you',  opts:['goodbye','no problem','see you'] },
+      { s:'You want a pencil from your friend. You say, "Can I have a pencil, ____?"', w:'please', opts:['thanks','sorry','again'] },
+      { s:'A new student comes to class. You say your name. You ____ yourself.', w:'introduce',  opts:['remember','practice','finish'] },
+      { s:'Today I ____ three new students in my class.',                        w:'met',        opts:['make','made','meeting'] },
+      { s:'"What is your ____?" "It is Ana Reyes."',                             w:'name',       opts:['class','country','number'] },
+      { s:'My first name is Ana. My ____ name is Reyes.',                        w:'last',       opts:['best','new','long'] },
+      { s:'Beto and I eat lunch ____ every day. We sit at the same table.',      w:'together',   opts:['alone','again','early'] },
+      { s:'I am from Guatemala. Guatemala is my ____.',                          w:'country',    opts:['city','school','language'] }
+    ]
+  },
+
+  {
+    id: 'u2-l2-names',
+    title: 'You Can Call Me . . .',
+    tag: 'Unit 2, Lesson 2',
+    emoji: '🗣️',
+    items: [
+      { s:'My name is Giovani, but my friends call me Gio. Gio is my ____.',     w:'nickname',  opts:['last name','country','answer'] },
+      { s:'"How do you say your name?" "Say it like this: Gee-o-von-ee." She helps me ____ it.', w:'pronounce', opts:['spell','write','forget'] },
+      { s:'The answer is Giovani, not Govani. Giovani is ____.',                 w:'correct',   opts:['wrong','late','easy'] },
+      { s:'The teacher wrote Govani on the paper. That is ____.',                w:'wrong',     opts:['correct','ready','new'] },
+      { s:'I met her last week and I still know her name. I ____ it.',           w:'remember',  opts:['forget','ask','repeat'] },
+      { s:'I met him one time, and now I do not know his name. I ____ it.',      w:'forget',    opts:['remember','know','learn'] },
+      { s:'"How do you ____ your name?" "R-E-Y-E-S."',                           w:'spell',     opts:['pronounce','call','write'] },
+      { s:'I did not hear you. Can you ____ that, please?',                      w:'repeat',    opts:['remember','spell','start'] },
+      { s:'My name is Roberto, but you can ____ me Beto.',                       w:'call',      opts:['spell','ask','meet'] },
+      { s:'I do not know the answer, so I ____ the teacher.',                    w:'ask',       opts:['tell','call','repeat'] }
+    ]
+  },
+
+  {
+    id: 'u2-l10-catching-up',
+    title: 'Catching Up',
+    tag: 'Unit 2, Lessons 9 and 10',
+    emoji: '🤝',
+    items: [
+      { s:'My little brother cannot do his math. I ____ him.',                   w:'help',     opts:['win','visit','finish'] },
+      { s:'The soccer team needs one more player, so I ____ the team.',          w:'join',     opts:['leave','watch','win'] },
+      { s:'My grandmother lives across town. On Sunday we ____ her.',            w:'visit',    opts:['call','miss','meet'] },
+      { s:'Our team played very well. We ____ the game, 3 to 1.',                w:'won',      opts:['lost','played','watched'] },
+      { s:'I did all ten math problems. I am ____.',                             w:'finished', opts:['started','tired','ready'] },
+      { s:'Something funny happened at lunch. Let me ____ you about it.',        w:'tell',     opts:['ask','hear','say'] },
+      { s:'We are new here. On Saturday we walk around and ____ the city.',      w:'explore',  opts:['clean','wait','study'] },
+      { s:'For art class I ____ a small house out of paper.',                    w:'made',     opts:['bought','found','wrote'] },
+      { s:'After school I ____ time with my friends at the park.',               w:'spend',    opts:['take','give','keep'] },
+      { s:'My cousin lives far away, so every Sunday I ____ her on the phone.',  w:'call',     opts:['visit','meet','see'] }
+    ]
+  },
+
+  {
+    id: 'tk3-compare',
+    title: 'Compare Words',
+    tag: 'Toolkit 3',
+    emoji: '🟰',
+    items: [
+      { s:'Red and black ____ are colors.',                                   w:'both',       opts:['also','same','too'] },
+      { s:'A circle is ____ a basketball. They are both round.',              w:'like',       opts:['for','than','with'] },
+      { s:'Soccer and basketball are ____. Both are team sports.',            w:'similar',    opts:['different','opposite','strange'] },
+      { s:'An important ____ between English class and history class is that both have essays.', w:'similarity', opts:['difference','contrast','problem'] },
+      { s:'An important similarity ____ the two cities is the weather.',      w:'between',    opts:['about','under','across'] },
+      { s:'Something that water and juice have in ____ is that both are liquids.', w:'common', opts:['same','together','equal'] },
+      { s:'San Francisco and New York ____ many traits. Both are big and both are on the coast.', w:'share', opts:['keep','leave','lose'] },
+      { s:'The two schools share the following ____: small classes, new books, and good teachers.', w:'traits', opts:['reasons','places','answers'] },
+      { s:'Basketball is a sport, ____ as football is a sport.',              w:'just',       opts:['only','even','still'] },
+      { s:'Ms. Walson is a teacher. Mr. Toby is ____ a teacher.',             w:'also',       opts:['never','almost','instead'] }
+    ]
+  },
+
+  {
+    id: 'tk3-contrast',
+    title: 'Contrast Words',
+    tag: 'Toolkit 3',
+    emoji: '⚖️',
+    items: [
+      { s:'An apple is red, ____ a banana is yellow.',                        w:'but',        opts:['so','because','and'] },
+      { s:'Apples and oranges are ____. An apple is red and an orange is orange.', w:'different', opts:['similar','same','equal'] },
+      { s:'An important ____ between a tree and a rock is that a tree is alive.', w:'difference', opts:['similarity','example','answer'] },
+      { s:'Plays and stories ____ because plays are performed and stories are not.', w:'differ', opts:['agree','belong','repeat'] },
+      { s:'Ms. Julie is a woman, ____ Mr. Ben is a man.',                     w:'while',      opts:['during','since','until'] },
+      { s:'____ Taylor Swift, who has wavy hair, Justin Bieber has straight hair.', w:'Unlike', opts:['Like','Without','Along'] },
+      { s:'The most notable ____ is that a circle is round and a square has four sides.', w:'contrast', opts:['comparison','similarity','example'] },
+      { s:'A circle is round, ____ a square has four sides.',                 w:'whereas',    opts:['therefore','because','also'] },
+      { s:'My old school was small. ____, this school is very big.',          w:'However',    opts:['Also','Because','Finally'] },
+      { s:'Galileo has more students ____ my old school.',                    w:'than',       opts:['then','that','from'] }
+    ]
+  },
+
+  {
+    id: 'tk3-frames',
+    title: 'Compare and Contrast Frames',
+    tag: 'Toolkit 3',
+    emoji: '🧰',
+    items: [
+      { s:'Something that The Mission and Chinatown ____ is that both have many immigrants.', w:'have in common', opts:['are different because','differ from','are unlike'] },
+      { s:'San Francisco and New York ____: big, on the coast, and many immigrants.', w:'share the following traits', opts:['have one difference','are not the same','differ because'] },
+      { s:'____ a circle is round, whereas a square has four sides.',          w:'The most notable contrast is that', opts:['An important similarity is that','They have in common that','Both of them are'] },
+      { s:'Ms. Walson ____ Mr. Toby because they both are teachers.',          w:'is like',      opts:['is unlike','differs from','is more than'] },
+      { s:'Ms. Julie and Mr. Ben ____ Ms. Julie is a woman, while Mr. Ben is a man.', w:'differ because', opts:['are similar because','have in common that','are alike because'] },
+      { s:'____ SFIHS, which is a small school, Galileo has more than 1,000 students.', w:'Unlike', opts:['Just as','Like','Along with'] },
+      { s:'____, my old school was small. On the other hand, Galileo is very big.', w:'On the one hand', opts:['In the same way','For example','At the same time'] },
+      { s:'My old school was small. ____, Galileo is very big.',               w:'On the other hand', opts:['In the same way','For this reason','Just as'] },
+      { s:'Mr. Toby is an English teacher, ____ Ms. Donahue is an English teacher.', w:'just as', opts:['unlike','whereas','while'] },
+      { s:'A Venn diagram shows similarities in the middle and ____ on the two sides.', w:'differences', opts:['similarities','examples','questions'] }
+    ]
   }
 
 ];
