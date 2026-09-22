@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reading Fluency — Mr. Toby</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--pine:#1d4d3f;--pine-dk:#143528;--paper:#fbfaf6;--ink:#22241f;--rule:#dcd9cf;--ok:#15803d;--no:#b91c1c;--gold:#b45309}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:Nunito,system-ui,sans-serif;font-size:17px;line-height:1.6}
+.bar{position:sticky;top:0;z-index:50;background:var(--pine);color:#fff;padding:10px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.bar h1{font-size:17px;margin:0;font-weight:800;flex:1;min-width:130px}
+.btn{font-family:inherit;font-size:14px;font-weight:700;padding:7px 13px;border-radius:8px;border:0;background:#fff;color:var(--pine);cursor:pointer}
+.btn.ghost{background:rgba(255,255,255,.16);color:#fff}
+main{max-width:720px;margin:0 auto;padding:18px 16px 90px}
+.card{background:#fff;border:1px solid var(--rule);border-radius:13px;padding:17px;margin:0 0 16px}
+.card h2{font-size:19px;margin:0 0 8px}
+.card h3{font-size:15px;margin:16px 0 6px;text-transform:uppercase;letter-spacing:.04em;color:var(--pine)}
+select,input.txt{width:100%;font-family:inherit;font-size:16px;padding:10px 11px;border:1px solid var(--rule);border-radius:9px;background:#fff}
+label.q{display:block;font-weight:700;margin:14px 0 5px}
+.big{font-size:16px;padding:13px 22px;border-radius:11px;background:var(--pine);color:#fff;border:0;font-family:inherit;font-weight:800;cursor:pointer}
+.big.stop{background:var(--no)}
+.big:disabled{opacity:.45}
+.clock{font-size:34px;font-weight:800;font-variant-numeric:tabular-nums}
+.passage{font-size:20px;line-height:2.1;background:#fff;border:1px solid var(--rule);border-left:5px solid var(--pine);border-radius:10px;padding:16px}
+.passage span.w{cursor:pointer;border-radius:4px;padding:1px 2px}
+.passage span.w.err{background:#fee2e2;color:var(--no);text-decoration:line-through;font-weight:700}
+.passage span.w.sc{background:#fef3c7;color:var(--gold);font-weight:700}
+.tiles{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 0}
+.tile{flex:1;min-width:98px;background:#f4f6f4;border:1px solid var(--rule);border-radius:10px;padding:10px 12px;text-align:center}
+.tile b{display:block;font-size:25px;line-height:1.2}
+.tile span{font-size:12px;color:#6d736b}
+.muted{color:#7a8075;font-size:14px}
+.note{background:#fff8e6;border:1px solid #f0dfae;border-radius:10px;padding:12px;font-size:15px;margin:0 0 16px}
+.steps{display:flex;gap:6px;margin-bottom:14px}
+.steps div{flex:1;height:5px;border-radius:99px;background:#e2e5e1}
+.steps div.on{background:var(--pine)}
+.pair{display:flex;gap:8px;align-items:center;margin:6px 0;flex-wrap:wrap}
+.pair b{min-width:92px}
+.sbtn{background:#eceadf;border:1px solid var(--rule);border-radius:7px;font-size:14px;padding:4px 9px;cursor:pointer;font-family:inherit}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{border-bottom:1px solid var(--rule);padding:6px 4px;text-align:left}
+th{color:#6d736b;font-size:12px;text-transform:uppercase}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+.hide{display:none}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <h1>Reading Fluency</h1>
+  <button class="btn ghost" id="who">Sign in</button>
+  <button class="btn ghost" id="histBtn">My progress</button>
+</div>
+
+<main>
+
+<div id="signin" style="position:fixed;inset:0;background:rgba(20,40,32,.55);z-index:95;display:none;align-items:center;justify-content:center;padding:16px">
+  <div class="card" style="width:min(400px,100%);margin:0">
+    <h2>Sign in</h2>
+    <label class="q">Your name</label>
+    <input class="txt" id="siName" autocomplete="name">
+    <label class="q">School email</label>
+    <input class="txt" id="siEmail" placeholder="name@s.sfusd.edu" autocomplete="email">
+    <label class="q">Period</label>
+    <select class="txt" id="siPeriod"><option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select>
+    <label class="q">Your first language</label>
+    <select class="txt" id="siL1">
+      <option value="">—</option>
+      <option value="es">Spanish / Español</option>
+      <option value="yue">Cantonese / 廣東話</option>
+      <option value="zh">Mandarin / 普通话</option>
+      <option value="ar">Arabic / العربية</option>
+      <option value="ary">Darija / الدارجة</option>
+      <option value="vi">Vietnamese / Tiếng Việt</option>
+      <option value="ru">Russian / Русский</option>
+      <option value="ur">Urdu / اردو</option>
+      <option value="tl">Tagalog</option>
+      <option value="fr">French / Français</option>
+      <option value="ko">Korean / 한국어</option>
+      <option value="hi">Hindi / हिन्दी</option>
+      <option value="so">Somali / Soomaali</option>
+      <option value="ne">Nepali / नेपाली</option>
+      <option value="th">Thai / ไทย</option>
+      <option value="other">Another language</option>
+    </select>
+    <p id="siErr" style="color:var(--no);font-weight:700;min-height:22px;margin:8px 0 0"></p>
+    <button class="big" id="siGo" style="width:100%">Start</button>
+  </div>
+</div>
+
+<!-- STEP 1 : choose -->
+<section id="s1">
+  <div class="steps"><div class="on"></div><div></div><div></div><div></div></div>
+  <div class="card">
+    <h2>Read aloud</h2>
+    <label class="q">Which text?</label>
+    <select id="pick"></select>
+    <label class="q">Is this your first time, or are you reading it again after practice?</label>
+    <select id="attempt">
+      <option value="cold">First time today</option>
+      <option value="hot">Again, after practice</option>
+    </select>
+    <button class="big" id="toRead" style="margin-top:16px;width:100%">Show me the text</button>
+  </div>
+</section>
+
+<!-- STEP 2 : record -->
+<section id="s2" class="hide">
+  <div class="steps"><div class="on"></div><div class="on"></div><div></div><div></div></div>
+  <div class="note">Read out loud at a comfortable speed. Clear is better than fast. If you make a mistake, keep going.</div>
+  <div class="card">
+    <div class="passage" id="readText"></div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:14px">
+      <button class="sbtn" id="listen">&#128266; Listen first</button>
+      <span class="muted" id="wcLabel"></span>
+    </div>
+    <div style="display:flex;gap:14px;align-items:center;margin-top:16px;flex-wrap:wrap">
+      <button class="big" id="recBtn">Start reading</button>
+      <span class="clock" id="clock">0.0s</span>
+    </div>
+  </div>
+</section>
+
+<!-- STEP 3 : mark -->
+<section id="s3" class="hide">
+  <div class="steps"><div class="on"></div><div class="on"></div><div class="on"></div><div></div></div>
+  <div class="note"><b>Listen to yourself.</b> Tap a word <b>once</b> if you read it wrong or skipped it. Tap <b>twice</b> if you said it wrong and then fixed it yourself. Tap a third time to clear it.</div>
+  <div class="card">
+    <audio id="aud" controls style="width:100%;margin-bottom:12px"></audio>
+    <div class="passage" id="markText"></div>
+    <div class="tiles" id="liveTiles"></div>
+    <button class="big" id="toDrill" style="margin-top:16px;width:100%">Save this reading</button>
+    <p class="muted" id="saveMsg" style="min-height:20px"></p>
+  </div>
+</section>
+
+<!-- STEP 4 : drills -->
+<section id="s4" class="hide">
+  <div class="steps"><div class="on"></div><div class="on"></div><div class="on"></div><div class="on"></div></div>
+  <div class="card">
+    <h2>Your sounds to practice</h2>
+    <div id="drills"></div>
+    <button class="big" id="again" style="margin-top:18px;width:100%">Read it again after practice</button>
+  </div>
+</section>
+
+<!-- history -->
+<section id="hist" class="hide">
+  <div class="card">
+    <h2>My progress</h2>
+    <div class="tiles" id="histTiles"></div>
+    <h3>Words correct per minute</h3>
+    <svg id="chart" viewBox="0 0 640 240" style="width:100%;height:auto"></svg>
+    <p class="muted">Dark line = first reading. Gold line = after practice.</p>
+    <h3>Every reading</h3>
+    <table id="runs"><tbody></tbody></table>
+    <button class="btn" id="backBtn" style="margin-top:16px;background:var(--pine);color:#fff">Back to reading</button>
+  </div>
+</section>
+
+</main>
+
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var BUCKET='fluency-recordings';
+var H={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};
+var EMAIL_RE=/^[^@\s]+@(s\.)?sfusd\.edu$/;
+
+var ME={email:'',name:'',period:'',l1:''};
+var PASSAGES=[],P=null,WORDS=[],MARKS={},BLOB=null,SECS=0,RUNS=[];
+
+function $(i){return document.getElementById(i);}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function show(id){['s1','s2','s3','s4','hist'].forEach(function(x){$(x).classList.toggle('hide',x!==id);});window.scrollTo(0,0);}
+function canon(e){e=e.trim().toLowerCase();return e.replace(/@sfusd\.edu$/,'@s.sfusd.edu');}
+function say(t,slow){try{speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(t);u.rate=slow?0.6:0.95;u.lang='en-US';speechSynthesis.speak(u);}catch(e){}}
+
+/* ---------- sign in ---------- */
+function showSignin(){
+  $('siName').value=ME.name||localStorage.getItem('gal_student_name')||'';
+  $('siEmail').value=ME.email||localStorage.getItem('gal_student_email')||'';
+  $('siPeriod').value=ME.period||localStorage.getItem('gal_student_period')||'';
+  $('siL1').value=ME.l1||localStorage.getItem('gal_student_l1')||'';
+  $('siErr').textContent='';$('signin').style.display='flex';
+}
+$('who').onclick=showSignin;
+$('siGo').onclick=function(){
+  var n=$('siName').value.trim(),raw=$('siEmail').value.trim().toLowerCase(),p=$('siPeriod').value,l=$('siL1').value;
+  if(!n){$('siErr').textContent='Type your name.';return;}
+  if(!EMAIL_RE.test(raw)){$('siErr').textContent='Use your school email (@s.sfusd.edu).';return;}
+  if(!p){$('siErr').textContent='Choose your period.';return;}
+  if(!l){$('siErr').textContent='Choose your first language.';return;}
+  var c=canon(raw);
+  ME={email:c,name:n,period:p,l1:l};
+  localStorage.setItem('gal_student_email',c);
+  localStorage.setItem('gal_student_name',n);
+  localStorage.setItem('gal_student_period',p);
+  localStorage.setItem('gal_student_l1',l);
+  if(raw!==c) fetch(SUPA_URL+'/rest/v1/student_aliases',{method:'POST',headers:Object.assign({},H,{'Prefer':'resolution=ignore-duplicates,return=minimal'}),body:JSON.stringify({alias:raw,canonical:c})}).catch(function(){});
+  fetch(SUPA_URL+'/rest/v1/students?on_conflict=email',{method:'POST',headers:Object.assign({},H,{'Prefer':'resolution=ignore-duplicates,return=minimal'}),body:JSON.stringify({email:c,name:n,period:p})}).catch(function(){});
+  $('signin').style.display='none';
+  $('who').textContent=n.split(' ')[0]+' \u00b7 P'+p;
+};
+(function(){
+  var e=localStorage.getItem('gal_student_email'),n=localStorage.getItem('gal_student_name'),
+      p=localStorage.getItem('gal_student_period'),l=localStorage.getItem('gal_student_l1');
+  if(e&&n&&p&&l&&EMAIL_RE.test(e)){ME={email:e,name:n,period:p,l1:l};$('who').textContent=n.split(' ')[0]+' \u00b7 P'+p;}
+  else setTimeout(showSignin,400);
+})();
+
+/* ---------- passages ---------- */
+function loadPassages(){
+  fetch(SUPA_URL+'/rest/v1/fluency_passages?select=*&active=is.true&order=assigned_week.desc.nullslast,created_at.desc',{headers:H})
+  .then(function(r){return r.json();}).then(function(rows){
+    PASSAGES=rows||[];
+    if(!PASSAGES.length){$('pick').innerHTML='<option>No texts yet — ask Mr. Toby</option>';return;}
+    $('pick').innerHTML=PASSAGES.map(function(p){
+      return '<option value="'+esc(p.slug)+'">'+esc(p.title)+' ('+(p.word_count||countWords(p.body))+' words)</option>';
+    }).join('');
+    var want=new URLSearchParams(location.search).get('p');
+    if(want&&PASSAGES.some(function(p){return p.slug===want;})) $('pick').value=want;
+  }).catch(function(){$('pick').innerHTML='<option>Could not load texts</option>';});
+}
+function countWords(b){return String(b||'').trim().split(/\s+/).filter(Boolean).length;}
+loadPassages();
+
+$('toRead').onclick=function(){
+  if(!ME.email){showSignin();return;}
+  P=PASSAGES.filter(function(p){return p.slug===$('pick').value;})[0];
+  if(!P){alert('Choose a text first.');return;}
+  WORDS=tokenize(P.body);
+  $('readText').innerHTML=WORDS.map(function(w){return w.pre+'<span>'+esc(w.word)+'</span>'+w.post;}).join(' ');
+  $('wcLabel').textContent=WORDS.length+' words';
+  $('clock').textContent='0.0s';
+  show('s2');
+};
+$('listen').onclick=function(){say(P.body,false);};
+
+function tokenize(body){
+  var out=[];
+  String(body||'').trim().split(/\s+/).forEach(function(tok){
+    var m=tok.match(/^([^A-Za-z\u2019']*)([A-Za-z\u2019'-]+)(.*)$/);
+    if(m) out.push({pre:esc(m[1]),word:m[2],post:esc(m[3])});
+    else out.push({pre:'',word:tok,post:''});
+  });
+  return out;
+}
+
+/* ---------- record ---------- */
+var mr=null,chunks=[],t0=0,tick=null;
+$('recBtn').onclick=function(){
+  var b=$('recBtn');
+  if(mr&&mr.state==='recording'){mr.stop();return;}
+  navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+    chunks=[];mr=new MediaRecorder(stream);
+    mr.ondataavailable=function(e){chunks.push(e.data);};
+    mr.onstop=function(){
+      clearInterval(tick);stream.getTracks().forEach(function(t){t.stop();});
+      SECS=(Date.now()-t0)/1000;BLOB=new Blob(chunks,{type:'audio/webm'});
+      b.textContent='Start reading';b.classList.remove('stop');
+      $('aud').src=URL.createObjectURL(BLOB);
+      MARKS={};drawMark();show('s3');
+    };
+    mr.start();t0=Date.now();
+    b.textContent='I finished';b.classList.add('stop');
+    tick=setInterval(function(){$('clock').textContent=((Date.now()-t0)/1000).toFixed(1)+'s';},100);
+  }).catch(function(){alert('I could not turn on the microphone. Allow it for this page and try again.');});
+};
+
+/* ---------- mark ---------- */
+function drawMark(){
+  $('markText').innerHTML=WORDS.map(function(w,i){
+    var c=MARKS[i]===1?' err':(MARKS[i]===2?' sc':'');
+    return w.pre+'<span class="w'+c+'" data-i="'+i+'">'+esc(w.word)+'</span>'+w.post;
+  }).join(' ');
+  tiles();
+}
+$('markText').addEventListener('click',function(e){
+  var s=e.target.closest('span.w');if(!s)return;
+  var i=+s.dataset.i;MARKS[i]=((MARKS[i]||0)+1)%3;drawMark();
+});
+function stats(){
+  var errs=0,sc=0;
+  Object.keys(MARKS).forEach(function(k){if(MARKS[k]===1)errs++;if(MARKS[k]===2)sc++;});
+  var total=WORDS.length,correct=total-errs,mins=SECS/60;
+  return {errors:errs,selfcorr:sc,total:total,
+    wpm:Math.round(total/mins),wcpm:Math.round(correct/mins),
+    accuracy:Math.round(correct/total*1000)/10};
+}
+function tiles(){
+  var s=stats();
+  $('liveTiles').innerHTML=
+    '<div class="tile"><b>'+s.wcpm+'</b><span>words correct / min</span></div>'+
+    '<div class="tile"><b>'+s.accuracy+'%</b><span>accuracy</span></div>'+
+    '<div class="tile"><b>'+s.errors+'</b><span>words missed</span></div>'+
+    '<div class="tile"><b>'+SECS.toFixed(0)+'s</b><span>time</span></div>';
+}
+
+/* ---------- save ---------- */
+$('toDrill').onclick=function(){
+  if(!ME.email){showSignin();return;}
+  var s=stats(),msg=$('saveMsg');
+  var errWords=[];
+  Object.keys(MARKS).forEach(function(k){
+    if(MARKS[k]>0) errWords.push({i:+k,word:WORDS[+k].word,type:MARKS[k]===1?'error':'selfcorrect'});
+  });
+  var folder=(P.slug.indexOf('news-')===0?'news/':'passages/')+P.slug+'/';
+  var path=folder+ME.email.replace(/[^a-z0-9]/g,'_')+'_'+Date.now()+'.webm';
+  msg.style.color='';msg.textContent='Saving\u2026';
+  $('toDrill').disabled=true;
+  fetch(SUPA_URL+'/storage/v1/object/'+BUCKET+'/'+path,{method:'POST',
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'audio/webm'},body:BLOB})
+  .then(function(r){return r.ok?null:r.text().then(function(t){throw new Error('Audio did not save \u2014 status '+r.status+'. '+t.slice(0,200));});})
+  .then(function(){
+    return fetch(SUPA_URL+'/rest/v1/fluency_runs',{method:'POST',
+      headers:Object.assign({},H,{'Prefer':'return=minimal'}),
+      body:JSON.stringify({email:ME.email,student_name:ME.name,period:ME.period,l1:ME.l1,
+        passage_slug:P.slug,attempt:$('attempt').value,seconds:Math.round(SECS*10)/10,
+        word_count:s.total,errors:s.errors,wpm:s.wpm,wcpm:s.wcpm,accuracy:s.accuracy,
+        error_words:errWords,audio_path:path})
+    }).then(function(r){return r.ok?null:r.text().then(function(t){throw new Error('Your score did not save \u2014 status '+r.status+'. '+t.slice(0,200));});});
+  })
+  .then(function(){msg.style.color='var(--ok)';msg.textContent='Saved.';buildDrills(errWords);show('s4');})
+  .catch(function(e){msg.style.color='var(--no)';msg.textContent=e.message;console.error(e);})
+  .then(function(){$('toDrill').disabled=false;});
+};
+$('again').onclick=function(){$('attempt').value='hot';show('s1');};
+
+/* ---------- phonics ---------- */
+var PATTERNS=[
+ {id:'th',name:'the "th" sound',test:/th/i,tip:'Put your tongue between your teeth and blow.',pairs:[['think','sink'],['three','tree'],['they','day'],['mother','mudder']]},
+ {id:'cluster',name:'two or three consonants together',test:/[bcdfgklmnprstvwz]{3}|(st|sk|sp|str|spr|scr|nd|nt|nk|ct|pt|ld|lk|sts|sks)$/i,tip:'Say every consonant. Do not drop the last one.',pairs:[['desk','des'],['asked','ast'],['world','worl'],['first','firs']]},
+ {id:'ed',name:'-ed at the end',test:/ed$/i,tip:'-ed can sound like /t/, /d/, or /id/. Walked = walkt. Played = playd. Wanted = want-id.',pairs:[['walked','walk-t'],['played','play-d'],['wanted','want-id'],['asked','ask-t']]},
+ {id:'plural',name:'-s at the end',test:/[a-z]s$/i,tip:'Do not drop the s. It carries meaning.',pairs:[['book','books'],['thing','things'],['friend','friends'],['make','makes']]},
+ {id:'shortI',name:'short i and long e',test:/^[^aeiou]*i[^aeiou]{1,2}$|ee|ea/i,tip:'Ship is short and quick. Sheep is long.',pairs:[['ship','sheep'],['live','leave'],['it','eat'],['fill','feel']]},
+ {id:'lr',name:'l and r',test:/[lr]/i,tip:'For l the tongue touches the roof. For r it never touches.',pairs:[['light','right'],['collect','correct'],['play','pray'],['long','wrong']]},
+ {id:'vb',name:'v and b',test:/[vb]/i,tip:'For v the top teeth touch the bottom lip. For b the lips touch each other.',pairs:[['very','berry'],['vote','boat'],['vest','best'],['have','hab']]},
+ {id:'pf',name:'p and f',test:/[pf]/i,tip:'For p the lips pop. For f the teeth touch the lip and the air keeps going.',pairs:[['pan','fan'],['copy','coffee'],['pull','full'],['cheap','chief']]},
+ {id:'wv',name:'w and v',test:/[wv]/i,tip:'For w the lips are round. For v the teeth touch the lip.',pairs:[['west','vest'],['wine','vine'],['wet','vet'],['while','vile']]},
+ {id:'sInit',name:'s at the start of a word',test:/^s[ctpkmnlw]/i,tip:'Start with the s. Do not add an "e" before it.',pairs:[['school','eschool'],['Spanish','Espanish'],['student','estudent'],['stop','estop']]},
+ {id:'long',name:'long words — find the beat',test:/^[a-z]{8,}$/i,tip:'Break it into parts and say each part.',pairs:[['im-por-tant','important'],['dif-fer-ent','different'],['gov-ern-ment','government'],['ex-am-ple','example']]}
+];
+var L1_PRIORITY={
+ es:['sInit','th','cluster','shortI','vb','ed'],
+ yue:['cluster','th','lr','plural','ed'],
+ zh:['cluster','th','lr','plural','ed'],
+ ar:['pf','shortI','cluster','th'],
+ ary:['pf','shortI','cluster','th'],
+ vi:['cluster','plural','ed','th'],
+ ru:['th','wv','shortI','ed'],
+ ur:['wv','th','cluster','ed'],
+ hi:['wv','th','cluster','ed'],
+ ne:['wv','th','shortI','cluster'],
+ tl:['pf','th','shortI'],
+ fr:['th','shortI','cluster'],
+ ko:['lr','cluster','th','plural'],
+ so:['pf','cluster','th'],
+ th:['lr','cluster','plural','th'],
+ other:['th','cluster','ed','shortI']
+};
+function buildDrills(errWords){
+  var words=errWords.filter(function(e){return e.type==='error';}).map(function(e){return e.word;});
+  var hits={};
+  words.forEach(function(w){PATTERNS.forEach(function(p){if(p.test.test(w)){hits[p.id]=hits[p.id]||[];hits[p.id].push(w);}});});
+  var ids=Object.keys(hits).sort(function(a,b){return hits[b].length-hits[a].length;});
+  var pri=L1_PRIORITY[ME.l1]||L1_PRIORITY.other;
+  ids.sort(function(a,b){
+    var d=hits[b].length-hits[a].length; if(d) return d;
+    return (pri.indexOf(a)<0?99:pri.indexOf(a))-(pri.indexOf(b)<0?99:pri.indexOf(b));
+  });
+  if(!ids.length) ids=pri.slice(0,2);
+  var h='';
+  if(!words.length) h+='<p class="muted">You did not mark any mistakes. Here are two sounds that are often tricky for speakers of your language.</p>';
+  ids.slice(0,3).forEach(function(id){
+    var p=PATTERNS.filter(function(x){return x.id===id;})[0];if(!p)return;
+    h+='<h3>'+esc(p.name)+'</h3>';
+    if(hits[id]&&hits[id].length) h+='<p class="muted">In your words: '+hits[id].slice(0,6).map(esc).join(', ')+'</p>';
+    h+='<p>'+esc(p.tip)+'</p>';
+    p.pairs.forEach(function(pr){
+      h+='<div class="pair"><b>'+esc(pr[0])+'</b> <button class="sbtn" data-say="'+esc(pr[0])+'">&#128266;</button>'+
+         '<span class="muted">not</span> <span>'+esc(pr[1])+'</span></div>';
+    });
+  });
+  $('drills').innerHTML=h;
+}
+$('drills').addEventListener('click',function(e){
+  var b=e.target.closest('[data-say]');if(b)say(b.dataset.say,true);
+});
+
+/* ---------- history ---------- */
+$('histBtn').onclick=function(){
+  if(!ME.email){showSignin();return;}
+  show('hist');
+  fetch(SUPA_URL+'/rest/v1/fluency_runs?select=*&email=eq.'+encodeURIComponent(ME.email)+'&order=created_at.asc',{headers:H})
+  .then(function(r){return r.json();}).then(function(rows){RUNS=rows||[];drawHist();});
+};
+$('backBtn').onclick=function(){show('s1');};
+function drawHist(){
+  var cold=RUNS.filter(function(r){return r.attempt==='cold';});
+  var first=cold.length?cold[0].wcpm:null,last=cold.length?cold[cold.length-1].wcpm:null;
+  var acc=RUNS.length?Math.round(RUNS.reduce(function(a,r){return a+(+r.accuracy||0);},0)/RUNS.length):0;
+  $('histTiles').innerHTML=
+    '<div class="tile"><b>'+(last==null?'—':last)+'</b><span>latest WCPM</span></div>'+
+    '<div class="tile"><b>'+(first==null||last==null?'—':(last-first>0?'+':'')+(last-first))+'</b><span>growth</span></div>'+
+    '<div class="tile"><b>'+acc+'%</b><span>average accuracy</span></div>'+
+    '<div class="tile"><b>'+RUNS.length+'</b><span>readings</span></div>';
+  chart(cold,RUNS.filter(function(r){return r.attempt==='hot';}));
+  var tb=$('runs').querySelector('tbody');
+  tb.innerHTML='<tr><th>Date</th><th>Text</th><th>Try</th><th class="num">WCPM</th><th class="num">Acc.</th></tr>'+
+    RUNS.slice().reverse().map(function(r){
+      var d=new Date(r.created_at);
+      return '<tr><td>'+(d.getMonth()+1)+'/'+d.getDate()+'</td><td>'+esc(r.passage_slug)+'</td><td>'+
+        (r.attempt==='cold'?'First':'After practice')+'</td><td class="num">'+r.wcpm+'</td><td class="num">'+r.accuracy+'%</td></tr>';
+    }).join('');
+}
+function chart(cold,hot){
+  var all=cold.concat(hot);
+  if(!all.length){$('chart').innerHTML='';return;}
+  var max=Math.max(80,Math.max.apply(null,all.map(function(r){return +r.wcpm||0;}))*1.15);
+  var W=640,Hh=240,pad=34;
+  function pts(rows){
+    if(rows.length<2&&rows.length>0) return null;
+    return rows.map(function(r,i){
+      var x=pad+(i/(rows.length-1))*(W-pad*2);
+      var y=Hh-pad-((+r.wcpm||0)/max)*(Hh-pad*2);
+      return x.toFixed(1)+','+y.toFixed(1);
+    }).join(' ');
+  }
+  var s='<rect x="0" y="0" width="'+W+'" height="'+Hh+'" fill="#fff"/>';
+  [0,0.5,1].forEach(function(f){
+    var y=Hh-pad-f*(Hh-pad*2);
+    s+='<line x1="'+pad+'" y1="'+y+'" x2="'+(W-pad)+'" y2="'+y+'" stroke="#e6e9e5"/>';
+    s+='<text x="4" y="'+(y+4)+'" font-size="12" fill="#8a8f86">'+Math.round(max*f)+'</text>';
+  });
+  var pc=pts(cold),ph=pts(hot);
+  if(pc) s+='<polyline points="'+pc+'" fill="none" stroke="#1d4d3f" stroke-width="3"/>';
+  if(ph) s+='<polyline points="'+ph+'" fill="none" stroke="#b45309" stroke-width="3" stroke-dasharray="6 4"/>';
+  cold.forEach(function(r,i){
+    var x=cold.length>1?pad+(i/(cold.length-1))*(W-pad*2):W/2;
+    var y=Hh-pad-((+r.wcpm||0)/max)*(Hh-pad*2);
+    s+='<circle cx="'+x+'" cy="'+y+'" r="5" fill="#1d4d3f"/>';
+  });
+  $('chart').innerHTML=s;
+}
+</script>
+</body>
+</html>
