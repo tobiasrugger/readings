@@ -80,6 +80,7 @@
 <div class="bar">
   <h1 id="barTitle">This Week's Reading</h1>
   <button class="btn ghost" id="who">Sign in</button>
+  <select id="lvl" style="display:none"></select>
   <select id="lang">
     <option value="">Translate…</option>
     <option value="Spanish">Español</option>
@@ -195,6 +196,8 @@ var A=null;        // parsed article
 var ANS={};        // student answers
 var ROLE='';
 var ME={email:'',name:'',period:''};
+var LEVEL=localStorage.getItem('gal_news_level')||'';
+var LOCKED=false;
 var EMAIL_RE=/^[^@\s]+@(s\.)?sfusd\.edu$/;
 function canon(e){e=e.trim().toLowerCase();return e.replace(/@sfusd\.edu$/,'@s.sfusd.edu');}
 var dirty=false;
@@ -208,16 +211,17 @@ function setDot(c){var d=$('dot');d.className='dot'+(c?' '+c:'');}
 /* Sections are lines like ---READ---  */
 function parseDoc(txt){
   var out={meta:{},read:[],gram:{note:'',bank:[],practice:[],produce:''},talk:{cols:[],rows:[],frames:[]},qs:[],record:''};
-  var parts=txt.split(/^\s*---([A-Z]+)---\s*$/m);
+  var parts=txt.split(/^\s*---([A-Z]+)(?::([A-Z]))?---\s*$/m);
   var head=parts[0]||'';
   head.split(/\n/).forEach(function(l){
     var m=l.match(/^([A-Z_]+):\s*(.*)$/);
     if(m) out.meta[m[1]]=m[2].trim();
   });
-  for(var i=1;i<parts.length;i+=2){
-    var name=parts[i], body=(parts[i+1]||'').trim();
+  out.reads={};
+  for(var i=1;i<parts.length;i+=3){
+    var name=parts[i], lv=parts[i+1]||'', body=(parts[i+2]||'').trim();
     if(name==='READ'){
-      out.read=body.split(/\n\s*\n/).map(function(s){return s.trim();}).filter(Boolean);
+      out.reads[lv||'B']=body.split(/\n\s*\n/).map(function(s){return s.trim();}).filter(Boolean);
     } else if(name==='GRAMMAR'){
       body.split(/\n/).forEach(function(l){
         var m;
@@ -244,7 +248,14 @@ function parseDoc(txt){
       out.record=body;
     }
   }
+  var lvs=Object.keys(out.reads);
+  out.read=out.reads[lvs.indexOf('B')>=0?'B':lvs[0]]||[];
   return out;
+}
+function levelsOf(d){return ['A','B','C','D'].filter(function(k){return d.reads&&d.reads[k]&&d.reads[k].length;});}
+function applyLevel(lv){
+  if(!A||!A.reads)return;
+  A.read=A.reads[lv]||A.reads.B||A.reads[levelsOf(A)[0]]||[];
 }
 
 /* [[word|meaning]] and ((grammar highlight)) */
@@ -285,8 +296,31 @@ function say(text,slow){
   }catch(e){}
 }
 
+function drawLevelPicker(){
+  var lvs=levelsOf(A),sel=$('lvl');
+  if(lvs.length<2){sel.style.display='none';return;}
+  if(lvs.indexOf(LEVEL)<0){
+    var d=(A.meta.DEFAULT||'B').toUpperCase();
+    LEVEL=lvs.indexOf(d)>=0?d:(lvs.indexOf('B')>=0?'B':lvs[0]);
+  }
+  var names={A:'A \u00b7 shortest sentences',B:'B \u00b7 medium',C:'C \u00b7 longest',D:'D'};
+  sel.innerHTML=lvs.map(function(k){return '<option value="'+k+'"'+(k===LEVEL?' selected':'')+'>'+names[k]+'</option>';}).join('');
+  sel.style.display='';
+  sel.disabled=LOCKED;
+  sel.title=LOCKED?'Mr. Toby chose this level for you.':'Choose the version that feels right.';
+}
+$('lvl').addEventListener('change',function(){
+  LEVEL=this.value;
+  localStorage.setItem('gal_news_level',LEVEL);
+  applyLevel(LEVEL);
+  dirty=true;
+  render();
+});
+
 /* ---------- render ---------- */
 function render(){
+  applyLevel(LEVEL);
+  drawLevelPicker();
   var m=A.meta;
   $('barTitle').textContent=m.TITLE||'This Week\u2019s Reading';
   document.title=(m.TITLE||'Reading')+' — Mr. Toby';
@@ -327,10 +361,10 @@ function render(){
   }
   if(A.gram.practice.length){
     g+='<div class="card"><h3>Practice</h3>';
-    if(A.gram.bank.length){g+='<div class="bank">';A.gram.bank.forEach(function(w){g+='<span>'+esc(w)+'</span>';});g+='</div>';}
+    if(A.gram.bank.length){g+='<div class="bank" translate="no">';A.gram.bank.forEach(function(w){g+='<span>'+esc(w)+'</span>';});g+='</div>';}
     A.gram.practice.forEach(function(p,i){
       var s=esc(p.s).replace(/_{2,}/,'<input class="cloze" data-k="c'+i+'" data-a="'+p.a.join('|')+'">');
-      g+='<p style="margin:12px 0">'+(i+1)+'. '+s+'</p>';
+      g+='<p style="margin:12px 0" translate="no">'+(i+1)+'. '+s+'</p>';
     });
     g+='</div>';
   }
@@ -370,7 +404,7 @@ function render(){
   $('recBody').innerHTML=
     '<div class="card"><h3>Read aloud</h3>'+
     '<p class="muted">You will read this passage out loud in the Fluency Tracker. It times you, you mark your own mistakes, and it shows you which sounds to practice.</p>'+
-    '<div class="passage">'+rich(A.record)+'</div>'+
+    '<div class="passage" translate="no">'+rich(A.record)+'</div>'+
     '<div class="rec"><button class="spk" data-raw="'+esc(plain(A.record)).replace(/"/g,'&quot;')+'" style="font-size:15px;padding:8px 12px">&#128266; Listen first</button>'+
     '<span class="muted">'+wc+' words</span></div>'+
     '<a class="big" style="display:block;text-align:center;margin-top:18px;text-decoration:none" href="../fluency/index.html?p='+encodeURIComponent(fslug)+'">Open the Fluency Tracker</a>'+
@@ -445,7 +479,7 @@ setInterval(function(){
   fetch(SUPA_URL+'/rest/v1/news_work?on_conflict=email,slug',{
     method:'POST',
     headers:Object.assign({},H,{'Prefer':'resolution=merge-duplicates,return=minimal'}),
-    body:JSON.stringify({email:em,name:ME.name,period:ME.period,slug:A.meta.SLUG,answers:ANS,updated_at:new Date().toISOString()})
+    body:JSON.stringify({email:em,name:ME.name,period:ME.period,level:LEVEL,slug:A.meta.SLUG,answers:ANS,updated_at:new Date().toISOString()})
   }).then(function(r){setDot(r.ok?'on':'err'); if(!r.ok) dirty=true;})
    .catch(function(){setDot('err');dirty=true;});
 },2500);
@@ -476,13 +510,36 @@ $('siGo').onclick=function(){
     body:JSON.stringify({email:c,name:n,period:p})}).catch(function(){});
   $('signin').style.display='none';
   $('who').textContent=n.split(' ')[0]+' \u00b7 P'+p;
+  fetchOverride();
   if(A){ANS={};restore();wireInputs();}
   dirty=true;
 };
+function fetchOverride(){
+  if(!ME.email)return;
+  fetch(SUPA_URL+'/rest/v1/news_student_level?select=level&email=eq.'+encodeURIComponent(ME.email),{headers:H})
+  .then(function(r){return r.json();}).then(function(rows){
+    var lv=(rows&&rows.length&&rows[0].level)||'';
+    if(lv&&lv!==LEVEL){
+      LEVEL=lv;LOCKED=true;
+      localStorage.setItem('gal_news_level',LEVEL);
+      if(A){applyLevel(LEVEL);render();toast('Mr. Toby changed your version.');}
+    } else if(lv){ LOCKED=true; if($('lvl'))$('lvl').disabled=true; }
+    else if(LOCKED){ LOCKED=false; if($('lvl'))$('lvl').disabled=false; }
+  }).catch(function(){});
+}
+setInterval(fetchOverride,20000);
+function toast(msg){
+  var t=document.createElement('div');
+  t.textContent=msg;
+  t.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:22px;background:var(--pine);color:#fff;padding:11px 18px;border-radius:99px;font-weight:700;z-index:99;box-shadow:0 6px 20px rgba(0,0,0,.25)';
+  document.body.appendChild(t);
+  setTimeout(function(){t.remove();},3500);
+}
 (function(){
   var e=localStorage.getItem('gal_student_email'),n=localStorage.getItem('gal_student_name'),p=localStorage.getItem('gal_student_period');
   if(e&&n&&p&&EMAIL_RE.test(e)){ME={email:e,name:n,period:p};$('who').textContent=n.split(' ')[0]+' \u00b7 P'+p;}
   else setTimeout(showSignin,400);
+  if(ME.email)fetchOverride();
 })();
 $('turnIn').onclick=function(){
   var em=ME.email;
