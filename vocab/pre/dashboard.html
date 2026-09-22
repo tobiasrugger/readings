@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard: Vocabulary pre-assessments</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --plum:#5B2A6E; --plum-deep:#3D1A4C; --plum-edge:#2E1239;
+  --lilac:#EFE7F3; --lilac-2:#E2D3EA; --paper:#FBF9FC;
+  --gold:#E3A92B; --ink:#2A2030; --muted:#6E6275; --line:#D9CCE0;
+  --know:#2F8A5B; --know-bg:#DDF1E5; --miss:#C0453A; --idk:#9C8FA3;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:"Lexend",system-ui,sans-serif;background:var(--paper);color:var(--ink);line-height:1.4;font-size:15px}
+input,button,select{font:inherit}
+button{cursor:pointer}
+.hidden{display:none!important}
+.bar{background:var(--plum);color:#fff}
+.bar .in{max-width:1200px;margin:0 auto;padding:13px 22px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.bar h1{margin:0;font-size:1.05rem;font-weight:600}
+.bar .ctl{margin-left:auto;display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.bar select{padding:7px 10px;border-radius:10px;border:0;background:#fff;color:var(--ink)}
+.bar .btn{padding:7px 13px;border-radius:10px;border:2px solid rgba(255,255,255,.5);background:transparent;color:#fff}
+.bar .btn:hover{background:rgba(255,255,255,.12)}
+main{max-width:1200px;margin:0 auto;padding:22px}
+.gate{max-width:360px;margin:80px auto;background:#fff;border:2px solid var(--line);border-radius:18px;padding:26px}
+.gate h2{margin:0 0 12px;color:var(--plum-deep)}
+.gate input{width:100%;padding:11px 13px;border:2px solid var(--line);border-radius:12px;margin-bottom:8px}
+.gate .err{color:var(--miss);min-height:1.2em;font-size:.9rem;margin-bottom:8px}
+.pbtn{border:0;border-radius:12px;padding:11px 20px;font-weight:600;background:var(--plum);color:#fff;box-shadow:0 4px 0 var(--plum-edge)}
+.pbtn.wide{width:100%}
+.lbtn{border:2px solid var(--line);border-radius:10px;padding:5px 11px;background:#fff;color:var(--plum)}
+.lbtn.danger{color:var(--miss)}
+.summary{display:flex;gap:26px;flex-wrap:wrap;margin-bottom:16px}
+.summary strong{display:block;font-size:1.6rem;color:var(--plum-deep);line-height:1.1}
+.summary span{color:var(--muted);font-size:.86rem}
+.link{background:#fff;border:2px dashed var(--line);border-radius:12px;padding:10px 14px;margin-bottom:16px;color:var(--muted);font-size:.9rem;word-break:break-all}
+.link b{color:var(--ink);font-weight:500}
+h3.sec{font-size:1rem;margin:22px 0 10px;color:var(--plum-deep)}
+.tablewrap{overflow-x:auto;background:#fff;border:2px solid var(--line);border-radius:14px}
+table{border-collapse:collapse;width:100%}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--lilac-2);white-space:nowrap}
+th{font-weight:500;color:var(--muted);font-size:.84rem;background:var(--lilac);cursor:pointer}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+.meter{display:inline-block;width:90px;height:10px;border-radius:5px;background:var(--lilac-2);vertical-align:middle;overflow:hidden;margin-right:7px}
+.meter i{display:block;height:100%;background:var(--plum)}
+.pill{display:inline-block;padding:2px 9px;border-radius:10px;font-size:.78rem}
+.pill.done{background:var(--know-bg);color:var(--know)}
+.pill.going{background:#FBEFD2;color:#8A6310}
+.e{font-size:1.6rem;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+.cell{display:inline-block;width:20px;height:20px;border-radius:4px;margin-right:3px;vertical-align:-3px}
+.k{background:var(--know)} .m{background:var(--miss)} .i{background:var(--idk)} .e0{background:#EDE9EF}
+.legend{color:var(--muted);font-size:.86rem;margin:0 0 10px;display:flex;gap:14px;flex-wrap:wrap}
+.legend b{display:inline-block;width:13px;height:13px;border-radius:3px;vertical-align:-1px;margin-right:4px}
+.empty{padding:36px;text-align:center;color:var(--muted)}
+.flag{color:var(--miss);font-size:.85rem}
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="in">
+    <h1>Vocabulary pre-assessments</h1>
+    <div class="ctl hidden" id="controls">
+      <select id="selQuiz" aria-label="Check"></select>
+      <select id="selPeriod" aria-label="Period"><option value="">All periods</option></select>
+      <button class="btn" id="btnRefresh">Refresh</button>
+      <button class="btn" id="btnCsv">CSV</button>
+    </div>
+  </div>
+</header>
+<main>
+  <section class="gate" id="gate">
+    <h2>Teacher sign in</h2>
+    <input id="pw" type="password" placeholder="Password">
+    <div class="err" id="pwErr"></div>
+    <button class="pbtn wide" id="btnPw">Open dashboard</button>
+  </section>
+  <section id="app" class="hidden">
+    <div class="link" id="shareLink"></div>
+    <div class="summary" id="summary"></div>
+    <h3 class="sec">Students</h3>
+    <div class="legend"><span><b class="k"></b>right</span><span><b class="m"></b>wrong</span><span><b class="i"></b>don't know</span><span><b class="e0"></b>not answered</span><span>Squares are in question order.</span></div>
+    <div id="tabStudents"></div>
+    <h3 class="sec">Words</h3>
+    <div id="tabWords"></div>
+  </section>
+</main>
+
+<script src="quizzes.js"></script>
+<script>
+var SUPA_URL = 'https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var TABLE = 'vocab_preassess', PASSWORD = 'galileo2026', IDK = '__idk';
+var ALL = [], ROWS = [], WORDS = [], sortKey = 'name', sortDir = 1;
+
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function sb(path, opts){
+  opts = opts || {};
+  return fetch(SUPA_URL + '/rest/v1/' + path, { method:opts.method || 'GET', headers:Object.assign({ apikey:SUPA_KEY, Authorization:'Bearer '+SUPA_KEY, 'Content-Type':'application/json' }, opts.headers || {}) })
+    .then(function(r){
+      if (!r.ok) return r.text().then(function(t){ throw new Error(r.status + ' ' + t); });
+      return r.status === 204 ? null : r.text().then(function(t){ return t ? JSON.parse(t) : null; });
+    });
+}
+
+function openApp(){ $('gate').classList.add('hidden'); $('app').classList.remove('hidden'); $('controls').classList.remove('hidden'); load(); }
+$('btnPw').addEventListener('click', function(){
+  if ($('pw').value === PASSWORD){ try { sessionStorage.setItem('vpa_ok','1'); } catch(e){} openApp(); }
+  else $('pwErr').textContent = 'That password is not right.';
+});
+$('pw').addEventListener('keydown', function(e){ if (e.key === 'Enter') $('btnPw').click(); });
+try { if (sessionStorage.getItem('vpa_ok') === '1') openApp(); } catch(e){}
+
+function load(){
+  sb(TABLE + '?select=*&order=name').then(function(rows){
+    ALL = rows || [];
+    var ids = {}, opts = [];
+    (window.QUIZZES || []).forEach(function(q){ ids[q.id] = q.title; });
+    ALL.forEach(function(r){ if (!ids[r.quiz]) ids[r.quiz] = r.quiz_title || r.quiz; });
+    var cur = $('selQuiz').value;
+    Object.keys(ids).forEach(function(id){ opts.push('<option value="'+esc(id)+'">'+esc(ids[id])+'</option>'); });
+    $('selQuiz').innerHTML = opts.join('') || '<option value="">No checks yet</option>';
+    if (cur) $('selQuiz').value = cur;
+    var periods = {}; ALL.forEach(function(r){ if (r.period) periods[r.period] = 1; });
+    var cp = $('selPeriod').value;
+    $('selPeriod').innerHTML = '<option value="">All periods</option>' + Object.keys(periods).sort(function(a,b){ return a.localeCompare(b, undefined, {numeric:true}); }).map(function(p){ return '<option value="'+esc(p)+'">Period '+esc(p)+'</option>'; }).join('');
+    $('selPeriod').value = cp;
+    build();
+  }).catch(function(e){
+    console.error(e);
+    $('tabStudents').innerHTML = '<div class="empty">Could not load results. Check that the vocab_preassess table exists (run schema.sql), then tap Refresh.</div>';
+  });
+}
+
+function score(row){
+  var items = row.items || [], ans = row.answers || {}, s = { known:0, missed:0, idk:0, blank:0, total:items.length, byKey:{} };
+  items.forEach(function(it){
+    var a = ans[it.k], st = !a ? 'e0' : a === IDK ? 'i' : a === it.w ? 'k' : 'm';
+    s.byKey[it.k] = { st:st, chose:a };
+    if (st === 'k') s.known++; else if (st === 'm') s.missed++; else if (st === 'i') s.idk++; else s.blank++;
+  });
+  s.answered = s.total - s.blank;
+  s.pct = s.total ? s.known / s.total : 0;
+  return s;
+}
+
+function build(){
+  var quiz = $('selQuiz').value, period = $('selPeriod').value;
+  ROWS = ALL.filter(function(r){ return r.quiz === quiz && (!period || r.period === period); })
+            .map(function(r){ return Object.assign({}, r, { s:score(r) }); });
+  var def = (window.QUIZZES || []).filter(function(q){ return q.id === quiz; })[0];
+  WORDS = def ? def.items.map(function(it){ return { w:it.w, e:it.e }; })
+              : (ROWS[0] ? (ROWS[0].items || []).map(function(it){ return { w:it.w, e:it.e }; }) : []);
+  var base = location.href.replace(/dashboard\.html.*$/, '');
+  $('shareLink').innerHTML = 'Student link: <b>' + esc(base + '?q=' + quiz) + '</b>';
+  renderSummary(); renderStudents(); renderWords();
+}
+
+function renderSummary(){
+  var done = ROWS.filter(function(r){ return r.turned_in; });
+  var avg = done.length ? Math.round(100 * done.reduce(function(t,r){ return t + r.s.pct; }, 0) / done.length) : null;
+  $('summary').innerHTML = '<div><strong>' + ROWS.length + '</strong><span>started</span></div>'
+    + '<div><strong>' + done.length + '</strong><span>finished</span></div>'
+    + '<div><strong>' + (avg == null ? '–' : avg + '%') + '</strong><span>average known</span></div>'
+    + '<div><strong>' + WORDS.length + '</strong><span>words</span></div>';
+}
+
+function renderStudents(){
+  if (!ROWS.length){ $('tabStudents').innerHTML = '<div class="empty">Nobody has taken this one yet.</div>'; return; }
+  var g = {
+    name:function(r){ return (r.name||'').toLowerCase(); }, period:function(r){ return r.period||''; },
+    pct:function(r){ return r.s.pct; }, idk:function(r){ return r.s.idk; }, updated:function(r){ return r.updated_at||''; }
+  };
+  var list = ROWS.slice().sort(function(a,b){
+    var x = g[sortKey](a), y = g[sortKey](b);
+    return typeof x === 'string' ? sortDir * x.localeCompare(y, undefined, {numeric:true}) : sortDir * (x - y);
+  });
+  var h = '<div class="tablewrap"><table><thead><tr>'
+    + [['name','Name'],['period','Period'],['pct','Known'],['','Answers'],['idk',"Don't know"],['','Status'],['updated','Last active'],['','']]
+      .map(function(c){ return c[0] ? '<th data-sort="'+c[0]+'">'+c[1]+(sortKey===c[0]?(sortDir>0?' ▲':' ▼'):'')+'</th>' : '<th style="cursor:default">'+c[1]+'</th>'; }).join('')
+    + '</tr></thead><tbody>';
+  list.forEach(function(r){
+    var pct = Math.round(100*r.s.pct);
+    var cells = (r.items || []).map(function(it){
+      var b = r.s.byKey[it.k] || { st:'e0' };
+      var tip = it.e + ' ' + it.w + ' — ' + (b.st==='k'?'right':b.st==='i'?"don't know":b.st==='m'?'chose "'+b.chose+'"':'not answered');
+      return '<span class="cell ' + b.st + '" title="' + esc(tip) + '"></span>';
+    }).join('');
+    h += '<tr><td>' + esc(r.name) + '<br><span style="color:var(--muted);font-size:.78rem">' + esc(r.email) + '</span></td>'
+      + '<td>' + esc(r.period) + '</td>'
+      + '<td><span class="meter"><i style="width:'+pct+'%"></i></span>' + r.s.known + '/' + r.s.total + '</td>'
+      + '<td>' + cells + '</td>'
+      + '<td class="num">' + r.s.idk + '</td>'
+      + '<td>' + (r.turned_in ? '<span class="pill done">Finished</span>' : '<span class="pill going">' + r.s.answered + ' of ' + r.s.total + '</span>')
+        + (r.translate_flags ? ' <span class="flag">translate ×' + r.translate_flags + '</span>' : '') + '</td>'
+      + '<td>' + (r.updated_at ? new Date(r.updated_at).toLocaleString([], { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }) : '') + '</td>'
+      + '<td><button class="lbtn danger" data-del="' + esc(r.email) + '">Reset</button></td></tr>';
+  });
+  h += '</tbody></table></div>';
+  $('tabStudents').innerHTML = h;
+  $('tabStudents').querySelectorAll('th[data-sort]').forEach(function(th){
+    th.addEventListener('click', function(){ var k = th.dataset.sort; sortDir = sortKey === k ? -sortDir : 1; sortKey = k; renderStudents(); });
+  });
+  $('tabStudents').querySelectorAll('button[data-del]').forEach(function(b){
+    b.addEventListener('click', function(){
+      if (!confirm('Delete this attempt so the student can take it again?')) return;
+      sb(TABLE + '?email=eq.' + encodeURIComponent(b.dataset.del) + '&quiz=eq.' + encodeURIComponent($('selQuiz').value), { method:'DELETE', headers:{ Prefer:'return=minimal' } })
+        .then(load).catch(function(e){ alert('Could not delete: ' + e.message); });
+    });
+  });
+}
+
+function renderWords(){
+  if (!WORDS.length || !ROWS.length){ $('tabWords').innerHTML = '<div class="empty">No answers yet.</div>'; return; }
+  var stats = WORDS.map(function(w){
+    var k=0,m=0,i=0,wrong={};
+    ROWS.forEach(function(r){
+      (r.items || []).forEach(function(it){
+        if (it.w !== w.w) return;
+        var b = r.s.byKey[it.k]; if (!b || b.st === 'e0') return;
+        if (b.st === 'k') k++; else if (b.st === 'i') i++; else { m++; wrong[b.chose] = (wrong[b.chose]||0)+1; }
+      });
+    });
+    var top = Object.keys(wrong).sort(function(a,b){ return wrong[b]-wrong[a]; })[0];
+    return { w:w, k:k, m:m, i:i, n:k+m+i, top: top ? top + ' (' + wrong[top] + ')' : '' };
+  }).sort(function(a,b){ return (a.n ? a.k/a.n : 2) - (b.n ? b.k/b.n : 2); });
+  var h = '<div class="tablewrap"><table><thead><tr><th style="cursor:default"></th><th style="cursor:default">Word</th><th style="cursor:default">Knew it</th><th style="cursor:default">Right</th><th style="cursor:default">Wrong</th><th style="cursor:default">Don\'t know</th><th style="cursor:default">Most common wrong choice</th></tr></thead><tbody>';
+  stats.forEach(function(x){
+    var pct = x.n ? Math.round(100*x.k/x.n) : null;
+    h += '<tr><td class="e">' + x.w.e + '</td><td><b>' + esc(x.w.w) + '</b></td>'
+      + '<td>' + (pct == null ? '–' : '<span class="meter"><i style="width:'+pct+'%"></i></span>' + pct + '%') + '</td>'
+      + '<td class="num">' + x.k + ' / ' + x.n + '</td><td class="num">' + x.m + '</td><td class="num">' + x.i + '</td>'
+      + '<td>' + esc(x.top) + '</td></tr>';
+  });
+  $('tabWords').innerHTML = h + '</tbody></table></div>';
+}
+
+$('selQuiz').addEventListener('change', build);
+$('selPeriod').addEventListener('change', build);
+$('btnRefresh').addEventListener('click', load);
+$('btnCsv').addEventListener('click', function(){
+  var head = ['name','email','period','check','finished','right','wrong','dont_know','total','percent'].concat(WORDS.map(function(w){ return w.w; }));
+  var lines = [head];
+  ROWS.forEach(function(r){
+    var row = [r.name, r.email, r.period, r.quiz_title || r.quiz, r.turned_in ? 'yes' : 'no', r.s.known, r.s.missed, r.s.idk, r.s.total, Math.round(100*r.s.pct)];
+    WORDS.forEach(function(w){
+      var hit = (r.items || []).filter(function(it){ return it.w === w.w; })[0];
+      var b = hit ? r.s.byKey[hit.k] : null;
+      row.push(!b || b.st === 'e0' ? '' : b.st === 'k' ? 1 : b.st === 'i' ? '?' : 0);
+    });
+    lines.push(row);
+  });
+  var csv = lines.map(function(l){ return l.map(function(v){ v = String(v == null ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g,'""') + '"' : v; }).join(','); }).join('\n');
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type:'text/csv' }));
+  a.download = 'preassess-' + $('selQuiz').value + '.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+});
+</script>
+</body>
+</html>
