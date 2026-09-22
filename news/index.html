@@ -116,6 +116,7 @@
   <div id="readBody"><p class="muted">Loading this week's article…</p></div>
   <div id="mediaBox"></div>
   <div id="qBox"></div>
+  <div id="archBox"></div>
 </section>
 
 <section class="pane" id="p-grammar">
@@ -310,6 +311,7 @@ function render(){
   });
   q+='</div>';
   $('qBox').innerHTML=A.qs.length?q:'';
+  archive();
 
   /* GRAMMAR */
   var g='<div class="card"><h3>'+esc(m.GRAMMAR||'Grammar')+'</h3><div>'+A.gram.note+'</div></div>';
@@ -491,6 +493,28 @@ $('turnIn').onclick=function(){
   alert('Turned in. You can still make changes — Mr. Toby sees the newest version.');
 };
 
+/* ---------- archive ---------- */
+var ARCH=null;
+function archive(){
+  if(ARCH){drawArch();return;}
+  fetch(SUPA_URL+'/rest/v1/news_articles?select=slug,title,week_of&published=is.true&order=week_of.desc.nullslast,updated_at.desc',{headers:H})
+  .then(function(r){return r.json();}).then(function(rows){ARCH=rows||[];drawArch();})
+  .catch(function(){});
+}
+function drawArch(){
+  var box=$('archBox'); if(!box||!ARCH) return;
+  var others=ARCH.filter(function(r){return r.slug!==A.meta.SLUG;});
+  if(!others.length){box.innerHTML='';return;}
+  var h='<div class="card"><h3>Other readings</h3>'+
+        '<p class="muted">Missed a week? You can still do any of these.</p>';
+  others.forEach(function(r){
+    h+='<div style="padding:8px 0;border-top:1px solid var(--rule)">'+
+       '<a href="?a='+encodeURIComponent(r.slug)+'" style="font-weight:700;color:var(--pine)">'+esc(r.title||r.slug)+'</a>'+
+       (r.week_of?' <span class="muted">'+esc(r.week_of)+'</span>':'')+'</div>';
+  });
+  box.innerHTML=h+'</div>';
+}
+
 /* ---------- teacher ---------- */
 $('pwGo').onclick=function(){
   if($('pw').value===PW){$('teach').style.display='block';loadList();}
@@ -509,14 +533,14 @@ $('pub').onclick=function(){
     if(!r.ok){$('pubMsg').textContent='Did not publish — check the table exists.';return;}
     $('pubMsg').textContent='Published. Adding the read-aloud passage…';
     var body=plain(d.record||'').trim();
-    if(!body){$('pubMsg').textContent='Published. (No ---RECORD--- passage, so nothing was sent to the fluency tracker.)';A=d;ROLE='';ANS={};render();loadList();return;}
+    if(!body){$('pubMsg').textContent='Published. (No ---RECORD--- passage, so nothing was sent to the fluency tracker.)';A=d;ROLE='';ANS={};ARCH=null;render();loadList();return;}
     return fetch(SUPA_URL+'/rest/v1/fluency_passages?on_conflict=slug',{
       method:'POST',headers:Object.assign({},H,{'Prefer':'resolution=merge-duplicates,return=minimal'}),
       body:JSON.stringify({slug:'news-'+d.meta.SLUG,title:d.meta.TITLE,level:'B',body:body,
         word_count:body.split(/\s+/).length,assigned_week:d.meta.WEEK||null,active:true})
     }).then(function(r2){
       $('pubMsg').textContent=r2.ok?'Published, and the passage is now in the Fluency Tracker.':'Published, but the fluency passage did not save.';
-      A=d;ROLE='';ANS={};render();loadList();
+      A=d;ROLE='';ANS={};ARCH=null;render();loadList();
     });
   }).catch(function(){$('pubMsg').textContent='Network problem.';});
 };
