@@ -169,8 +169,8 @@ function build(){
   ROWS = ALL.filter(function(r){ return r.quiz === quiz && (!period || r.period === period); })
             .map(function(r){ return Object.assign({}, r, { s:score(r) }); });
   var def = (window.QUIZZES || []).filter(function(q){ return q.id === quiz; })[0];
-  WORDS = def ? def.items.map(function(it){ return { w:it.w, e:it.e }; })
-              : (ROWS[0] ? (ROWS[0].items || []).map(function(it){ return { w:it.w, e:it.e }; }) : []);
+  WORDS = def ? def.items.map(function(it){ return { w:it.w, e:it.e || '', s:it.s || '' }; })
+              : (ROWS[0] ? (ROWS[0].items || []).map(function(it){ return { w:it.w, e:it.e || '', s:it.s || '' }; }) : []);
   var base = location.href.replace(/dashboard\.html.*$/, '');
   $('shareLink').innerHTML = 'Student link: <b>' + esc(base + '?q=' + quiz) + '</b>';
   renderSummary(); renderStudents(); renderWords();
@@ -204,7 +204,7 @@ function renderStudents(){
     var cells = (r.items || []).map(function(it, n){
       var b = r.s.byKey[it.k] || { st:'e0' };
       var res = b.st==='k' ? 'Right' : b.st==='i' ? "Chose: I don't know" : b.st==='m' ? 'Chose: ' + b.chose : 'Not answered yet';
-      return '<span class="cell ' + b.st + '" data-e="' + esc(it.e) + '" data-w="' + esc(it.w) + '" data-r="' + esc(res) + '" data-n="' + (n+1) + '"></span>';
+      return '<span class="cell ' + b.st + '" data-e="' + esc(it.e || '💬') + '" data-w="' + esc(it.w) + '" data-r="' + esc(res) + '" data-n="' + (n+1) + '"></span>';
     }).join('');
     h += '<tr><td>' + esc(r.name) + '<br><span style="color:var(--muted);font-size:.78rem">' + esc(r.email) + '</span></td>'
       + '<td>' + esc(r.period) + '</td>'
@@ -247,7 +247,7 @@ function renderWords(){
   var h = '<div class="tablewrap"><table><thead><tr><th style="cursor:default"></th><th style="cursor:default">Word</th><th style="cursor:default">Knew it</th><th style="cursor:default">Right</th><th style="cursor:default">Wrong</th><th style="cursor:default">Don\'t know</th><th style="cursor:default">Most common wrong choice</th></tr></thead><tbody>';
   stats.forEach(function(x){
     var pct = x.n ? Math.round(100*x.k/x.n) : null;
-    h += '<tr><td class="e">' + x.w.e + '</td><td><b>' + esc(x.w.w) + '</b></td>'
+    h += '<tr><td class="e" title="' + esc(x.w.s || '') + '">' + (x.w.e || '💬') + '</td><td><b>' + esc(x.w.w) + '</b></td>'
       + '<td>' + (pct == null ? '–' : '<span class="meter"><i style="width:'+pct+'%"></i></span>' + pct + '%') + '</td>'
       + '<td class="num">' + x.k + ' / ' + x.n + '</td><td class="num">' + x.m + '</td><td class="num">' + x.i + '</td>'
       + '<td>' + esc(x.top) + '</td></tr>';

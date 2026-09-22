@@ -65,6 +65,12 @@ main{max-width:760px;margin:0 auto;padding:18px 20px 40px}
   padding:22px 10px;margin-bottom:18px;
   font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;
 }
+.sent{
+  background:#fff;border:2px solid var(--line);border-radius:24px;
+  padding:26px 24px;margin-bottom:18px;min-height:150px;display:grid;align-items:center;
+}
+/* drawn by CSS, like the answer words, so translators cannot reach it */
+.sent::before{content:attr(data-s);font-size:clamp(1.15rem,4.6vw,1.45rem);line-height:1.6;font-weight:500}
 .opts{display:grid;gap:10px}
 .opt{display:flex;align-items:center;gap:14px;padding:14px 16px;border:2px solid var(--line);border-radius:14px;background:#fff;min-height:58px;cursor:pointer}
 .opt:hover{background:var(--paper)}
@@ -122,6 +128,7 @@ main{max-width:760px;margin:0 auto;padding:18px 20px 40px}
   <section id="scrTest" class="qwrap hidden">
     <div class="qnum" id="qnum"></div>
     <div class="emoji" id="emoji" aria-hidden="true"></div>
+    <div class="sent hidden" id="sent" aria-hidden="true"></div>
     <div class="opts" id="opts" role="radiogroup" aria-label="Choose the word"></div>
     <div class="qfoot">
       <button class="btn ghost" id="btnBack">Back</button>
@@ -234,7 +241,7 @@ $('btnSignin').addEventListener('click', function(){
 
 function buildItems(){
   S.items = shuffle(QUIZ.items).map(function(it, n){
-    return { k:'q' + (n+1) + '_' + it.w.replace(/\s+/g,'-'), w:it.w, e:it.e, opts:shuffle([it.w].concat(it.opts)) };
+    return { k:'q' + (n+1) + '_' + it.w.replace(/\s+/g,'-'), w:it.w, e:it.e || '', s:it.s || '', opts:shuffle([it.w].concat(it.opts)) };
   });
   S.answers = {}; S.i = 0; S.created = false;
 }
@@ -278,7 +285,13 @@ function save(finish){
 function render(){
   var it = S.items[S.i], last = S.i === S.items.length - 1;
   $('qnum').textContent = 'Question ' + (S.i+1) + ' of ' + S.items.length;
-  $('emoji').textContent = it.e;
+  if (it.s){
+    $('sent').setAttribute('data-s', it.s); $('sent').classList.remove('hidden');
+    $('emoji').classList.add('hidden');
+  } else {
+    $('emoji').textContent = it.e; $('emoji').classList.remove('hidden');
+    $('sent').classList.add('hidden');
+  }
   $('dots').innerHTML = S.items.map(function(x, n){
     return '<i class="' + (n === S.i ? 'now' : (S.answers[x.k] ? 'done' : '')) + '"></i>';
   }).join('');
@@ -342,7 +355,9 @@ document.addEventListener('contextmenu', function(e){ if (!e.target.closest('inp
   if (!QUIZ){ renderMenu(); return; }
   $('barTitle').textContent = QUIZ.title;
   $('signTitle').textContent = QUIZ.title;
-  $('signSub').textContent = (QUIZ.tag ? QUIZ.tag + '. ' : '') + QUIZ.items.length + ' questions. Look at the picture and choose the word.';
+  var sentences = QUIZ.items.every(function(it){ return it.s; });
+  $('signSub').textContent = (QUIZ.tag ? QUIZ.tag + '. ' : '') + QUIZ.items.length + ' questions. '
+    + (sentences ? 'Read the sentence and choose the word.' : 'Look at the picture and choose the word.');
   try {
     var e = localStorage.getItem('gal_student_email'); if (e) $('inEmail').value = e;
     var n = localStorage.getItem('gal_student_name');  if (n) $('inName').value = n;
