@@ -94,6 +94,7 @@ tbody tr:hover td{background:var(--plum-lt)}
 .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.82rem;font-weight:700;margin-top:10px}
 .legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
 .msg{padding:12px 14px;border-radius:10px;font-weight:700;margin-bottom:12px}
+.msg.ok{background:var(--green-bg);color:var(--green);border:1.5px solid var(--green)}
 .msg.err{background:var(--red-bg);color:var(--red);border:1.5px solid var(--red)}
 .msg.info{background:var(--plum-lt);color:var(--plum-dk);border:1.5px solid var(--line-dk)}
 .gate{max-width:380px;margin:60px auto}
@@ -120,6 +121,7 @@ tbody tr:hover td{background:var(--plum-lt)}
     <div class="spacer"></div>
     <button class="btn light sm" onclick="loadAll()">Refresh</button>
     <button class="btn light sm" onclick="exportCsv()">Export CSV</button>
+    <button class="btn light sm" onclick="syncEld()">Sync ELD 103 &rarr; student pages</button>
     <button class="btn light sm" onclick="window.print()">Print</button>
   </div>
 
@@ -614,6 +616,67 @@ function render(){
     stat(cols.length,'columns shown');
 }
 function stat(v,l){return '<div class="stat"><b>'+v+'</b><span>'+l+'</span></div>';}
+
+
+/* ============ ELD 103 -> shared results ============
+   eld103_work stores a payload scored by the functions above, so it cannot be
+   bridged in SQL. This reads what is already loaded, scores it, and writes
+   activity_attempts + skill_attempts so ELD 103 feeds the skill bars. */
+var ELD_SKILL={cap:'capitalization',sv:'sentence-vs-fragment',sva:'subject-verb-agreement',
+  frag:'fragments',tos:'topic-sentences',ord:'time-order',cloze:'paragraph-cloze',
+  conj:'conjunctions',cs:'comma-splices',comma:'commas'};
+var ELD_SLUG='eld103/ch1-2';
+
+function syncEld(){
+  var who=ROWS.filter(function(r){return r.eld&&r.eld.s;});
+  if(!who.length){$('msg').innerHTML='<div class="msg info">No ELD 103 work loaded yet.</div>';return;}
+  if(!confirm('Write ELD 103 results for '+who.length+' student'+(who.length===1?'':'s')+
+    ' onto their student pages?'))return;
+
+  var attempts=[],skills=[],now=new Date().toISOString();
+  who.forEach(function(r){
+    var tot={n:0,d:0},mine=[];
+    Object.keys(ELD_SKILL).forEach(function(k){
+      var sc=r.eld.s[k];
+      if(!sc||!sc.d)return;
+      tot.n+=sc.n; tot.d+=sc.d;
+      mine.push({email:r.email,slug:ELD_SLUG,skill:ELD_SKILL[k],
+                 n:sc.n,d:sc.d,completed_at:r.eld.when||now});
+    });
+    if(!tot.d)return;
+    attempts.push({email:r.email,slug:ELD_SLUG,score:tot.n,max_score:tot.d,
+      detail:{source:'eld103',turned_in:!!r.eld.turned},
+      completed_at:r.eld.when||now});
+    skills=skills.concat(mine);
+  });
+  if(!attempts.length){$('msg').innerHTML=
+    '<div class="msg info">Nobody has scorable ELD 103 work yet.</div>';return;}
+
+  var act=[{slug:ELD_SLUG,title:'ELD 103: Paragraphs and Sentences',unit:'ELD 103 Writing',
+    url:'https://tobiasrugger.github.io/readings/eld103/ch1-2/',
+    skills:Object.keys(ELD_SKILL).map(function(k){return ELD_SKILL[k];}),sort_order:300}];
+
+  function post(t,b,pref){return fetch(SUPA_URL+'/rest/v1/'+t,{method:'POST',
+    headers:H({Prefer:pref||'return=minimal'}),body:JSON.stringify(b)})
+    .then(function(r){if(!r.ok)return r.text().then(function(x){throw new Error(x);});});}
+
+  $('msg').innerHTML='<div class="msg info">Writing&hellip;</div>';
+  // clear any earlier sync for these students so re-running never doubles up
+  var list=attempts.map(function(a){return '"'+a.email+'"';}).join(',');
+  var del='?slug=eq.'+encodeURIComponent(ELD_SLUG)+'&email=in.('+encodeURIComponent(list)+')';
+  fetch(SUPA_URL+'/rest/v1/activity_attempts'+del,{method:'DELETE',headers:H()})
+  .then(function(){return fetch(SUPA_URL+'/rest/v1/skill_attempts'+del,{method:'DELETE',headers:H()});})
+  .then(function(){return post('activities?on_conflict=slug',act,'resolution=merge-duplicates,return=minimal');})
+  .then(function(){return post('activity_attempts',attempts);})
+  .then(function(){return skills.length?post('skill_attempts',skills):null;})
+  .then(function(){
+    $('msg').innerHTML='<div class="msg ok">Wrote ELD 103 results for <b>'+attempts.length+
+      '</b> students across <b>'+skills.length+'</b> skill scores. '+
+      'Their student pages now show capitalization, subject-verb, fragments and the rest.</div>';
+  })
+  .catch(function(e){$('msg').innerHTML='<div class="msg err">Could not write.<br>'+
+    esc(String(e.message).slice(0,300))+'</div>';});
+}
 
 /* ============ CSV ============ */
 function exportCsv(){
