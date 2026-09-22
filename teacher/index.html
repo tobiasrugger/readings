@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class Data &middot; Teacher View</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --plum:#5a4a8a; --plum-dk:#3d3160; --plum-dp:#2b2244; --plum-lt:#eae7f5; --plum-mid:#8d7fc0;
+  --paper:#efebf7; --card:#fff; --field:#f6f4fb;
+  --ink:#231d35; --muted:#5d5575; --line:#d5cceb; --line-dk:#bdb0dd;
+  --green:#1f7a4d; --green-bg:#d7f0e2;
+  --lime:#4d8c2a;  --lime-bg:#e6f4d8;
+  --yellow:#a86b00;--yellow-bg:#fdefd4;
+  --orange:#c25400;--orange-bg:#fde8d4;
+  --red:#b5304a;   --red-bg:#fbdde4;
+  --grey:#9a92b5;  --grey-bg:#eeebf5;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:Nunito,system-ui,sans-serif;font-size:16px}
+.wrap{max-width:1500px;margin:0 auto;padding:14px}
+h1,h2{margin:0;font-weight:900;color:var(--plum-dk)}
+.hide{display:none!important}
+a{color:var(--plum)}
+
+.topbar{background:linear-gradient(135deg,var(--plum-dk),var(--plum) 60%,var(--plum-mid));
+  color:#fff;border-radius:14px;padding:16px 20px;margin-bottom:14px;
+  border-bottom:5px solid var(--plum-dp);display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.topbar h1{color:#fff;font-size:1.45rem}
+.topbar .sub{opacity:.9;font-size:.9rem;font-weight:700}
+.spacer{flex:1}
+
+.card{background:var(--card);border:1.5px solid var(--line);border-radius:14px;
+  padding:16px;margin-bottom:14px;box-shadow:0 2px 0 var(--line)}
+
+.btn{background:var(--plum);color:#fff;border:0;border-bottom:3px solid var(--plum-dp);
+  border-radius:10px;padding:10px 16px;font:inherit;font-weight:800;cursor:pointer}
+.btn:hover{background:var(--plum-dk)} .btn:active{transform:translateY(2px);border-bottom-width:1px}
+.btn.sm{padding:6px 12px;font-size:.87rem;border-radius:8px}
+.btn.ghost{background:#fff;color:var(--plum-dk);border:2px solid var(--plum);border-bottom:3px solid var(--plum)}
+.btn.light{background:rgba(255,255,255,.18);color:#fff;border:2px solid rgba(255,255,255,.5)}
+input,select{font:inherit;padding:9px 11px;border:2px solid var(--line-dk);border-radius:10px;background:var(--field);color:var(--ink)}
+input:focus,select:focus{outline:0;border-color:var(--plum);background:#fff}
+
+/* period pills */
+.pills{display:flex;gap:8px;flex-wrap:wrap}
+.pill{background:#fff;border:2px solid var(--line-dk);border-radius:999px;padding:7px 16px;
+  font-weight:800;cursor:pointer;font-size:.9rem;color:var(--plum-dk)}
+.pill.on{background:var(--plum);color:#fff;border-color:var(--plum-dp)}
+
+/* column toggles */
+.toggles{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px 18px;margin-top:10px}
+.grp{font-weight:900;color:var(--plum-dk);font-size:.82rem;text-transform:uppercase;
+  letter-spacing:.05em;margin:12px 0 4px;border-bottom:2px solid var(--plum-lt);padding-bottom:3px}
+.tog{display:flex;align-items:center;gap:8px;font-weight:700;font-size:.9rem;cursor:pointer}
+.tog input{width:17px;height:17px;padding:0;accent-color:var(--plum)}
+
+/* stats strip */
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.stat{background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:10px 18px;
+  box-shadow:0 2px 0 var(--line);min-width:112px}
+.stat b{display:block;font-size:1.6rem;font-weight:900;color:var(--plum-dk);line-height:1.1}
+.stat span{font-size:.78rem;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+
+/* table */
+.tablewrap{overflow-x:auto;border:1.5px solid var(--line);border-radius:12px;background:#fff}
+table{border-collapse:separate;border-spacing:0;width:100%;font-size:.9rem}
+th,td{padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap;text-align:center}
+th{background:var(--plum-lt);color:var(--plum-dk);font-weight:900;font-size:.78rem;
+  position:sticky;top:0;z-index:2;cursor:pointer;user-select:none}
+th:hover{background:var(--line)}
+th.grpstart,td.grpstart{border-left:3px solid var(--line-dk)}
+td.nm,th.nm{text-align:left;position:sticky;left:0;background:#fff;z-index:1;
+  border-right:3px solid var(--line-dk);min-width:180px}
+th.nm{z-index:3;background:var(--plum-lt)}
+tbody tr:nth-child(even) td{background:#faf9fd}
+tbody tr:nth-child(even) td.nm{background:#faf9fd}
+tbody tr:hover td{background:var(--plum-lt)}
+.sname{font-weight:800;color:var(--plum-dk);text-decoration:none;font-size:.95rem}
+.sname:hover{text-decoration:underline}
+.semail{display:block;font-size:.72rem;color:var(--muted);font-weight:600}
+.flag{height:13px;border-radius:2px;vertical-align:-1px;margin-right:4px}
+
+.v{display:inline-block;min-width:44px;padding:3px 8px;border-radius:9px;font-weight:900;font-size:.85rem}
+.v.g{background:var(--green-bg);color:var(--green)}
+.v.l{background:var(--lime-bg);color:var(--lime)}
+.v.y{background:var(--yellow-bg);color:var(--yellow)}
+.v.o{background:var(--orange-bg);color:var(--orange)}
+.v.r{background:var(--red-bg);color:var(--red)}
+.v.n{background:var(--grey-bg);color:var(--grey)}
+.dot{font-size:1.15rem;line-height:1}
+.muted{color:var(--muted)}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.82rem;font-weight:700;margin-top:10px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.msg{padding:12px 14px;border-radius:10px;font-weight:700;margin-bottom:12px}
+.msg.err{background:var(--red-bg);color:var(--red);border:1.5px solid var(--red)}
+.msg.info{background:var(--plum-lt);color:var(--plum-dk);border:1.5px solid var(--line-dk)}
+.gate{max-width:380px;margin:60px auto}
+@media print{.noprint{display:none!important}body{background:#fff}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ============ GATE ============ -->
+<div id="gate" class="card gate">
+  <h1 style="margin-bottom:6px">Class Data</h1>
+  <p class="muted" style="margin-top:0;font-weight:700">Mr. Toby &middot; Galileo Academy</p>
+  <div style="margin:14px 0"><input id="pw" type="password" placeholder="Password" style="width:100%"></div>
+  <button class="btn" id="btnPw" style="width:100%">Open</button>
+  <p id="pwErr" class="muted" style="color:var(--red);font-weight:800"></p>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app" class="hide">
+
+  <div class="topbar noprint">
+    <div><h1>Class Data</h1><div class="sub">Teacher view &middot; every student, every activity</div></div>
+    <div class="spacer"></div>
+    <button class="btn light sm" onclick="loadAll()">Refresh</button>
+    <button class="btn light sm" onclick="exportCsv()">Export CSV</button>
+    <button class="btn light sm" onclick="window.print()">Print</button>
+  </div>
+
+  <div id="msg"></div>
+  <div class="stats" id="stats"></div>
+
+  <div class="card noprint">
+    <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+      <div class="pills" id="periodPills"></div>
+      <div class="spacer"></div>
+      <input id="search" placeholder="Search a name&hellip;" oninput="render()" style="min-width:200px">
+      <button class="btn ghost sm" onclick="togglePanel()">Columns &#9662;</button>
+    </div>
+
+    <div id="colPanel" class="hide">
+      <div class="grp">Who they are</div>
+      <div class="toggles" id="togProfile"></div>
+      <div class="grp">Overall progress</div>
+      <div class="toggles" id="togOverall"></div>
+      <div class="grp">English skills &mdash; from every activity</div>
+      <div class="toggles" id="togSkills"></div>
+      <div class="grp">ELD 103 &mdash; grammar detail</div>
+      <div class="toggles" id="togEld"></div>
+      <div class="grp">Vocabulary pre-checks</div>
+      <div class="toggles" id="togVocab"></div>
+      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn ghost sm" onclick="setAll(true)">Show all</button>
+        <button class="btn ghost sm" onclick="setAll(false)">Hide all</button>
+        <button class="btn ghost sm" onclick="preset('basic')">Just the basics</button>
+        <button class="btn ghost sm" onclick="preset('grammar')">Grammar focus</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="tablewrap"><table id="tbl"><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
+
+  <div class="legend">
+    <span><i style="background:var(--green)"></i>90&ndash;100</span>
+    <span><i style="background:var(--lime)"></i>80&ndash;89</span>
+    <span><i style="background:var(--yellow)"></i>70&ndash;79</span>
+    <span><i style="background:var(--orange)"></i>60&ndash;69</span>
+    <span><i style="background:var(--red)"></i>under 60</span>
+    <span><i style="background:var(--grey)"></i>not tried</span>
+    <span class="muted">&middot; click a name to open that student's page &middot; click a column heading to sort</span>
+  </div>
+</div>
+</div>
+<script>
+var CAPTEXT="My friend Linh Tran comes from Da Nang, a city on the coast of Vietnam. She moved to San Francisco last August. Linh speaks Vietnamese, English, and a little French. On Tuesdays she studies Chemistry 101 at City College. Her favorite book is The Little Prince, and her favorite holiday is Tet. Next summer she wants to visit the Golden Gate Bridge with her cousin, who works for the Red Cross. Linh says that the Pacific Ocean here is much colder than the water at home.";
+var CAPW=CAPTEXT.split(' ');
+var SVDATA=[
+ {t:'My older brother repairs motorcycles.',S:[2],V:[3]},
+ {t:'The students in the library study quietly.',S:[1],V:[5]},
+ {t:'Amina and Hassan walked to the market.',S:[0,2],V:[3]},
+ {t:'My phone fell and broke.',S:[1],V:[2,4]},
+ {t:'The coach and the players cheered and celebrated.',S:[1,4],V:[5,7]},
+ {t:'Rain fell all night.',S:[0],V:[1]},
+ {t:'My cousins in Oakland sell fruit at the farmers market.',S:[1],V:[4]},
+ {t:'The old dog slept and dreamed.',S:[2],V:[3,5]}];
+var SVA=[['One of my cousins ___ in Daly City.',['live','lives'],1],
+ ['Both of my parents ___ at night.',['work','works'],0],
+ ['There ___ four new students in our class.',['is','are'],1],
+ ['Each of the desks ___ a broken leg.',['has','have'],0],
+ ['Some of the water ___ still frozen.',['was','were'],0],
+ ['Some of the players ___ still warming up.',['was','were'],1],
+ ['Neither of my sisters ___ Tagalog.',['speak','speaks'],1],
+ ['The noise from the construction trucks ___ me up every morning.',['wake','wakes'],1],
+ ['Many of my classmates ___ the bus.',['take','takes'],0],
+ ['None of the homework ___ finished.',['was','were'],0],
+ ['A lot of my friends ___ in the Excelsior.',['live','lives'],0],
+ ['There ___ any milk in the refrigerator.',["wasn't","weren't"],0]];
+var FRAG=[['Is very difficult to find parking downtown.',['Complete','No subject','No verb'],1],
+ ['The bus driver waved at us.',['Complete','No subject','No verb'],0],
+ ['My neighbors always friendly in the morning.',['Complete','No subject','No verb'],2],
+ ['They practice every afternoon.',['Complete','No subject','No verb'],0],
+ ['Was raining hard when the game started.',['Complete','No subject','No verb'],1],
+ ['Mrs. Okafor, our chemistry teacher, from Nigeria.',['Complete','No subject','No verb'],2],
+ ['The little boy in the red jacket.',['Complete','No subject','No verb'],2],
+ ['Close the window.',['Complete','No subject','No verb'],0]];
+var FIXPROMPT=['Is very difficult to find parking downtown.','My neighbors always friendly in the morning.','The little boy in the red jacket.'];
+var TOS=[['finally','w'],['at last','p'],['next','w'],['after a while','p'],['meanwhile','w'],
+ ['the next morning','p'],['soon','w'],['at 7:30','p'],['later','w'],['after that','p'],
+ ['then','w'],['before the test','p']];
+var STORY=['Last winter my family drove to Lake Tahoe for the first time.',
+ 'We left San Francisco at five in the morning so we could beat the traffic.',
+ 'After about three hours, my little sister announced that she felt sick.',
+ 'We pulled over at a rest stop, and she felt better in ten minutes.',
+ 'When we finally reached the lake, none of us could believe how blue it was.',
+ 'My father took a picture of us standing in snow up to our knees.',
+ 'That photograph is still taped to our refrigerator door.'];
+var CLOZEB=[{opts:['Finally','During the night','After that','At last'],a:1},
+ {opts:['In the morning','Before that','Meanwhile','Two years ago'],a:0},
+ {opts:['At 7:15','Yesterday','Finally','Before school started'],a:0},
+ {opts:['Later','First','Meanwhile','The next day'],a:1},
+ {opts:['Next','At last','Before that','Now'],a:0},
+ {opts:['A minute later','The next morning','Before the bus came','Two hours later'],a:0},
+ {opts:['Soon','Finally','Meanwhile','First'],a:1}];
+var CONJ=[['I studied for three hours, ___ I still failed the quiz.',['and','but','so','or'],1],
+ ['The restaurant was closed, ___ we ate at my aunt\u2019s house.',['and','but','so','or'],2],
+ ['My brother plays soccer, ___ my sister plays basketball.',['and','but','so','or'],0],
+ ['You can take the N train, ___ you can take the 22 bus.',['and','but','so','or'],3],
+ ['It rained all weekend, ___ the game was canceled.',['and','but','so','or'],2],
+ ['She speaks Arabic at home, ___ she does not write it well.',['and','but','so','or'],1],
+ ['We arrived early, ___ the doors were already locked.',['and','but','so','or'],1],
+ ['Ask your counselor about it, ___ send her an email.',['and','but','so','or'],3],
+ ['My phone battery died, ___ I could not call anyone.',['and','but','so','or'],2],
+ ['The soup was hot, ___ the bread was fresh.',['and','but','so','or'],0]];
+var CSDATA=[['We cleaned the kitchen and washed the car.',0],
+ ['We cleaned the kitchen and my brother washed the car.',1],
+ ['The movie was long but it was worth it.',1],
+ ['The movie was long but interesting.',0],
+ ['You can pay now or you can pay later.',1],
+ ['You can pay now or later.',0],
+ ['My father works nights so he sleeps during the day.',1],
+ ['My father works nights and sleeps during the day.',0]];
+var COMMA=[['Finally the rain stopped.',[0]],['Then the rain stopped.',[]],
+ ['I packed my books my laptop and my lunch.',[3,5]],
+ ['The bus was late so I missed first period.',[3]],
+ ['At 6:00 my father starts making breakfast.',[1]],
+ ['We studied and we passed.',[1]],['We studied and passed.',[]],
+ ['After the game we ate pizza drank soda and told stories until midnight.',[2,5,7]]];
+var CHECKS=['Centered, capitalized title','First line indented','Topic sentence names the event',
+ 'Events in real order','Four or more time signals','Comma after opening signals',
+ 'No fragments','Two or more compound sentences','Subject-verb agreement','Concluding sentence'];
+
+/* ============ SCORING ============ */
+function attempted(o){return o && Object.keys(o).length>0}
+function scoreCap(p){
+  var need=[],got=p.cap||[];
+  CAPW.forEach(function(w,i){if(/[A-Z]/.test(w.charAt(0)))need.push(i)});
+  if(!got.length) return null;
+  var right=0,extra=0;
+  got.forEach(function(i){need.indexOf(i)>-1?right++:extra++});
+  return {n:right,d:need.length,extra:extra,missed:need.filter(function(i){return got.indexOf(i)<0})};
+}
+function scoreSV(p){
+  if(!attempted(p.sv))return null;
+  var n=0,wrong=[];
+  SVDATA.forEach(function(q,qi){
+    var a=(p.sv||{})[qi]||{},ok=true;
+    q.t.split(' ').forEach(function(w,wi){
+      var want=q.S.indexOf(wi)>-1?'S':(q.V.indexOf(wi)>-1?'V':'');
+      if((a[wi]||'')!==want)ok=false;
+    });
+    if(ok)n++; else wrong.push(q.t);
+  });
+  return {n:n,d:8,wrong:wrong};
+}
+function scoreMC(ans,key,ki){
+  if(!attempted(ans))return null;
+  var n=0,wrong=[];
+  key.forEach(function(q,qi){
+    var pick=ans[qi];
+    if(pick===q[ki])n++;
+    else wrong.push({q:q[0],gave:(pick===undefined?'(blank)':q[1][pick]),want:q[1][q[ki]]});
+  });
+  return {n:n,d:key.length,wrong:wrong};
+}
+function scoreCS(ans){
+  if(!attempted(ans))return null;
+  var n=0,wrong=[],lab=['Simple','Compound'];
+  CSDATA.forEach(function(q,qi){
+    if(ans[qi]===q[1])n++;
+    else wrong.push({q:q[0],gave:(ans[qi]===undefined?'(blank)':lab[ans[qi]]),want:lab[q[1]]});
+  });
+  return {n:n,d:8,wrong:wrong};
+}
+function scoreTOS(ans){
+  if(!attempted(ans))return null;
+  var n=0,wrong=[];
+  TOS.forEach(function(t,i){
+    if((ans[i]||'')===t[1])n++;
+    else wrong.push({q:t[0],gave:(ans[i]==='w'?'word':(ans[i]==='p'?'phrase':'(blank)')),want:t[1]==='w'?'word':'phrase'});
+  });
+  return {n:n,d:12,wrong:wrong};
+}
+function scoreOrder(arr){
+  if(!arr||!arr.length)return null;
+  var n=0; arr.forEach(function(v,i){if(v===i)n++});
+  return {n:n,d:7,seq:arr};
+}
+function scoreCloze(ans){
+  if(!attempted(ans))return null;
+  var n=0,wrong=[];
+  CLOZEB.forEach(function(b,i){
+    var v=parseInt(ans[i],10);
+    if(v===b.a)n++;
+    else wrong.push({q:'Blank '+(i+1),gave:(isNaN(v)||v<0?'(blank)':b.opts[v]),want:b.opts[b.a]});
+  });
+  return {n:n,d:7,wrong:wrong};
+}
+function scoreComma(ans){
+  if(!attempted(ans))return null;
+  var n=0,wrong=[];
+  COMMA.forEach(function(q,qi){
+    var got=(ans[qi]||[]).slice().sort(function(a,b){return a-b}).join(',');
+    var want=q[1].slice().sort(function(a,b){return a-b}).join(',');
+    if(got===want)n++;
+    else{
+      var ws=q[0].split(' '),show='';
+      ws.forEach(function(w,wi){show+=w+((ans[qi]||[]).indexOf(wi)>-1?',':'')+' '});
+      wrong.push({q:show.trim(),want:q[1].length?q[1].length+' comma'+(q[1].length>1?'s':''):'no comma'});
+    }
+  });
+  return {n:n,d:8,wrong:wrong};
+}
+var SIGNALS=['first','second','third','next','then','later','soon','now','meanwhile','finally',
+ 'at last','after that','after a while','the next day','the next morning','in the morning',
+ 'in the afternoon','at night','before','after','during','suddenly','one day','last','yesterday','when'];
+function wc(s){return ((s||'').trim().match(/\S+/g)||[]).length}
+function draftStats(p){
+  var d=p.draft||'';
+  if(!d.trim())return null;
+  var low=' '+d.toLowerCase()+' ',sig=[];
+  SIGNALS.forEach(function(s){if(low.indexOf(' '+s+' ')>-1||low.indexOf(' '+s+',')>-1)sig.push(s)});
+  var sents=d.split(/[.!?]+\s/).filter(function(x){return x.trim().length});
+  return {
+    words:wc(d), title:(p.title||'').trim(),
+    signals:sig, compound:(d.match(/,\s+(and|but|so|or)\s/g)||[]).length,
+    lowI:(d.match(/\bi\b/g)||[]).length,
+    badStart:sents.filter(function(x){var c=x.trim().charAt(0);return c&&c===c.toLowerCase()&&/[a-z]/.test(c)}).length,
+    sents:sents.length, breaks:/\n\s*\S/.test(d.trim())
+  };
+}
+function pct(s){return s?Math.round(s.n/s.d*100):null}
+function cell(s){
+  if(s===null||s===undefined)return '<span class="pct pna">—</span>';
+  var v=pct(s),c=v>=90?'p100':(v>=60?'p70':'p0');
+  return '<span class="pct '+c+'" title="'+s.n+' of '+s.d+'">'+v+'%</span>';
+}
+
+</script>
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var PASSWORD='galileo2026';
+var IDK='__idk';
+function H(){return {apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY,'Content-Type':'application/json'};}
+function $(id){return document.getElementById(id);}
+function esc(s){return (s==null?'':String(s)).replace(/[&<>"]/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function sb(path){return fetch(SUPA_URL+'/rest/v1/'+path,{headers:H()})
+  .then(function(r){return r.ok?r.json():r.text().then(function(t){throw new Error(t);});});}
+
+/* ============ GATE ============ */
+$('btnPw').addEventListener('click',function(){
+  if($('pw').value===PASSWORD){try{sessionStorage.setItem('dash_ok','1');}catch(e){} openApp();}
+  else $('pwErr').textContent='Not the right password.';
+});
+$('pw').addEventListener('keydown',function(e){if(e.key==='Enter')$('btnPw').click();});
+try{if(sessionStorage.getItem('dash_ok')==='1')openApp();}catch(e){}
+function openApp(){$('gate').classList.add('hide');$('app').classList.remove('hide');loadAll();}
+
+/* ============ COLUMN DEFINITIONS ============
+   Add a new column by pushing one object here. Nothing else to change. */
+var COLS=[
+  {id:'period',  grp:'togProfile', label:'Period',   on:true,  get:function(r){return r.period||'';}},
+  {id:'country', grp:'togProfile', label:'Country',  on:true,  html:function(r){
+      return r.country_code?'<img class="flag" src="https://flagcdn.com/w20/'+r.country_code.toLowerCase()+'.png">'+esc(r.country_name||''):'<span class="muted">&mdash;</span>';},
+      get:function(r){return r.country_name||'';}},
+  {id:'lang',    grp:'togProfile', label:'Home language', on:false, get:function(r){return r.home_language||'';}},
+  {id:'arrived', grp:'togProfile', label:'Years in USA',  on:false, get:function(r){return r.years_usa==null?'':r.years_usa;}},
+
+  {id:'done',    grp:'togOverall', label:'Activities done', on:true, num:true, get:function(r){return r.doneCount;}},
+  {id:'avg',     grp:'togOverall', label:'Average score',   on:true, pctv:true, get:function(r){return r.avgPct;}},
+  {id:'last',    grp:'togOverall', label:'Last active',     on:true, get:function(r){return r.lastSeen?fmtDate(r.lastSeen):'';}},
+  {id:'turned',  grp:'togOverall', label:'ELD 103 turned in', on:false, html:function(r){
+      return r.eld?(r.eld.turned?'<span class="v g">yes</span>':'<span class="v n">no</span>'):'<span class="muted">&mdash;</span>';},
+      get:function(r){return r.eld?(r.eld.turned?'yes':'no'):'';}}
+];
+
+/* eld103 grammar columns, keyed to the scoring functions from your ch1-2 dashboard */
+var ELD_COLS=[['cap','Capital letters'],['sv','Sentence / fragment'],['sva','Subject-verb'],
+  ['frag','Fragments MC'],['tos','Topic sentence'],['ord','Time order'],['cloze','Cloze'],
+  ['conj','Conjunctions'],['cs','Comma splice'],['comma','Commas']];
+ELD_COLS.forEach(function(c,i){
+  COLS.push({id:'eld_'+c[0],grp:'togEld',label:c[1],on:i<4,pctv:true,grpstart:i===0,
+    get:function(r){var s=r.eld&&r.eld.s&&r.eld.s[c[0]];return s&&s.d?Math.round(s.n/s.d*100):null;}});
+});
+
+var SKILL_COLS=[], VOCAB_COLS=[];
+
+/* ============ STATE ============ */
+var STUD={}, ROWS=[], PERIOD='', SORT={key:'name',dir:1};
+
+function fmtDate(d){var x=new Date(d);if(isNaN(x))return '';
+  return (x.getMonth()+1)+'/'+x.getDate();}
+function band(v){return v==null?'n':v>=90?'g':v>=80?'l':v>=70?'y':v>=60?'o':'r';}
+function vcell(v,suffix){if(v==null)return '<span class="v n">&mdash;</span>';
+  return '<span class="v '+band(v)+'">'+v+(suffix||'%')+'</span>';}
+
+/* ============ LOAD ============ */
+function loadAll(){
+  $('msg').innerHTML='<div class="msg info">Loading&hellip;</div>';
+  Promise.all([
+    sb('students?select=*').catch(function(){return [];}),
+    sb('activity_attempts?select=email,slug,score,max_score,completed_at').catch(function(){return [];}),
+    sb('activities?select=slug,title,unit,skills').catch(function(){return [];}),
+    sb('student_skills?select=*').catch(function(){return [];}),
+    sb('eld103_work?select=*').catch(function(){return [];}),
+    sb('vocab_preassess?select=*').catch(function(){return [];})
+  ]).then(function(res){
+    build(res[0],res[1],res[2],res[3],res[4],res[5]);
+  }).catch(function(e){
+    $('msg').innerHTML='<div class="msg err">Could not load.<br>'+esc(String(e.message).slice(0,300))+'</div>';
+  });
+}
+
+function keyOf(e){return String(e||'').trim().toLowerCase();}
+
+function build(students,attempts,acts,skills,eld,vocab){
+  STUD={};
+  function touch(email,name,period){
+    var k=keyOf(email); if(!k)return null;
+    if(!STUD[k])STUD[k]={email:k,name:'',period:'',doneCount:0,avgPct:null,lastSeen:null,
+                          skills:{},vocab:{},eld:null,_sum:0,_n:0};
+    var s=STUD[k];
+    if(name&&!s.name)s.name=name;
+    if(period&&!s.period)s.period=String(period);
+    return s;
+  }
+
+  students.forEach(function(r){
+    var s=touch(r.email,((r.first_name||'')+' '+(r.last_name||'')).trim(),r.period);
+    if(!s)return;
+    s.country_code=r.country_code; s.country_name=r.country_name;
+    s.home_language=r.home_language; s.photo_url=r.photo_url;
+    if(r.arrival_date){var y=new Date(r.arrival_date);
+      if(!isNaN(y))s.years_usa=Math.max(0,Math.floor((Date.now()-y)/31557600000));}
+  });
+
+  // activity attempts -> done count + average, best attempt per slug
+  var best={};
+  attempts.forEach(function(a){
+    var k=keyOf(a.email); if(!k)return; touch(a.email);
+    var p=a.max_score?Math.round(100*a.score/a.max_score):null;
+    var kk=k+'||'+a.slug;
+    if(!best[kk]||(p!=null&&p>best[kk]))best[kk]=p==null?best[kk]:p;
+    if(best[kk]===undefined)best[kk]=null;
+    var s=STUD[k];
+    if(!s.lastSeen||a.completed_at>s.lastSeen)s.lastSeen=a.completed_at;
+  });
+  Object.keys(best).forEach(function(kk){
+    var k=kk.split('||')[0], s=STUD[k]; if(!s)return;
+    s.doneCount++;
+    if(best[kk]!=null){s._sum+=best[kk];s._n++;}
+  });
+  Object.keys(STUD).forEach(function(k){
+    var s=STUD[k]; s.avgPct=s._n?Math.round(s._sum/s._n):null;
+  });
+
+  // skills view
+  var skillNames={};
+  skills.forEach(function(r){
+    var k=keyOf(r.email), s=STUD[k]; if(!s)return;
+    s.skills[r.skill]=r.pct; skillNames[r.skill]=1;
+  });
+  SKILL_COLS=Object.keys(skillNames).sort();
+  // rebuild skill columns
+  COLS=COLS.filter(function(c){return c.grp!=='togSkills';});
+  SKILL_COLS.forEach(function(sk,i){
+    COLS.push({id:'sk_'+sk,grp:'togSkills',label:nice(sk),on:i<6,pctv:true,grpstart:i===0,
+      get:function(r){return r.skills[sk]==null?null:r.skills[sk];}});
+  });
+
+  // eld103_work
+  eld.forEach(function(r){
+    var s=touch(r.email,r.name||r.student_name,r.period); if(!s)return;
+    var p=r.payload||{};
+    s.eld={turned:!!r.turned_in,when:r.updated_at,
+      s:{cap:scoreCap(p),sv:scoreSV(p),sva:scoreMC(p.sva||{},SVA,2),
+         frag:scoreMC(p.frag||{},FRAG,2),tos:scoreTOS(p.tos||{}),ord:scoreOrder(p.order),
+         cloze:scoreCloze(p.cloze||{}),conj:scoreMC(p.conj||{},CONJ,2),
+         cs:scoreCS(p.cs||{}),comma:scoreComma(p.comma||{})}};
+    if(r.updated_at&&(!s.lastSeen||r.updated_at>s.lastSeen))s.lastSeen=r.updated_at;
+  });
+
+  // vocab pre-assessments
+  var quizzes={};
+  vocab.forEach(function(r){
+    var s=touch(r.email,r.name,r.period); if(!s)return;
+    var items=r.items||[], ans=r.answers||{}, known=0;
+    items.forEach(function(it){if(ans[it.k]===it.w)known++;});
+    var pctv=items.length?Math.round(100*known/items.length):null;
+    s.vocab[r.quiz]={pct:pctv,known:known,total:items.length,turned:!!r.turned_in};
+    quizzes[r.quiz]=r.quiz_title||r.quiz;
+    if(r.updated_at&&(!s.lastSeen||r.updated_at>s.lastSeen))s.lastSeen=r.updated_at;
+  });
+  VOCAB_COLS=Object.keys(quizzes).sort();
+  COLS=COLS.filter(function(c){return c.grp!=='togVocab';});
+  VOCAB_COLS.forEach(function(q,i){
+    COLS.push({id:'vq_'+q,grp:'togVocab',label:quizzes[q],on:i<4,pctv:true,grpstart:i===0,
+      get:function(r){return r.vocab[q]?r.vocab[q].pct:null;}});
+  });
+
+  ROWS=Object.keys(STUD).map(function(k){
+    var s=STUD[k]; if(!s.name)s.name=s.email.split('@')[0]; return s;});
+
+  $('msg').innerHTML=ROWS.length?'':
+    '<div class="msg info">No students yet. They appear here as soon as they turn in any activity.</div>';
+  buildToggles(); buildPeriods(); render();
+}
+
+function nice(s){return String(s).replace(/[-_]/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});}
+
+/* ============ TOGGLES ============ */
+function buildToggles(){
+  ['togProfile','togOverall','togSkills','togEld','togVocab'].forEach(function(g){
+    var box=$(g); if(!box)return;
+    var mine=COLS.filter(function(c){return c.grp===g;});
+    box.innerHTML=mine.length?mine.map(function(c){
+      return '<label class="tog"><input type="checkbox" data-col="'+esc(c.id)+'"'+
+        (c.on?' checked':'')+' onchange="toggleCol(this)">'+esc(c.label)+'</label>';
+    }).join(''):'<span class="muted">Nothing here yet.</span>';
+  });
+}
+function toggleCol(el){
+  var c=COLS.filter(function(x){return x.id===el.getAttribute('data-col');})[0];
+  if(c){c.on=el.checked;render();}
+}
+function togglePanel(){$('colPanel').classList.toggle('hide');}
+function setAll(v){COLS.forEach(function(c){c.on=v;});buildToggles();render();}
+function preset(which){
+  COLS.forEach(function(c){
+    if(which==='basic')c.on=['period','country','done','avg','last'].indexOf(c.id)>-1;
+    else if(which==='grammar')c.on=c.id==='period'||c.grp==='togEld'||c.id.indexOf('sk_grammar')===0;
+  });
+  buildToggles();render();
+}
+
+/* ============ PERIOD FILTER ============ */
+function buildPeriods(){
+  var ps={};ROWS.forEach(function(r){if(r.period)ps[r.period]=1;});
+  var list=Object.keys(ps).sort(function(a,b){return a.localeCompare(b,undefined,{numeric:true});});
+  $('periodPills').innerHTML='<button class="pill'+(PERIOD===''?' on':'')+'" onclick="setPeriod(\'\')">All periods</button>'+
+    list.map(function(p){return '<button class="pill'+(PERIOD===p?' on':'')+
+      '" onclick="setPeriod(\''+esc(p)+'\')">Period '+esc(p)+'</button>';}).join('');
+}
+function setPeriod(p){PERIOD=p;buildPeriods();render();}
+
+/* ============ RENDER ============ */
+function shown(){
+  var q=($('search').value||'').trim().toLowerCase();
+  return ROWS.filter(function(r){
+    if(PERIOD&&String(r.period)!==PERIOD)return false;
+    if(q&&r.name.toLowerCase().indexOf(q)<0&&r.email.indexOf(q)<0)return false;
+    return true;
+  });
+}
+function sortBy(key){
+  if(SORT.key===key)SORT.dir*=-1; else {SORT.key=key;SORT.dir=1;}
+  render();
+}
+function render(){
+  var cols=COLS.filter(function(c){return c.on;});
+  var rows=shown().slice();
+
+  rows.sort(function(a,b){
+    var va,vb;
+    if(SORT.key==='name'){va=a.name.toLowerCase();vb=b.name.toLowerCase();}
+    else{var c=COLS.filter(function(x){return x.id===SORT.key;})[0];
+      if(!c)return 0; va=c.get(a);vb=c.get(b);
+      if(va==null)va=-1; if(vb==null)vb=-1;}
+    if(va<vb)return -SORT.dir; if(va>vb)return SORT.dir; return 0;
+  });
+
+  $('thead').innerHTML='<tr><th class="nm" onclick="sortBy(\'name\')">Student'+
+    (SORT.key==='name'?(SORT.dir>0?' &#9650;':' &#9660;'):'')+'</th>'+
+    cols.map(function(c){return '<th'+(c.grpstart?' class="grpstart"':'')+
+      ' onclick="sortBy(\''+esc(c.id)+'\')">'+esc(c.label)+
+      (SORT.key===c.id?(SORT.dir>0?' &#9650;':' &#9660;'):'')+'</th>';}).join('')+'</tr>';
+
+  $('tbody').innerHTML=rows.map(function(r){
+    return '<tr><td class="nm"><a class="sname" href="../student/?email='+
+      encodeURIComponent(r.email)+'">'+esc(r.name)+'</a><span class="semail">'+esc(r.email)+'</span></td>'+
+      cols.map(function(c){
+        var cls=c.grpstart?' class="grpstart"':'';
+        if(c.html)return '<td'+cls+'>'+c.html(r)+'</td>';
+        var v=c.get(r);
+        if(c.pctv)return '<td'+cls+'>'+vcell(v)+'</td>';
+        if(c.num)return '<td'+cls+'><b>'+(v||0)+'</b></td>';
+        return '<td'+cls+'>'+(v===''||v==null?'<span class="muted">&mdash;</span>':esc(v))+'</td>';
+      }).join('')+'</tr>';
+  }).join('');
+
+  var done=rows.filter(function(r){return r.doneCount>0;});
+  var avgs=rows.map(function(r){return r.avgPct;}).filter(function(v){return v!=null;});
+  $('stats').innerHTML=
+    stat(rows.length,'students')+
+    stat(done.length,'have work')+
+    stat(avgs.length?Math.round(avgs.reduce(function(a,b){return a+b;},0)/avgs.length)+'%':'&ndash;','class average')+
+    stat(cols.length,'columns shown');
+}
+function stat(v,l){return '<div class="stat"><b>'+v+'</b><span>'+l+'</span></div>';}
+
+/* ============ CSV ============ */
+function exportCsv(){
+  var cols=COLS.filter(function(c){return c.on;});
+  var head=['Name','Email'].concat(cols.map(function(c){return c.label;}));
+  var lines=[head];
+  shown().forEach(function(r){
+    lines.push([r.name,r.email].concat(cols.map(function(c){
+      var v=c.get(r);return v==null?'':String(v);})));
+  });
+  var csv=lines.map(function(row){return row.map(function(cell){
+    return '"'+String(cell).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download='galileo-class-data.csv'; a.click();
+}
+</script>
+</body>
+</html>
