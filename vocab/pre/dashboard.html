@@ -59,6 +59,17 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 .legend{color:var(--muted);font-size:.86rem;margin:0 0 10px;display:flex;gap:14px;flex-wrap:wrap}
 .legend b{display:inline-block;width:13px;height:13px;border-radius:3px;vertical-align:-1px;margin-right:4px}
 .empty{padding:36px;text-align:center;color:var(--muted)}
+.cell{cursor:pointer}
+.cell:hover{outline:2px solid var(--ink);outline-offset:1px}
+#tip{
+  position:fixed;z-index:80;pointer-events:none;opacity:0;transition:opacity .08s;
+  background:var(--plum-deep);color:#fff;border-radius:10px;padding:8px 12px;
+  font-size:.9rem;line-height:1.35;max-width:260px;box-shadow:0 6px 18px rgba(46,18,57,.3);
+}
+#tip.on{opacity:1}
+#tip .te{font-size:1.4rem;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;vertical-align:-3px;margin-right:6px}
+#tip b{font-weight:600}
+#tip .tr{display:block;opacity:.85;font-size:.84rem;margin-top:2px}
 .flag{color:var(--miss);font-size:.85rem}
 </style>
 </head>
@@ -91,6 +102,8 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
     <div id="tabWords"></div>
   </section>
 </main>
+
+<div id="tip"></div>
 
 <script src="quizzes.js"></script>
 <script>
@@ -188,10 +201,10 @@ function renderStudents(){
     + '</tr></thead><tbody>';
   list.forEach(function(r){
     var pct = Math.round(100*r.s.pct);
-    var cells = (r.items || []).map(function(it){
+    var cells = (r.items || []).map(function(it, n){
       var b = r.s.byKey[it.k] || { st:'e0' };
-      var tip = it.e + ' ' + it.w + ' — ' + (b.st==='k'?'right':b.st==='i'?"don't know":b.st==='m'?'chose "'+b.chose+'"':'not answered');
-      return '<span class="cell ' + b.st + '" title="' + esc(tip) + '"></span>';
+      var res = b.st==='k' ? 'Right' : b.st==='i' ? "Chose: I don't know" : b.st==='m' ? 'Chose: ' + b.chose : 'Not answered yet';
+      return '<span class="cell ' + b.st + '" data-e="' + esc(it.e) + '" data-w="' + esc(it.w) + '" data-r="' + esc(res) + '" data-n="' + (n+1) + '"></span>';
     }).join('');
     h += '<tr><td>' + esc(r.name) + '<br><span style="color:var(--muted);font-size:.78rem">' + esc(r.email) + '</span></td>'
       + '<td>' + esc(r.period) + '</td>'
@@ -241,6 +254,35 @@ function renderWords(){
   });
   $('tabWords').innerHTML = h + '</tbody></table></div>';
 }
+
+/* tooltip on the answer squares: shows the question and the word */
+(function(){
+  var tip = $('tip'), shown = null;
+  function place(e){
+    var pad = 12, r = tip.getBoundingClientRect();
+    var x = Math.min(Math.max(8, e.clientX + 14), window.innerWidth - r.width - 8);
+    var y = e.clientY - r.height - pad;
+    if (y < 8) y = e.clientY + pad + 6;
+    tip.style.left = x + 'px'; tip.style.top = y + 'px';
+  }
+  function open(cell, e){
+    shown = cell;
+    tip.innerHTML = '<span class="te">' + cell.dataset.e + '</span><b>' + cell.dataset.w + '</b>'
+      + '<span class="tr">Question ' + cell.dataset.n + '. ' + cell.dataset.r + '</span>';
+    tip.classList.add('on'); place(e);
+  }
+  function close(){ shown = null; tip.classList.remove('on'); }
+  document.addEventListener('mouseover', function(e){
+    var cell = e.target.closest ? e.target.closest('.cell') : null;
+    if (cell) open(cell, e); else if (shown) close();
+  });
+  document.addEventListener('mousemove', function(e){ if (shown) place(e); });
+  document.addEventListener('click', function(e){          // tap works on a touchscreen
+    var cell = e.target.closest ? e.target.closest('.cell') : null;
+    if (cell) open(cell, e); else close();
+  });
+  document.addEventListener('scroll', close, true);
+})();
 
 $('selQuiz').addEventListener('change', build);
 $('selPeriod').addEventListener('change', build);
