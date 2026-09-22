@@ -13,6 +13,8 @@
   --paper:#efebf7; --card:#ffffff; --field:#f6f4fb;
   --ink:#231d35; --muted:#5d5575; --line:#d5cceb; --line-dk:#bdb0dd;
   --green:#1f7a4d; --green-bg:#e0f2e8;
+  --lime:#4d8c2a; --lime-bg:#e6f4d8;
+  --orange:#c25400; --orange-bg:#fde8d4;
   --yellow:#a86b00; --yellow-bg:#fdf0d8;
   --red:#b5304a;   --red-bg:#fbe4e9;
   --grey:#9a92b5;  --grey-bg:#eeebf5;
@@ -119,6 +121,29 @@ ul{margin:0;padding-left:20px} li{margin-bottom:6px;font-weight:700}
 .flagbig{height:38px;border-radius:5px;vertical-align:-10px;margin-left:10px;
   border:1.5px solid var(--line-dk)}
 #saveMsg{font-weight:800;margin-left:12px}
+
+/* five-band colours + progress bar + practice links */
+.skill.l{border-left-color:var(--lime);background:var(--lime-bg)}
+.skill.o{border-left-color:var(--orange);background:var(--orange-bg)}
+.l .pct{color:var(--lime)} .o .pct{color:var(--orange)}
+.bar{height:7px;border-radius:99px;background:rgba(0,0,0,.09);margin:7px 0 5px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:99px;background:currentColor;opacity:.75}
+.skill.g .bar i{background:var(--green)} .skill.l .bar i{background:var(--lime)}
+.skill.y .bar i{background:var(--yellow)} .skill.o .bar i{background:var(--orange)}
+.skill.r .bar i{background:var(--red)}
+.prac{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.prac-link{display:inline-block;background:#fff;border:1.5px solid var(--line-dk);
+  border-radius:999px;padding:4px 11px;font-size:.8rem;font-weight:800;
+  color:var(--plum-dk);text-decoration:none}
+.prac-link:hover{background:var(--plum);color:#fff;border-color:var(--plum-dp)}
+.v{display:inline-block;min-width:42px;text-align:center;padding:2px 8px;border-radius:9px;
+  font-weight:900;font-size:.82rem}
+.v.g{background:var(--green-bg);color:var(--green)}
+.v.l{background:var(--lime-bg);color:var(--lime)}
+.v.y{background:var(--yellow-bg);color:var(--yellow)}
+.v.o{background:var(--orange-bg);color:var(--orange)}
+.v.r{background:var(--red-bg);color:var(--red)}
+#growth li,#strengths li{margin-bottom:12px}
 @media print{.btn,.noprint{display:none!important}
   body{background:#fff}.card{break-inside:avoid;box-shadow:none}
   .hero{background:var(--plum-dk)!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
@@ -215,9 +240,11 @@ ul{margin:0;padding-left:20px} li{margin-bottom:6px;font-weight:700}
   <div class="card">
     <h2>My English Skills</h2>
     <div class="legend">
-      <span><i style="background:var(--green)"></i>Strong</span>
+      <span><i style="background:var(--green)"></i>Excellent</span>
+      <span><i style="background:var(--lime)"></i>Strong</span>
       <span><i style="background:var(--yellow)"></i>Getting there</span>
-      <span><i style="background:var(--red)"></i>Keep practicing</span>
+      <span><i style="background:var(--orange)"></i>Keep working</span>
+      <span><i style="background:var(--red)"></i>Practice more</span>
       <span><i style="background:var(--grey)"></i>Not tried yet</span>
     </div>
     <div class="skills" id="skillBox"></div>
@@ -313,19 +340,20 @@ async function load(email){
   if(al&&al.length)email=al[0].email;
   ME=email;
 
-  const [stu,facts,acts,atts,skills]=await Promise.all([
+  const [stu,facts,acts,atts,skills,res]=await Promise.all([
     sb('students?email=eq.'+encodeURIComponent(email)+'&select=*'),
     sb('student_facts?email=eq.'+encodeURIComponent(email)+'&select=key,value'),
     sb('activities?select=*&order=sort_order.asc'),
     sb('activity_attempts?email=eq.'+encodeURIComponent(email)+'&select=slug,score,max_score,completed_at&order=completed_at.asc'),
-    sb('student_skills?email=eq.'+encodeURIComponent(email)+'&select=skill,pct,n')
+    sb('student_skills?email=eq.'+encodeURIComponent(email)+'&select=skill,pct,n'),
+    sb('skill_resources?select=*&order=sort_order.asc')
   ]);
 
   if(!stu||!stu.length){
     await upsert('students',{email:email},'email');
     DATA.student={email:email};
   } else DATA.student=stu[0];
-  DATA.facts=facts||[]; DATA.acts=acts||[]; DATA.atts=atts||[]; DATA.skills=skills||[];
+  DATA.facts=facts||[]; DATA.acts=acts||[]; DATA.atts=atts||[]; DATA.skills=skills||[]; DATA.res=res||[];
 
   document.getElementById('signin').classList.add('hide');
   document.getElementById('page').classList.remove('hide');
@@ -437,7 +465,20 @@ function renderActs(){
   }).join('');
 }
 
-function band(p){return p>=80?'g':p>=60?'y':'r';}
+function band(p){return p==null?'n':p>=90?'g':p>=80?'l':p>=70?'y':p>=60?'o':'r';}
+var KIND_ICON={practice:'\u270F\uFE0F',video:'\u25B6\uFE0F',quill:'\uD83E\uDEB6',reading:'\uD83D\uDCD6'};
+
+function linksFor(skill,pct){
+  var rows=(DATA.res||[]).filter(function(r){
+    return r.skill===skill && (pct==null || (r.max_band==null?79:r.max_band)>=pct);
+  });
+  if(!rows.length)return '';
+  return '<div class="prac">'+rows.map(function(r){
+    return '<a class="prac-link" target="_blank" rel="noopener" href="'+esc(r.url)+'">'+
+      (KIND_ICON[r.kind]||'\u2192')+' '+esc(r.label)+'</a>';
+  }).join('')+'</div>';
+}
+
 function renderSkills(){
   const box=document.getElementById('skillBox');
   const tagged=new Set();
@@ -445,21 +486,27 @@ function renderSkills(){
   const have={}; DATA.skills.forEach(s=>have[s.skill]=s);
   const all=[...new Set([...tagged,...Object.keys(have)])].sort();
   if(!all.length){box.innerHTML='<p class="note">No skills tagged yet.</p>';return;}
+
   box.innerHTML=all.map(sk=>{
     const r=have[sk];
     const label=sk.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
-    if(!r)return `<div class="skill"><b>${esc(label)}</b><span>Not tried yet</span></div>`;
+    if(!r)return `<div class="skill"><b>${esc(label)}</b><span>Not tried yet</span>${linksFor(sk,null)}</div>`;
+    const bar=`<div class="bar"><i style="width:${Math.max(4,r.pct)}%"></i></div>`;
     return `<div class="skill ${band(r.pct)}"><span class="pct">${r.pct}%</span><b>${esc(label)}</b>
-      <span>${r.n} activit${r.n===1?'y':'ies'}</span></div>`;
+      ${bar}<span>${r.n} activit${r.n===1?'y':'ies'}</span>${linksFor(sk,r.pct)}</div>`;
   }).join('');
 
   const scored=DATA.skills.slice().sort((a,b)=>b.pct-a.pct);
-  const nice=s=>s.skill.replace(/-/g,' ');
+  const nice=s=>s.skill.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+
   document.getElementById('strengths').innerHTML=
-    scored.filter(s=>s.pct>=80).slice(0,5).map(s=>`<li>${esc(nice(s))} — ${s.pct}%</li>`).join('')
+    scored.filter(s=>s.pct>=80).slice(0,5).map(s=>
+      `<li><b>${esc(nice(s))}</b> <span class="v g">${s.pct}%</span></li>`).join('')
     ||'<li class="note">Finish some activities to see your strengths.</li>';
+
   document.getElementById('growth').innerHTML=
-    scored.filter(s=>s.pct<70).slice(-5).reverse().map(s=>`<li>${esc(nice(s))} — ${s.pct}%</li>`).join('')
+    scored.filter(s=>s.pct<80).slice(-5).reverse().map(s=>
+      `<li><b>${esc(nice(s))}</b> <span class="v ${band(s.pct)}">${s.pct}%</span>${linksFor(s.skill,s.pct)}</li>`).join('')
     ||'<li class="note">Nothing here yet. Keep going!</li>';
 }
 </script>
