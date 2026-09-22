@@ -96,6 +96,89 @@
     return { score: r, max: t, parts: got.length, source: 'dom' };
   }
 
+
+  /* ==================================================================
+     PAGE DECLARATION  (optional, but this is how a page joins in)
+
+     Put this ABOVE the track.js tag on any activity page:
+
+       <script>
+       window.GAL_META = {
+         title : 'Maus Chapter 1',          // shown on student pages
+         unit  : 'Maus',                    // groups it in the list
+         skills: ['reading-comprehension','inference']
+       };
+       </script>
+
+     Then, whenever the page knows more, it can add any of these:
+
+       window.GAL_SCORE = 7;  window.GAL_MAX = 10;   // exact score
+       window.GAL_SKILLS = { inference:{n:3,d:4} };  // per-skill detail
+       window.GAL_HIGHLIGHTS = [                     // student work worth showing
+         { label:'Favorite song', text:'Tití Me Preguntó', pin:true },
+         { label:'Best sentence', text:'The snow fell like rice.' }
+       ];
+
+     Nothing here is required. A page with no declaration still logs a score,
+     exactly as before.
+     ================================================================== */
+  var META = window.GAL_META || {};
+
+  function registerActivity() {
+    if (!META.title && !META.skills) return Promise.resolve();
+    var row = {
+      slug: SLUG,
+      title: META.title || document.title.split(/[·|]/)[0].trim() || SLUG,
+      unit: META.unit || 'Readings',
+      url: META.url || (location.origin + location.pathname),
+      skills: META.skills || [],
+      sort_order: META.sort_order || 600
+    };
+    if (typeof window.GAL_MAX === 'number') row.max_score = window.GAL_MAX;
+    return fetch(SUPA_URL + '/rest/v1/activities?on_conflict=slug', {
+      method: 'POST',
+      headers: H({ Prefer: 'resolution=merge-duplicates,return=minimal' }),
+      body: JSON.stringify([row])
+    }).catch(function () {});
+  }
+
+  function logSkills(email, when) {
+    var by = window.GAL_SKILLS;
+    if (!by || typeof by !== 'object') return;
+    var rows = [];
+    Object.keys(by).forEach(function (k) {
+      var v = by[k];
+      if (!v || !(v.d > 0)) return;
+      rows.push({ email: email, slug: SLUG, skill: k,
+                  n: v.n || 0, d: v.d, completed_at: when });
+    });
+    if (!rows.length) return;
+    fetch(SUPA_URL + '/rest/v1/skill_attempts', {
+      method: 'POST', headers: H({ Prefer: 'return=minimal' }),
+      body: JSON.stringify(rows)
+    }).catch(function () {});
+  }
+
+  function logHighlights(email, when) {
+    var hs = window.GAL_HIGHLIGHTS;
+    if (!hs || !hs.length) return;
+    var rows = [];
+    hs.forEach(function (h, i) {
+      var text = (h && h.text != null) ? String(h.text).trim() : '';
+      if (!text) return;
+      rows.push({ email: email, slug: SLUG,
+        label: (h.label || 'From this activity').slice(0, 80),
+        text: text.slice(0, 2000),
+        pinned: !!h.pin, sort_order: i, updated_at: when });
+    });
+    if (!rows.length) return;
+    fetch(SUPA_URL + '/rest/v1/student_work?on_conflict=email,slug,label', {
+      method: 'POST',
+      headers: H({ Prefer: 'resolution=merge-duplicates,return=minimal' }),
+      body: JSON.stringify(rows)
+    }).catch(function () {});
+  }
+
   /* ---------- log one completed attempt ---------- */
   function logAttempt(email, extra) {
     email = clean(email);
@@ -114,6 +197,9 @@
                               parts: s ? s.parts : 0 }, extra || {}),
       completed_at: new Date().toISOString()
     };
+    registerActivity();
+    logSkills(email, row.completed_at);
+    logHighlights(email, row.completed_at);
     fetch(SUPA_URL + '/rest/v1/activity_attempts', {
       method: 'POST',
       headers: H({ Prefer: 'return=minimal' }),
