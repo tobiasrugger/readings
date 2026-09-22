@@ -116,6 +116,29 @@ h3{font-size:1.02rem; margin:1.4em 0 .4em; color:var(--pine2)}
 .choicebox .lbl{font-weight:800; font-size:.78rem; color:var(--moss); display:block; margin-bottom:5px}
 .choicebox .mini{font-size:.86rem; line-height:1.7; white-space:pre-wrap}
 
+/* ============ word vs phrase boxes ============ */
+.tosboxes{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+@media(max-width:520px){.tosboxes{grid-template-columns:1fr}}
+.tosbox{border:2px solid var(--line);border-radius:11px;padding:10px 12px;min-height:92px;cursor:pointer;background:#fff}
+.tosbox.bw{border-color:#b9cbe4}.tosbox.bp{border-color:#e6cf9a}
+.tosbox.bw.aiming{border-color:var(--pine2);background:#eef3fa;box-shadow:inset 0 0 0 2px var(--pine2)}
+.tosbox.bp.aiming{border-color:var(--gold);background:#fdf6e3;box-shadow:inset 0 0 0 2px var(--gold)}
+.toslabel{font-size:.7rem;font-weight:800;letter-spacing:.7px;color:var(--muted)}
+.toshint{display:block;font-size:.68rem;font-weight:600;letter-spacing:0;text-transform:none;opacity:.85}
+.tosbox.bw.aiming .toslabel{color:var(--pine2)}
+.tosbox.bp.aiming .toslabel{color:#8a6a00}
+.toschips{margin-top:7px;min-height:28px}
+.toschips.pool{background:#f4f6f3;border-radius:9px;padding:8px 10px;margin-top:5px;min-height:46px}
+.tospoolwrap{margin-top:4px}
+.toschip{display:inline-block;background:#fff;border:2px solid var(--line);border-radius:17px;
+  padding:5px 12px;margin:4px 6px 0 0;font-weight:700;font-size:.89rem;cursor:pointer}
+.toschip:hover{border-color:var(--moss)}
+.toschip.in{background:#f2f5f2;padding-right:9px}
+.toschip.in b{margin-left:7px;color:var(--rust)}
+.toschip.cy{background:#d8f0e2;border-color:var(--moss)}
+.toschip.cn{background:#fbeae5;border-color:#e07a5f}
+.tosempty{font-size:.8rem;color:#9aa8a0;font-weight:600;font-style:italic}
+
 /* ============ tappable word grids ============ */
 .tapdoc{font-size:1.02rem; line-height:2.3}
 .w{cursor:pointer; padding:1px 2px; border-radius:4px; border-bottom:2px solid transparent}
@@ -126,6 +149,7 @@ h3{font-size:1.02rem; margin:1.4em 0 .4em; color:var(--pine2)}
 .w.miss{background:#fdf0c4; border-bottom:2px solid var(--gold)}
 
 /* ============ S / V tagging ============ */
+
 .svline{border-bottom:1px solid var(--line); padding:12px 0; font-size:1.03rem; line-height:2.4}
 .svline:last-child{border-bottom:none}
 .num{color:var(--moss); font-weight:800; font-size:.82rem; margin-right:7px}
@@ -402,15 +426,17 @@ I Went To Ocean Beach Last Saturday. The Water Was Freezing Cold. I Stayed For T
   </div>
 
   <h3>Part A — Word or phrase?</h3>
-  <p>Tap each signal until it lands in the right box.</p>
+  <p>Sort all twelve signals into the two boxes.</p>
   <div class="card" id="tosDoc" translate="no"></div>
   <button class="btn" onclick="checkTOS()">Check</button>
+  <button class="btn ghost small" onclick="resetTOS()">Start over</button>
   <div class="score" id="tosScore"></div>
 
   <h3>Part B — Put the story in order</h3>
   <p>These seven sentences are scrambled. Use the arrows to put them in the order the events happened.</p>
   <div class="card" id="orderDoc" translate="no"></div>
   <button class="btn" onclick="checkOrder()">Check the order</button>
+  <button class="btn ghost small" onclick="helpOrder()">Put one in place for me</button>
   <div class="score" id="orderScore"></div>
 
   <div class="navrow"><button class="btn ghost" onclick="go(5)">← Back</button><button class="btn" onclick="go(7)">Activity 7 →</button></div>
@@ -621,6 +647,10 @@ I Went To Ocean Beach Last Saturday. The Water Was Freezing Cold. I Stayed For T
 .orow .ar{display:flex;flex-direction:column;gap:2px}
 .orow .ar button{font-family:inherit;cursor:pointer;border:1px solid var(--line);background:#f4f6f3;
   border-radius:5px;width:29px;height:21px;font-size:.7rem;line-height:1;color:var(--pine2);font-weight:800}
+.orow.locked{background:#e9f7ef;border-color:var(--moss)}
+.orow .olock{color:var(--moss);font-weight:800;font-size:1.15rem;padding:0 7px}
+.cluehi{background:#fff3cd;border-bottom:2px solid var(--gold);border-radius:3px;padding:0 2px;font-weight:700}
+.ohint{font-size:.83rem;color:var(--muted);margin-top:6px;padding-left:9px;border-left:3px solid var(--sage);font-weight:600}
 .orow.right{background:#e9f7ef;border-color:var(--moss)}
 .orow.wrong{background:#fdf0ec;border-color:#e3a58f}
 .orow .pos{font-weight:800;color:var(--moss);width:20px;text-align:center}
@@ -757,24 +787,45 @@ function recordAlias(alias,canon){
     body:JSON.stringify([{alias_email:alias,email:canon}])
   }).catch(function(){});
 }
-/* if they already worked under the other spelling on this device, bring it forward */
-function adoptLocalWork(canon,typed){
+/* if they already worked under another key on this device, bring it forward */
+function adoptLocalWork(canon,typed,name){
   try{
     var canonKey='eld103_'+canon.replace(/[^a-z0-9]+/g,'_');
     if(localStorage.getItem(canonKey)) return;
-    var alt='eld103_'+clean(typed).replace(/[^a-z0-9]+/g,'_');
-    var d=localStorage.getItem(alt);
+    var tries=[];
+    tries.push('eld103_'+clean(typed).replace(/[^a-z0-9]+/g,'_'));
+    var lp=localPart(canon);
+    tries.push('eld103_'+(lp+'@sfusd.edu').replace(/[^a-z0-9]+/g,'_'));
+    tries.push('eld103_'+(lp+'@s.sfusd.edu').replace(/[^a-z0-9]+/g,'_'));
+    /* the original version of this page keyed on the student's NAME */
+    if(name) tries.push('eld103_'+clean(name).replace(/\s+/g,'_'));
+    var d=null;
+    tries.forEach(function(k){ if(!d) d=localStorage.getItem(k); });
+    /* last resort: any eld103_ entry on this device that has real work in it */
     if(!d){
-      var lp=localPart(canon);
-      [lp+'@sfusd.edu',lp+'@s.sfusd.edu'].forEach(function(v){
-        if(d) return;
-        d=localStorage.getItem('eld103_'+v.replace(/[^a-z0-9]+/g,'_'));
-      });
+      var best=null,bestN=0;
+      for(var i=0;i<localStorage.length;i++){
+        var k=localStorage.key(i);
+        if(k.indexOf('eld103_')!==0 || k==='eld103_last' || k==='eld103_lang') continue;
+        try{
+          var o=JSON.parse(localStorage.getItem(k));
+          var n=(o.cap?o.cap.length:0)+Object.keys(o.sv||{}).length+Object.keys(o.sva||{}).length+
+                Object.keys(o.frag||{}).length+Object.keys(o.comma||{}).length+(o.draft?o.draft.length:0);
+          if(n>bestN){bestN=n; best=localStorage.getItem(k);}
+        }catch(e2){}
+      }
+      if(bestN>0) d=best;
     }
-    if(d){var o=JSON.parse(d); o.email=canon; ST=Object.assign(ST,o);
-          localStorage.setItem(canonKey,JSON.stringify(ST));}
+    if(d){
+      var o=JSON.parse(d);
+      o.email=canon; o.name=name||o.name;
+      ST=Object.assign(ST,o);
+      localStorage.setItem(canonKey,JSON.stringify(ST));
+      recovered=true;
+    }
   }catch(e){}
 }
+var recovered=false;
 
 function saveName(){
   var err=document.getElementById('nameErr');
@@ -787,7 +838,7 @@ function saveName(){
   if(!pd){err.textContent='Please choose your class period.';return;}
   var typed=e, canon=canonEmail(e);
   var oldKey=ST.email?key():null;
-  adoptLocalWork(canon,typed);
+  adoptLocalWork(canon,typed,n);
   recordAlias(typed,canon);
   ST.name=n; ST.email=canon; ST.period=pd;
   document.getElementById('whoami').textContent=n+' · P'+pd;
@@ -795,7 +846,14 @@ function saveName(){
   try{localStorage.setItem('gal_student_email',canon)}catch(e2){}
   if(oldKey&&oldKey!==key()){try{localStorage.setItem(key(),JSON.stringify(ST))}catch(e2){}}
   seedRoster(canon,n,pd);
+  refreshFields();
   save(); push(true);
+  if(recovered){
+    recovered=false;
+    setTimeout(function(){
+      alert('Welcome back, '+n+'. Work you did on this device before has been found and added to your account.');
+    },400);
+  }
 }
 
 /* Add this student to `students` if they are not there yet.
@@ -839,6 +897,18 @@ function push(force){
   }).catch(function(){pushing=false; dirty=true; dot('err');});
 }
 function val(id){var e=document.getElementById(id); return e?e.value:''}
+/* after recovering old work, put it back on screen before the sync reads the boxes */
+function refreshFields(){
+  [['pgTitle','title'],['draft','draft'],['free','free'],['listing','listing']].forEach(function(pair){
+    var el=document.getElementById(pair[0]);
+    if(el && ST[pair[1]]) el.value=ST[pair[1]];
+  });
+  try{
+    initCap(); initSV(); initSVA(); initFrag(); initTOS(); initOrder();
+    initCloze(); initConj(); initCS(); initComma(); initChecklist();
+    paintTotal();
+  }catch(e){}
+}
 function turnIn(){
   if(!ST.email){askName();return;}
   ST.turnedIn=new Date().toISOString();
@@ -1207,34 +1277,98 @@ function checkFrag(){gradeMC('fragDoc',FRAG,'frag','fragScore',5)}
 var TOS=[['finally','w'],['at last','p'],['next','w'],['after a while','p'],['meanwhile','w'],
          ['the next morning','p'],['soon','w'],['at 7:30','p'],['later','w'],['after that','p'],
          ['then','w'],['before the test','p']];
+/* Two boxes. Tap a box to aim at it, then tap signals to send them there.
+   Nothing is hidden in a tap count: a chip is either in a box or it is not. */
+var TOSAIM='w';
 function initTOS(){
   var d=document.getElementById('tosDoc');
-  d.innerHTML='<div class="tip" style="margin-bottom:9px">Tap once = single word. Tap twice = phrase. Tap again to clear.</div><div id="tosChips"></div>';
-  var c=document.getElementById('tosChips');
-  TOS.forEach(function(t,i){
-    var s=document.createElement('span'); s.className='chip'; s.dataset.i=i;
-    s.innerHTML=t[0]+'<span class="tag"></span>';
-    var cur=ST.tos[i]||''; if(cur){s.classList.add(cur); s.querySelector('.tag').textContent=cur==='w'?'word':'phrase';}
-    s.onclick=function(){
-      var v=ST.tos[i]||'';
-      var nx = v===''?'w':(v==='w'?'p':'');
-      s.className='chip'+(nx?' '+nx:'');
-      s.querySelector('.tag').textContent = nx==='w'?'word':(nx==='p'?'phrase':'');
-      if(nx)ST.tos[i]=nx; else delete ST.tos[i]; save();
-    };
-    c.appendChild(s);
-  });
+  d.innerHTML=
+    '<div class="tip" style="margin-bottom:10px">Tap a box to choose it. The box you are aiming at turns dark. '+
+    'Then tap the signals below and they jump into that box. Tap a signal inside a box to send it back.</div>'+
+    '<div class="tosboxes">'+
+      '<div class="tosbox bw" id="tbox_w"><div class="toslabel">SINGLE WORD'+
+        '<span class="toshint">one word on its own</span></div><div class="toschips" id="tchips_w"></div></div>'+
+      '<div class="tosbox bp" id="tbox_p"><div class="toslabel">PHRASE'+
+        '<span class="toshint">two or more words together</span></div><div class="toschips" id="tchips_p"></div></div>'+
+    '</div>'+
+    '<div class="tospoolwrap"><div class="toslabel" style="color:var(--muted)">STILL TO SORT</div>'+
+      '<div class="toschips pool" id="tosPool"></div></div>';
+  document.getElementById('tbox_w').onclick=function(ev){if(!ev.target.classList.contains('toschip'))tosAim('w')};
+  document.getElementById('tbox_p').onclick=function(ev){if(!ev.target.classList.contains('toschip'))tosAim('p')};
+  paintTOS();
 }
-function checkTOS(){
-  var good=0;
-  document.querySelectorAll('#tosChips .chip').forEach(function(s){
-    var i=+s.dataset.i, want=TOS[i][1], got=ST.tos[i]||'';
-    s.classList.remove('right','wrong');
-    if(got===want){s.classList.add('right'); good++;}
-    else{s.classList.add('wrong'); s.querySelector('.tag').textContent=want==='w'?'word':'phrase';}
+function tosAim(k){TOSAIM=k; paintTOS();}
+function tosPut(i){
+  if(ST.tos[i]===TOSAIM) return;
+  ST.tos[i]=TOSAIM; paintTOS(); save();
+}
+function tosTakeOut(i){ delete ST.tos[i]; paintTOS(); save(); }
+function chip(i,where){
+  var c=document.createElement('span');
+  c.className='toschip'+(where?' in':'');
+  c.textContent=TOS[i][0];
+  if(where){
+    var x=document.createElement('b'); x.textContent='\u00d7'; c.appendChild(x);
+    c.onclick=function(ev){ev.stopPropagation(); tosTakeOut(i);};
+  } else {
+    c.onclick=function(){tosPut(i)};
+  }
+  return c;
+}
+function paintTOS(){
+  ['w','p'].forEach(function(k){
+    var box=document.getElementById('tbox_'+k);
+    box.classList.toggle('aiming',TOSAIM===k);
+    box.classList.remove('good','bad');
+    var wrap=document.getElementById('tchips_'+k); wrap.innerHTML='';
+    var any=false;
+    TOS.forEach(function(t,i){ if(ST.tos[i]===k){wrap.appendChild(chip(i,true)); any=true;} });
+    if(!any){
+      var e=document.createElement('span'); e.className='tosempty';
+      e.textContent = TOSAIM===k ? 'tap a signal below' : 'empty';
+      wrap.appendChild(e);
+    }
   });
-  var s=document.getElementById('tosScore'); s.className='score show '+(good===12?'good':(good>=8?'mid':'bad'));
-  s.innerHTML='<b>'+good+' of 12</b> correct.'+(good===12?' A phrase is two or more words working together. A single word stands alone.':' The correct label is now shown on the ones you missed.');
+  var pool=document.getElementById('tosPool'); pool.innerHTML='';
+  var left=0;
+  TOS.forEach(function(t,i){ if(!ST.tos[i]){pool.appendChild(chip(i,false)); left++;} });
+  if(!left){
+    var e=document.createElement('span'); e.className='tosempty'; e.textContent='all sorted';
+    pool.appendChild(e);
+  }
+}
+function resetTOS(){ST.tos={};save();initTOS();document.getElementById('tosScore').className='score';}
+function checkTOS(){
+  var good=0, unsorted=0, wrongOnes=[];
+  TOS.forEach(function(t,i){
+    if(!ST.tos[i]){unsorted++; return;}
+    if(ST.tos[i]===t[1]) good++;
+    else wrongOnes.push(t);
+  });
+  /* mark the chips that are in the wrong box, and say which box is right */
+  document.querySelectorAll('.toschip.in').forEach(function(c){
+    var label=c.firstChild.textContent||c.textContent.replace('\u00d7','');
+    var hit=null; TOS.forEach(function(t){ if(t[0]===label.trim()) hit=t; });
+    c.classList.remove('cy','cn');
+    if(!hit) return;
+    c.classList.add(ST.tos[TOS.indexOf(hit)]===hit[1]?'cy':'cn');
+  });
+  var s=document.getElementById('tosScore');
+  s.className='score show '+(good===12?'good':(good>=8?'mid':'bad'));
+  if(good===12){
+    s.innerHTML='<b>All 12 correct.</b> The rule is simple: count the words. One word on its own is a word. '+
+      'Two or more words working together is a phrase.';
+  } else {
+    var h='<b>'+good+' of 12</b> correct.';
+    if(unsorted) h+='<br>'+unsorted+' signal'+(unsorted>1?'s are':' is')+' still waiting in <b>Still to sort</b>.';
+    if(wrongOnes.length){
+      h+='<br>These are in the wrong box \u2014 tap the \u00d7 to send them back, then count the words again:<br>';
+      h+=wrongOnes.map(function(t){
+        return '<b>'+t[0]+'</b> is '+(t[1]==='w'?'one word':(t[0].split(' ').length)+' words');
+      }).join(' \u00b7 ');
+    }
+    s.innerHTML=h;
+  }
   save();
 }
 var STORY=[
@@ -1246,37 +1380,92 @@ var STORY=[
  'My father took a picture of us standing in snow up to our knees.',
  'That photograph is still taped to our refrigerator door.'
 ];
+/* the clue inside each sentence that tells you where it goes */
+var CLUE=[
+ ['Last winter','This sentence tells you what the whole story is about. That always comes first.'],
+ ['at five in the morning','The very start of the day, before anything else happened.'],
+ ['After about three hours','Three hours after they left, so it comes after the leaving.'],
+ ['felt better in ten minutes','This is what they did about the sister feeling sick, so it comes right after.'],
+ ['finally reached the lake','They arrive. This has to come after the whole drive.'],
+ ['took a picture','This happens at the lake, so it comes after they arrive.'],
+ ['is still taped','<b>still</b> means right now, long after the trip. It has to be last.']
+];
 var SCRAM=[3,6,0,4,1,2,5];
 function initOrder(){
   if(!ST.order||!ST.order.length) ST.order=SCRAM.slice();
   drawOrder();
 }
+var orderChecked=false;
 function drawOrder(){
   var d=document.getElementById('orderDoc'); d.innerHTML='';
   ST.order.forEach(function(idx,pos){
-    var r=document.createElement('div'); r.className='orow';
+    var locked = orderChecked && idx===pos;       /* correct ones stop moving */
+    var r=document.createElement('div'); r.className='orow'+(locked?' locked':'');
     var p=document.createElement('span'); p.className='pos'; p.textContent=(pos+1);
-    var t=document.createElement('div'); t.className='txt'; t.textContent=STORY[idx];
+    var t=document.createElement('div'); t.className='txt';
+    t.innerHTML=hiliteClue(STORY[idx],CLUE[idx][0]);
+    if(orderChecked && !locked)
+      t.innerHTML+='<div class="ohint">'+CLUE[idx][1]+'</div>';
     var ar=document.createElement('div'); ar.className='ar';
-    var up=document.createElement('button'); up.textContent='▲';
-    var dn=document.createElement('button'); dn.textContent='▼';
-    up.onclick=function(){if(pos>0){var a=ST.order.splice(pos,1)[0];ST.order.splice(pos-1,0,a);drawOrder();save();}};
-    dn.onclick=function(){if(pos<ST.order.length-1){var a=ST.order.splice(pos,1)[0];ST.order.splice(pos+1,0,a);drawOrder();save();}};
-    ar.appendChild(up); ar.appendChild(dn);
+    if(locked){
+      var tick=document.createElement('span'); tick.className='olock'; tick.textContent='\u2713';
+      ar.appendChild(tick);
+    } else {
+      var up=document.createElement('button'); up.textContent='\u25B2';
+      var dn=document.createElement('button'); dn.textContent='\u25BC';
+      up.onclick=function(){moveRow(pos,-1)};
+      dn.onclick=function(){moveRow(pos,1)};
+      ar.appendChild(up); ar.appendChild(dn);
+    }
     r.appendChild(p); r.appendChild(t); r.appendChild(ar); d.appendChild(r);
   });
 }
+function hiliteClue(sent,clue){
+  var i=sent.toLowerCase().indexOf(clue.toLowerCase());
+  if(i<0) return sent;
+  return sent.slice(0,i)+'<span class="cluehi">'+sent.slice(i,i+clue.length)+'</span>'+sent.slice(i+clue.length);
+}
+/* never push a locked sentence out of its correct slot */
+function moveRow(pos,dir){
+  var target=pos+dir;
+  while(target>=0 && target<ST.order.length && orderChecked && ST.order[target]===target) target+=dir;
+  if(target<0||target>=ST.order.length) return;
+  var a=ST.order.splice(pos,1)[0];
+  ST.order.splice(target,0,a);
+  drawOrder(); save();
+}
+/* place one sentence for a student who is stuck */
+function helpOrder(){
+  var pos=-1;
+  for(var k=0;k<ST.order.length;k++){ if(ST.order[k]!==k){pos=k;break;} }
+  if(pos<0) return;
+  var val=ST.order[pos];
+  ST.order.splice(ST.order.indexOf(val),1);
+  ST.order.splice(val,0,val);
+  orderChecked=true; drawOrder(); save();
+  var sc=document.getElementById('orderScore');
+  sc.className='score show mid';
+  sc.innerHTML='Moved one sentence into place for you: <i>'+STORY[val]+'</i><br>'+CLUE[val][1]+
+    '<br>Now tap <b>Check the order</b> again.';
+}
 function checkOrder(){
-  var good=0;
-  document.querySelectorAll('#orderDoc .orow').forEach(function(r,pos){
-    if(ST.order[pos]===pos){r.classList.add('right'); good++;} else r.classList.add('wrong');
-  });
-  var s=document.getElementById('orderScore'); s.className='score show '+(good===7?'good':(good>=4?'mid':'bad'));
-  s.innerHTML=good===7
-    ? '<b>All 7 in order.</b> Notice the signals that helped you: <i>Last winter, at five in the morning, After about three hours, in ten minutes, finally, still</i>.'
-    : '<b>'+good+' of 7</b> are in the right place. Look for the time words inside each sentence — they tell you what has to come first.';
-  if(good===7)markDone(6);
-  setTimeout(function(){document.querySelectorAll('#orderDoc .orow').forEach(function(r){r.classList.remove('right','wrong')})},2600);
+  var good=0, wrongCount=0;
+  ST.order.forEach(function(v,i){ if(v===i) good++; else wrongCount++; });
+  orderChecked=true;
+  drawOrder();
+  var s=document.getElementById('orderScore');
+  s.className='score show '+(good===7?'good':(good>=4?'mid':'bad'));
+  if(good===7){
+    s.innerHTML='<b>All 7 in order.</b> The yellow words are the clues that told you where each one went.';
+    markDone(6);
+  } else {
+    var h='<b>'+good+' of 7</b> are in the right place. The ones with a check mark are correct and will stay where they are.';
+    h += (wrongCount===2)
+      ? '<br>Only two are in the wrong place \u2014 so you just need to <b>swap them</b>.'
+      : '<br>Read the yellow clue inside each sentence that can still move. It tells you when that part happened.';
+    h += '<br>Still stuck? Tap <b>Put one in place for me</b>.';
+    s.innerHTML=h;
+  }
   save();
 }
 
