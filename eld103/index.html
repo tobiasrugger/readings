@@ -1760,6 +1760,56 @@ function paintTotal(){
   if(el) el.textContent=t.n+' / '+t.d;
 }
 
+/* A student who is ALREADY signed in never opens the sign-in box, so the
+   recovery above never runs. On every load, look for work stranded under an
+   older key on this device and fold in anything this account is missing.
+   It only ever fills gaps, so nothing already here can be overwritten. */
+var OBJF=['sv','sva','frag','fragfix','tos','cloze','conj','cs','comma','check'];
+var STRF=['title','draft','free','listing'];
+function workSize(o){
+  if(!o) return 0;
+  var n=(o.cap&&o.cap.length?o.cap.length:0)+((o.order&&o.order.length)?
+    o.order.filter(function(v,i){return v===i}).length:0);
+  OBJF.forEach(function(k){ n+=Object.keys(o[k]||{}).length; });
+  STRF.forEach(function(k){ n+=(o[k]||'').length?1:0; });
+  return n;
+}
+function mergeStranded(){
+  if(!ST.email) return;
+  var mine='eld103_'+ST.email.replace(/[^a-z0-9]+/g,'_');
+  var added=0;
+  try{
+    for(var i=0;i<localStorage.length;i++){
+      var k=localStorage.key(i);
+      if(k.indexOf('eld103_')!==0||k===mine||k==='eld103_last'||k==='eld103_lang') continue;
+      var o=null; try{o=JSON.parse(localStorage.getItem(k));}catch(e){continue;}
+      if(!o||!workSize(o)) continue;
+      if(o.email && clean(o.email)!==clean(ST.email) &&
+         localPart(o.email)!==localPart(ST.email)) continue;   /* someone else's */
+      if((!ST.cap||!ST.cap.length) && o.cap && o.cap.length){ST.cap=o.cap; added++;}
+      if((!ST.order||!ST.order.length||ST.order.join()===SCRAM.join()) &&
+          o.order && o.order.length && o.order.join()!==SCRAM.join()){ST.order=o.order; added++;}
+      OBJF.forEach(function(f){
+        ST[f]=ST[f]||{};
+        Object.keys(o[f]||{}).forEach(function(q){
+          if(ST[f][q]===undefined||ST[f][q]===''){ST[f][q]=o[f][q]; added++;}
+        });
+      });
+      STRF.forEach(function(f){
+        if(!(ST[f]||'').trim() && (o[f]||'').trim()){ST[f]=o[f]; added++;}
+      });
+    }
+  }catch(e){}
+  if(added){
+    try{localStorage.setItem(mine,JSON.stringify(ST));}catch(e){}
+    refreshFields(); dirty=true; push(true);
+    setTimeout(function(){
+      alert('Some work you did on this device earlier was not saved to your account. '+
+            'It has been found and added. Everything should be here now.');
+    },600);
+  }
+}
+
 /* ===================== BOOT ===================== */
 function boot(){
   load();
@@ -1784,7 +1834,7 @@ function boot(){
   setInterval(checkCanary,20000);
   go(ST.act||0);
   dot('on');
-  if(!ST.email) askName();
+  if(!ST.email) askName(); else mergeStranded();
   paintTotal();
   setInterval(function(){push(false)},20000);
   document.addEventListener('visibilitychange',function(){if(document.hidden)push(false)});
