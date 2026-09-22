@@ -525,18 +525,36 @@ function upload(blob,secs,wc,wpm){
   var em=ME.email;
   if(!em||em.indexOf('@')<0){showSignin();return;}
   var path='news/'+A.meta.SLUG+'/'+em.replace(/[^a-z0-9]/g,'_')+'_'+Date.now()+'.webm';
-  $('upMsg').textContent='Sending…';
+  var msg=$('upMsg');
+  msg.style.color=''; msg.textContent='Sending\u2026';
   fetch(SUPA_URL+'/storage/v1/object/'+BUCKET+'/'+path,{
-    method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'audio/webm'},body:blob
+    method:'POST',
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'audio/webm'},
+    body:blob
   }).then(function(r){
-    if(!r.ok) throw 0;
-    return fetch(SUPA_URL+'/rest/v1/fluency_recordings',{
-      method:'POST',headers:Object.assign({},H,{'Prefer':'return=minimal'}),
-      body:JSON.stringify({email:em,name:ME.name,period:ME.period,slug:A.meta.SLUG,passage:'main',path:path,
-        seconds:Math.round(secs*10)/10,word_count:wc,wpm:wpm})
+    return r.ok ? null : r.text().then(function(t){
+      throw new Error('Audio upload failed \u2014 status '+r.status+'. '+t.slice(0,300));
     });
-  }).then(function(){$('upMsg').textContent='Sent.';})
-   .catch(function(){$('upMsg').textContent='It did not send. Try once more.';});
+  }).then(function(){
+    msg.textContent='Audio saved. Saving your score\u2026';
+    return fetch(SUPA_URL+'/rest/v1/fluency_recordings',{
+      method:'POST',
+      headers:Object.assign({},H,{'Prefer':'return=minimal'}),
+      body:JSON.stringify({email:em,name:ME.name,period:ME.period,slug:A.meta.SLUG,
+        passage:'main',path:path,seconds:Math.round(secs*10)/10,word_count:wc,wpm:wpm})
+    }).then(function(r){
+      return r.ok ? null : r.text().then(function(t){
+        throw new Error('Your audio saved, but the score row did not \u2014 status '+r.status+'. '+t.slice(0,300));
+      });
+    });
+  }).then(function(){
+    msg.style.color='var(--ok)';
+    msg.textContent='Sent to Mr. Toby.';
+  }).catch(function(e){
+    msg.style.color='var(--no)';
+    msg.textContent=e.message||'Network problem.';
+    console.error('[upload]',e);
+  });
 }
 
 /* ---------- teacher ---------- */
