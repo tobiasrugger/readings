@@ -144,6 +144,13 @@ ul{margin:0;padding-left:20px} li{margin-bottom:6px;font-weight:700}
 .v.o{background:var(--orange-bg);color:var(--orange)}
 .v.r{background:var(--red-bg);color:var(--red)}
 #growth li,#strengths li{margin-bottom:12px}
+
+.quote{background:var(--field);border:1.5px solid var(--line);border-left:7px solid var(--plum-mid);
+  border-radius:12px;padding:13px 16px;margin-bottom:11px}
+.quote.pin{border-left-color:var(--plum);background:var(--plum-lt)}
+.qlabel{font-size:.74rem;font-weight:900;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.qtext{font-size:1.12rem;font-weight:700;margin:4px 0 5px;line-height:1.45}
+.qfrom{font-size:.8rem;color:var(--muted);font-weight:700}
 @media print{.btn,.noprint{display:none!important}
   body{background:#fff}.card{break-inside:avoid;box-shadow:none}
   .hero{background:var(--plum-dk)!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
@@ -224,6 +231,12 @@ ul{margin:0;padding-left:20px} li{margin-bottom:6px;font-weight:700}
     <h2>My Favorites</h2>
     <div class="facts" id="factsBox"></div>
     <p class="note" id="factsEmpty">When you finish activities like <em>My Favorite Song</em>, your answers will show up here.</p>
+  </div>
+
+  <!-- My Work -->
+  <div class="card hide" id="workCard">
+    <h2>From My Work</h2>
+    <div id="workBox"></div>
   </div>
 
   <!-- Activities -->
@@ -321,7 +334,8 @@ function signIn(){
   let email=sel?clean(sel):clean(document.getElementById('emailIn').value);
   const err=document.getElementById('siErr');
   if(!email){err.textContent='Please choose your name or type your email.';return;}
-  if(!/^[^@\s]+@sfusd\.edu$/.test(email)){err.textContent='Please use your school email that ends with @sfusd.edu';return;}
+  if(!/^[^@\s]+@(s\.)?sfusd\.edu$/.test(email)){err.textContent='Please use your school email that ends with @sfusd.edu';return;}
+  email=email.replace('@s.sfusd.edu','@sfusd.edu');
   err.textContent='';
   localStorage.setItem('gal_student_email',email);
   load(email);
@@ -336,24 +350,28 @@ function teacherLogin(){
 /* ---------- load ---------- */
 async function load(email){
   // follow alias if this email was a typo
-  const al=await sb('student_aliases?alias_email=eq.'+encodeURIComponent(email)+'&select=email');
+  // s.sfusd.edu and sfusd.edu are the same person
+  const asked=email;
+  email=email.replace('@s.sfusd.edu','@sfusd.edu');
+  const al=await sb('student_aliases?alias_email=eq.'+encodeURIComponent(asked)+'&select=email');
   if(al&&al.length)email=al[0].email;
   ME=email;
 
-  const [stu,facts,acts,atts,skills,res]=await Promise.all([
+  const [stu,facts,acts,atts,skills,res,work]=await Promise.all([
     sb('students?email=eq.'+encodeURIComponent(email)+'&select=*'),
     sb('student_facts?email=eq.'+encodeURIComponent(email)+'&select=key,value'),
     sb('activities?select=*&order=sort_order.asc'),
     sb('activity_attempts?email=eq.'+encodeURIComponent(email)+'&select=slug,score,max_score,completed_at&order=completed_at.asc'),
     sb('student_skills?email=eq.'+encodeURIComponent(email)+'&select=skill,pct,n'),
-    sb('skill_resources?select=*&order=sort_order.asc')
+    sb('skill_resources?select=*&order=sort_order.asc'),
+    sb('student_work?email=eq.'+encodeURIComponent(email)+'&select=*&order=sort_order.asc')
   ]);
 
   if(!stu||!stu.length){
     await upsert('students',{email:email},'email');
     DATA.student={email:email};
   } else DATA.student=stu[0];
-  DATA.facts=facts||[]; DATA.acts=acts||[]; DATA.atts=atts||[]; DATA.skills=skills||[]; DATA.res=res||[];
+  DATA.facts=facts||[]; DATA.acts=acts||[]; DATA.atts=atts||[]; DATA.skills=skills||[]; DATA.res=res||[]; DATA.work=work||[];
 
   document.getElementById('signin').classList.add('hide');
   document.getElementById('page').classList.remove('hide');
@@ -361,7 +379,23 @@ async function load(email){
 }
 
 /* ---------- render ---------- */
-function renderAll(){renderHero();fillForm();renderFacts();renderActs();renderSkills();}
+function renderAll(){renderHero();fillForm();renderFacts();renderWork();renderActs();renderSkills();}
+
+function renderWork(){
+  var rows=(DATA.work||[]).filter(function(w){return w.text&&String(w.text).trim();});
+  document.getElementById('workCard').classList.toggle('hide',!rows.length);
+  if(!rows.length)return;
+  rows.sort(function(a,b){return (b.pinned?1:0)-(a.pinned?1:0);});
+  var byAct={};
+  DATA.acts.forEach(function(a){byAct[a.slug]=a.title||a.slug;});
+  document.getElementById('workBox').innerHTML=rows.map(function(w){
+    var from=byAct[w.slug]||w.slug;
+    return '<div class="quote'+(w.pinned?' pin':'')+'">'+
+      '<div class="qlabel">'+esc(w.label||'From my work')+'</div>'+
+      '<div class="qtext" translate="no">'+esc(w.text)+'</div>'+
+      '<div class="qfrom">'+esc(from)+'</div></div>';
+  }).join('');
+}
 
 function renderHero(){
   const s=DATA.student;
