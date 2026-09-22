@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Verbs dashboard — Mr. Toby</title>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#1c2640;--muted:#5b6784;--bg:#eef2f8;--card:#fff;--line:#d3dbe9;--ok:#1d7f53;--ok-t:#dff3e8;--mid:#a86400;--mid-t:#fff0d6;--no:#b93a2e;--no-t:#fbe5e1}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.45 Lexend,"Segoe UI",system-ui,sans-serif}
+.wrap{max-width:1300px;margin:0 auto;padding:18px}
+h1{margin:0 0 12px;font-size:26px}
+#gate{max-width:360px;margin:12vh auto;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px}
+input,select,button{font:inherit;padding:8px 10px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink)}
+button{cursor:pointer;font-weight:600}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.tablewrap{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:14px}
+table{border-collapse:collapse;width:100%;min-width:900px}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:center;white-space:nowrap}
+th{position:sticky;top:0;background:var(--card);font-weight:500;font-size:13px;color:var(--muted)}
+th.u{color:var(--ink);font-weight:700;border-left:2px solid var(--line)}
+td.u0{border-left:2px solid var(--line)}
+td.name{text-align:left;font-weight:600;cursor:pointer}
+td.name small{display:block;font-weight:400;color:var(--muted)}
+.c{display:inline-block;min-width:44px;border-radius:6px;padding:1px 4px;font-size:13px}
+.hi{background:var(--ok-t);color:var(--ok)} .md{background:var(--mid-t);color:var(--mid)} .lo{background:var(--no-t);color:var(--no)}
+.detail td{text-align:left;background:var(--bg);white-space:normal}
+.detail ul{margin:4px 0;padding-left:18px}
+.muted{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="gate">
+    <h1>Verbs dashboard</h1>
+    <div class="row"><input id="pass" type="password" placeholder="Teacher password"><button id="go">Open</button></div>
+    <div class="muted" id="gateMsg"></div>
+  </div>
+
+  <div id="panel" style="display:none">
+    <h1 id="dashTitle">Verbs: present tense</h1>
+    <div class="row">
+      <select id="tense"><option value="present">Present tense</option><option value="past">Past tense</option></select>
+      <select id="period"><option value="">All periods</option></select>
+      <button id="refresh">Refresh</button>
+      <button id="csv">Download CSV</button>
+      <span class="muted" id="count"></span>
+    </div>
+    <p class="muted">Best score shown for each activity. Click a name to see the sentences that student missed most recently, and any story writing.</p>
+    <div class="tablewrap"><table id="tbl"></table></div>
+  </div>
+</div>
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var TABLE='verb_practice', PASS='galileo2026';
+var TENSES={
+  present:{title:'Verbs: present tense', units:[['be','1 To be'],['have','2 To have'],['behave','3 Be or have'],['s','4 -s verbs'],['es','5 -es verbs'],['all','6 Mix']]},
+  past:{title:'Verbs: past tense', units:[['was','1 Was, were'],['ed','2 Regular -ed'],['irr1','3 Irregular 1'],['irr2','4 Irregular 2'],['did',"5 Did, didn't"],['pmix','6 Mix + story']]}
+};
+var ACTS=[['flash','Flash'],['match','Match'],['choose','Choose'],['write','Write'],['sort','Sort'],['rw','R/W'],['build','Build'],['speed','Speed']];
+var UNITS=TENSES.present.units;
+function actsFor(uk){ return uk==='pmix' ? ACTS.concat([['story','Story']]) : ACTS; }
+function cols(){ var c=[]; UNITS.forEach(function(u){ actsFor(u[0]).forEach(function(a,i){ c.push({u:u[0], a:a[0], lab:a[1], first:i===0}); }); }); return c; }
+function inTense(act){ var uk=act.split('-')[0]; return UNITS.some(function(u){ return u[0]===uk; }); }
+var ROWS=[], open={};
+function $(id){return document.getElementById(id)}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function H(){return {apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY}}
+
+function load(){
+  $('count').textContent='Loading…';
+  var q=SUPA_URL+'/rest/v1/'+TABLE+'?select=*&order=name.asc';
+  if($('period').value) q+='&period=eq.'+encodeURIComponent($('period').value);
+  fetch(q,{headers:H()}).then(function(r){return r.ok?r.json():r.text().then(function(t){throw new Error(t)})})
+  .then(function(rows){ROWS=rows||[]; render();})
+  .catch(function(e){$('count').textContent='Could not load: '+e.message;});
+}
+function students(){
+  var by={};
+  ROWS.forEach(function(r){
+    if(!inTense(r.activity)) return;
+    var s=by[r.email]||(by[r.email]={email:r.email,name:r.name,period:r.period,acts:{},last:''});
+    s.acts[r.activity]=r;
+    if(r.updated_at>s.last){s.last=r.updated_at; s.name=r.name||s.name; s.period=r.period||s.period;}
+  });
+  return Object.keys(by).map(function(k){return by[k]}).sort(function(a,b){return (a.period+a.name).localeCompare(b.period+b.name)});
+}
+function cell(r, isSpeed){
+  if(!r) return '<span class="muted">–</span>';
+  if(isSpeed) return '<span class="c md" title="'+r.attempts+' tries">'+r.best+'</span>';
+  var pct=r.total?r.best/r.total:0, cls=pct>=.85?'hi':pct>=.65?'md':'lo';
+  return '<span class="c '+cls+'" title="'+r.attempts+' tries, last '+r.correct+'/'+r.total+'">'+r.best+'/'+r.total+'</span>';
+}
+function render(){
+  var list=students(), C=cols();
+  $('count').textContent=list.length+' students';
+  var h='<tr><th rowspan="2" style="text-align:left">Student</th>';
+  UNITS.forEach(function(u){h+='<th class="u" colspan="'+actsFor(u[0]).length+'">'+u[1]+'</th>';});
+  h+='</tr><tr>';
+  C.forEach(function(c){h+='<th'+(c.first?' class="u"':'')+'>'+c.lab+'</th>';});
+  h+='</tr>';
+  list.forEach(function(s,si){
+    h+='<tr><td class="name" data-s="'+si+'">'+esc(s.name)+'<small>'+esc(s.period)+'</small></td>';
+    C.forEach(function(c){ h+='<td'+(c.first?' class="u0"':'')+'>'+cell(s.acts[c.u+'-'+c.a], c.a==='speed')+'</td>'; });
+    h+='</tr>';
+    if(open[s.email]){
+      var miss=[], writing='';
+      Object.keys(s.acts).forEach(function(k){
+        var d=s.acts[k].detail||{};
+        (d.missed||[]).forEach(function(m){miss.push('<li><b>'+esc(k)+'</b>: wrote "'+esc(m.given)+'" for <i>'+esc(m.full)+'</i></li>');});
+        if(d.writing) writing='<div style="margin-top:8px"><b>Story writing</b><div style="white-space:pre-wrap;background:var(--card);border-radius:8px;padding:8px 10px;margin-top:4px;max-width:70ch">'+esc(d.writing)+'</div></div>';
+      });
+      h+='<tr class="detail"><td colspan="'+(1+C.length)+'">'+esc(s.email)+
+        (miss.length?'<ul>'+miss.join('')+'</ul>':'<div class="muted">No missed sentences saved.</div>')+writing+'</td></tr>';
+    }
+  });
+  if(!list.length) h+='<tr><td colspan="'+(1+C.length)+'" class="muted">No work saved yet for this period.</td></tr>';
+  $('tbl').innerHTML=h;
+  $('tbl').onclick=function(e){
+    var td=e.target.closest('[data-s]'); if(!td) return;
+    var s=list[+td.getAttribute('data-s')]; open[s.email]=!open[s.email]; render();
+  };
+}
+function csv(){
+  var list=students(), C=cols(), head=['name','email','period'];
+  C.forEach(function(c){head.push(c.u+'-'+c.a);});
+  var lines=[head.join(',')];
+  list.forEach(function(s){
+    var row=[s.name,s.email,s.period];
+    C.forEach(function(c){var r=s.acts[c.u+'-'+c.a]; row.push(r?(c.a==='speed'?r.best:r.best+'/'+r.total):'');});
+    lines.push(row.map(function(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"';}).join(','));
+  });
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/csv'}));
+  a.download='verbs_'+$('tense').value+'_'+($('period').value||'all').replace(/\s/g,'')+'.csv'; a.click();
+}
+$('go').onclick=function(){
+  if($('pass').value!==PASS){$('gateMsg').textContent='Wrong password.';return;}
+  $('gate').style.display='none'; $('panel').style.display='block';
+  for(var i=1;i<=6;i++){var o=document.createElement('option');o.textContent='Period '+i;$('period').appendChild(o);}
+  load();
+};
+$('pass').onkeydown=function(e){if(e.key==='Enter')$('go').click();};
+$('refresh').onclick=load; $('period').onchange=load; $('csv').onclick=csv;
+$('tense').onchange=function(){ var t=TENSES[$('tense').value]; UNITS=t.units; $('dashTitle').textContent=t.title; open={}; render(); };
+</script>
+</body>
+</html>
