@@ -472,32 +472,46 @@ function renderFacts(){
 }
 
 function renderActs(){
-  const body=document.getElementById('actBody');
-  const by={};
-  DATA.atts.forEach(a=>{(by[a.slug]=by[a.slug]||[]).push(a);});
-  if(!DATA.acts.length){
+  var body=document.getElementById('actBody');
+  var by={};
+  DATA.atts.forEach(function(a){(by[a.slug]=by[a.slug]||[]).push(a);});
+  var mine=DATA.acts.filter(function(a){return by[a.slug];});
+  var rest=DATA.acts.filter(function(a){return !by[a.slug];});
+  var list=SHOW_ALL?mine.concat(rest):mine;
+
+  if(!list.length){
     body.innerHTML='';
-    document.getElementById('actEmpty').textContent='No activities in the list yet.';
+    document.getElementById('actEmpty').innerHTML=
+      'Nothing finished yet. When you turn in an activity it will show up here.'+
+      (rest.length?' <a href="#" onclick="toggleAll();return false;">See what you can do</a>':'');
     return;
   }
-  document.getElementById('actEmpty').textContent='';
-  body.innerHTML=DATA.acts.map(act=>{
-    const list=by[act.slug]||[];
-    const pct=a=>a.max_score?Math.round(100*a.score/a.max_score):null;
-    const first=list.length?pct(list[0]):null;
-    const best=list.length?Math.max(...list.map(pct)):null;
-    const gain=(first!=null&&best!=null&&best>first)?` <span class="up">+${best-first}</span>`:'';
-    const url=act.url||'';
-    const btn=url?`<a class="btn sm ${list.length?'ghost':''}" href="${esc(url)}?email=${encodeURIComponent(ME)}">${list.length?'Do it again':'Start'}</a>`:'';
-    return `<tr>
-      <td><b>${esc(act.title||act.slug)}</b><br>
-        <span class="tag ${list.length?'done':'todo'}">${list.length?'Finished':'Not started'}</span>
-        ${act.unit?` <span class="note">${esc(act.unit)}</span>`:''}</td>
-      <td class="score">${first!=null?first+'%':'—'}</td>
-      <td class="score">${best!=null?best+'%'+gain:'—'}</td>
-      <td class="noprint">${btn}</td></tr>`;
+  document.getElementById('actEmpty').innerHTML=
+    SHOW_ALL
+      ? '<a href="#" onclick="toggleAll();return false;">Show only my work</a>'
+      : (rest.length? mine.length+' finished &middot; <a href="#" onclick="toggleAll();return false;">See '+
+         rest.length+' more you can try</a>' : '');
+
+  body.innerHTML=list.map(function(act){
+    var l=by[act.slug]||[];
+    var pct=function(a){return a.max_score?Math.round(100*a.score/a.max_score):null;};
+    var first=l.length?pct(l[0]):null;
+    var best=l.length?Math.max.apply(null,l.map(pct)):null;
+    var gain=(first!=null&&best!=null&&best>first)?' <span class="up">+'+(best-first)+'</span>':'';
+    var url=act.url||'';
+    var btn=url?'<a class="btn sm '+(l.length?'ghost':'')+'" href="'+esc(url)+
+      (url.indexOf('?')>-1?'&':'?')+'email='+encodeURIComponent(ME)+'">'+
+      (l.length?'Do it again':'Start')+'</a>':'';
+    return '<tr><td><b>'+esc(act.title||act.slug)+'</b><br>'+
+      '<span class="tag '+(l.length?'done':'todo')+'">'+(l.length?'Finished':'Not started')+'</span>'+
+      (act.unit?' <span class="note">'+esc(act.unit)+'</span>':'')+'</td>'+
+      '<td class="score">'+(first!=null?first+'%':'&mdash;')+'</td>'+
+      '<td class="score">'+(best!=null?best+'%'+gain:'&mdash;')+'</td>'+
+      '<td class="noprint">'+btn+'</td></tr>';
   }).join('');
 }
+var SHOW_ALL=false;
+function toggleAll(){SHOW_ALL=!SHOW_ALL;renderActs();}
 
 function band(p){return p==null?'n':p>=90?'g':p>=80?'l':p>=70?'y':p>=60?'o':'r';}
 var KIND_ICON={practice:'\u270F\uFE0F',video:'\u25B6\uFE0F',quill:'\uD83E\uDEB6',reading:'\uD83D\uDCD6'};
@@ -515,11 +529,13 @@ function linksFor(skill,pct){
 
 function renderSkills(){
   const box=document.getElementById('skillBox');
+  // only skills from activities this student actually did
+  const did={}; DATA.atts.forEach(a=>{did[a.slug]=1;});
   const tagged=new Set();
-  DATA.acts.forEach(a=>(a.skills||[]).forEach(s=>tagged.add(s)));
+  DATA.acts.forEach(a=>{ if(did[a.slug]) (a.skills||[]).forEach(s=>tagged.add(s)); });
   const have={}; DATA.skills.forEach(s=>have[s.skill]=s);
   const all=[...new Set([...tagged,...Object.keys(have)])].sort();
-  if(!all.length){box.innerHTML='<p class="note">No skills tagged yet.</p>';return;}
+  if(!all.length){box.innerHTML='<p class="note">Finish an activity and your skills will show up here in colour.</p>';return;}
 
   box.innerHTML=all.map(sk=>{
     const r=have[sk];
