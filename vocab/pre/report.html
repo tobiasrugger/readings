@@ -86,6 +86,12 @@ td.sc{font-variant-numeric:tabular-nums;font-size:.85rem}
 .b-hi{background:var(--know)} .b-mid{background:#E0A32A} .b-lo{background:var(--miss)} .b-none{background:#EDE9EF}
 td.avg{font-weight:600;font-variant-numeric:tabular-nums}
 .avg .big{font-size:1.05rem}
+#practice table td.wd{font-weight:600}
+#practice .e{font-size:1.25rem;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+#practice .pbar{display:inline-block;width:80px;height:9px;border-radius:5px;background:var(--lilac-2);overflow:hidden;vertical-align:middle;margin-right:7px}
+#practice .pbar i{display:block;height:100%;background:var(--plum)}
+#practice .more{border:2px solid var(--line);background:#fff;color:var(--plum);border-radius:9px;padding:4px 11px;font-size:.82rem;margin-top:8px}
+#practice .sent{color:var(--muted);font-size:.8rem;white-space:normal;max-width:360px;display:block}
 h3.sub{margin:18px 0 8px;font-size:.95rem;color:var(--muted);font-weight:500}
 .cell:hover{outline:2px solid var(--ink);outline-offset:1px}
 .k{background:var(--know)} .m{background:var(--miss)} .i{background:var(--idk)} .e0{background:#EDE9EF} .x{background:transparent;border:1px dashed var(--line)}
@@ -168,6 +174,7 @@ h3.sub{margin:18px 0 8px;font-size:.95rem;color:var(--muted);font-weight:500}
     </div>
     <div class="legend"><span>Squares are in the quiz's own word order, so the same column is the same word for every student. Hover one.</span></div>
     <div class="overview" id="overview"></div>
+    <div id="practice"></div>
     <div id="body"></div>
   </section>
 </main>
@@ -324,7 +331,7 @@ function scoreHtml(rec, mode){
 }
 
 function render(){
-  if (!PICKED.length){ $('overview').innerHTML = ''; $('body').innerHTML = '<div class="empty">Tick some quizzes above.</div>'; return; }
+  if (!PICKED.length){ $('overview').innerHTML = ''; $('practice').innerHTML = ''; $('body').innerHTML = '<div class="empty">Tick some quizzes above.</div>'; return; }
   var phase = $('selPhase').value, onlyPeriod = $('selPeriod').value, detail = $('selDetail').value;
   var defs = PICKED.map(quizById).filter(Boolean);
 
@@ -373,6 +380,47 @@ function render(){
     if (retaken) h += '<div class="sub">' + retaken + ' took it again</div>';
     return h + '</div>';
   }).join('');
+
+  /* ----- words to practice, across everyone shown ----- */
+  var stats = [];
+  defs.forEach(function(def){
+    def.items.forEach(function(di, n){
+      var k = 0, m = 0, i = 0, wrong = {};
+      students.forEach(function(st){
+        var ln = phase === 'first' ? st.lines[def.id].first : st.lines[def.id].last;
+        if (!ln) return;
+        var c = ln.cells[n]; if (!c || c.st === 'e0') return;
+        if (c.st === 'k') k++; else if (c.st === 'i') i++; else { m++; wrong[c.chose] = (wrong[c.chose] || 0) + 1; }
+      });
+      var tot = k + m + i; if (!tot) return;
+      var top = Object.keys(wrong).sort(function(a,b){ return wrong[b] - wrong[a]; })[0];
+      stats.push({ w:di.w, e:di.e || '💬', s:di.s || '', quiz:def.title, known:k, missed:m, idk:i, n:tot,
+                   pct:k/tot, top: top ? top + ' (' + wrong[top] + ')' : '' });
+    });
+  });
+  stats.sort(function(a,b){ return a.pct - b.pct || b.n - a.n; });
+  var CUT = 20, showAll = window.__showAllWords;
+  var shownStats = showAll ? stats : stats.slice(0, CUT);
+  var ph = '<h3 class="sub">Words to practice' + (onlyPeriod ? ', period ' + esc(onlyPeriod) : '')
+    + ' &mdash; hardest first, ' + stats.length + ' words across ' + defs.length + ' quiz' + (defs.length > 1 ? 'zes' : '') + '</h3>';
+  if (!stats.length){
+    ph += '<div class="empty">No answers yet.</div>';
+  } else {
+    ph += '<div class="tablewrap"><table><thead><tr><th></th><th>Word</th><th>Quiz</th><th>Knew it</th><th>Right</th><th>Wrong</th><th>Don\'t know</th><th>Most common wrong answer</th></tr></thead><tbody>';
+    shownStats.forEach(function(x){
+      var pct = Math.round(100 * x.pct);
+      ph += '<tr><td class="e" title="' + esc(x.s) + '">' + x.e + '</td>'
+        + '<td class="wd">' + esc(x.w) + (x.s ? '<span class="sent">' + esc(x.s) + '</span>' : '') + '</td>'
+        + '<td class="quiz">' + esc(x.quiz) + '</td>'
+        + '<td><span class="pbar"><i style="width:' + pct + '%"></i></span>' + pct + '%</td>'
+        + '<td class="sc">' + x.known + ' / ' + x.n + '</td><td class="sc">' + x.missed + '</td><td class="sc">' + x.idk + '</td>'
+        + '<td class="quiz">' + esc(x.top) + '</td></tr>';
+    });
+    ph += '</tbody></table></div>';
+    if (stats.length > CUT) ph += '<button class="more" id="btnMoreWords">' + (showAll ? 'Show only the hardest ' + CUT : 'Show all ' + stats.length + ' words') + '</button>';
+  }
+  $('practice').innerHTML = ph;
+  if ($('btnMoreWords')) $('btnMoreWords').addEventListener('click', function(){ window.__showAllWords = !window.__showAllWords; render(); });
 
   /* ----- one table per period ----- */
   var periods = {};
