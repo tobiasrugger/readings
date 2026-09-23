@@ -426,6 +426,66 @@ window.QUIZZES = [
       { s:'Mr. Toby is an English teacher, ____ Ms. Donahue is an English teacher.', w:'just as', opts:['unlike','whereas','while'] },
       { s:'A Venn diagram shows similarities in the middle and ____ on the two sides.', w:'differences', opts:['similarities','examples','questions'] }
     ]
+  },
+
+  {
+    id: 'dp-looks',
+    title: 'How I Look',
+    tag: 'Describing yourself',
+    group: 'Describing people',
+    emoji: '👀',
+    items: [
+      { e:'👱', w:'blond hair',    opts:['red hair','black hair','curly hair'] },
+      { e:'👩‍🦰', w:'red hair',      opts:['blond hair','white hair','short hair'] },
+      { e:'👩‍🦱', w:'curly hair',    opts:['straight hair','long hair','blond hair'] },
+      { e:'👩‍🦳', w:'white hair',    opts:['black hair','red hair','wavy hair'] },
+      { e:'👨‍🦲', w:'bald',          opts:['long hair','curly hair','tall'] },
+      { e:'🧔', w:'a beard',       opts:['glasses','a hat','blue eyes'] },
+      { e:'👓', w:'glasses',       opts:['a beard','earrings','a hat'] },
+      { e:'👶', w:'young',         opts:['old','tall','loud'] },
+      { e:'👵', w:'old',           opts:['young','short','quiet'] },
+      { e:'👀', w:'brown eyes',    opts:['brown hair','big hands','long arms'] }
+    ]
+  },
+
+  {
+    id: 'dp-traits-1',
+    title: 'Personality Traits 1',
+    tag: 'Describing yourself',
+    group: 'Describing people',
+    emoji: '🎨',
+    items: [
+      { e:'🏃', w:'athletic',  opts:['artistic','musical','quiet'] },
+      { e:'🎨', w:'artistic',  opts:['athletic','musical','loud'] },
+      { e:'🎶', w:'musical',   opts:['artistic','athletic','shy'] },
+      { e:'📢', w:'loud',      opts:['quiet','shy','lazy'] },
+      { e:'🤫', w:'quiet',     opts:['loud','playful','brave'] },
+      { e:'🙈', w:'shy',       opts:['loud','brave','mean'] },
+      { e:'🛋️', w:'lazy',      opts:['athletic','busy','strong'] },
+      { e:'🦁', w:'brave',     opts:['shy','quiet','kind'] },
+      { e:'🎁', w:'generous',  opts:['selfish','serious','lazy'] },
+      { e:'🤹', w:'playful',   opts:['serious','quiet','tired'] }
+    ]
+  },
+
+  {
+    id: 'dp-traits-2',
+    title: 'Personality Traits 2',
+    tag: 'Describing yourself',
+    group: 'Describing people',
+    emoji: '🤝',
+    items: [
+      { e:'🤝', w:'friendly',   opts:['shy','lazy','serious'] },
+      { e:'🔍', w:'curious',    opts:['lazy','loud','quiet'] },
+      { e:'📚', w:'studious',   opts:['athletic','playful','friendly'] },
+      { e:'🧠', w:'smart',      opts:['strong','fast','tall'] },
+      { e:'🤣', w:'funny',      opts:['serious','shy','mean'] },
+      { e:'🎭', w:'dramatic',   opts:['quiet','athletic','honest'] },
+      { e:'😠', w:'mean',       opts:['nice','funny','quiet'] },
+      { e:'🙄', w:'rude',       opts:['polite','happy','shy'] },
+      { e:'☮️', w:'peaceful',   opts:['aggressive','loud','busy'] },
+      { e:'👊', w:'aggressive', opts:['peaceful','quiet','shy'] }
+    ]
   }
 
 ];
