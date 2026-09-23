@@ -166,7 +166,8 @@ var TABLE     = 'vocab_preassess';
 var ALLOW_IDK = true;   // show "I don't know" under each question
 var IDK       = '__idk';
 
-var QUIZ = null, SET = null, SET_KEY = '', PHASE = 'pre';
+var QUIZ = null, SET = null, SET_KEY = '', PHASE = 'pre', AGAIN = false;
+var ATTEMPT = 1;
 var S = { email:'', name:'', period:'', items:[], answers:{}, i:0, created:false, translateFlags:0 };
 
 function $(id){ return document.getElementById(id); }
@@ -237,12 +238,24 @@ $('btnSignin').addEventListener('click', function(){
     if (typed !== email) jobs.push(sb('student_aliases?on_conflict=alias_email', { method:'POST', headers:{ Prefer:'resolution=ignore-duplicates,return=minimal' }, body:[{ alias_email:typed, email:email }] }).catch(function(){}));
     return Promise.all(jobs).then(function(){
       return sb(TABLE + '?select=*&email=eq.' + encodeURIComponent(email)
-        + '&quiz=eq.' + encodeURIComponent(QUIZ.id) + '&phase=eq.' + PHASE);
+        + '&quiz=eq.' + encodeURIComponent(QUIZ.id) + '&order=attempt');
     });
   }).then(function(rows){
     $('whoName').textContent = S.name;
-    var row = rows && rows[0];
-    if (row && row.turned_in){ renderDone(); show('scrDone'); return; }
+    rows = rows || [];
+    var open = rows.filter(function(r){ return !r.turned_in; })[0];      // an unfinished try comes first
+    var last = rows.length ? rows[rows.length-1] : null;
+    var row = null;
+    if (open){
+      row = open; ATTEMPT = open.attempt || 1;
+    } else if (last && AGAIN){
+      ATTEMPT = (last.attempt || 1) + 1;                                  // the link asked for another go
+    } else if (last){
+      ATTEMPT = last.attempt || 1;
+      renderDone(); show('scrDone'); return;                              // already done, and not asked to redo
+    } else {
+      ATTEMPT = 1;
+    }
     if (row && row.items && row.items.length === QUIZ.items.length){
       S.items = row.items; S.answers = row.answers || {}; S.created = true;
       S.translateFlags = row.translate_flags || 0;
@@ -280,7 +293,8 @@ function tally(){
 function save(finish){
   var t = tally();
   var body = {
-    email:S.email, name:S.name, period:S.period, quiz:QUIZ.id, quiz_title:QUIZ.title, phase:PHASE,
+    email:S.email, name:S.name, period:S.period, quiz:QUIZ.id, quiz_title:QUIZ.title,
+    phase:PHASE, attempt:ATTEMPT,
     answers:S.answers, score:t.score, total:t.total, answered:t.answered, idk:t.idk,
     translate_flags:S.translateFlags, updated_at:new Date().toISOString()
   };
@@ -288,7 +302,7 @@ function save(finish){
   if (finish){ body.turned_in = true; body.turned_in_at = new Date().toISOString(); }
   $('saveState').textContent = 'Saving…';
   saving = saving.then(function(){
-    return sb(TABLE + '?on_conflict=email,quiz,phase', { method:'POST', headers:{ Prefer:'resolution=merge-duplicates,return=minimal' }, body:[body] });
+    return sb(TABLE + '?on_conflict=email,quiz,attempt', { method:'POST', headers:{ Prefer:'resolution=merge-duplicates,return=minimal' }, body:[body] });
   }).then(function(){
     S.created = true; $('saveState').textContent = 'Saved';
   }).catch(function(e){
@@ -371,11 +385,11 @@ function renderDone(){
 $('btnNextQuiz').addEventListener('click', function(){
   var nextId = nextInSet();
   if (nextId) location.search = '?q=' + encodeURIComponent(nextId) + '&set=' + encodeURIComponent(SET_KEY)
-    + (PHASE === 'post' ? '&phase=post' : '');
+    + (PHASE === 'post' ? '&phase=post' : AGAIN ? '&again=1' : '');
 });
 $('btnAgain').addEventListener('click', function(){
   location.href = SET && SET.page
-    ? SET.page.replace(/^\/*/, '../') + (PHASE === 'post' ? '?phase=post' : '')
+    ? SET.page.replace(/^\/*/, '../') + (PHASE === 'post' ? '?phase=post' : AGAIN ? '?again=1' : '')
     : location.pathname;
 });
 
@@ -408,11 +422,12 @@ document.addEventListener('contextmenu', function(e){ if (!e.target.closest('inp
   var id = params.get('q');
   QUIZ = (window.QUIZZES || []).filter(function(q){ return q.id === id; })[0];
   PHASE = (params.get('phase') || 'pre').toLowerCase() === 'post' ? 'post' : 'pre';
+  AGAIN = PHASE === 'post' || params.get('again') === '1';
   SET_KEY = params.get('set') || '';
   SET = (window.SETS || {})[SET_KEY] || null;
   if (SET && SET.quizzes.indexOf(id) === -1) { SET = null; SET_KEY = ''; }
   if (!QUIZ){ renderMenu(); return; }
-  $('barTitle').textContent = QUIZ.title + (PHASE === 'post' ? '  (after)' : '');
+  $('barTitle').textContent = QUIZ.title + (AGAIN ? '  (again)' : '');
   $('signTitle').textContent = QUIZ.title;
   var sentences = QUIZ.items.every(function(it){ return it.s; });
   $('signSub').textContent = (QUIZ.tag ? QUIZ.tag + '. ' : '') + QUIZ.items.length + ' questions. '

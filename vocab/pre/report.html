@@ -67,7 +67,14 @@ td.name span{display:block;font-weight:400;color:var(--muted);font-size:.76rem}
 tr.first td{border-top:2px solid var(--lilac-2)}
 td.quiz{color:var(--muted);font-size:.85rem}
 td.sc{font-variant-numeric:tabular-nums;font-size:.85rem}
-.cell{display:inline-block;width:15px;height:15px;border-radius:3px;margin-right:2px;vertical-align:-2px;cursor:pointer}
+.cell{display:inline-block;width:16px;height:16px;border-radius:3px;margin-right:2px;vertical-align:-3px;cursor:pointer}
+/* two goes = one square cut down the middle: left is the first try, right is the latest */
+.cell.split{background:linear-gradient(90deg,var(--a) 0 50%,var(--b) 50% 100%)!important}
+.badge{
+  display:inline-grid;place-items:center;width:19px;height:19px;border-radius:50%;
+  background:#2E6DB4;color:#fff;font-size:.72rem;font-weight:600;margin-left:6px;vertical-align:-4px;
+}
+.arrow{color:var(--muted);margin:0 3px}
 .cell:hover{outline:2px solid var(--ink);outline-offset:1px}
 .k{background:var(--know)} .m{background:var(--miss)} .i{background:var(--idk)} .e0{background:#EDE9EF} .x{background:transparent;border:1px dashed var(--line)}
 .grow{font-weight:600;color:var(--know)} .grow.down{color:var(--miss)} .grow.flat{color:var(--muted);font-weight:400}
@@ -114,9 +121,9 @@ td.sc{font-variant-numeric:tabular-nums;font-size:.85rem}
     <div class="opts2">
       <span>Show</span>
       <select id="selPhase">
-        <option value="pre">Before (pre)</option>
-        <option value="post">After (post)</option>
-        <option value="both">Before and after</option>
+        <option value="both">First try and latest</option>
+        <option value="first">First try only</option>
+        <option value="last">Latest only</option>
       </select>
       <select id="selPeriod"><option value="">All periods</option></select>
       <span id="updated"></span>
@@ -124,8 +131,10 @@ td.sc{font-variant-numeric:tabular-nums;font-size:.85rem}
     <div class="legend">
       <span><b class="k"></b>right</span><span><b class="m"></b>wrong</span><span><b class="i"></b>don't know</span>
       <span><b class="e0"></b>not answered</span><span><b class="x"></b>did not take it</span>
-      <span>Squares are in the quiz's own word order, so the same column is the same word for every student. Hover one.</span>
+      <span><b style="background:linear-gradient(90deg,var(--miss) 0 50%,var(--know) 50% 100%)"></b>first try, then latest</span>
+      <span><span class="badge" style="margin-left:0">2</span> how many times they took it</span>
     </div>
+    <div class="legend"><span>Squares are in the quiz's own word order, so the same column is the same word for every student. Hover one.</span></div>
     <div class="overview" id="overview"></div>
     <div id="body"></div>
   </section>
@@ -229,20 +238,35 @@ function line(row, def){
            pct: def.items.length ? known / def.items.length : 0, turned_in: !!row.turned_in };
 }
 
-function cellsHtml(ln, who, label){
-  if (!ln) return '<span class="none">did not take it</span>';
-  return ln.cells.map(function(c, n){
-    var res = c.st === 'k' ? 'Right' : c.st === 'i' ? "Chose: I don't know" : c.st === 'm' ? 'Chose: ' + c.chose : 'Not answered';
-    return '<span class="cell ' + c.st + '" data-e="' + esc(c.e) + '" data-w="' + esc(c.w)
-      + '" data-r="' + esc(res) + '" data-n="' + (n+1) + '" data-who="' + esc(who + ' · ' + label) + '"></span>';
+var COLOR = { k:'var(--know)', m:'var(--miss)', i:'var(--idk)', e0:'#EDE9EF' };
+function said(c){ return c.st === 'k' ? 'Right' : c.st === 'i' ? "Chose: I don't know" : c.st === 'm' ? 'Chose: ' + c.chose : 'Not answered'; }
+
+function cellsHtml(rec, who, label, mode){
+  var first = rec.first, last = rec.last;
+  var show = mode === 'first' ? first : last;
+  if (!show) return '<span class="none">did not take it</span>';
+  var split = mode === 'both' && rec.count > 1 && first && last;
+  return show.cells.map(function(c, n){
+    var f = first ? first.cells[n] : null, l = last ? last.cells[n] : null;
+    var data = ' data-e="' + esc(c.e) + '" data-w="' + esc(c.w) + '" data-n="' + (n+1) + '" data-who="' + esc(who + ' · ' + label) + '"';
+    if (split){
+      var tip = 'First try: ' + said(f) + ' | Latest: ' + said(l);
+      return '<span class="cell split" style="--a:' + COLOR[f.st] + ';--b:' + COLOR[l.st] + '"' + data
+        + ' data-r="' + esc(tip) + '"></span>';
+    }
+    return '<span class="cell ' + c.st + '"' + data + ' data-r="' + esc(said(c)) + '"></span>';
   }).join('');
 }
 
-function growth(pre, post){
-  if (!pre || !post) return '<span class="none">—</span>';
-  var d = post.known - pre.known;
+function scoreHtml(rec, mode){
+  var first = rec.first, last = rec.last;
+  if (!first && !last) return '–';
+  if (mode === 'first') return first ? first.known + '/' + first.total + (first.turned_in ? '' : ' •') : '–';
+  if (mode === 'last' || rec.count < 2) return last ? last.known + '/' + last.total + (last.turned_in ? '' : ' •') : '–';
+  var d = last.known - first.known;
   var cls = d > 0 ? 'grow' : d < 0 ? 'grow down' : 'grow flat';
-  return '<span class="' + cls + '">' + (d > 0 ? '+' : '') + d + '</span>';
+  return first.known + '<span class="arrow">→</span>' + last.known + '/' + last.total
+    + ' <span class="' + cls + '">' + (d > 0 ? '+' : '') + d + '</span>' + (last.turned_in ? '' : ' •');
 }
 
 function render(){
@@ -258,7 +282,7 @@ function render(){
     var st = byStudent[r.email] || (byStudent[r.email] = { email:r.email, name:r.name, period:r.period || '', q:{} });
     if (r.name) st.name = r.name;
     if (r.period) st.period = r.period;
-    (st.q[r.quiz] || (st.q[r.quiz] = {}))[r.phase || 'pre'] = r;
+    (st.q[r.quiz] || (st.q[r.quiz] = [])).push(r);
   });
   var students = Object.keys(byStudent).map(function(k){ return byStudent[k]; });
   if (!students.length){ $('overview').innerHTML = ''; $('body').innerHTML = '<div class="empty">Nobody has taken these yet.</div>'; return; }
@@ -267,28 +291,32 @@ function render(){
   students.forEach(function(st){
     st.lines = {};
     defs.forEach(function(def){
-      var got = st.q[def.id] || {};
-      st.lines[def.id] = { pre: line(got.pre, def), post: line(got.post, def) };
+      var tries = (st.q[def.id] || []).slice().sort(function(a,b){ return (a.attempt||1) - (b.attempt||1); });
+      st.lines[def.id] = {
+        first: line(tries[0], def),
+        last:  line(tries[tries.length-1], def),
+        count: tries.length
+      };
     });
   });
 
-  var phases = phase === 'both' ? ['pre','post'] : [phase];
-
   /* ----- overview across everyone shown ----- */
   $('overview').innerHTML = defs.map(function(def){
-    function avg(ph){
-      var ls = students.map(function(s){ return s.lines[def.id][ph]; }).filter(Boolean);
+    function avg(which){
+      var ls = students.map(function(s){ return s.lines[def.id][which]; }).filter(Boolean);
       return ls.length ? { pct: Math.round(100 * ls.reduce(function(t,l){ return t + l.pct; }, 0) / ls.length), n: ls.length } : null;
     }
-    var pre = avg('pre'), post = avg('post');
-    var main = phase === 'post' ? post : pre;
+    var first = avg('first'), last = avg('last');
+    var retaken = students.filter(function(s){ return s.lines[def.id].count > 1; }).length;
+    var main = phase === 'first' ? first : last;
     var h = '<div class="ov"><h4>' + esc(def.title) + '</h4>';
     h += '<div class="big">' + (main ? main.pct + '%' : '–') + '</div>';
     h += '<div class="sub">' + (main ? main.n + ' students, average known' : 'nobody yet') + '</div>';
-    if (phase === 'both' && pre && post){
-      var d = post.pct - pre.pct;
-      h += '<div class="sub">before ' + pre.pct + '% → after ' + post.pct + '% <span class="grow' + (d < 0 ? ' down' : '') + '">' + (d > 0 ? '+' : '') + d + '</span></div>';
+    if (retaken && first && last && first.pct !== last.pct){
+      var d = last.pct - first.pct;
+      h += '<div class="sub">first ' + first.pct + '% → latest ' + last.pct + '% <span class="grow' + (d < 0 ? ' down' : '') + '">' + (d > 0 ? '+' : '') + d + '</span></div>';
     }
+    if (retaken) h += '<div class="sub">' + retaken + ' took it again</div>';
     return h + '</div>';
   }).join('');
 
@@ -300,37 +328,25 @@ function render(){
   var html = keys.map(function(p){
     var list = periods[p].sort(function(a,b){ return (a.name||'').toLowerCase().localeCompare((b.name||'').toLowerCase()); });
     var h = '<h2 class="per">Period ' + (esc(p) || '—') + '<span>' + list.length + ' students</span></h2>';
-    h += '<div class="tablewrap"><table><thead><tr><th>Student</th><th>Quiz</th>'
-       + (phase === 'both' ? '<th>When</th>' : '')
-       + '<th>Score</th><th>Answers</th>' + (phase === 'both' ? '<th>Change</th>' : '') + '</tr></thead><tbody>';
+    h += '<div class="tablewrap"><table><thead><tr><th>Student</th><th>Quiz</th><th>Score</th><th>Answers</th></tr></thead><tbody>';
     list.forEach(function(st){
-      var rows = defs.length * phases.length, first = true;
+      var firstRow = true;
       defs.forEach(function(def){
-        phases.forEach(function(ph, pi){
-          var ln = st.lines[def.id][ph];
-          h += '<tr' + (first ? ' class="first"' : '') + '>';
-          if (first){
-            h += '<td class="name" rowspan="' + rows + '">' + esc(st.name || st.email) + '<span>' + esc(st.email) + '</span></td>';
-          }
-          if (pi === 0){
-            h += '<td class="quiz"' + (phases.length > 1 ? ' rowspan="' + phases.length + '"' : '') + '>' + esc(def.title) + '</td>';
-          }
-          if (phase === 'both') h += '<td class="quiz">' + (ph === 'pre' ? 'before' : 'after') + '</td>';
-          h += '<td class="sc">' + (ln ? ln.known + '/' + ln.total + (ln.turned_in ? '' : ' •') : '–') + '</td>';
-          h += '<td>' + cellsHtml(ln, st.name || st.email, def.title + ' ' + (ph === 'pre' ? 'before' : 'after')) + '</td>';
-          if (phase === 'both' && pi === 0){
-            h += '<td rowspan="2">' + growth(st.lines[def.id].pre, st.lines[def.id].post) + '</td>';
-          }
-          h += '</tr>';
-          first = false;
-        });
+        var rec = st.lines[def.id];
+        h += '<tr' + (firstRow ? ' class="first"' : '') + '>';
+        if (firstRow) h += '<td class="name" rowspan="' + defs.length + '">' + esc(st.name || st.email) + '<span>' + esc(st.email) + '</span></td>';
+        h += '<td class="quiz">' + esc(def.title) + (rec.count > 1 ? '<span class="badge" title="taken ' + rec.count + ' times">' + rec.count + '</span>' : '') + '</td>';
+        h += '<td class="sc">' + scoreHtml(rec, phase) + '</td>';
+        h += '<td>' + cellsHtml(rec, st.name || st.email, def.title, phase) + '</td>';
+        h += '</tr>';
+        firstRow = false;
       });
     });
     return h + '</tbody></table></div>';
   }).join('');
 
-  $('body').innerHTML = html + '<p class="none" style="margin-top:12px">A dot after a score means the student has not finished that quiz yet.</p>';
-  window.__report = { students:students, defs:defs, phases:phases };
+  $('body').innerHTML = html + '<p class="none" style="margin-top:12px">A dot after a score means the student has not finished that quiz yet. A blue circle means they took it more than once, and the squares show the first try on the left and the latest on the right.</p>';
+  window.__report = { students:students, defs:defs, mode:phase };
 }
 
 /* ---------- tooltip ---------- */
@@ -370,15 +386,14 @@ $('btnRefresh').addEventListener('click', load);
 $('btnPrint').addEventListener('click', function(){ window.print(); });
 $('btnCsv').addEventListener('click', function(){
   var r = window.__report; if (!r) return;
-  var head = ['period','name','email','quiz','when','known','total','percent','finished'];
+  var head = ['period','name','email','quiz','times_taken','first_known','latest_known','total','latest_percent','change','finished'];
   var lines = [head];
   r.students.forEach(function(st){
     r.defs.forEach(function(def){
-      r.phases.forEach(function(ph){
-        var ln = st.lines[def.id][ph]; if (!ln) return;
-        lines.push([st.period, st.name, st.email, def.title, ph === 'pre' ? 'before' : 'after',
-          ln.known, ln.total, Math.round(100*ln.pct), ln.turned_in ? 'yes' : 'no']);
-      });
+      var rec = st.lines[def.id]; if (!rec.last) return;
+      lines.push([st.period, st.name, st.email, def.title, rec.count,
+        rec.first ? rec.first.known : '', rec.last.known, rec.last.total, Math.round(100*rec.last.pct),
+        (rec.count > 1 && rec.first) ? (rec.last.known - rec.first.known) : '', rec.last.turned_in ? 'yes' : 'no']);
     });
   });
   var csv = lines.map(function(l){ return l.map(function(v){ v = String(v == null ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g,'""') + '"' : v; }).join(','); }).join('\n');
