@@ -88,6 +88,7 @@ main{max-width:760px;margin:0 auto;padding:18px 20px 40px}
 .qfoot{display:flex;gap:12px;align-items:center;margin-top:18px}
 .qfoot .msg{flex:1;color:var(--muted);font-size:.9rem}
 
+.after{display:block;margin-top:14px;padding-top:14px;border-top:2px solid var(--line);color:var(--ink);font-weight:500;line-height:1.55}
 .overlay{position:fixed;inset:0;background:rgba(46,18,57,.82);display:grid;place-items:center;z-index:50;padding:20px}
 .overlay .box{background:#fff;border-radius:20px;padding:28px;max-width:420px;text-align:center}
 .overlay h3{margin:0 0 10px;color:var(--plum-deep)}
@@ -140,9 +141,10 @@ main{max-width:760px;margin:0 auto;padding:18px 20px 40px}
   </section>
 
   <section id="scrDone" class="panel hidden">
-    <h2>You finished. 🎉</h2>
-    <p>Thank you. Mr. Toby will see your answers.</p>
-    <button class="btn ghost wide" id="btnAgain">Back to the list</button>
+    <h2 id="doneTitle">You finished. 🎉</h2>
+    <p id="doneSub">Thank you. Mr. Toby will see your answers.</p>
+    <button class="btn wide hidden" id="btnNextQuiz"></button>
+    <button class="btn ghost wide" id="btnAgain" style="margin-top:10px">Back to the list</button>
   </section>
 
 </main>
@@ -164,7 +166,7 @@ var TABLE     = 'vocab_preassess';
 var ALLOW_IDK = true;   // show "I don't know" under each question
 var IDK       = '__idk';
 
-var QUIZ = null;
+var QUIZ = null, SET = null, SET_KEY = '';
 var S = { email:'', name:'', period:'', items:[], answers:{}, i:0, created:false, translateFlags:0 };
 
 function $(id){ return document.getElementById(id); }
@@ -239,7 +241,7 @@ $('btnSignin').addEventListener('click', function(){
   }).then(function(rows){
     $('whoName').textContent = S.name;
     var row = rows && rows[0];
-    if (row && row.turned_in){ show('scrDone'); return; }
+    if (row && row.turned_in){ renderDone(); show('scrDone'); return; }
     if (row && row.items && row.items.length === QUIZ.items.length){
       S.items = row.items; S.answers = row.answers || {}; S.created = true;
       S.translateFlags = row.translate_flags || 0;
@@ -333,11 +335,45 @@ function render(){
 $('btnBack').addEventListener('click', function(){ if (S.i > 0){ S.i--; render(); } });
 $('btnFinish').addEventListener('click', function(){
   var btn = this; btn.disabled = true; btn.textContent = 'Turning in…';
-  save(true).then(function(){ show('scrDone'); })
+  save(true).then(function(){ renderDone(); show('scrDone'); })
     .catch(function(){ btn.textContent = 'Try again'; })
     .finally(function(){ btn.disabled = false; if (btn.textContent === 'Turning in…') btn.textContent = 'Finish'; });
 });
-$('btnAgain').addEventListener('click', function(){ location.search = ''; });
+function setPos(){ return SET ? SET.quizzes.indexOf(QUIZ.id) : -1; }
+function nextInSet(){
+  var i = setPos();
+  return (i >= 0 && i < SET.quizzes.length - 1) ? SET.quizzes[i+1] : null;
+}
+function renderDone(){
+  var nextId = SET ? nextInSet() : null;
+  var btn = $('btnNextQuiz'), back = $('btnAgain');
+  if (SET){
+    var i = setPos(), n = SET.quizzes.length;
+    $('doneSub').textContent = 'Number ' + (i+1) + ' of ' + n + ' is done. Mr. Toby will see your answers.';
+  }
+  if (nextId){
+    var nq = (window.QUIZZES || []).filter(function(q){ return q.id === nextId; })[0];
+    btn.textContent = 'Next: ' + (nq ? nq.title : 'keep going') + ' →';
+    btn.classList.remove('hidden');
+    back.textContent = 'See the list';
+  } else if (SET){
+    $('doneTitle').textContent = 'All done! 🎉';
+    $('doneSub').innerHTML = 'You finished all ' + SET.quizzes.length + '. Thank you.'
+      + '<span class="after">Tell your teacher you are finished.<br>Or, if he is busy, go to Google Classroom to do more work.</span>';
+    btn.classList.add('hidden');
+    back.textContent = 'See the list';
+  } else {
+    btn.classList.add('hidden');
+    back.textContent = 'Back to the list';
+  }
+}
+$('btnNextQuiz').addEventListener('click', function(){
+  var nextId = nextInSet();
+  if (nextId) location.search = '?q=' + encodeURIComponent(nextId) + '&set=' + encodeURIComponent(SET_KEY);
+});
+$('btnAgain').addEventListener('click', function(){
+  location.href = SET && SET.page ? SET.page.replace(/^\/*/, '../') : location.pathname;
+});
 
 /* ================= NO TRANSLATION ================= */
 var CANARY = $('canary').textContent, transShown = false;
@@ -364,8 +400,12 @@ document.addEventListener('contextmenu', function(e){ if (!e.target.closest('inp
 
 /* ================= START ================= */
 (function init(){
-  var id = new URLSearchParams(location.search).get('q');
+  var params = new URLSearchParams(location.search);
+  var id = params.get('q');
   QUIZ = (window.QUIZZES || []).filter(function(q){ return q.id === id; })[0];
+  SET_KEY = params.get('set') || '';
+  SET = (window.SETS || {})[SET_KEY] || null;
+  if (SET && SET.quizzes.indexOf(id) === -1) { SET = null; SET_KEY = ''; }
   if (!QUIZ){ renderMenu(); return; }
   $('barTitle').textContent = QUIZ.title;
   $('signTitle').textContent = QUIZ.title;

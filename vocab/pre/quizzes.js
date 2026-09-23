@@ -489,3 +489,20 @@ window.QUIZZES = [
   }
 
 ];
+
+/* =====================================================================
+   SETS
+   A set is a short list of quizzes students do in order, with its own
+   page (like traits/). When a student finishes one quiz in a set, the
+   next one is offered right there, so nobody lands on the big menu.
+
+   To add a set, copy a block: the key goes in the link as &set=KEY.
+   ===================================================================== */
+
+window.SETS = {
+  traits: {
+    title: 'Describing People',
+    page:  'traits/',
+    quizzes: ['dp-looks', 'dp-traits-1', 'dp-traits-2', 'u2-l3-strengths']
+  }
+};
