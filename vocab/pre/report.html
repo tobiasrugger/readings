@@ -82,6 +82,7 @@ td.sc{font-variant-numeric:tabular-nums;font-size:.85rem}
 .arrow{color:var(--muted);margin:0 3px}
 /* one square per quiz, banded */
 .qsq{display:inline-block;width:20px;height:20px;border-radius:4px;margin-right:3px;vertical-align:-4px;cursor:pointer}
+.qsq:hover{outline:2px solid var(--ink);outline-offset:1px}
 .b-hi{background:var(--know)} .b-mid{background:#E0A32A} .b-lo{background:var(--miss)} .b-none{background:#EDE9EF}
 td.avg{font-weight:600;font-variant-numeric:tabular-nums}
 .avg .big{font-size:1.05rem}
@@ -92,7 +93,13 @@ h3.sub{margin:18px 0 8px;font-size:.95rem;color:var(--muted);font-weight:500}
 .none{color:var(--muted);font-size:.82rem;font-style:normal}
 .empty{padding:40px;text-align:center;color:var(--muted)}
 
-#tip{position:fixed;z-index:80;pointer-events:none;opacity:0;transition:opacity .08s;background:var(--plum-deep);color:#fff;border-radius:10px;padding:8px 12px;font-size:.9rem;line-height:1.35;max-width:270px;box-shadow:0 6px 18px rgba(46,18,57,.3)}
+#tip{position:fixed;z-index:80;pointer-events:none;opacity:0;transition:opacity .08s;background:var(--plum-deep);color:#fff;border-radius:10px;padding:9px 13px;font-size:.9rem;line-height:1.35;max-width:300px;box-shadow:0 6px 18px rgba(46,18,57,.3);white-space:normal}
+#tip.wide{max-width:340px}
+#tip .hd{display:flex;align-items:center;gap:6px;font-weight:600}
+#tip .pc{opacity:.9;font-weight:400}
+#tip .wl{display:block;margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.25);font-size:.85rem}
+#tip .wl u{display:block;text-decoration:none;opacity:.75;font-size:.76rem;letter-spacing:.02em;text-transform:uppercase}
+#tip .badge{background:#2E6DB4;margin-left:2px}
 #tip.on{opacity:1}
 #tip .te{font-size:1.3rem;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;vertical-align:-3px;margin-right:6px}
 #tip .tr{display:block;opacity:.85;font-size:.83rem;margin-top:2px}
@@ -384,9 +391,17 @@ function render(){
       h += '<td>' + defs.map(function(def){
         var rec = st.lines[def.id];
         var ln = phase === 'first' ? rec.first : rec.last;
-        var tipPct = ln ? Math.round(100*ln.pct) + '%' : 'did not take it';
-        return '<span class="qsq ' + band(ln ? ln.pct : null) + '" title="' + esc(def.title + ' — ' + tipPct
-          + (rec.count > 1 ? ' (taken ' + rec.count + ' times)' : '')) + '"></span>';
+        var wrong = ln ? ln.cells.filter(function(c){ return c.st === 'm'; }).map(function(c){ return c.w; }) : [];
+        var dunno = ln ? ln.cells.filter(function(c){ return c.st === 'i'; }).map(function(c){ return c.w; }) : [];
+        var blank = ln ? ln.cells.filter(function(c){ return c.st === 'e0'; }).length : 0;
+        return '<span class="qsq ' + band(ln ? ln.pct : null) + '"'
+          + ' data-qt="' + esc(def.title) + '"'
+          + ' data-pct="' + (ln ? Math.round(100*ln.pct) + '% (' + ln.known + ' of ' + ln.total + ')' : '') + '"'
+          + ' data-count="' + rec.count + '"'
+          + ' data-wrong="' + esc(wrong.join(', ')) + '"'
+          + ' data-idk="' + esc(dunno.join(', ')) + '"'
+          + ' data-blank="' + blank + '"'
+          + ' data-student="' + esc(st.name || st.email) + '"></span>';
       }).join('') + '</td>';
       h += '<td class="sc">' + (ov ? ov.n + ' of ' + defs.length : '0 of ' + defs.length) + '</td></tr>';
     });
@@ -429,19 +444,34 @@ function render(){
   }
   function open(cell, e){
     shown = cell;
-    tip.innerHTML = '<span class="te">' + cell.dataset.e + '</span><b>' + esc(cell.dataset.w) + '</b>'
-      + '<span class="tr">' + esc(cell.dataset.who) + '</span>'
-      + '<span class="tr">Question ' + cell.dataset.n + '. ' + esc(cell.dataset.r) + '</span>';
+    if (cell.classList.contains('qsq')){
+      var d = cell.dataset, n = parseInt(d.count, 10) || 1;
+      var h = '<span class="hd">' + esc(d.qt)
+        + (n > 1 ? '<span class="badge" title="taken ' + n + ' times">' + n + '</span>' : '') + '</span>';
+      h += d.pct
+        ? '<span class="tr">' + esc(d.student) + ' &middot; <span class="pc">' + esc(d.pct) + '</span></span>'
+        : '<span class="tr">' + esc(d.student) + ' did not take this one</span>';
+      if (d.wrong) h += '<span class="wl"><u>wrong</u>' + esc(d.wrong) + '</span>';
+      if (d.idk)   h += '<span class="wl"><u>don\'t know</u>' + esc(d.idk) + '</span>';
+      if (+d.blank) h += '<span class="wl"><u>not answered</u>' + d.blank + ' question' + (+d.blank > 1 ? 's' : '') + '</span>';
+      if (d.pct && !d.wrong && !d.idk && !+d.blank) h += '<span class="wl">Knew every word.</span>';
+      tip.className = 'wide'; tip.innerHTML = h;
+    } else {
+      tip.className = '';
+      tip.innerHTML = '<span class="te">' + cell.dataset.e + '</span><b>' + esc(cell.dataset.w) + '</b>'
+        + '<span class="tr">' + esc(cell.dataset.who) + '</span>'
+        + '<span class="tr">Question ' + cell.dataset.n + '. ' + esc(cell.dataset.r) + '</span>';
+    }
     tip.classList.add('on'); place(e);
   }
   function close(){ shown = null; tip.classList.remove('on'); }
   document.addEventListener('mouseover', function(e){
-    var c = e.target.closest ? e.target.closest('.cell') : null;
+    var c = e.target.closest ? e.target.closest('.cell, .qsq') : null;
     if (c) open(c, e); else if (shown) close();
   });
   document.addEventListener('mousemove', function(e){ if (shown) place(e); });
   document.addEventListener('click', function(e){
-    var c = e.target.closest ? e.target.closest('.cell') : null;
+    var c = e.target.closest ? e.target.closest('.cell, .qsq') : null;
     if (c) open(c, e); else close();
   });
   document.addEventListener('scroll', close, true);
