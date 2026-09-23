@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class report: vocabulary pre-assessments</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --plum:#5B2A6E; --plum-deep:#3D1A4C; --plum-edge:#2E1239;
+  --lilac:#EFE7F3; --lilac-2:#E2D3EA; --paper:#FBF9FC;
+  --gold:#E3A92B; --ink:#2A2030; --muted:#6E6275; --line:#D9CCE0;
+  --know:#2F8A5B; --know-bg:#DDF1E5; --miss:#C0453A; --idk:#9C8FA3;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:"Lexend",system-ui,sans-serif;background:var(--paper);color:var(--ink);line-height:1.4;font-size:15px}
+input,button,select{font:inherit}
+button{cursor:pointer}
+.hidden{display:none!important}
+a{color:var(--plum)}
+
+.bar{background:var(--plum);color:#fff}
+.bar .in{max-width:1180px;margin:0 auto;padding:13px 22px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.bar h1{margin:0;font-size:1.05rem;font-weight:600}
+.bar .ctl{margin-left:auto;display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.bar .btn{padding:7px 13px;border-radius:10px;border:2px solid rgba(255,255,255,.5);background:transparent;color:#fff}
+.bar .btn:hover{background:rgba(255,255,255,.12)}
+main{max-width:1180px;margin:0 auto;padding:20px 22px 60px}
+
+.gate{max-width:360px;margin:80px auto;background:#fff;border:2px solid var(--line);border-radius:18px;padding:26px}
+.gate h2{margin:0 0 12px;color:var(--plum-deep)}
+.gate input{width:100%;padding:11px 13px;border:2px solid var(--line);border-radius:12px;margin-bottom:8px}
+.gate .err{color:var(--miss);min-height:1.2em;font-size:.9rem;margin-bottom:8px}
+.pbtn{border:0;border-radius:12px;padding:11px 20px;font-weight:600;background:var(--plum);color:#fff;box-shadow:0 4px 0 var(--plum-edge)}
+.pbtn.wide{width:100%}
+
+.pickers{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
+@media (max-width:820px){.pickers{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.pick label{display:block;font-size:.78rem;color:var(--muted);margin-bottom:3px}
+.pick select{width:100%;padding:8px 10px;border:2px solid var(--line);border-radius:10px;background:#fff}
+.opts2{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px;color:var(--muted);font-size:.9rem}
+.opts2 select{padding:7px 10px;border:2px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
+
+.legend{color:var(--muted);font-size:.86rem;margin:0 0 14px;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.legend b{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:4px}
+
+.overview{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:22px}
+.ov{background:#fff;border:2px solid var(--line);border-radius:14px;padding:12px 14px}
+.ov h4{margin:0 0 4px;font-size:.92rem;color:var(--plum-deep)}
+.ov .big{font-size:1.5rem;font-weight:600}
+.ov .sub{color:var(--muted);font-size:.82rem}
+.ov .grow{color:var(--know);font-weight:600}
+.ov .grow.down{color:var(--miss)}
+
+h2.per{margin:26px 0 10px;font-size:1.15rem;color:var(--plum-deep);border-bottom:2px solid var(--lilac-2);padding-bottom:6px}
+h2.per span{color:var(--muted);font-size:.85rem;font-weight:400;margin-left:8px}
+.tablewrap{overflow-x:auto;background:#fff;border:2px solid var(--line);border-radius:14px}
+table{border-collapse:collapse;width:100%}
+th,td{padding:6px 12px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--lilac-2)}
+th{font-weight:500;color:var(--muted);font-size:.8rem;background:var(--lilac)}
+td.name{font-weight:500;border-right:2px solid var(--lilac-2);vertical-align:top;padding-top:10px}
+td.name span{display:block;font-weight:400;color:var(--muted);font-size:.76rem}
+tr.first td{border-top:2px solid var(--lilac-2)}
+td.quiz{color:var(--muted);font-size:.85rem}
+td.sc{font-variant-numeric:tabular-nums;font-size:.85rem}
+.cell{display:inline-block;width:15px;height:15px;border-radius:3px;margin-right:2px;vertical-align:-2px;cursor:pointer}
+.cell:hover{outline:2px solid var(--ink);outline-offset:1px}
+.k{background:var(--know)} .m{background:var(--miss)} .i{background:var(--idk)} .e0{background:#EDE9EF} .x{background:transparent;border:1px dashed var(--line)}
+.grow{font-weight:600;color:var(--know)} .grow.down{color:var(--miss)} .grow.flat{color:var(--muted);font-weight:400}
+.none{color:var(--muted);font-size:.82rem;font-style:normal}
+.empty{padding:40px;text-align:center;color:var(--muted)}
+
+#tip{position:fixed;z-index:80;pointer-events:none;opacity:0;transition:opacity .08s;background:var(--plum-deep);color:#fff;border-radius:10px;padding:8px 12px;font-size:.9rem;line-height:1.35;max-width:270px;box-shadow:0 6px 18px rgba(46,18,57,.3)}
+#tip.on{opacity:1}
+#tip .te{font-size:1.3rem;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;vertical-align:-3px;margin-right:6px}
+#tip .tr{display:block;opacity:.85;font-size:.83rem;margin-top:2px}
+
+@media print{
+  .bar .ctl,.pickers,.opts2{display:none!important}
+  body{font-size:12px}
+  .tablewrap{border:1px solid #999}
+  h2.per{page-break-before:always}
+  h2.per:first-of-type{page-break-before:avoid}
+}
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="in">
+    <h1 id="repTitle">Class report</h1>
+    <div class="ctl hidden" id="controls">
+      <button class="btn" id="btnRefresh">Refresh</button>
+      <button class="btn" id="btnCsv">CSV</button>
+      <button class="btn" id="btnPrint">Print</button>
+      <a class="btn" href="dashboard.html" style="text-decoration:none">One quiz at a time</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="gate" id="gate">
+    <h2>Teacher sign in</h2>
+    <input id="pw" type="password" placeholder="Password">
+    <div class="err" id="pwErr"></div>
+    <button class="pbtn wide" id="btnPw">Open report</button>
+  </section>
+
+  <section id="app" class="hidden">
+    <div class="pickers" id="pickers"></div>
+    <div class="opts2">
+      <span>Show</span>
+      <select id="selPhase">
+        <option value="pre">Before (pre)</option>
+        <option value="post">After (post)</option>
+        <option value="both">Before and after</option>
+      </select>
+      <select id="selPeriod"><option value="">All periods</option></select>
+      <span id="updated"></span>
+    </div>
+    <div class="legend">
+      <span><b class="k"></b>right</span><span><b class="m"></b>wrong</span><span><b class="i"></b>don't know</span>
+      <span><b class="e0"></b>not answered</span><span><b class="x"></b>did not take it</span>
+      <span>Squares are in the quiz's own word order, so the same column is the same word for every student. Hover one.</span>
+    </div>
+    <div class="overview" id="overview"></div>
+    <div id="body"></div>
+  </section>
+</main>
+
+<div id="tip"></div>
+
+<script src="quizzes.js"></script>
+<script>
+var SUPA_URL = 'https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var TABLE = 'vocab_preassess', PASSWORD = 'galileo2026', IDK = '__idk', SLOTS = 4;
+
+var ALL = [], PICKED = [];
+
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function quizById(id){ return (window.QUIZZES || []).filter(function(q){ return q.id === id; })[0]; }
+
+function sb(path){
+  return fetch(SUPA_URL + '/rest/v1/' + path, { headers:{ apikey:SUPA_KEY, Authorization:'Bearer '+SUPA_KEY } })
+    .then(function(r){
+      if (!r.ok) return r.text().then(function(t){ throw new Error(r.status + ' ' + t); });
+      return r.text().then(function(t){ return t ? JSON.parse(t) : []; });
+    });
+}
+
+/* ---------- gate ---------- */
+function openApp(){ $('gate').classList.add('hidden'); $('app').classList.remove('hidden'); $('controls').classList.remove('hidden'); initPickers(); load(); }
+$('btnPw').addEventListener('click', function(){
+  if ($('pw').value === PASSWORD){ try { sessionStorage.setItem('vpa_ok','1'); } catch(e){} openApp(); }
+  else $('pwErr').textContent = 'That password is not right.';
+});
+$('pw').addEventListener('keydown', function(e){ if (e.key === 'Enter') $('btnPw').click(); });
+try { if (sessionStorage.getItem('vpa_ok') === '1') openApp(); } catch(e){}
+
+/* ---------- which quizzes ---------- */
+function wanted(){
+  var p = new URLSearchParams(location.search);
+  var list = (p.get('quizzes') || '').split(',').filter(Boolean);
+  var setKey = p.get('set');
+  if (!list.length && setKey && (window.SETS || {})[setKey]){
+    var set = window.SETS[setKey];
+    list = set.quizzes.slice(0, SLOTS);
+    $('repTitle').textContent = 'Class report: ' + set.title;
+  }
+  return list;
+}
+
+function initPickers(){
+  PICKED = wanted();
+  var opts = '<option value="">— none —</option>' + (window.QUIZZES || []).map(function(q){
+    return '<option value="' + esc(q.id) + '">' + esc(q.title) + '</option>';
+  }).join('');
+  var html = '';
+  for (var i = 0; i < SLOTS; i++){
+    html += '<div class="pick"><label>Quiz ' + (i+1) + '</label><select data-slot="' + i + '">' + opts + '</select></div>';
+  }
+  $('pickers').innerHTML = html;
+  $('pickers').querySelectorAll('select').forEach(function(sel, i){
+    sel.value = PICKED[i] || '';
+    sel.addEventListener('change', function(){
+      PICKED = [];
+      $('pickers').querySelectorAll('select').forEach(function(s){ if (s.value) PICKED.push(s.value); });
+      render();
+    });
+  });
+}
+
+/* ---------- data ---------- */
+function load(){
+  $('updated').textContent = 'Loading…';
+  sb(TABLE + '?select=*&order=name').then(function(rows){
+    ALL = rows || [];
+    var periods = {}; ALL.forEach(function(r){ if (r.period) periods[r.period] = 1; });
+    var cur = $('selPeriod').value;
+    $('selPeriod').innerHTML = '<option value="">All periods</option>' + Object.keys(periods).sort(function(a,b){ return a.localeCompare(b, undefined, {numeric:true}); })
+      .map(function(p){ return '<option value="'+esc(p)+'">Period '+esc(p)+'</option>'; }).join('');
+    $('selPeriod').value = cur;
+    $('updated').textContent = 'Updated ' + new Date().toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
+    render();
+  }).catch(function(e){
+    console.error(e); $('updated').textContent = '';
+    $('body').innerHTML = '<div class="empty">Could not load results. If this is the first time, run schema-phase.sql in Supabase, then tap Refresh.</div>';
+  });
+}
+
+/* one student's answers for one quiz, laid out in the quiz's own word order */
+function line(row, def){
+  if (!row) return null;
+  var ans = row.answers || {}, items = row.items || [], out = [], known = 0, answered = 0;
+  def.items.forEach(function(di){
+    var mine = items.filter(function(it){ return it.w === di.w; })[0];
+    var a = mine ? ans[mine.k] : null;
+    var st = !a ? 'e0' : a === IDK ? 'i' : a === di.w ? 'k' : 'm';
+    if (st !== 'e0') answered++;
+    if (st === 'k') known++;
+    out.push({ st:st, chose:a, w:di.w, e:di.e || '💬', s:di.s || '' });
+  });
+  return { cells:out, known:known, answered:answered, total:def.items.length,
+           pct: def.items.length ? known / def.items.length : 0, turned_in: !!row.turned_in };
+}
+
+function cellsHtml(ln, who, label){
+  if (!ln) return '<span class="none">did not take it</span>';
+  return ln.cells.map(function(c, n){
+    var res = c.st === 'k' ? 'Right' : c.st === 'i' ? "Chose: I don't know" : c.st === 'm' ? 'Chose: ' + c.chose : 'Not answered';
+    return '<span class="cell ' + c.st + '" data-e="' + esc(c.e) + '" data-w="' + esc(c.w)
+      + '" data-r="' + esc(res) + '" data-n="' + (n+1) + '" data-who="' + esc(who + ' · ' + label) + '"></span>';
+  }).join('');
+}
+
+function growth(pre, post){
+  if (!pre || !post) return '<span class="none">—</span>';
+  var d = post.known - pre.known;
+  var cls = d > 0 ? 'grow' : d < 0 ? 'grow down' : 'grow flat';
+  return '<span class="' + cls + '">' + (d > 0 ? '+' : '') + d + '</span>';
+}
+
+function render(){
+  if (!PICKED.length){ $('overview').innerHTML = ''; $('body').innerHTML = '<div class="empty">Choose one to four quizzes above.</div>'; return; }
+  var phase = $('selPhase').value, onlyPeriod = $('selPeriod').value;
+  var defs = PICKED.map(quizById).filter(Boolean);
+
+  // index: email -> quiz -> phase -> row
+  var byStudent = {};
+  ALL.forEach(function(r){
+    if (PICKED.indexOf(r.quiz) === -1) return;
+    if (onlyPeriod && r.period !== onlyPeriod) return;
+    var st = byStudent[r.email] || (byStudent[r.email] = { email:r.email, name:r.name, period:r.period || '', q:{} });
+    if (r.name) st.name = r.name;
+    if (r.period) st.period = r.period;
+    (st.q[r.quiz] || (st.q[r.quiz] = {}))[r.phase || 'pre'] = r;
+  });
+  var students = Object.keys(byStudent).map(function(k){ return byStudent[k]; });
+  if (!students.length){ $('overview').innerHTML = ''; $('body').innerHTML = '<div class="empty">Nobody has taken these yet.</div>'; return; }
+
+  // lines per student
+  students.forEach(function(st){
+    st.lines = {};
+    defs.forEach(function(def){
+      var got = st.q[def.id] || {};
+      st.lines[def.id] = { pre: line(got.pre, def), post: line(got.post, def) };
+    });
+  });
+
+  var phases = phase === 'both' ? ['pre','post'] : [phase];
+
+  /* ----- overview across everyone shown ----- */
+  $('overview').innerHTML = defs.map(function(def){
+    function avg(ph){
+      var ls = students.map(function(s){ return s.lines[def.id][ph]; }).filter(Boolean);
+      return ls.length ? { pct: Math.round(100 * ls.reduce(function(t,l){ return t + l.pct; }, 0) / ls.length), n: ls.length } : null;
+    }
+    var pre = avg('pre'), post = avg('post');
+    var main = phase === 'post' ? post : pre;
+    var h = '<div class="ov"><h4>' + esc(def.title) + '</h4>';
+    h += '<div class="big">' + (main ? main.pct + '%' : '–') + '</div>';
+    h += '<div class="sub">' + (main ? main.n + ' students, average known' : 'nobody yet') + '</div>';
+    if (phase === 'both' && pre && post){
+      var d = post.pct - pre.pct;
+      h += '<div class="sub">before ' + pre.pct + '% → after ' + post.pct + '% <span class="grow' + (d < 0 ? ' down' : '') + '">' + (d > 0 ? '+' : '') + d + '</span></div>';
+    }
+    return h + '</div>';
+  }).join('');
+
+  /* ----- one table per period ----- */
+  var periods = {};
+  students.forEach(function(s){ (periods[s.period] || (periods[s.period] = [])).push(s); });
+  var keys = Object.keys(periods).sort(function(a,b){ return a.localeCompare(b, undefined, { numeric:true }); });
+
+  var html = keys.map(function(p){
+    var list = periods[p].sort(function(a,b){ return (a.name||'').toLowerCase().localeCompare((b.name||'').toLowerCase()); });
+    var h = '<h2 class="per">Period ' + (esc(p) || '—') + '<span>' + list.length + ' students</span></h2>';
+    h += '<div class="tablewrap"><table><thead><tr><th>Student</th><th>Quiz</th>'
+       + (phase === 'both' ? '<th>When</th>' : '')
+       + '<th>Score</th><th>Answers</th>' + (phase === 'both' ? '<th>Change</th>' : '') + '</tr></thead><tbody>';
+    list.forEach(function(st){
+      var rows = defs.length * phases.length, first = true;
+      defs.forEach(function(def){
+        phases.forEach(function(ph, pi){
+          var ln = st.lines[def.id][ph];
+          h += '<tr' + (first ? ' class="first"' : '') + '>';
+          if (first){
+            h += '<td class="name" rowspan="' + rows + '">' + esc(st.name || st.email) + '<span>' + esc(st.email) + '</span></td>';
+          }
+          if (pi === 0){
+            h += '<td class="quiz"' + (phases.length > 1 ? ' rowspan="' + phases.length + '"' : '') + '>' + esc(def.title) + '</td>';
+          }
+          if (phase === 'both') h += '<td class="quiz">' + (ph === 'pre' ? 'before' : 'after') + '</td>';
+          h += '<td class="sc">' + (ln ? ln.known + '/' + ln.total + (ln.turned_in ? '' : ' •') : '–') + '</td>';
+          h += '<td>' + cellsHtml(ln, st.name || st.email, def.title + ' ' + (ph === 'pre' ? 'before' : 'after')) + '</td>';
+          if (phase === 'both' && pi === 0){
+            h += '<td rowspan="2">' + growth(st.lines[def.id].pre, st.lines[def.id].post) + '</td>';
+          }
+          h += '</tr>';
+          first = false;
+        });
+      });
+    });
+    return h + '</tbody></table></div>';
+  }).join('');
+
+  $('body').innerHTML = html + '<p class="none" style="margin-top:12px">A dot after a score means the student has not finished that quiz yet.</p>';
+  window.__report = { students:students, defs:defs, phases:phases };
+}
+
+/* ---------- tooltip ---------- */
+(function(){
+  var tip = $('tip'), shown = null;
+  function place(e){
+    var r = tip.getBoundingClientRect();
+    var x = Math.min(Math.max(8, e.clientX + 14), window.innerWidth - r.width - 8);
+    var y = e.clientY - r.height - 12;
+    if (y < 8) y = e.clientY + 18;
+    tip.style.left = x + 'px'; tip.style.top = y + 'px';
+  }
+  function open(cell, e){
+    shown = cell;
+    tip.innerHTML = '<span class="te">' + cell.dataset.e + '</span><b>' + esc(cell.dataset.w) + '</b>'
+      + '<span class="tr">' + esc(cell.dataset.who) + '</span>'
+      + '<span class="tr">Question ' + cell.dataset.n + '. ' + esc(cell.dataset.r) + '</span>';
+    tip.classList.add('on'); place(e);
+  }
+  function close(){ shown = null; tip.classList.remove('on'); }
+  document.addEventListener('mouseover', function(e){
+    var c = e.target.closest ? e.target.closest('.cell') : null;
+    if (c) open(c, e); else if (shown) close();
+  });
+  document.addEventListener('mousemove', function(e){ if (shown) place(e); });
+  document.addEventListener('click', function(e){
+    var c = e.target.closest ? e.target.closest('.cell') : null;
+    if (c) open(c, e); else close();
+  });
+  document.addEventListener('scroll', close, true);
+})();
+
+/* ---------- controls ---------- */
+$('selPhase').addEventListener('change', render);
+$('selPeriod').addEventListener('change', render);
+$('btnRefresh').addEventListener('click', load);
+$('btnPrint').addEventListener('click', function(){ window.print(); });
+$('btnCsv').addEventListener('click', function(){
+  var r = window.__report; if (!r) return;
+  var head = ['period','name','email','quiz','when','known','total','percent','finished'];
+  var lines = [head];
+  r.students.forEach(function(st){
+    r.defs.forEach(function(def){
+      r.phases.forEach(function(ph){
+        var ln = st.lines[def.id][ph]; if (!ln) return;
+        lines.push([st.period, st.name, st.email, def.title, ph === 'pre' ? 'before' : 'after',
+          ln.known, ln.total, Math.round(100*ln.pct), ln.turned_in ? 'yes' : 'no']);
+      });
+    });
+  });
+  var csv = lines.map(function(l){ return l.map(function(v){ v = String(v == null ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g,'""') + '"' : v; }).join(','); }).join('\n');
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type:'text/csv' }));
+  a.download = 'class-report.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+});
+</script>
+</body>
+</html>

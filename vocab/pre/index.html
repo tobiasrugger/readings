@@ -166,7 +166,7 @@ var TABLE     = 'vocab_preassess';
 var ALLOW_IDK = true;   // show "I don't know" under each question
 var IDK       = '__idk';
 
-var QUIZ = null, SET = null, SET_KEY = '';
+var QUIZ = null, SET = null, SET_KEY = '', PHASE = 'pre';
 var S = { email:'', name:'', period:'', items:[], answers:{}, i:0, created:false, translateFlags:0 };
 
 function $(id){ return document.getElementById(id); }
@@ -236,7 +236,8 @@ $('btnSignin').addEventListener('click', function(){
     var jobs = [ sb('students?on_conflict=email', { method:'POST', headers:{ Prefer:'resolution=ignore-duplicates,return=minimal' }, body:[{ email:email, name:name, period:period }] }).catch(function(){}) ];
     if (typed !== email) jobs.push(sb('student_aliases?on_conflict=alias_email', { method:'POST', headers:{ Prefer:'resolution=ignore-duplicates,return=minimal' }, body:[{ alias_email:typed, email:email }] }).catch(function(){}));
     return Promise.all(jobs).then(function(){
-      return sb(TABLE + '?select=*&email=eq.' + encodeURIComponent(email) + '&quiz=eq.' + encodeURIComponent(QUIZ.id));
+      return sb(TABLE + '?select=*&email=eq.' + encodeURIComponent(email)
+        + '&quiz=eq.' + encodeURIComponent(QUIZ.id) + '&phase=eq.' + PHASE);
     });
   }).then(function(rows){
     $('whoName').textContent = S.name;
@@ -279,7 +280,7 @@ function tally(){
 function save(finish){
   var t = tally();
   var body = {
-    email:S.email, name:S.name, period:S.period, quiz:QUIZ.id, quiz_title:QUIZ.title,
+    email:S.email, name:S.name, period:S.period, quiz:QUIZ.id, quiz_title:QUIZ.title, phase:PHASE,
     answers:S.answers, score:t.score, total:t.total, answered:t.answered, idk:t.idk,
     translate_flags:S.translateFlags, updated_at:new Date().toISOString()
   };
@@ -287,7 +288,7 @@ function save(finish){
   if (finish){ body.turned_in = true; body.turned_in_at = new Date().toISOString(); }
   $('saveState').textContent = 'Saving…';
   saving = saving.then(function(){
-    return sb(TABLE + '?on_conflict=email,quiz', { method:'POST', headers:{ Prefer:'resolution=merge-duplicates,return=minimal' }, body:[body] });
+    return sb(TABLE + '?on_conflict=email,quiz,phase', { method:'POST', headers:{ Prefer:'resolution=merge-duplicates,return=minimal' }, body:[body] });
   }).then(function(){
     S.created = true; $('saveState').textContent = 'Saved';
   }).catch(function(e){
@@ -369,10 +370,13 @@ function renderDone(){
 }
 $('btnNextQuiz').addEventListener('click', function(){
   var nextId = nextInSet();
-  if (nextId) location.search = '?q=' + encodeURIComponent(nextId) + '&set=' + encodeURIComponent(SET_KEY);
+  if (nextId) location.search = '?q=' + encodeURIComponent(nextId) + '&set=' + encodeURIComponent(SET_KEY)
+    + (PHASE === 'post' ? '&phase=post' : '');
 });
 $('btnAgain').addEventListener('click', function(){
-  location.href = SET && SET.page ? SET.page.replace(/^\/*/, '../') : location.pathname;
+  location.href = SET && SET.page
+    ? SET.page.replace(/^\/*/, '../') + (PHASE === 'post' ? '?phase=post' : '')
+    : location.pathname;
 });
 
 /* ================= NO TRANSLATION ================= */
@@ -403,11 +407,12 @@ document.addEventListener('contextmenu', function(e){ if (!e.target.closest('inp
   var params = new URLSearchParams(location.search);
   var id = params.get('q');
   QUIZ = (window.QUIZZES || []).filter(function(q){ return q.id === id; })[0];
+  PHASE = (params.get('phase') || 'pre').toLowerCase() === 'post' ? 'post' : 'pre';
   SET_KEY = params.get('set') || '';
   SET = (window.SETS || {})[SET_KEY] || null;
   if (SET && SET.quizzes.indexOf(id) === -1) { SET = null; SET_KEY = ''; }
   if (!QUIZ){ renderMenu(); return; }
-  $('barTitle').textContent = QUIZ.title;
+  $('barTitle').textContent = QUIZ.title + (PHASE === 'post' ? '  (after)' : '');
   $('signTitle').textContent = QUIZ.title;
   var sentences = QUIZ.items.every(function(it){ return it.s; });
   $('signSub').textContent = (QUIZ.tag ? QUIZ.tag + '. ' : '') + QUIZ.items.length + ' questions. '
