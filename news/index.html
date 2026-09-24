@@ -79,25 +79,15 @@
 
 <div class="bar">
   <h1 id="barTitle">This Week's Reading</h1>
-  <button class="btn ghost" id="who">Sign in</button>
-  <select id="lvl" style="display:none"></select>
+  <input id="email" placeholder="your school email">
   <select id="lang">
     <option value="">Translate…</option>
     <option value="Spanish">Español</option>
-    <option value="Cantonese">廣東話</option>
-    <option value="Mandarin">普通话</option>
+    <option value="Chinese (Simplified)">中文</option>
     <option value="Arabic">العربية</option>
-    <option value="Darija">الدارجة</option>
     <option value="Vietnamese">Tiếng Việt</option>
-    <option value="Russian">Русский</option>
-    <option value="Urdu">اردو</option>
-    <option value="Tagalog">Tagalog</option>
-    <option value="French">Français</option>
-    <option value="Korean">한국어</option>
-    <option value="Hindi">हिन्दी</option>
-    <option value="Somali">Soomaali</option>
-    <option value="Nepali">नेपाली</option>
     <option value="Thai">ไทย</option>
+    <option value="Nepali">नेपाली</option>
   </select>
   <span class="dot" id="dot" title="save status"></span>
   <button class="btn" id="turnIn">Turn in</button>
@@ -117,7 +107,6 @@
   <div id="readBody"><p class="muted">Loading this week's article…</p></div>
   <div id="mediaBox"></div>
   <div id="qBox"></div>
-  <div id="archBox"></div>
 </section>
 
 <section class="pane" id="p-grammar">
@@ -163,20 +152,6 @@
 
 </main>
 
-<div id="signin" style="position:fixed;inset:0;background:rgba(20,40,32,.55);z-index:95;display:none;align-items:center;justify-content:center;padding:16px">
-  <div class="card" style="width:min(400px,100%);margin:0">
-    <h3>Sign in</h3>
-    <label class="q" style="margin-top:6px">Your name</label>
-    <input class="txt" id="siName" autocomplete="name">
-    <label class="q">School email</label>
-    <input class="txt" id="siEmail" placeholder="name@s.sfusd.edu" autocomplete="email">
-    <label class="q">Period</label>
-    <select class="txt" id="siPeriod"><option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select>
-    <p id="siErr" style="color:var(--no);font-weight:700;min-height:22px;margin:8px 0 0"></p>
-    <button class="big" id="siGo" style="width:100%">Start</button>
-  </div>
-</div>
-
 <div class="pop" id="pop">
   <span class="x" onclick="document.getElementById('pop').style.display='none'">✕</span>
   <b id="popW"></b>
@@ -195,11 +170,6 @@ var H={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'appl
 var A=null;        // parsed article
 var ANS={};        // student answers
 var ROLE='';
-var ME={email:'',name:'',period:''};
-var LEVEL=localStorage.getItem('gal_news_level')||'';
-var LOCKED=false;
-var EMAIL_RE=/^[^@\s]+@(s\.)?sfusd\.edu$/;
-function canon(e){e=e.trim().toLowerCase();return e.replace(/@sfusd\.edu$/,'@s.sfusd.edu');}
 var dirty=false;
 
 /* ---------- tiny helpers ---------- */
@@ -211,17 +181,16 @@ function setDot(c){var d=$('dot');d.className='dot'+(c?' '+c:'');}
 /* Sections are lines like ---READ---  */
 function parseDoc(txt){
   var out={meta:{},read:[],gram:{note:'',bank:[],practice:[],produce:''},talk:{cols:[],rows:[],frames:[]},qs:[],record:''};
-  var parts=txt.split(/^\s*---([A-Z]+)(?::([A-Z]))?---\s*$/m);
+  var parts=txt.split(/^\s*---([A-Z]+)---\s*$/m);
   var head=parts[0]||'';
   head.split(/\n/).forEach(function(l){
     var m=l.match(/^([A-Z_]+):\s*(.*)$/);
     if(m) out.meta[m[1]]=m[2].trim();
   });
-  out.reads={};
-  for(var i=1;i<parts.length;i+=3){
-    var name=parts[i], lv=parts[i+1]||'', body=(parts[i+2]||'').trim();
+  for(var i=1;i<parts.length;i+=2){
+    var name=parts[i], body=(parts[i+1]||'').trim();
     if(name==='READ'){
-      out.reads[lv||'B']=body.split(/\n\s*\n/).map(function(s){return s.trim();}).filter(Boolean);
+      out.read=body.split(/\n\s*\n/).map(function(s){return s.trim();}).filter(Boolean);
     } else if(name==='GRAMMAR'){
       body.split(/\n/).forEach(function(l){
         var m;
@@ -248,14 +217,7 @@ function parseDoc(txt){
       out.record=body;
     }
   }
-  var lvs=Object.keys(out.reads);
-  out.read=out.reads[lvs.indexOf('B')>=0?'B':lvs[0]]||[];
   return out;
-}
-function levelsOf(d){return ['A','B','C','D'].filter(function(k){return d.reads&&d.reads[k]&&d.reads[k].length;});}
-function applyLevel(lv){
-  if(!A||!A.reads)return;
-  A.read=A.reads[lv]||A.reads.B||A.reads[levelsOf(A)[0]]||[];
 }
 
 /* [[word|meaning]] and ((grammar highlight)) */
@@ -272,17 +234,14 @@ function plain(s){
 }
 
 /* ---------- translation via Apps Script proxy ---------- */
-var tcache={};
-function translate(word,meaning,lang,cb){
-  var text=word+' \u2014 '+meaning;
-  var key=lang+'|'+text;
-  if(tcache[key]){cb(tcache[key]);return;}
-  var u=PROXY+'?text='+encodeURIComponent(text)+'&q='+encodeURIComponent(text)+
-        '&target='+encodeURIComponent(lang)+'&lang='+encodeURIComponent(lang)+'&to='+encodeURIComponent(lang);
-  fetch(u).then(function(r){return r.text();}).then(function(t){
+function translate(text,lang,cb){
+  fetch(PROXY,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body:JSON.stringify({text:text,target:lang,targetLang:lang,language:lang})})
+  .then(function(r){return r.text();})
+  .then(function(t){
     var v=t;
-    try{var j=JSON.parse(t);v=j.translation||j.text||j.result||j.translatedText||t;}catch(e){}
-    tcache[key]=v;cb(v);
+    try{var j=JSON.parse(t); v=j.translation||j.translated||j.text||j.result||j.output||t;}catch(e){}
+    cb(v);
   }).catch(function(){cb('(translation unavailable)');});
 }
 
@@ -296,31 +255,8 @@ function say(text,slow){
   }catch(e){}
 }
 
-function drawLevelPicker(){
-  var lvs=levelsOf(A),sel=$('lvl');
-  if(lvs.length<2){sel.style.display='none';return;}
-  if(lvs.indexOf(LEVEL)<0){
-    var d=(A.meta.DEFAULT||'B').toUpperCase();
-    LEVEL=lvs.indexOf(d)>=0?d:(lvs.indexOf('B')>=0?'B':lvs[0]);
-  }
-  var names={A:'A \u00b7 shortest sentences',B:'B \u00b7 medium',C:'C \u00b7 longest',D:'D'};
-  sel.innerHTML=lvs.map(function(k){return '<option value="'+k+'"'+(k===LEVEL?' selected':'')+'>'+names[k]+'</option>';}).join('');
-  sel.style.display='';
-  sel.disabled=LOCKED;
-  sel.title=LOCKED?'Mr. Toby chose this level for you.':'Choose the version that feels right.';
-}
-$('lvl').addEventListener('change',function(){
-  LEVEL=this.value;
-  localStorage.setItem('gal_news_level',LEVEL);
-  applyLevel(LEVEL);
-  dirty=true;
-  render();
-});
-
 /* ---------- render ---------- */
 function render(){
-  applyLevel(LEVEL);
-  drawLevelPicker();
   var m=A.meta;
   $('barTitle').textContent=m.TITLE||'This Week\u2019s Reading';
   document.title=(m.TITLE||'Reading')+' — Mr. Toby';
@@ -345,7 +281,6 @@ function render(){
   });
   q+='</div>';
   $('qBox').innerHTML=A.qs.length?q:'';
-  archive();
 
   /* GRAMMAR */
   var g='<div class="card"><h3>'+esc(m.GRAMMAR||'Grammar')+'</h3><div>'+A.gram.note+'</div></div>';
@@ -361,10 +296,10 @@ function render(){
   }
   if(A.gram.practice.length){
     g+='<div class="card"><h3>Practice</h3>';
-    if(A.gram.bank.length){g+='<div class="bank" translate="no">';A.gram.bank.forEach(function(w){g+='<span>'+esc(w)+'</span>';});g+='</div>';}
+    if(A.gram.bank.length){g+='<div class="bank">';A.gram.bank.forEach(function(w){g+='<span>'+esc(w)+'</span>';});g+='</div>';}
     A.gram.practice.forEach(function(p,i){
       var s=esc(p.s).replace(/_{2,}/,'<input class="cloze" data-k="c'+i+'" data-a="'+p.a.join('|')+'">');
-      g+='<p style="margin:12px 0" translate="no">'+(i+1)+'. '+s+'</p>';
+      g+='<p style="margin:12px 0">'+(i+1)+'. '+s+'</p>';
     });
     g+='</div>';
   }
@@ -398,18 +333,20 @@ function render(){
   }
   $('talkBody').innerHTML=ROLE?t:'<p class="muted">Choose A or B above to see your half of the chart.</p>';
 
-  /* RECORD — hands off to the fluency tracker so everything lands in one growth chart */
+  /* RECORD */
   var wc=A.record?plain(A.record).trim().split(/\s+/).length:0;
-  var fslug='news-'+A.meta.SLUG;
   $('recBody').innerHTML=
     '<div class="card"><h3>Read aloud</h3>'+
-    '<p class="muted">You will read this passage out loud in the Fluency Tracker. It times you, you mark your own mistakes, and it shows you which sounds to practice.</p>'+
-    '<div class="passage" translate="no">'+rich(A.record)+'</div>'+
+    '<p class="muted">Read this passage out loud. Take your time — clear beats fast. You can listen to it first.</p>'+
+    '<div class="passage" id="pass">'+rich(A.record)+'</div>'+
     '<div class="rec"><button class="spk" data-raw="'+esc(plain(A.record)).replace(/"/g,'&quot;')+'" style="font-size:15px;padding:8px 12px">&#128266; Listen first</button>'+
     '<span class="muted">'+wc+' words</span></div>'+
-    '<a class="big" style="display:block;text-align:center;margin-top:18px;text-decoration:none" href="../fluency/index.html?p='+encodeURIComponent(fslug)+'">Open the Fluency Tracker</a>'+
-    '<p class="muted" style="margin-top:10px">Read it once on Monday and again on Thursday after you practice. The second reading is how you see yourself getting better.</p>'+
+    '<div class="rec" style="margin-top:16px"><button class="big" id="recBtn">Start recording</button>'+
+    '<span class="clock" id="clock">0.0s</span></div>'+
+    '<div id="playback" style="margin-top:14px"></div>'+
+    '<div id="wpm" style="margin-top:10px;font-weight:800"></div>'+
     '</div>';
+  wireRecorder(wc);
 
   restore();
   wireInputs();
@@ -424,7 +361,7 @@ document.addEventListener('click',function(e){
     $('popT').textContent='';
     $('pop').style.display='block';
     var L=$('lang').value;
-    if(L){$('popT').textContent='…';translate(g.textContent,g.dataset.d,L,function(v){$('popT').textContent=v;});}
+    if(L){$('popT').textContent='…';translate(g.dataset.d,L,function(v){$('popT').textContent=v;});}
     say(g.textContent,false);
     return;
   }
@@ -461,7 +398,7 @@ function wireInputs(){
     }
   });
 }
-function lsKey(){return 'news_'+(A&&A.meta.SLUG||'x')+'_'+(ME.email||'anon');}
+function lsKey(){return 'news_'+(A&&A.meta.SLUG||'x')+'_'+($('email').value.trim().toLowerCase()||'anon');}
 function restore(){
   var raw=localStorage.getItem(lsKey());
   if(raw){try{ANS=JSON.parse(raw);}catch(e){}}
@@ -473,103 +410,71 @@ function restore(){
 /* ---------- autosave ---------- */
 setInterval(function(){
   if(!dirty||!A) return;
-  var em=ME.email;
+  var em=$('email').value.trim().toLowerCase();
   if(!em||em.indexOf('@')<0) return;
   dirty=false;
   fetch(SUPA_URL+'/rest/v1/news_work?on_conflict=email,slug',{
     method:'POST',
     headers:Object.assign({},H,{'Prefer':'resolution=merge-duplicates,return=minimal'}),
-    body:JSON.stringify({email:em,name:ME.name,period:ME.period,level:LEVEL,slug:A.meta.SLUG,answers:ANS,updated_at:new Date().toISOString()})
+    body:JSON.stringify({email:em,slug:A.meta.SLUG,answers:ANS,updated_at:new Date().toISOString()})
   }).then(function(r){setDot(r.ok?'on':'err'); if(!r.ok) dirty=true;})
    .catch(function(){setDot('err');dirty=true;});
 },2500);
 
-function showSignin(){
-  $('siName').value=ME.name||localStorage.getItem('gal_student_name')||'';
-  $('siEmail').value=ME.email||localStorage.getItem('gal_student_email')||'';
-  $('siPeriod').value=ME.period||localStorage.getItem('gal_student_period')||'';
-  $('siErr').textContent='';
-  $('signin').style.display='flex';
-}
-$('who').onclick=showSignin;
-$('siGo').onclick=function(){
-  var n=$('siName').value.trim(), raw=$('siEmail').value.trim().toLowerCase(), p=$('siPeriod').value;
-  if(!n){$('siErr').textContent='Type your name.';return;}
-  if(!EMAIL_RE.test(raw)){$('siErr').textContent='Use your school email (@s.sfusd.edu).';return;}
-  if(!p){$('siErr').textContent='Choose your period.';return;}
-  var c=canon(raw);
-  ME={email:c,name:n,period:p};
-  localStorage.setItem('gal_student_email',c);
-  localStorage.setItem('gal_student_name',n);
-  localStorage.setItem('gal_student_period',p);
-  if(raw!==c){
-    fetch(SUPA_URL+'/rest/v1/student_aliases',{method:'POST',headers:Object.assign({},H,{'Prefer':'resolution=ignore-duplicates,return=minimal'}),
-      body:JSON.stringify({alias:raw,canonical:c})}).catch(function(){});
-  }
-  fetch(SUPA_URL+'/rest/v1/students?on_conflict=email',{method:'POST',headers:Object.assign({},H,{'Prefer':'resolution=ignore-duplicates,return=minimal'}),
-    body:JSON.stringify({email:c,name:n,period:p})}).catch(function(){});
-  $('signin').style.display='none';
-  $('who').textContent=n.split(' ')[0]+' \u00b7 P'+p;
-  fetchOverride();
-  if(A){ANS={};restore();wireInputs();}
-  dirty=true;
-};
-function fetchOverride(){
-  if(!ME.email)return;
-  fetch(SUPA_URL+'/rest/v1/news_student_level?select=level&email=eq.'+encodeURIComponent(ME.email),{headers:H})
-  .then(function(r){return r.json();}).then(function(rows){
-    var lv=(rows&&rows.length&&rows[0].level)||'';
-    if(lv&&lv!==LEVEL){
-      LEVEL=lv;LOCKED=true;
-      localStorage.setItem('gal_news_level',LEVEL);
-      if(A){applyLevel(LEVEL);render();toast('Mr. Toby changed your version.');}
-    } else if(lv){ LOCKED=true; if($('lvl'))$('lvl').disabled=true; }
-    else if(LOCKED){ LOCKED=false; if($('lvl'))$('lvl').disabled=false; }
-  }).catch(function(){});
-}
-setInterval(fetchOverride,20000);
-function toast(msg){
-  var t=document.createElement('div');
-  t.textContent=msg;
-  t.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:22px;background:var(--pine);color:#fff;padding:11px 18px;border-radius:99px;font-weight:700;z-index:99;box-shadow:0 6px 20px rgba(0,0,0,.25)';
-  document.body.appendChild(t);
-  setTimeout(function(){t.remove();},3500);
-}
-(function(){
-  var e=localStorage.getItem('gal_student_email'),n=localStorage.getItem('gal_student_name'),p=localStorage.getItem('gal_student_period');
-  if(e&&n&&p&&EMAIL_RE.test(e)){ME={email:e,name:n,period:p};$('who').textContent=n.split(' ')[0]+' \u00b7 P'+p;}
-  else setTimeout(showSignin,400);
-  if(ME.email)fetchOverride();
-})();
+$('email').addEventListener('change',function(){if(A){restore();}});
 $('turnIn').onclick=function(){
-  var em=ME.email;
-  if(!em||em.indexOf('@')<0){showSignin();return;}
+  var em=$('email').value.trim().toLowerCase();
+  if(!em||em.indexOf('@')<0){alert('Type your school email at the top first.');return;}
   dirty=true;
   ANS._turnedIn=new Date().toISOString();
   localStorage.setItem(lsKey(),JSON.stringify(ANS));
   alert('Turned in. You can still make changes — Mr. Toby sees the newest version.');
 };
 
-/* ---------- archive ---------- */
-var ARCH=null;
-function archive(){
-  if(ARCH){drawArch();return;}
-  fetch(SUPA_URL+'/rest/v1/news_articles?select=slug,title,week_of&published=is.true&order=week_of.desc.nullslast,updated_at.desc',{headers:H})
-  .then(function(r){return r.json();}).then(function(rows){ARCH=rows||[];drawArch();})
-  .catch(function(){});
+/* ---------- recorder ---------- */
+var mr=null,chunks=[],t0=0,tick=null;
+function wireRecorder(wordCount){
+  var btn=$('recBtn'); if(!btn) return;
+  btn.onclick=function(){
+    if(mr&&mr.state==='recording'){ mr.stop(); return; }
+    navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+      chunks=[]; mr=new MediaRecorder(stream);
+      mr.ondataavailable=function(e){chunks.push(e.data);};
+      mr.onstop=function(){
+        clearInterval(tick);
+        stream.getTracks().forEach(function(t){t.stop();});
+        var secs=(Date.now()-t0)/1000;
+        var blob=new Blob(chunks,{type:'audio/webm'});
+        $('playback').innerHTML='<audio controls src="'+URL.createObjectURL(blob)+'" style="width:100%"></audio>'+
+          '<button class="btn" style="background:var(--pine);color:#fff;margin-top:10px" id="up">Send to Mr. Toby</button>'+
+          '<span class="muted" id="upMsg" style="margin-left:8px"></span>';
+        var wpm=Math.round(wordCount/(secs/60));
+        $('wpm').innerHTML='Time: '+secs.toFixed(1)+'s &nbsp;·&nbsp; About '+wpm+' words per minute';
+        btn.textContent='Record again'; btn.classList.remove('stop');
+        $('up').onclick=function(){ upload(blob,secs,wordCount,wpm); };
+      };
+      mr.start(); t0=Date.now();
+      btn.textContent='Stop'; btn.classList.add('stop');
+      tick=setInterval(function(){$('clock').textContent=((Date.now()-t0)/1000).toFixed(1)+'s';},100);
+    }).catch(function(){alert('I could not turn on the microphone. Check that this page is allowed to use it.');});
+  };
 }
-function drawArch(){
-  var box=$('archBox'); if(!box||!ARCH) return;
-  var others=ARCH.filter(function(r){return r.slug!==A.meta.SLUG;});
-  if(!others.length){box.innerHTML='';return;}
-  var h='<div class="card"><h3>Other readings</h3>'+
-        '<p class="muted">Missed a week? You can still do any of these.</p>';
-  others.forEach(function(r){
-    h+='<div style="padding:8px 0;border-top:1px solid var(--rule)">'+
-       '<a href="?a='+encodeURIComponent(r.slug)+'" style="font-weight:700;color:var(--pine)">'+esc(r.title||r.slug)+'</a>'+
-       (r.week_of?' <span class="muted">'+esc(r.week_of)+'</span>':'')+'</div>';
-  });
-  box.innerHTML=h+'</div>';
+function upload(blob,secs,wc,wpm){
+  var em=$('email').value.trim().toLowerCase();
+  if(!em||em.indexOf('@')<0){alert('Type your school email at the top first.');return;}
+  var path='news/'+A.meta.SLUG+'/'+em.replace(/[^a-z0-9]/g,'_')+'_'+Date.now()+'.webm';
+  $('upMsg').textContent='Sending…';
+  fetch(SUPA_URL+'/storage/v1/object/'+BUCKET+'/'+path,{
+    method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'audio/webm'},body:blob
+  }).then(function(r){
+    if(!r.ok) throw 0;
+    return fetch(SUPA_URL+'/rest/v1/fluency_recordings',{
+      method:'POST',headers:Object.assign({},H,{'Prefer':'return=minimal'}),
+      body:JSON.stringify({email:em,slug:A.meta.SLUG,passage:'main',path:path,
+        seconds:Math.round(secs*10)/10,word_count:wc,wpm:wpm})
+    });
+  }).then(function(){$('upMsg').textContent='Sent.';})
+   .catch(function(){$('upMsg').textContent='It did not send. Try once more.';});
 }
 
 /* ---------- teacher ---------- */
@@ -587,18 +492,8 @@ $('pub').onclick=function(){
     body:JSON.stringify({slug:d.meta.SLUG,title:d.meta.TITLE,week_of:d.meta.WEEK||null,
       doc:$('doc').value,published:true,updated_at:new Date().toISOString()})
   }).then(function(r){
-    if(!r.ok){$('pubMsg').textContent='Did not publish — check the table exists.';return;}
-    $('pubMsg').textContent='Published. Adding the read-aloud passage…';
-    var body=plain(d.record||'').trim();
-    if(!body){$('pubMsg').textContent='Published. (No ---RECORD--- passage, so nothing was sent to the fluency tracker.)';A=d;ROLE='';ANS={};ARCH=null;render();loadList();return;}
-    return fetch(SUPA_URL+'/rest/v1/fluency_passages?on_conflict=slug',{
-      method:'POST',headers:Object.assign({},H,{'Prefer':'resolution=merge-duplicates,return=minimal'}),
-      body:JSON.stringify({slug:'news-'+d.meta.SLUG,title:d.meta.TITLE,level:'B',body:body,
-        word_count:body.split(/\s+/).length,assigned_week:d.meta.WEEK||null,active:true})
-    }).then(function(r2){
-      $('pubMsg').textContent=r2.ok?'Published, and the passage is now in the Fluency Tracker.':'Published, but the fluency passage did not save.';
-      A=d;ROLE='';ANS={};ARCH=null;render();loadList();
-    });
+    $('pubMsg').textContent=r.ok?'Published.':'Did not publish — check the table exists.';
+    if(r.ok){A=d;ROLE='';ANS={};render();loadList();}
   }).catch(function(){$('pubMsg').textContent='Network problem.';});
 };
 function loadList(){
@@ -683,5 +578,6 @@ var SEED=[
 $('doc').value=SEED;
 boot();
 </script>
+<script src="/readings/track.js"></script>
 </body>
 </html>
