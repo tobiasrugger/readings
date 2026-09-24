@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Dashboard: Vocabulary pre-assessments</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -58,6 +60,9 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 .k{background:var(--know)} .m{background:var(--miss)} .i{background:var(--idk)} .e0{background:#EDE9EF}
 .legend{color:var(--muted);font-size:.86rem;margin:0 0 10px;display:flex;gap:14px;flex-wrap:wrap}
 .legend b{display:inline-block;width:13px;height:13px;border-radius:3px;vertical-align:-1px;margin-right:4px}
+.gi{display:inline-block;width:1.5em;vertical-align:-.35em}
+.gi.big{width:2em;vertical-align:-.5em}
+.gi svg{width:100%;height:auto;display:block}
 .empty{padding:36px;text-align:center;color:var(--muted)}
 .cell{cursor:pointer}
 .cell:hover{outline:2px solid var(--ink);outline-offset:1px}
@@ -71,6 +76,19 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 #tip b{font-weight:600}
 #tip .tr{display:block;opacity:.85;font-size:.84rem;margin-top:2px}
 .flag{color:var(--miss);font-size:.85rem}
+
+/* Browsers drop background colours when printing unless told otherwise.
+   Without this the squares come out blank in a PDF. */
+@media print{
+  *,*::before,*::after{ -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; color-adjust:exact !important; }
+  body{ background:#fff }
+  .cell,.qsq,.meter i,.pbar i,.badge,.pill{ box-shadow:inset 0 0 0 1000px currentColor }
+  .cell.k,.qsq.b-hi{ color:#2F8A5B } .cell.m,.qsq.b-lo{ color:#C0453A } .cell.i{ color:#9C8FA3 }
+  .cell.e0,.qsq.b-none{ color:#DAD5DE } .qsq.b-mid{ color:#E0A32A }
+  .cell.split{ box-shadow:none }
+  tr,td,th{ page-break-inside:avoid }
+  thead{ display:table-header-group }
+}
 </style>
 </head>
 <body>
@@ -105,13 +123,22 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 
 <div id="tip"></div>
 
-<script src="quizzes.js"></script>
+<script>
+/* Loads the quiz file with a changing web address, so browsers can never serve
+   students an old copy. Nothing to remember when you upload a new quizzes.js. */
+document.write('<scr' + 'ipt src="quizzes.js?v=' + Math.floor(Date.now()/60000) + '"><\/scr' + 'ipt>');
+</script>
 <script>
 var SUPA_URL = 'https://lhmwtfyceilgndpygivj.supabase.co';
 var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
 var TABLE = 'vocab_preassess', PASSWORD = 'galileo2026', IDK = '__idk';
 var ALL = [], ROWS = [], WORDS = [], sortKey = 'name', sortDir = 1;
 
+function glyph(o, big){
+  var ic = o && o.icon && (window.ICONS || {})[o.icon];
+  if (ic) return '<span class="gi' + (big ? ' big' : '') + '">' + ic + '</span>';
+  return (o && o.e) || '💬';
+}
 function $(id){ return document.getElementById(id); }
 function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function sb(path, opts){
@@ -169,8 +196,8 @@ function build(){
   ROWS = ALL.filter(function(r){ return r.quiz === quiz && (!period || r.period === period); })
             .map(function(r){ return Object.assign({}, r, { s:score(r) }); });
   var def = (window.QUIZZES || []).filter(function(q){ return q.id === quiz; })[0];
-  WORDS = def ? def.items.map(function(it){ return { w:it.w, e:it.e || '', s:it.s || '' }; })
-              : (ROWS[0] ? (ROWS[0].items || []).map(function(it){ return { w:it.w, e:it.e || '', s:it.s || '' }; }) : []);
+  WORDS = def ? def.items.map(function(it){ return { w:it.w, e:it.e || '', s:it.s || '', icon:it.icon || '' }; })
+              : (ROWS[0] ? (ROWS[0].items || []).map(function(it){ return { w:it.w, e:it.e || '', s:it.s || '', icon:it.icon || '' }; }) : []);
   var base = location.href.replace(/dashboard\.html.*$/, '');
   $('shareLink').innerHTML = 'Student link: <b>' + esc(base + '?q=' + quiz) + '</b>';
   renderSummary(); renderStudents(); renderWords();
@@ -204,7 +231,7 @@ function renderStudents(){
     var cells = (r.items || []).map(function(it, n){
       var b = r.s.byKey[it.k] || { st:'e0' };
       var res = b.st==='k' ? 'Right' : b.st==='i' ? "Chose: I don't know" : b.st==='m' ? 'Chose: ' + b.chose : 'Not answered yet';
-      return '<span class="cell ' + b.st + '" data-e="' + esc(it.e || '💬') + '" data-w="' + esc(it.w) + '" data-r="' + esc(res) + '" data-n="' + (n+1) + '"></span>';
+      return '<span class="cell ' + b.st + '" data-e="' + esc(it.e || '') + '" data-icon="' + esc(it.icon || '') + '" data-w="' + esc(it.w) + '" data-r="' + esc(res) + '" data-n="' + (n+1) + '"></span>';
     }).join('');
     h += '<tr><td>' + esc(r.name) + '<br><span style="color:var(--muted);font-size:.78rem">' + esc(r.email) + '</span></td>'
       + '<td>' + esc(r.period) + '</td>'
@@ -247,7 +274,7 @@ function renderWords(){
   var h = '<div class="tablewrap"><table><thead><tr><th style="cursor:default"></th><th style="cursor:default">Word</th><th style="cursor:default">Knew it</th><th style="cursor:default">Right</th><th style="cursor:default">Wrong</th><th style="cursor:default">Don\'t know</th><th style="cursor:default">Most common wrong choice</th></tr></thead><tbody>';
   stats.forEach(function(x){
     var pct = x.n ? Math.round(100*x.k/x.n) : null;
-    h += '<tr><td class="e" title="' + esc(x.w.s || '') + '">' + (x.w.e || '💬') + '</td><td><b>' + esc(x.w.w) + '</b></td>'
+    h += '<tr><td class="e" title="' + esc(x.w.s || '') + '">' + glyph(x.w, true) + '</td><td><b>' + esc(x.w.w) + '</b></td>'
       + '<td>' + (pct == null ? '–' : '<span class="meter"><i style="width:'+pct+'%"></i></span>' + pct + '%') + '</td>'
       + '<td class="num">' + x.k + ' / ' + x.n + '</td><td class="num">' + x.m + '</td><td class="num">' + x.i + '</td>'
       + '<td>' + esc(x.top) + '</td></tr>';
@@ -267,7 +294,7 @@ function renderWords(){
   }
   function open(cell, e){
     shown = cell;
-    tip.innerHTML = '<span class="te">' + cell.dataset.e + '</span><b>' + cell.dataset.w + '</b>'
+    tip.innerHTML = '<span class="te">' + glyph({ e:cell.dataset.e, icon:cell.dataset.icon }) + '</span><b>' + cell.dataset.w + '</b>'
       + '<span class="tr">Question ' + cell.dataset.n + '. ' + cell.dataset.r + '</span>';
     tip.classList.add('on'); place(e);
   }

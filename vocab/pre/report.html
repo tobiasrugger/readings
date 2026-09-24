@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Class report: vocabulary pre-assessments</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -92,6 +94,9 @@ td.avg{font-weight:600;font-variant-numeric:tabular-nums}
 #practice .pbar i{display:block;height:100%;background:var(--plum)}
 #practice .more{border:2px solid var(--line);background:#fff;color:var(--plum);border-radius:9px;padding:4px 11px;font-size:.82rem;margin-top:8px}
 #practice .sent{color:var(--muted);font-size:.8rem;white-space:normal;max-width:360px;display:block}
+.gi{display:inline-block;width:1.5em;vertical-align:-.35em}
+.gi.big{width:2em;vertical-align:-.5em}
+.gi svg{width:100%;height:auto;display:block}
 h3.sub{margin:18px 0 8px;font-size:.95rem;color:var(--muted);font-weight:500}
 .cell:hover{outline:2px solid var(--ink);outline-offset:1px}
 .k{background:var(--know)} .m{background:var(--miss)} .i{background:var(--idk)} .e0{background:#EDE9EF} .x{background:transparent;border:1px dashed var(--line)}
@@ -110,12 +115,27 @@ h3.sub{margin:18px 0 8px;font-size:.95rem;color:var(--muted);font-weight:500}
 #tip .te{font-size:1.3rem;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;vertical-align:-3px;margin-right:6px}
 #tip .tr{display:block;opacity:.85;font-size:.83rem;margin-top:2px}
 
+/* Browsers drop background colours when printing unless told otherwise.
+   Without this the squares come out blank in a PDF. */
 @media print{
-  .bar .ctl,.pickers,.opts2{display:none!important}
+  *,*::before,*::after{ -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; color-adjust:exact !important; }
+  body{ background:#fff }
+  .cell,.qsq,.meter i,.pbar i,.badge,.pill{ box-shadow:inset 0 0 0 1000px currentColor }
+  .cell.k,.qsq.b-hi{ color:#2F8A5B } .cell.m,.qsq.b-lo{ color:#C0453A } .cell.i{ color:#9C8FA3 }
+  .cell.e0,.qsq.b-none{ color:#DAD5DE } .qsq.b-mid{ color:#E0A32A }
+  .cell.split{ box-shadow:none }
+  tr,td,th{ page-break-inside:avoid }
+  thead{ display:table-header-group }
+}
+
+@media print{
+  .bar .ctl,.pickwrap,.opts2{display:none!important}
+  .bar{background:var(--plum)!important;color:#fff!important}
   body{font-size:12px}
   .tablewrap{border:1px solid #999}
   h2.per{page-break-before:always}
   h2.per:first-of-type{page-break-before:avoid}
+  #practice{page-break-after:always}
 }
 </style>
 </head>
@@ -181,7 +201,11 @@ h3.sub{margin:18px 0 8px;font-size:.95rem;color:var(--muted);font-weight:500}
 
 <div id="tip"></div>
 
-<script src="quizzes.js"></script>
+<script>
+/* Loads the quiz file with a changing web address, so browsers can never serve
+   students an old copy. Nothing to remember when you upload a new quizzes.js. */
+document.write('<scr' + 'ipt src="quizzes.js?v=' + Math.floor(Date.now()/60000) + '"><\/scr' + 'ipt>');
+</script>
 <script>
 var SUPA_URL = 'https://lhmwtfyceilgndpygivj.supabase.co';
 var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
@@ -190,6 +214,11 @@ var TABLE = 'vocab_preassess', PASSWORD = 'galileo2026', IDK = '__idk', SLOTS = 
 var ALL = [], PICKED = [];
 
 function $(id){ return document.getElementById(id); }
+function glyph(o, big){
+  var ic = o && o.icon && (window.ICONS || {})[o.icon];
+  if (ic) return '<span class="gi' + (big ? ' big' : '') + '">' + ic + '</span>';
+  return (o && o.e) || '💬';
+}
 function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function quizById(id){ return (window.QUIZZES || []).filter(function(q){ return q.id === id; })[0]; }
 
@@ -279,7 +308,7 @@ function line(row, def){
     var st = !a ? 'e0' : a === IDK ? 'i' : a === di.w ? 'k' : 'm';
     if (st !== 'e0') answered++;
     if (st === 'k') known++;
-    out.push({ st:st, chose:a, w:di.w, e:di.e || '💬', s:di.s || '' });
+    out.push({ st:st, chose:a, w:di.w, e:di.e || '', icon:di.icon || '', s:di.s || '' });
   });
   return { cells:out, known:known, answered:answered, total:def.items.length,
            pct: def.items.length ? known / def.items.length : 0, turned_in: !!row.turned_in };
@@ -295,7 +324,7 @@ function cellsHtml(rec, who, label, mode){
   var split = mode === 'both' && rec.count > 1 && first && last;
   return show.cells.map(function(c, n){
     var f = first ? first.cells[n] : null, l = last ? last.cells[n] : null;
-    var data = ' data-e="' + esc(c.e) + '" data-w="' + esc(c.w) + '" data-n="' + (n+1) + '" data-who="' + esc(who + ' · ' + label) + '"';
+    var data = ' data-e="' + esc(c.e) + '" data-icon="' + esc(c.icon || '') + '" data-w="' + esc(c.w) + '" data-n="' + (n+1) + '" data-who="' + esc(who + ' · ' + label) + '"';
     if (split){
       var tip = 'First try: ' + said(f) + ' | Latest: ' + said(l);
       return '<span class="cell split" style="--a:' + COLOR[f.st] + ';--b:' + COLOR[l.st] + '"' + data
@@ -394,7 +423,7 @@ function render(){
       });
       var tot = k + m + i; if (!tot) return;
       var top = Object.keys(wrong).sort(function(a,b){ return wrong[b] - wrong[a]; })[0];
-      stats.push({ w:di.w, e:di.e || '💬', s:di.s || '', quiz:def.title, known:k, missed:m, idk:i, n:tot,
+      stats.push({ w:di.w, e:di.e || '', icon:di.icon || '', s:di.s || '', quiz:def.title, known:k, missed:m, idk:i, n:tot,
                    pct:k/tot, top: top ? top + ' (' + wrong[top] + ')' : '' });
     });
   });
@@ -409,7 +438,7 @@ function render(){
     ph += '<div class="tablewrap"><table><thead><tr><th></th><th>Word</th><th>Quiz</th><th>Knew it</th><th>Right</th><th>Wrong</th><th>Don\'t know</th><th>Most common wrong answer</th></tr></thead><tbody>';
     shownStats.forEach(function(x){
       var pct = Math.round(100 * x.pct);
-      ph += '<tr><td class="e" title="' + esc(x.s) + '">' + x.e + '</td>'
+      ph += '<tr><td class="e" title="' + esc(x.s) + '">' + glyph(x, true) + '</td>'
         + '<td class="wd">' + esc(x.w) + (x.s ? '<span class="sent">' + esc(x.s) + '</span>' : '') + '</td>'
         + '<td class="quiz">' + esc(x.quiz) + '</td>'
         + '<td><span class="pbar"><i style="width:' + pct + '%"></i></span>' + pct + '%</td>'
@@ -506,7 +535,7 @@ function render(){
       tip.className = 'wide'; tip.innerHTML = h;
     } else {
       tip.className = '';
-      tip.innerHTML = '<span class="te">' + cell.dataset.e + '</span><b>' + esc(cell.dataset.w) + '</b>'
+      tip.innerHTML = '<span class="te">' + glyph({ e:cell.dataset.e, icon:cell.dataset.icon }) + '</span><b>' + esc(cell.dataset.w) + '</b>'
         + '<span class="tr">' + esc(cell.dataset.who) + '</span>'
         + '<span class="tr">Question ' + cell.dataset.n + '. ' + esc(cell.dataset.r) + '</span>';
     }
