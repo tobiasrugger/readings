@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Four Agreements · Teacher dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--pine:#1F4D3D;--pine2:#2E6B55;--ink:#1d2a24;--muted:#5f6f67;--line:#dfe5e1;--soft:#f4f7f5;
+  --a1:#864D9E;--a2:#557F2C;--a3:#C99A12;--a4:#DC7410;--ok:#2f8f5b;--bad:#c2452d}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Nunito',system-ui,sans-serif;color:var(--ink);background:#fff;font-size:15px}
+header{background:var(--pine);color:#fff;padding:12px 16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+header h1{font-size:1.15rem;margin:0 auto 0 0}
+header select,header button{border:none;border-radius:8px;padding:6px 11px;font-weight:800;font-family:inherit;cursor:pointer}
+main{padding:14px 16px 60px;max-width:1300px;margin:0 auto}
+table{border-collapse:collapse;width:100%}
+th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+th{background:var(--soft);position:sticky;top:0;font-size:.85rem;cursor:pointer}
+tr.row{cursor:pointer}
+tr.row:hover{background:#f6faf8}
+td.c{text-align:center}
+.y{color:var(--ok);font-weight:900}.n{color:#c9d2cd}
+.pill{display:inline-block;border-radius:999px;padding:1px 8px;font-size:.78rem;font-weight:800;background:var(--soft)}
+.pill.in{background:#dff3e7;color:var(--ok)}
+.pill.xl{background:#fbe3dd;color:var(--bad)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin:16px 0}
+.box{border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.box h3{margin:0 0 8px;font-size:1rem}
+.bar{height:10px;border-radius:5px;background:var(--pine2)}
+.brow{display:grid;grid-template-columns:1fr 90px 40px;gap:8px;align-items:center;font-size:.85rem;margin:4px 0}
+.btrack{background:var(--soft);border-radius:5px}
+#gate{position:fixed;inset:0;background:var(--pine);display:flex;align-items:center;justify-content:center}
+#gate div{background:#fff;padding:22px;border-radius:14px;width:300px}
+#gate input{width:100%;padding:8px;border:2px solid var(--line);border-radius:8px;font-family:inherit;margin:8px 0}
+#gate button,.btn{background:var(--pine);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer;font-family:inherit}
+.btn.red{background:var(--bad)}
+#detail{position:fixed;top:0;right:0;bottom:0;width:min(620px,100%);background:#fff;box-shadow:-8px 0 24px rgba(0,0,0,.18);overflow:auto;padding:16px 18px 40px;display:none;z-index:20}
+#detail.show{display:block}
+#detail h2{margin:0 0 4px;color:var(--pine)}
+#detail h4{margin:16px 0 4px;color:var(--pine2);border-bottom:1px solid var(--line);padding-bottom:3px}
+#detail .qa{margin:6px 0}
+#detail .qa b{display:block;font-size:.85rem;color:var(--muted)}
+#detail .qa div{white-space:pre-wrap}
+.empty{color:#b3bdb8;font-style:italic}
+.ag1{color:var(--a1)}.ag2{color:var(--a2)}.ag3{color:#8a6a00}.ag4{color:var(--a4)}
+</style>
+</head>
+<body>
+<div id="gate"><div><b>Teacher dashboard</b><input id="pw" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')unlock()"><button onclick="unlock()">Open</button><div id="pwErr" style="color:var(--bad);margin-top:6px"></div></div></div>
+
+<header>
+  <h1>The Four Agreements · Dashboard</h1>
+  <select id="per" onchange="paint()"><option value="">All periods</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select>
+  <button onclick="loadRows()">Refresh</button>
+  <button onclick="csv()">CSV</button>
+  <a href="./" style="color:#fff;font-weight:800">Student page</a>
+</header>
+<main>
+  <div id="summary"></div>
+  <div style="overflow-x:auto"><table id="tbl"></table></div>
+  <h2 style="color:var(--pine);margin-top:26px">Class view</h2>
+  <div class="grid" id="class"></div>
+</main>
+<div id="detail"></div>
+
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var TABLE='four_agreements_work', UNIT='four-agreements', PW='galileo2026';
+function H(x){var h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}; if(x)for(var k in x)h[k]=x[k]; return h;}
+function $(id){return document.getElementById(id)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+
+/* keys copied from the student page */
+var SCEN_SHORT=['Ana: friend doesn\'t say hi','Minh: sick in PE','Luis: tells a rumor','Fatima: rude customer','Kevin: guesses homework','Sofia: "I am stupid"','Jin: half-cleans room','Maria: asks to sit','Omar: keeps promise','Aisha: laughed at'];
+var SCEN_KEY=[[[3],[2],false],[[4],[],true],[[1],[3],false],[[2],[],true],[[3],[4],false],[[1],[],false],[[4],[],false],[[3],[],true],[[1],[4],true],[[2],[4],true]];
+var GRAM_Q=["___ gossip","___ honest","Always ___ questions","Don't ___ it personally","___ make assumptions","Always ___ the truth","___ your best","___ be late"];
+var GRAM_KEY=[0,0,0,0,1,2,1,2];
+var RATES=[['r1','tell the truth'],['r2','gossip'],['r3','say bad things about myself'],['r4','take things personally'],['r5','make assumptions'],['r6','ask questions'],['r7','do my best at school'],['r8','do my best at home']];
+var TABS=['Words','Read','Toltecs','Grammar','Scenarios','Me','True?','Wisdom','Rules','Imagine'];
+var AGN={1:'Your word',2:'Personally',3:'Assumptions',4:'Your best'};
+
+function unlock(){
+  if($('pw').value!==PW){$('pwErr').textContent='Wrong password.';return;}
+  try{sessionStorage.setItem('fourag_dash','1')}catch(e){}
+  $('gate').style.display='none'; loadRows();
+}
+var ROWS=[];
+function loadRows(){
+  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?unit=eq.'+UNIT+'&select=*&order=period.asc,name.asc',{headers:H()})
+  .then(function(r){return r.ok?r.json():r.text().then(function(t){throw new Error(t)})})
+  .then(function(rows){ROWS=rows||[]; paint();})
+  .catch(function(e){$('summary').innerHTML='<p style="color:var(--bad)"><b>Could not load.</b> Did you run the SQL for <code>'+TABLE+'</code>? '+esc(e.message)+'</p>';});
+}
+function filled(s){return String(s||'').trim().length>=8}
+function words(s){s=String(s||'').trim(); return s?s.split(/\s+/).length:0}
+function done(P){
+  var t=P.txt||{}, mc=P.mc||{}, d=[];
+  d.push(Object.keys(mc.match||{}).length>=10 && Object.keys(P.cloze||{}).filter(function(k){return P.cloze[k]}).length>=8);
+  d.push(Object.keys(mc.read||{}).length>=8);
+  d.push(Object.keys(mc.toltec||{}).length>=6);
+  d.push(Object.keys(mc.gram||{}).length>=8);
+  var sc=P.scen||{}; var sd=0; for(var i=0;i<10;i++){var S=sc[i]; if(S&&S.ag&&S.ag.length&&S.fb&&filled(S.why)) sd++;} d.push(sd===10);
+  d.push(Object.keys(P.rate||{}).length>=8 && filled(t.easy) && filled(t.hard) && filled(t.person1));
+  var v=P.valid||{}; d.push([1,2,3,4].every(function(n){var V=v['v'+n]; return V&&V.stance&&filled(V.why)}) && filled(t.mostImportant));
+  d.push((filled(t.wOrig)||filled(t.wEng)) && filled(t.wMean));
+  d.push((P.rules||[]).length>=3);
+  d.push(!!P.ww && words(t.wwPara)>=40);
+  return d;
+}
+function rowsShown(){var p=$('per').value; return ROWS.filter(function(r){return !p||String(r.period)===p});}
+var SORT='name', DIR=1;
+function sortBy(k){if(SORT===k)DIR=-DIR; else {SORT=k;DIR=1;} paint();}
+function paint(){
+  var rows=rowsShown().slice();
+  rows.sort(function(a,b){
+    var x,y;
+    if(SORT==='score'){x=a.score||0;y=b.score||0;}
+    else if(SORT==='updated'){x=a.updated_at||'';y=b.updated_at||'';}
+    else if(SORT==='period'){x=+a.period||0;y=+b.period||0;}
+    else {x=(a.name||'').toLowerCase();y=(b.name||'').toLowerCase();}
+    return (x<y?-1:x>y?1:0)*DIR;
+  });
+  var ti=rows.filter(function(r){return r.turned_in}).length;
+  var avg=rows.length?Math.round(rows.reduce(function(s,r){return s+(r.max_score?r.score/r.max_score:0)},0)/rows.length*100):0;
+  $('summary').innerHTML='<p><b>'+rows.length+'</b> students · <b>'+ti+'</b> turned in · average on the check-it parts <b>'+avg+'%</b></p>';
+  var h='<tr><th onclick="sortBy(\'name\')">Name</th><th onclick="sortBy(\'period\')">P</th><th onclick="sortBy(\'score\')">Score</th>';
+  TABS.forEach(function(t){h+='<th class="c">'+t+'</th>'});
+  h+='<th>Status</th><th onclick="sortBy(\'updated\')">Updated</th></tr>';
+  rows.forEach(function(r){
+    var P=r.payload||{}, d=done(P);
+    h+='<tr class="row" onclick="openRow(\''+esc(r.email)+'\')"><td><b>'+esc(r.name)+'</b><br><span style="color:var(--muted);font-size:.8rem">'+esc(r.email)+'</span></td><td>'+esc(r.period)+'</td>'+
+       '<td>'+(r.score||0)+' / '+(r.max_score||0)+'</td>';
+    d.forEach(function(x){h+='<td class="c">'+(x?'<span class="y">✓</span>':'<span class="n">·</span>')+'</td>'});
+    h+='<td>'+(r.turned_in?'<span class="pill in">turned in</span>':'<span class="pill">working</span>')+(P.browserTranslated?' <span class="pill xl" title="Browser translation was detected">translated</span>':'')+'</td>'+
+       '<td style="font-size:.8rem">'+(r.updated_at?new Date(r.updated_at).toLocaleString():'')+'</td></tr>';
+  });
+  $('tbl').innerHTML=h;
+  paintClass(rows);
+}
+function barRow(label,n,d){
+  var pct=d?Math.round(n/d*100):0;
+  return '<div class="brow"><span>'+label+'</span><div class="btrack"><div class="bar" style="width:'+pct+'%"></div></div><span>'+pct+'%</span></div>';
+}
+function inSet(a,x){return a.indexOf(x)>=0}
+function scenAgOK(pick,k){if(!pick||!pick.length)return false; for(var i=0;i<k[0].length;i++) if(!inSet(pick,k[0][i]))return false; for(var j=0;j<pick.length;j++) if(!inSet(k[0],pick[j])&&!inSet(k[1],pick[j]))return false; return true;}
+function paintClass(rows){
+  var h='';
+  // scenarios
+  var s='<div class="box"><h3>Scenarios: right agreement and followed/broken</h3>';
+  SCEN_KEY.forEach(function(k,i){
+    var n=0,d=0;
+    rows.forEach(function(r){var S=((r.payload||{}).scen||{})[i]; if(S&&S.ag&&S.ag.length&&S.fb){d++; if(scenAgOK(S.ag,k)&&S.fb===(k[2]?'followed':'broken'))n++;}});
+    s+=barRow((i+1)+'. '+SCEN_SHORT[i],n,d);
+  });
+  h+=s+'</div>';
+  // grammar
+  var g='<div class="box"><h3>Grammar A: commands</h3>';
+  GRAM_Q.forEach(function(q,i){var n=0,d=0; rows.forEach(function(r){var a=(((r.payload||{}).mc||{}).gram||{})[i]; if(a!=null){d++; if(a===GRAM_KEY[i])n++;}}); g+=barRow(esc(q),n,d);});
+  h+=g+'</div>';
+  // self ratings
+  var sr='<div class="box"><h3>Self-ratings (always / usually / sometimes / never)</h3><table style="font-size:.85rem">';
+  RATES.forEach(function(rt){
+    var c={always:0,usually:0,sometimes:0,never:0};
+    rows.forEach(function(r){var v=((r.payload||{}).rate||{})[rt[0]]; if(c[v]!=null)c[v]++;});
+    sr+='<tr><td>I ___ '+rt[1]+'</td><td>'+c.always+'</td><td>'+c.usually+'</td><td>'+c.sometimes+'</td><td>'+c.never+'</td></tr>';
+  });
+  h+=sr+'</table></div>';
+  // valid stances
+  var v='<div class="box"><h3>Is it true? (agree / not sure / disagree)</h3>';
+  [1,2,3,4].forEach(function(n){
+    var c={'agree':0,'not sure':0,'disagree':0};
+    rows.forEach(function(r){var V=((r.payload||{}).valid||{})['v'+n]; if(V&&c[V.stance]!=null)c[V.stance]++;});
+    v+='<p class="ag'+n+'"><b>'+n+'. '+AGN[n]+'</b>: 👍 '+c['agree']+' · 🤷 '+c['not sure']+' · 👎 '+c['disagree']+'</p>';
+  });
+  h+=v+'</div>';
+  // rules
+  var rc={}; rows.forEach(function(r){((r.payload||{}).rules||[]).forEach(function(x){rc[x]=(rc[x]||0)+1})});
+  var rk=Object.keys(rc).sort(function(a,b){return rc[b]-rc[a]}).slice(0,10);
+  var ru='<div class="box"><h3>Most chosen rules</h3>';
+  rk.forEach(function(k){ru+='<div class="brow" style="grid-template-columns:1fr 40px"><span>'+esc(k)+'</span><b>'+rc[k]+'</b></div>'});
+  h+=ru+(rk.length?'':'<p class="empty">none yet</p>')+'</div>';
+  // wisdom
+  var w='<div class="box"><h3>Wisdom from home</h3>';
+  var any=false;
+  rows.forEach(function(r){var t=(r.payload||{}).txt||{}; if(t.wOrig||t.wEng){any=true; w+='<p><b>'+esc(r.name)+'</b> ('+esc(t.wLang||'?')+'): <span translate="no">'+esc(t.wOrig)+'</span><br><i>'+esc(t.wEng)+'</i></p>';}});
+  h+=w+(any?'':'<p class="empty">none yet</p>')+'</div>';
+  // world without
+  var ww={1:0,2:0,3:0,4:0}; rows.forEach(function(r){var x=(r.payload||{}).ww; if(ww[x]!=null)ww[x]++;});
+  h+='<div class="box"><h3>"A world where no one…" choice</h3>'+[1,2,3,4].map(function(n){return '<p class="ag'+n+'"><b>'+n+'. '+AGN[n]+'</b>: '+ww[n]+'</p>'}).join('')+'</div>';
+  $('class').innerHTML=h;
+}
+function qa(label,val){return '<div class="qa"><b>'+esc(label)+'</b><div>'+(String(val||'').trim()?esc(val):'<span class="empty">(blank)</span>')+'</div></div>';}
+function openRow(email){
+  var r=ROWS.filter(function(x){return x.email===email})[0]; if(!r) return;
+  var P=r.payload||{}, t=P.txt||{};
+  var h='<button class="btn" style="float:right" onclick="$(\'detail\').classList.remove(\'show\')">Close</button>'+
+        '<h2>'+esc(r.name)+'</h2><div>'+esc(r.email)+' · P'+esc(r.period)+' · '+(r.score||0)+' / '+(r.max_score||0)+(r.turned_in?' · turned in '+(P.turnedIn?new Date(P.turnedIn).toLocaleString():''):'')+'</div>';
+  h+='<h4>Scenarios</h4>';
+  SCEN_KEY.forEach(function(k,i){
+    var S=(P.scen||{})[i]||{}; var ok=scenAgOK(S.ag,k)&&S.fb===(k[2]?'followed':'broken');
+    h+='<div class="qa"><b>'+(i+1)+'. '+SCEN_SHORT[i]+' — picked '+((S.ag||[]).join(', ')||'none')+', '+(S.fb||'?')+' '+(S.ag&&S.ag.length?(ok?'✅':'❌'):'')+'</b><div>'+(S.why?esc(S.why):'<span class="empty">(blank)</span>')+'</div></div>';
+  });
+  h+=qa('Own scenario (extra)',t.ownScen);
+  h+='<h4>Me and my people</h4>';
+  RATES.forEach(function(rt){h+='<div>I <b>'+esc((P.rate||{})[rt[0]]||'___')+'</b> '+rt[1]+'.</div>'});
+  h+=qa('Easy agreement',t.easy)+qa('Hard agreement',t.hard)+qa('Person 1',t.person1)+qa('Person 2',t.person2)+qa('Habit to change',t.habitChange);
+  h+='<h4>Is it true?</h4>';
+  [1,2,3,4].forEach(function(n){var V=(P.valid||{})['v'+n]||{}; h+=qa(n+'. '+AGN[n]+' — '+(V.stance||'?'),V.why);});
+  h+=qa('Can you ALWAYS do your best?',t.alwaysBest)+qa('Is it still "not about you"?',t.personalHard)+qa('Most important for teenagers',t.mostImportant);
+  h+='<h4>Wisdom from home</h4>'+qa('Language',t.wLang)+'<div class="qa" translate="no"><b>Original</b><div>'+esc(t.wOrig)+'</div></div>'+qa('English',t.wEng)+qa('Meaning',t.wMean)+qa('Who taught it',t.wWho)+qa('Like Agreement '+((P.wLike||[]).join(', ')||'—'),t.wWhy);
+  h+='<h4>My rules</h4>';
+  (P.rules||[]).forEach(function(x){h+=qa(x,(t.ruleWhy||{})[x])});
+  if(t.ownRule) h+=qa('Own rule: '+t.ownRule,(t.ruleWhy||{})[t.ownRule]);
+  h+=qa('Who gave you a rule',t.ruleWho);
+  h+='<h4>Imagine: no one follows '+(P.ww?(P.ww+'. '+AGN[P.ww]):'—')+'</h4>'+qa('At school',t.wwSchool)+qa('At home',t.wwHome)+qa('In the city',t.wwCity)+qa('Paragraph ('+words(t.wwPara)+' words)',t.wwPara)+qa('Challenge: a world before this wisdom',t.before);
+  h+='<h4>Grammar B (make it negative)</h4>';
+  Object.keys(P.neg||{}).forEach(function(k){h+='<div>'+esc(P.neg[k])+'</div>'});
+  h+='<p style="margin-top:24px"><button class="btn red" onclick="resetRow(\''+esc(r.email)+'\')">Reset this student</button></p>';
+  $('detail').innerHTML=h; $('detail').classList.add('show'); $('detail').scrollTop=0;
+}
+function resetRow(email){
+  if(!confirm('Delete all Four Agreements work for '+email+'? This cannot be undone.\n\n(The student\'s device may still have a copy; it will upload again next time they open the page.)')) return;
+  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?email=eq.'+encodeURIComponent(email)+'&unit=eq.'+UNIT,{method:'DELETE',headers:H({'Prefer':'return=minimal'})})
+  .then(function(r){if(!r.ok) throw new Error('HTTP '+r.status); $('detail').classList.remove('show'); loadRows();})
+  .catch(function(e){alert('Could not delete: '+e.message);});
+}
+function csv(){
+  var rows=rowsShown();
+  var cols=['name','email','period','score','max_score','turned_in','updated_at'].concat(TABS.map(function(t){return 'done_'+t}))
+    .concat(['easy','hard','person1','mostImportant','wLang','wOrig','wEng','wMean','rules','ww','wwPara','before']);
+  var out=[cols.join(',')];
+  rows.forEach(function(r){
+    var P=r.payload||{}, t=P.txt||{}, d=done(P);
+    var vals=[r.name,r.email,r.period,r.score,r.max_score,r.turned_in,r.updated_at].concat(d.map(function(x){return x?1:0}))
+      .concat([t.easy,t.hard,t.person1,t.mostImportant,t.wLang,t.wOrig,t.wEng,t.wMean,(P.rules||[]).join(' | '),P.ww||'',t.wwPara,t.before]);
+    out.push(vals.map(function(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"'}).join(','));
+  });
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\ufeff'+out.join('\n')],{type:'text/csv'}));
+  a.download='four_agreements'+($('per').value?'_P'+$('per').value:'')+'.csv'; a.click();
+}
+try{if(sessionStorage.getItem('fourag_dash')==='1'){$('gate').style.display='none'; loadRows();}}catch(e){}
+</script>
+</body>
+</html>
