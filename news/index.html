@@ -26,6 +26,15 @@
   .btn{font-family:inherit;font-size:14px;font-weight:700;padding:7px 13px;border-radius:8px;border:0;background:#fff;color:var(--pine);cursor:pointer}
   .btn:disabled{opacity:.45;cursor:default}
   .btn.ghost{background:rgba(255,255,255,.16);color:#fff}
+  .btn.line{background:#fff;color:var(--pine);border:1.5px solid var(--pine);box-shadow:0 1px 0 rgba(0,0,0,.06)}
+  .btn.line:hover{background:var(--pine);color:#fff}
+  .btn.solid{background:var(--pine);color:#fff;box-shadow:0 1px 0 rgba(0,0,0,.12)}
+  .btn.solid:hover{filter:brightness(1.12)}
+  .arow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
+  .crlv{font-weight:800;color:var(--pine);margin:14px 0 6px;font-size:14px;text-transform:uppercase;letter-spacing:.04em}
+  .crs{display:block;width:100%;text-align:left;font-family:inherit;font-size:15px;line-height:1.5;padding:7px 10px;margin:0 0 5px;border:1px solid var(--rule);border-radius:8px;background:#fff;cursor:pointer}
+  .crs:hover{border-color:var(--pine)}
+  .crs.on{background:#eef3ef;border-left:3px solid var(--pine);font-weight:600}
   .dot{width:10px;height:10px;border-radius:50%;background:#9ca3af;display:inline-block}
   .dot.on{background:#86efac}.dot.err{background:#fca5a5}
   .tabs{position:sticky;top:53px;z-index:40;background:var(--pine-dk);display:flex;overflow-x:auto}
@@ -41,6 +50,8 @@
   .parwrap .par{flex:1;margin-bottom:16px}
   .spk{background:#eceadf;border:1px solid var(--rule);border-radius:7px;font-size:14px;padding:3px 6px;cursor:pointer;line-height:1;margin-top:4px}
   .g{color:var(--gloss);border-bottom:2px dotted var(--gloss);cursor:pointer;font-weight:600}
+  .cr{background:#eef3ef;border-left:3px solid var(--pine);padding:2px 6px;border-radius:0 5px 5px 0;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+  .crnote{font-size:14px;color:#5b6159;background:#eef3ef;border-left:3px solid var(--pine);padding:8px 12px;border-radius:0 8px 8px 0;margin:0 0 16px}
   .hl{background:#dbeafe;border-radius:3px;padding:0 2px;box-shadow:inset 0 -2px 0 var(--gram)}
   .card{background:#fff;border:1px solid var(--rule);border-radius:12px;padding:16px;margin:0 0 16px}
   .card h3{margin:0 0 8px;font-size:17px}
@@ -152,9 +163,22 @@
         <button class="btn" style="background:var(--pine);color:#fff" id="pub">Publish</button>
         <button class="btn" id="draft">Save as draft</button>
         <button class="btn" id="prev">Preview only</button>
+        <button class="btn line" id="crBtn">Mark close reading</button>
         <span id="pubMsg" class="muted"></span>
       </div>
     </div>
+    <div class="card" id="crCard" style="display:none">
+      <h3>Close reading — choose what stays in English</h3>
+      <p class="muted">Tap any sentence to keep it in English when a student translates the page. Tap again to release it. Two or three per level is usually plenty.</p>
+      <div id="crBody"></div>
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+        <button class="btn solid" id="crApply">Apply to the document</button>
+        <button class="btn line" id="crClear">Clear all marks</button>
+        <span class="muted" id="crMsg"></span>
+      </div>
+      <p class="muted" style="margin-top:10px">This only changes the box above. You still need to Publish or Save as draft.</p>
+    </div>
+
     <div class="card">
       <h3>Published articles</h3>
       <div id="list" class="muted">—</div>
@@ -266,10 +290,11 @@ function rich(s){
     return '<span class="g" data-d="'+d.replace(/"/g,'&quot;')+'">'+w+'</span>';
   });
   h=h.replace(/\(\((.+?)\)\)/g,'<span class="hl">$1</span>');
+  h=h.replace(/\{\{([\s\S]+?)\}\}/g,'<span class="cr" translate="no">$1</span>');
   return h;
 }
 function plain(s){
-  return String(s).replace(/\[\[(.+?)\|.+?\]\]/g,'$1').replace(/\(\((.+?)\)\)/g,'$1');
+  return String(s).replace(/\[\[(.+?)\|.+?\]\]/g,'$1').replace(/\(\((.+?)\)\)/g,'$1').replace(/\{\{([\s\S]+?)\}\}/g,'$1');
 }
 
 /* ---------- translation via Apps Script proxy ---------- */
@@ -330,6 +355,8 @@ function render(){
   var h='<h2>'+esc(m.TITLE||'')+'</h2>';
   if(m.DEK) h+='<p class="dek">'+esc(m.DEK)+'</p>';
   h+='<p class="src">'+esc(m.SOURCE||'Written for our class by Mr. Toby.')+'</p>';
+  if(A.read.join(' ').indexOf('{{')>=0)
+    h+='<div class="crnote">The marked parts stay in English, even if you translate the page. Read those slowly. You can still tap the orange words.</div>';
   A.read.forEach(function(p,i){
     h+='<div class="parwrap"><p class="par">'+rich(p)+'</p>'+
        '<button class="spk" data-i="'+i+'" data-s="0" title="Listen">&#128266;</button>'+
@@ -619,10 +646,12 @@ function loadList(){
         '<b>'+esc(r.title||r.slug)+'</b> '+
         (r.published?'<span style="color:var(--ok);font-weight:800">live</span>':'<span style="color:var(--gloss);font-weight:800">draft</span>')+
         '<br><span class="muted">'+esc(r.slug)+(r.week_of?' \u00b7 '+esc(r.week_of):'')+'</span><br>'+
-        '<button class="btn" style="margin-top:6px" data-edit="'+esc(r.slug)+'">Load into box</button> '+
-        '<button class="btn" style="margin-top:6px" data-toggle="'+esc(r.slug)+'" data-live="'+(r.published?'1':'0')+'">'+
-          (r.published?'Unpublish':'Publish now')+'</button> '+
-        '<a href="?a='+encodeURIComponent(r.slug)+'">open</a></div>';
+        '<div class="arow">'+
+        '<button class="btn line" data-edit="'+esc(r.slug)+'">Load into box</button>'+
+        '<button class="btn '+(r.published?'line':'solid')+'" data-toggle="'+esc(r.slug)+'" data-live="'+(r.published?'1':'0')+'">'+
+          (r.published?'Unpublish':'Publish now')+'</button>'+
+        '<a class="btn line" href="?a='+encodeURIComponent(r.slug)+'" style="text-decoration:none">Open</a>'+
+        '</div></div>';
     }).join('');
   }).catch(function(){$('list').textContent='Could not load.';});
 }
@@ -643,6 +672,84 @@ $('list').addEventListener('click',function(e){
     }).then(function(){ARCH=null;loadList();}).catch(function(){});
   }
 });
+
+/* ---------- close-reading marker ---------- */
+var CRSET={},CRDATA=[];
+function splitSentences(par){
+  var out=par.split(/(?<=[.!?])\s+(?=[A-Z"\u201c\[(])/);
+  return out.filter(function(x){return x.trim();});
+}
+function docSections(txt){
+  var parts=txt.split(/^\s*---([A-Z]+)(?::([A-Z]))?---\s*$/m);
+  var head=parts[0]||'',secs=[];
+  for(var i=1;i<parts.length;i+=3) secs.push({name:parts[i],lv:parts[i+1]||'',body:(parts[i+2]||'').trim()});
+  return {head:head,secs:secs};
+}
+function buildDoc(d){
+  var out=d.head.replace(/\s+$/,'')+'\n\n';
+  d.secs.forEach(function(x){
+    out+='---'+x.name+(x.lv?':'+x.lv:'')+'---\n'+x.body+'\n\n';
+  });
+  return out.replace(/\n{3,}/g,'\n\n');
+}
+$('crBtn').onclick=function(){
+  var d=docSections($('doc').value);
+  CRDATA=[];CRSET={};
+  d.secs.forEach(function(sec,si){
+    if(sec.name!=='READ')return;
+    var pars=sec.body.split(/\n\s*\n/).map(function(x){return x.trim();}).filter(Boolean);
+    var ps=[];
+    pars.forEach(function(par,pi){
+      var sents=splitSentences(par).map(function(t,ti){
+        var marked=/^\{\{[\s\S]*\}\}$/.test(t.trim());
+        var clean=t.trim().replace(/^\{\{/,'').replace(/\}\}$/,'');
+        if(marked)CRSET[si+'|'+pi+'|'+ti]=1;
+        return clean;
+      });
+      ps.push(sents);
+    });
+    CRDATA.push({si:si,lv:sec.lv||'B',pars:ps});
+  });
+  if(!CRDATA.length){alert('Paste or load an article first.');return;}
+  $('crCard').style.display='block';
+  drawCR();
+  $('crCard').scrollIntoView({behavior:'smooth'});
+};
+function drawCR(){
+  var h='';
+  CRDATA.forEach(function(L){
+    h+='<div class="crlv">Level '+esc(L.lv)+'</div>';
+    L.pars.forEach(function(sents,pi){
+      sents.forEach(function(t,ti){
+        var k=L.si+'|'+pi+'|'+ti;
+        h+='<button class="crs'+(CRSET[k]?' on':'')+'" data-k="'+k+'">'+esc(plain(t))+'</button>';
+      });
+    });
+  });
+  $('crBody').innerHTML=h;
+}
+$('crBody').addEventListener('click',function(e){
+  var b=e.target.closest('.crs');if(!b)return;
+  var k=b.dataset.k;
+  if(CRSET[k])delete CRSET[k];else CRSET[k]=1;
+  b.classList.toggle('on');
+  $('crMsg').textContent='';
+});
+$('crClear').onclick=function(){CRSET={};drawCR();$('crMsg').textContent='';};
+$('crApply').onclick=function(){
+  var d=docSections($('doc').value);
+  CRDATA.forEach(function(L){
+    var body=L.pars.map(function(sents,pi){
+      return sents.map(function(t,ti){
+        return CRSET[L.si+'|'+pi+'|'+ti]?('{{'+t+'}}'):t;
+      }).join(' ');
+    }).join('\n\n');
+    d.secs[L.si].body=body;
+  });
+  $('doc').value=buildDoc(d);
+  var n=Object.keys(CRSET).length;
+  $('crMsg').textContent=n?(n+' marked. Now Publish or Save as draft.'):'Marks cleared. Now Publish or Save as draft.';
+};
 
 /* ---------- boot ---------- */
 function boot(){
