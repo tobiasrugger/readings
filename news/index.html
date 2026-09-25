@@ -633,9 +633,15 @@ function saveDoc(live){
 $('pub').onclick=function(){saveDoc(true);};
 $('draft').onclick=function(){saveDoc(false);};
 
+function stamp(t){
+  var d=new Date(t);
+  if(isNaN(d))return '';
+  return (d.getMonth()+1)+'/'+d.getDate()+'/'+String(d.getFullYear()).slice(2)+' at '+
+         d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+}
 var DOCS={};
 function loadList(){
-  fetch(SUPA_URL+'/rest/v1/news_articles?select=slug,title,week_of,published,doc&order=week_of.desc.nullslast,updated_at.desc',{headers:H})
+  fetch(SUPA_URL+'/rest/v1/news_articles?select=slug,title,week_of,published,updated_at,doc&order=week_of.desc.nullslast,updated_at.desc',{headers:H})
   .then(function(r){return r.json();})
   .then(function(rows){
     if(!rows||!rows.length){$('list').textContent='Nothing saved yet.';return;}
@@ -645,7 +651,8 @@ function loadList(){
       return '<div style="padding:8px 0;border-bottom:1px solid var(--rule)">'+
         '<b>'+esc(r.title||r.slug)+'</b> '+
         (r.published?'<span style="color:var(--ok);font-weight:800">live</span>':'<span style="color:var(--gloss);font-weight:800">draft</span>')+
-        '<br><span class="muted">'+esc(r.slug)+(r.week_of?' \u00b7 '+esc(r.week_of):'')+'</span><br>'+
+        '<br><span class="muted">'+esc(r.slug)+(r.week_of?' \u00b7 week of '+esc(r.week_of):'')+'</span>'+
+        (r.updated_at?'<br><span style="color:var(--ok);font-weight:700;font-size:14px">updated '+esc(stamp(r.updated_at))+'</span>':'')+'<br>'+
         '<div class="arow">'+
         '<button class="btn line" data-edit="'+esc(r.slug)+'">Load into box</button>'+
         '<button class="btn '+(r.published?'line':'solid')+'" data-toggle="'+esc(r.slug)+'" data-live="'+(r.published?'1':'0')+'">'+
