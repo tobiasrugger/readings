@@ -124,6 +124,102 @@ window.ICONS = {
     '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
       '<path d="M50 84 h44 l-6 -30 h-32z" fill="#2F8A5B"/><rect x="48" y="46" width="48" height="9" rx="3" fill="#27754D"/><rect x="20" y="30" width="34" height="10" rx="2" fill="#E8E8EE" stroke="#4A4A55" stroke-width="2" transform="rotate(-24 37 35)"/><circle cx="46" cy="38" r="4" fill="#C0453A"/><circle cx="34" cy="44" r="4" fill="#E3A92B"/><path d="M10 76 q6 -20 16 -30" stroke="#6E7B8B" stroke-width="10" fill="none" stroke-linecap="round"/><path d="M20 20 l-3 -10 M34 14 l2 -9 M8 32 l-9 -3" stroke="#E3A92B" stroke-width="3" stroke-linecap="round"/>' +
     '</svg>'
+,
+
+  go:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<circle cx="26" cy="44" r="7.6499999999999995" fill="#C9CFD6"/><path d="M14.950000000000001 72.9 v-14 a11.049999999999999 11.049999999999999 0 0 1 22.099999999999998 0 v14 z" fill="#C9CFD6"/><circle cx="72" cy="44" r="7.6499999999999995" fill="#6E7B8B"/><path d="M60.95 72.9 v-14 a11.049999999999999 11.049999999999999 0 0 1 22.099999999999998 0 v14 z" fill="#6E7B8B"/><path d="M40 52 h20" stroke="#2F8A5B" stroke-width="6" stroke-linecap="round"/><path d="M54 44 l10 8 -10 8" fill="none" stroke="#2F8A5B" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 84 h60" stroke="#4A4A55" stroke-width="3" stroke-dasharray="6 6"/>' +
+    '</svg>',
+
+  learn:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<path d="M49.2 73.0 v-10 a16.8 16.8 0 0 1 33.6 0 v10 z" fill="#6E7B8B"/><circle cx="66" cy="47.8" r="16.8" fill="#6E7B8B"/><rect x="6" y="44" width="32" height="24" rx="2" fill="#4C8FDC"/><path d="M22 44 v24" stroke="#E8E8EE" stroke-width="2"/><text x="14" y="60" font-size="11" fill="#fff" font-family="serif">A</text><text x="28" y="60" font-size="11" fill="#fff" font-family="serif">B</text><path d="M40 40 q14 -12 24 -2" fill="none" stroke="#2F8A5B" stroke-width="5" stroke-linecap="round"/><path d="M58 30 l8 6 -4 9" fill="none" stroke="#2F8A5B" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><text x="66" y="58" text-anchor="middle" font-size="16" fill="#E8E8EE" font-family="serif">AB</text>' +
+    '</svg>',
+
+  study:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<rect x="8" y="62" width="84" height="8" rx="2" fill="#B98A52"/><rect x="14" y="70" width="6" height="22" fill="#4A4A55"/><rect x="80" y="70" width="6" height="22" fill="#4A4A55"/><circle cx="34" cy="22" r="7.2" fill="#6E7B8B"/><path d="M23.6 49.2 v-14 a10.4 10.4 0 0 1 20.8 0 v14 z" fill="#6E7B8B"/><path d="M30 54 q16 -6 30 0 v8 q-15 -5 -30 0z" fill="#E8E8EE" stroke="#4A4A55" stroke-width="2"/><path d="M45 55 v8" stroke="#4A4A55" stroke-width="2"/><path d="M74 34 l10 6 -6 16 h-12z" fill="#E3A92B"/><rect x="76" y="56" width="4" height="8" fill="#4A4A55"/><path d="M56 40 l8 -8" stroke="#6E7B8B" stroke-width="6" stroke-linecap="round"/>' +
+    '</svg>',
+
+  understand:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<path d="M25.2 73.0 v-10 a16.8 16.8 0 0 1 33.6 0 v10 z" fill="#6E7B8B"/><circle cx="42" cy="47.8" r="16.8" fill="#6E7B8B"/><circle cx="42" cy="46" r="12" fill="#E3A92B"/><rect x="37" y="58" width="10" height="6" rx="2" fill="#E8E8EE"/><path d="M42 26 v-8 M24 34 l-6 -5 M60 34 l6 -5" stroke="#E3A92B" stroke-width="4" stroke-linecap="round"/><path d="M69.2 48 l6.6000000000000005 7.700000000000001 l13.200000000000001 -16.5" fill="none" stroke="#2F8A5B" stroke-width="6.6000000000000005" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '</svg>',
+
+  practice:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<rect x="8" y="30" width="84" height="46" rx="4" fill="#E8E8EE" stroke="#4A4A55" stroke-width="2"/><path d="M8 54 h84" stroke="#C9CFD6" stroke-width="2" stroke-dasharray="5 5"/><text x="24" y="50" text-anchor="middle" font-size="20" font-family="serif" fill="#C9CFD6">A</text><text x="46" y="50" text-anchor="middle" font-size="20" font-family="serif" fill="#C9CFD6">A</text><text x="68" y="50" text-anchor="middle" font-size="20" font-family="serif" fill="#4A4A55">A</text><path d="M22 68 q24 -10 48 0" fill="none" stroke="#2F8A5B" stroke-width="5" stroke-linecap="round"/><path d="M64 60 l8 8 -10 6" fill="none" stroke="#2F8A5B" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M76 14 l10 6 -18 14 -8 -6z" fill="#E3A92B"/><path d="M60 28 l8 6 -10 4z" fill="#4A4A55"/>' +
+    '</svg>',
+
+  solve:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<rect x="10" y="16" width="80" height="50" rx="4" fill="#E8E8EE" stroke="#4A4A55" stroke-width="2"/><text x="50" y="42" text-anchor="middle" font-family="monospace" font-size="20" fill="#4A4A55">8+7=</text><text x="50" y="60" text-anchor="middle" font-family="monospace" font-size="18" fill="#2F8A5B">15</text><path d="M41.2 80 l6.6000000000000005 7.700000000000001 l13.200000000000001 -16.5" fill="none" stroke="#2F8A5B" stroke-width="6.6000000000000005" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '</svg>',
+
+  subject:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<path d="M10 26 h26 l6 8 h48 v50 h-80z" fill="#B98A52"/><rect x="16" y="40" width="68" height="38" rx="2" fill="#F3EDE4"/><text x="32" y="66" text-anchor="middle" font-size="22" fill="#5B2A6E">÷</text><circle cx="52" cy="58" r="9" fill="none" stroke="#2F8A5B" stroke-width="3"/><path d="M52 49 v18 M43 58 h18" stroke="#2F8A5B" stroke-width="3"/><path d="M70 66 l6 -16 6 16z" fill="#C0453A"/>' +
+    '</svg>',
+
+  event:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<rect x="12" y="18" width="76" height="70" rx="5" fill="#E8E8EE" stroke="#4A4A55" stroke-width="2"/><rect x="12" y="18" width="76" height="16" rx="5" fill="#5B2A6E"/><rect x="28" y="10" width="7" height="14" rx="3" fill="#4A4A55"/><rect x="65" y="10" width="7" height="14" rx="3" fill="#4A4A55"/><circle cx="26" cy="46" r="4" fill="#C9CFD6"/><circle cx="42" cy="46" r="4" fill="#C9CFD6"/><circle cx="58" cy="46" r="4" fill="#C9CFD6"/><circle cx="74" cy="46" r="4" fill="#C9CFD6"/><circle cx="26" cy="62" r="4" fill="#C9CFD6"/><circle cx="42" cy="62" r="4" fill="#C9CFD6"/><circle cx="58" cy="62" r="4" fill="#C9CFD6"/><circle cx="74" cy="62" r="4" fill="#C9CFD6"/><circle cx="26" cy="78" r="4" fill="#C9CFD6"/><circle cx="42" cy="78" r="4" fill="#C9CFD6"/><circle cx="58" cy="78" r="4" fill="#C9CFD6"/><circle cx="74" cy="78" r="4" fill="#C9CFD6"/><circle cx="58" cy="62" r="11" fill="#C0453A"/><path d="M58 51 v-6 M74 54 l6 -5 M76 68 l8 2" stroke="#E3A92B" stroke-width="3" stroke-linecap="round"/>' +
+    '</svg>',
+
+  before:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<circle cx="30" cy="50" r="20" fill="#2F8A5B"/><path d="M30 38 v12 l8 6" stroke="#E8E8EE" stroke-width="4" fill="none" stroke-linecap="round"/><circle cx="76" cy="50" r="14" fill="#C9CFD6"/><path d="M76 41 v9 l6 4" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M62 22 h-30" stroke="#2F8A5B" stroke-width="5" stroke-linecap="round"/><path d="M40 14 l-9 8 9 8" fill="none" stroke="#2F8A5B" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 82 h72" stroke="#4A4A55" stroke-width="3"/><path d="M30 76 v12 M76 76 v12" stroke="#4A4A55" stroke-width="3"/>' +
+    '</svg>',
+
+  after:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<circle cx="24" cy="50" r="14" fill="#C9CFD6"/><path d="M24 41 v9 l6 4" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="70" cy="50" r="20" fill="#2F8A5B"/><path d="M70 38 v12 l8 6" stroke="#E8E8EE" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M38 22 h30" stroke="#2F8A5B" stroke-width="5" stroke-linecap="round"/><path d="M60 14 l9 8 -9 8" fill="none" stroke="#2F8A5B" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 82 h72" stroke="#4A4A55" stroke-width="3"/><path d="M24 76 v12 M70 76 v12" stroke="#4A4A55" stroke-width="3"/>' +
+    '</svg>',
+
+  similar:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<circle cx="26" cy="30" r="13" fill="#E3A92B"/><circle cx="56" cy="30" r="13" fill="#E3A92B"/><path d="M26 17 q2 -6 7 -7 M56 17 q2 -6 7 -7" stroke="#2F8A5B" stroke-width="3" fill="none"/><path d="M74.0 30 l6.0 7.0 l12.0 -15.0" fill="none" stroke="#2F8A5B" stroke-width="6.0" stroke-linecap="round" stroke-linejoin="round"/><circle cx="26" cy="72" r="13" fill="#E3A92B"/><path d="M43 85 a13 13 0 1 1 26 -2 q0 8 -13 15 q-13 -7 -13 -13z" fill="#C0453A"/><path d="M74.0 64.0 l16.0 16.0 M90.0 64.0 l-16.0 16.0" stroke="#C0453A" stroke-width="6.0" stroke-linecap="round"/>' +
+    '</svg>',
+
+  different:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<circle cx="30" cy="32" r="14" fill="#4C8FDC"/><rect x="54" y="18" width="28" height="28" rx="3" fill="#E3A92B"/><path d="M40.4 60.4 l19.2 19.2 M59.6 60.4 l-19.2 19.2" stroke="#C0453A" stroke-width="7.199999999999999" stroke-linecap="round"/><path d="M14 88 h72" stroke="#C9CFD6" stroke-width="0"/>' +
+    '</svg>',
+
+  share:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<circle cx="22" cy="34" r="7.2" fill="#6E7B8B"/><path d="M11.6 61.2 v-14 a10.4 10.4 0 0 1 20.8 0 v14 z" fill="#6E7B8B"/><circle cx="78" cy="34" r="7.2" fill="#6E7B8B"/><path d="M67.6 61.2 v-14 a10.4 10.4 0 0 1 20.8 0 v14 z" fill="#6E7B8B"/><rect x="36" y="58" width="28" height="20" rx="3" fill="#E3A92B" stroke="#4A4A55" stroke-width="2"/><path d="M34 54 q-8 6 -10 12" stroke="#6E7B8B" stroke-width="6" fill="none" stroke-linecap="round"/><path d="M66 54 q8 6 10 12" stroke="#6E7B8B" stroke-width="6" fill="none" stroke-linecap="round"/><path d="M50 58 v20" stroke="#4A4A55" stroke-width="2" stroke-dasharray="4 4"/>' +
+    '</svg>',
+
+  both:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<circle cx="38" cy="50" r="26" fill="#4C8FDC" opacity="0.85"/><circle cx="62" cy="50" r="26" fill="#E3A92B" opacity="0.85"/><path d="M50 27 a26 26 0 0 0 0 46 a26 26 0 0 0 0 -46z" fill="#2F8A5B"/><path d="M42.8 52 l5.4 6.3 l10.8 -13.5" fill="none" stroke="#FFFFFF" stroke-width="5.4" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '</svg>',
+
+  language:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<path d="M6 18 h48 v30 h-28 l-12 10 v-10 h-8z" fill="#4C8FDC"/><text x="30" y="40" text-anchor="middle" font-size="15" fill="#fff" font-family="sans-serif">hello</text><path d="M94 46 h-48 v30 h28 l12 10 v-10 h8z" fill="#5B2A6E"/><text x="70" y="68" text-anchor="middle" font-size="15" fill="#fff" font-family="sans-serif">hola</text>' +
+    '</svg>',
+
+  information:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<rect x="14" y="20" width="44" height="58" rx="3" fill="#E8E8EE" stroke="#4A4A55" stroke-width="2"/><path d="M22 34 h28 M22 44 h28 M22 54 h18" stroke="#C9CFD6" stroke-width="4" stroke-linecap="round"/><circle cx="68" cy="58" r="24" fill="#4C8FDC"/><circle cx="68" cy="45" r="4" fill="#fff"/><rect x="64" y="52" width="8" height="20" rx="3" fill="#fff"/>' +
+    '</svg>',
+
+  try:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<rect x="72" y="26" width="22" height="4" fill="#4A4A55"/><path d="M74 30 q8 12 18 0" fill="none" stroke="#C0453A" stroke-width="3"/><path d="M16 66 q24 -46 58 -34" fill="none" stroke="#C9CFD6" stroke-width="4" stroke-dasharray="6 5"/><path d="M16 66 q30 -58 62 -24" fill="none" stroke="#C9CFD6" stroke-width="4" stroke-dasharray="6 5"/><path d="M16 66 q34 -40 66 -34" fill="none" stroke="#2F8A5B" stroke-width="5"/><circle cx="16" cy="70" r="11" fill="#E3A92B" stroke="#4A4A55" stroke-width="2"/><path d="M5 70h22M16 59v22" stroke="#4A4A55" stroke-width="2"/>' +
+    '</svg>',
+
+  years:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<rect x="10" y="34" width="24" height="26" rx="3" fill="#8FA0B3"/><text x="22" y="52" text-anchor="middle" font-size="11" fill="#fff" font-family="monospace">2024</text><rect x="36" y="34" width="24" height="26" rx="3" fill="#8FA0B3"/><text x="48" y="52" text-anchor="middle" font-size="11" fill="#fff" font-family="monospace">2025</text><rect x="62" y="34" width="24" height="26" rx="3" fill="#5B2A6E"/><text x="74" y="52" text-anchor="middle" font-size="11" fill="#fff" font-family="monospace">2026</text><path d="M14 74 h68" stroke="#2F8A5B" stroke-width="5" stroke-linecap="round"/><path d="M74 66 l10 8 -10 8" fill="none" stroke="#2F8A5B" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '</svg>',
+
+  hang_out:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<circle cx="34" cy="34" r="7.2" fill="#6E7B8B"/><path d="M23.6 61.2 v-14 a10.4 10.4 0 0 1 20.8 0 v14 z" fill="#6E7B8B"/><circle cx="66" cy="34" r="7.2" fill="#8B97A6"/><path d="M55.6 61.2 v-14 a10.4 10.4 0 0 1 20.8 0 v14 z" fill="#8B97A6"/><rect x="12" y="66" width="76" height="8" rx="3" fill="#B98A52"/><rect x="18" y="74" width="6" height="16" fill="#4A4A55"/><rect x="76" y="74" width="6" height="16" fill="#4A4A55"/><path d="M44 42 q6 6 12 0" stroke="#2F8A5B" stroke-width="4" fill="none" stroke-linecap="round"/>' +
+    '</svg>'
 };
 
 /* =====================================================================
@@ -690,6 +786,47 @@ window.QUIZZES = [
       { e:'🖍️', w:'draw',      opts:['read','count','sing'] },
       { e:'💼', w:'work',      opts:['play','rest','travel'] },
       { e:'🚪', w:'leave',     opts:['arrive','wait','sit'] }
+    ]
+  }
+,
+
+  {
+    id: 'hard-school-words',
+    title: 'School Words',
+    tag: 'Units 1 and 2',
+    group: 'Harder words',
+    emoji: '🧠',
+    items: [
+      { icon:'go',          w:'go',          opts:['stop','stay','sit'] },
+      { icon:'learn',       w:'learn',       opts:['forget','sleep','shout'] },
+      { icon:'study',       w:'study',       opts:['play','cook','swim'] },
+      { icon:'understand',  w:'understand',  opts:['forget','ask','wait'] },
+      { icon:'practice',    w:'practice',    opts:['forget','shout','cook'] },
+      { icon:'solve',       w:'solve',       opts:['spell','draw','sing'] },
+      { icon:'try',         w:'try',         opts:['watch','sleep','cook'] },
+      { icon:'subject',     w:'subject',     opts:['store','park','job'] },
+      { icon:'language',    w:'language',    opts:['music','number','color'] },
+      { icon:'information', w:'information', opts:['furniture','weather','money'] }
+    ]
+  },
+
+  {
+    id: 'hard-time-compare',
+    title: 'Time and Comparing',
+    tag: 'Units 1 and 2, Toolkit 3',
+    group: 'Harder words',
+    emoji: '⚖️',
+    items: [
+      { icon:'before',    w:'before',    opts:['after','always','never'] },
+      { icon:'after',     w:'after',     opts:['before','again','almost'] },
+      { icon:'event',     w:'event',     opts:['month','weekend','clock'] },
+      { icon:'years',     w:'years',     opts:['hours','minutes','weeks'] },
+      { icon:'similar',   w:'similar',   opts:['different','opposite','wrong'] },
+      { icon:'different', w:'different', opts:['similar','same','equal'] },
+      { icon:'both',      w:'both',      opts:['only one','none','many'] },
+      { icon:'share',     w:'share',     opts:['keep','hide','buy'] },
+      { icon:'hang_out',  w:'hang out',  opts:['study','work','clean'] },
+      { e:'🏁',           w:'finish',    opts:['start','wait','rest'] }
     ]
   }
 ];
