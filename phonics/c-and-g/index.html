@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>C and G Sounds &middot; Mr. Toby</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --teal:#1e6468; --teal-dk:#134649; --teal-dp:#0c3133; --teal-lt:#e2f0f0; --teal-mid:#6aa7a9;
+  --paper:#eef4f3; --card:#fff; --field:#f5f9f9;
+  --ink:#1d2b2c; --muted:#56686a; --line:#cfe0df; --line-dk:#a9c6c5;
+  --gold:#e3a92b; --gold-bg:#fff1bf; --gold-dk:#8a5a00;
+  --green:#1f7a4d; --green-bg:#e0f2e8; --red:#b5304a; --red-bg:#fbe4e9;
+  --r:14px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:Nunito,system-ui,sans-serif;font-size:17px;line-height:1.5}
+.hide{display:none!important}
+button{font:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+
+.top{background:var(--teal-dk);color:#fff;border-bottom:4px solid var(--teal-dp)}
+.top .in{max-width:980px;margin:0 auto;padding:12px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.top h1{margin:0;font-size:1.35rem;font-weight:900}
+.top .grow{flex:1;min-width:170px}
+.top select{font:inherit;font-size:.9rem;padding:7px 10px;border-radius:10px;border:2px solid rgba(255,255,255,.5);background:rgba(255,255,255,.12);color:#fff}
+.top select option{color:var(--ink)}
+.top a{color:#fff;font-weight:800;font-size:.88rem}
+.prog{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.prog span{font-size:.78rem;font-weight:800;border:1.5px solid rgba(255,255,255,.4);border-radius:999px;padding:1px 9px;opacity:.85}
+.prog span.done{background:var(--gold);border-color:var(--gold);color:var(--teal-dp);opacity:1}
+.wrap{max-width:980px;margin:0 auto;padding:16px 16px 70px}
+
+.card{background:var(--card);border:1.5px solid var(--line);border-radius:var(--r);padding:20px;margin-bottom:16px;box-shadow:0 2px 0 var(--line)}
+.btn{background:var(--teal);color:#fff;border:0;border-bottom:3px solid var(--teal-dp);border-radius:11px;padding:11px 18px;font-weight:800;text-decoration:none;display:inline-block}
+.btn:hover{background:var(--teal-dk)}
+.btn:active{transform:translateY(2px);border-bottom-width:1px}
+.btn.ghost{background:#fff;color:var(--teal-dk);border:2px solid var(--teal);border-bottom-width:3px}
+.btn.sm{padding:6px 12px;font-size:.88rem;border-radius:9px}
+.btn:disabled{opacity:.45;cursor:default}
+label{display:block;font-weight:800;font-size:.9rem;color:var(--teal-dk);margin:0 0 5px}
+.gate input,.gate select{font:inherit;padding:11px 12px;border:2px solid var(--line-dk);border-radius:11px;width:100%;background:var(--field)}
+.field{margin-bottom:14px}
+.err{color:var(--red);font-weight:800}
+.note{color:var(--muted);font-size:.92rem}
+.row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;align-items:center}
+
+/* instructions with a translate button */
+.lead{font-weight:700;color:var(--teal-dk);margin:0 0 14px}
+.lrev{margin-left:8px;background:none;border:0;color:var(--teal);font-weight:800;text-decoration:underline;font-size:.88rem;padding:0}
+.ltr{display:block;color:var(--muted);font-weight:700;margin-top:4px}
+
+nav.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+nav.tabs button{background:#fff;border:2px solid var(--line-dk);border-radius:11px;padding:8px 14px;font-weight:800;color:var(--teal-dk)}
+nav.tabs button[aria-selected="true"]{background:var(--teal);border-color:var(--teal-dp);color:#fff}
+.pane{display:none}.pane.on{display:block}
+
+/* the letter the rule is about, and the letter that decides it */
+.rl{background:var(--gold-bg);color:var(--gold-dk);border-radius:4px;padding:0 1px;box-shadow:inset 0 -3px 0 var(--gold)}
+.nx{text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:4px;text-decoration-color:var(--teal-mid)}
+
+/* ---- learn ---- */
+.rules{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:720px){.rules{grid-template-columns:1fr}}
+.rule{border:2px solid var(--line);border-radius:var(--r);padding:16px;background:var(--field)}
+.rule h2{margin:0 0 10px;font-size:2.4rem;line-height:1;color:var(--teal-dk)}
+.way{background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
+.way .eq{font-size:1.15rem;font-weight:900;margin-bottom:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.snd{display:inline-flex;align-items:center;gap:6px;background:var(--teal);color:#fff;border-radius:999px;padding:3px 12px;font-size:1rem}
+.words{display:flex;flex-wrap:wrap;gap:6px}
+.wbtn{background:#fff;border:2px solid var(--line-dk);border-radius:10px;padding:5px 10px;font-weight:800;font-size:1.05rem}
+.wbtn:hover{border-color:var(--teal)}
+.wbtn .e{margin-right:4px}
+.breakers{border:2px dashed #d58aa0;background:#fff5f8;border-radius:12px;padding:10px 12px}
+.breakers b{color:var(--red)}
+.trbox{background:#fff;border-radius:10px;padding:8px 10px;margin-top:8px;font-weight:700;color:var(--muted)}
+.l1{background:var(--gold-bg);border:2px solid var(--gold);border-radius:12px;padding:12px 14px;margin-top:16px}
+.l1 h3{margin:0 0 6px;font-size:1rem;color:var(--gold-dk)}
+.trick{font-size:1.1rem;font-weight:800;text-align:center;margin:0 0 14px;color:var(--teal-dk)}
+
+/* ---- sort ---- */
+.sortwrap{max-width:640px;margin:0 auto;text-align:center}
+.count{font-weight:800;color:var(--muted);font-size:.88rem;margin-bottom:8px}
+.dock{min-height:150px;display:grid;place-items:center;margin-bottom:10px}
+.scard{width:170px;min-height:120px;border-radius:16px;background:#fff;border:3px solid var(--teal);box-shadow:0 5px 0 var(--teal-dk);
+  display:grid;place-items:center;padding:10px;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;position:relative;z-index:5}
+.scard.drag{cursor:grabbing;box-shadow:0 12px 20px rgba(0,0,0,.2)}
+.scard .play{font-size:2.6rem;line-height:1}
+.scard .sub{font-size:.8rem;font-weight:800;color:var(--muted)}
+.scard .rev{font-size:1.5rem;font-weight:900}
+.scard .rev .e{display:block;font-size:2.4rem;line-height:1.1}
+.bins{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.bin{border:3px dashed var(--line-dk);border-radius:16px;background:var(--field);min-height:190px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.bin.over{border-color:var(--gold);background:var(--gold-bg)}
+.bin .lab{display:flex;align-items:center;gap:8px;font-weight:900;font-size:1.3rem;color:var(--teal-dk)}
+.bin .lab .k{font-size:2rem}
+.bin .pile{display:flex;flex-wrap:wrap;gap:5px;justify-content:center}
+.bin .pile span{background:#fff;border:1.5px solid var(--line-dk);border-radius:8px;padding:2px 8px;font-weight:800;font-size:.9rem}
+.bin .pile span.miss{border-color:var(--red);color:var(--red)}
+.bin .pile span.heart::after{content:' \2764\FE0F';font-size:.75rem}
+.bin button.pick{margin-top:auto}
+.fb{min-height:1.6em;font-weight:900;margin:10px 0}
+.fb.ok{color:var(--green)} .fb.no{color:var(--red)}
+.why{font-weight:800;font-size:1.05rem;color:var(--teal-dk);min-height:1.5em}
+
+/* ---- look first / say ---- */
+.stage{max-width:560px;margin:0 auto;text-align:center}
+.bigword{font-size:3rem;font-weight:900;letter-spacing:.02em;margin:8px 0 14px;color:var(--ink)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.opt{background:#fff;border:3px solid var(--line-dk);border-radius:14px;padding:12px;font-weight:900;font-size:1.25rem;display:flex;align-items:center;justify-content:center;gap:8px}
+.opt:hover{border-color:var(--teal)}
+.opt.ok{background:var(--green-bg);border-color:var(--green)}
+.opt.no{background:var(--red-bg);border-color:var(--red)}
+.pic{font-size:4rem;line-height:1.1}
+.rec{background:var(--red);border-bottom-color:#7d1f31}
+.rec.on{animation:pulse 1s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 8px rgba(181,48,74,.25)}}
+.heard{font-weight:800;color:var(--muted);min-height:1.4em;margin-top:8px}
+
+/* ---- spell boxes (same look as My Words) ---- */
+.lbwrap{position:relative;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:14px auto;padding:6px;cursor:text}
+.lbox{width:44px;height:54px;border:2px solid var(--line-dk);border-radius:9px;background:#fff;display:grid;place-items:center;font-size:1.6rem;font-weight:900}
+.lbox.cur{border-color:var(--gold);box-shadow:0 0 0 3px rgba(227,169,43,.35)}
+.lbox.ok{background:var(--green-bg);border-color:var(--green);color:var(--green)}
+.lbox.bad{background:var(--red-bg);border-color:var(--red);color:var(--red)}
+.lbox.snd{background:var(--gold-bg);border-color:#d99a00;color:var(--gold-dk)}
+.lbin{position:absolute;inset:0;width:100%;height:100%;opacity:0;font-size:16px;border:0;padding:0}
+.hintline{background:var(--gold-bg);border:2px solid var(--gold);border-radius:12px;padding:10px 12px;font-weight:800;color:var(--gold-dk);margin-top:10px}
+.done-card{text-align:center}
+.done-card .big{font-size:2rem;font-weight:900;color:var(--teal-dk)}
+@media(max-width:560px){.lbox{width:36px;height:46px;font-size:1.3rem}.bigword{font-size:2.3rem}.scard{width:150px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="in">
+    <div class="grow">
+      <h1>C and G Sounds</h1>
+      <div class="prog" id="prog" translate="no"></div>
+    </div>
+    <select id="lang" aria-label="My language"></select>
+    <a href="/readings/student/">My Page</a>
+    <a href="#" id="notMe" class="hide">Not me</a>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="card gate hide" id="gate" style="max-width:480px;margin:20px auto">
+    <h2 style="margin-top:0;color:var(--teal-dk)">Sign in</h2>
+    <div class="field"><label for="gName">Name</label><input id="gName" autocomplete="name"></div>
+    <div class="field"><label for="gMail">School email</label><input id="gMail" placeholder="name@s.sfusd.edu" autocapitalize="off" spellcheck="false"></div>
+    <div class="field"><label for="gPer">Period</label>
+      <select id="gPer"><option value="">Choose</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select></div>
+    <button class="btn" id="gBtn">Start</button>
+    <p class="err" id="gErr"></p>
+  </div>
+
+  <div id="app" class="hide">
+    <nav class="tabs" id="tabs" role="tablist"></nav>
+
+    <!-- LEARN -->
+    <section class="pane card" id="p-learn">
+      <p class="trick" translate="yes" data-k="trick" data-en="The trick: look at the letter after C or G. It tells you the sound.">The trick: look at the letter after C or G. It tells you the sound.</p>
+      <div class="rules" translate="no">
+        <div class="rule">
+          <h2>C</h2>
+          <div class="way"><div class="eq"><span>c + <span class="nx">e, i, y</span></span> <span>&rarr;</span> <span class="snd">/s/ &#9728;&#65039; sun</span></div>
+            <div class="words" id="wSoftC"></div></div>
+          <div class="way"><div class="eq"><span>c + <span class="nx">a, o, u</span>, or a consonant</span> <span>&rarr;</span> <span class="snd">/k/ &#129665; kite</span></div>
+            <div class="words" id="wHardC"></div></div>
+          <button class="btn ghost sm" data-rtr="c">Show in my language</button>
+          <div class="trbox hide" id="trC"></div>
+        </div>
+        <div class="rule">
+          <h2>G</h2>
+          <div class="way"><div class="eq"><span>g + <span class="nx">e, i, y</span></span> <span>&rarr;</span> <span class="snd">/j/ &#128086; jeans</span></div>
+            <div class="words" id="wSoftG"></div></div>
+          <div class="way"><div class="eq"><span>g + <span class="nx">a, o, u</span>, or a consonant</span> <span>&rarr;</span> <span class="snd">/g/ &#128016; goat</span></div>
+            <div class="words" id="wHardG"></div></div>
+          <div class="breakers"><b>&#10084;&#65039; Rule breakers.</b> These words have g + e or i, but g says /g/. Learn them by heart:
+            <div class="words" id="wBreak" style="margin-top:6px"></div></div>
+          <button class="btn ghost sm" data-rtr="g" style="margin-top:10px">Show in my language</button>
+          <div class="trbox hide" id="trG"></div>
+        </div>
+      </div>
+      <div class="l1 hide" id="l1"><h3 id="l1h">For you</h3><p id="l1t" style="margin:0"></p>
+        <button class="btn ghost sm" id="l1Btn" style="margin-top:8px">Show in my language</button><div class="trbox hide" id="l1Tr"></div></div>
+    </section>
+
+    <!-- SORT C / SORT G share one engine -->
+    <section class="pane card" id="p-sortC">
+      <p class="lead" translate="yes" data-k="sort" data-en="Listen to the word. Drag it to the sound you hear. Or tap the box.">Listen to the word. Drag it to the sound you hear. Or tap the box.</p>
+      <div class="sortwrap" id="sortC" translate="no"></div>
+    </section>
+    <section class="pane card" id="p-sortG">
+      <p class="lead" translate="yes" data-k="sort" data-en="Listen to the word. Drag it to the sound you hear. Or tap the box.">Listen to the word. Drag it to the sound you hear. Or tap the box.</p>
+      <div class="sortwrap" id="sortG" translate="no"></div>
+    </section>
+
+    <!-- LOOK FIRST -->
+    <section class="pane card" id="p-look">
+      <p class="lead" translate="yes" data-k="look" data-en="Read first. Look at the letter after C or G. Which sound does it make? Then listen.">Read first. Look at the letter after C or G. Which sound does it make? Then listen.</p>
+      <div class="stage" id="lookStage" translate="no"></div>
+    </section>
+
+    <!-- SAY -->
+    <section class="pane card" id="p-say">
+      <p class="lead" translate="yes" data-k="say" data-en="Listen. Press Record and say the word. Make the yellow sound clear.">Listen. Press Record and say the word. Make the yellow sound clear.</p>
+      <div class="stage" id="sayStage" translate="no"></div>
+    </section>
+
+    <!-- SPELL -->
+    <section class="pane card" id="p-spell">
+      <p class="lead" translate="yes" data-k="spell" data-en="Listen and type the word. Green is right. Yellow is the right sound, but a different letter. Red is wrong.">Listen and type the word. Green is right. Yellow is the right sound, but a different letter. Red is wrong.</p>
+      <div class="stage" id="spellStage" translate="no"></div>
+    </section>
+  </div>
+</div>
+
+<script src="/readings/vocab/mywords/words.js"></script>
+<script src="/readings/phonics/phonics.js"></script>
+<script>
+(function(){
+var esc = MW.esc, RULE = 'c-and-g', SLUG = 'phonics-c-and-g';
+function $(id){ return document.getElementById(id); }
+function shuffle(a){ a = a.slice(); for (var i = a.length - 1; i > 0; i--){ var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+function speak(t, slow){ MW.speak(t, slow); }
+
+/* ================= WORDS =================
+   s = the sound of the FIRST c or g in the word (the one we highlight).
+   heart = breaks the rule. */
+var SOUND = {
+  s:{ label:'/s/', key:'sun',   e:'\u2600\ufe0f' }, k:{ label:'/k/', key:'kite',  e:'\ud83e\ude81' },
+  j:{ label:'/j/', key:'jeans', e:'\ud83d\udc56' }, g:{ label:'/g/', key:'goat',  e:'\ud83d\udc10' }
+};
+var W = {
+  softC:[['city','\ud83c\udfd9\ufe0f'],['rice','\ud83c\udf5a'],['ice','\ud83e\uddca'],['face','\ud83d\ude42'],['dance','\ud83d\udc83'],
+         ['juice','\ud83e\uddc3'],['police','\ud83d\udc6e'],['pencil','\u270f\ufe0f'],['cereal','\ud83e\udd63'],['space','\ud83d\ude80'],
+         ['price','\ud83c\udff7\ufe0f'],['mice','\ud83d\udc01']],
+  hardC:[['cat','\ud83d\udc08'],['car','\ud83d\ude97'],['cup','\u2615'],['cake','\ud83c\udf82'],['coat','\ud83e\udde5'],['corn','\ud83c\udf3d'],
+         ['camera','\ud83d\udcf7'],['cookie','\ud83c\udf6a'],['carrot','\ud83e\udd55'],['cow','\ud83d\udc04'],['clock','\ud83d\udd50'],
+         ['cloud','\u2601\ufe0f'],['candy','\ud83c\udf6c'],['music','\ud83c\udfb5'],['computer','\ud83d\udcbb']],
+  softG:[['gym','\ud83c\udfcb\ufe0f'],['giraffe','\ud83e\udd92'],['gem','\ud83d\udc8e'],['germ','\ud83e\udda0'],['page','\ud83d\udcc4'],
+         ['orange','\ud83c\udf4a'],['magic','\ud83e\ude84'],['vegetables','\ud83e\udd66'],['bridge','\ud83c\udf09'],['energy','\u26a1']],
+  hardG:[['game','\ud83c\udfae'],['gas','\u26fd'],['goat','\ud83d\udc10'],['guitar','\ud83c\udfb8'],['grapes','\ud83c\udf47'],
+         ['dog','\ud83d\udc15'],['bag','\ud83d\udc5c'],['egg','\ud83e\udd5a'],['frog','\ud83d\udc38'],['pig','\ud83d\udc16'],
+         ['flag','\ud83d\udea9'],['gold','\ud83e\udd47']],
+  breakG:[['gift','\ud83c\udf81'],['girl','\ud83d\udc67'],['get',''],['give',''],['begin',''],['tiger','\ud83d\udc05']]
+};
+/* words for reading: no pictures, so they must use the rule */
+var LOOK = [['cell','s'],['cinema','s'],['citizen','s'],['cement','s'],['cycle','s'],
+            ['cot','k'],['cub','k'],['cabin','k'],['cone','k'],['cut','k'],['crab','k'],
+            ['gel','j'],['gentle','j'],['genius','j'],['giant','j'],['gist','j'],
+            ['gap','g'],['gum','g'],['gust','g'],['gate','g'],['got','g'],['glad','g']];
+var SAY = [['city','s'],['cat','k'],['rice','s'],['cake','k'],['pencil','s'],['cup','k'],['gym','j'],['goat','g'],['page','j'],['game','g'],['orange','j'],['egg','g']];
+var SPELL = ['city','face','rice','dance','cake','cup','cat','coat','gym','page','game','dog','orange','goat'];
+function emojiOf(w){
+  var all = [].concat(W.softC, W.hardC, W.softG, W.hardG, W.breakG);
+  for (var i = 0; i < all.length; i++) if (all[i][0] === w) return all[i][1];
+  return '';
+}
+/* highlight the first c or g and the letter after it */
+function mark(word){
+  var i = word.search(/[cg]/i); if (i < 0) return esc(word);
+  return esc(word.slice(0, i)) + '<span class="rl">' + esc(word.charAt(i)) + '</span>'
+    + (word.charAt(i + 1) ? '<span class="nx">' + esc(word.charAt(i + 1)) + '</span>' : '') + esc(word.slice(i + 2));
+}
+function whyLine(word, snd, heart){
+  var i = word.search(/[cg]/i), L = word.charAt(i), n = word.charAt(i + 1);
+  if (heart) return '\u2764\ufe0f Rule breaker: ' + L + ' + ' + n + ', but it says ' + SOUND[snd].label + '.';
+  return L + ' + ' + (n || 'end') + ' \u2192 ' + SOUND[snd].label;
+}
+
+/* ================= STATE / SAVE ================= */
+var ME = { email:'', name:'', period:'' }, LANG = MW.getLang('');
+var SC = {}, WORK = { rounds:{} };
+function save(){
+  if (!ME.email) return;
+  PH.sb('phonics_work?on_conflict=email,rule', { method:'POST', prefer:'resolution=merge-duplicates,return=minimal',
+    body:[{ email:ME.email, rule:RULE, name:ME.name || null, period:ME.period || null, scores:SC, work:WORK, updated_at:new Date().toISOString() }] });
+}
+function score(part, pct){
+  WORK.rounds[part] = (WORK.rounds[part] || 0) + 1;
+  SC[part] = Math.max(SC[part] || 0, pct);
+  drawProg(); save();
+}
+function drawProg(){
+  var R = PH.RULES[RULE];
+  $('prog').innerHTML = ['sortC','sortG','look','say','spell'].map(function(p){
+    var d = (SC[p] || 0) >= 80;
+    return '<span class="' + (d ? 'done' : '') + '">' + (d ? '\u2713 ' : '') + R.partNames[p] + (SC[p] != null ? ' ' + SC[p] + '%' : '') + '</span>';
+  }).join('');
+}
+
+/* ================= LANGUAGE ================= */
+$('lang').innerHTML = MW.langOptions(LANG);
+$('lang').addEventListener('change', function(){ LANG = this.value; MW.setLang(LANG); drawLeads(); drawL1(); });
+function trInto(el, text){
+  el.classList.remove('hide'); el.textContent = '\u2026';
+  if (MW.RTL[LANG]) el.setAttribute('dir', 'rtl'); else el.removeAttribute('dir');
+  MW.translate(text, LANG).then(function(t){ el.textContent = t || '(translation unavailable)'; });
+}
+/* instructions: English first, translation on tap, logged like the other units */
+function drawLeads(){
+  Array.prototype.forEach.call(document.querySelectorAll('[data-k][data-en]'), function(p){
+    var en = p.getAttribute('data-en');
+    p.textContent = en;
+    if (!LANG) return;
+    var b = document.createElement('button'); b.className = 'lrev'; b.textContent = 'Translate';
+    b.onclick = function(){
+      b.remove(); var s = document.createElement('span'); s.className = 'ltr'; p.appendChild(s); trInto(s, en);
+      if (ME.email) PH.sb('instruction_reveals', { method:'POST', prefer:'return=minimal',
+        body:[{ email:ME.email, set_slug:SLUG, activity:p.getAttribute('data-k'), lang:LANG }] });
+    };
+    p.appendChild(b);
+  });
+}
+var RULE_TEXT = {
+  c:'The letter C has two sounds. When e, i, or y comes after C, it says /s/, like in city and rice. When a, o, u, or a consonant comes after C, it says /k/, like in cat and clock.',
+  g:'The letter G has two sounds. When e, i, or y comes after G, it often says /j/, like in gym and page. When a, o, u, or a consonant comes after G, it says /g/, like in goat and game. Some words break the rule: get, give, girl, gift.'
+};
+Array.prototype.forEach.call(document.querySelectorAll('[data-rtr]'), function(b){
+  b.onclick = function(){
+    var k = b.getAttribute('data-rtr');
+    if (!LANG){ alert('Choose your language at the top first.'); return; }
+    trInto($(k === 'c' ? 'trC' : 'trG'), RULE_TEXT[k]);
+  };
+});
+function drawL1(){
+  var note = PH.l1Note(RULE, LANG);
+  $('l1').classList.toggle('hide', !note);
+  $('l1t').textContent = note || '';
+  $('l1Tr').classList.add('hide');
+  var name = (MW.LANGS.filter(function(l){ return l[0] === LANG; })[0] || [,''])[1];
+  $('l1h').textContent = 'For ' + name + ' speakers';
+}
+$('l1Btn').onclick = function(){ trInto($('l1Tr'), $('l1t').textContent); };
+
+/* ================= SIGN IN ================= */
+var EMAIL_RE = /^[^@\s]+@(s\.)?sfusd\.edu$/;
+function canonicalEmail(typed){
+  var lp = typed.split('@')[0], a = lp + '@s.sfusd.edu', b = lp + '@sfusd.edu';
+  return PH.sb('students?select=email&email=in.(' + encodeURIComponent('"' + a + '","' + b + '"') + ')').then(function(rows){
+    if (rows && rows.length) return rows.some(function(r){ return r.email === a; }) ? a : rows[0].email;
+    return a;
+  });
+}
+$('gBtn').onclick = function(){
+  var name = $('gName').value.trim(), typed = $('gMail').value.trim().toLowerCase(), per = $('gPer').value, btn = this;
+  if (!name){ $('gErr').textContent = 'Write your name.'; return; }
+  if (!EMAIL_RE.test(typed)){ $('gErr').textContent = 'Use your school email. It ends with @s.sfusd.edu'; return; }
+  if (!per){ $('gErr').textContent = 'Choose your period.'; return; }
+  btn.disabled = true;
+  canonicalEmail(typed).then(function(email){
+    ME = { email:email, name:name, period:per };
+    try { localStorage.setItem('gal_student_email', email); localStorage.setItem('gal_student_name', name); localStorage.setItem('gal_student_period', per); } catch(e){}
+    PH.sb('students?on_conflict=email', { method:'POST', prefer:'resolution=ignore-duplicates,return=minimal', body:[{ email:email, name:name, period:per }] });
+    if (typed !== email) PH.sb('student_aliases?on_conflict=alias_email', { method:'POST', prefer:'resolution=ignore-duplicates,return=minimal', body:[{ alias_email:typed, email:email }] });
+    $('gate').classList.add('hide'); start();
+  }).finally(function(){ btn.disabled = false; });
+};
+$('notMe').onclick = function(e){ e.preventDefault(); try { localStorage.removeItem('gal_student_email'); } catch(err){} location.reload(); };
+(function(){
+  try { ME.email = localStorage.getItem('gal_student_email') || ''; ME.name = localStorage.getItem('gal_student_name') || ''; ME.period = localStorage.getItem('gal_student_period') || ''; } catch(e){}
+  var q = new URLSearchParams(location.search).get('email'); if (q) ME.email = q.toLowerCase();
+  if (ME.email) setTimeout(start, 0); else { $('gate').classList.remove('hide'); $('gName').value = ME.name; }
+})();
+
+function start(){
+  $('notMe').classList.remove('hide'); $('app').classList.remove('hide');
+  PH.sb('phonics_work?email=eq.' + encodeURIComponent(ME.email) + '&rule=eq.' + RULE + '&select=scores,work').then(function(rows){
+    if (rows && rows[0]){ SC = rows[0].scores || {}; WORK = rows[0].work || { rounds:{} }; if (!WORK.rounds) WORK.rounds = {}; }
+    drawProg();
+  });
+  if (!LANG) PH.sb('students?email=eq.' + encodeURIComponent(ME.email) + '&select=home_language').then(function(r){
+    if (r && r[0] && r[0].home_language){ LANG = MW.langFromHome(r[0].home_language); $('lang').value = LANG; drawLeads(); drawL1(); }
+  });
+  drawProg(); drawLeads(); drawL1(); buildLearn(); buildSort('C'); buildSort('G'); buildLook(); buildSay(); buildSpell();
+}
+
+/* ================= TABS ================= */
+var PANES = [['p-learn','Learn'],['p-sortC','Sort C'],['p-sortG','Sort G'],['p-look','Look first'],['p-say','Say it'],['p-spell','Spell']];
+(function(){
+  var nav = $('tabs');
+  PANES.forEach(function(p, i){
+    var b = document.createElement('button');
+    b.textContent = p[1]; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', i ? 'false' : 'true');
+    b.onclick = function(){
+      PANES.forEach(function(q){ $(q[0]).classList.remove('on'); });
+      Array.prototype.forEach.call(nav.children, function(c){ c.setAttribute('aria-selected', 'false'); });
+      $(p[0]).classList.add('on'); b.setAttribute('aria-selected', 'true');
+      if (p[0] === 'p-sortC') SORT.C.play(); if (p[0] === 'p-sortG') SORT.G.play();
+    };
+    nav.appendChild(b);
+  });
+  $('p-learn').classList.add('on');
+})();
+document.addEventListener('click', function(e){
+  var b = e.target.closest('[data-say]'); if (!b) return;
+  speak(b.getAttribute('data-say'), !!b.getAttribute('data-slow'));
+});
+
+/* ================= LEARN ================= */
+function wordBtns(list){
+  return list.map(function(x){ return '<button class="wbtn" data-say="' + esc(x[0]) + '">' + (x[1] ? '<span class="e">' + x[1] + '</span>' : '') + mark(x[0]) + '</button>'; }).join('');
+}
+function buildLearn(){
+  $('wSoftC').innerHTML = wordBtns(W.softC.slice(0, 6));
+  $('wHardC').innerHTML = wordBtns(W.hardC.slice(0, 6));
+  $('wSoftG').innerHTML = wordBtns(W.softG.slice(0, 6));
+  $('wHardG').innerHTML = wordBtns(W.hardG.slice(0, 6));
+  $('wBreak').innerHTML = wordBtns(W.breakG);
+}
+
+/* ================= SORT (drag or tap) ================= */
+var SORT = {};
+function buildSort(L){
+  var box = $('sort' + L), A = L === 'C' ? 's' : 'j', B = L === 'C' ? 'k' : 'g';
+  var soft = L === 'C' ? W.softC : W.softG, hard = L === 'C' ? W.hardC : W.hardG;
+  var items = shuffle(soft).slice(0, 6).map(function(x){ return { w:x[0], e:x[1], s:A }; })
+    .concat(shuffle(hard).slice(0, L === 'G' ? 5 : 6).map(function(x){ return { w:x[0], e:x[1], s:B }; }));
+  if (L === 'G'){ var br = shuffle(W.breakG.filter(function(x){ return x[1]; }))[0]; items.push({ w:br[0], e:br[1], s:'g', heart:true }); }
+  items = shuffle(items);
+  var I = 0, right = 0, busy = false;
+
+  function bin(s){
+    return '<div class="bin" data-s="' + s + '"><div class="lab"><span class="k">' + SOUND[s].e + '</span>' + SOUND[s].label
+      + ' <button class="btn ghost sm" data-say="' + SOUND[s].key + '">' + SOUND[s].key + '</button></div>'
+      + '<div class="pile"></div><button class="btn sm pick">This sound</button></div>';
+  }
+  box.innerHTML = '<div class="count" id="cnt' + L + '"></div><div class="dock" id="dock' + L + '"></div>'
+    + '<div class="why" id="why' + L + '"></div><div class="fb" id="fb' + L + '"></div>'
+    + '<div class="bins">' + bin(A) + bin(B) + '</div>';
+  var dock = $('dock' + L);
+  Array.prototype.forEach.call(box.querySelectorAll('.bin'), function(b){
+    b.querySelector('.pick').onclick = function(){ drop(b.getAttribute('data-s')); };
+  });
+
+  function card(){
+    if (I >= items.length) return finish();
+    busy = false;
+    $('cnt' + L).textContent = (I + 1) + ' of ' + items.length;
+    $('why' + L).textContent = ''; $('fb' + L).textContent = '';
+    dock.innerHTML = '<div class="scard" id="card' + L + '" role="button" tabindex="0" aria-label="Play the word"><div><div class="play">\ud83d\udd0a</div><div class="sub">Tap to hear again</div></div></div>';
+    drag($('card' + L));
+    play();
+  }
+  function play(){ var it = items[I]; if (it && !busy && $('p-sort' + L).classList.contains('on')) setTimeout(function(){ speak(it.w); }, 200); }
+  function drop(s){
+    if (busy || I >= items.length) return; busy = true;
+    var it = items[I], ok = s === it.s;
+    if (ok) right++;
+    var c = $('card' + L);
+    c.style.transform = ''; c.innerHTML = '<div class="rev">' + (it.e ? '<span class="e">' + it.e + '</span>' : '') + mark(it.w) + '</div>';
+    $('why' + L).textContent = whyLine(it.w, it.s, it.heart);
+    $('fb' + L).className = 'fb ' + (ok ? 'ok' : 'no');
+    $('fb' + L).textContent = ok ? 'Yes!' : 'Listen: ' + it.w + ' has the ' + SOUND[it.s].label + ' sound.';
+    speak(it.w, !ok);
+    var pile = box.querySelector('.bin[data-s="' + it.s + '"] .pile');
+    var chip = document.createElement('span'); chip.textContent = it.w;
+    if (!ok) chip.className = 'miss'; if (it.heart) chip.classList.add('heart');
+    pile.appendChild(chip);
+    setTimeout(function(){ I++; card(); }, ok ? 1500 : 2600);
+  }
+  function finish(){
+    var pct = Math.round(100 * right / items.length);
+    score('sort' + L, pct);
+    dock.innerHTML = '<div class="done-card"><div class="big">' + right + ' of ' + items.length + '</div>'
+      + '<p>' + (pct >= 80 ? 'Great listening!' : 'Keep practicing. Try again with new words.') + '</p>'
+      + '<button class="btn" id="again' + L + '">Sort new words</button></div>';
+    $('why' + L).textContent = ''; $('fb' + L).textContent = '';
+    $('again' + L).onclick = function(){ buildSort(L); SORT[L].play(); };
+  }
+  /* drag with a finger or mouse; a small tap replays the word */
+  function drag(el){
+    var sx, sy, moved, over = null;
+    el.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); speak(items[I].w); } });
+    el.addEventListener('pointerdown', function(e){
+      if (busy) return;
+      sx = e.clientX; sy = e.clientY; moved = false; el.setPointerCapture(e.pointerId); el.classList.add('drag');
+    });
+    el.addEventListener('pointermove', function(e){
+      if (sx == null) return;
+      var dx = e.clientX - sx, dy = e.clientY - sy;
+      if (Math.abs(dx) + Math.abs(dy) > 6) moved = true;
+      el.style.transform = 'translate(' + dx + 'px,' + dy + 'px) rotate(' + (dx / 30) + 'deg)';
+      el.style.visibility = 'hidden';
+      var under = document.elementFromPoint(e.clientX, e.clientY);
+      el.style.visibility = '';
+      var b = under && under.closest ? under.closest('.bin') : null;
+      if (over && over !== b) over.classList.remove('over');
+      over = b; if (b) b.classList.add('over');
+    });
+    el.addEventListener('pointerup', function(){
+      el.classList.remove('drag');
+      if (over){ over.classList.remove('over'); var s = over.getAttribute('data-s'); over = null; sx = null; drop(s); return; }
+      el.style.transform = ''; sx = null;
+      if (!moved) speak(items[I].w);
+    });
+  }
+  SORT[L] = { play:play };
+  card();
+}
+
+/* ================= LOOK FIRST ================= */
+var LK = [], LK_I = 0, LK_R = 0;
+function buildLook(){ LK = shuffle(LOOK).slice(0, 12); LK_I = 0; LK_R = 0; drawLook(); }
+function drawLook(){
+  var st = $('lookStage');
+  if (LK_I >= LK.length){
+    var pct = Math.round(100 * LK_R / LK.length); score('look', pct);
+    st.innerHTML = '<div class="done-card"><div class="big">' + LK_R + ' of ' + LK.length + '</div><p>' + (pct >= 80 ? 'You can read the rule!' : 'Look at the letter after C or G. Try again.') + '</p><button class="btn" id="lkAgain">New words</button></div>';
+    $('lkAgain').onclick = buildLook; return;
+  }
+  var it = LK[LK_I], w = it[0], L = w.search(/[cg]/i) > -1 ? w.charAt(w.search(/[cg]/i)).toLowerCase() : 'c';
+  var A = L === 'c' ? 's' : 'j', B = L === 'c' ? 'k' : 'g';
+  st.innerHTML = '<div class="count">' + (LK_I + 1) + ' of ' + LK.length + '</div><div class="bigword">' + mark(w) + '</div>'
+    + '<div class="two">' + [A, B].map(function(s){ return '<button class="opt" data-s="' + s + '"><span>' + SOUND[s].e + '</span>' + SOUND[s].label + '</button>'; }).join('') + '</div>'
+    + '<div class="why" id="lkWhy" style="margin-top:12px"></div><div class="fb" id="lkFb"></div>';
+  var first = true;
+  Array.prototype.forEach.call(st.querySelectorAll('.opt'), function(b){
+    b.onclick = function(){
+      var ok = b.getAttribute('data-s') === it[1];
+      b.classList.add(ok ? 'ok' : 'no');
+      if (first && ok) LK_R++;
+      first = false;
+      $('lkWhy').textContent = whyLine(w, it[1]);
+      if (ok){ $('lkFb').className = 'fb ok'; $('lkFb').textContent = 'Listen: ' + w; speak(w); setTimeout(function(){ LK_I++; drawLook(); }, 1700); }
+      else { $('lkFb').className = 'fb no'; $('lkFb').textContent = 'Look at the underlined letter.'; }
+    };
+  });
+}
+
+/* ================= SAY IT ================= */
+var SY = [], SY_I = 0, SY_R = 0, SY_TRIED = {}, MEDIA = null, CH = [], SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+function buildSay(){ SY = shuffle(SAY).slice(0, 8); SY_I = 0; SY_R = 0; SY_TRIED = {}; drawSay(); }
+function drawSay(){
+  var st = $('sayStage');
+  if (SY_I >= SY.length){
+    if (SR){ var pct = Math.round(100 * SY_R / SY.length); score('say', pct); }
+    st.innerHTML = '<div class="done-card"><div class="big">Done!</div>' + (SR ? '<p>' + SY_R + ' of ' + SY.length + ' words heard clearly.</p>' : '')
+      + '<button class="btn" id="syAgain">Say new words</button></div>';
+    $('syAgain').onclick = buildSay; return;
+  }
+  var it = SY[SY_I], w = it[0];
+  st.innerHTML = '<div class="count">' + (SY_I + 1) + ' of ' + SY.length + '</div><div class="pic">' + emojiOf(w) + '</div>'
+    + '<div class="bigword">' + mark(w) + '</div><div class="why">' + whyLine(w, it[1]) + ' &nbsp; ' + SOUND[it[1]].e + ' ' + SOUND[it[1]].key + '</div>'
+    + '<div class="row" style="margin:10px 0"><button class="btn sm" data-say="' + esc(w) + '">Hear it</button><button class="btn ghost sm" data-say="' + esc(w) + '" data-slow="1">Slow</button></div>'
+    + '<div class="row"><button class="btn rec" id="syRec">Record</button><button class="btn ghost hide" id="syMine">My voice</button></div>'
+    + '<div class="heard" id="syHeard"></div>'
+    + '<div class="row" style="margin-top:12px"><button class="btn ghost sm" id="syNext">Next word</button></div>';
+  $('syNext').onclick = function(){ SY_I++; drawSay(); };
+  $('syRec').onclick = function(){ record(w); };
+}
+function record(w){
+  var btn = $('syRec');
+  if (MEDIA && MEDIA.state === 'recording'){ MEDIA.stop(); return; }
+  if (!navigator.mediaDevices || !window.MediaRecorder){ $('syHeard').textContent = 'This computer cannot record. Say it out loud, then tap Next word.'; return; }
+  navigator.mediaDevices.getUserMedia({ audio:true }).then(function(stream){
+    CH = []; MEDIA = new MediaRecorder(stream);
+    MEDIA.ondataavailable = function(e){ if (e.data.size) CH.push(e.data); };
+    MEDIA.onstop = function(){
+      stream.getTracks().forEach(function(t){ t.stop(); });
+      btn.classList.remove('on'); btn.textContent = 'Record again';
+      var url = URL.createObjectURL(new Blob(CH, { type:MEDIA.mimeType || 'audio/webm' }));
+      var m = $('syMine'); m.classList.remove('hide'); m.onclick = function(){ new Audio(url).play(); };
+    };
+    MEDIA.start(); btn.classList.add('on'); btn.textContent = 'Stop'; $('syHeard').textContent = 'Listening\u2026';
+    if (SR) try {
+      var r = new SR(); r.lang = 'en-US'; r.maxAlternatives = 5;
+      r.onresult = function(ev){
+        var alts = [], i; for (i = 0; i < ev.results[0].length; i++) alts.push(MW.norm(ev.results[0][i].transcript));
+        var ok = alts.some(function(a){ return (' ' + a + ' ').indexOf(' ' + w + ' ') > -1; });
+        $('syHeard').innerHTML = ok ? '<span style="color:var(--green)">I heard: ' + esc(w) + '. Clear!</span>' : 'I heard: <b>' + esc(alts[0] || '?') + '</b>. Listen and try again.';
+        if (ok && !SY_TRIED[w]){ SY_R++; }
+        SY_TRIED[w] = 1;
+        if (MEDIA && MEDIA.state === 'recording') MEDIA.stop();
+      };
+      r.onnomatch = function(){ $('syHeard').textContent = 'I did not hear it. Try again.'; };
+      r.start();
+    } catch(e){}
+    setTimeout(function(){ if (MEDIA && MEDIA.state === 'recording') MEDIA.stop(); }, 5000);
+  }).catch(function(){ $('syHeard').textContent = 'Allow the microphone. Or say it out loud.'; });
+}
+
+/* ================= SPELL (letter boxes, yellow = right sound) ================= */
+var SP = [], SP_I = 0, SP_R = 0;
+function buildSpell(){ SP = shuffle(SPELL).slice(0, 10); SP_I = 0; SP_R = 0; drawSpell(); }
+function drawSpell(){
+  var st = $('spellStage');
+  if (SP_I >= SP.length){
+    var pct = Math.round(100 * SP_R / SP.length); score('spell', pct);
+    st.innerHTML = '<div class="done-card"><div class="big">' + SP_R + ' of ' + SP.length + '</div><p>right the first time</p><button class="btn" id="spAgain">Spell new words</button></div>';
+    $('spAgain').onclick = buildSpell; return;
+  }
+  var T = SP[SP_I], wrong = 0, done = false, prev = 0;
+  var boxes = ''; for (var i = 0; i < T.length; i++) boxes += '<span class="lbox" data-i="' + i + '"></span>';
+  st.innerHTML = '<div class="count">' + (SP_I + 1) + ' of ' + SP.length + '</div><div class="pic">' + emojiOf(T) + '</div>'
+    + '<div class="row"><button class="btn sm" data-say="' + esc(T) + '">Hear it</button><button class="btn ghost sm" data-say="' + esc(T) + '" data-slow="1">Slow</button></div>'
+    + '<label class="lbwrap" id="spLb">' + boxes + '<input class="lbin" id="spIn" maxlength="' + T.length + '" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Type the word"></label>'
+    + '<div class="fb" id="spFb"></div><div id="spHint"></div>';
+  var inp = $('spIn'); inp.focus(); setTimeout(function(){ speak(T); }, 250);
+  function draw(){
+    var v = inp.value, m = PH.analyze(T, v);
+    Array.prototype.forEach.call($('spLb').querySelectorAll('.lbox'), function(b){
+      var i = +b.getAttribute('data-i'); b.className = 'lbox';
+      if (!v[i]){ b.textContent = ''; if (i === v.length && !done) b.classList.add('cur'); return; }
+      b.textContent = m[i] === 'ok' ? T[i] : v[i];
+      b.classList.add(m[i] === 'ok' ? 'ok' : m[i] === 'sound' ? 'snd' : 'bad');
+    });
+  }
+  inp.addEventListener('input', function(){
+    if (done) return;
+    var v = inp.value;
+    if (v.length > prev){
+      var i = v.length - 1;
+      if (v[i].toLowerCase() !== T[i].toLowerCase()){
+        wrong++;
+        var info = PH.letterInfo(T, i);
+        if (info && info.alike.indexOf(v[i].toLowerCase()) > -1){
+          var X = PH.EXPLAIN[info.why];
+          $('spHint').innerHTML = '<div class="hintline">' + esc(X.head) + ' ' + esc(X.body) + '</div>';
+          PH.logHit(ME.email, info, T, v, 'phonics-spell');
+        } else { $('spFb').className = 'fb no'; $('spFb').textContent = 'Letter ' + (i + 1) + ' is not right.'; }
+      } else $('spFb').textContent = '';
+    }
+    prev = v.length; draw();
+    if (v.toLowerCase() === T.toLowerCase()){
+      done = true; inp.disabled = true; if (!wrong) SP_R++; draw();
+      $('spFb').className = 'fb ok'; $('spFb').textContent = 'Yes! ' + T; speak(T);
+      setTimeout(function(){ SP_I++; drawSpell(); }, 1400);
+    }
+  });
+  draw();
+}
+
+/* ================= quiet browser-translation check ================= */
+var TR_SENT = '';
+function checkTranslation(){
+  if (!ME.email) return;
+  var btns = document.querySelectorAll('nav.tabs button'), observed = '', i;
+  for (i = 0; i < btns.length && i < PANES.length; i++){
+    var got = (btns[i].textContent || '').trim();
+    if (got && got !== PANES[i][1]){ observed = got; break; }
+  }
+  var cls = document.documentElement.className || '';
+  if (!observed && !/translated/.test(cls)) return;
+  var sig = observed + '|' + document.documentElement.lang;
+  if (sig === TR_SENT) return; TR_SENT = sig;
+  PH.sb('page_translation?on_conflict=email,set_slug', { method:'POST', prefer:'resolution=merge-duplicates,return=minimal',
+    body:[{ email:ME.email, set_slug:SLUG, translated:true, observed:observed, html_lang:document.documentElement.lang || '',
+            html_class:cls, updated_at:new Date().toISOString() }] });
+}
+setInterval(checkTranslation, 20000); setTimeout(checkTranslation, 4000);
+})();
+</script>
+<script src="/readings/track.js"></script>
+</body>
+</html>

@@ -104,6 +104,12 @@ nav.tabs button[aria-selected="true"]{background:var(--plum);border-color:var(--
 .lbox.cur{border-color:var(--plum);box-shadow:0 0 0 3px rgba(90,74,138,.22)}
 .lbox.ok{background:var(--green-bg);border-color:var(--green);color:var(--green)}
 .lbox.bad{background:var(--red-bg);border-color:var(--red);color:var(--red)}
+.lbox.snd{background:#fff1bf;border-color:#d99a00;color:#8a5a00}
+.phx .ex{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px}
+.phx .ex button{background:#fff;border:2px solid var(--gold);border-radius:999px;padding:3px 12px;font-weight:800}
+.phx .ex b{color:#b36b00;text-decoration:underline}
+.phx .phtr{color:var(--ink);font-weight:700;background:#fff;border-radius:8px;padding:8px 10px;margin:8px 0}
+.phx .phl1{font-size:.93rem;border-top:1px dashed var(--gold);padding-top:8px;margin-top:8px}
 .lbox.hint{background:var(--plum-lt);border:2px dashed var(--plum-mid);color:var(--plum-dk)}
 .lbin{position:absolute;inset:0;width:100%;height:100%;opacity:0;font-size:16px;border:0;padding:0;cursor:text}
 .lbwrap:focus-within .lbox.cur{border-color:var(--gold);box-shadow:0 0 0 3px rgba(227,169,43,.35)}
@@ -221,7 +227,7 @@ nav.tabs button[aria-selected="true"]{background:var(--plum);border-color:var(--
     </section>
 
     <section class="pane card" id="p-spell">
-      <p class="lead" translate="yes">Listen, then type the word. Green letters are right. Red letters are wrong.</p>
+      <p class="lead" translate="yes">Listen, then type the word. Green is right. Yellow is the right sound, but a different letter. Red is wrong.</p>
       <div class="stage" id="spellStage" translate="no"></div>
     </section>
 
@@ -241,6 +247,7 @@ nav.tabs button[aria-selected="true"]{background:var(--plum);border-color:var(--
 document.write('<script src="/readings/vocab/pre/quizzes.js?v=' + Math.floor(Date.now() / 3600000) + '"><\/script>');
 </script>
 <script src="words.js"></script>
+<script src="/readings/phonics/phonics.js"></script>
 <script>
 (function(){
 var MW = window.MW, esc = MW.esc;
@@ -709,10 +716,52 @@ function misspell(w){
   return out;
 }
 
+/* ---------- phonics: right sound, other spelling ----------
+   Shown once per word and rule. Logged to phonics_hits so My Page can
+   assign the lesson after a couple of mix-ups. */
+var PH_SEEN = {}, PH_SESSION = {};
+function phonicsNote(en, info, i, typed){
+  var k = en.w + '|' + info.why;
+  if (!PH_SEEN[k]){
+    PH_SEEN[k] = 1;
+    PH.logHit(ME.email, info, en.w, typed.slice(0, i + 1), 'mywords-spell');
+    (PH_SESSION[info.rule] = PH_SESSION[info.rule] || []).indexOf(en.w) < 0 && PH_SESSION[info.rule].push(en.w);
+  }
+  var X = PH.EXPLAIN[info.why], R = PH.RULES[info.rule];
+  var L = info.letter;
+  var exHtml = X.ex.map(function(w){
+    /* underline the letter the rule is about */
+    var j = w.toLowerCase().indexOf(L);
+    var shown = j < 0 ? esc(w) : esc(w.slice(0, j)) + '<b>' + esc(w.charAt(j)) + '</b>' + esc(w.slice(j + 1));
+    return '<button data-say="' + esc(w) + '">' + shown + '</button>';
+  }).join('');
+  var note = PH.l1Note(info.rule, LANG);
+  openHelp('sPh', '<h4>' + esc(X.head) + ' <span style="font-weight:700;color:var(--ink)">You typed <b class="hword">' + esc(typed.charAt(i)) + '</b>.</span></h4>'
+    + '<p>' + esc(X.body) + '</p><div class="ex" translate="no">' + exHtml + '</div>'
+    + (LANG ? '<button class="btn ghost sm" id="phTrBtn">Show in my language</button><div class="phtr hide" id="phTr"></div>' : '')
+    + (note ? '<p class="phl1" id="phL1">' + esc(note) + '</p>' : '')
+    + '<p style="margin:10px 0 0"><a class="btn sm" target="_blank" rel="noopener" href="' + R.url + '">Practice ' + esc(R.title) + '</a></p>');
+  if ($('phTrBtn')) $('phTrBtn').onclick = function(){
+    this.classList.add('hide'); var out = $('phTr'); out.classList.remove('hide'); out.textContent = '\u2026';
+    if (MW.RTL[LANG]) out.setAttribute('dir', 'rtl');
+    Promise.all([MW.translate(X.head + ' ' + X.body, LANG), note ? MW.translate(note, LANG) : Promise.resolve('')])
+      .then(function(t){ out.textContent = t[0] + (t[1] ? '\n\n' + t[1] : ''); out.style.whiteSpace = 'pre-line'; });
+  };
+}
+function phonicsOffer(){
+  var rules = Object.keys(PH_SESSION); if (!rules.length || !window.PH) return '';
+  return rules.map(function(r){
+    var R = PH.RULES[r], w = PH_SESSION[r];
+    return '<div class="help phx" style="text-align:center;margin-bottom:14px"><h4>' + esc(R.title) + '</h4>'
+      + '<p>You mixed up this sound in ' + w.length + ' word' + (w.length === 1 ? '' : 's') + ': <b translate="no">' + esc(w.join(', ')) + '</b>.</p>'
+      + '<a class="btn" href="' + R.url + '">Practice ' + esc(R.title) + '</a></div>';
+  }).join('');
+}
+
 function buildSpell(){ S_Q = shuffle(WORDS); S_I = 0; renderSpell(); }
 function renderSpell(){
   if (S_I >= S_Q.length){
-    $('spellStage').innerHTML = '<div class="big">Done!</div><button class="btn" id="sAgain">Do it again</button>';
+    $('spellStage').innerHTML = '<div class="big">Done!</div>' + phonicsOffer() + '<button class="btn" id="sAgain">Do it again</button>';
     $('sAgain').onclick = buildSpell; return;
   }
   var en = S_Q[S_I], T = en.w, N = T.length;
@@ -734,19 +783,20 @@ function renderSpell(){
     + '<label class="lbwrap" id="lb">' + boxes
     + '<input class="lbin" id="sIn" maxlength="' + N + '" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Type the word"></label>'
     + '<div class="row"><button class="btn ghost sm" id="sLetter">First letter</button> ' + helpBtn('sHelpBtn') + '</div>'
-    + '<div class="fb" id="sFb"></div><div class="help hide" id="sHelp"></div>';
+    + '<div class="fb" id="sFb"></div><div class="help phx hide" id="sPh"></div><div class="help hide" id="sHelp"></div>';
   var inp = $('sIn');
   inp.focus();
 
   function same(a, b){ return a != null && b != null && a.toLowerCase() === b.toLowerCase(); }
   function draw(){
-    var v = inp.value;
+    var v = inp.value, marks = window.PH ? PH.analyze(T, v) : [];
     Array.prototype.forEach.call($('lb').querySelectorAll('.lbox'), function(b){
       var i = +b.getAttribute('data-i'), ch = v[i];
       b.className = 'lbox';
       if (st.hintSet[i]){ b.classList.add('hint'); b.textContent = T[i]; }
       else if (ch == null){ b.textContent = ''; if (i === v.length && !st.done) b.classList.add('cur'); }
       else if (same(ch, T[i])){ b.classList.add('ok'); b.textContent = T[i]; }
+      else if (marks[i] === 'sound'){ b.classList.add('snd'); b.textContent = ch; }
       else { b.classList.add('bad'); b.textContent = ch === ' ' ? '\u2423' : ch; }
     });
   }
@@ -794,6 +844,8 @@ function renderSpell(){
       var i = v.length - 1;
       if (!same(v[i], T[i])){
         st.wrongAt[i] = (st.wrongAt[i] || 0) + 1; st.wrongs++;
+        var info = window.PH ? PH.letterInfo(T, i) : null;
+        if (info && info.alike.indexOf(v[i].toLowerCase()) > -1) phonicsNote(en, info, i, v);
         if (st.wrongAt[i] >= SPELL_MISS_ONE || st.wrongs >= SPELL_MISS_ALL) openSpellHelp();
         else if (st.wrongAt[i] === 2) { $('sFb').className = 'fb no'; $('sFb').textContent = 'Letter ' + (i + 1) + ' is not right. Listen again.'; MW.speak(T, true); }
       } else $('sFb').textContent = '';

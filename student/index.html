@@ -202,6 +202,14 @@ details.wq .qm{font-size:.85rem;color:var(--muted);font-weight:800}
 .known{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .known .kl{font-weight:800;font-size:.85rem;color:var(--green);margin-right:4px}
 .kchip{background:var(--green-bg);color:var(--green);border:1px solid #b7dcc6;border-radius:999px;padding:3px 10px;font-weight:800;font-size:.85rem;cursor:pointer}
+.phcard{display:flex;gap:12px;align-items:flex-start;border:2px solid #d99a00;background:#fff6d9;border-radius:12px;padding:12px;margin-bottom:10px}
+.phcard.done{border-color:var(--green);background:var(--green-bg)}
+.phcard .se{font-size:1.6rem}
+.phcard .st{flex:1;min-width:0}
+.phcard .st b{display:block;color:var(--plum-dk)}
+.phcard .st span{font-size:.88rem;font-weight:700;color:var(--muted)}
+.phcard .pheg{font-size:.88rem;margin-top:4px}
+.phcard .phparts{margin-top:6px;display:flex;gap:5px;flex-wrap:wrap}
 @media print{.btn,.noprint{display:none!important}
   body{background:#fff}.card{break-inside:avoid;box-shadow:none}
   .hero{background:var(--plum-dk)!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
@@ -359,6 +367,7 @@ details.wq .qm{font-size:.85rem;color:var(--muted);font-weight:800}
 </script>
 <script>document.write('<script src="/readings/vocab/pre/quizzes.js?v='+Math.floor(Date.now()/3600000)+'"><\/script>');</script>
 <script src="/readings/vocab/mywords/words.js"></script>
+<script src="/readings/phonics/phonics.js"></script>
 <script>
 const SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
@@ -427,7 +436,7 @@ async function load(email){
   if(al&&al.length)email=al[0].email;
   ME=email;
 
-  const [stu,facts,acts,atts,skills,res,work,checks,practice]=await Promise.all([
+  const [stu,facts,acts,atts,skills,res,work,checks,practice,phHits,phWork]=await Promise.all([
     sb('students?email=eq.'+encodeURIComponent(email)+'&select=*'),
     sb('student_facts?email=eq.'+encodeURIComponent(email)+'&select=key,value'),
     sb('activities?select=*&order=sort_order.asc'),
@@ -436,9 +445,11 @@ async function load(email){
     sb('skill_resources?select=*&order=sort_order.asc'),
     sb('student_work?email=eq.'+encodeURIComponent(email)+'&select=*&order=sort_order.asc'),
     window.MW?MW.loadChecks(email):null,
-    window.MW?MW.loadPractice(email):null
+    window.MW?MW.loadPractice(email):null,
+    window.PH?PH.loadHits(email):null,
+    window.PH?PH.loadWork(email):null
   ]);
-  DATA.checks=checks||[]; DATA.practice=practice||[];
+  DATA.checks=checks||[]; DATA.practice=practice||[]; DATA.phHits=phHits||[]; DATA.phWork=phWork||[];
 
   if(!stu||!stu.length){
     // viewing by link or teacher view must never invent a student
@@ -476,8 +487,9 @@ function renderWords(){
   document.getElementById('wLang').innerHTML=MW.langOptions(WLANG);
   var st=MW.buildState(DATA.checks,DATA.practice);
   var q=MW.esc;
+  var ph=phonicsHtml();
   if(!st.quizzes.length){
-    box.innerHTML='<p>Take a vocabulary check. Then this card shows the words you know and the words to learn.</p>'+
+    box.innerHTML=ph+'<p>Take a vocabulary check. Then this card shows the words you know and the words to learn.</p>'+
       '<a class="btn" href="'+MW.CHECK_URL+'">Take a vocabulary check</a>';
     return;
   }
@@ -487,6 +499,7 @@ function renderWords(){
     '<div class="wstat n"><b>'+t.learn+'</b><span>words to learn</span></div>'+
     '<div class="wstat p"><b>'+t.got+'</b><span>learned with practice</span></div></div>';
 
+  h+=ph;
   var sg=MW.suggest(st);
   if(sg.length){
     var firstMine=true;
@@ -523,6 +536,25 @@ function renderWords(){
   }).join('');
   box.innerHTML=h;
   wordsTranslate();
+}
+/* Sounds to practice: phonics rules this student mixed up in spelling.
+   A rule appears after PH.ASSIGN_AFTER mix-ups, or once they start the lesson. */
+function phonicsHtml(){
+  if(!window.PH)return '';
+  var list=PH.assigned(DATA.phHits,DATA.phWork);
+  if(!list.length)return '';
+  var q=MW.esc;
+  return '<div class="subh">Sounds to practice</div>'+list.map(function(o){
+    var R=PH.RULES[o.rule];
+    var eg=o.hits.slice(0,4).map(function(h){return '<b>'+q(h.word)+'</b> <span style="color:var(--orange)">('+q(h.typed)+'&hellip;)</span>';}).join(', ');
+    var parts=R.parts.map(function(p){var d=(o.scores[p]||0)>=80;
+      return '<span class="pill '+(d?'got':'new')+'">'+(d?'&#10003; ':'')+q(R.partNames[p])+'</span>';}).join(' ');
+    return '<div class="phcard'+(o.complete?' done':'')+'"><span class="se">'+R.emoji+'</span><div class="st"><b>'+q(R.title)+'</b>'+
+      '<span>'+q(R.short)+'</span>'+
+      (eg?'<div class="pheg" translate="no">You wrote: '+eg+'</div>':'')+
+      '<div class="phparts">'+parts+'</div></div>'+
+      '<a class="btn sm noprint" href="'+R.url+'">'+(o.complete?'Practice again':(o.started?'Keep going':'Start'))+'</a></div>';
+  }).join('');
 }
 function wordsLang(L){WLANG=L;MW.setLang(L);wordsTranslate();}
 function wordsTranslate(){
