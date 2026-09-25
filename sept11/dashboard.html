@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>September 11 Reading Guide — Teacher Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pine:#1f4d3d; --pine-dk:#143528; --pine-lt:#e8f0ec;
+  --ink:#1b1b1b; --rule:#d3d8d5; --muted:#6d7a74;
+  --tag-review:#2f6f4f; --tag-infer:#7a4a86; --tag-connect:#b1552a;
+  --tag-language:#1f5f8b; --tag-ml:#8a6d1f;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;font-family:'Nunito',-apple-system,Segoe UI,Roboto,sans-serif;
+  background:#eef1ef;color:var(--ink);font-size:16px;line-height:1.6;
+}
+
+/* ---------- gate ---------- */
+#gate{position:fixed;inset:0;z-index:500;background:var(--pine-dk);display:flex;align-items:center;justify-content:center;padding:20px}
+#gate .card{background:#fff;border-radius:14px;padding:28px;max-width:380px;width:100%;box-shadow:0 14px 44px rgba(0,0,0,.35)}
+#gate h1{margin:0 0 4px;font-size:1.4rem;color:var(--pine)}
+#gate p{margin:0 0 18px;color:var(--muted);font-weight:600;font-size:.92rem}
+#gate input{width:100%;font-family:inherit;font-size:1.05rem;padding:10px 12px;border:2px solid var(--rule);border-radius:8px}
+#gate input:focus{outline:none;border-color:var(--pine)}
+#gate button{width:100%;margin-top:14px;font-family:inherit;font-weight:800;font-size:1.05rem;background:var(--pine);color:#fff;border:none;border-radius:9px;padding:11px;cursor:pointer}
+#gate .err{color:#b3261e;font-weight:700;font-size:.88rem;min-height:1.2em;margin-top:8px}
+
+/* ---------- bar ---------- */
+#bar{
+  position:sticky;top:0;z-index:60;background:var(--pine);color:#fff;
+  padding:9px 16px;display:flex;flex-wrap:wrap;gap:9px;align-items:center;
+  box-shadow:0 2px 8px rgba(0,0,0,.2);
+}
+#bar .brand{font-weight:800;font-size:15px;margin-right:8px}
+#bar button,#bar select,#bar input{
+  font-family:inherit;font-size:14px;font-weight:700;border:1px solid rgba(255,255,255,.45);
+  background:rgba(255,255,255,.10);color:#fff;border-radius:7px;padding:6px 10px;cursor:pointer;
+}
+#bar input{cursor:text;min-width:180px}
+#bar input::placeholder{color:rgba(255,255,255,.7)}
+#bar select option{color:#111;background:#fff}
+#bar button:hover,#bar select:hover{background:rgba(255,255,255,.22)}
+#bar .spacer{flex:1}
+#count{font-size:13px;font-weight:700;opacity:.9}
+
+.wrap{max-width:1180px;margin:18px auto 60px;padding:0 16px;display:grid;grid-template-columns:380px 1fr;gap:18px;align-items:start}
+
+/* ---------- roster ---------- */
+.panel{background:#fff;border-radius:12px;box-shadow:0 1px 8px rgba(0,0,0,.09);overflow:hidden}
+.panel h2{margin:0;padding:12px 16px;font-size:1rem;background:var(--pine-lt);color:var(--pine-dk);border-bottom:1px solid var(--rule)}
+ul.roster{list-style:none;margin:0;padding:0;max-height:72vh;overflow:auto}
+ul.roster li{border-bottom:1px solid #eceeed;padding:10px 14px;cursor:pointer}
+ul.roster li:hover{background:#f5f9f7}
+ul.roster li.sel{background:var(--pine-lt);box-shadow:inset 4px 0 0 var(--pine)}
+ul.roster .nm{font-weight:800;color:var(--pine-dk)}
+ul.roster .em{font-size:.8rem;color:var(--muted);word-break:break-all}
+ul.roster .meta{font-size:.78rem;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;margin-top:2px;align-items:center}
+.pill{display:inline-block;font-size:.7rem;font-weight:800;border-radius:20px;padding:1px 8px}
+.pill.in{background:#d8f0e0;color:#1c5c37}
+.pill.wip{background:#fdf0d4;color:#8a6410}
+.bar{height:5px;background:#e6eae8;border-radius:4px;overflow:hidden;width:80px;flex:none}
+.bar i{display:block;height:100%;background:var(--pine)}
+.empty{padding:26px 16px;color:var(--muted);font-weight:600;text-align:center}
+
+/* ---------- detail ---------- */
+#detail{min-height:200px}
+.dhead{padding:16px 20px;border-bottom:1px solid var(--rule)}
+.dhead h3{margin:0;font-size:1.35rem;color:var(--pine)}
+.dhead .sub{color:var(--muted);font-weight:700;font-size:.9rem}
+.dhead .acts{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+.dhead .acts button{
+  font-family:inherit;font-weight:800;font-size:.85rem;border:2px solid var(--pine);
+  background:#fff;color:var(--pine);border-radius:7px;padding:6px 11px;cursor:pointer;
+}
+.dhead .acts button:hover{background:var(--pine-lt)}
+.dhead .acts button.danger{border-color:#b3261e;color:#b3261e}
+.dhead .acts button.danger:hover{background:#fdeceb}
+.dbody{padding:8px 20px 24px}
+.qa{border-bottom:1px solid #eceeed;padding:12px 0;break-inside:avoid}
+.qa .tag{display:inline-block;font-size:.65rem;font-weight:800;letter-spacing:.5px;color:#fff;border-radius:4px;padding:1px 7px;margin-right:7px;vertical-align:2px}
+.tag.REVIEW{background:var(--tag-review)}.tag.INFER{background:var(--tag-infer)}
+.tag.CONNECT{background:var(--tag-connect)}.tag.LANGUAGE{background:var(--tag-language)}
+.tag.ML{background:var(--tag-ml)}
+.qa .q{font-weight:800;color:var(--pine-dk);margin:0 0 5px}
+.qa .a{white-space:pre-wrap;background:#f7faf8;border-left:3px solid var(--pine);padding:8px 12px;border-radius:0 6px 6px 0}
+.qa .a.blank{color:#a3aeaa;font-style:italic;border-left-color:#d6dbd8;background:#fafbfa}
+h4.sec{margin:26px 0 6px;font-size:1.05rem;color:var(--pine);border-bottom:2px solid var(--pine-lt);padding-bottom:4px}
+table.mini{width:100%;border-collapse:collapse;font-size:.93rem}
+table.mini td{border-bottom:1px solid #eceeed;padding:6px 8px;vertical-align:top}
+table.mini td.ans{width:70px;text-align:center;font-weight:800}
+td.ans.right{color:#1c5c37}td.ans.wrong{color:#b3261e}td.ans.none{color:#b6bebb}
+.scorebox{background:var(--pine-lt);border-radius:9px;padding:10px 14px;font-weight:800;color:var(--pine-dk);margin:10px 0 0;display:inline-block}
+
+@media print{
+  #bar,#gate,.panel.left,.dhead .acts,.noprint{display:none !important}
+  body{background:#fff}
+  .wrap{display:block;max-width:100%;margin:0;padding:0}
+  .panel{box-shadow:none}
+}
+@media (max-width:900px){
+  .wrap{grid-template-columns:1fr}
+  ul.roster{max-height:340px}
+}
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="card">
+    <h1>Teacher Dashboard</h1>
+    <p>September 11, 2001 &mdash; Reading Guide</p>
+    <input id="pw" type="password" placeholder="Password" autocomplete="current-password">
+    <button id="pwGo" type="button">Open dashboard</button>
+    <div class="err" id="pwErr"></div>
+  </div>
+</div>
+
+<div id="bar">
+  <span class="brand">September 11 &mdash; Responses</span>
+  <select id="fGuide">
+    <option value="">Both versions</option>
+    <option value="sept11_rg1">Full version</option>
+    <option value="sept11_rg2">Easy version</option>
+  </select>
+  <select id="fPeriod"><option value="">All periods</option></select>
+  <select id="fStatus">
+    <option value="">All students</option>
+    <option value="in">Turned in only</option>
+    <option value="wip">Not turned in</option>
+  </select>
+  <input id="fSearch" type="text" placeholder="Search name or email">
+  <button id="refresh" type="button">Refresh</button>
+  <button id="csv" type="button">Download CSV</button>
+  <span class="spacer"></span>
+  <span id="count"></span>
+</div>
+
+<div class="wrap">
+  <div class="panel left">
+    <h2>Students</h2>
+    <ul class="roster" id="roster"><li class="empty">Loading&hellip;</li></ul>
+  </div>
+  <div class="panel" id="detail">
+    <div class="empty">Choose a student on the left to read their answers.</div>
+  </div>
+</div>
+
+<script>
+var SUPA_URL = "https://lhmwtfyceilgndpygivj.supabase.co";
+var SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU";
+var TABLE = "sept11_responses";
+var PASSWORD = "galileo2026";
+
+/* answer keys, kept in step with the student guide */
+var TF_KEY = ["F","T","T","F","T","T","F","T","T"];
+var ORDER_KEY = ["4","1","6","3","2","5"];
+var CLOZE_KEY = ["hijacked","fuel","towers","Pentagon","field","flames","Firefighters","escape","collapsed","memorial","remember"];
+
+var rows = [], selected = null;
+
+function H(){
+  return { "apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY, "Content-Type": "application/json" };
+}
+function esc(s){
+  return String(s == null ? "" : s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+function when(iso){
+  if(!iso) return "";
+  var d = new Date(iso);
+  var mo = d.getMonth() + 1, da = d.getDate();
+  var h = d.getHours(), m = d.getMinutes();
+  var ap = h >= 12 ? "PM" : "AM"; h = h % 12; if(h === 0) h = 12;
+  if(m < 10) m = "0" + m;
+  return mo + "/" + da + " " + h + ":" + m + " " + ap;
+}
+
+/* ---------- gate ---------- */
+function openDash(){
+  document.getElementById("gate").style.display = "none";
+  load();
+}
+document.getElementById("pwGo").addEventListener("click", function(){
+  if(document.getElementById("pw").value === PASSWORD){
+    try{ sessionStorage.setItem("sept11_dash", "1"); }catch(e){}
+    openDash();
+  } else {
+    document.getElementById("pwErr").textContent = "Wrong password.";
+  }
+});
+document.getElementById("pw").addEventListener("keydown", function(e){
+  if(e.key === "Enter") document.getElementById("pwGo").click();
+});
+
+/* ---------- load ---------- */
+function load(){
+  document.getElementById("count").textContent = "Loading\u2026";
+  var url = SUPA_URL + "/rest/v1/" + TABLE +
+            "?select=*&order=period.asc,student_name.asc";
+  fetch(url, { headers: H() })
+    .then(function(r){
+      if(!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    })
+    .then(function(data){
+      rows = data || [];
+      buildPeriodFilter();
+      draw();
+    })
+    .catch(function(e){
+      document.getElementById("roster").innerHTML =
+        '<li class="empty">Could not load.<br>' + esc(e.message) +
+        '<br><br>Check that the table exists and RLS allows anon select.</li>';
+      document.getElementById("count").textContent = "";
+    });
+}
+
+function buildPeriodFilter(){
+  var sel = document.getElementById("fPeriod");
+  var cur = sel.value, seen = {}, list = [];
+  for(var i = 0; i < rows.length; i++){
+    var p = rows[i].period || "";
+    if(p && !seen[p]){ seen[p] = 1; list.push(p); }
+  }
+  list.sort();
+  var h = '<option value="">All periods</option>';
+  for(var j = 0; j < list.length; j++){
+    h += '<option value="' + esc(list[j]) + '">Period ' + esc(list[j]) + '</option>';
+  }
+  sel.innerHTML = h;
+  sel.value = cur;
+}
+
+function filtered(){
+  var g = document.getElementById("fGuide").value;
+  var p = document.getElementById("fPeriod").value;
+  var st = document.getElementById("fStatus").value;
+  var q = document.getElementById("fSearch").value.trim().toLowerCase();
+  var out = [];
+  for(var i = 0; i < rows.length; i++){
+    var r = rows[i];
+    if(g && r.guide_key !== g) continue;
+    if(p && r.period !== p) continue;
+    if(st === "in" && !r.submitted) continue;
+    if(st === "wip" && r.submitted) continue;
+    if(q){
+      var hay = ((r.student_name || "") + " " + (r.email || "")).toLowerCase();
+      if(hay.indexOf(q) === -1) continue;
+    }
+    out.push(r);
+  }
+  return out;
+}
+
+function draw(){
+  var list = filtered();
+  var ul = document.getElementById("roster");
+  if(!list.length){
+    ul.innerHTML = '<li class="empty">No students match.</li>';
+    document.getElementById("count").textContent = rows.length + " total";
+    return;
+  }
+  var h = "";
+  for(var i = 0; i < list.length; i++){
+    var r = list[i];
+    var tot = r.total || 1;
+    var pct = Math.round(100 * (r.answered || 0) / tot);
+    var pill = r.submitted
+      ? '<span class="pill in">Turned in</span>'
+      : '<span class="pill wip">In progress</span>';
+    h += '<li data-id="' + esc(r.id) + '"' + (selected === r.id ? ' class="sel"' : '') + '>' +
+         '<div class="nm">' + esc(r.student_name) + '</div>' +
+         '<div class="em">' + esc(r.email) + '</div>' +
+         '<div class="meta">' + pill +
+         '<span class="bar"><i style="width:' + pct + '%"></i></span>' +
+         '<span>' + (r.answered || 0) + '/' + tot + '</span>' +
+         '<span>P' + esc(r.period) + '</span>' +
+         '<span>' + (r.guide_key === "sept11_rg2" ? "Easy" : "Full") + '</span>' +
+         '<span>' + when(r.updated_at) + '</span>' +
+         '</div></li>';
+  }
+  ul.innerHTML = h;
+  document.getElementById("count").textContent =
+    list.length + " shown \u00b7 " + rows.length + " total";
+}
+
+document.getElementById("roster").addEventListener("click", function(e){
+  var li = e.target.closest ? e.target.closest("li[data-id]") : null;
+  if(!li) return;
+  selected = li.getAttribute("data-id");
+  draw();
+  showDetail(selected);
+});
+document.getElementById("fGuide").addEventListener("change", draw);
+document.getElementById("fPeriod").addEventListener("change", draw);
+document.getElementById("fStatus").addEventListener("change", draw);
+document.getElementById("fSearch").addEventListener("input", draw);
+document.getElementById("refresh").addEventListener("click", load);
+
+/* ---------- detail ---------- */
+function findRow(id){
+  for(var i = 0; i < rows.length; i++){ if(rows[i].id === id) return rows[i]; }
+  return null;
+}
+
+function showDetail(id){
+  var r = findRow(id);
+  var box = document.getElementById("detail");
+  if(!r){ box.innerHTML = '<div class="empty">Not found.</div>'; return; }
+  var p = r.payload || {};
+  var K = (p.meta && p.meta.keys) ? p.meta.keys : { tf: TF_KEY, order: ORDER_KEY, cloze: CLOZE_KEY };
+
+  var h = '<div class="dhead">' +
+    '<h3>' + esc(r.student_name) + '</h3>' +
+    '<div class="sub">' + esc(r.email) + ' \u00b7 Period ' + esc(r.period) +
+    ' \u00b7 ' + (r.guide_key === "sept11_rg2" ? "Easy version" : "Full version") +
+    ' \u00b7 last saved ' + when(r.updated_at) +
+    (r.submitted ? ' \u00b7 turned in ' + when(r.submitted_at) : ' \u00b7 not turned in') +
+    '</div>' +
+    '<div class="acts">' +
+    '<button type="button" onclick="window.print()">Print this student</button>' +
+    '<button type="button" class="danger" data-del="' + esc(r.id) + '">Delete this record</button>' +
+    '</div></div><div class="dbody">';
+
+  /* scored sections */
+  var tfRight = 0, ordRight = 0, czRight = 0;
+
+  if(p.tf && p.tf.length){
+    h += '<h4 class="sec">True or false</h4><table class="mini">';
+    for(var i = 0; i < p.tf.length; i++){
+      var got = p.tf[i].a || "";
+      var key = K.tf[i] || "";
+      var cls = got ? (got === key ? "right" : "wrong") : "none";
+      if(got && got === key) tfRight++;
+      h += '<tr><td>' + esc(p.tf[i].s) + '</td>' +
+           '<td class="ans ' + cls + '">' + (got ? esc(got) : "\u2014") + '</td>' +
+           '<td class="ans none">key ' + esc(key) + '</td></tr>';
+    }
+    h += '</table><div class="scorebox">True/false: ' + tfRight + ' / ' + p.tf.length + '</div>';
+  }
+
+  if(p.order && p.order.length){
+    h += '<h4 class="sec">Timeline order</h4><table class="mini">';
+    for(var o = 0; o < p.order.length; o++){
+      var g = p.order[o].a || "";
+      var k = K.order[o] || "";
+      var c = g ? (g === k ? "right" : "wrong") : "none";
+      if(g && g === k) ordRight++;
+      h += '<tr><td class="ans ' + c + '">' + (g ? esc(g) : "\u2014") + '</td>' +
+           '<td>' + esc(p.order[o].ev) + '</td>' +
+           '<td class="ans none">' + esc(k) + '</td></tr>';
+    }
+    h += '</table><div class="scorebox">Order: ' + ordRight + ' / ' + p.order.length + '</div>';
+  }
+
+  if(p.cloze && p.cloze.length){
+    h += '<h4 class="sec">Summary cloze</h4><table class="mini">';
+    for(var c2 = 0; c2 < p.cloze.length; c2++){
+      var gv = (p.cloze[c2].a || "").trim();
+      var kv = K.cloze[c2] || "";
+      var ok = gv && gv.toLowerCase() === kv.toLowerCase();
+      if(ok) czRight++;
+      h += '<tr><td class="ans none">' + (c2 + 1) + '</td>' +
+           '<td class="ans ' + (gv ? (ok ? "right" : "wrong") : "none") + '">' +
+           (gv ? esc(gv) : "\u2014") + '</td>' +
+           '<td class="ans none">' + esc(kv) + '</td></tr>';
+    }
+    h += '</table><div class="scorebox">Cloze: ' + czRight + ' / ' + p.cloze.length + '</div>';
+  }
+
+  /* written answers */
+  if(p.questions && p.questions.length){
+    h += '<h4 class="sec">Written answers</h4>';
+    for(var q = 0; q < p.questions.length; q++){
+      var it = p.questions[q];
+      var tag = (it.tag || "").toUpperCase();
+      var ans = (it.a || "").trim();
+      h += '<div class="qa">' +
+           '<p class="q">' + (tag ? '<span class="tag ' + esc(tag) + '">' + esc(tag) + '</span>' : '') +
+           esc(it.q) + '</p>' +
+           '<div class="a' + (ans ? '' : ' blank') + '">' + (ans ? esc(ans) : "no answer yet") + '</div>' +
+           '</div>';
+    }
+  }
+
+  h += '</div>';
+  box.innerHTML = h;
+
+  var delBtn = box.querySelector("[data-del]");
+  if(delBtn){
+    delBtn.addEventListener("click", function(){
+      if(!confirm("Delete " + r.student_name + "'s record? This cannot be undone.")) return;
+      fetch(SUPA_URL + "/rest/v1/" + TABLE + "?id=eq." + encodeURIComponent(r.id), {
+        method: "DELETE",
+        headers: H()
+      }).then(function(res){
+        if(res.ok){
+          selected = null;
+          document.getElementById("detail").innerHTML =
+            '<div class="empty">Record deleted.</div>';
+          load();
+        } else {
+          alert("Delete failed. Check that RLS allows anon delete.");
+        }
+      });
+    });
+  }
+}
+
+/* ---------- CSV ---------- */
+function csvCell(v){
+  var s = String(v == null ? "" : v).replace(/"/g, '""');
+  return '"' + s + '"';
+}
+document.getElementById("csv").addEventListener("click", function(){
+  var list = filtered();
+  if(!list.length){ alert("Nothing to export."); return; }
+
+  /* build the column list from the first record that has a payload */
+  var sample = null;
+  for(var i = 0; i < list.length; i++){
+    if(list[i].payload && list[i].payload.questions){ sample = list[i].payload; break; }
+  }
+  var cols = ["Name","Email","Period","Turned in","Last saved","Answered","Total"];
+  if(sample){
+    for(var q = 0; q < sample.questions.length; q++){
+      cols.push("Q" + (q + 1) + " " + (sample.questions[q].q || "").slice(0, 60));
+    }
+    for(var t = 0; t < sample.tf.length; t++){ cols.push("TF" + (t + 1)); }
+    for(var o = 0; o < sample.order.length; o++){ cols.push("Order" + (o + 1)); }
+    for(var c = 0; c < sample.cloze.length; c++){ cols.push("Cloze" + (c + 1)); }
+  }
+
+  var lines = [cols.map(csvCell).join(",")];
+  for(var r = 0; r < list.length; r++){
+    var row = list[r], p = row.payload || {};
+    var cells = [row.student_name, row.email, row.period,
+                 row.submitted ? "yes" : "no", when(row.updated_at),
+                 row.answered || 0, row.total || 0];
+    if(sample){
+      var qs = p.questions || [], tf = p.tf || [], od = p.order || [], cz = p.cloze || [];
+      for(var a = 0; a < sample.questions.length; a++){ cells.push(qs[a] ? qs[a].a : ""); }
+      for(var b = 0; b < sample.tf.length; b++){ cells.push(tf[b] ? tf[b].a : ""); }
+      for(var d = 0; d < sample.order.length; d++){ cells.push(od[d] ? od[d].a : ""); }
+      for(var e2 = 0; e2 < sample.cloze.length; e2++){ cells.push(cz[e2] ? cz[e2].a : ""); }
+    }
+    lines.push(cells.map(csvCell).join(","));
+  }
+
+  var blob = new Blob(["\ufeff" + lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
+  var a2 = document.createElement("a");
+  a2.href = URL.createObjectURL(blob);
+  a2.download = "sept11_responses.csv";
+  document.body.appendChild(a2);
+  a2.click();
+  document.body.removeChild(a2);
+});
+
+/* stay signed in for the class period */
+try{
+  if(sessionStorage.getItem("sept11_dash") === "1") openDash();
+  else document.getElementById("pw").focus();
+}catch(e){
+  document.getElementById("pw").focus();
+}
+</script>
+<script src="/readings/track.js"></script>
+</body>
+</html>

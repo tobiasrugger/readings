@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Seedfolks — Teacher Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#101c17;--card:#1c3129;--edge:#2b4a3c;--text:#eaf1ed;--muted:#93a89d;--pine:#3f9e73;--gold:#d9a441;--clay:#e0705c}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Nunito',-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.6}
+.wrap{max-width:1180px;margin:0 auto;padding:26px 18px 80px}
+h1{font-size:1.9rem;margin:0;font-weight:800;letter-spacing:-.6px}
+.sub{color:var(--muted);font-weight:700;margin:4px 0 0;font-size:.9rem}
+
+#gate{position:fixed;inset:0;background:#0c1512;display:flex;align-items:center;justify-content:center;z-index:99;padding:20px}
+#gate .box{background:var(--card);border:1px solid var(--edge);border-radius:14px;padding:26px;max-width:340px;width:100%}
+#gate h2{margin:0 0 14px;font-size:1.25rem}
+#gate input{width:100%;font-family:inherit;font-size:1rem;padding:10px 12px;border-radius:9px;border:1px solid var(--edge);background:#14231d;color:var(--text)}
+#gate button{width:100%;margin-top:14px;padding:12px;border:0;border-radius:9px;background:var(--pine);color:#0d1a14;font-family:inherit;font-weight:800;font-size:1rem;cursor:pointer}
+#gate .err{color:var(--clay);font-weight:700;font-size:.85rem;margin-top:10px;display:none}
+
+.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:22px 0 14px}
+select,button.act{font-family:inherit;font-weight:800;font-size:.85rem;border-radius:9px;border:1px solid var(--edge);background:var(--card);color:var(--text);padding:9px 13px;cursor:pointer}
+button.act:hover,select:hover{border-color:var(--pine)}
+button.act.gold{background:var(--gold);color:#20160a;border-color:var(--gold)}
+.stats{display:flex;gap:14px;flex-wrap:wrap;margin-left:auto;color:var(--muted);font-weight:800;font-size:.85rem}
+.stats b{color:var(--text)}
+
+table{width:100%;border-collapse:collapse;margin-top:8px;font-size:.92rem}
+th{text-align:left;color:var(--muted);font-size:.74rem;font-weight:800;padding:8px 10px;border-bottom:1px solid var(--edge);white-space:nowrap}
+td{padding:10px;border-bottom:1px solid #223a30;vertical-align:middle}
+tr.row:hover{background:#1a2e26;cursor:pointer}
+.nm{font-weight:800}
+.em{color:var(--muted);font-size:.8rem}
+.pill{font-size:.7rem;font-weight:800;padding:3px 9px;border-radius:20px;background:#244135;color:var(--muted)}
+.pill.in{background:var(--pine);color:#0d1a14}
+.bar{height:8px;background:#244135;border-radius:6px;overflow:hidden;min-width:110px}
+.bar i{display:block;height:100%;background:var(--pine)}
+.score{font-weight:800}
+.score.low{color:var(--clay)}
+.score.mid{color:var(--gold)}
+.score.hi{color:#7fe0ac}
+
+tr.detail td{background:#16261f;padding:0}
+.detail .inner{padding:16px 18px 20px}
+.detail h4{margin:14px 0 6px;font-size:.8rem;color:var(--muted);font-weight:800}
+.detail h4:first-child{margin-top:0}
+.ans{margin:6px 0;padding:8px 11px;background:#1c3129;border-left:3px solid var(--edge);border-radius:0 8px 8px 0;font-size:.9rem}
+.ans .qt{color:var(--muted);font-size:.78rem;font-weight:800;display:block;margin-bottom:2px}
+.ans.ok{border-left-color:var(--pine)}
+.ans.bad{border-left-color:var(--clay)}
+.ans .key{color:var(--gold);font-size:.78rem;font-weight:800}
+.empty{color:var(--muted);padding:40px 0;text-align:center;font-weight:700}
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="box">
+    <h2>Teacher dashboard</h2>
+    <input id="pw" type="password" placeholder="Password" autocomplete="current-password">
+    <button id="go">Open</button>
+    <div class="err" id="perr">Wrong password.</div>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>Seedfolks</h1>
+  <p class="sub">Student work, auto-scored. Click any row to read the full answers.</p>
+
+  <div class="controls">
+    <select id="fchap"><option value="">All chapters</option></select>
+    <select id="fver">
+      <option value="">Both versions</option>
+      <option value="standard">Standard</option>
+      <option value="easier">Easier</option>
+    </select>
+    <select id="fper"><option value="">All periods</option></select>
+    <select id="fstat">
+      <option value="">Everyone</option>
+      <option value="in">Turned in</option>
+      <option value="out">Not turned in</option>
+    </select>
+    <button class="act" id="refresh">Refresh</button>
+    <button class="act gold" id="csv">Export CSV</button>
+    <div class="stats" id="stats"></div>
+  </div>
+
+  <table id="tbl">
+    <thead>
+      <tr>
+        <th>Student</th><th>Per</th><th>Chapter</th><th>Version</th>
+        <th>Done</th><th>Auto score</th><th>Status</th><th>Last saved</th>
+      </tr>
+    </thead>
+    <tbody id="body"></tbody>
+  </table>
+  <div class="empty" id="empty" style="display:none">No student work yet.</div>
+</div>
+
+<script>
+var SUPA_URL = 'https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var TABLE = 'seedfolks_work';
+var PASSWORD = 'galileo2026';
+
+/* ---- chapter registry: add a line here for each new chapter ---- */
+var CHAPTERS = { kim:'1. Kim' };
+
+/* ---- answer keys and expected field counts ---- */
+var CONFIG = {
+  'kim|standard': {
+    total: 54,
+    keys: {
+      m0:'1', m1:'2', m2:'0', m3:'1', m4:'2', m5:'1', m6:'2', m7:'1', m8:'3', m9:'1',
+      s0:'yes', s1:'no', s2:'yes', s3:'no', s4:'yes', s5:'no', s6:'yes', s7:'no', s8:'yes', s9:'no',
+      v1:'walked', v2:'planted', v3:'watched', v4:'carried', v5:'dug', v6:'took'
+    },
+    labels: {
+      a0:'Agree/disagree: one person can change a neighborhood',
+      a1:'Agree/disagree: you can love someone you never met',
+      a2:'Agree/disagree: better to do good quietly',
+      a3:'Agree/disagree: a garden is only about food',
+      b1:'Before: a person who made your neighborhood better',
+      b2:'Before: how your family remembers someone who died',
+      r1:'Who is in Kim\u2019s family', r2:'What day is it and what does the family do',
+      r3:'Why Kim does not remember her father', r4:'Her father\u2019s work',
+      r5:'What Kim is afraid of', r6:'Why she goes out so early',
+      r7:'Five things in the vacant lot', r8:'What she digs with, and why that spot',
+      r9:'What she wants her father to see',
+      m0:'MC: age', m1:'MC: home country', m2:'MC: city', m3:'MC: when father died',
+      m4:'MC: father\u2019s job', m5:'MC: what she plants', m6:'MC: where she plants',
+      m7:'MC: why she plants', m8:'MC: who she tells', m9:'MC: how she feels',
+      c1:'Card: age', c2:'Card: country', c3:'Card: city', c4:'Card: language',
+      c5:'Card: what she plants', c6:'Card: feeling', c7:'What it shows about her',
+      s0:'Sort 1', s1:'Sort 2', s2:'Sort 3', s3:'Sort 4', s4:'Sort 5',
+      s5:'Sort 6', s6:'Sort 7', s7:'Sort 8', s8:'Sort 9', s9:'Sort 10',
+      g1:'Own rule for sentences', g2:'because\u2026', g3:'but\u2026', g4:'so\u2026',
+      v1:'walk', v2:'plant', v3:'watch', v4:'carry', v5:'dig', v6:'take',
+      w1:'Paragraph', w2:'Fixed sentence'
+    }
+  },
+  'kim|easier': {
+    total: 32,
+    keys: {
+      m0:'1', m1:'2', m2:'0', m3:'1', m4:'0', m5:'1', m6:'2', m7:'1',
+      s0:'yes', s1:'no', s2:'yes', s3:'no', s4:'yes', s5:'no',
+      v1:'walked', v2:'planted', v3:'watched'
+    },
+    labels: {
+      r1:'How old is Kim', r2:'Who lives with Kim', r3:'Father\u2019s job',
+      r4:'Why she never met him', r5:'Three things in the lot',
+      r6:'How many beans', r7:'Why she plants them',
+      m0:'MC: age', m1:'MC: country', m2:'MC: city', m3:'MC: father\u2019s job',
+      m4:'MC: what she plants', m5:'MC: where', m6:'MC: who she tells', m7:'MC: what she wants',
+      c1:'Card: age', c2:'Card: country', c3:'Card: city', c4:'Card: plants', c5:'Card: feels',
+      s0:'Sort 1', s1:'Sort 2', s2:'Sort 3', s3:'Sort 4', s4:'Sort 5', s5:'Sort 6',
+      g1:'because\u2026', g2:'so\u2026',
+      v1:'walk', v2:'plant', v3:'watch',
+      w1:'Three sentences'
+    }
+  }
+};
+
+var ROWS = [];
+var $ = function(id){ return document.getElementById(id); };
+
+function norm(s){
+  return String(s || '').toLowerCase().replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ').trim();
+}
+
+function scoreOf(row){
+  var cfg = CONFIG[row.chapter + '|' + row.version];
+  if(!cfg) return { got:0, out:0 };
+  var got = 0, out = 0, a = row.answers || {};
+  Object.keys(cfg.keys).forEach(function(k){
+    out++;
+    var want = norm(cfg.keys[k]), have = norm(a[k]);
+    if(!have) return;
+    if(have === want) got++;
+    else if(want.length > 3 && have.indexOf(want) >= 0) got++;
+  });
+  return { got:got, out:out };
+}
+
+function doneOf(row){
+  var cfg = CONFIG[row.chapter + '|' + row.version];
+  var total = cfg ? cfg.total : Object.keys(row.answers || {}).length || 1;
+  var n = 0, a = row.answers || {};
+  Object.keys(a).forEach(function(k){ if(String(a[k] || '').trim()) n++; });
+  return Math.min(100, Math.round(n / total * 100));
+}
+
+function load(){
+  fetch(SUPA_URL + '/rest/v1/' + TABLE + '?select=*&order=student_name.asc', {
+    headers:{ 'apikey':SUPA_KEY, 'Authorization':'Bearer ' + SUPA_KEY }
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    ROWS = Array.isArray(d) ? d : [];
+    fillFilters();
+    render();
+  })
+  .catch(function(e){ console.error(e); $('empty').style.display = 'block'; $('empty').textContent = 'Could not reach Supabase.'; });
+}
+
+function fillFilters(){
+  var chaps = {}, pers = {};
+  ROWS.forEach(function(r){ chaps[r.chapter] = 1; if(r.period) pers[r.period] = 1; });
+  var c = $('fchap'), cur = c.value;
+  c.innerHTML = '<option value="">All chapters</option>';
+  Object.keys(chaps).sort().forEach(function(k){
+    c.innerHTML += '<option value="' + k + '">' + (CHAPTERS[k] || k) + '</option>';
+  });
+  c.value = cur;
+  var p = $('fper'), curp = p.value;
+  p.innerHTML = '<option value="">All periods</option>';
+  Object.keys(pers).sort().forEach(function(k){ p.innerHTML += '<option value="' + k + '">Period ' + k + '</option>'; });
+  p.value = curp;
+}
+
+function filtered(){
+  var ch = $('fchap').value, ve = $('fver').value, pe = $('fper').value, st = $('fstat').value;
+  return ROWS.filter(function(r){
+    if(ch && r.chapter !== ch) return false;
+    if(ve && r.version !== ve) return false;
+    if(pe && String(r.period) !== pe) return false;
+    if(st === 'in' && !r.turned_in) return false;
+    if(st === 'out' && r.turned_in) return false;
+    return true;
+  });
+}
+
+function render(){
+  var rows = filtered(), h = '';
+  rows.forEach(function(r, i){
+    var sc = scoreOf(r), pct = doneOf(r);
+    var pc = sc.out ? Math.round(sc.got / sc.out * 100) : 0;
+    var cls = pc >= 80 ? 'hi' : (pc >= 55 ? 'mid' : 'low');
+    var when = r.updated_at ? new Date(r.updated_at).toLocaleString([], { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }) : '';
+    h += '<tr class="row" data-i="' + i + '">'
+      + '<td><div class="nm">' + esc(r.student_name || '(no name)') + '</div><div class="em">' + esc(r.email) + '</div></td>'
+      + '<td>' + esc(r.period || '') + '</td>'
+      + '<td>' + esc(CHAPTERS[r.chapter] || r.chapter) + '</td>'
+      + '<td>' + esc(r.version) + '</td>'
+      + '<td><div class="bar"><i style="width:' + pct + '%"></i></div><div class="em">' + pct + '%</div></td>'
+      + '<td class="score ' + cls + '">' + sc.got + ' / ' + sc.out + '</td>'
+      + '<td><span class="pill ' + (r.turned_in ? 'in' : '') + '">' + (r.turned_in ? 'Turned in' : 'Working') + '</span></td>'
+      + '<td class="em">' + when + '</td></tr>'
+      + '<tr class="detail" id="d' + i + '" style="display:none"><td colspan="8"><div class="inner" id="di' + i + '"></div></td></tr>';
+  });
+  $('body').innerHTML = h;
+  $('empty').style.display = rows.length ? 'none' : 'block';
+
+  var turned = rows.filter(function(r){ return r.turned_in; }).length;
+  var avg = rows.length ? Math.round(rows.reduce(function(a,r){ var s = scoreOf(r); return a + (s.out ? s.got / s.out : 0); }, 0) / rows.length * 100) : 0;
+  $('stats').innerHTML = '<span><b>' + rows.length + '</b> students</span><span><b>' + turned + '</b> turned in</span><span>avg <b>' + avg + '%</b></span>';
+
+  Array.prototype.forEach.call(document.querySelectorAll('tr.row'), function(tr){
+    tr.addEventListener('click', function(){ toggle(parseInt(tr.getAttribute('data-i'), 10), rows); });
+  });
+}
+
+function toggle(i, rows){
+  var d = $('d' + i);
+  if(d.style.display !== 'none'){ d.style.display = 'none'; return; }
+  var r = rows[i], cfg = CONFIG[r.chapter + '|' + r.version] || { keys:{}, labels:{} };
+  var a = r.answers || {}, h = '';
+  var order = Object.keys(cfg.labels).length ? Object.keys(cfg.labels) : Object.keys(a);
+  var groups = [['Before reading','ab'],['Reading questions','r'],['Multiple choice','m'],['Character card','c'],['Sentence sort','s'],['Grammar','gv'],['Writing','w']];
+  groups.forEach(function(g){
+    var part = order.filter(function(k){ return g[1].indexOf(k[0]) >= 0; });
+    if(!part.length) return;
+    var body = '';
+    part.forEach(function(k){
+      var v = a[k];
+      if(v === undefined || String(v).trim() === '') return;
+      var key = cfg.keys[k];
+      var cls = '', extra = '';
+      if(key !== undefined){
+        var ok = norm(v) === norm(key) || (norm(key).length > 3 && norm(v).indexOf(norm(key)) >= 0);
+        cls = ok ? ' ok' : ' bad';
+        if(!ok) extra = ' <span class="key">(key: ' + esc(keyText(r, k, key)) + ')</span>';
+      }
+      var shown = keyText(r, k, v);
+      body += '<div class="ans' + cls + '"><span class="qt">' + esc(cfg.labels[k] || k) + '</span>' + esc(shown) + extra + '</div>';
+    });
+    if(body) h += '<h4>' + g[0] + '</h4>' + body;
+  });
+  $('di' + i).innerHTML = h || '<div class="em">Nothing answered yet.</div>';
+  d.style.display = '';
+}
+
+/* multiple-choice values are stored as an index; show the index plainly */
+function keyText(r, k, v){
+  if(k[0] === 'm') return 'choice ' + (parseInt(v, 10) + 1);
+  return String(v);
+}
+
+function esc(s){
+  return String(s === undefined || s === null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function exportCSV(){
+  var rows = filtered();
+  var cols = ['student_name','email','period','chapter','version','done_pct','auto_score','auto_out','turned_in','updated_at'];
+  var keySet = {};
+  rows.forEach(function(r){ Object.keys(r.answers || {}).forEach(function(k){ keySet[k] = 1; }); });
+  var aKeys = Object.keys(keySet).sort();
+  var out = cols.concat(aKeys).join(',') + '\n';
+  rows.forEach(function(r){
+    var sc = scoreOf(r);
+    var line = [
+      q(r.student_name), q(r.email), q(r.period), q(r.chapter), q(r.version),
+      doneOf(r), sc.got, sc.out, r.turned_in ? 'yes' : 'no', q(r.updated_at)
+    ];
+    aKeys.forEach(function(k){ line.push(q((r.answers || {})[k])); });
+    out += line.join(',') + '\n';
+  });
+  var blob = new Blob([out], { type:'text/csv;charset=utf-8' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'seedfolks_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+}
+function q(v){
+  var s = String(v === undefined || v === null ? '' : v);
+  return '"' + s.replace(/"/g,'""').replace(/\n/g,' ') + '"';
+}
+
+$('csv').addEventListener('click', exportCSV);
+$('refresh').addEventListener('click', load);
+['fchap','fver','fper','fstat'].forEach(function(id){ $(id).addEventListener('change', render); });
+
+$('go').addEventListener('click', function(){
+  if($('pw').value === PASSWORD){
+    $('gate').style.display = 'none';
+    try { sessionStorage.setItem('sf_dash','1'); } catch(e){}
+    load();
+  } else { $('perr').style.display = 'block'; }
+});
+$('pw').addEventListener('keydown', function(e){ if(e.key === 'Enter') $('go').click(); });
+try { if(sessionStorage.getItem('sf_dash') === '1'){ $('gate').style.display = 'none'; load(); } } catch(e){}
+</script>
+<script src="/readings/track.js"></script>
+</body>
+</html>
