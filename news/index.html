@@ -150,7 +150,8 @@
       <textarea id="doc" style="min-height:320px;font-size:14px"></textarea>
       <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
         <button class="btn" style="background:var(--pine);color:#fff" id="pub">Publish</button>
-        <button class="btn" id="prev">Preview without publishing</button>
+        <button class="btn" id="draft">Save as draft</button>
+        <button class="btn" id="prev">Preview only</button>
         <span id="pubMsg" class="muted"></span>
       </div>
     </div>
@@ -171,10 +172,7 @@
     <label class="q">School email</label>
     <input class="txt" id="siEmail" placeholder="name@s.sfusd.edu" autocomplete="email">
     <label class="q">Period</label>
-    <select class="txt" id="siPeriod">
-    <option value="">—</option>
-    <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option>
-  </select>
+    <select class="txt" id="siPeriod"><option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select>
     <p id="siErr" style="color:var(--no);font-weight:700;min-height:22px;margin:8px 0 0"></p>
     <button class="big" id="siGo" style="width:100%">Start</button>
   </div>
@@ -581,19 +579,20 @@ $('pwGo').onclick=function(){
   else alert('Wrong password.');
 };
 $('prev').onclick=function(){ A=parseDoc($('doc').value); ROLE=''; ANS={}; render(); alert('Preview loaded. Nothing was published.'); };
-$('pub').onclick=function(){
+function saveDoc(live){
   var d=parseDoc($('doc').value);
   if(!d.meta.SLUG||!d.meta.TITLE){alert('The document needs a SLUG: line and a TITLE: line at the top.');return;}
-  $('pubMsg').textContent='Publishing…';
+  $('pubMsg').textContent=live?'Publishing\u2026':'Saving draft\u2026';
   fetch(SUPA_URL+'/rest/v1/news_articles?on_conflict=slug',{
     method:'POST',headers:Object.assign({},H,{'Prefer':'resolution=merge-duplicates,return=minimal'}),
     body:JSON.stringify({slug:d.meta.SLUG,title:d.meta.TITLE,week_of:d.meta.WEEK||null,
-      doc:$('doc').value,published:true,updated_at:new Date().toISOString()})
+      doc:$('doc').value,published:!!live,updated_at:new Date().toISOString()})
   }).then(function(r){
-    if(!r.ok){$('pubMsg').textContent='Did not publish — check the table exists.';return;}
-    $('pubMsg').textContent='Published. Adding the read-aloud passage…';
+    if(!r.ok){$('pubMsg').textContent='Did not save \u2014 check the table exists.';return;}
+    if(!live){$('pubMsg').textContent='Draft saved. Students cannot see it.';loadList();return;}
+    $('pubMsg').textContent='Published. Adding the read-aloud passage\u2026';
     var body=plain(d.record||'').trim();
-    if(!body){$('pubMsg').textContent='Published. (No ---RECORD--- passage, so nothing was sent to the fluency tracker.)';A=d;ROLE='';ANS={};ARCH=null;render();loadList();return;}
+    if(!body){$('pubMsg').textContent='Published. (No ---RECORD--- passage.)';A=d;ROLE='';ANS={};ARCH=null;render();loadList();return;}
     return fetch(SUPA_URL+'/rest/v1/fluency_passages?on_conflict=slug',{
       method:'POST',headers:Object.assign({},H,{'Prefer':'resolution=merge-duplicates,return=minimal'}),
       body:JSON.stringify({slug:'news-'+d.meta.SLUG,title:d.meta.TITLE,level:'B',body:body,
@@ -603,19 +602,47 @@ $('pub').onclick=function(){
       A=d;ROLE='';ANS={};ARCH=null;render();loadList();
     });
   }).catch(function(){$('pubMsg').textContent='Network problem.';});
-};
+}
+$('pub').onclick=function(){saveDoc(true);};
+$('draft').onclick=function(){saveDoc(false);};
+
+var DOCS={};
 function loadList(){
-  fetch(SUPA_URL+'/rest/v1/news_articles?select=slug,title,week_of,published&order=updated_at.desc',{headers:H})
+  fetch(SUPA_URL+'/rest/v1/news_articles?select=slug,title,week_of,published,doc&order=week_of.desc.nullslast,updated_at.desc',{headers:H})
   .then(function(r){return r.json();})
   .then(function(rows){
-    if(!rows.length){$('list').textContent='Nothing published yet.';return;}
+    if(!rows||!rows.length){$('list').textContent='Nothing saved yet.';return;}
+    DOCS={};
     $('list').innerHTML=rows.map(function(r){
-      return '<div style="padding:6px 0;border-bottom:1px solid var(--rule)"><b>'+esc(r.title||r.slug)+'</b> '+
-        '<span class="muted">'+esc(r.slug)+(r.week_of?' · '+esc(r.week_of):'')+'</span> '+
+      DOCS[r.slug]=r.doc;
+      return '<div style="padding:8px 0;border-bottom:1px solid var(--rule)">'+
+        '<b>'+esc(r.title||r.slug)+'</b> '+
+        (r.published?'<span style="color:var(--ok);font-weight:800">live</span>':'<span style="color:var(--gloss);font-weight:800">draft</span>')+
+        '<br><span class="muted">'+esc(r.slug)+(r.week_of?' \u00b7 '+esc(r.week_of):'')+'</span><br>'+
+        '<button class="btn" style="margin-top:6px" data-edit="'+esc(r.slug)+'">Load into box</button> '+
+        '<button class="btn" style="margin-top:6px" data-toggle="'+esc(r.slug)+'" data-live="'+(r.published?'1':'0')+'">'+
+          (r.published?'Unpublish':'Publish now')+'</button> '+
         '<a href="?a='+encodeURIComponent(r.slug)+'">open</a></div>';
     }).join('');
   }).catch(function(){$('list').textContent='Could not load.';});
 }
+$('list').addEventListener('click',function(e){
+  var ed=e.target.closest('[data-edit]');
+  if(ed){
+    $('doc').value=DOCS[ed.dataset.edit]||'';
+    $('pubMsg').textContent='Loaded. Edit it, then Publish or Save as draft.';
+    $('doc').scrollIntoView({behavior:'smooth'});
+    return;
+  }
+  var tg=e.target.closest('[data-toggle]');
+  if(tg){
+    var live=tg.dataset.live!=='1';
+    fetch(SUPA_URL+'/rest/v1/news_articles?slug=eq.'+encodeURIComponent(tg.dataset.toggle),{
+      method:'PATCH',headers:Object.assign({},H,{'Prefer':'return=minimal'}),
+      body:JSON.stringify({published:live,updated_at:new Date().toISOString()})
+    }).then(function(){ARCH=null;loadList();}).catch(function(){});
+  }
+});
 
 /* ---------- boot ---------- */
 function boot(){
@@ -686,6 +713,5 @@ var SEED=[
 $('doc').value=SEED;
 boot();
 </script>
-  <script src="/readings/track.js"></script>
 </body>
 </html>
