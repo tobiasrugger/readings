@@ -96,8 +96,37 @@ nav.tabs button[aria-selected="true"]{background:var(--plum);border-color:var(--
 .choice .mw-emoji{font-size:48px}
 .choice .mw-svg svg{width:60px;height:60px}
 .choice .mw-sentpic{font-size:.88rem}
-.spell-in{font-size:1.4rem;text-align:center;font-weight:800;max-width:360px;margin:10px auto;display:block}
-.hint{letter-spacing:.35em;font-weight:900;color:var(--plum-mid);font-size:1.2rem}
+/* ---- spell: letter boxes ---- */
+.lbwrap{position:relative;display:flex;flex-wrap:wrap;gap:10px 6px;justify-content:center;align-items:center;margin:14px auto;padding:6px;border-radius:12px;cursor:text;font-weight:normal;color:inherit}
+.lword{display:inline-flex;gap:5px}
+.lgap{width:14px}
+.lbox{width:42px;height:52px;border:2px solid var(--line-dk);border-radius:9px;background:#fff;display:grid;place-items:center;font-size:1.55rem;font-weight:900;color:var(--ink)}
+.lbox.cur{border-color:var(--plum);box-shadow:0 0 0 3px rgba(90,74,138,.22)}
+.lbox.ok{background:var(--green-bg);border-color:var(--green);color:var(--green)}
+.lbox.bad{background:var(--red-bg);border-color:var(--red);color:var(--red)}
+.lbox.hint{background:var(--plum-lt);border:2px dashed var(--plum-mid);color:var(--plum-dk)}
+.lbin{position:absolute;inset:0;width:100%;height:100%;opacity:0;font-size:16px;border:0;padding:0;cursor:text}
+.lbwrap:focus-within .lbox.cur{border-color:var(--gold);box-shadow:0 0 0 3px rgba(227,169,43,.35)}
+@media(max-width:560px){.lbox{width:32px;height:42px;font-size:1.2rem;border-radius:7px}.lword{gap:4px}}
+
+/* ---- help box (yellow, opens on misses or "I need help") ---- */
+.help{background:#fff6d9;border:2px solid var(--gold);border-radius:12px;padding:12px 14px;margin:12px auto 0;text-align:left;max-width:560px;animation:helpIn .22s ease-out}
+.help h4{margin:0 0 8px;color:#7a5200;font-size:1rem}
+.help p{margin:0 0 8px}
+.help .hword{font-size:1.25rem;color:var(--plum-dk)}
+.help .htr{color:var(--muted);font-weight:700;min-height:1em}
+.help .hmsg{font-weight:800;color:#7a5200;margin-top:8px}
+.hopts{display:flex;gap:8px;flex-wrap:wrap}
+.hopt{background:#fff;border:2px solid var(--gold);border-radius:10px;padding:8px 14px;font-weight:900;font-size:1.1rem;letter-spacing:.02em;color:var(--ink)}
+.hopt:hover{background:#fffbeb}
+.hopt.ok{background:var(--green-bg);border-color:var(--green);color:var(--green)}
+.hopt.no{background:var(--red-bg);border-color:var(--red);color:var(--red);text-decoration:line-through}
+.hrow{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.hpic .mw-emoji,.hpic.mw-emoji{font-size:52px}
+.helpbtn{background:none;border:0;color:#8a5a00;font-weight:800;text-decoration:underline;text-underline-offset:3px;padding:6px 8px}
+.choice.gone{visibility:hidden}
+.chip.hl,.tile.hl{box-shadow:0 0 0 4px var(--gold);border-color:#b98400}
+@keyframes helpIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
 
 /* ---- match ---- */
 .match{display:grid;grid-template-columns:1fr 1fr;gap:14px}
@@ -182,6 +211,7 @@ nav.tabs button[aria-selected="true"]{background:var(--plum);border-color:var(--
     <section class="pane card" id="p-match">
       <p class="lead" translate="yes">Tap a picture. Then tap its word.</p>
       <div class="match" id="matchBox" translate="no"></div>
+      <div class="help hide" id="matchHelp" translate="no"></div>
       <p style="text-align:center;margin-top:14px"><button class="btn ghost sm" id="matchAgain">Mix them up again</button></p>
     </section>
 
@@ -191,7 +221,7 @@ nav.tabs button[aria-selected="true"]{background:var(--plum);border-color:var(--
     </section>
 
     <section class="pane card" id="p-spell">
-      <p class="lead" translate="yes">Listen, then type the word.</p>
+      <p class="lead" translate="yes">Listen, then type the word. Green letters are right. Red letters are wrong.</p>
       <div class="stage" id="spellStage" translate="no"></div>
     </section>
 
@@ -458,23 +488,49 @@ function fillTranslations(){
   });
 }
 
+/* ================= HELP BOX =================
+   One yellow box per activity. It opens after a few misses, or when the
+   student taps "I need help". Help lets them finish, but a word finished
+   with help does not count as a right answer toward "Learned". */
+function helpBtn(id){ return '<button class="helpbtn" id="' + id + '">I need help</button>'; }
+function openHelp(id, html){
+  var el = $(id); if (!el) return null;
+  el.innerHTML = html; el.classList.remove('hide');
+  return el;
+}
+function sentenceTr(el, text){
+  if (!LANG || !el) return;
+  el.textContent = '\u2026';
+  MW.translate(text, LANG).then(function(t){ el.textContent = t || ''; if (MW.RTL[LANG]) el.setAttribute('dir', 'rtl'); });
+}
+
 /* ================= SAY IT ================= */
-var SAY_I = 0, MEDIA = null, CHUNKS = [], SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+var SAY_I = 0, MEDIA = null, CHUNKS = [], SR = window.SpeechRecognition || window.webkitSpeechRecognition, SAY_MISS = 0;
 function buildSay(){ SAY_I = 0; renderSay(); }
 function renderSay(){
-  var en = WORDS[SAY_I];
+  var en = WORDS[SAY_I]; SAY_MISS = 0;
   $('sayStage').innerHTML = '<div class="count">' + (SAY_I + 1) + ' of ' + WORDS.length + '</div>' + MW.pic(en)
     + '<div class="big">' + esc(en.w) + '</div><div class="tr" data-tr="' + esc(en.w) + '" style="font-weight:700;color:var(--muted)"></div>'
     + '<div class="row" style="margin:10px 0">' + hearBtns(en.w) + '</div>'
     + '<div class="row"><button class="btn rec" id="recBtn">Record</button> <button class="btn ghost hide" id="playMine">My voice</button></div>'
     + '<div class="heard" id="heard"></div>'
     + '<div class="row hide" id="selfCheck"><button class="btn sm" id="saidIt">I said it</button></div>'
+    + '<div class="row">' + helpBtn('sayHelpBtn') + '</div><div class="help hide" id="sayHelp"></div>'
     + '<div class="row" style="margin-top:12px"><button class="btn ghost sm" id="sayPrev"' + (SAY_I ? '' : ' disabled') + '>Back</button> <button class="btn ghost sm" id="sayNext">Next word</button></div>';
   fillTranslations();
   $('sayPrev').onclick = function(){ SAY_I = Math.max(0, SAY_I - 1); renderSay(); };
   $('sayNext').onclick = function(){ SAY_I = (SAY_I + 1) % WORDS.length; renderSay(); };
   $('recBtn').onclick = function(){ record(en); };
   $('saidIt').onclick = function(){ modeOnly(en, 'say'); $('heard').textContent = 'Nice. Try the next word.'; this.disabled = true; };
+  $('sayHelpBtn').onclick = function(){ sayHelp(en); };
+}
+function sayHelp(en){
+  var el = openHelp('sayHelp', '<h4>Need help?</h4><p>Listen slowly. Say it with the voice. Then press Record one more time.</p>'
+    + '<div class="row" style="justify-content:flex-start"><button class="btn sm" data-say="' + esc(en.w) + '" data-slow="1">Slow</button>'
+    + (en.sent ? ' <button class="btn ghost sm" data-say="' + esc(filled(en)) + '">Hear it in a sentence</button>' : '') + '</div>'
+    + '<p class="htr" id="sayHelpTr"></p>');
+  if (el) sentenceTr($('sayHelpTr'), en.w);
+  MW.speak(en.w, true);
 }
 function record(en){
   var btn = $('recBtn');
@@ -504,7 +560,8 @@ function listenFor(en){
       var target = MW.norm(en.w), ok = alts.some(function(a){ return a === target || (' ' + a + ' ').indexOf(' ' + target + ' ') > -1; });
       $('heard').innerHTML = ok ? '<span style="color:var(--green)">I heard: ' + esc(alts[0]) + '. Great!</span>'
         : 'I heard: <b>' + esc(alts[0] || '?') + '</b>. Listen again and try one more time.';
-      if (ok) mark(en, 'say', true); else modeOnly(en, 'say');
+      if (ok) mark(en, 'say', true);
+      else { modeOnly(en, 'say'); SAY_MISS++; if (SAY_MISS >= 2) sayHelp(en); }
       if (MEDIA && MEDIA.state === 'recording') MEDIA.stop();
     };
     r.onerror = function(){ $('selfCheck').classList.remove('hide'); };
@@ -514,10 +571,17 @@ function listenFor(en){
 }
 
 /* ================= MATCH ================= */
-var M_SEL = null;
+var M_SEL = null, M_MISS = {};
+function byKey(k){ return WORDS.filter(function(x){ return key(x) === k; })[0]; }
+function matchDone(k){
+  Array.prototype.forEach.call($('matchBox').querySelectorAll('.tile'), function(t){
+    if (t.getAttribute('data-k') === k){ t.classList.remove('sel', 'hl'); t.classList.add('done'); t.disabled = true; }
+  });
+}
 function buildMatch(){
   var set = WORDS.slice(0, 8);
   var pics = shuffle(set), words = shuffle(set);
+  M_MISS = {}; $('matchHelp').classList.add('hide');
   $('matchBox').innerHTML = '<div class="col">' + pics.map(function(en){
       return '<button class="tile" data-k="' + esc(key(en)) + '" data-side="pic">' + MW.pic(en) + '</button>'; }).join('') + '</div>'
     + '<div class="col">' + words.map(function(en){
@@ -531,18 +595,40 @@ function buildMatch(){
         if (M_SEL) M_SEL.classList.remove('sel');
         M_SEL = t; t.classList.add('sel'); return;
       }
-      var a = M_SEL, en = WORDS.filter(function(x){ return key(x) === a.getAttribute('data-k'); })[0];
-      var picSide = a.getAttribute('data-side') === 'pic' ? a : t;
-      var picEn = WORDS.filter(function(x){ return key(x) === picSide.getAttribute('data-k'); })[0];
+      var a = M_SEL, picSide = a.getAttribute('data-side') === 'pic' ? a : t;
+      var picKey = picSide.getAttribute('data-k'), picEn = byKey(picKey);
       if (a.getAttribute('data-k') === t.getAttribute('data-k')){
-        a.classList.remove('sel'); a.classList.add('done'); t.classList.add('done'); a.disabled = t.disabled = true;
-        mark(en, 'match', true);
+        matchDone(picKey); mark(picEn, 'match', true); $('matchHelp').classList.add('hide');
       } else {
         a.classList.remove('sel'); t.classList.add('bad'); setTimeout(function(){ t.classList.remove('bad'); }, 320);
         mark(picEn, 'match', false);
+        M_MISS[picKey] = (M_MISS[picKey] || 0) + 1;
+        if (M_MISS[picKey] >= 2) matchHelp(picEn);
       }
       M_SEL = null;
     });
+  });
+}
+function matchHelp(en){
+  /* the picture with just two words to pick from */
+  var left = WORDS.slice(0, 8).filter(function(x){
+    var tile = $('matchBox').querySelector('.tile[data-side="word"][data-k="' + key(x).replace(/"/g, '\\"') + '"]');
+    return key(x) !== key(en) && tile && !tile.classList.contains('done');
+  });
+  var other = shuffle(left)[0] || distractors(en, 1)[0];
+  var opts = shuffle([en].concat(other ? [other] : []));
+  openHelp('matchHelp', '<h4>Need help? Which word goes with this picture?</h4>'
+    + '<div class="hrow">' + MW.pic(en, 'mw-pic hpic') + '<div class="hopts">'
+    + opts.map(function(o){ return '<button class="hopt" data-w="' + esc(o.w) + '">' + esc(o.w) + '</button>'; }).join('')
+    + '</div></div>');
+  Array.prototype.forEach.call($('matchHelp').querySelectorAll('.hopt'), function(b){
+    b.onclick = function(){
+      MW.speak(b.getAttribute('data-w'));
+      if (b.getAttribute('data-w') === en.w){
+        b.classList.add('ok'); modeOnly(en, 'match'); matchDone(key(en));
+        setTimeout(function(){ $('matchHelp').classList.add('hide'); }, 900);
+      } else b.classList.add('no');
+    };
   });
 }
 $('matchAgain').addEventListener('click', buildMatch);
@@ -568,49 +654,171 @@ function renderListen(){
   $('listenStage').innerHTML = '<div class="count">' + (L_I + 1) + ' of ' + L_Q.length + '</div>'
     + '<div class="row">' + hearBtns(en.w) + '</div>'
     + '<div class="choices">' + opts.map(function(o){ return '<button class="choice" data-w="' + esc(o.w) + '">' + MW.pic(o) + '</button>'; }).join('') + '</div>'
-    + '<div class="fb" id="lFb"></div>';
-  var tried = false;
+    + '<div class="fb" id="lFb"></div><div class="row">' + helpBtn('lHelpBtn') + '</div><div class="help hide" id="lHelp"></div>';
+  var tried = false, helped = false;
+  function help(){
+    if (helped) return; helped = true;
+    openHelp('lHelp', '<h4>Need help?</h4><p>The word looks like this: <b class="hword">' + esc(en.w) + '</b></p>'
+      + '<p class="htr" id="lHelpTr"></p><button class="btn sm" data-say="' + esc(en.w) + '" data-slow="1">Hear it slowly</button>');
+    sentenceTr($('lHelpTr'), en.w);
+    /* take away one wrong picture */
+    var wrong = Array.prototype.filter.call($('listenStage').querySelectorAll('.choice'), function(c){
+      return c.getAttribute('data-w') !== en.w && !c.classList.contains('no'); });
+    if (wrong.length > 1) shuffle(wrong)[0].classList.add('gone');
+  }
+  $('lHelpBtn').onclick = help;
   Array.prototype.forEach.call($('listenStage').querySelectorAll('.choice'), function(c){
     c.addEventListener('click', function(){
+      if (c.classList.contains('gone')) return;
       var ok = c.getAttribute('data-w') === en.w;
       c.classList.add(ok ? 'ok' : 'no');
-      if (!tried) mark(en, 'listen', ok);
+      if (!tried){ if (helped && ok) modeOnly(en, 'listen'); else mark(en, 'listen', ok); }
       tried = true;
       if (ok){ $('lFb').className = 'fb ok'; $('lFb').textContent = en.w; setTimeout(function(){ L_I++; renderListen(); playListen(); }, 900); }
-      else { $('lFb').className = 'fb no'; $('lFb').textContent = 'Listen again.'; MW.speak(en.w, true); }
+      else { $('lFb').className = 'fb no'; $('lFb').textContent = 'Listen again.'; MW.speak(en.w, true); help(); }
     });
   });
 }
 function playListen(){ var en = L_Q[L_I]; if (en && $('p-listen').classList.contains('on')) setTimeout(function(){ MW.speak(en.w); }, 250); }
 
-/* ================= SPELL ================= */
+/* ================= SPELL =================
+   One box per letter. Letters turn green or red as they type.
+   "Another letter" fills the next letter they don't have yet (up to 4, never the last one).
+   3 misses on one letter, or 6 wrong letters, opens the help box:
+   pick the right spelling, then type it. */
 var S_Q = [], S_I = 0;
+var SPELL_MAX_HINTS = 4, SPELL_MISS_ONE = 3, SPELL_MISS_ALL = 6;
+
+function misspell(w){
+  /* believable mistakes first: a missing letter, a wrong vowel, a doubled letter.
+     Swapped letters only if a short word has nothing else. */
+  var lower = w.toLowerCase(), V = { a:'e', e:'i', i:'e', o:'u', u:'o', y:'i' }, i;
+  var drop = [], vow = [], dbl = [], swap = [];
+  function isL(c){ return /[a-z]/i.test(c || ''); }
+  var BAD = { hell:1, ass:1, damn:1, shit:1, butt:1, sex:1, kill:1, die:1, poop:1, fat:1, dum:1 };
+  function add(list, x){ if (x && x.toLowerCase() !== lower && !BAD[x.toLowerCase()] && list.indexOf(x) < 0) list.push(x); }
+  for (i = 1; i < w.length; i++) if (isL(w[i]) && w.replace(/[^a-z]/gi, '').length > 3) add(drop, w.slice(0, i) + w.slice(i + 1));
+  for (i = 1; i < w.length; i++) if (V[lower[i]]) add(vow, w.slice(0, i) + V[lower[i]] + w.slice(i + 1));
+  for (i = 1; i < w.length; i++) if (isL(w[i]) && !V[lower[i]])
+    add(dbl, w[i] === w[i - 1] ? w.slice(0, i) + w.slice(i + 1) : w.slice(0, i + 1) + w[i] + w.slice(i + 1));
+  for (i = 1; i < w.length - 1; i++) if (isL(w[i]) && isL(w[i + 1]) && w[i] !== w[i + 1]) add(swap, w.slice(0, i) + w[i + 1] + w[i] + w.slice(i + 2));
+  var kinds = shuffle([drop, vow, dbl]).filter(function(k){ return k.length; }).concat([swap]);
+  var out = [];
+  kinds.forEach(function(k){ if (out.length < 2 && k.length){ var x = shuffle(k)[0]; if (out.indexOf(x) < 0) out.push(x); } });
+  kinds.forEach(function(k){ shuffle(k).forEach(function(x){ if (out.length < 2 && out.indexOf(x) < 0) out.push(x); }); });
+  return out;
+}
+
 function buildSpell(){ S_Q = shuffle(WORDS); S_I = 0; renderSpell(); }
 function renderSpell(){
   if (S_I >= S_Q.length){
     $('spellStage').innerHTML = '<div class="big">Done!</div><button class="btn" id="sAgain">Do it again</button>';
     $('sAgain').onclick = buildSpell; return;
   }
-  var en = S_Q[S_I], tries = 0;
-  var dashes = en.w.replace(/[A-Za-z]/g, '_');
-  $('spellStage').innerHTML = '<div class="count">' + (S_I + 1) + ' of ' + S_Q.length + '</div>' + MW.pic(en)
-    + '<div class="row">' + hearBtns(en.w) + '</div>'
-    + '<div class="hint" id="sHint">' + esc(dashes) + '</div>'
-    + '<input class="spell-in" id="sIn" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Type the word">'
-    + '<div class="row"><button class="btn" id="sCheck">Check</button> <button class="btn ghost" id="sLetter">First letter</button></div>'
-    + '<div class="fb" id="sFb"></div>';
-  $('sIn').focus();
-  $('sLetter').onclick = function(){ $('sHint').textContent = en.w.charAt(0) + dashes.slice(1); };
-  function check(){
-    var ok = MW.norm($('sIn').value) === MW.norm(en.w);
-    if (tries === 0) mark(en, 'spell', ok);
-    tries++;
-    if (ok){ $('sFb').className = 'fb ok'; $('sFb').textContent = 'Yes! ' + en.w; setTimeout(function(){ S_I++; renderSpell(); }, 900); }
-    else if (tries >= 2){ $('sFb').className = 'fb no'; $('sFb').textContent = 'It is: ' + en.w + '. Type it one time.'; $('sIn').value = ''; $('sIn').focus(); MW.speak(en.w, true); }
-    else { $('sFb').className = 'fb no'; $('sFb').textContent = 'Not yet. Listen and try again.'; MW.speak(en.w, true); }
+  var en = S_Q[S_I], T = en.w, N = T.length;
+  var letters = T.replace(/[^A-Za-z]/g, '').length;
+  var MAXH = Math.max(1, Math.min(SPELL_MAX_HINTS, letters - 1));
+  var st = { hints:0, hintSet:{}, hintLen:0, wrongAt:{}, wrongs:0, rescued:false, helpOpen:false, done:false, prev:0 };
+
+  /* boxes, grouped by word so a word never breaks across lines */
+  var groups = [], cur = '';
+  for (var i = 0; i < N; i++){
+    if (T[i] === ' '){ groups.push(cur); cur = ''; groups.push(null); continue; }
+    cur += '<span class="lbox" data-i="' + i + '"></span>';
   }
-  $('sCheck').onclick = check;
-  $('sIn').addEventListener('keydown', function(e){ if (e.key === 'Enter') check(); });
+  groups.push(cur);
+  var boxes = groups.map(function(g){ return g === null ? '<span class="lgap"></span>' : '<span class="lword">' + g + '</span>'; }).join('');
+
+  $('spellStage').innerHTML = '<div class="count">' + (S_I + 1) + ' of ' + S_Q.length + '</div>' + MW.pic(en)
+    + '<div class="row">' + hearBtns(T) + '</div>'
+    + '<label class="lbwrap" id="lb">' + boxes
+    + '<input class="lbin" id="sIn" maxlength="' + N + '" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Type the word"></label>'
+    + '<div class="row"><button class="btn ghost sm" id="sLetter">First letter</button> ' + helpBtn('sHelpBtn') + '</div>'
+    + '<div class="fb" id="sFb"></div><div class="help hide" id="sHelp"></div>';
+  var inp = $('sIn');
+  inp.focus();
+
+  function same(a, b){ return a != null && b != null && a.toLowerCase() === b.toLowerCase(); }
+  function draw(){
+    var v = inp.value;
+    Array.prototype.forEach.call($('lb').querySelectorAll('.lbox'), function(b){
+      var i = +b.getAttribute('data-i'), ch = v[i];
+      b.className = 'lbox';
+      if (st.hintSet[i]){ b.classList.add('hint'); b.textContent = T[i]; }
+      else if (ch == null){ b.textContent = ''; if (i === v.length && !st.done) b.classList.add('cur'); }
+      else if (same(ch, T[i])){ b.classList.add('ok'); b.textContent = T[i]; }
+      else { b.classList.add('bad'); b.textContent = ch === ' ' ? '\u2423' : ch; }
+    });
+  }
+  function letterLabel(){
+    var left = MAXH - st.hints, b = $('sLetter');
+    if (!st.hints) b.textContent = 'First letter';
+    else if (left > 0) b.textContent = 'Another letter (' + left + ' left)';
+    else { b.textContent = 'No more letters'; b.disabled = true; }
+  }
+  function finish(){
+    st.done = true; inp.disabled = true; draw();
+    $('sFb').className = 'fb ok'; $('sFb').textContent = 'Yes! ' + T;
+    MW.speak(T);
+    if (st.rescued) mark(en, 'spell', false);
+    else if (st.hints <= 1 && st.wrongs <= 2) mark(en, 'spell', true);
+    else modeOnly(en, 'spell');   /* finished with letters given: practice, not yet a right answer */
+    setTimeout(function(){ S_I++; renderSpell(); }, 1300);
+  }
+  function openSpellHelp(){
+    if (st.helpOpen || st.done) return; st.helpOpen = true;
+    var opts = shuffle([T].concat(misspell(T)));
+    openHelp('sHelp', '<h4>Need help? Which spelling is right?</h4><div class="hopts">'
+      + opts.map(function(o){ return '<button class="hopt" data-w="' + esc(o) + '">' + esc(o) + '</button>'; }).join('')
+      + '</div><p id="sHelpMsg" class="hmsg"></p>');
+    Array.prototype.forEach.call($('sHelp').querySelectorAll('.hopt'), function(b){
+      b.onclick = function(){
+        if (b.getAttribute('data-w') === T){
+          b.classList.add('ok'); st.rescued = true;
+          Array.prototype.forEach.call($('sHelp').querySelectorAll('.hopt'), function(x){ x.disabled = true; });
+          $('sHelpMsg').textContent = 'Yes! Now type it in the boxes.';
+          inp.value = T.slice(0, st.hintLen); st.prev = inp.value.length; st.wrongAt = {};
+          draw(); inp.focus(); MW.speak(T);
+        } else { b.classList.add('no'); $('sHelpMsg').textContent = 'Look again. Say each letter.'; }
+      };
+    });
+    $('sFb').textContent = '';
+  }
+
+  inp.addEventListener('input', function(){
+    if (st.done) return;
+    var v = inp.value.replace(/ {2,}/g, ' ');
+    /* letters we gave them stay put */
+    if (st.hintLen && !same(v.slice(0, st.hintLen), T.slice(0, st.hintLen))) v = T.slice(0, st.hintLen) + v.slice(st.hintLen);
+    if (v.length > st.prev){
+      var i = v.length - 1;
+      if (!same(v[i], T[i])){
+        st.wrongAt[i] = (st.wrongAt[i] || 0) + 1; st.wrongs++;
+        if (st.wrongAt[i] >= SPELL_MISS_ONE || st.wrongs >= SPELL_MISS_ALL) openSpellHelp();
+        else if (st.wrongAt[i] === 2) { $('sFb').className = 'fb no'; $('sFb').textContent = 'Letter ' + (i + 1) + ' is not right. Listen again.'; MW.speak(T, true); }
+      } else $('sFb').textContent = '';
+      if (T[v.length] === ' ' && v.length < N) v += ' ';   /* we type the space for them */
+    }
+    if (v.length > N) v = v.slice(0, N);
+    inp.value = v; st.prev = v.length; draw();
+    if (same(v, T)) finish();
+  });
+  inp.addEventListener('keydown', function(e){ if (e.key === 'Enter') e.preventDefault(); });
+
+  $('sLetter').onclick = function(){
+    if (st.done || st.hints >= MAXH) return;
+    var v = inp.value, k = 0;
+    while (k < N && same(v[k], T[k])) k++;       /* first letter they don't have */
+    while (k < N && T[k] === ' ') k++;
+    if (k >= N) return;
+    st.hintSet[k] = 1; st.hints++; st.hintLen = k + 1;
+    v = T.slice(0, k + 1); if (T[k + 1] === ' ') v += ' ';
+    inp.value = v; st.prev = v.length;
+    letterLabel(); draw(); inp.focus();
+    if (same(v, T)) finish();
+  };
+  $('sHelpBtn').onclick = openSpellHelp;
+  draw();
 }
 
 /* ================= USE IT (grammar: fill the gap, then build the sentence) ================= */
@@ -631,17 +839,26 @@ function renderUse(){
     + '<div class="sentence">' + parts[0] + '<span class="gap" id="uGap">&nbsp;</span>' + (parts[1] || '') + '</div>'
     + '<div class="choices" style="grid-template-columns:repeat(' + opts.length + ',1fr)">'
     + opts.map(function(o){ return '<button class="choice" data-w="' + esc(o) + '">' + esc(o) + '</button>'; }).join('') + '</div>'
-    + '<div class="fb" id="uFb"></div><div id="uBuild"></div>';
-  var first = true;
+    + '<div class="fb" id="uFb"></div><div class="row" id="uHelpRow">' + helpBtn('uHelpBtn') + '</div><div class="help hide" id="uHelp"></div><div id="uBuild"></div>';
+  var first = true, helped = false;
+  function help(){
+    if (helped) return; helped = true;
+    openHelp('uHelp', '<h4>Need help?</h4><p>The word starts with <b class="hword">' + esc(en.w.charAt(0)) + '</b>.</p>'
+      + (LANG ? '<p class="htr" id="uHelpTr"></p>' : '')
+      + '<button class="btn sm" data-say="' + esc(en.sent) + '">Hear the sentence</button>');
+    sentenceTr($('uHelpTr'), filled(en));
+  }
+  $('uHelpBtn').onclick = help;
   Array.prototype.forEach.call($('useStage').querySelectorAll('.choice'), function(c){
     c.addEventListener('click', function(){
       var ok = c.getAttribute('data-w') === en.w;
       c.classList.add(ok ? 'ok' : 'no');
-      if (!ok){ if (first) mark(en, 'use', false); first = false; $('uFb').className = 'fb no'; $('uFb').textContent = 'Read the sentence again.'; return; }
+      if (!ok){ if (first) mark(en, 'use', false); first = false; $('uFb').className = 'fb no'; $('uFb').textContent = 'Read the sentence again.'; help(); return; }
       $('uGap').textContent = en.w; $('uFb').className = 'fb ok'; $('uFb').textContent = '';
+      $('uHelp').classList.add('hide'); $('uHelpRow').classList.add('hide');
       MW.speak(filled(en));
       Array.prototype.forEach.call($('useStage').querySelectorAll('.choice'), function(x){ x.disabled = true; });
-      buildSentence(en, first);
+      buildSentence(en, first && !helped);
     });
   });
 }
@@ -655,33 +872,56 @@ function buildSentence(en, firstTry){
   var m = after.match(/^[.,!?]+/); if (m){ target += m[0]; after = after.slice(m[0].length).trim(); }
   var chips = [].concat(before ? before.split(/\s+/) : [], [target], after ? after.split(/\s+/) : []);
   chips = chips.map(function(c, i){ return i === 0 ? c.charAt(0).toUpperCase() + c.slice(1) : c; });
-  if (chips.length > 11 || chips.length < 3){ mark(en, 'use', firstTry); U_I++; setTimeout(renderUse, 1100); return; }
+  if (chips.length > 11 || chips.length < 3){ if (firstTry) mark(en, 'use', true); else modeOnly(en, 'use'); U_I++; setTimeout(renderUse, 1100); return; }
   var shuffled = shuffle(chips.map(function(c, i){ return { t:c, i:i }; }));
   if (shuffled.every(function(c, i){ return c.i === i; })) shuffled.reverse();
   $('uBuild').innerHTML = '<p class="note" translate="yes">Now build the sentence. Tap the words in order.</p>'
     + '<div class="tray" id="uTray"></div>'
     + '<div class="tray" id="uBank" style="border-style:solid;background:var(--field)">' + shuffled.map(function(c, n){
         return '<button class="chip" data-n="' + n + '">' + esc(c.t) + '</button>'; }).join('') + '</div>'
-    + '<div class="row"><button class="btn ghost sm" id="uClear">Start over</button> <button class="btn sm" id="uDone">Check</button></div>';
-  var picked = [];
+    + '<div class="row"><button class="btn ghost sm" id="uClear">Start over</button> <button class="btn sm" id="uDone">Check</button> ' + helpBtn('bHelpBtn') + '</div>'
+    + '<div class="help hide" id="bHelp"></div>';
+  var picked = [], HL = -1, misses = 0, helped = false;
   function draw(){
     $('uTray').innerHTML = picked.map(function(n, j){ return '<button class="chip" data-j="' + j + '">' + esc(shuffled[n].t) + '</button>'; }).join('');
-    Array.prototype.forEach.call($('uBank').children, function(b){ b.classList.toggle('used', picked.indexOf(+b.getAttribute('data-n')) > -1); });
-    Array.prototype.forEach.call($('uTray').children, function(b){ b.onclick = function(){ picked.splice(+b.getAttribute('data-j'), 1); draw(); }; });
+    Array.prototype.forEach.call($('uBank').children, function(b){
+      var n = +b.getAttribute('data-n');
+      b.classList.toggle('used', picked.indexOf(n) > -1);
+      b.classList.toggle('hl', n === HL && picked.indexOf(n) < 0);
+    });
+    Array.prototype.forEach.call($('uTray').children, function(b){ b.onclick = function(){ picked.splice(+b.getAttribute('data-j'), 1); HL = -1; draw(); }; });
+  }
+  function nextHelp(){
+    helped = true;
+    /* keep the right start, take off everything after the first wrong word, light up the next word */
+    var k = 0; while (k < picked.length && shuffled[picked[k]].t === chips[k]) k++;
+    picked = picked.slice(0, k);
+    if (k >= chips.length) return;
+    HL = -1;
+    shuffled.forEach(function(c, n){ if (HL < 0 && c.t === chips[k] && picked.indexOf(n) < 0) HL = n; });
+    openHelp('bHelp', '<h4>Need help?</h4><p>' + (k ? 'The first ' + k + ' word' + (k === 1 ? ' is' : 's are') + ' right. ' : '')
+      + 'The next word is glowing.</p><button class="btn sm" data-say="' + esc(full) + '" data-slow="1">Hear the sentence slowly</button>');
+    draw();
   }
   Array.prototype.forEach.call($('uBank').children, function(b){
-    b.onclick = function(){ var n = +b.getAttribute('data-n'); if (picked.indexOf(n) < 0){ picked.push(n); draw(); } };
+    b.onclick = function(){ var n = +b.getAttribute('data-n'); if (picked.indexOf(n) < 0){ picked.push(n); if (n === HL) HL = -1; draw(); } };
   });
-  $('uClear').onclick = function(){ picked = []; draw(); };
+  $('uClear').onclick = function(){ picked = []; HL = -1; draw(); };
+  $('bHelpBtn').onclick = nextHelp;
   var built = false;
   $('uDone').onclick = function(){
     var said = picked.map(function(n){ return shuffled[n].t; }).join(' ');
     if (MW.norm(said) === MW.norm(chips.join(' '))){
-      if (!built) mark(en, 'use', firstTry);
+      if (!built){ if (firstTry && !helped) mark(en, 'use', true); else modeOnly(en, 'use'); }
       built = true;
+      $('bHelp').classList.add('hide');
       $('uFb').className = 'fb ok'; $('uFb').textContent = full; MW.speak(full);
       setTimeout(function(){ U_I++; renderUse(); }, 1500);
-    } else { $('uFb').className = 'fb no'; $('uFb').textContent = 'Not yet. Check the order.'; }
+    } else {
+      misses++;
+      $('uFb').className = 'fb no'; $('uFb').textContent = 'Not yet. Check the order.';
+      if (misses >= 2) nextHelp();
+    }
   };
   draw();
 }
