@@ -1007,5 +1007,45 @@ window.SETS = {
     title: 'Describing People',
     page:  'traits/',
     quizzes: ['dp-looks', 'dp-traits-1', 'dp-traits-2', 'u2-l3-strengths']
+  },
+  school: {
+    title: 'At School',
+    page:  'school/',
+    quizzes: ['u1-l9-school-places', 'u1-l6-school-people', 'u1-l7-supplies', 'u1-l10-subjects']
+  },
+  day: {
+    title: 'My Day',
+    page:  'day/',
+    quizzes: ['u2-l8-habits', 'u1-l11-lunchtime', 'u1-l12-lunch', 'u1-day']
+  },
+  weather: {
+    title: 'Weather, Clothes and Dates',
+    page:  'weather/',
+    quizzes: ['u2-l5-weather', 'u2-l12-seasons', 'u2-l7-clothes', 'u2-l4-dates']
+  },
+  feelings: {
+    title: 'Feelings and Free Time',
+    page:  'feelings/',
+    quizzes: ['u2-l11-feelings', 'u2-l6-freetime', 'u2-l13-senses']
+  },
+  personality: {
+    title: 'Personality',
+    page:  'personality/',
+    quizzes: ['dp-strengths-pics', 'dp-traits-3', 'dp-traits-4']
+  },
+  compare: {
+    title: 'Compare and Contrast',
+    page:  'compare/',
+    quizzes: ['tk3-compare', 'tk3-contrast', 'tk3-frames', 'hard-time-compare']
+  },
+  reading: {
+    title: 'Reading Sentences',
+    page:  'reading/',
+    quizzes: ['u2-l1-greetings', 'u2-l2-names', 'u1-l13-directions', 'u2-l10-catching-up', 'u2-l3-strengths']
+  },
+  world: {
+    title: 'People, Places and School Words',
+    page:  'world/',
+    quizzes: ['u1-l9-places', 'u1-l6-people', 'hard-school-words']
   }
 };
