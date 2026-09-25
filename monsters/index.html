@@ -1,0 +1,1640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monsters as Symbols — Mr. Toby's ELD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pine:#2e2b4f;
+  --pine-dk:#1c1a33;
+  --pine-lt:#ecebf4;
+  --ink:#1b1b1b;
+  --rule:#c9ccc8;
+  --paper:#ffffff;
+  --marigold:#c9822c;
+  --tag-review:#2f6f4f;
+  --tag-infer:#7a4a86;
+  --tag-connect:#b1552a;
+  --tag-language:#1f5f8b;
+  --tag-ml:#8a6d1f;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:'Nunito',-apple-system,Segoe UI,Roboto,sans-serif;
+  color:var(--ink);background:#f2f4f2;font-size:17px;line-height:1.65;
+}
+body.big{font-size:21px}
+body.big .qbox textarea{min-height:120px}
+
+/* ---------- toolbar ---------- */
+#bar{
+  position:sticky;top:0;z-index:60;background:var(--pine);color:#fff;
+  padding:8px 14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;
+  box-shadow:0 2px 8px rgba(0,0,0,.2);
+}
+#bar .brand{font-weight:800;letter-spacing:.2px;margin-right:6px;font-size:15px}
+#bar button,#bar select{
+  font-family:inherit;font-size:14px;font-weight:700;
+  border:1px solid rgba(255,255,255,.45);background:rgba(255,255,255,.10);
+  color:#fff;border-radius:7px;padding:6px 10px;cursor:pointer;
+}
+#bar button:hover,#bar select:hover{background:rgba(255,255,255,.22)}
+#bar select option{color:#111;background:#fff}
+#bar .spacer{flex:1}
+#bar .who{font-size:13px;font-weight:700;opacity:.92}
+#bar button.turnin{background:#fff;color:var(--pine);border-color:#fff}
+#bar button.turnin:hover{background:#e4efe9}
+#bar button.on{background:var(--marigold);border-color:var(--marigold);color:#1b1b1b}
+#saveNote{font-size:13px;opacity:.9;font-weight:600}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:1px}
+.dot.ok{background:#8fe3b0}.dot.wait{background:#ffd76e}.dot.bad{background:#ff9a8f}
+
+/* ---------- page ---------- */
+.sheet{
+  max-width:880px;margin:18px auto 60px;background:var(--paper);
+  padding:34px 42px 50px;box-shadow:0 1px 10px rgba(0,0,0,.10);
+}
+h1{font-size:2.4rem;line-height:1.1;margin:0 0 2px;color:var(--pine);font-weight:800;letter-spacing:-.5px}
+.sub{font-size:1.05rem;font-weight:700;color:#5a6660;margin:0 0 4px}
+.byline{font-size:.9rem;color:#7a837e;margin:0 0 18px;font-weight:600}
+.nameline{
+  display:flex;gap:22px;flex-wrap:wrap;
+  border-top:2px solid var(--pine);border-bottom:2px solid var(--pine);
+  padding:10px 0;margin:0 0 20px;
+}
+.nameline label{font-weight:700;font-size:.95rem;white-space:nowrap}
+.nameline input{
+  font-family:inherit;font-size:1rem;border:none;border-bottom:1.5px solid var(--rule);
+  padding:2px 4px;min-width:150px;background:transparent;
+}
+.nameline .w1{min-width:230px}.nameline .w2{min-width:70px}
+
+h2{
+  font-size:1.45rem;color:var(--pine-dk);margin:40px 0 4px;font-weight:800;
+  border-bottom:3px solid var(--pine-lt);padding-bottom:5px;
+}
+h2 .num{
+  display:inline-block;background:var(--pine);color:#fff;
+  width:1.55em;height:1.55em;line-height:1.55em;text-align:center;
+  border-radius:50%;font-size:.78em;margin-right:9px;vertical-align:2px;
+}
+h3{font-size:1.12rem;color:var(--pine-dk);margin:26px 0 8px;font-weight:800}
+h4{font-size:1rem;color:var(--pine-dk);margin:18px 0 6px;font-weight:800}
+.instr{font-style:italic;color:#4f5a55;margin:2px 0 14px;font-weight:600}
+p.pass{margin:0 0 12px}
+p.pass .pnum{color:#8e9a94;font-weight:800;font-size:.8em;margin-right:7px;vertical-align:2px}
+
+/* ---------- jump nav ---------- */
+#jump{
+  display:flex;flex-wrap:wrap;gap:7px;margin:0 0 8px;padding:12px 14px;
+  border:1.5px solid var(--rule);border-radius:10px;background:#f7faf8;
+}
+#jump a{
+  font-size:.83rem;font-weight:800;text-decoration:none;color:var(--pine-dk);
+  border:1px solid var(--rule);border-radius:20px;padding:4px 11px;background:#fff;
+}
+#jump a:hover{border-color:var(--pine);background:var(--pine-lt)}
+
+/* ---------- glossed words ---------- */
+.gl{
+  border-bottom:2px dotted var(--pine);cursor:pointer;font-weight:700;color:var(--pine-dk);
+  background:rgba(46,43,79,.06);padding:0 1px;border-radius:2px;
+}
+.gl:focus{outline:2px solid var(--pine);outline-offset:2px}
+#tip{
+  position:absolute;z-index:200;max-width:320px;background:#fff;
+  border:2px solid var(--pine);border-radius:10px;padding:10px 13px;
+  box-shadow:0 6px 20px rgba(0,0,0,.24);font-size:15px;line-height:1.45;display:none;
+}
+#tip .w{font-weight:800;color:var(--pine);font-size:17px;display:block;margin-bottom:2px}
+#tip .d{margin-bottom:6px}
+#tip .t{border-top:1px dashed var(--rule);padding-top:6px;font-weight:700;font-size:17px}
+#tip .t.rtl{direction:rtl;text-align:right}
+#tip .none{color:#8a938e;font-style:italic;font-weight:600;font-size:14px}
+
+/* ---------- question boxes ---------- */
+.qgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+.qgrid.one{grid-template-columns:1fr}
+.qbox{border:1.5px solid var(--rule);border-radius:9px;padding:11px 13px 13px;break-inside:avoid;page-break-inside:avoid;background:#fff}
+.tag{display:inline-block;font-size:.68rem;font-weight:800;letter-spacing:.6px;color:#fff;border-radius:4px;padding:2px 7px;margin-bottom:6px}
+.tag.review{background:var(--tag-review)}
+.tag.infer{background:var(--tag-infer)}
+.tag.connect{background:var(--tag-connect)}
+.tag.language{background:var(--tag-language)}
+.tag.ml{background:var(--tag-ml)}
+.qtext{font-weight:700;margin:0 0 8px;font-size:1rem}
+.qbox textarea{
+  width:100%;font-family:inherit;font-size:1rem;line-height:28px;border:none;resize:vertical;
+  min-height:84px;padding:0;
+  background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 27px,var(--rule) 27px,var(--rule) 28px);
+  background-attachment:local;
+}
+.qbox textarea:focus{outline:none;background-color:#fbfdfb}
+.frame{font-size:.86rem;color:#5f6b65;font-weight:700;margin:0 0 6px;background:var(--pine-lt);border-radius:6px;padding:5px 8px}
+
+/* ---------- tables ---------- */
+table.tf,table.vocab,table.comp{width:100%;border-collapse:collapse;margin:12px 0}
+table.tf th,table.tf td,table.vocab th,table.vocab td,table.comp th,table.comp td{
+  border:1.5px solid var(--rule);padding:8px 10px;font-size:.98rem;vertical-align:top;
+}
+table.tf th,table.vocab th,table.comp th{background:var(--pine);color:#fff;font-weight:800;font-size:.9rem;text-align:left}
+table.tf th.tfcol,table.tf td.tfcol{width:54px;text-align:center}
+table.tf td.tfcol input{width:19px;height:19px;accent-color:var(--pine)}
+table.tf tr,table.vocab tr,table.comp tr{break-inside:avoid;page-break-inside:avoid}
+table.vocab td.w{font-weight:800;color:var(--pine-dk);width:19%}
+table.vocab td.tr{font-weight:700;width:26%}
+table.vocab td.tr.rtl{direction:rtl;text-align:right}
+table.vocab tr:nth-child(even) td{background:#f7faf8}
+table.comp td input{width:100%;font-family:inherit;font-size:.98rem;border:none;border-bottom:1.5px solid var(--rule);background:transparent;padding:2px}
+table.comp td input:focus{outline:none;background:#f0f6f2}
+table.comp td.lbl{background:#f7faf8;font-weight:800;width:24%;color:var(--pine-dk)}
+
+/* ---------- cloze / blanks ---------- */
+.bank{border:2px solid var(--pine);border-radius:9px;padding:12px 14px;margin:12px 0 18px;display:flex;flex-wrap:wrap;gap:8px 16px;background:var(--pine-lt)}
+.bank span{font-weight:800;color:var(--pine-dk)}
+.cloze{line-height:2.5;font-size:1.05rem}
+.blank{
+  font-family:inherit;font-size:1rem;font-weight:700;color:var(--pine-dk);
+  border:none;border-bottom:2px solid var(--pine);width:140px;text-align:center;
+  background:transparent;padding:1px 3px;
+}
+.blank:focus{outline:none;background:#f0f6f2}
+.blank.right{background:#e3f5e9;border-bottom-color:#2f6f4f}
+.blank.wrong{background:#fde8e6;border-bottom-color:#b3261e}
+.mark{font-weight:800;margin-left:6px;font-size:.95rem}
+.mark.right{color:#2f6f4f}.mark.wrong{color:#b3261e}
+
+/* ---------- rules / notes ---------- */
+.rule-box{border-left:6px solid var(--marigold);background:#fdf6ea;border-radius:0 9px 9px 0;padding:12px 16px;margin:14px 0}
+.rule-box p{margin:4px 0}
+.rule-box .eg{font-weight:700;color:var(--pine-dk)}
+.note-box{border:2px dashed var(--pine);border-radius:9px;background:#f7faf8;padding:12px 16px;margin:14px 0}
+
+/* ---------- level switch ---------- */
+.lvlbar{display:flex;gap:10px;align-items:center;margin:10px 0 14px;flex-wrap:wrap}
+.lvlbar .lbl{font-weight:800;font-size:.9rem;color:var(--pine-dk)}
+.lvlbtn{
+  font-family:inherit;font-size:.9rem;font-weight:800;border:2px solid var(--pine);
+  background:#fff;color:var(--pine);border-radius:20px;padding:5px 14px;cursor:pointer;
+}
+.lvlbtn.on{background:var(--pine);color:#fff}
+body[data-level="easy"] .lvl-hard{display:none}
+body[data-level="hard"] .lvl-easy{display:none}
+
+/* ---------- world cards ---------- */
+.world{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+.wcard{border:1.5px solid var(--rule);border-left:6px solid var(--marigold);border-radius:0 10px 10px 0;padding:12px 15px;background:#fff;break-inside:avoid;page-break-inside:avoid}
+.wcard h4{margin:0 0 2px;font-size:1.05rem;color:var(--pine-dk)}
+.wcard .place{font-size:.78rem;font-weight:800;color:var(--tag-connect);margin:0 0 6px}
+.wcard p{margin:0;font-size:.95rem}
+
+/* ---------- survey ---------- */
+.sq{border:1.5px solid var(--rule);border-radius:9px;padding:11px 14px;margin:10px 0;background:#fff;break-inside:avoid}
+.sq .qtext{margin-bottom:7px}
+.opts{display:flex;flex-wrap:wrap;gap:8px 18px}
+.opts label{font-weight:700;font-size:.97rem;cursor:pointer;display:flex;align-items:center;gap:6px}
+.opts input[type=radio],.opts input[type=checkbox]{width:18px;height:18px;accent-color:var(--pine)}
+.sq input[type=text]{width:100%;font-family:inherit;font-size:1rem;border:none;border-bottom:1.5px solid var(--rule);background:transparent;padding:3px}
+.sq input[type=text]:focus{outline:none;background:#f0f6f2}
+.sq select{font-family:inherit;font-size:1rem;padding:6px 9px;border:1.5px solid var(--rule);border-radius:7px;background:#fff}
+
+/* ---------- class chart ---------- */
+#chartWrap{border:1.5px solid var(--rule);border-radius:10px;padding:14px 16px;margin:12px 0;background:#f7faf8;display:none}
+.chartrow{margin:9px 0}
+.chartrow .cl{font-weight:800;font-size:.9rem;margin-bottom:3px;display:flex;justify-content:space-between}
+.barout{background:#e2e7e4;border-radius:5px;height:17px;overflow:hidden}
+.barin{background:var(--pine);height:100%;border-radius:5px;transition:width .4s ease}
+.barin.alt{background:var(--marigold)}
+
+/* ---------- multiple choice ---------- */
+.mc{border:1.5px solid var(--rule);border-radius:9px;padding:11px 14px;margin:10px 0;background:#fff;break-inside:avoid}
+.mc .qtext{margin-bottom:7px}
+.mc label{display:flex;gap:8px;align-items:flex-start;font-weight:600;margin:4px 0;cursor:pointer}
+.mc input[type=radio]{width:18px;height:18px;accent-color:var(--pine);margin-top:3px;flex:none}
+.mc.right{border-color:#2f6f4f;background:#f2fbf5}
+.mc.wrong{border-color:#b3261e;background:#fdf4f3}
+
+/* ---------- ofrenda builder ---------- */
+#ofrenda{border:1.5px solid var(--rule);border-radius:10px;padding:14px;background:#fffdf8;margin:12px 0}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px}
+.chip{
+  font-family:inherit;font-size:.86rem;font-weight:800;border:2px solid var(--pine);
+  background:#fff;color:var(--pine-dk);border-radius:20px;padding:4px 11px;cursor:pointer;
+}
+.chip.on{background:var(--pine);color:#fff}
+.altar{display:grid;gap:8px;max-width:560px;margin:0 auto}
+.tier{display:grid;gap:8px}
+.tier.t1{grid-template-columns:1fr 1fr}
+.tier.t2{grid-template-columns:1fr 1fr 1fr}
+.tier.t3{grid-template-columns:1fr 1fr 1fr}
+.slot{
+  border:2px dashed var(--marigold);border-radius:9px;min-height:64px;background:#fff;
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  font-weight:800;font-size:.87rem;color:#9aa49f;cursor:pointer;padding:6px;
+}
+.slot.filled{border-style:solid;color:var(--pine-dk);background:var(--pine-lt)}
+.tierlabel{font-size:.78rem;font-weight:800;color:var(--tag-connect);margin:6px 0 0}
+
+/* ---------- writing ---------- */
+.wcount{font-size:.82rem;font-weight:800;color:#7a837e;text-align:right;margin-top:4px}
+.checklist{list-style:none;padding:0;margin:10px 0}
+.checklist li{display:flex;gap:9px;align-items:flex-start;margin:6px 0;font-weight:700;font-size:.96rem}
+.checklist input{width:19px;height:19px;accent-color:var(--pine);margin-top:3px;flex:none}
+
+/* ---------- score ---------- */
+#scorebox{border:3px solid var(--pine);border-radius:11px;padding:14px 18px;margin:16px 0;background:var(--pine-lt);display:none}
+#scorebox .big{font-size:1.8rem;font-weight:800;color:var(--pine-dk)}
+.checkbtn{
+  font-family:inherit;font-size:.95rem;font-weight:800;background:var(--pine);color:#fff;
+  border:none;border-radius:8px;padding:9px 16px;cursor:pointer;margin:8px 6px 8px 0;
+}
+.checkbtn:hover{background:var(--pine-dk)}
+.checkbtn.ghost{background:#fff;color:var(--pine);border:2px solid var(--pine)}
+
+/* ---------- figures ---------- */
+figure.art{margin:0 0 10px 20px;float:right;width:230px;break-inside:avoid;page-break-inside:avoid}
+figure.art.left{float:left;margin:0 20px 10px 0}
+figure.art svg{width:100%;height:auto;display:block}
+figure.art figcaption{font-size:.82rem;color:#5f6b65;font-weight:700;text-align:center;margin-top:4px;line-height:1.35}
+.clearfix::after{content:"";display:table;clear:both}
+
+/* ---------- teacher ---------- */
+#teacher{border:2px dashed var(--tag-connect);border-radius:9px;padding:14px 16px;margin:34px 0 0;background:#fdf7f3;display:none}
+#teacher h3{margin-top:0;color:var(--tag-connect)}
+#teacher p{margin:5px 0;font-size:.95rem}
+#teacherBtn{font-family:inherit;font-size:.9rem;font-weight:800;margin-top:30px;background:#fff;border:2px solid var(--tag-connect);color:var(--tag-connect);border-radius:7px;padding:7px 12px;cursor:pointer}
+.footnote{font-size:.85rem;color:#7a837e;margin-top:34px;border-top:1px solid var(--rule);padding-top:10px}
+
+/* ---------- login gate ---------- */
+#gate{position:fixed;inset:0;z-index:500;background:rgba(28,26,51,.95);display:flex;align-items:center;justify-content:center;padding:20px}
+#gate .card{background:#fff;border-radius:14px;max-width:430px;width:100%;padding:26px 28px 24px;box-shadow:0 14px 44px rgba(0,0,0,.35)}
+#gate h2{margin:0 0 4px;border:none;padding:0;font-size:1.45rem}
+#gate p.hi{margin:0 0 18px;color:#5a6660;font-weight:600;font-size:.95rem}
+#gate label{display:block;font-weight:800;font-size:.85rem;color:var(--pine-dk);margin:12px 0 4px}
+#gate input,#gate select{width:100%;font-family:inherit;font-size:1.02rem;padding:9px 11px;border:2px solid var(--rule);border-radius:8px;background:#fff;color:var(--ink)}
+#gate input:focus,#gate select:focus{outline:none;border-color:var(--pine)}
+#gate button{width:100%;margin-top:20px;font-family:inherit;font-size:1.05rem;font-weight:800;background:var(--pine);color:#fff;border:none;border-radius:9px;padding:12px;cursor:pointer}
+#gate button:hover{background:var(--pine-dk)}
+#gate .err{color:#b3261e;font-weight:700;font-size:.88rem;margin-top:10px;min-height:1.1em}
+#gate .note{font-size:.8rem;color:#7a837e;margin-top:14px;line-height:1.45}
+
+/* ---------- print ---------- */
+@media print{
+  body{background:#fff;font-size:12pt}
+  #bar,#tip,#teacherBtn,#gate,#jump,.noprint,.chip,.checkbtn{display:none !important}
+  .sheet{box-shadow:none;margin:0;max-width:100%;padding:0}
+  h2{page-break-after:avoid}
+  .qbox,ol li,table tr,.mc,.sq,.wcard{page-break-inside:avoid}
+  .gl{background:none;border-bottom:1px dotted #555;color:#000}
+  .qbox textarea{min-height:78px}
+  a{text-decoration:none;color:#000}
+  .world{grid-template-columns:1fr 1fr}
+  #chartWrap{display:none !important}
+}
+@media (max-width:700px){
+  .sheet{padding:20px 18px 40px;margin:8px}
+  .qgrid,.world{grid-template-columns:1fr}
+  figure.art{float:none;width:100%;max-width:290px;margin:12px auto}
+  h1{font-size:1.9rem}
+  .tier.t2,.tier.t3{grid-template-columns:1fr 1fr}
+}
+
+/* ---------- translated directions ---------- */
+.lrev{font-family:inherit;font-size:.78rem;font-weight:800;margin-left:8px;border:1.5px solid var(--pine);
+  color:var(--pine);background:#fff;border-radius:14px;padding:1px 9px;cursor:pointer;font-style:normal;vertical-align:1px}
+.lrev:hover{background:var(--pine-lt)}
+.ltr{display:block;font-style:normal;margin-top:4px;padding:4px 9px;border-left:3px solid var(--marigold);
+  background:#fdf7ec;color:#3d3326;font-weight:700}
+.ltr[dir="rtl"]{border-left:none;border-right:3px solid var(--marigold);text-align:right}
+#tip .t.rtl{direction:rtl;text-align:right}
+.tapzone{cursor:text}
+@media print{ .lrev{display:none !important} }
+
+/* ---------- monsters ---------- */
+.hero{display:flex;gap:18px;align-items:center;margin-bottom:6px}
+.hero .moon{width:92px;height:92px;flex:none}
+.fearlist{counter-reset:none;padding-left:2.2em;margin:10px 0 18px}
+.fearlist li{margin:0 0 7px;padding-left:4px}
+.fearlist li::marker{font-weight:800;color:var(--pine)}
+table.mtable input[type=text]{width:100%;font-family:inherit;font-size:.98rem;border:none;border-bottom:1.5px solid var(--rule);padding:3px 4px;background:transparent}
+table.mtable input.num{width:5.5em;text-align:center;font-weight:800}
+table.mtable td.lbl{font-weight:800;color:var(--pine-dk);white-space:nowrap}
+.others{display:none;border-left:6px solid var(--pine);background:var(--pine-lt);border-radius:0 9px 9px 0;padding:10px 15px;margin:10px 0 16px}
+.others.on{display:block}
+.others p{margin:4px 0}
+.stories{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:14px 0}
+.story{border:1.5px solid var(--rule);border-top:6px solid var(--pine);border-radius:0 0 10px 10px;padding:12px 15px;background:#fff;break-inside:avoid;page-break-inside:avoid}
+.story h4{margin:0 0 2px;font-size:1.12rem;color:var(--pine-dk)}
+.story h4 .aka{font-weight:600;font-style:italic;color:#6f6a86;font-size:.9rem}
+.story .place{font-size:.78rem;font-weight:800;color:var(--marigold);margin:0 0 6px}
+.story > p{margin:0 0 8px;font-size:.96rem}
+.story .mc{margin:8px 0 0}
+@media (max-width:760px){ .stories{grid-template-columns:1fr} .hero .moon{width:64px;height:64px} }
+@media print{ .stories{grid-template-columns:1fr 1fr} .others{display:block} }
+</style>
+</head>
+<body data-level="hard">
+<div id="gate">
+  <div class="card">
+    <h2>Monsters as Symbols</h2>
+    <p class="hi">Sign in so Mr. Toby can see your work.</p>
+    <label for="gName">Your full name</label>
+    <input id="gName" type="text" autocomplete="name" placeholder="First and last name">
+    <label for="gEmail">School email address</label>
+    <input id="gEmail" type="email" autocomplete="email" placeholder="name@s.sfusd.edu" inputmode="email" autocapitalize="off" spellcheck="false">
+    <label for="gPeriod">Class period</label>
+    <select id="gPeriod">
+      <option value="">Choose your period</option>
+      <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option>
+    </select>
+    <button id="gGo" type="button">Start</button>
+    <div class="err" id="gErr"></div>
+    <p class="note">Your answers save automatically while you work. You can close the page and come back later.</p>
+  </div>
+</div>
+
+<div id="bar">
+  <span class="brand">Monsters as Symbols</span>
+  <select id="lang" aria-label="Translation language" translate="no">
+    <option value="none">Language: English only</option>
+    <option value="es">Español</option>
+    <option value="zh-CN">中文 (普通话)</option>
+    <option value="yue">廣東話 (Cantonese)</option>
+    <option value="ar">العربية</option>
+    <option value="ary">الدارجة</option>
+    <option value="vi">Tiếng Việt</option>
+    <option value="ru">Русский</option>
+    <option value="ur">اردو</option>
+    <option value="tl">Tagalog</option>
+    <option value="fr">Français</option>
+    <option value="ko">한국어</option>
+    <option value="hi">हिन्दी</option>
+    <option value="so">Soomaali</option>
+    <option value="th">ไทย</option>
+    <option value="ne">नेपाली</option>
+  </select>
+  <select id="imode" aria-label="Directions" translate="no">
+    <option value="tap">Directions: tap to translate</option>
+    <option value="always">Directions: always translate</option>
+    <option value="off">Directions: English only</option>
+  </select>
+  <button id="lvlBtn" type="button">Easier English</button>
+  <button id="bigBtn" type="button">Bigger text</button>
+  <button id="pBlank" type="button">Print blank copy</button>
+  <button id="pMine" type="button">Print my answers</button>
+  <span class="spacer"></span>
+  <span class="who" id="whoNote"></span>
+  <button id="turnIn" class="turnin" type="button">Turn in</button>
+  <span id="saveNote"></span>
+</div>
+
+<div id="tip" role="tooltip"></div>
+
+<div class="sheet" translate="no">
+
+  <div class="hero">
+    <svg class="moon" viewBox="0 0 120 120" aria-hidden="true">
+      <circle cx="60" cy="60" r="44" fill="#f3e3b5"/>
+      <circle cx="78" cy="48" r="44" fill="var(--paper)"/>
+      <g fill="#2e2b4f"><circle cx="30" cy="96" r="2.2"/><circle cx="104" cy="22" r="1.8"/><circle cx="96" cy="100" r="1.4"/></g>
+    </svg>
+    <div>
+      <h1>Monsters as Symbols</h1>
+      <p class="sub">What are we afraid of? Scary stories from around the world</p>
+      <p class="byline">Mr. Toby &middot; Galileo Academy of Science and Technology &middot; English Language Development</p>
+    </div>
+  </div>
+
+  <div class="nameline">
+    <label>Name: <input class="w1" type="text" data-id="name"></label>
+    <label>Period: <input class="w2" type="text" data-id="period"></label>
+    <label>Date: <input class="w2" type="text" data-id="date"></label>
+  </div>
+
+  <nav id="jump" class="noprint" aria-label="Jump to a part" translate="yes">
+    <a href="#p1">1 · Your stories</a>
+    <a href="#p2">2 · Words</a>
+    <a href="#p3">3 · Read</a>
+    <a href="#p4">4 · Sixteen fears</a>
+    <a href="#p5">5 · Eight monsters</a>
+    <a href="#p6">6 · Around the world</a>
+    <a href="#p7">7 · What do they mean?</a>
+    <a href="#p8">8 · Grammar</a>
+    <a href="#p9">9 · Writing</a>
+    <a href="#p10">10 · Show what you know</a>
+  </nav>
+
+  <div class="lvlbar noprint">
+    <span class="lbl">Reading level:</span>
+    <button class="lvlbtn" type="button" data-set="easy">Easier English</button>
+    <button class="lvlbtn on" type="button" data-set="hard">Full English</button>
+  </div>
+
+  <!-- ================= PART 1 ================= -->
+  <h2 id="p1"><span class="num">1</span>Scary stories in your family</h2>
+  <p class="instr" translate="yes" data-k="survey" data-en="There are no wrong answers. Tell us about the scary stories in your family.">There are no wrong answers. Tell us about the scary stories in your family.</p>
+
+  <div class="sq">
+    <p class="qtext">1. What country is your family from?</p>
+    <input type="text" data-id="s_country" placeholder="Write the country">
+  </div>
+  <div class="sq">
+    <p class="qtext">2. When you were little, did people tell you scary stories?</p>
+    <div class="opts">
+      <label><input type="radio" name="s_told" value="Many" data-id="s_told"> Yes, many</label>
+      <label><input type="radio" name="s_told" value="A few" data-id="s_told"> Yes, a few</label>
+      <label><input type="radio" name="s_told" value="No" data-id="s_told"> No</label>
+    </div>
+  </div>
+  <div class="sq">
+    <p class="qtext">3. Who told them? Check everyone.</p>
+    <div class="opts">
+      <label><input type="checkbox" data-id="s_who_gp" value="grandparents"> A grandparent</label>
+      <label><input type="checkbox" data-id="s_who_par" value="parents"> My mother or father</label>
+      <label><input type="checkbox" data-id="s_who_sib" value="brothers and sisters"> A brother, sister, or cousin</label>
+      <label><input type="checkbox" data-id="s_who_fr" value="friends"> Friends</label>
+      <label><input type="checkbox" data-id="s_who_tv" value="TV or internet"> TV, movies, or the internet</label>
+    </div>
+  </div>
+  <div class="sq">
+    <p class="qtext">4. Why do adults tell children scary stories?</p>
+    <div class="opts">
+      <label><input type="radio" name="s_why" value="Safe" data-id="s_why"> To keep them safe</label>
+      <label><input type="radio" name="s_why" value="Lesson" data-id="s_why"> To teach a lesson</label>
+      <label><input type="radio" name="s_why" value="Fun" data-id="s_why"> For fun</label>
+      <label><input type="radio" name="s_why" value="Not sure" data-id="s_why"> I am not sure</label>
+    </div>
+  </div>
+  <div class="sq">
+    <p class="qtext">5. What is the name of a monster, ghost, or spirit from your country? Write it in English letters or in your language.</p>
+    <input type="text" data-id="s_monster" placeholder="Name of the monster">
+  </div>
+  <div class="sq">
+    <p class="qtext">6. Some people believe these monsters and spirits are real. Some people do not. What about you?</p>
+    <div class="opts">
+      <label><input type="radio" name="s_believe" value="Yes" data-id="s_believe"> I believe some are real</label>
+      <label><input type="radio" name="s_believe" value="No" data-id="s_believe"> I think they are only stories</label>
+      <label><input type="radio" name="s_believe" value="Not sure" data-id="s_believe"> I am not sure</label>
+    </div>
+  </div>
+  <div class="noprint">
+    <button class="checkbtn ghost" id="classBtn" type="button">See the class results</button>
+    <div id="chartWrap"></div>
+  </div>
+
+  <!-- ================= PART 2 ================= -->
+  <h2 id="p2"><span class="num">2</span>Words you need</h2>
+  <p class="instr" translate="yes" data-k="vocab" data-en="Choose your language in the bar at the top and the third column will fill in. Tap any dotted word in a reading to see it again.">Choose your language in the bar at the top and the third column will fill in. Tap any dotted word in a reading to see it again.</p>
+  <table class="vocab">
+    <thead><tr><th>Word</th><th>Meaning</th><th id="vocabLangHead">Your language</th></tr></thead>
+    <tbody id="vocabBody"></tbody>
+  </table>
+
+  <p class="instr" translate="yes" data-k="vblank" data-en="Write one word from the table on each line.">Write one word from the table on each line.</p>
+  <p class="cloze">
+    1. People say a ghost <input class="blank" data-id="v1" data-key="haunts"><span class="mark" data-for="v1"></span> the old house on the hill.<br>
+    2. The dead body was covered in a white <input class="blank" data-id="v2" data-key="shroud"><span class="mark" data-for="v2"></span>.<br>
+    3. There are too many stars to count. There are <input class="blank" data-id="v3" data-key="countless"><span class="mark" data-for="v3"></span> stars.<br>
+    4. In the story, the <input class="blank" data-id="v4" data-key="witch"><span class="mark" data-for="v4"></span> cast a spell on the prince.<br>
+    5. He plays games on his phone for ten hours a day and cannot stop. He is an <input class="blank" data-id="v5" data-key="addict"><span class="mark" data-for="v5"></span>.<br>
+    6. A big, wild group of zombies is a <input class="blank" data-id="v6" data-key="horde"><span class="mark" data-for="v6"></span>.<br>
+    7. The little girl sleeps with her <input class="blank" data-id="v7" data-key="doll"><span class="mark" data-for="v7"></span>.<br>
+    8. A white flag <input class="blank" data-id="v8" data-key="symbolizes|represents"><span class="mark" data-for="v8"></span> peace.<br>
+    9. The war was a <input class="blank" data-id="v9" data-key="trauma"><span class="mark" data-for="v9"></span>. He still has bad dreams.<br>
+    10. Nobody knows her name. She is <input class="blank" data-id="v10" data-key="nameless"><span class="mark" data-for="v10"></span>.
+  </p>
+  <button class="checkbtn noprint" data-check="v">Check these 10</button>
+
+  <!-- ================= PART 3 ================= -->
+  <h2 id="p3"><span class="num">3</span>Read: what do monsters represent?</h2>
+  <p class="instr" translate="yes" data-k="read" data-en="Read it once. Then read it again and tap the words that are new for you.">Read it once. Then read it again and tap the words that are new for you.</p>
+  <div class="lvl-hard">
+    <p class="pass"><span class="pnum">1</span><span class="gl" data-g="monster">Monsters</span> <span class="gl">represent</span> the unknown, our deepest <span class="gl" data-g="fear">fears</span>, and the <span class="gl">eventual</span> death that we all face. Throughout history, there are <span class="gl">countless</span> examples of monsters. Some of our most well-known monsters come from an age in which the world was still <span class="gl" data-g="shroud">shrouded</span> in darkness, counting <span class="gl">nameless</span> fears in the dark.</p>
+    <p class="pass"><span class="pnum">2</span>That is why a monster is never only a monster. It is a <span class="gl">symbol</span>. When we look closely at a monster, we can see what the people who told the story were afraid of — and sometimes what we are still afraid of today.</p>
+  </div>
+  <div class="lvl-easy">
+    <p class="pass"><span class="pnum">1</span><span class="gl" data-g="monster">Monsters</span> are <span class="gl" data-g="symbol">symbols</span>. They show what people are afraid of. They <span class="gl">represent</span> three things: things we do not know, our biggest <span class="gl" data-g="fear">fears</span>, and death. Every person dies one day.</p>
+    <p class="pass"><span class="pnum">2</span>There are <span class="gl">countless</span> monsters in history. Many famous monsters come from long ago. Then, people did not understand the world. The world was dark, and people had fears with no names.</p>
+    <p class="pass"><span class="pnum">3</span>So a monster is not only a monster. When we look at a monster, we can see what people were afraid of. Sometimes we are still afraid of the same things today.</p>
+  </div>
+
+  <table class="tf">
+    <thead><tr><th>Sentence</th><th class="tfcol">T</th><th class="tfcol">F</th></tr></thead>
+    <tbody>
+      <tr data-id="tfa1" data-key="T"><td>Monsters represent things that people are afraid of.</td><td class="tfcol"><input type="radio" name="tfa1" value="T" data-id="tfa1"></td><td class="tfcol"><input type="radio" name="tfa1" value="F" data-id="tfa1"></td></tr>
+      <tr data-id="tfa2" data-key="F"><td>There are only a few monsters in history.</td><td class="tfcol"><input type="radio" name="tfa2" value="T" data-id="tfa2"></td><td class="tfcol"><input type="radio" name="tfa2" value="F" data-id="tfa2"></td></tr>
+      <tr data-id="tfa3" data-key="T"><td>Many famous monsters come from a time when people did not understand much about the world.</td><td class="tfcol"><input type="radio" name="tfa3" value="T" data-id="tfa3"></td><td class="tfcol"><input type="radio" name="tfa3" value="F" data-id="tfa3"></td></tr>
+      <tr data-id="tfa4" data-key="T"><td>A monster can be a symbol of death.</td><td class="tfcol"><input type="radio" name="tfa4" value="T" data-id="tfa4"></td><td class="tfcol"><input type="radio" name="tfa4" value="F" data-id="tfa4"></td></tr>
+      <tr data-id="tfa5" data-key="F"><td>We cannot be afraid of the same things as people long ago.</td><td class="tfcol"><input type="radio" name="tfa5" value="T" data-id="tfa5"></td><td class="tfcol"><input type="radio" name="tfa5" value="F" data-id="tfa5"></td></tr>
+    </tbody>
+  </table>
+
+  <!-- ================= PART 4 ================= -->
+  <h2 id="p4"><span class="num">4</span>Sixteen fears that monsters symbolize</h2>
+  <p class="instr" translate="yes" data-k="fears" data-en="Read the sixteen fears. Tap any word you do not know.">Read the sixteen fears. Tap any word you do not know.</p>
+  <ol class="fearlist">
+    <li>Fear of medicine and doctors, or of science and technology</li>
+    <li>A scary person who gets mad too much and attacks others</li>
+    <li>A person who looks beautiful, young, and good, but is really bad</li>
+    <li>A handsome or beautiful person who you like, but who <span class="gl" data-g="seduce">seduces</span> you, takes your energy, and makes you feel bad</li>
+    <li>A scary memory that you want to forget but cannot forget</li>
+    <li>A house where bad things happened — for example, parents were <span class="gl" data-g="abuse">abusive</span>, or someone was murdered</li>
+    <li>A family with problems and <span class="gl">trauma</span> that pass from generation to generation — from grandparents to parents to children</li>
+    <li>A memory that you want to forget, but it keeps coming back to your mind</li>
+    <li>The fear that things you love, and think are nice and <span class="gl">innocent</span>, are secretly bad</li>
+    <li>The fear that the world is so dangerous that you cannot escape, even in your own bedroom</li>
+    <li>A person who is very good at cooking and singing, who can <span class="gl">charm</span> you and <span class="gl">cast a spell</span> over you</li>
+    <li>A person who does not think, and just acts automatically</li>
+    <li>A person who is <span class="gl" data-g="addict">addicted</span> to drugs, a phone, or a computer, and cannot control themselves anymore — the addiction controls them</li>
+    <li>Fear of <span class="gl">disease</span> — for example, COVID, Ebola, or AIDS</li>
+    <li>Fear of <span class="gl">powerful</span> women, or hatred of strong women</li>
+    <li>Fear that a big group of people who are different from you will take control and change your world — fear of people of another race, country, or class. This is called <strong>xenophobia</strong>.</li>
+  </ol>
+
+  <!-- ================= PART 5 ================= -->
+  <h2 id="p5"><span class="num">5</span>Eight monsters: what do they symbolize?</h2>
+  <p class="instr" translate="yes" data-k="match" data-en="For each monster, write the number of one or more fears. Then finish the sentence.">For each monster, write the number of one or more fears. Then finish the sentence.</p>
+  <table class="comp mtable">
+    <thead><tr><th>Monster</th><th>Fear number(s)</th><th>What does it symbolize?</th></tr></thead>
+    <tbody>
+      <tr><td class="lbl">a ghost</td><td><input type="text" class="num" data-id="mf1"></td><td><input type="text" data-id="ms1" placeholder="A ghost symbolizes …"></td></tr>
+      <tr><td class="lbl">a <span class="gl">werewolf</span></td><td><input type="text" class="num" data-id="mf2"></td><td><input type="text" data-id="ms2" placeholder="A werewolf symbolizes …"></td></tr>
+      <tr><td class="lbl">a <span class="gl">vampire</span></td><td><input type="text" class="num" data-id="mf3"></td><td><input type="text" data-id="ms3" placeholder="A vampire symbolizes …"></td></tr>
+      <tr><td class="lbl">a <span class="gl" data-g="haunt">haunted</span> house</td><td><input type="text" class="num" data-id="mf4"></td><td><input type="text" data-id="ms4" placeholder="A haunted house symbolizes …"></td></tr>
+      <tr><td class="lbl">a scary toy / <span class="gl">possessed</span> <span class="gl">doll</span></td><td><input type="text" class="num" data-id="mf5"></td><td><input type="text" data-id="ms5" placeholder="A possessed doll symbolizes …"></td></tr>
+      <tr><td class="lbl">a <span class="gl">witch</span></td><td><input type="text" class="num" data-id="mf6"></td><td><input type="text" data-id="ms6" placeholder="A witch symbolizes …"></td></tr>
+      <tr><td class="lbl">a <span class="gl">horde</span> of <span class="gl" data-g="zombie">zombies</span></td><td><input type="text" class="num" data-id="mf7"></td><td><input type="text" data-id="ms7" placeholder="A horde of zombies symbolizes …"></td></tr>
+      <tr><td class="lbl">Frankenstein</td><td><input type="text" class="num" data-id="mf8"></td><td><input type="text" data-id="ms8" placeholder="Frankenstein symbolizes …"></td></tr>
+    </tbody>
+  </table>
+  <button class="checkbtn ghost noprint reveal" type="button" data-reveal="others5">When you finish: see what other people say</button>
+  <div class="others" id="others5">
+    <p>There is no one right answer. Here is what many writers and teachers say. Do you agree?</p>
+    <p><b>Ghost</b> — 5 and 8: a memory that will not leave. <b>Werewolf</b> — 2: the angry animal inside a normal person. <b>Vampire</b> — 4, and also 13 and 14: someone who drains you, like an addiction or a disease. In the old book <em>Dracula</em>, the vampire is a foreigner who comes to London — so some people say 16. <b>Haunted house</b> — 6 and 7, sometimes 10. <b>Possessed doll</b> — 9 and 10. <b>Witch</b> — 11 and 15, sometimes 3. <b>Zombie horde</b> — 12, 13, 14, and 16. <b>Frankenstein</b> — 1: a scientist makes life, and it goes wrong.</p>
+  </div>
+
+  <!-- ================= PART 6 ================= -->
+  <h2 id="p6"><span class="num">6</span>Monsters from around the world</h2>
+  <p class="instr" translate="yes" data-k="stories" data-en="Read at least four stories. If there is a story from your country, read that one first. Answer the question under each story you read.">Read at least four stories. If there is a story from your country, read that one first. Answer the question under each story you read.</p>
+
+  <div class="stories">
+    <div class="story" id="st1">
+      <h4>La Llorona <span class="aka">the weeping woman</span></h4>
+      <p class="place">MEXICO AND CENTRAL AMERICA</p>
+      <p>Long ago, a beautiful young woman named María had two children. Their father left her for another woman. María was so angry and so sad that she lost her mind. She threw her children into the river, and they <span class="gl" data-g="drown">drowned</span>. The next day she understood what she did. She searched the river, but her children were gone. Soon she died too. Now her <span class="gl">spirit</span> walks next to rivers and lakes at night in a long white dress. She <span class="gl" data-g="wail">wails</span>, "¡Ay, mis hijos!" — "Oh, my children!" Parents <span class="gl">warn</span> their children: if you go near the water at night, La Llorona will take you.</p>
+      <div class="mc" data-id="sm1" data-key="b">
+        <p class="qtext">Why does La Llorona cry?</p>
+        <label><input type="radio" name="sm1" value="a" data-id="sm1"><span>She is lost in the forest.</span></label>
+        <label><input type="radio" name="sm1" value="b" data-id="sm1"><span>She lost her children, and it was her fault.</span></label>
+        <label><input type="radio" name="sm1" value="c" data-id="sm1"><span>Her husband is a werewolf.</span></label>
+        <label><input type="radio" name="sm1" value="d" data-id="sm1"><span>She is hungry.</span></label>
+      </div>
+    </div>
+    <div class="story" id="st2">
+      <h4>Aswang <span class="aka">the neighbor at night</span></h4>
+      <p class="place">THE PHILIPPINES</p>
+      <p>In the daytime, an aswang looks like a normal person. Maybe she is a quiet neighbor who sells vegetables, or a man who does not talk much. But at night the aswang can <span class="gl">shapeshift</span> — it changes into a big black dog, a pig, or a bird. It hunts in the dark and makes a sound, "tik-tik-tik." Strangely, the sound is loud when the aswang is far away and quiet when it is close. Families put salt and garlic by the doors and windows to keep it out. People say that if you look into an aswang's eyes, your picture is upside down.</p>
+      <div class="mc" data-id="sm2" data-key="b">
+        <p class="qtext">What does an aswang look like in the daytime?</p>
+        <label><input type="radio" name="sm2" value="a" data-id="sm2"><span>A big black dog</span></label>
+        <label><input type="radio" name="sm2" value="b" data-id="sm2"><span>A normal person</span></label>
+        <label><input type="radio" name="sm2" value="c" data-id="sm2"><span>A bird</span></label>
+        <label><input type="radio" name="sm2" value="d" data-id="sm2"><span>A ghost in a white dress</span></label>
+      </div>
+    </div>
+    <div class="story" id="st3">
+      <h4>Aisha Qandisha <span class="aka">the woman by the water</span></h4>
+      <p class="place">MOROCCO</p>
+      <p>In Morocco, people tell stories about Aisha Qandisha, a jinniya — a female jinn. She lives near rivers, springs, and the sea. At night she looks like a very beautiful woman, and she calls men by their names. Men who follow her fall under her <span class="gl">charm</span>, and some never come back to their families. But she has one secret: under her long dress, her feet are the feet of a goat or a camel. Grandmothers say: if a beautiful woman calls your name by the water at night, look at her feet first — and then run.</p>
+      <div class="mc" data-id="sm3" data-key="c">
+        <p class="qtext">What is Aisha Qandisha's secret?</p>
+        <label><input type="radio" name="sm3" value="a" data-id="sm3"><span>She cannot swim.</span></label>
+        <label><input type="radio" name="sm3" value="b" data-id="sm3"><span>She has no name.</span></label>
+        <label><input type="radio" name="sm3" value="c" data-id="sm3"><span>She has the feet of a goat or a camel.</span></label>
+        <label><input type="radio" name="sm3" value="d" data-id="sm3"><span>She is afraid of salt.</span></label>
+      </div>
+    </div>
+    <div class="story" id="st4">
+      <h4>The Ghoul <span class="aka">the stranger in the desert</span></h4>
+      <p class="place">ARABIA</p>
+      <p>The English word <em>ghoul</em> comes from the Arabic word <em>ghūl</em>. Long before Islam, Arab travelers told stories about the ghūl of the desert. It can <span class="gl">shapeshift</span> — it can look like a hyena, an old friend, or a <span class="gl">stranger</span> who needs help. It calls to travelers in a kind voice and leads them far from the road, into the empty sand, where it eats them. Later stories say the ghoul also lives in <span class="gl" data-g="cemetery">cemeteries</span> and eats the dead. Travelers learned to stay on the road and not to follow a friendly voice in the dark.</p>
+      <div class="mc" data-id="sm4" data-key="a">
+        <p class="qtext">How does the ghoul catch travelers?</p>
+        <label><input type="radio" name="sm4" value="a" data-id="sm4"><span>It looks like a friend or a stranger and leads them away.</span></label>
+        <label><input type="radio" name="sm4" value="b" data-id="sm4"><span>It flies down from the sky.</span></label>
+        <label><input type="radio" name="sm4" value="c" data-id="sm4"><span>It hides in their house.</span></label>
+        <label><input type="radio" name="sm4" value="d" data-id="sm4"><span>It sells them bad food.</span></label>
+      </div>
+    </div>
+    <div class="story" id="st5">
+      <h4>Jiangshi <span class="aka">the hopping corpse</span></h4>
+      <p class="place">CHINA</p>
+      <p>A jiangshi is a dead body that cannot rest. Many stories say it is a person who died far from home and did not have the right funeral. Its body is stiff, so it cannot walk. It hops, with its arms straight out in front. It wears the clothes of an old Qing dynasty official. A jiangshi cannot see, but it can feel your breath. If you meet one, hold your breath and do not move! A Taoist priest can stop a jiangshi with a yellow paper <span class="gl">charm</span> on its forehead.</p>
+      <div class="mc" data-id="sm5" data-key="c">
+        <p class="qtext">How can you hide from a jiangshi?</p>
+        <label><input type="radio" name="sm5" value="a" data-id="sm5"><span>Run into the river.</span></label>
+        <label><input type="radio" name="sm5" value="b" data-id="sm5"><span>Sing a song.</span></label>
+        <label><input type="radio" name="sm5" value="c" data-id="sm5"><span>Hold your breath and do not move.</span></label>
+        <label><input type="radio" name="sm5" value="d" data-id="sm5"><span>Give it candy.</span></label>
+      </div>
+    </div>
+    <div class="story" id="st6">
+      <h4>Gumiho <span class="aka">the nine-tailed fox</span></h4>
+      <p class="place">KOREA</p>
+      <p>In Korea, a fox that lives for a thousand years grows nine tails and becomes a gumiho. A gumiho can <span class="gl">shapeshift</span> into a beautiful young woman. She is sweet and smart, and men fall in love with her. But she is not human. In many stories, the gumiho wants to become a real woman, and to do that she must eat the livers or hearts of people. In some newer stories and TV dramas, the gumiho is lonely and kind, and she only wants to be human and to be loved.</p>
+      <div class="mc" data-id="sm6" data-key="a">
+        <p class="qtext">What does the gumiho want in many stories?</p>
+        <label><input type="radio" name="sm6" value="a" data-id="sm6"><span>To become a real human</span></label>
+        <label><input type="radio" name="sm6" value="b" data-id="sm6"><span>To find her children</span></label>
+        <label><input type="radio" name="sm6" value="c" data-id="sm6"><span>To go back to the forest</span></label>
+        <label><input type="radio" name="sm6" value="d" data-id="sm6"><span>To become a bird</span></label>
+      </div>
+    </div>
+    <div class="story" id="st7">
+      <h4>Ma Da <span class="aka">the water ghost</span></h4>
+      <p class="place">VIETNAM</p>
+      <p>In Vietnam, when a person <span class="gl" data-g="drown">drowns</span>, people say their spirit can become a ma da — a water ghost. The ma da is trapped under the water. It is cold and lonely, and it wants to be free. There is only one way out: it must pull another person under the water to take its place. So the ma da waits in rivers and ponds. When a child swims alone, it grabs the child's foot. That is why grandparents say: never swim alone, and never swim at noon or at night.</p>
+      <div class="mc" data-id="sm7" data-key="b">
+        <p class="qtext">How can a ma da become free?</p>
+        <label><input type="radio" name="sm7" value="a" data-id="sm7"><span>It must find its family.</span></label>
+        <label><input type="radio" name="sm7" value="b" data-id="sm7"><span>It must pull another person under the water.</span></label>
+        <label><input type="radio" name="sm7" value="c" data-id="sm7"><span>It must eat rice.</span></label>
+        <label><input type="radio" name="sm7" value="d" data-id="sm7"><span>It must wait for one hundred years.</span></label>
+      </div>
+    </div>
+    <div class="story" id="st8">
+      <h4>Mae Nak <span class="aka">the wife who waited</span></h4>
+      <p class="place">THAILAND</p>
+      <p>Nak lived with her husband, Mak, near Bangkok. She was going to have a baby. Then Mak had to go to war. While he was away, Nak and the baby both died. When Mak came home, Nak was waiting for him at the door with the baby, smiling. Mak was happy. Neighbors tried to tell him, but everyone who spoke was <span class="gl" data-g="punish">punished</span>. One day, Nak dropped a lime from the kitchen. Her arm grew very long and reached down under the house to pick it up. Then Mak knew — his wife was a ghost. Her love was stronger than death.</p>
+      <div class="mc" data-id="sm8" data-key="b">
+        <p class="qtext">How did Mak learn the truth?</p>
+        <label><input type="radio" name="sm8" value="a" data-id="sm8"><span>The neighbors told him and he believed them.</span></label>
+        <label><input type="radio" name="sm8" value="b" data-id="sm8"><span>He saw her arm grow very long.</span></label>
+        <label><input type="radio" name="sm8" value="c" data-id="sm8"><span>He found her grave.</span></label>
+        <label><input type="radio" name="sm8" value="d" data-id="sm8"><span>The baby told him.</span></label>
+      </div>
+    </div>
+    <div class="story" id="st9">
+      <h4>Baba Yaga <span class="aka">the witch in the forest</span></h4>
+      <p class="place">RUSSIA AND EASTERN EUROPE</p>
+      <p>Deep in the <span class="gl">forest</span> lives Baba Yaga, an old <span class="gl">witch</span> with iron teeth. Her house stands on giant chicken legs and turns around and around. The fence around it is made of bones. She flies through the sky in a big bowl. Children know that Baba Yaga eats people. But she is not only bad. In the story of Vasilisa, a girl goes to Baba Yaga's house to ask for fire. She is brave, she works hard, and she is polite — and Baba Yaga helps her. If you are rude or lazy, she will eat you. If you are brave and kind, she may help you.</p>
+      <div class="mc" data-id="sm9" data-key="c">
+        <p class="qtext">Who does Baba Yaga help?</p>
+        <label><input type="radio" name="sm9" value="a" data-id="sm9"><span>Rude children</span></label>
+        <label><input type="radio" name="sm9" value="b" data-id="sm9"><span>Lazy children</span></label>
+        <label><input type="radio" name="sm9" value="c" data-id="sm9"><span>People who are brave and polite</span></label>
+        <label><input type="radio" name="sm9" value="d" data-id="sm9"><span>Nobody</span></label>
+      </div>
+    </div>
+    <div class="story" id="st10">
+      <h4>Churel and Kichkandi <span class="aka">the woman with backward feet</span></h4>
+      <p class="place">INDIA, PAKISTAN, AND NEPAL</p>
+      <p>In India and Pakistan, people tell stories about the churel. She was a woman who died unhappily — maybe during childbirth, or because her husband's family treated her badly. Now she comes back for <span class="gl">revenge</span>. At night she looks like a beautiful woman, and she calls young men to follow her. But her feet point backward. In Nepal, people tell a similar story about the kichkandi, who waits by the road at night. In both stories, the sign is the same: look at the feet.</p>
+      <div class="mc" data-id="sm10" data-key="a">
+        <p class="qtext">How can you know a churel?</p>
+        <label><input type="radio" name="sm10" value="a" data-id="sm10"><span>Her feet point backward.</span></label>
+        <label><input type="radio" name="sm10" value="b" data-id="sm10"><span>She has nine tails.</span></label>
+        <label><input type="radio" name="sm10" value="c" data-id="sm10"><span>She hops.</span></label>
+        <label><input type="radio" name="sm10" value="d" data-id="sm10"><span>She wears a yellow paper.</span></label>
+      </div>
+    </div>
+    <div class="story" id="st11">
+      <h4>Dhegdheer <span class="aka">the woman with the long ear</span></h4>
+      <p class="place">SOMALIA</p>
+      <p>Somali grandmothers tell stories about Dhegdheer — the name means "long ear." She was a <span class="gl">powerful</span> woman who lived far away from other people. One of her ears was very long, and she could hear people talking from far, far away. She ate people who came near her house. Dhegdheer had a daughter who was not like her. The daughter was afraid of her mother and ran away to a town. Children are told to be quiet at night — because Dhegdheer can hear everything.</p>
+      <div class="mc" data-id="sm11" data-key="b">
+        <p class="qtext">What is special about Dhegdheer?</p>
+        <label><input type="radio" name="sm11" value="a" data-id="sm11"><span>She can fly.</span></label>
+        <label><input type="radio" name="sm11" value="b" data-id="sm11"><span>She can hear from very far away.</span></label>
+        <label><input type="radio" name="sm11" value="c" data-id="sm11"><span>She lives in the water.</span></label>
+        <label><input type="radio" name="sm11" value="d" data-id="sm11"><span>She is a fox.</span></label>
+      </div>
+    </div>
+    <div class="story" id="st12">
+      <h4>Loup-garou <span class="aka">the wolf inside</span></h4>
+      <p class="place">FRANCE, QUEBEC, LOUISIANA, AND HAITI</p>
+      <p>The loup-garou is a person who turns into a wolf — a <span class="gl">werewolf</span>. In old French and Quebec stories, a person who does not go to church for seven years becomes a loup-garou and runs through the <span class="gl">forest</span> at night. In Louisiana it is called the rougarou. In Haiti, a lougawou is a person who takes off their skin at night, changes into an animal or a ball of fire, and goes out to hurt people. In the morning, the loup-garou is a normal person again, and nobody knows.</p>
+      <div class="mc" data-id="sm12" data-key="b">
+        <p class="qtext">In the morning, what happens to the loup-garou?</p>
+        <label><input type="radio" name="sm12" value="a" data-id="sm12"><span>It dies.</span></label>
+        <label><input type="radio" name="sm12" value="b" data-id="sm12"><span>It becomes a normal person again.</span></label>
+        <label><input type="radio" name="sm12" value="c" data-id="sm12"><span>It flies away.</span></label>
+        <label><input type="radio" name="sm12" value="d" data-id="sm12"><span>It goes back to the river.</span></label>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= PART 7 ================= -->
+  <h2 id="p7"><span class="num">7</span>What do these monsters mean?</h2>
+  <p class="instr" translate="yes" data-k="analyze" data-en="Choose four stories. Write the number of the fear each monster symbolizes and say why. If it is a new fear, write 17 and name it.">Choose four stories. Write the number of the fear each monster symbolizes and say why. If it is a new fear, write 17 and name it.</p>
+  <table class="comp mtable">
+    <thead><tr><th>Monster</th><th>Fear number(s)</th><th>Why? Use <em>because</em>.</th></tr></thead>
+    <tbody>
+      <tr><td><input type="text" data-id="an_m1" placeholder="La Llorona"></td><td><input type="text" class="num" data-id="an_f1"></td><td><input type="text" data-id="an_w1" placeholder="… because …"></td></tr>
+      <tr><td><input type="text" data-id="an_m2"></td><td><input type="text" class="num" data-id="an_f2"></td><td><input type="text" data-id="an_w2"></td></tr>
+      <tr><td><input type="text" data-id="an_m3"></td><td><input type="text" class="num" data-id="an_f3"></td><td><input type="text" data-id="an_w3"></td></tr>
+      <tr><td><input type="text" data-id="an_m4"></td><td><input type="text" class="num" data-id="an_f4"></td><td><input type="text" data-id="an_w4"></td></tr>
+    </tbody>
+  </table>
+
+  <div class="qgrid">
+    <div class="qbox">
+      <span class="tag infer">COMPARE</span>
+      <p class="qtext">La Llorona and the Ma Da both live in the water. Why do so many parents tell water stories to children?</p>
+      <p class="frame">Parents tell water stories because ______.</p>
+      <textarea data-id="an_water"></textarea>
+    </div>
+    <div class="qbox">
+      <span class="tag infer">COMPARE</span>
+      <p class="qtext">Baba Yaga, Dhegdheer, the Churel, and the Gumiho are all women. Look at fear number 15. Why do you think so many monsters are women?</p>
+      <textarea data-id="an_women"></textarea>
+    </div>
+    <div class="qbox">
+      <span class="tag infer">INFER</span>
+      <p class="qtext">The Aswang, the Ghoul, and the Gumiho all look like normal people. What are these stories telling us to be careful about?</p>
+      <textarea data-id="an_look"></textarea>
+    </div>
+    <div class="qbox">
+      <span class="tag connect">CONNECT</span>
+      <p class="qtext">Which story is the scariest for you? Why? Is there a lesson in it?</p>
+      <p class="frame">The scariest story for me is ______ because ______. The lesson is ______.</p>
+      <textarea data-id="an_mine"></textarea>
+    </div>
+  </div>
+  <button class="checkbtn ghost noprint reveal" type="button" data-reveal="others7">When you finish: see what other people say</button>
+  <div class="others" id="others7">
+    <p><b>La Llorona</b> — 5 and 8: <span class="gl">guilt</span> that never ends. She is also a warning: stay away from the river. <b>Ma Da</b> — a warning about dangerous water. <b>Aswang</b> — 3: your neighbor may not be who you think. <b>Aisha Qandisha</b> — 4 and 15. <b>Ghoul</b> — 3: the stranger in the desert. <b>Jiangshi</b> — 12, and the fear of dying far from home without the right funeral. <b>Gumiho</b> — 3, 4, and 15. <b>Mae Nak</b> — 5 and 8: love that cannot let go. <b>Baba Yaga</b> — 11 and 15, but she also helps people who are brave and polite. <b>Churel</b> — 7 and 15: a woman who was treated badly, and her <span class="gl">revenge</span>. <b>Dhegdheer</b> — 2 and 15. <b>Loup-garou</b> — 2: the animal inside a person.</p>
+  </div>
+
+  <!-- ================= PART 8 ================= -->
+  <h2 id="p8"><span class="num">8</span>Grammar you need to talk about symbols</h2>
+
+  <h3>A. symbolize / symbolizes</h3>
+  <p class="instr" translate="yes" data-k="gA" data-en="Write symbolize, symbolizes, represent, or represents.">Write symbolize, symbolizes, represent, or represents.</p>
+  <div class="rule-box">One monster → <b>symbolizes</b>. Many monsters → <b>symbolize</b>. After <b>does</b> or <b>do</b> → <b>symbolize</b>.</div>
+  <p class="cloze">
+    1. A ghost <input class="blank" data-id="g1" data-key="symbolizes|represents"><span class="mark" data-for="g1"></span> a memory that we cannot forget.<br>
+    2. Frankenstein <input class="blank" data-id="g2" data-key="represents|symbolizes"><span class="mark" data-for="g2"></span> the fear of science.<br>
+    3. Zombies <input class="blank" data-id="g3" data-key="symbolize|represent"><span class="mark" data-for="g3"></span> people who act without thinking.<br>
+    4. Witches and the Gumiho <input class="blank" data-id="g4" data-key="represent|symbolize"><span class="mark" data-for="g4"></span> the fear of powerful women.<br>
+    5. The Jiangshi <input class="blank" data-id="g5" data-key="symbolizes|represents"><span class="mark" data-for="g5"></span> the fear of dying far from home.<br>
+    6. What does a werewolf <input class="blank" data-id="g6" data-key="symbolize|represent"><span class="mark" data-for="g6"></span>?
+  </p>
+  <button class="checkbtn noprint" data-check="g">Check these 6</button>
+
+  <h3>B. who, that, where</h3>
+  <p class="instr" translate="yes" data-k="gB" data-en="Write who, that, or where.">Write who, that, or where.</p>
+  <div class="rule-box"><b>who</b> → a person. <b>that</b> → a thing, an animal, or a person. <b>where</b> → a place.</div>
+  <p class="cloze">
+    1. La Llorona is a woman <input class="blank" data-id="r1" data-key="who|that"><span class="mark" data-for="r1"></span> cries next to the river.<br>
+    2. A haunted house is a house <input class="blank" data-id="r2" data-key="where"><span class="mark" data-for="r2"></span> bad things happened.<br>
+    3. A zombie is a monster <input class="blank" data-id="r3" data-key="that|which|who"><span class="mark" data-for="r3"></span> walks but cannot think.<br>
+    4. Baba Yaga is a witch <input class="blank" data-id="r4" data-key="who|that"><span class="mark" data-for="r4"></span> lives in the forest.<br>
+    5. The forest is the place <input class="blank" data-id="r5" data-key="where"><span class="mark" data-for="r5"></span> Baba Yaga lives.<br>
+    6. A Jiangshi is a dead body <input class="blank" data-id="r6" data-key="that|which"><span class="mark" data-for="r6"></span> hops at night.<br>
+    7. A stranger is a person <input class="blank" data-id="r7" data-key="who|that|whom"><span class="mark" data-for="r7"></span> you do not know.<br>
+    8. Morocco is the country <input class="blank" data-id="r8" data-key="where"><span class="mark" data-for="r8"></span> people tell stories about Aisha Qandisha.
+  </p>
+  <button class="checkbtn noprint" data-check="r">Check these 8</button>
+
+  <h3>C. Monster warnings: If you …, the monster will …</h3>
+  <p class="instr" translate="yes" data-k="gC" data-en="Write the verb in the correct form. Monsters give warnings: if you do this, the monster will do that.">Write the verb in the correct form. Monsters give warnings: if you do this, the monster will do that.</p>
+  <div class="rule-box"><b>If</b> + present, … <b>will</b> + verb. &nbsp; <em>If you <b>go</b> out at night, La Llorona <b>will take</b> you.</em></div>
+  <p class="cloze">
+    1. If you <input class="blank sm" data-id="c1a" data-key="go"><span class="mark" data-for="c1a"></span> (go) to the river at night, La Llorona <input class="blank" data-id="c1b" data-key="will take|ll take"><span class="mark" data-for="c1b"></span> (take) you.<br>
+    2. If you <input class="blank sm" data-id="c2a" data-key="swim"><span class="mark" data-for="c2a"></span> (swim) alone, the Ma Da <input class="blank" data-id="c2b" data-key="will pull|ll pull"><span class="mark" data-for="c2b"></span> (pull) you under the water.<br>
+    3. If a Jiangshi <input class="blank sm" data-id="c3a" data-key="hears"><span class="mark" data-for="c3a"></span> (hear) you breathe, it <input class="blank" data-id="c3b" data-key="will find|ll find"><span class="mark" data-for="c3b"></span> (find) you.<br>
+    4. If you <input class="blank sm" data-id="c4a" data-key="are"><span class="mark" data-for="c4a"></span> (be) rude to Baba Yaga, she <input class="blank" data-id="c4b" data-key="will eat|ll eat"><span class="mark" data-for="c4b"></span> (eat) you.<br>
+    5. If a child <input class="blank sm" data-id="c5a" data-key="disobeys"><span class="mark" data-for="c5a"></span> (disobey) his parents, the monster <input class="blank" data-id="c5b" data-key="will come|ll come"><span class="mark" data-for="c5b"></span> (come) for him.<br>
+    6. If you <input class="blank sm" data-id="c6a" data-key="leave"><span class="mark" data-for="c6a"></span> (leave) salt by the door, the Aswang <input class="blank" data-id="c6b" data-key="will not come in|wont come in|will not enter|wont enter|will not come|wont come"><span class="mark" data-for="c6b"></span> (not / come in).
+  </p>
+  <button class="checkbtn noprint" data-check="c">Check these 12</button>
+
+  <div class="qbox">
+    <span class="tag language">YOUR TURN</span>
+    <p class="qtext">Write a warning that adults in your country tell children. Use <em>If you …, … will …</em></p>
+    <textarea data-id="g_mywarn"></textarea>
+  </div>
+
+  <!-- ================= PART 9 ================= -->
+  <h2 id="p9"><span class="num">9</span>Writing</h2>
+  <p class="instr" translate="yes" data-k="levels" data-en="There are three levels. Do the one Mr. Toby gives you — and if it feels easy, climb one level up.">There are three levels. Do the one Mr. Toby gives you — and if it feels easy, climb one level up.</p>
+
+  <h3>Level 1 — My monster in six sentences</h3>
+  <div class="qbox">
+    <p class="frame">The monster is from ______. &nbsp;Its name is ______. &nbsp;It looks ______. &nbsp;It lives ______. &nbsp;It scares people because ______. &nbsp;I think it symbolizes ______.</p>
+    <textarea data-id="w_l1" style="min-height:170px"></textarea>
+    <div class="wcount" data-count="w_l1">0 words</div>
+  </div>
+
+  <h3>Level 2 — One paragraph: a monster from my country or my family</h3>
+  <div class="qbox">
+    <p class="qtext">Who told you the story? What happens in it? What fear does the monster symbolize? Why do adults tell this story to children?</p>
+    <textarea data-id="w_l2" style="min-height:170px"></textarea>
+    <div class="wcount" data-count="w_l2">0 words</div>
+  </div>
+
+  <h3>Level 3 — Two paragraphs: invent a monster for today</h3>
+  <div class="qbox">
+    <p class="qtext">Invent a new monster for a fear people have <em>now</em> — phones, AI, loneliness, climate change, or your own idea. Paragraph 1: describe the monster and its warning (<em>If you …, it will …</em>). Paragraph 2: explain what it symbolizes and compare it with one old monster from this unit.</p>
+    <textarea data-id="w_l3" style="min-height:170px"></textarea>
+    <div class="wcount" data-count="w_l3">0 words</div>
+  </div>
+
+  <!-- ================= PART 10 ================= -->
+  <h2 id="p10"><span class="num">10</span>Show what you know</h2>
+  <p class="instr" translate="yes" data-k="quiz" data-en="Twelve questions. Choose one answer for each. Then press the button at the bottom to see your score.">Twelve questions. Choose one answer for each. Then press the button at the bottom to see your score.</p>
+  <div class="mc" data-id="m1" data-key="b">
+    <p class="qtext">1. To <em>symbolize</em> something means …</p>
+    <label><input type="radio" name="m1" value="a" data-id="m1"><span>to be afraid of it</span></label>
+    <label><input type="radio" name="m1" value="b" data-id="m1"><span>to be a sign for an idea</span></label>
+    <label><input type="radio" name="m1" value="c" data-id="m1"><span>to cry loudly</span></label>
+    <label><input type="radio" name="m1" value="d" data-id="m1"><span>to change shape</span></label>
+  </div>
+  <div class="mc" data-id="m2" data-key="a">
+    <p class="qtext">2. The reading says monsters represent …</p>
+    <label><input type="radio" name="m2" value="a" data-id="m2"><span>the unknown, our fears, and death</span></label>
+    <label><input type="radio" name="m2" value="b" data-id="m2"><span>only children's games</span></label>
+    <label><input type="radio" name="m2" value="c" data-id="m2"><span>only animals</span></label>
+    <label><input type="radio" name="m2" value="d" data-id="m2"><span>only the weather</span></label>
+  </div>
+  <div class="mc" data-id="m3" data-key="c">
+    <p class="qtext">3. Frankenstein is often about the fear of …</p>
+    <label><input type="radio" name="m3" value="a" data-id="m3"><span>water</span></label>
+    <label><input type="radio" name="m3" value="b" data-id="m3"><span>powerful women</span></label>
+    <label><input type="radio" name="m3" value="c" data-id="m3"><span>science and technology</span></label>
+    <label><input type="radio" name="m3" value="d" data-id="m3"><span>strangers in the desert</span></label>
+  </div>
+  <div class="mc" data-id="m4" data-key="d">
+    <p class="qtext">4. A horde of zombies can symbolize …</p>
+    <label><input type="radio" name="m4" value="a" data-id="m4"><span>a scary memory</span></label>
+    <label><input type="radio" name="m4" value="b" data-id="m4"><span>a beautiful person who is bad</span></label>
+    <label><input type="radio" name="m4" value="c" data-id="m4"><span>a house where bad things happened</span></label>
+    <label><input type="radio" name="m4" value="d" data-id="m4"><span>a fear that a big group of different people will take over</span></label>
+  </div>
+  <div class="mc" data-id="m5" data-key="b">
+    <p class="qtext">5. La Llorona cries because …</p>
+    <label><input type="radio" name="m5" value="a" data-id="m5"><span>she is lost</span></label>
+    <label><input type="radio" name="m5" value="b" data-id="m5"><span>she lost her children</span></label>
+    <label><input type="radio" name="m5" value="c" data-id="m5"><span>she is hungry</span></label>
+    <label><input type="radio" name="m5" value="d" data-id="m5"><span>she wants to be human</span></label>
+  </div>
+  <div class="mc" data-id="m6" data-key="a">
+    <p class="qtext">6. Why do parents tell children about La Llorona and the Ma Da?</p>
+    <label><input type="radio" name="m6" value="a" data-id="m6"><span>so they stay away from dangerous water</span></label>
+    <label><input type="radio" name="m6" value="b" data-id="m6"><span>so they learn to swim</span></label>
+    <label><input type="radio" name="m6" value="c" data-id="m6"><span>so they go to church</span></label>
+    <label><input type="radio" name="m6" value="d" data-id="m6"><span>so they eat their food</span></label>
+  </div>
+  <div class="mc" data-id="m7" data-key="c">
+    <p class="qtext">7. Baba Yaga helps people who are …</p>
+    <label><input type="radio" name="m7" value="a" data-id="m7"><span>rude</span></label>
+    <label><input type="radio" name="m7" value="b" data-id="m7"><span>lazy</span></label>
+    <label><input type="radio" name="m7" value="c" data-id="m7"><span>brave and polite</span></label>
+    <label><input type="radio" name="m7" value="d" data-id="m7"><span>rich</span></label>
+  </div>
+  <div class="mc" data-id="m8" data-key="b">
+    <p class="qtext">8. Choose the correct sentence.</p>
+    <label><input type="radio" name="m8" value="a" data-id="m8"><span>A vampire symbolize a person who takes your energy.</span></label>
+    <label><input type="radio" name="m8" value="b" data-id="m8"><span>A vampire symbolizes a person who takes your energy.</span></label>
+    <label><input type="radio" name="m8" value="c" data-id="m8"><span>A vampire symbolizing a person who takes your energy.</span></label>
+    <label><input type="radio" name="m8" value="d" data-id="m8"><span>A vampire are symbolize a person who takes your energy.</span></label>
+  </div>
+  <div class="mc" data-id="m9" data-key="d">
+    <p class="qtext">9. A haunted house is a house ______ bad things happened.</p>
+    <label><input type="radio" name="m9" value="a" data-id="m9"><span>who</span></label>
+    <label><input type="radio" name="m9" value="b" data-id="m9"><span>what</span></label>
+    <label><input type="radio" name="m9" value="c" data-id="m9"><span>when</span></label>
+    <label><input type="radio" name="m9" value="d" data-id="m9"><span>where</span></label>
+  </div>
+  <div class="mc" data-id="m10" data-key="a">
+    <p class="qtext">10. If you ______ out at night, La Llorona will find you.</p>
+    <label><input type="radio" name="m10" value="a" data-id="m10"><span>go</span></label>
+    <label><input type="radio" name="m10" value="b" data-id="m10"><span>will go</span></label>
+    <label><input type="radio" name="m10" value="c" data-id="m10"><span>goes</span></label>
+    <label><input type="radio" name="m10" value="d" data-id="m10"><span>going</span></label>
+  </div>
+  <div class="mc" data-id="m11" data-key="c">
+    <p class="qtext">11. The English word <em>ghoul</em> comes from which language?</p>
+    <label><input type="radio" name="m11" value="a" data-id="m11"><span>French</span></label>
+    <label><input type="radio" name="m11" value="b" data-id="m11"><span>Chinese</span></label>
+    <label><input type="radio" name="m11" value="c" data-id="m11"><span>Arabic</span></label>
+    <label><input type="radio" name="m11" value="d" data-id="m11"><span>Korean</span></label>
+  </div>
+  <div class="mc" data-id="m12" data-key="b">
+    <p class="qtext">12. The Gumiho and Aisha Qandisha are both …</p>
+    <label><input type="radio" name="m12" value="a" data-id="m12"><span>animals that live in the sea</span></label>
+    <label><input type="radio" name="m12" value="b" data-id="m12"><span>beautiful women who are really dangerous</span></label>
+    <label><input type="radio" name="m12" value="c" data-id="m12"><span>hopping dead bodies</span></label>
+    <label><input type="radio" name="m12" value="d" data-id="m12"><span>old men in the forest</span></label>
+  </div>
+  <button class="checkbtn noprint" id="gradeBtn" type="button">Check everything and show my score</button>
+  <div id="scorebox"></div>
+
+  <h3>What can you do now?</h3>
+  <p class="instr" translate="yes" data-k="exit" data-en="Check the ones that are true for you. This is not a grade — it tells Mr. Toby what to teach next.">Check the ones that are true for you. This is not a grade — it tells Mr. Toby what to teach next.</p>
+  <ul class="checklist">
+    <li><input type="checkbox" data-id="ic1"><span>I can explain what a symbol is.</span></li>
+    <li><input type="checkbox" data-id="ic2"><span>I can say what a ghost, a vampire, or a zombie symbolizes.</span></li>
+    <li><input type="checkbox" data-id="ic3"><span>I can tell a monster story from another country.</span></li>
+    <li><input type="checkbox" data-id="ic4"><span>I can use <em>who</em>, <em>that</em>, and <em>where</em> to describe a monster.</span></li>
+    <li><input type="checkbox" data-id="ic5"><span>I can write a warning with <em>If you …, … will …</em></span></li>
+    <li><input type="checkbox" data-id="ic6"><span>I can tell a scary story from my own country in English.</span></li>
+  </ul>
+  <div class="qgrid one"><div class="qbox">
+    <span class="tag ml">LAST ONE</span>
+    <p class="qtext">What is one question you still have about monsters, or about a story in this unit?</p>
+    <textarea data-id="q_last"></textarea>
+  </div></div>
+
+  <button id="teacherBtn" class="noprint" type="button">Teacher notes</button>
+  <div id="teacher">
+    <h3>Teacher notes — Mr. Toby</h3>
+    <p><strong>Auto-scored (65):</strong> Part 2 words (10), Part 3 true/false (5), Part 6 story questions (12, one per story — students who read four stories will have four), Part 8 grammar (26), Part 10 multiple choice (12). Everything else is for reading on the dashboard.</p>
+    <p><strong>Suggested pacing (5 days):</strong> Day 1 — survey, class results, words. Day 2 — the reading and the sixteen fears; model one monster (the ghost) out loud, then Part 5 in pairs, then the reveal. Day 3 — jigsaw Part 6: groups of four, each student reads three stories and teaches them; students from a story's country go first. Day 4 — Part 7 and grammar A–C. Day 5 — writing and Part 10.</p>
+    <p><strong>Sensitive ground:</strong> fears 6 and 7 name abuse, murder, and family trauma. Students choose which fears to write about; nobody has to connect a fear to their own life. Fear 16 (xenophobia) is worth ten minutes of talk: the zombie horde is often how people describe immigrants. Let students name that themselves.</p>
+    <p><strong>Belief:</strong> for some students, jinn and spirits are part of their religion, not folklore. Aisha Qandisha is told as a story about one jinniya, not about jinn in general. Say out loud that some people in the room believe, some do not, and both are respected.</p>
+    <p><strong>Dashboard:</strong> <a href="dashboard.html">dashboard.html</a> &middot; <strong>Sister unit:</strong> <a href="../holidays/">Ghosts, Candy, and Remembering</a></p>
+  </div>
+
+</div>
+
+<script>
+/* ============================================================
+   GLOSSARY — simple English meaning + 6 translations
+   ============================================================ */
+var GLOSS = {"monster": {"d": "a scary creature from a story", "t": {"es": "monstruo", "zh-CN": "怪物", "yue": "怪物", "ar": "وحش", "ary": "غول / وحش", "vi": "quái vật", "ru": "чудовище", "ur": "عفریت / دیو", "tl": "halimaw", "fr": "monstre", "ko": "괴물", "hi": "राक्षस", "so": "bahal", "th": "สัตว์ประหลาด", "ne": "राक्षस"}}, "fear": {"d": "the feeling that something bad will happen; to be afraid of", "t": {"es": "miedo / temer", "zh-CN": "恐惧 / 害怕", "yue": "恐懼 / 驚", "ar": "خوف / يخاف", "ary": "الخوف / خاف", "vi": "nỗi sợ / sợ", "ru": "страх / бояться", "ur": "خوف / ڈرنا", "tl": "takot / matakot", "fr": "peur / craindre", "ko": "두려움 / 두려워하다", "hi": "डर / डरना", "so": "cabsi / ka baqo", "th": "ความกลัว / กลัว", "ne": "डर / डराउनु"}}, "symbolize": {"d": "to be a sign for an idea; to stand for", "t": {"es": "simbolizar", "zh-CN": "象征", "yue": "象徵", "ar": "يرمز إلى", "ary": "كيرمز ل", "vi": "tượng trưng cho", "ru": "символизировать", "ur": "علامت ہونا", "tl": "sumagisag", "fr": "symboliser", "ko": "상징하다", "hi": "प्रतीक होना", "so": "u taagan / astaan u noqo", "th": "เป็นสัญลักษณ์ของ", "ne": "प्रतीक हुनु"}}, "represent": {"d": "to show or stand for something else", "t": {"es": "representar", "zh-CN": "代表", "yue": "代表", "ar": "يمثّل", "ary": "كيمثل", "vi": "đại diện cho", "ru": "представлять", "ur": "نمائندگی کرنا", "tl": "kumatawan", "fr": "représenter", "ko": "나타내다", "hi": "दर्शाना", "so": "matalaa", "th": "แทน", "ne": "प्रतिनिधित्व गर्नु"}}, "haunt": {"d": "when a ghost stays in a place and scares people there", "t": {"es": "embrujar / rondar", "zh-CN": "闹鬼 / 缠绕", "yue": "鬧鬼", "ar": "يسكن (الشبح) / يطارد", "ary": "سكن (العفريت)", "vi": "ám", "ru": "преследовать (о призраке)", "ur": "آسیب ہونا", "tl": "magmulto", "fr": "hanter", "ko": "(귀신이) 나오다", "hi": "भूत का बसना", "so": "ku soo noqnoqo (cirfiid)", "th": "หลอกหลอน", "ne": "भूत लाग्नु"}}, "shroud": {"d": "a white cloth that covers a dead body", "t": {"es": "mortaja", "zh-CN": "裹尸布", "yue": "壽衣", "ar": "كفن", "ary": "الكفن", "vi": "vải liệm", "ru": "саван", "ur": "کفن", "tl": "saplot ng patay", "fr": "linceul", "ko": "수의", "hi": "कफ़न", "so": "kafan / marada meydka", "th": "ผ้าห่อศพ", "ne": "कात्रो"}}, "eventual": {"d": "happening at the end, after a long time", "t": {"es": "final / eventual", "zh-CN": "最终的", "yue": "最後嘅", "ar": "نهائي / في النهاية", "ary": "لي غادي يوقع فالأخير", "vi": "cuối cùng", "ru": "окончательный", "ur": "آخرکار ہونے والا", "tl": "pangwakas", "fr": "final", "ko": "결국의", "hi": "अंततः होने वाला", "so": "ugu dambeyn", "th": "ในที่สุด", "ne": "अन्ततः हुने"}}, "trauma": {"d": "a very bad experience that hurts your mind for a long time", "t": {"es": "trauma", "zh-CN": "创伤", "yue": "創傷", "ar": "صدمة نفسية", "ary": "صدمة", "vi": "sang chấn tâm lý", "ru": "травма", "ur": "صدمہ", "tl": "trauma", "fr": "traumatisme", "ko": "트라우마", "hi": "आघात", "so": "dhaawac maskaxeed", "th": "บาดแผลทางใจ", "ne": "मानसिक आघात"}}, "abuse": {"d": "hurting a person again and again, with the body or with words", "t": {"es": "abuso / maltrato", "zh-CN": "虐待", "yue": "虐待", "ar": "إساءة / تعنيف", "ary": "التعنيف", "vi": "ngược đãi", "ru": "жестокое обращение", "ur": "زیادتی", "tl": "pang-aabuso", "fr": "maltraitance", "ko": "학대", "hi": "दुर्व्यवहार", "so": "xadgudub", "th": "การทารุณ", "ne": "दुर्व्यवहार"}}, "seduce": {"d": "to use beauty or charm to make someone do what you want", "t": {"es": "seducir", "zh-CN": "引诱", "yue": "引誘", "ar": "يغوي", "ary": "يغوي / يطيّح", "vi": "quyến rũ", "ru": "соблазнять", "ur": "ورغلانا", "tl": "akitin", "fr": "séduire", "ko": "유혹하다", "hi": "लुभाना", "so": "sasabasho", "th": "ล่อลวง", "ne": "लोभ्याउनु"}}, "nameless": {"d": "with no name; unknown", "t": {"es": "sin nombre", "zh-CN": "无名的", "yue": "冇名嘅", "ar": "بلا اسم", "ary": "بلا سمية", "vi": "vô danh", "ru": "безымянный", "ur": "بے نام", "tl": "walang pangalan", "fr": "sans nom", "ko": "이름 없는", "hi": "बेनाम", "so": "magac la'aan", "th": "ไร้ชื่อ", "ne": "बेनामी"}}, "countless": {"d": "too many to count", "t": {"es": "incontable / innumerables", "zh-CN": "无数的", "yue": "數唔清嘅", "ar": "لا يُحصى", "ary": "بزاف بزاف", "vi": "vô số", "ru": "бесчисленный", "ur": "بے شمار", "tl": "di-mabilang", "fr": "innombrable", "ko": "셀 수 없는", "hi": "अनगिनत", "so": "aan la tirin karin", "th": "นับไม่ถ้วน", "ne": "अनगिन्ती"}}, "charm": {"d": "a nice way of acting that makes people like you; also, a little magic", "t": {"es": "encanto", "zh-CN": "魅力 / 咒语", "yue": "魅力 / 符咒", "ar": "سحر / جاذبية", "ary": "الجاذبية / السحور", "vi": "sức quyến rũ / bùa", "ru": "обаяние / чары", "ur": "دلکشی / تعویذ", "tl": "alindog / anting-anting", "fr": "charme", "ko": "매력 / 주문", "hi": "आकर्षण / जादू", "so": "soo jiidasho / sixir", "th": "เสน่ห์", "ne": "आकर्षण / जादु"}}, "cast a spell": {"d": "to use magic words to change someone", "t": {"es": "lanzar un hechizo", "zh-CN": "施咒", "yue": "落咒", "ar": "يلقي تعويذة", "ary": "يدير السحور", "vi": "yểm bùa", "ru": "наложить заклятие", "ur": "جادو کرنا", "tl": "mangkulam", "fr": "jeter un sort", "ko": "주문을 걸다", "hi": "जादू करना", "so": "sixir ku samee", "th": "ร่ายมนตร์", "ne": "मन्त्र हान्नु"}}, "doll": {"d": "a toy that looks like a small person", "t": {"es": "muñeca", "zh-CN": "娃娃", "yue": "公仔", "ar": "دمية", "ary": "المونيكة / العروسة", "vi": "búp bê", "ru": "кукла", "ur": "گڑیا", "tl": "manika", "fr": "poupée", "ko": "인형", "hi": "गुड़िया", "so": "caruusad", "th": "ตุ๊กตา", "ne": "पुतली"}}, "possessed": {"d": "controlled by a spirit or demon", "t": {"es": "poseído", "zh-CN": "被附身的", "yue": "俾鬼上身", "ar": "ممسوس", "ary": "مسكون / فيه الجن", "vi": "bị ma nhập", "ru": "одержимый", "ur": "آسیب زدہ", "tl": "sinapian", "fr": "possédé", "ko": "빙의된", "hi": "भूत-ग्रस्त", "so": "jinni ku jiro", "th": "ถูกผีสิง", "ne": "भूत चढेको"}}, "addict": {"d": "a person who cannot stop using a drug or doing something", "t": {"es": "adicto", "zh-CN": "成瘾者", "yue": "上癮嘅人", "ar": "مدمن", "ary": "مدمن", "vi": "người nghiện", "ru": "зависимый человек", "ur": "عادی / نشئی", "tl": "adik", "fr": "accro / toxicomane", "ko": "중독자", "hi": "लती", "so": "qof ku qabatimay", "th": "คนติด", "ne": "लतमा परेको"}}, "horde": {"d": "a very big, wild crowd", "t": {"es": "horda", "zh-CN": "一大群", "yue": "一大班", "ar": "حشد", "ary": "جوقة كبيرة", "vi": "đám đông", "ru": "орда", "ur": "ہجوم", "tl": "dumog", "fr": "horde", "ko": "무리", "hi": "भीड़", "so": "guuto / dad badan", "th": "ฝูง", "ne": "भीड"}}, "foreign": {"d": "from another country", "t": {"es": "extranjero", "zh-CN": "外国的", "yue": "外國嘅", "ar": "أجنبي", "ary": "براني", "vi": "nước ngoài", "ru": "иностранный", "ur": "غیر ملکی", "tl": "dayuhan", "fr": "étranger", "ko": "외국의", "hi": "विदेशी", "so": "shisheeye", "th": "ต่างชาติ", "ne": "विदेशी"}}, "disease": {"d": "a sickness", "t": {"es": "enfermedad", "zh-CN": "疾病", "yue": "病", "ar": "مرض", "ary": "المرض", "vi": "bệnh", "ru": "болезнь", "ur": "بیماری", "tl": "sakit", "fr": "maladie", "ko": "질병", "hi": "बीमारी", "so": "cudur", "th": "โรค", "ne": "रोग"}}, "werewolf": {"d": "a person who changes into a wolf at night", "t": {"es": "hombre lobo", "zh-CN": "狼人", "yue": "狼人", "ar": "المستذئب", "ary": "الراجل الذيب", "vi": "người sói", "ru": "оборотень", "ur": "بھیڑیا مانس", "tl": "taong-lobo", "fr": "loup-garou", "ko": "늑대인간", "hi": "भेड़िया-मानव", "so": "nin yeey noqda", "th": "มนุษย์หมาป่า", "ne": "ब्वाँसो-मानिस"}}, "vampire": {"d": "a dead person who comes out at night to drink blood", "t": {"es": "vampiro", "zh-CN": "吸血鬼", "yue": "吸血殭屍", "ar": "مصاص دماء", "ary": "مصاص الدماء", "vi": "ma cà rồng", "ru": "вампир", "ur": "خون آشام", "tl": "bampira", "fr": "vampire", "ko": "흡혈귀", "hi": "पिशाच", "so": "dhiig-cab", "th": "แวมไพร์", "ne": "पिशाच"}}, "witch": {"d": "a woman in stories who uses magic", "t": {"es": "bruja", "zh-CN": "女巫", "yue": "巫婆", "ar": "ساحرة", "ary": "الساحرة / الشوافة", "vi": "phù thủy", "ru": "ведьма", "ur": "چڑیل / جادوگرنی", "tl": "mangkukulam", "fr": "sorcière", "ko": "마녀", "hi": "चुड़ैल", "so": "saaxirad", "th": "แม่มด", "ne": "बोक्सी"}}, "zombie": {"d": "a dead body that walks and has no mind", "t": {"es": "zombi", "zh-CN": "僵尸", "yue": "喪屍", "ar": "زومبي", "ary": "زومبي", "vi": "xác sống", "ru": "зомби", "ur": "زومبی", "tl": "zombie", "fr": "zombie", "ko": "좀비", "hi": "ज़ॉम्बी", "so": "meyd socda", "th": "ซอมบี้", "ne": "जोम्बी"}}, "curse": {"d": "bad magic words that make bad things happen to someone", "t": {"es": "maldición", "zh-CN": "诅咒", "yue": "詛咒", "ar": "لعنة", "ary": "الدعوة الخايبة / اللعنة", "vi": "lời nguyền", "ru": "проклятие", "ur": "بددعا / لعنت", "tl": "sumpa", "fr": "malédiction", "ko": "저주", "hi": "श्राप", "so": "habaar", "th": "คำสาป", "ne": "श्राप"}}, "wail": {"d": "to cry very loudly and sadly", "t": {"es": "gemir / llorar a gritos", "zh-CN": "哀号", "yue": "喊到好慘", "ar": "ينوح", "ary": "كيعيّط وكيبكي", "vi": "than khóc", "ru": "выть / рыдать", "ur": "بین کرنا", "tl": "managhoy", "fr": "gémir", "ko": "울부짖다", "hi": "विलाप करना", "so": "ooy qaylo leh", "th": "คร่ำครวญ", "ne": "रुवाबासी गर्नु"}}, "drown": {"d": "to die under water because you cannot breathe", "t": {"es": "ahogarse", "zh-CN": "淹死", "yue": "浸死", "ar": "يغرق", "ary": "غرق", "vi": "chết đuối", "ru": "утонуть", "ur": "ڈوبنا", "tl": "malunod", "fr": "se noyer", "ko": "익사하다", "hi": "डूबना", "so": "qarqarmo", "th": "จมน้ำ", "ne": "डुब्नु"}}, "revenge": {"d": "hurting someone because they hurt you first", "t": {"es": "venganza", "zh-CN": "报仇", "yue": "報仇", "ar": "انتقام", "ary": "التار", "vi": "trả thù", "ru": "месть", "ur": "بدلہ", "tl": "paghihiganti", "fr": "vengeance", "ko": "복수", "hi": "बदला", "so": "aargoosi", "th": "การแก้แค้น", "ne": "बदला"}}, "guilt": {"d": "the bad feeling when you know you did something wrong", "t": {"es": "culpa", "zh-CN": "内疚", "yue": "內疚", "ar": "ذنب / شعور بالذنب", "ary": "الذنب", "vi": "tội lỗi / áy náy", "ru": "вина", "ur": "احساسِ جرم", "tl": "pagkakasala", "fr": "culpabilité", "ko": "죄책감", "hi": "अपराध-बोध", "so": "dambi-dareen", "th": "ความรู้สึกผิด", "ne": "अपराधबोध"}}, "warn": {"d": "to tell someone about a danger before it happens", "t": {"es": "advertir", "zh-CN": "警告", "yue": "警告", "ar": "يحذّر", "ary": "نبّه", "vi": "cảnh báo", "ru": "предупреждать", "ur": "خبردار کرنا", "tl": "magbabala", "fr": "avertir", "ko": "경고하다", "hi": "चेतावनी देना", "so": "u digniin", "th": "เตือน", "ne": "चेतावनी दिनु"}}, "punish": {"d": "to do something bad to a person because they broke a rule", "t": {"es": "castigar", "zh-CN": "惩罚", "yue": "罰", "ar": "يعاقب", "ary": "عاقب", "vi": "trừng phạt", "ru": "наказывать", "ur": "سزا دینا", "tl": "parusahan", "fr": "punir", "ko": "벌하다", "hi": "सज़ा देना", "so": "ciqaab", "th": "ลงโทษ", "ne": "सजाय दिनु"}}, "greedy": {"d": "wanting more and more, and not sharing", "t": {"es": "codicioso", "zh-CN": "贪婪的", "yue": "貪心", "ar": "جشع", "ary": "طماع", "vi": "tham lam", "ru": "жадный", "ur": "لالچی", "tl": "sakim", "fr": "avide", "ko": "욕심 많은", "hi": "लालची", "so": "hunguri", "th": "โลภ", "ne": "लोभी"}}, "shapeshift": {"d": "to change your body into a different animal or person", "t": {"es": "transformarse", "zh-CN": "变形", "yue": "變身", "ar": "يتحوّل", "ary": "يتقلب (لشي حاجة أخرى)", "vi": "biến hình", "ru": "оборачиваться", "ur": "روپ بدلنا", "tl": "mag-anyo", "fr": "se métamorphoser", "ko": "둔갑하다", "hi": "रूप बदलना", "so": "isu beddel", "th": "แปลงร่าง", "ne": "रूप फेर्नु"}}, "stranger": {"d": "a person you do not know", "t": {"es": "desconocido", "zh-CN": "陌生人", "yue": "陌生人", "ar": "غريب", "ary": "البراني", "vi": "người lạ", "ru": "незнакомец", "ur": "اجنبی", "tl": "estranghero", "fr": "inconnu", "ko": "낯선 사람", "hi": "अजनबी", "so": "qof aadan aqoon", "th": "คนแปลกหน้า", "ne": "अपरिचित"}}, "innocent": {"d": "not guilty; did nothing wrong; pure, like a small child", "t": {"es": "inocente", "zh-CN": "无辜的", "yue": "無辜", "ar": "بريء", "ary": "بريء", "vi": "vô tội", "ru": "невинный", "ur": "معصوم", "tl": "walang-sala", "fr": "innocent", "ko": "순진한 / 무고한", "hi": "मासूम / निर्दोष", "so": "aan dambi lahayn", "th": "บริสุทธิ์", "ne": "निर्दोष"}}, "powerful": {"d": "very strong; able to control things", "t": {"es": "poderoso", "zh-CN": "强大的", "yue": "好勁", "ar": "قوي", "ary": "قوي / عندو الجهد", "vi": "quyền lực", "ru": "могущественный", "ur": "طاقتور", "tl": "makapangyarihan", "fr": "puissant", "ko": "강력한", "hi": "शक्तिशाली", "so": "awood leh", "th": "ทรงพลัง", "ne": "शक्तिशाली"}}, "forest": {"d": "a big place with many trees", "t": {"es": "bosque", "zh-CN": "森林", "yue": "森林", "ar": "غابة", "ary": "الغابة", "vi": "rừng", "ru": "лес", "ur": "جنگل", "tl": "kagubatan", "fr": "forêt", "ko": "숲", "hi": "जंगल", "so": "kayn", "th": "ป่า", "ne": "जङ्गल"}}, "disobey": {"d": "to not do what a parent or a rule says", "t": {"es": "desobedecer", "zh-CN": "不听话", "yue": "唔聽話", "ar": "يعصي", "ary": "ما سمعش الكلام", "vi": "không vâng lời", "ru": "не слушаться", "ur": "نافرمانی کرنا", "tl": "sumuway", "fr": "désobéir", "ko": "말을 안 듣다", "hi": "आज्ञा न मानना", "so": "ku caasiyoow", "th": "ไม่เชื่อฟัง", "ne": "आज्ञा नमान्नु"}}, "ghost": {"d": "the spirit of a dead person that people believe they can see", "t": {"es": "fantasma", "zh-CN": "鬼", "yue": "鬼", "ar": "شبح", "ary": "عفريت / روح ديال الميت", "vi": "con ma", "ru": "призрак", "ur": "بھوت", "tl": "multo", "fr": "fantôme", "ko": "유령", "hi": "भूत", "so": "cirfiid", "th": "ผี", "ne": "भूत"}}, "spirit": {"d": "the part of a person that people believe lives after the body dies", "t": {"es": "espíritu", "zh-CN": "灵魂", "yue": "靈魂", "ar": "روح", "ary": "الروح", "vi": "linh hồn", "ru": "дух", "ur": "روح", "tl": "espiritu / kaluluwa", "fr": "esprit", "ko": "영혼", "hi": "आत्मा", "so": "ruux", "th": "วิญญาณ", "ne": "आत्मा"}}, "grave": {"d": "the place in the ground where a dead body is put", "t": {"es": "tumba", "zh-CN": "坟墓", "yue": "山墳 / 墳墓", "ar": "قبر", "ary": "القبر", "vi": "ngôi mộ", "ru": "могила", "ur": "قبر", "tl": "puntod", "fr": "tombe", "ko": "무덤", "hi": "कब्र", "so": "qabri", "th": "หลุมศพ", "ne": "चिहान"}}, "cemetery": {"d": "a place with many graves", "t": {"es": "cementerio", "zh-CN": "墓地", "yue": "墳場", "ar": "مقبرة", "ary": "المقبرة / الروضة", "vi": "nghĩa trang", "ru": "кладбище", "ur": "قبرستان", "tl": "sementeryo", "fr": "cimetière", "ko": "묘지", "hi": "कब्रिस्तान", "so": "qabuuraha", "th": "สุสาน", "ne": "चिहानघारी"}}, "afraid": {"d": "feeling that something bad is going to happen", "t": {"es": "asustado / con miedo", "zh-CN": "害怕", "yue": "驚", "ar": "خائف", "ary": "خايف", "vi": "sợ hãi", "ru": "испуганный", "ur": "ڈرا ہوا", "tl": "takot", "fr": "avoir peur", "ko": "두려워하는", "hi": "डरा हुआ", "so": "baqay", "th": "กลัว", "ne": "डराएको"}}, "symbol": {"d": "a picture or thing that means an idea", "t": {"es": "símbolo", "zh-CN": "象征", "yue": "象徵", "ar": "رمز", "ary": "رمز", "vi": "biểu tượng", "ru": "символ", "ur": "علامت", "tl": "simbolo", "fr": "symbole", "ko": "상징", "hi": "प्रतीक", "so": "astaan", "th": "สัญลักษณ์", "ne": "प्रतीक"}}, "soul": {"d": "the part of a person that many religions say lives forever after the body dies", "t": {"es": "alma", "zh-CN": "灵魂", "yue": "靈魂", "ar": "روح", "ary": "الروح", "vi": "linh hồn", "ru": "душа", "ur": "روح", "tl": "kaluluwa", "fr": "âme", "ko": "영혼", "hi": "आत्मा", "so": "naf", "th": "วิญญาณ", "ne": "आत्मा"}}};
+var VOCAB_ORDER = ["monster", "fear", "symbol", "symbolize", "represent", "haunt", "ghost", "spirit", "shroud", "eventual", "countless", "nameless", "trauma", "abuse", "seduce", "charm", "cast a spell", "doll", "possessed", "addict", "horde", "disease", "foreign", "werewolf", "vampire", "witch", "zombie", "curse", "wail", "drown", "revenge", "guilt", "warn", "punish", "greedy", "shapeshift", "stranger", "innocent", "powerful", "forest", "disobey", "grave", "cemetery", "afraid"];
+var LANGNAME = {"es": "Español", "zh-CN": "中文 (普通话)", "yue": "廣東話 (Cantonese)", "ar": "العربية", "ary": "الدارجة", "vi": "Tiếng Việt", "ru": "Русский", "ur": "اردو", "tl": "Tagalog", "fr": "Français", "ko": "한국어", "hi": "हिन्दी", "so": "Soomaali", "th": "ไทย", "ne": "नेपाली"};
+var curLang = "none";
+
+/* ---------- vocabulary table ---------- */
+function buildVocab(){
+  var tb = document.getElementById("vocabBody"), h = "";
+  var rtl = ({ar:1,ary:1,ur:1})[curLang] ? " rtl" : "";
+  for(var i=0;i<VOCAB_ORDER.length;i++){
+    var k = VOCAB_ORDER[i], g = GLOSS[k];
+    var tr = (curLang !== "none" && g.t[curLang]) ? g.t[curLang] : "";
+    h += '<tr><td class="w">' + k + '</td><td>' + g.d + '</td><td class="tr' + rtl + '">' + tr + '</td></tr>';
+  }
+  tb.innerHTML = h;
+  document.getElementById("vocabLangHead").textContent =
+    (curLang === "none") ? "Your language" : LANGNAME[curLang];
+}
+
+/* ---------- tooltip ---------- */
+var tip = document.getElementById("tip");
+function showTip(el){
+  var key = el.getAttribute("data-g") || el.textContent.toLowerCase().replace(/[^a-z']/g,"");
+  var g = GLOSS[key];
+  if(!g){ return; }
+  var h = '<span class="w">' + key + '</span><span class="d">' + g.d + '</span>';
+  if(curLang === "none"){
+    h += '<div class="none">Choose a language in the bar at the top to see this word in your language.</div>';
+  } else {
+    h += '<div class="t' + (({ar:1,ary:1,ur:1})[curLang] ? " rtl" : "") + '">' + (g.t[curLang] || "—") + '</div>';
+  }
+  tip.innerHTML = h;
+  tip.style.display = "block";
+  var r = el.getBoundingClientRect();
+  var top = r.bottom + window.scrollY + 6;
+  var left = r.left + window.scrollX;
+  var maxLeft = window.scrollX + document.documentElement.clientWidth - tip.offsetWidth - 12;
+  if(left > maxLeft) left = maxLeft;
+  if(left < window.scrollX + 8) left = window.scrollX + 8;
+  tip.style.top = top + "px";
+  tip.style.left = left + "px";
+}
+document.addEventListener("click", function(e){
+  var g = e.target.closest ? e.target.closest(".gl") : null;
+  if(g){ showTip(g); e.stopPropagation(); return; }
+  tip.style.display = "none";
+});
+document.addEventListener("keydown", function(e){ if(e.key === "Escape") tip.style.display = "none"; });
+
+/* ---------- toolbar ---------- */
+document.getElementById("lang").addEventListener("change", function(){
+  curLang = this.value;
+  buildVocab();
+  if(typeof applyLeads === "function") applyLeads();
+  tip.style.display = "none";
+  try{ localStorage.setItem("mon_lang", curLang); }catch(err){}
+  queueSave();
+});
+document.getElementById("bigBtn").addEventListener("click", function(){
+  document.body.classList.toggle("big");
+  this.classList.toggle("on");
+});
+function setLevel(v){
+  document.body.setAttribute("data-level", v);
+  var bs = document.querySelectorAll(".lvlbtn");
+  for(var i=0;i<bs.length;i++) bs[i].classList.toggle("on", bs[i].getAttribute("data-set") === v);
+  document.getElementById("lvlBtn").textContent = (v === "easy") ? "Full English" : "Easier English";
+  document.getElementById("lvlBtn").classList.toggle("on", v === "easy");
+  try{ localStorage.setItem("mon_level", v); }catch(err){}
+}
+document.getElementById("lvlBtn").addEventListener("click", function(){
+  setLevel(document.body.getAttribute("data-level") === "easy" ? "hard" : "easy");
+});
+var lb = document.querySelectorAll(".lvlbtn");
+for(var i=0;i<lb.length;i++){
+  lb[i].addEventListener("click", function(){ setLevel(this.getAttribute("data-set")); });
+}
+
+/* ---------- word count ---------- */
+function wordsIn(s){ s = (s||"").trim(); return s ? s.split(/\s+/).length : 0; }
+document.addEventListener("input", function(e){
+  var id = e.target.getAttribute && e.target.getAttribute("data-id");
+  if(!id) return;
+  var c = document.querySelector('[data-count="' + id + '"]');
+  if(c) c.textContent = wordsIn(e.target.value) + " words";
+});
+</script>
+<script>
+/* ============================================================
+   AUTO-SCORING
+   ============================================================ */
+var GROUPS = {
+  v: /^v\d+$/,  w: /^w\d+$/,  g: /^g\d+$/,
+  r: /^r\d+$/,  c: /^c\d+[ab]$/
+};
+function norm(s){
+  return (s||"").toLowerCase().trim()
+    .replace(/[.,!?;:"']/g,"")
+    .replace(/\s+/g," ");
+}
+function blankOK(inp){
+  var keys = (inp.getAttribute("data-key")||"").split("|");
+  var val = norm(inp.value);
+  if(!val) return null;
+  for(var i=0;i<keys.length;i++){ if(norm(keys[i]) === val) return true; }
+  return false;
+}
+function markBlank(inp, ok){
+  var m = document.querySelector('.mark[data-for="' + inp.getAttribute("data-id") + '"]');
+  inp.classList.remove("right","wrong");
+  if(ok === null){ if(m) m.textContent = ""; return; }
+  inp.classList.add(ok ? "right" : "wrong");
+  if(m){ m.className = "mark " + (ok ? "right" : "wrong"); m.textContent = ok ? "✓" : "✗"; }
+}
+function checkBlanks(re, mark){
+  var got = 0, tot = 0;
+  var all = document.querySelectorAll("input.blank[data-key]");
+  for(var i=0;i<all.length;i++){
+    var id = all[i].getAttribute("data-id");
+    if(re && !re.test(id)) continue;
+    tot++;
+    var ok = blankOK(all[i]);
+    if(mark) markBlank(all[i], ok);
+    if(ok === true) got++;
+  }
+  return [got, tot];
+}
+function checkTF(mark){
+  var got = 0, tot = 0, rows = document.querySelectorAll("table.tf tr[data-key]");
+  for(var i=0;i<rows.length;i++){
+    tot++;
+    var name = rows[i].getAttribute("data-id");
+    var sel = rows[i].querySelector('input[name="' + name + '"]:checked');
+    var ok = sel && sel.value === rows[i].getAttribute("data-key");
+    if(mark){ rows[i].style.background = sel ? (ok ? "#f2fbf5" : "#fdf4f3") : ""; }
+    if(ok) got++;
+  }
+  return [got, tot];
+}
+function checkMC(mark){
+  var got = 0, tot = 0, blocks = document.querySelectorAll(".mc[data-key]");
+  for(var i=0;i<blocks.length;i++){
+    tot++;
+    var name = blocks[i].getAttribute("data-id");
+    var sel = blocks[i].querySelector('input[name="' + name + '"]:checked');
+    var ok = sel && sel.value === blocks[i].getAttribute("data-key");
+    if(mark){ blocks[i].classList.remove("right","wrong"); if(sel) blocks[i].classList.add(ok ? "right" : "wrong"); }
+    if(ok) got++;
+  }
+  return [got, tot];
+}
+function totalScore(mark){
+  var b = checkBlanks(null, mark), t = checkTF(mark), m = checkMC(mark);
+  return { score: b[0] + t[0] + m[0], max: b[1] + t[1] + m[1],
+           blanks: b, tf: t, mc: m };
+}
+var cbtns = document.querySelectorAll("[data-check]");
+for(var ci=0;ci<cbtns.length;ci++){
+  cbtns[ci].addEventListener("click", function(){
+    var r = checkBlanks(GROUPS[this.getAttribute("data-check")], true);
+    this.textContent = "You got " + r[0] + " of " + r[1] + " — check again";
+    queueSave();
+  });
+}
+document.getElementById("gradeBtn").addEventListener("click", function(){
+  var r = totalScore(true);
+  var pct = r.max ? Math.round(100 * r.score / r.max) : 0;
+  var msg = pct >= 85 ? "Strong. You know this unit."
+          : pct >= 70 ? "Good. Look at the red ones and fix them."
+          : pct >= 50 ? "You are getting there. Go back and re-read the part you missed."
+          : "Go back to the readings and try again — the answers are all in there.";
+  var box = document.getElementById("scorebox");
+  box.innerHTML = '<div class="big">' + r.score + " / " + r.max + "  (" + pct + "%)</div>" +
+    "<p style=\"margin:6px 0 0;font-weight:700\">" + msg + "</p>" +
+    '<p style="margin:8px 0 0;font-size:.92rem">Words and grammar blanks: ' + r.blanks[0] + " / " + r.blanks[1] +
+    " &nbsp;&middot;&nbsp; True or false: " + r.tf[0] + " / " + r.tf[1] +
+    " &nbsp;&middot;&nbsp; Multiple choice: " + r.mc[0] + " / " + r.mc[1] + "</p>";
+  box.style.display = "block";
+  if(box.scrollIntoView) box.scrollIntoView({behavior:"smooth", block:"center"});
+  queueSave();
+});
+document.getElementById("teacherBtn").addEventListener("click", function(){
+  var t = document.getElementById("teacher");
+  t.style.display = (t.style.display === "block") ? "none" : "block";
+});
+
+/* ============================================================
+   PRINTING
+   ============================================================ */
+function allFields(){ return document.querySelectorAll("[data-id]"); }
+document.getElementById("pMine").addEventListener("click", function(){
+  window.print();
+});
+document.getElementById("pBlank").addEventListener("click", function(){
+  var f = allFields(), stash = [];
+  for(var i=0;i<f.length;i++){
+    var el = f[i];
+    if(el.tagName === "TEXTAREA" || (el.tagName === "INPUT" && (el.type === "text" || el.type === "email"))){
+      stash.push([el,"value",el.value]); el.value = "";
+    } else if(el.tagName === "INPUT" && (el.type === "radio" || el.type === "checkbox")){
+      stash.push([el,"checked",el.checked]); el.checked = false;
+    } else if(el.classList.contains("slot")){
+      stash.push([el,"slot",el.getAttribute("data-val")||""]); setSlot(el,"");
+    }
+  }
+  var marks = document.querySelectorAll(".mark"), mstash = [];
+  for(var k=0;k<marks.length;k++){ mstash.push(marks[k].textContent); marks[k].textContent = ""; }
+  window.print();
+  setTimeout(function(){
+    for(var j=0;j<stash.length;j++){
+      if(stash[j][1] === "slot") setSlot(stash[j][0], stash[j][2]);
+      else stash[j][0][stash[j][1]] = stash[j][2];
+    }
+    for(var n=0;n<marks.length;n++) marks[n].textContent = mstash[n];
+  }, 400);
+});
+
+
+/* ============================================================
+   SUPABASE — sign in, autosave, class results
+   ============================================================ */
+var SUPA_URL = "https://lhmwtfyceilgndpygivj.supabase.co";
+var SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU";
+var TABLE = "unit_responses";
+var GUIDE_KEY = "monsters_v1";
+var LOCAL_KEY = "monsters_v1_work";
+var STU_KEY = "monsters_v1_student";
+var student = null;
+
+function headers(extra){
+  var h = { "apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY, "Content-Type": "application/json" };
+  if(extra){ for(var k in extra) h[k] = extra[k]; }
+  return h;
+}
+function setStatus(cls, text){
+  document.getElementById("saveNote").innerHTML = '<span class="dot ' + cls + '"></span>' + text;
+}
+function timeNow(){
+  var d = new Date(), h = d.getHours(), m = d.getMinutes();
+  var ap = h >= 12 ? "PM" : "AM"; h = h % 12; if(h === 0) h = 12;
+  if(m < 10) m = "0" + m;
+  return h + ":" + m + " " + ap;
+}
+
+/* ---------- collect / restore ---------- */
+function collectPayload(){
+  var out = { fields:{}, checks:{}, radios:{}, ofrenda:{}, meta:{} };
+  var answered = 0, total = 0;
+  var f = allFields();
+  for(var i=0;i<f.length;i++){
+    var el = f[i], id = el.getAttribute("data-id");
+    if(el.tagName === "TEXTAREA" || (el.tagName === "INPUT" && el.type === "text")){
+      out.fields[id] = el.value;
+      total++; if(el.value.trim()) answered++;
+    } else if(el.tagName === "INPUT" && el.type === "checkbox"){
+      if(el.checked) out.checks[id] = el.value || true;
+    } else if(el.tagName === "INPUT" && el.type === "radio"){
+      if(el.checked){ out.radios[el.name] = el.value; }
+    } else if(el.classList.contains("slot")){
+      out.ofrenda[id] = el.getAttribute("data-val") || "";
+    }
+  }
+  var seen = {};
+  var radios = document.querySelectorAll('input[type="radio"][data-id]');
+  for(var r=0;r<radios.length;r++){
+    if(seen[radios[r].name]) continue;
+    seen[radios[r].name] = 1; total++;
+    if(out.radios[radios[r].name]) answered++;
+  }
+  var sc = totalScore(false);
+  out.meta.answered = answered;
+  out.meta.total = total;
+  out.meta.score = sc.score;
+  out.meta.max = sc.max;
+  out.meta.level = document.body.getAttribute("data-level");
+  out.meta.words = wordsIn(out.fields.w_l1) + wordsIn(out.fields.w_l2) + wordsIn(out.fields.w_l3);
+  return out;
+}
+function restorePayload(p){
+  if(!p) return;
+  var f = allFields();
+  for(var i=0;i<f.length;i++){
+    var el = f[i], id = el.getAttribute("data-id");
+    if(el.tagName === "TEXTAREA" || (el.tagName === "INPUT" && el.type === "text")){
+      if(p.fields && p.fields[id] !== undefined) el.value = p.fields[id];
+    } else if(el.tagName === "INPUT" && el.type === "checkbox"){
+      if(p.checks && p.checks[id] !== undefined) el.checked = true;
+    } else if(el.tagName === "INPUT" && el.type === "radio"){
+      if(p.radios && p.radios[el.name] === el.value) el.checked = true;
+    } else if(el.classList.contains("slot")){
+      if(p.ofrenda && p.ofrenda[id]) setSlot(el, p.ofrenda[id]);
+    }
+  }
+  var cs = document.querySelectorAll("[data-count]");
+  for(var c=0;c<cs.length;c++){
+    var src = document.querySelector('[data-id="' + cs[c].getAttribute("data-count") + '"]');
+    if(src) cs[c].textContent = wordsIn(src.value) + " words";
+  }
+}
+function saveLocal(){
+  try{ localStorage.setItem(LOCAL_KEY, JSON.stringify(collectPayload())); }catch(e){}
+}
+
+/* ---------- upsert ---------- */
+var saving = false, pending = false, saveTimer = null;
+function pushRow(markSubmitted, done){
+  saveLocal();
+  if(!student) return;
+  if(saving){ pending = true; return; }
+  saving = true;
+  setStatus("wait", "Saving…");
+  var pay = collectPayload();
+  var row = {
+    email: student.email, student_name: student.name, period: student.period,
+    guide_key: GUIDE_KEY, lang: curLang, payload: pay,
+    answered: pay.meta.answered, total: pay.meta.total,
+    score: pay.meta.score, max_score: pay.meta.max,
+    updated_at: new Date().toISOString()
+  };
+  if(markSubmitted){ row.submitted = true; row.submitted_at = new Date().toISOString(); }
+  fetch(SUPA_URL + "/rest/v1/" + TABLE + "?on_conflict=email,guide_key", {
+    method: "POST",
+    headers: headers({ "Prefer": "resolution=merge-duplicates,return=minimal" }),
+    body: JSON.stringify([row])
+  }).then(function(res){
+    saving = false;
+    if(res.ok){ setStatus("ok", "Saved " + timeNow()); if(done) done(true); }
+    else { res.text().then(function(t){ console.warn("Save failed:", res.status, t); });
+           setStatus("bad", "Not saved — check internet"); if(done) done(false); }
+    if(pending){ pending = false; pushRow(false); }
+  }).catch(function(e){
+    saving = false; console.warn("Save error:", e);
+    setStatus("bad", "Not saved — check internet");
+    if(done) done(false);
+    if(pending){ pending = false; pushRow(false); }
+  });
+}
+function queueSave(){
+  saveLocal();
+  if(!student) return;
+  setStatus("wait", "Saving…");
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(function(){ pushRow(false); }, 2500);
+}
+document.addEventListener("input", function(e){
+  if(e.target.hasAttribute && e.target.hasAttribute("data-id")) queueSave();
+});
+document.addEventListener("change", function(e){
+  if(e.target.hasAttribute && e.target.hasAttribute("data-id")) queueSave();
+});
+window.addEventListener("beforeunload", function(){
+  saveLocal();
+  if(!student || !saveTimer) return;
+  clearTimeout(saveTimer);
+  var pay = collectPayload();
+  try{
+    fetch(SUPA_URL + "/rest/v1/" + TABLE + "?on_conflict=email,guide_key", {
+      method: "POST", keepalive: true,
+      headers: headers({ "Prefer": "resolution=merge-duplicates,return=minimal" }),
+      body: JSON.stringify([{
+        email: student.email, student_name: student.name, period: student.period,
+        guide_key: GUIDE_KEY, lang: curLang, payload: pay,
+        answered: pay.meta.answered, total: pay.meta.total,
+        score: pay.meta.score, max_score: pay.meta.max,
+        updated_at: new Date().toISOString()
+      }])
+    });
+  }catch(e){}
+});
+
+/* ---------- turn in ---------- */
+document.getElementById("turnIn").addEventListener("click", function(){
+  if(!student){ alert("Sign in first."); return; }
+  var pay = collectPayload();
+  var left = pay.meta.total - pay.meta.answered;
+  var msg = left > 0 ? ("You still have " + left + " empty boxes. Turn it in anyway?") : "Turn in your work?";
+  if(!confirm(msg)) return;
+  var btn = this; btn.disabled = true; btn.textContent = "Turning in…";
+  pushRow(true, function(ok){
+    btn.disabled = false;
+    btn.textContent = ok ? "Turned in ✓" : "Turn in";
+    if(!ok) alert("It did not send. Check the wifi and press Turn in again.");
+  });
+});
+
+/* ---------- sign in ---------- */
+function startSession(s){
+  student = s;
+  document.getElementById("gate").style.display = "none";
+  document.getElementById("whoNote").textContent = s.name + " · period " + s.period;
+  var n = document.querySelector('[data-id="name"]'); if(n && !n.value) n.value = s.name;
+  var p = document.querySelector('[data-id="period"]'); if(p && !p.value) p.value = s.period;
+  setStatus("wait", "Loading your work…");
+  fetch(SUPA_URL + "/rest/v1/" + TABLE + "?select=payload&email=eq." + encodeURIComponent(s.email) +
+        "&guide_key=eq." + GUIDE_KEY, { headers: headers() })
+    .then(function(r){ return r.json(); })
+    .then(function(rows){
+      if(rows && rows.length && rows[0].payload) restorePayload(rows[0].payload);
+      else { try{ restorePayload(JSON.parse(localStorage.getItem(LOCAL_KEY))); }catch(e){} }
+      setStatus("ok", "Ready");
+    })
+    .catch(function(){
+      try{ restorePayload(JSON.parse(localStorage.getItem(LOCAL_KEY))); }catch(e){}
+      setStatus("bad", "Working offline — your answers are on this device only");
+    });
+}
+/* sign-in lives in the platform kit below */
+
+/* ---------- class results ---------- */
+function bar(label, n, total, alt){
+  var pct = total ? Math.round(100 * n / total) : 0;
+  return '<div class="chartrow"><div class="cl"><span>' + label + '</span><span>' + n + " (" + pct + '%)</span></div>' +
+         '<div class="barout"><div class="barin' + (alt ? " alt" : "") + '" style="width:' + pct + '%"></div></div></div>';
+}
+document.getElementById("classBtn").addEventListener("click", function(){
+  var wrap = document.getElementById("chartWrap");
+  wrap.style.display = "block";
+  wrap.innerHTML = "<p style=\"font-weight:700;margin:0\">Loading the class…</p>";
+  fetch(SUPA_URL + "/rest/v1/" + TABLE + "?select=payload&guide_key=eq." + GUIDE_KEY, { headers: headers() })
+    .then(function(r){ return r.json(); })
+    .then(function(rows){
+      if(!rows || !rows.length){ wrap.innerHTML = "<p style=\"font-weight:700;margin:0\">Nobody has answered yet. Come back later.</p>"; return; }
+      var n = rows.length;
+      var countRadio = function(name, val){
+        var c = 0;
+        for(var i=0;i<rows.length;i++){
+          var p = rows[i].payload; if(p && p.radios && p.radios[name] === val) c++;
+        }
+        return c;
+      };
+      var countCheck = function(id){
+        var c = 0;
+        for(var i=0;i<rows.length;i++){
+          var p = rows[i].payload; if(p && p.checks && p.checks[id]) c++;
+        }
+        return c;
+      };
+      var countries = {}, monsters = [];
+      for(var i=0;i<rows.length;i++){
+        var p = rows[i].payload, f = (p && p.fields) || {};
+        var cy = f.s_country ? f.s_country.trim() : "";
+        if(cy){ cy = cy.charAt(0).toUpperCase() + cy.slice(1).toLowerCase(); countries[cy] = (countries[cy]||0) + 1; }
+        if(f.s_monster && f.s_monster.trim()) monsters.push(f.s_monster.trim() + (cy ? " (" + cy + ")" : ""));
+      }
+      var clist = Object.keys(countries).sort(function(a,b){ return countries[b]-countries[a]; }).slice(0,10);
+      var h = '<p style="font-weight:800;margin:0 0 8px">Our class so far — ' + n + " students</p>";
+      h += '<h4 style="margin:12px 0 2px">Countries in this room</h4>';
+      for(var c=0;c<clist.length;c++) h += bar(clist[c], countries[clist[c]], n, true);
+      h += '<h4 style="margin:16px 0 2px">Did people tell you scary stories when you were little?</h4>';
+      h += bar("Yes, many", countRadio("s_told","Many"), n) + bar("Yes, a few", countRadio("s_told","A few"), n) + bar("No", countRadio("s_told","No"), n);
+      h += '<h4 style="margin:16px 0 2px">Who told them?</h4>';
+      var who = [["A grandparent","s_who_gp"],["Mother or father","s_who_par"],["Brother, sister, cousin","s_who_sib"],["Friends","s_who_fr"],["TV, movies, internet","s_who_tv"]];
+      for(var w=0;w<who.length;w++) h += bar(who[w][0], countCheck(who[w][1]), n, true);
+      h += '<h4 style="margin:16px 0 2px">Why do adults tell children scary stories?</h4>';
+      h += bar("To keep them safe", countRadio("s_why","Safe"), n) + bar("To teach a lesson", countRadio("s_why","Lesson"), n) +
+           bar("For fun", countRadio("s_why","Fun"), n) + bar("Not sure", countRadio("s_why","Not sure"), n);
+      h += '<h4 style="margin:16px 0 2px">Are they real?</h4>';
+      h += bar("Some are real", countRadio("s_believe","Yes"), n, true) + bar("Only stories", countRadio("s_believe","No"), n, true) + bar("Not sure", countRadio("s_believe","Not sure"), n, true);
+      if(monsters.length){
+        h += '<h4 style="margin:16px 0 4px">Monsters from our families</h4><p style="margin:0;font-weight:700;line-height:1.9">' +
+             monsters.map(function(m){ return kEsc(m); }).join(" &middot; ") + "</p>";
+      }
+      wrap.innerHTML = h;
+    })
+    .catch(function(){ wrap.innerHTML = "<p style=\"font-weight:700;margin:0\">Could not load the class results right now.</p>"; });
+});
+
+/* ---------- boot ---------- */
+(function(){
+  buildVocab();
+  try{
+    var L = localStorage.getItem("mon_lang");
+    if(L){ curLang = L; document.getElementById("lang").value = L; buildVocab(); }
+    var V = localStorage.getItem("mon_level");
+    if(V) setLevel(V); else setLevel("hard");
+    var saved = localStorage.getItem(STU_KEY);
+    if(saved) startSession(JSON.parse(saved));
+    else { restorePayload(JSON.parse(localStorage.getItem(LOCAL_KEY) || "null")); }
+  }catch(e){ setLevel("hard"); }
+})();
+</script>
+<script>
+/* ---------- "what other people say" reveals ---------- */
+var rv = document.querySelectorAll("[data-reveal]");
+for(var ri=0; ri<rv.length; ri++){
+  rv[ri].addEventListener("click", function(){
+    var box = document.getElementById(this.getAttribute("data-reveal"));
+    box.classList.toggle("on");
+    this.textContent = box.classList.contains("on") ? "Hide what other people say" : "When you finish: see what other people say";
+  });
+}
+</script>
+
+<script>
+/* ============================================================
+   PLATFORM KIT — directions in 15 languages, tap any word,
+   school-email identity, silent page-translation canary
+   ============================================================ */
+var KIT_SLUG = "monsters";
+var RTL = {ar:1, ary:1, ur:1};
+var PROXY = "https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec";
+var TXT = {"es": {"survey": "No hay respuestas incorrectas. Cuéntanos sobre las historias de miedo de tu familia.", "vocab": "Elige tu idioma en la barra de arriba y la tercera columna se llenará. Toca cualquier palabra con puntos en una lectura para verla otra vez.", "read": "Léelo una vez. Luego léelo otra vez y toca las palabras que son nuevas para ti.", "fears": "Lee los dieciséis miedos. Toca cualquier palabra que no conozcas.", "match": "Para cada monstruo, escribe el número de uno o más miedos. Luego termina la oración.", "stories": "Lee por lo menos cuatro historias. Si hay una historia de tu país, léela primero. Responde la pregunta debajo de cada historia que leas.", "analyze": "Elige cuatro historias. Escribe el número del miedo que simboliza cada monstruo y explica por qué. Si es un miedo nuevo, escribe 17 y ponle nombre.", "gA": "Escribe symbolize, symbolizes, represent o represents.", "gB": "Escribe who, that o where.", "gC": "Escribe el verbo en la forma correcta. Los monstruos dan advertencias: si haces esto, el monstruo hará aquello.", "quiz": "Doce preguntas. Elige una respuesta para cada una. Luego presiona el botón de abajo para ver tu puntaje.", "vblank": "Escribe una palabra de la tabla en cada línea.", "levels": "Hay tres niveles. Haz el que te dé Mr. Toby, y si te parece fácil, sube un nivel.", "exit": "Marca las que son verdad para ti. No es una nota; le dice a Mr. Toby qué enseñar después.", "_show": "Ver traducción"}, "zh-CN": {"survey": "没有错误答案。告诉我们你家里的恐怖故事。", "vocab": "在顶部栏选择你的语言，第三栏就会显示翻译。点击阅读中任何带点的词可以再次查看。", "read": "读一遍。然后再读一遍，点击你不认识的新词。", "fears": "读这十六种恐惧。点击任何你不认识的词。", "match": "为每个怪物写出一个或多个恐惧的编号。然后把句子写完整。", "stories": "至少读四个故事。如果有你国家的故事，先读那个。回答你读过的每个故事下面的问题。", "analyze": "选四个故事。写出每个怪物象征的恐惧编号，并说明原因。如果是新的恐惧，写17并给它起个名字。", "gA": "写 symbolize、symbolizes、represent 或 represents。", "gB": "写 who、that 或 where。", "gC": "用动词的正确形式填空。怪物会发出警告：如果你做这件事，怪物就会做那件事。", "quiz": "十二道题。每题选一个答案。然后按下面的按钮看你的分数。", "vblank": "在每一行写一个表格里的词。", "levels": "一共有三个级别。做 Mr. Toby 给你的那个——如果觉得容易，就往上升一级。", "exit": "勾选符合你的情况。这不是成绩——它告诉 Mr. Toby 接下来教什么。", "_show": "查看翻译"}, "yue": {"survey": "冇錯嘅答案。講吓你屋企嘅鬼故俾我哋聽。", "vocab": "喺上面條bar揀你嘅語言，第三行就會出翻譯。撳閱讀入面有點點嘅字可以再睇。", "read": "讀一次。然後再讀一次，撳你唔識嘅新字。", "fears": "讀呢十六種恐懼。撳任何你唔識嘅字。", "match": "每隻怪物寫一個或者幾個恐懼嘅號碼。然後寫完句子。", "stories": "最少讀四個故事。如果有你國家嘅故事，先讀嗰個。答你讀過每個故事下面嘅問題。", "analyze": "揀四個故事。寫出每隻怪物代表嘅恐懼號碼，講點解。如果係新嘅恐懼，寫17同改個名。", "gA": "寫 symbolize、symbolizes、represent 或者 represents。", "gB": "寫 who、that 或者 where。", "gC": "用動詞嘅正確形式。怪物會警告你：如果你做呢樣，怪物就會做嗰樣。", "quiz": "十二條問題。每條揀一個答案。然後撳下面個掣睇分數。", "vblank": "每一行寫一個表入面嘅字。", "levels": "有三個程度。做 Mr. Toby 俾你嗰個——如果覺得易，就升一級。", "exit": "剔啱你嘅。呢個唔係分數——係話俾 Mr. Toby 知下一步教乜。", "_show": "睇翻譯"}, "ar": {"survey": "لا توجد إجابات خاطئة. أخبرنا عن القصص المخيفة في عائلتك.", "vocab": "اختر لغتك من الشريط في الأعلى وسيمتلئ العمود الثالث. اضغط على أي كلمة منقّطة في القراءة لتراها مرة أخرى.", "read": "اقرأه مرة واحدة. ثم اقرأه مرة أخرى واضغط على الكلمات الجديدة عليك.", "fears": "اقرأ المخاوف الستة عشر. اضغط على أي كلمة لا تعرفها.", "match": "لكل وحش، اكتب رقم خوف واحد أو أكثر. ثم أكمل الجملة.", "stories": "اقرأ أربع قصص على الأقل. إذا كانت هناك قصة من بلدك، فاقرأها أولًا. أجب عن السؤال تحت كل قصة تقرؤها.", "analyze": "اختر أربع قصص. اكتب رقم الخوف الذي يرمز إليه كل وحش وقل لماذا. إذا كان خوفًا جديدًا، فاكتب 17 وأعطه اسمًا.", "gA": "اكتب symbolize أو symbolizes أو represent أو represents.", "gB": "اكتب who أو that أو where.", "gC": "اكتب الفعل بالشكل الصحيح. الوحوش تعطي تحذيرات: إذا فعلت هذا، سيفعل الوحش ذلك.", "quiz": "اثنا عشر سؤالًا. اختر إجابة واحدة لكل سؤال. ثم اضغط الزر في الأسفل لترى درجتك.", "vblank": "اكتب كلمة واحدة من الجدول في كل سطر.", "levels": "هناك ثلاثة مستويات. اعمل المستوى الذي يعطيك إياه Mr. Toby — وإن كان سهلًا، اصعد مستوى واحدًا.", "exit": "ضع علامة على ما ينطبق عليك. هذه ليست درجة — إنها تخبر Mr. Toby بما يعلّمه بعد ذلك.", "_show": "إظهار الترجمة"}, "ary": {"survey": "ما كاينش جواب غالط. عاود لينا على الحكايات ديال الخلعة لي فالعائلة ديالك.", "vocab": "ختار اللغة ديالك فالبار الفوق والعمود التالت غادي يتعمر. ضغط على أي كلمة فيها نقط فالقراءة باش تشوفها عاود.", "read": "قراه مرة. من بعد قراه عاود وضغط على الكلمات لي جداد عليك.", "fears": "قرا الستاش ديال المخاوف. ضغط على أي كلمة ما عرفتيهاش.", "match": "لكل غول، كتب النمرة ديال خوف ولا كثر. من بعد كمّل الجملة.", "stories": "قرا على الأقل ربعة ديال الحكايات. إلا كانت شي حكاية من بلادك، قراها الأولى. جاوب على السؤال لي تحت كل حكاية قريتيها.", "analyze": "ختار ربعة ديال الحكايات. كتب النمرة ديال الخوف لي كيرمز ليه كل غول وقول علاش. إلا كان خوف جديد، كتب 17 وعطيه سمية.", "gA": "كتب symbolize ولا symbolizes ولا represent ولا represents.", "gB": "كتب who ولا that ولا where.", "gC": "كتب الفعل بالشكل الصحيح. الغيلان كيعطيو تحذيرات: إلا درتي هادي، الغول غادي يدير هاديك.", "quiz": "ثناش السؤال. ختار جواب واحد لكل سؤال. من بعد ضغط على البوطونة لتحت باش تشوف النقطة ديالك.", "vblank": "كتب كلمة وحدة من الجدول فكل سطر.", "levels": "كاينين تلاتة ديال المستويات. دير لي عطاك Mr. Toby — وإلا بان ليك ساهل، طلع مستوى.", "exit": "علّم على لي صحيح بالنسبة ليك. هادي ماشي نقطة — كتقول لـ Mr. Toby شنو يقري من بعد.", "_show": "شوف الترجمة"}, "vi": {"survey": "Không có câu trả lời sai. Hãy kể cho chúng tôi về những câu chuyện ma trong gia đình em.", "vocab": "Chọn ngôn ngữ của em ở thanh phía trên và cột thứ ba sẽ hiện ra. Chạm vào bất kỳ từ có dấu chấm trong bài đọc để xem lại.", "read": "Đọc một lần. Sau đó đọc lại và chạm vào những từ mới với em.", "fears": "Đọc mười sáu nỗi sợ. Chạm vào bất kỳ từ nào em không biết.", "match": "Với mỗi con quái vật, viết số của một hoặc nhiều nỗi sợ. Sau đó hoàn thành câu.", "stories": "Đọc ít nhất bốn câu chuyện. Nếu có câu chuyện từ nước em, hãy đọc nó trước. Trả lời câu hỏi dưới mỗi câu chuyện em đọc.", "analyze": "Chọn bốn câu chuyện. Viết số của nỗi sợ mà mỗi quái vật tượng trưng và giải thích tại sao. Nếu là nỗi sợ mới, viết 17 và đặt tên cho nó.", "gA": "Viết symbolize, symbolizes, represent, hoặc represents.", "gB": "Viết who, that, hoặc where.", "gC": "Viết động từ ở dạng đúng. Quái vật đưa ra lời cảnh báo: nếu em làm điều này, quái vật sẽ làm điều kia.", "quiz": "Mười hai câu hỏi. Chọn một đáp án cho mỗi câu. Rồi bấm nút ở dưới để xem điểm.", "vblank": "Viết một từ trong bảng vào mỗi dòng.", "levels": "Có ba cấp độ. Làm cấp Mr. Toby giao cho em — nếu thấy dễ, hãy lên một cấp.", "exit": "Đánh dấu những điều đúng với em. Đây không phải là điểm — nó cho Mr. Toby biết nên dạy gì tiếp theo.", "_show": "Xem bản dịch"}, "ru": {"survey": "Здесь нет неправильных ответов. Расскажи нам о страшных историях в твоей семье.", "vocab": "Выбери свой язык на панели сверху, и третий столбец заполнится. Нажми на любое слово с точками в тексте, чтобы увидеть его снова.", "read": "Прочитай один раз. Потом прочитай ещё раз и нажми на новые для тебя слова.", "fears": "Прочитай шестнадцать страхов. Нажми на любое незнакомое слово.", "match": "Для каждого чудовища напиши номер одного или нескольких страхов. Потом закончи предложение.", "stories": "Прочитай не меньше четырёх историй. Если есть история из твоей страны, прочитай её первой. Ответь на вопрос под каждой прочитанной историей.", "analyze": "Выбери четыре истории. Напиши номер страха, который символизирует каждое чудовище, и объясни почему. Если это новый страх, напиши 17 и дай ему название.", "gA": "Напиши symbolize, symbolizes, represent или represents.", "gB": "Напиши who, that или where.", "gC": "Напиши глагол в правильной форме. Чудовища предупреждают: если ты сделаешь это, чудовище сделает то.", "quiz": "Двенадцать вопросов. Выбери один ответ для каждого. Потом нажми кнопку внизу, чтобы увидеть результат.", "vblank": "Напиши одно слово из таблицы в каждой строке.", "levels": "Есть три уровня. Делай тот, который даёт Mr. Toby — а если легко, поднимись на уровень выше.", "exit": "Отметь то, что верно для тебя. Это не оценка — это помогает Mr. Toby понять, что объяснять дальше.", "_show": "Показать перевод"}, "ur": {"survey": "کوئی غلط جواب نہیں ہے۔ ہمیں اپنے خاندان کی ڈراؤنی کہانیوں کے بارے میں بتائیں۔", "vocab": "اوپر والی پٹی میں اپنی زبان منتخب کریں اور تیسرا کالم بھر جائے گا۔ پڑھائی میں کسی بھی نقطوں والے لفظ پر ٹیپ کریں تاکہ اسے دوبارہ دیکھ سکیں۔", "read": "اسے ایک بار پڑھیں۔ پھر دوبارہ پڑھیں اور اپنے لیے نئے الفاظ پر ٹیپ کریں۔", "fears": "سولہ خوف پڑھیں۔ جو لفظ آپ نہیں جانتے اس پر ٹیپ کریں۔", "match": "ہر عفریت کے لیے ایک یا زیادہ خوف کا نمبر لکھیں۔ پھر جملہ مکمل کریں۔", "stories": "کم از کم چار کہانیاں پڑھیں۔ اگر آپ کے ملک کی کوئی کہانی ہے تو پہلے وہ پڑھیں۔ جو کہانی پڑھیں اس کے نیچے سوال کا جواب دیں۔", "analyze": "چار کہانیاں چنیں۔ ہر عفریت جس خوف کی علامت ہے اس کا نمبر لکھیں اور وجہ بتائیں۔ اگر یہ نیا خوف ہے تو 17 لکھیں اور اسے نام دیں۔", "gA": "symbolize، symbolizes، represent، یا represents لکھیں۔", "gB": "who، that، یا where لکھیں۔", "gC": "فعل کو صحیح شکل میں لکھیں۔ عفریت خبردار کرتے ہیں: اگر آپ یہ کریں گے تو عفریت وہ کرے گا۔", "quiz": "بارہ سوال۔ ہر سوال کا ایک جواب چنیں۔ پھر اپنا اسکور دیکھنے کے لیے نیچے بٹن دبائیں۔", "vblank": "ہر لائن پر جدول میں سے ایک لفظ لکھیں۔", "levels": "تین لیول ہیں۔ وہ کریں جو Mr. Toby آپ کو دیں — اگر آسان لگے تو ایک لیول اوپر جائیں۔", "exit": "جو آپ کے لیے سچ ہیں ان پر نشان لگائیں۔ یہ گریڈ نہیں ہے — یہ Mr. Toby کو بتاتا ہے کہ آگے کیا پڑھانا ہے۔", "_show": "ترجمہ دکھائیں"}, "tl": {"survey": "Walang maling sagot. Ikuwento sa amin ang mga nakakatakot na kuwento sa pamilya mo.", "vocab": "Piliin ang iyong wika sa bar sa itaas at mapupuno ang ikatlong kolum. I-tap ang anumang salitang may tuldok sa pagbasa para makita ito ulit.", "read": "Basahin ito nang isang beses. Pagkatapos, basahin ulit at i-tap ang mga salitang bago sa iyo.", "fears": "Basahin ang labing-anim na takot. I-tap ang anumang salitang hindi mo alam.", "match": "Para sa bawat halimaw, isulat ang numero ng isa o higit pang takot. Pagkatapos, tapusin ang pangungusap.", "stories": "Magbasa ng hindi bababa sa apat na kuwento. Kung may kuwento mula sa bansa mo, iyon muna ang basahin. Sagutin ang tanong sa ilalim ng bawat kuwentong nabasa mo.", "analyze": "Pumili ng apat na kuwento. Isulat ang numero ng takot na sinasagisag ng bawat halimaw at sabihin kung bakit. Kung bagong takot ito, isulat ang 17 at bigyan ito ng pangalan.", "gA": "Isulat ang symbolize, symbolizes, represent, o represents.", "gB": "Isulat ang who, that, o where.", "gC": "Isulat ang pandiwa sa tamang anyo. Nagbibigay ng babala ang mga halimaw: kung gagawin mo ito, gagawin ng halimaw iyon.", "quiz": "Labindalawang tanong. Pumili ng isang sagot sa bawat isa. Pagkatapos, pindutin ang button sa ibaba para makita ang iskor mo.", "vblank": "Sumulat ng isang salita mula sa talahanayan sa bawat linya.", "levels": "May tatlong antas. Gawin ang ibinigay ni Mr. Toby — kung madali, umakyat ng isang antas.", "exit": "Markahan ang mga totoo para sa iyo. Hindi ito grado — sinasabi nito kay Mr. Toby kung ano ang susunod na ituturo.", "_show": "Ipakita ang salin"}, "fr": {"survey": "Il n'y a pas de mauvaises réponses. Parle-nous des histoires qui font peur dans ta famille.", "vocab": "Choisis ta langue dans la barre en haut et la troisième colonne se remplira. Touche n'importe quel mot en pointillés dans une lecture pour le revoir.", "read": "Lis-le une fois. Puis relis-le et touche les mots qui sont nouveaux pour toi.", "fears": "Lis les seize peurs. Touche n'importe quel mot que tu ne connais pas.", "match": "Pour chaque monstre, écris le numéro d'une ou plusieurs peurs. Puis termine la phrase.", "stories": "Lis au moins quatre histoires. S'il y a une histoire de ton pays, lis-la en premier. Réponds à la question sous chaque histoire que tu lis.", "analyze": "Choisis quatre histoires. Écris le numéro de la peur que chaque monstre symbolise et explique pourquoi. Si c'est une nouvelle peur, écris 17 et donne-lui un nom.", "gA": "Écris symbolize, symbolizes, represent ou represents.", "gB": "Écris who, that ou where.", "gC": "Écris le verbe à la bonne forme. Les monstres donnent des avertissements : si tu fais ceci, le monstre fera cela.", "quiz": "Douze questions. Choisis une réponse pour chacune. Puis appuie sur le bouton en bas pour voir ton score.", "vblank": "Écris un mot du tableau sur chaque ligne.", "levels": "Il y a trois niveaux. Fais celui que Mr. Toby te donne — et si c'est facile, monte d'un niveau.", "exit": "Coche ce qui est vrai pour toi. Ce n'est pas une note — cela dit à Mr. Toby quoi enseigner ensuite.", "_show": "Voir la traduction"}, "ko": {"survey": "틀린 답은 없어요. 여러분 가족의 무서운 이야기를 알려 주세요.", "vocab": "위쪽 바에서 언어를 고르면 세 번째 칸이 채워져요. 읽기 안의 점선 단어를 누르면 다시 볼 수 있어요.", "read": "한 번 읽으세요. 그다음 다시 읽고 새로운 단어를 누르세요.", "fears": "열여섯 가지 두려움을 읽으세요. 모르는 단어를 누르세요.", "match": "각 괴물마다 두려움 번호를 하나 이상 쓰세요. 그다음 문장을 완성하세요.", "stories": "이야기를 적어도 네 개 읽으세요. 여러분 나라의 이야기가 있으면 그것부터 읽으세요. 읽은 이야기 아래에 있는 질문에 답하세요.", "analyze": "이야기 네 개를 고르세요. 각 괴물이 상징하는 두려움 번호를 쓰고 이유를 말하세요. 새로운 두려움이면 17을 쓰고 이름을 붙이세요.", "gA": "symbolize, symbolizes, represent, represents 중 하나를 쓰세요.", "gB": "who, that, where 중 하나를 쓰세요.", "gC": "동사를 알맞은 형태로 쓰세요. 괴물은 경고를 해요: 이것을 하면 괴물이 저것을 할 거예요.", "quiz": "열두 문제예요. 각 문제에 답을 하나씩 고르세요. 그다음 아래 버튼을 눌러 점수를 보세요.", "vblank": "각 줄에 표에 있는 단어를 하나씩 쓰세요.", "levels": "세 단계가 있어요. Mr. Toby가 준 단계를 하세요 — 쉬우면 한 단계 올라가세요.", "exit": "자신에게 맞는 것에 체크하세요. 성적이 아니에요 — Mr. Toby가 다음에 무엇을 가르칠지 알려 줘요.", "_show": "번역 보기"}, "hi": {"survey": "कोई गलत जवाब नहीं है। हमें अपने परिवार की डरावनी कहानियों के बारे में बताएँ।", "vocab": "ऊपर वाली पट्टी में अपनी भाषा चुनें और तीसरा कॉलम भर जाएगा। पढ़ाई में किसी भी बिंदु वाले शब्द पर टैप करें ताकि उसे फिर से देख सकें।", "read": "इसे एक बार पढ़ें। फिर दोबारा पढ़ें और अपने लिए नए शब्दों पर टैप करें।", "fears": "सोलह डर पढ़ें। जो शब्द आप नहीं जानते उस पर टैप करें।", "match": "हर राक्षस के लिए एक या ज़्यादा डर का नंबर लिखें। फिर वाक्य पूरा करें।", "stories": "कम से कम चार कहानियाँ पढ़ें। अगर आपके देश की कोई कहानी है, तो पहले वह पढ़ें। जो कहानी पढ़ें उसके नीचे के सवाल का जवाब दें।", "analyze": "चार कहानियाँ चुनें। हर राक्षस जिस डर का प्रतीक है उसका नंबर लिखें और कारण बताएँ। अगर यह नया डर है, तो 17 लिखें और उसे नाम दें।", "gA": "symbolize, symbolizes, represent, या represents लिखें।", "gB": "who, that, या where लिखें।", "gC": "क्रिया को सही रूप में लिखें। राक्षस चेतावनी देते हैं: अगर तुम यह करोगे, तो राक्षस वह करेगा।", "quiz": "बारह सवाल। हर सवाल का एक जवाब चुनें। फिर अपना स्कोर देखने के लिए नीचे बटन दबाएँ।", "vblank": "हर लाइन पर तालिका से एक शब्द लिखें।", "levels": "तीन स्तर हैं। वह करें जो Mr. Toby आपको दें — अगर आसान लगे, तो एक स्तर ऊपर जाएँ।", "exit": "जो आपके लिए सच हैं उन पर निशान लगाएँ। यह ग्रेड नहीं है — यह Mr. Toby को बताता है कि आगे क्या पढ़ाना है।", "_show": "अनुवाद देखें"}, "so": {"survey": "Ma jiraan jawaabo khaldan. Noo sheeg sheekooyinka cabsida leh ee qoyskaaga.", "vocab": "Ka dooro luqaddaada xariijinta sare, tiirka saddexaadna wuu buuxsami doonaa. Taabo eray kasta oo dhibco leh si aad mar kale u aragto.", "read": "Hal mar akhri. Kadib mar kale akhri oo taabo erayada kuu cusub.", "fears": "Akhri lix iyo tobanka cabsi. Taabo eray kasta oo aadan aqoon.", "match": "Bahal kasta, qor lambarka hal cabsi ama ka badan. Kadib dhammaystir jumladda.", "stories": "Akhri ugu yaraan afar sheeko. Haddii ay jirto sheeko waddankaaga ka timid, marka hore taas akhri. Ka jawaab su'aasha ka hoosaysa sheeko kasta oo aad akhrido.", "analyze": "Dooro afar sheeko. Qor lambarka cabsida uu bahal kasta astaan u yahay oo sheeg sababta. Haddii ay tahay cabsi cusub, qor 17 oo magac u bixi.", "gA": "Qor symbolize, symbolizes, represent, ama represents.", "gB": "Qor who, that, ama where.", "gC": "Ficilka ku qor qaabka saxda ah. Bahallada ayaa digniin bixiya: haddii aad tan samayso, bahalku wuxuu samayn doonaa taas.", "quiz": "Laba iyo toban su'aalood. Mid kasta hal jawaab u dooro. Kadib riix badhanka hoose si aad u aragto dhibcahaaga.", "vblank": "Saf kasta ku qor hal eray oo shaxda ka mid ah.", "levels": "Waxaa jira saddex heer. Samee kan Mr. Toby ku siiyo — haddii uu fudud yahay, hal heer kor u kac.", "exit": "Calaamadee kuwa adiga run kuu ah. Tani ma aha dhibco — waxay u sheegaysaa Mr. Toby waxa uu marka xigta bari doono.", "_show": "Muuji turjumaadda"}, "th": {"survey": "ไม่มีคำตอบที่ผิด เล่าเรื่องผีหรือเรื่องน่ากลัวในครอบครัวของเธอให้เราฟัง", "vocab": "เลือกภาษาของเธอที่แถบด้านบน แล้วคอลัมน์ที่สามจะแสดงคำแปล แตะคำที่มีจุดในบทอ่านเพื่อดูอีกครั้ง", "read": "อ่านหนึ่งรอบ แล้วอ่านอีกรอบและแตะคำที่ใหม่สำหรับเธอ", "fears": "อ่านความกลัวสิบหกข้อ แตะคำที่เธอไม่รู้", "match": "สำหรับสัตว์ประหลาดแต่ละตัว เขียนหมายเลขความกลัวหนึ่งข้อหรือมากกว่า แล้วเขียนประโยคให้จบ", "stories": "อ่านอย่างน้อยสี่เรื่อง ถ้ามีเรื่องจากประเทศของเธอ ให้อ่านเรื่องนั้นก่อน ตอบคำถามใต้ทุกเรื่องที่อ่าน", "analyze": "เลือกสี่เรื่อง เขียนหมายเลขความกลัวที่สัตว์ประหลาดแต่ละตัวเป็นสัญลักษณ์ และบอกเหตุผล ถ้าเป็นความกลัวใหม่ ให้เขียน 17 และตั้งชื่อให้มัน", "gA": "เขียน symbolize, symbolizes, represent หรือ represents", "gB": "เขียน who, that หรือ where", "gC": "เขียนคำกริยาในรูปที่ถูกต้อง สัตว์ประหลาดเตือนว่า ถ้าเธอทำสิ่งนี้ สัตว์ประหลาดจะทำสิ่งนั้น", "quiz": "สิบสองคำถาม เลือกคำตอบเดียวในแต่ละข้อ แล้วกดปุ่มด้านล่างเพื่อดูคะแนน", "vblank": "เขียนคำจากตารางหนึ่งคำในแต่ละบรรทัด", "levels": "มีสามระดับ ทำระดับที่ Mr. Toby ให้ — ถ้ารู้สึกง่าย ให้ขึ้นไปอีกหนึ่งระดับ", "exit": "ทำเครื่องหมายข้อที่จริงสำหรับเธอ นี่ไม่ใช่คะแนน — มันบอก Mr. Toby ว่าควรสอนอะไรต่อ", "_show": "ดูคำแปล"}, "ne": {"survey": "कुनै गलत जवाफ छैन। तिम्रो परिवारका डरलाग्दा कथाहरूबारे हामीलाई भन।", "vocab": "माथिको पट्टीमा आफ्नो भाषा छान र तेस्रो स्तम्भ भरिनेछ। पढाइभित्र कुनै पनि थोप्ला भएको शब्दमा ट्याप गर र फेरि हेर।", "read": "एक पटक पढ। त्यसपछि फेरि पढ र तिम्रो लागि नयाँ शब्दहरूमा ट्याप गर।", "fears": "सोह्र वटा डर पढ। थाहा नभएको कुनै पनि शब्दमा ट्याप गर।", "match": "हरेक राक्षसका लागि एक वा बढी डरको नम्बर लेख। त्यसपछि वाक्य पूरा गर।", "stories": "कम्तीमा चार कथा पढ। तिम्रो देशको कथा छ भने त्यो पहिले पढ। पढेको हरेक कथामुनिको प्रश्नको जवाफ देऊ।", "analyze": "चार कथा छान। हरेक राक्षस जुन डरको प्रतीक हो त्यसको नम्बर लेख र किन भन। नयाँ डर हो भने 17 लेख र नाम देऊ।", "gA": "symbolize, symbolizes, represent, वा represents लेख।", "gB": "who, that, वा where लेख।", "gC": "क्रियालाई सही रूपमा लेख। राक्षसहरूले चेतावनी दिन्छन्: तिमीले यो गर्‍यौ भने, राक्षसले त्यो गर्छ।", "quiz": "बाह्र प्रश्न। हरेकको एउटा उत्तर छान। त्यसपछि आफ्नो अंक हेर्न तलको बटन थिच।", "vblank": "हरेक लाइनमा तालिकाबाट एउटा शब्द लेख।", "levels": "तीन तह छन्। Mr. Toby ले दिएको तह गर — सजिलो लागे एक तह माथि जाऊ।", "exit": "तिम्रो लागि सत्य भएकामा चिन्ह लगाऊ। यो ग्रेड होइन — यसले Mr. Toby लाई अब के पढाउने भनेर बताउँछ।", "_show": "अनुवाद हेर्नुहोस्"}};
+function kEsc(s){ return String(s == null ? "" : s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+/* ---------- directions: tap to reveal / always / off ---------- */
+var IMODE = "tap";
+try{ IMODE = localStorage.getItem("gal_imode") || "tap"; }catch(e){}
+function logReveal(k, lang){
+  if(!student) return;
+  fetch(SUPA_URL + "/rest/v1/instruction_reveals", {
+    method:"POST", headers: headers({ "Prefer":"return=minimal" }),
+    body: JSON.stringify([{ email: student.email, set_slug: KIT_SLUG, activity: k, lang: lang }])
+  }).catch(function(){});
+}
+function applyLeads(){
+  var lang = curLang;
+  var list = document.querySelectorAll("[data-k][data-en]");
+  for(var i=0;i<list.length;i++){
+    (function(p){
+      var k = p.getAttribute("data-k"), en = p.getAttribute("data-en");
+      var tr = (TXT[lang] && TXT[lang][k]) ? TXT[lang][k] : null;
+      var dir = RTL[lang] ? ' dir="rtl"' : "";
+      if(!tr || IMODE === "off"){ p.textContent = en; return; }
+      if(IMODE === "always"){ p.innerHTML = kEsc(en) + '<span class="ltr"' + dir + ">" + kEsc(tr) + "</span>"; return; }
+      p.innerHTML = kEsc(en) + '<button type="button" class="lrev">' + kEsc(TXT[lang]._show) + "</button>";
+      p.querySelector(".lrev").addEventListener("click", function(ev){
+        ev.stopPropagation();
+        p.innerHTML = kEsc(en) + '<span class="ltr"' + dir + ">" + kEsc(tr) + "</span>";
+        logReveal(k, lang);
+      });
+    })(list[i]);
+  }
+}
+document.getElementById("imode").addEventListener("change", function(){
+  IMODE = this.value;
+  try{ localStorage.setItem("gal_imode", IMODE); }catch(e){}
+  applyLeads();
+});
+
+/* ---------- tap any word in a reading ---------- */
+var TAPZONE = ".pass, .wcard p, .story p, .fearlist li";
+var tcache = {};
+function wordAt(x, y){
+  var node = null, off = 0, r;
+  if(document.caretRangeFromPoint){ r = document.caretRangeFromPoint(x, y); if(r){ node = r.startContainer; off = r.startOffset; } }
+  else if(document.caretPositionFromPoint){ r = document.caretPositionFromPoint(x, y); if(r){ node = r.offsetNode; off = r.offset; } }
+  if(!node || node.nodeType !== 3) return null;
+  var t = node.textContent, a = off, b = off, re = /[A-Za-z\u00C0-\u024F'\u2019-]/;
+  while(a > 0 && re.test(t.charAt(a-1))) a--;
+  while(b < t.length && re.test(t.charAt(b))) b++;
+  var w = t.slice(a, b).replace(/^['\u2019-]+|['\u2019-]+$/g, "");
+  return w.length > 1 ? w : null;
+}
+function placeTip(x, y){
+  var top = y + window.scrollY + 14, left = x + window.scrollX - 20;
+  var maxLeft = window.scrollX + document.documentElement.clientWidth - tip.offsetWidth - 12;
+  if(left > maxLeft) left = maxLeft;
+  if(left < window.scrollX + 8) left = window.scrollX + 8;
+  tip.style.top = top + "px"; tip.style.left = left + "px";
+}
+function showWordTip(word, x, y){
+  var lang = curLang;
+  var h = '<span class="w">' + kEsc(word) + "</span>";
+  if(lang === "none"){ h += '<div class="none">Choose a language in the green bar to translate any word.</div>'; }
+  else { h += '<div class="t' + (RTL[lang] ? " rtl" : "") + '" id="tipTr">…</div>'; }
+  tip.innerHTML = h; tip.style.display = "block"; placeTip(x, y);
+  if(lang === "none") return;
+  var code = (lang === "ary") ? "ar" : lang, key = code + "|" + word.toLowerCase();
+  if(tcache[key]){ document.getElementById("tipTr").textContent = tcache[key]; return; }
+  var u = PROXY + "?text=" + encodeURIComponent(word) + "&q=" + encodeURIComponent(word) +
+          "&target=" + encodeURIComponent(code) + "&lang=" + encodeURIComponent(code) + "&to=" + encodeURIComponent(code);
+  fetch(u).then(function(r){ return r.text(); }).then(function(t){
+    var v = t;
+    try{ var j = JSON.parse(t); v = j.translation || j.text || j.result || j.translatedText || t;
+         if(typeof v === "object") v = v.equiv || v.meaning || JSON.stringify(v); }catch(e){}
+    tcache[key] = v;
+    var o = document.getElementById("tipTr"); if(o) o.textContent = v;
+  }).catch(function(){ var o = document.getElementById("tipTr"); if(o) o.textContent = "(translation unavailable)"; });
+}
+document.addEventListener("click", function(e){
+  if(!e.target.closest) return;
+  if(e.target.closest(".gl, input, textarea, button, label, a, select")) return;
+  var z = e.target.closest(TAPZONE); if(!z) return;
+  var w = wordAt(e.clientX, e.clientY); if(!w) return;
+  showWordTip(w, e.clientX, e.clientY);
+});
+
+/* ---------- school email identity (shared standard) ---------- */
+var CANON_DOMAIN = "@s.sfusd.edu", ROSTER = [];
+function cleanMail(x){ return String(x||"").trim().toLowerCase(); }
+function localPart(e){ return cleanMail(e).split("@")[0]; }
+function validMail(e){ return /^[^@\s]+@(s\.)?sfusd\.edu$/.test(cleanMail(e)); }
+function canonMail(raw){
+  var lp = localPart(raw);
+  for(var i=0;i<ROSTER.length;i++){ if(localPart(ROSTER[i].email) === lp) return cleanMail(ROSTER[i].email); }
+  return lp + CANON_DOMAIN;
+}
+function recordAlias(alias, canon){
+  if(!alias || alias === canon) return;
+  fetch(SUPA_URL + "/rest/v1/student_aliases?on_conflict=alias_email", {
+    method:"POST", headers: headers({ "Prefer":"resolution=merge-duplicates,return=minimal" }),
+    body: JSON.stringify([{ alias_email: alias, email: canon }])
+  }).catch(function(){});
+}
+function seedStudent(name, email, period){
+  fetch(SUPA_URL + "/rest/v1/students?on_conflict=email", {
+    method:"POST", headers: headers({ "Prefer":"resolution=ignore-duplicates,return=minimal" }),
+    body: JSON.stringify([{ email: email, name: name, period: period }])
+  }).catch(function(){});
+}
+fetch(SUPA_URL + "/rest/v1/students?select=name,email,period&order=name", { headers: headers() })
+  .then(function(r){ return r.ok ? r.json() : []; }).then(function(rows){ ROSTER = rows || []; }).catch(function(){});
+function kitSignIn(){
+  var raw = cleanMail(document.getElementById("gEmail").value);
+  var name = document.getElementById("gName").value.trim();
+  var period = document.getElementById("gPeriod").value;
+  var err = document.getElementById("gErr");
+  if(name.length < 3){ err.textContent = "Write your first and last name."; return; }
+  if(!validMail(raw)){ err.textContent = "Use your school email. It ends with @s.sfusd.edu"; return; }
+  if(!period){ err.textContent = "Choose your class period."; return; }
+  var canon = canonMail(raw);
+  recordAlias(raw, canon);
+  seedStudent(name, canon, period);
+  var s = { email: canon, name: name, period: period };
+  try{ localStorage.setItem(STU_KEY, JSON.stringify(s)); localStorage.setItem("gal_student_email", canon); }catch(e){}
+  startSession(s);
+}
+document.getElementById("gGo").addEventListener("click", kitSignIn);
+document.getElementById("gEmail").addEventListener("keydown", function(e){ if(e.key === "Enter") kitSignIn(); });
+document.getElementById("gName").addEventListener("keydown", function(e){ if(e.key === "Enter") kitSignIn(); });
+(function(){
+  try{ var g = localStorage.getItem("gal_student_email"); if(g && !document.getElementById("gEmail").value) document.getElementById("gEmail").value = g; }catch(e){}
+})();
+
+/* ---------- quiet whole-page translation canary ----------
+   Browser translators rewrite the DOM. The part links are translatable and we
+   know what they say, so any drift means an outside translator is running.
+   Nothing is shown to the student. */
+var TR_EXPECT = ["1 · Your stories", "2 · Words", "3 · Read", "4 · Sixteen fears", "5 · Eight monsters", "6 · Around the world", "7 · What do they mean?", "8 · Grammar", "9 · Writing", "10 · Show what you know"], TR_SENT = "";
+function detectTranslation(){
+  var links = document.querySelectorAll("#jump a"), observed = "";
+  for(var i=0;i<links.length && i<TR_EXPECT.length;i++){
+    var got = (links[i].textContent || "").trim();
+    if(got && got !== TR_EXPECT[i]){ observed = got; break; }
+  }
+  var cls = document.documentElement.className || "";
+  if(!observed && !/translated/.test(cls)) return null;
+  return { observed: observed, html_lang: document.documentElement.lang || "", html_class: cls };
+}
+function checkTranslation(){
+  var d = detectTranslation();
+  if(!d || !student) return;
+  var sig = d.observed + "|" + d.html_lang;
+  if(sig === TR_SENT) return;
+  TR_SENT = sig;
+  fetch(SUPA_URL + "/rest/v1/page_translation?on_conflict=email,set_slug", {
+    method:"POST", headers: headers({ "Prefer":"resolution=merge-duplicates,return=minimal" }),
+    body: JSON.stringify([{ email: student.email, set_slug: KIT_SLUG, translated: true,
+      observed: d.observed, html_lang: d.html_lang, html_class: d.html_class, updated_at: new Date().toISOString() }])
+  }).catch(function(){});
+}
+setInterval(checkTranslation, 20000);
+setTimeout(checkTranslation, 4000);
+
+document.getElementById("imode").value = IMODE;
+applyLeads();
+</script>
+<script src="/readings/track.js"></script>
+</body>
+</html>
