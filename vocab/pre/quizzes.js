@@ -220,6 +220,107 @@ window.ICONS = {
     '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
       '<circle cx="34" cy="34" r="7.2" fill="#6E7B8B"/><path d="M23.6 61.2 v-14 a10.4 10.4 0 0 1 20.8 0 v14 z" fill="#6E7B8B"/><circle cx="66" cy="34" r="7.2" fill="#8B97A6"/><path d="M55.6 61.2 v-14 a10.4 10.4 0 0 1 20.8 0 v14 z" fill="#8B97A6"/><rect x="12" y="66" width="76" height="8" rx="3" fill="#B98A52"/><rect x="18" y="74" width="6" height="16" fill="#4A4A55"/><rect x="76" y="74" width="6" height="16" fill="#4A4A55"/><path d="M44 42 q6 6 12 0" stroke="#2F8A5B" stroke-width="4" fill="none" stroke-linecap="round"/>' +
     '</svg>'
+,
+
+  responsible:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<rect x="20" y="12" width="60" height="76" rx="5" fill="#E8E8EE" stroke="#4A4A55" stroke-width="2"/><rect x="38" y="6" width="24" height="12" rx="4" fill="#6E7B8B"/><rect x="30" y="28" width="13" height="13" rx="3" fill="#fff" stroke="#2F8A5B" stroke-width="2"/><path d="M30.5 36 l4.5 5.25 l9.0 -11.25" fill="none" stroke="#2F8A5B" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="50" y="32" width="22" height="5" rx="2" fill="#C9CFD6"/><rect x="30" y="46" width="13" height="13" rx="3" fill="#fff" stroke="#2F8A5B" stroke-width="2"/><path d="M30.5 54 l4.5 5.25 l9.0 -11.25" fill="none" stroke="#2F8A5B" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="50" y="50" width="22" height="5" rx="2" fill="#C9CFD6"/><rect x="30" y="64" width="13" height="13" rx="3" fill="#fff" stroke="#2F8A5B" stroke-width="2"/><path d="M30.5 72 l4.5 5.25 l9.0 -11.25" fill="none" stroke="#2F8A5B" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="50" y="68" width="22" height="5" rx="2" fill="#C9CFD6"/>' +
+    '</svg>',
+
+  honest:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<circle cx="34" cy="36" r="8.1" fill="#6E7B8B"/><path d="M22.299999999999997 66.6 v-14 a11.700000000000001 11.700000000000001 0 0 1 23.400000000000002 0 v14 z" fill="#6E7B8B"/><path d="M58 22 h36 v24 h-22 l-10 8 v-8 h-4z" fill="#2F8A5B"/><path d="M68.8 34 l5.4 6.3 l10.8 -13.5" fill="none" stroke="#FFFFFF" stroke-width="5.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M18 86 h64" stroke="#C9CFD6" stroke-width="0"/>' +
+    '</svg>',
+
+  kind:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<circle cx="24" cy="40" r="7.2" fill="#6E7B8B"/><path d="M13.6 67.2 v-14 a10.4 10.4 0 0 1 20.8 0 v14 z" fill="#6E7B8B"/><circle cx="76" cy="40" r="7.2" fill="#8B97A6"/><path d="M65.6 67.2 v-14 a10.4 10.4 0 0 1 20.8 0 v14 z" fill="#8B97A6"/><path d="M50 44.8 q-15.6 -10.799999999999999 -15.6 -20.4 a8.4 8.4 0 0 1 15.6 -4.8 a8.4 8.4 0 0 1 15.6 4.8 q0 9.6 -15.6 20.4z" fill="#D98BA8"/><path d="M38 52 q8 4 12 2" stroke="#6E7B8B" stroke-width="6" fill="none" stroke-linecap="round"/><path d="M62 52 q-8 4 -12 2" stroke="#8B97A6" stroke-width="6" fill="none" stroke-linecap="round"/>' +
+    '</svg>',
+
+  helpful:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<path d="M4 88 h40 v6 h-40z" fill="#C9CFD6"/><circle cx="30" cy="22" r="7.2" fill="#6E7B8B"/><path d="M19.6 49.2 v-14 a10.4 10.4 0 0 1 20.8 0 v14 z" fill="#6E7B8B"/><circle cx="72" cy="56" r="10" fill="#8B97A6"/><path d="M60 88 v-12 a12 12 0 0 1 24 0 v12z" fill="#8B97A6"/><path d="M42 40 l16 10" stroke="#6E7B8B" stroke-width="7" stroke-linecap="round"/><path d="M64 48 l-6 2" stroke="#8B97A6" stroke-width="7" stroke-linecap="round"/><path d="M50 30 q10 -10 20 -6" stroke="#2F8A5B" stroke-width="5" fill="none" stroke-dasharray="0" stroke-linecap="round"/><path d="M50 18 l0 12 12 0" fill="none" stroke="#2F8A5B" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '</svg>',
+
+  imaginative:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<path d="M22.0 78.0 v-10 a16.0 16.0 0 0 1 32.0 0 v10 z" fill="#6E7B8B"/><circle cx="38" cy="54.0" r="16.0" fill="#6E7B8B"/><path d="M54 30 l6 -12 6 12 12 2 -9 9 2 12 -11 -6 -11 6 2 -12 -9 -9z" fill="#E3A92B"/><circle cx="80" cy="22" r="5" fill="#4C8FDC"/><circle cx="66" cy="46" r="4" fill="#D98BA8"/><path d="M46 40 q4 -8 10 -10" stroke="#C9CFD6" stroke-width="3" fill="none" stroke-dasharray="4 4"/>' +
+    '</svg>',
+
+  collaborative:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<circle cx="22" cy="26" r="6.3" fill="#6E7B8B"/><path d="M12.9 49.8 v-14 a9.1 9.1 0 0 1 18.2 0 v14 z" fill="#6E7B8B"/><circle cx="78" cy="26" r="6.3" fill="#8B97A6"/><path d="M68.9 49.8 v-14 a9.1 9.1 0 0 1 18.2 0 v14 z" fill="#8B97A6"/><path d="M14 56 h22 a6 6 0 0 1 0 12 h-22z" fill="#4C8FDC"/><path d="M36 56 v12 h10 a6 6 0 0 0 0 -12z" fill="#4C8FDC"/><path d="M86 56 h-22 a6 6 0 0 0 0 12 h22z" fill="#E3A92B"/><path d="M46 62 h18" stroke="#2F8A5B" stroke-width="4" stroke-dasharray="4 4"/><path d="M30 46 l6 6 M70 46 l-6 6" stroke="#C9CFD6" stroke-width="4" stroke-linecap="round"/>' +
+    '</svg>',
+
+  studious:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<rect x="26" y="72" width="44" height="11" rx="2" fill="#5B2A6E"/><rect x="29" y="59" width="44" height="11" rx="2" fill="#C0453A"/><rect x="26" y="46" width="44" height="11" rx="2" fill="#2F8A5B"/><rect x="29" y="33" width="44" height="11" rx="2" fill="#4C8FDC"/><circle cx="36" cy="26" r="9" fill="none" stroke="#4A4A55" stroke-width="3"/><circle cx="62" cy="26" r="9" fill="none" stroke="#4A4A55" stroke-width="3"/><path d="M45 26 h8" stroke="#4A4A55" stroke-width="3"/>' +
+    '</svg>',
+
+  creative:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<path d="M18.8 75.0 v-10 a15.2 15.2 0 0 1 30.4 0 v10 z" fill="#6E7B8B"/><circle cx="34" cy="52.2" r="15.2" fill="#6E7B8B"/><path d="M52 30 q14 -16 30 -6 q12 8 4 20 q-6 8 -16 4" fill="#E3A92B"/><circle cx="62" cy="34" r="4" fill="#C0453A"/><circle cx="74" cy="32" r="4" fill="#4C8FDC"/><circle cx="76" cy="44" r="4" fill="#2F8A5B"/><path d="M46 40 q4 -6 8 -8" stroke="#C9CFD6" stroke-width="3" stroke-dasharray="4 4" fill="none"/>' +
+    '</svg>',
+
+  confident:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<circle cx="50" cy="26" r="13" fill="#6E7B8B"/><path d="M30 90 v-24 a20 20 0 0 1 40 0 v24z" fill="#6E7B8B"/><path d="M30 70 q-12 -8 -12 -22 M70 70 q12 -8 12 -22" stroke="#6E7B8B" stroke-width="8" fill="none" stroke-linecap="round"/><path d="M50 6 v-4 M16 22 l-6 -5 M84 22 l6 -5" stroke="#E3A92B" stroke-width="4" stroke-linecap="round"/><path d="M42 28 q8 8 16 0" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/>' +
+    '</svg>',
+
+  patient:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<circle cx="28" cy="30" r="18" fill="#E8E8EE" stroke="#4A4A55" stroke-width="3"/><path d="M28 18 v12 l8 5" stroke="#4A4A55" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M62 88 h26 l-3 -18 h-20z" fill="#B98A52"/><path d="M75 70 v-16" stroke="#2F8A5B" stroke-width="4"/><path d="M75 60 q-12 -2 -12 -12 q12 0 12 12z" fill="#2F8A5B"/><path d="M75 66 q12 -2 12 -12 q-12 0 -12 12z" fill="#3FA06C"/><path d="M40 46 q12 14 18 22" stroke="#C9CFD6" stroke-width="4" stroke-dasharray="5 5" fill="none"/>' +
+    '</svg>',
+
+  optimistic:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<circle cx="34" cy="30" r="16" fill="#E3A92B"/><path d="M34 30 l18.421219880057702 7.788366846173011" stroke="#E3A92B" stroke-width="4" stroke-linecap="round" transform="translate(0,0)"/><path d="M34 30 l7.247155089533472 18.640781719344524" stroke="#E3A92B" stroke-width="4" stroke-linecap="round" transform="translate(0,0)"/><path d="M34 30 l-8.322936730942848 18.185948536513635" stroke="#E3A92B" stroke-width="4" stroke-linecap="round" transform="translate(0,0)"/><path d="M34 30 l-18.84444681337316 6.699763003118102" stroke="#E3A92B" stroke-width="4" stroke-linecap="round" transform="translate(0,0)"/><path d="M34 30 l-17.93516832668294 -8.85040886589705" stroke="#E3A92B" stroke-width="4" stroke-linecap="round" transform="translate(0,0)"/><path d="M34 30 l-6.146657399568387 -19.03204147779032" stroke="#E3A92B" stroke-width="4" stroke-linecap="round" transform="translate(0,0)"/><path d="M34 30 l9.370333426007543 -17.66909311440306" stroke="#E3A92B" stroke-width="4" stroke-linecap="round" transform="translate(0,0)"/><path d="M34 30 l19.20340573300732 -5.588309963978517" stroke="#E3A92B" stroke-width="4" stroke-linecap="round" transform="translate(0,0)"/><circle cx="34" cy="30" r="14" fill="#E3A92B"/><path d="M28 28 a3 3 0 0 1 6 0 M38 28 a3 3 0 0 1 6 0" stroke="#fff" stroke-width="0"/><path d="M14 84 l20 -18 14 10 34 -30" fill="none" stroke="#2F8A5B" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M72 46 h12 v12" fill="none" stroke="#2F8A5B" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '</svg>',
+
+  pessimistic:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<path d="M22 40 a14 14 0 0 1 28 -6 a12 12 0 0 1 20 10 a10 10 0 0 1 -4 18 h-40 a11 11 0 0 1 -4 -22z" fill="#8FA0B3"/><path d="M30 68 l-4 10 M46 68 l-4 10 M62 68 l-4 10" stroke="#4C8FDC" stroke-width="4" stroke-linecap="round"/><path d="M14 54 l18 16 14 -8 34 26" fill="none" stroke="#C0453A" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M80 76 v12 h-12" fill="none" stroke="#C0453A" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '</svg>',
+
+  introvert:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<circle cx="28" cy="38" r="8.549999999999999" fill="#6E7B8B"/><path d="M15.65 70.3 v-14 a12.35 12.35 0 0 1 24.7 0 v14 z" fill="#6E7B8B"/><path d="M14 66 q14 -6 28 0 v9 q-14 -5 -28 0z" fill="#E8E8EE" stroke="#4A4A55" stroke-width="2"/><path d="M56 10 v80" stroke="#C9CFD6" stroke-width="4" stroke-dasharray="7 7"/><circle cx="70" cy="40" r="4.5" fill="#C9CFD6"/><path d="M63.5 57.0 v-14 a6.5 6.5 0 0 1 13.0 0 v14 z" fill="#C9CFD6"/><circle cx="86" cy="40" r="4.5" fill="#C9CFD6"/><path d="M79.5 57.0 v-14 a6.5 6.5 0 0 1 13.0 0 v14 z" fill="#C9CFD6"/><path d="M22 16 a7 7 0 1 1 14 0 a7 7 0 0 1 -14 0z" fill="none" stroke="#2F8A5B" stroke-width="3"/><path d="M26 16 h6" stroke="#2F8A5B" stroke-width="3"/>' +
+    '</svg>',
+
+  extrovert:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<circle cx="16" cy="44" r="5.58" fill="#C9CFD6"/><path d="M7.9399999999999995 65.08 v-14 a8.06 8.06 0 0 1 16.12 0 v14 z" fill="#C9CFD6"/><circle cx="32" cy="44" r="5.58" fill="#C9CFD6"/><path d="M23.939999999999998 65.08 v-14 a8.06 8.06 0 0 1 16.12 0 v14 z" fill="#C9CFD6"/><circle cx="84" cy="44" r="5.58" fill="#C9CFD6"/><path d="M75.94 65.08 v-14 a8.06 8.06 0 0 1 16.12 0 v14 z" fill="#C9CFD6"/><circle cx="56" cy="34" r="9.0" fill="#6E7B8B"/><path d="M43.0 68.0 v-14 a13.0 13.0 0 0 1 26.0 0 v14 z" fill="#6E7B8B"/><path d="M14 18 h34 v20 h-18 l-9 7 v-7 h-7z" fill="#E3A92B"/><path d="M78 24 h18 v16 h-9 l-6 6 v-6 h-3z" fill="#4C8FDC"/><path d="M44 52 l-10 6 M70 52 l10 6" stroke="#6E7B8B" stroke-width="6" stroke-linecap="round"/>' +
+    '</svg>',
+
+  stubborn:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<circle cx="58" cy="28" r="13" fill="#6E7B8B"/><path d="M36 86 v-22 a22 22 0 0 1 44 0 v22z" fill="#6E7B8B"/><path d="M38 58 h40" stroke="#4A4A55" stroke-width="5"/><path d="M40 50 l36 16 M76 50 l-36 16" stroke="#4A4A55" stroke-width="4"/><path d="M6 46 h20" stroke="#C0453A" stroke-width="8" stroke-linecap="round"/><path d="M20 36 l10 10 -10 10" fill="none" stroke="#C0453A" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 86 h84" stroke="#4A4A55" stroke-width="5"/><path d="M44 92 h28" stroke="#4A4A55" stroke-width="0"/>' +
+    '</svg>',
+
+  determined:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<path d="M6 88 l34 -52 18 26 14 -18 22 44z" fill="#8FA0B3"/><path d="M40 36 l18 26 h-36z" fill="#C9CFD6"/><path d="M78 44 v-26" stroke="#4A4A55" stroke-width="4"/><path d="M78 18 h20 l-6 8 6 8 h-20z" fill="#C0453A"/><circle cx="34" cy="52" r="5.58" fill="#6E7B8B"/><path d="M25.939999999999998 73.08 v-14 a8.06 8.06 0 0 1 16.12 0 v14 z" fill="#6E7B8B"/><path d="M44 58 q10 -8 18 -16" stroke="#2F8A5B" stroke-width="5" stroke-dasharray="6 5" fill="none"/>' +
+    '</svg>',
+
+  sensitive:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<circle cx="44" cy="40" r="22" fill="#6E7B8B"/><path d="M22 88 v-16 a22 22 0 0 1 44 0 v16z" fill="#6E7B8B"/><circle cx="36" cy="36" r="3" fill="#fff"/><circle cx="52" cy="36" r="3" fill="#fff"/><path d="M36 50 q8 -6 16 0" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M54 42 q6 10 0 12 q-6 -2 0 -12z" fill="#4C8FDC"/><path d="M80 39.0 q-13.0 -9.0 -13.0 -17.0 a7.0 7.0 0 0 1 13.0 -4.0 a7.0 7.0 0 0 1 13.0 4.0 q0 8.0 -13.0 17.0z" fill="#D98BA8"/>' +
+    '</svg>',
+
+  reliable:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<circle cx="44" cy="46" r="28" fill="#2F8A5B"/><path d="M31.2 50 l9.600000000000001 11.200000000000001 l19.200000000000003 -24.0" fill="none" stroke="#FFFFFF" stroke-width="9.600000000000001" stroke-linecap="round" stroke-linejoin="round"/><path d="M30 74 l-6 18 20 -10 20 10 -6 -18" fill="#2F8A5B"/><circle cx="80" cy="74" r="16" fill="#E8E8EE" stroke="#4A4A55" stroke-width="3"/><path d="M80 64 v10 l7 5" stroke="#4A4A55" stroke-width="3" fill="none" stroke-linecap="round"/>' +
+    '</svg>',
+
+  ambitious:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<path d="M4 88 h20 v-18 h20 v-22 h20 v-24 h20 v64z" fill="#8FA0B3"/><path d="M78 24 v-16" stroke="#4A4A55" stroke-width="4"/><path d="M78 8 h18 l-5 7 5 7 h-18z" fill="#C0453A"/><circle cx="32" cy="52" r="5.3999999999999995" fill="#6E7B8B"/><path d="M24.2 72.4 v-14 a7.8 7.8 0 0 1 15.6 0 v14 z" fill="#6E7B8B"/><path d="M40 44 l12 -12" stroke="#2F8A5B" stroke-width="6" stroke-linecap="round"/><path d="M48 26 l10 -2 -2 10" fill="none" stroke="#2F8A5B" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '</svg>',
+
+  humble:
+    '<svg viewBox="0 0 100 100" role="img" aria-label="">' +
+      '<circle cx="30" cy="34" r="11" fill="#6E7B8B"/><path d="M14 86 v-18 a16 16 0 0 1 32 0 v18z" fill="#6E7B8B"/><circle cx="76" cy="28" r="7.6499999999999995" fill="#8B97A6"/><path d="M64.95 56.9 v-14 a11.049999999999999 11.049999999999999 0 0 1 22.099999999999998 0 v14 z" fill="#8B97A6"/><path d="M62 48 l10 -6 10 6 -4 14 h-12z" fill="#E3A92B"/><rect x="68" y="62" width="10" height="6" rx="2" fill="#E3A92B"/><path d="M44 56 q10 -4 16 -6" stroke="#6E7B8B" stroke-width="6" fill="none" stroke-linecap="round"/><path d="M40 44 q10 -8 20 -4" stroke="#2F8A5B" stroke-width="4" fill="none" stroke-dasharray="4 4"/><path d="M52 36 l10 -2 -1 9" fill="none" stroke="#2F8A5B" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '</svg>'
 };
 
 /* =====================================================================
@@ -827,6 +928,67 @@ window.QUIZZES = [
       { icon:'share',     w:'share',     opts:['keep','hide','buy'] },
       { icon:'hang_out',  w:'hang out',  opts:['study','work','clean'] },
       { e:'🏁',           w:'finish',    opts:['start','wait','rest'] }
+    ]
+  }
+,
+
+  {
+    id: 'dp-strengths-pics',
+    title: 'My Strengths, in Pictures',
+    tag: 'Unit 2, Lesson 3',
+    group: 'Describing people',
+    emoji: '💪',
+    items: [
+      { icon:'honest',        w:'honest',        opts:['funny','tired','hungry'] },
+      { icon:'responsible',   w:'responsible',   opts:['late','lazy','loud'] },
+      { icon:'kind',          w:'kind',          opts:['angry','busy','loud'] },
+      { icon:'helpful',       w:'helpful',       opts:['shy','sleepy','angry'] },
+      { icon:'imaginative',   w:'imaginative',   opts:['sleepy','hungry','late'] },
+      { icon:'collaborative', w:'collaborative', opts:['quiet','hungry','early'] },
+      { icon:'creative',      w:'creative',      opts:['strong','late','cold'] },
+      { icon:'studious',      w:'studious',      opts:['athletic','hungry','noisy'] },
+      { e:'🔍',               w:'curious',       opts:['sleepy','hungry','calm'] },
+      { e:'🦁',               w:'brave',         opts:['shy','sleepy','sad'] }
+    ]
+  },
+
+  {
+    id: 'dp-traits-3',
+    title: 'Personality Words',
+    tag: 'Describing yourself',
+    group: 'Describing people',
+    emoji: '🧗',
+    items: [
+      { icon:'confident',   w:'confident',   opts:['nervous','shy','quiet'] },
+      { icon:'patient',     w:'patient',     opts:['fast','angry','busy'] },
+      { icon:'optimistic',  w:'optimistic',  opts:['pessimistic','angry','bored'] },
+      { icon:'pessimistic', w:'pessimistic', opts:['optimistic','excited','proud'] },
+      { icon:'introvert',   w:'introvert',   opts:['extrovert','athletic','funny'] },
+      { icon:'extrovert',   w:'extrovert',   opts:['introvert','quiet','shy'] },
+      { icon:'stubborn',    w:'stubborn',    opts:['helpful','friendly','gentle'] },
+      { icon:'determined',  w:'determined',  opts:['lazy','tired','confused'] },
+      { icon:'reliable',    w:'reliable',    opts:['late','careless','rude'] },
+      { icon:'ambitious',   w:'ambitious',   opts:['lazy','sleepy','calm'] }
+    ]
+  },
+
+  {
+    id: 'dp-traits-4',
+    title: 'More Personality Words',
+    tag: 'Describing yourself',
+    group: 'Describing people',
+    emoji: '💙',
+    items: [
+      { icon:'humble',    w:'humble',    opts:['proud','loud','selfish'] },
+      { icon:'sensitive', w:'sensitive', opts:['tough','angry','bored'] },
+      { e:'🎁',           w:'generous',  opts:['selfish','quiet','busy'] },
+      { icon:'honest',    w:'honest',    opts:['shy','lazy','strange'] },
+      { icon:'patient',   w:'patient',   opts:['nervous','loud','hungry'] },
+      { icon:'reliable',  w:'reliable',  opts:['funny','sleepy','messy'] },
+      { icon:'confident', w:'confident', opts:['afraid','tired','sad'] },
+      { icon:'determined',w:'determined',opts:['bored','weak','quiet'] },
+      { e:'🤝',           w:'friendly',  opts:['mean','shy','serious'] },
+      { e:'🤣',           w:'funny',     opts:['serious','strict','tired'] }
     ]
   }
 ];
