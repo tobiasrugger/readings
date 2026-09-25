@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Words &middot; Mr. Toby</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --plum:#5a4a8a; --plum-dk:#3d3160; --plum-dp:#2b2244; --plum-lt:#eae7f5; --plum-mid:#8d7fc0;
+  --paper:#efebf7; --card:#fff; --field:#f6f4fb;
+  --ink:#231d35; --muted:#5d5575; --line:#d5cceb; --line-dk:#bdb0dd;
+  --green:#1f7a4d; --green-bg:#e0f2e8; --orange:#c25400; --orange-bg:#fde8d4;
+  --red:#b5304a; --red-bg:#fbe4e9; --gold:#e3a92b;
+  --r:14px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:Nunito,system-ui,sans-serif;font-size:17px;line-height:1.5}
+.hide{display:none!important}
+button{font:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+
+/* ---- top bar ---- */
+.top{background:var(--plum-dk);color:#fff;border-bottom:4px solid var(--plum-dp)}
+.top .in{max-width:980px;margin:0 auto;padding:12px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.top h1{margin:0;font-size:1.35rem;font-weight:900}
+.top .sub{font-size:.88rem;opacity:.85;font-weight:700}
+.top .grow{flex:1;min-width:170px}
+.top select{font:inherit;font-size:.9rem;padding:7px 10px;border-radius:10px;border:2px solid rgba(255,255,255,.5);background:rgba(255,255,255,.12);color:#fff}
+.top select option{color:var(--ink)}
+.top a{color:#fff;font-weight:800;font-size:.88rem}
+.wrap{max-width:980px;margin:0 auto;padding:16px 16px 70px}
+
+/* ---- cards / buttons / fields ---- */
+.card{background:var(--card);border:1.5px solid var(--line);border-radius:var(--r);padding:20px;margin-bottom:16px;box-shadow:0 2px 0 var(--line)}
+.btn{background:var(--plum);color:#fff;border:0;border-bottom:3px solid var(--plum-dp);border-radius:11px;padding:11px 18px;font-weight:800}
+.btn:hover{background:var(--plum-dk)}
+.btn:active{transform:translateY(2px);border-bottom-width:1px}
+.btn.ghost{background:#fff;color:var(--plum-dk);border:2px solid var(--plum);border-bottom-width:3px}
+.btn.ghost:hover{background:var(--plum-lt)}
+.btn.sm{padding:6px 12px;font-size:.88rem;border-radius:9px}
+.btn:disabled{opacity:.45;cursor:default}
+label{display:block;font-weight:800;font-size:.9rem;color:var(--plum-dk);margin:0 0 5px}
+input,.gate select{font:inherit;padding:11px 12px;border:2px solid var(--line-dk);border-radius:11px;width:100%;background:var(--field);color:var(--ink)}
+.field{margin-bottom:14px}
+.err{color:var(--red);font-weight:800}
+.note{color:var(--muted);font-size:.92rem}
+.lead{font-weight:700;color:var(--plum-dk);margin:0 0 14px}
+
+/* ---- word strip: one bead per word, fills as they practice ---- */
+.strip{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.bead{display:flex;align-items:center;gap:7px;background:#fff;border:1.5px solid var(--line-dk);border-radius:999px;padding:4px 12px 4px 5px;font-weight:800;font-size:.9rem}
+.ring{width:24px;height:24px;border-radius:50%;background:conic-gradient(var(--plum) calc(var(--p)*1%),var(--plum-lt) 0);display:grid;place-items:center}
+.ring::after{content:'';width:14px;height:14px;border-radius:50%;background:#fff}
+.bead.got{background:var(--green-bg);border-color:var(--green);color:var(--green)}
+.bead.got .ring{background:var(--green)}
+.bead.got .ring::after{content:'\2713';background:none;color:#fff;font-size:.8rem;width:auto;height:auto}
+
+/* ---- tabs ---- */
+nav.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+nav.tabs button{background:#fff;border:2px solid var(--line-dk);border-radius:11px;padding:8px 14px;font-weight:800;color:var(--plum-dk)}
+nav.tabs button[aria-selected="true"]{background:var(--plum);border-color:var(--plum-dp);color:#fff}
+.pane{display:none}.pane.on{display:block}
+
+/* ---- pictures ---- */
+.mw-pic{display:grid;place-items:center}
+.mw-emoji{font-size:64px;line-height:1.1}
+.mw-svg svg{width:84px;height:84px}
+.mw-sentpic{font-size:1rem;font-weight:700;line-height:1.35;text-align:center;padding:6px;color:var(--ink)}
+.mw-blank{display:inline-block;min-width:3.2em;border-bottom:3px solid var(--plum)}
+
+/* ---- learn cards ---- */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.lc{background:#fff;border:1.5px solid var(--line);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:8px;text-align:center}
+.lc .mw-pic{min-height:96px}
+.lc .w{font-size:1.4rem;font-weight:900;color:var(--plum-dk)}
+.lc .tr{min-height:1.4em;font-weight:700;color:var(--muted)}
+.lc .sent{font-size:.92rem;background:var(--field);border-radius:10px;padding:7px 9px;text-align:left}
+.lc .sent b{color:var(--plum)}
+.row{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+
+/* ---- one-at-a-time stage ---- */
+.stage{max-width:560px;margin:0 auto;text-align:center}
+.stage .mw-pic{min-height:120px;margin-bottom:6px}
+.stage .mw-emoji{font-size:92px}
+.stage .mw-svg svg{width:120px;height:120px}
+.stage .big{font-size:2rem;font-weight:900;color:var(--plum-dk);margin:4px 0}
+.count{font-weight:800;color:var(--muted);font-size:.88rem;margin-bottom:8px}
+.fb{min-height:1.6em;font-weight:900;margin:10px 0}
+.fb.ok{color:var(--green)} .fb.no{color:var(--red)}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.choice{background:#fff;border:2px solid var(--line-dk);border-radius:12px;padding:12px;font-weight:800;min-height:64px}
+.choice:hover{border-color:var(--plum)}
+.choice.ok{background:var(--green-bg);border-color:var(--green)}
+.choice.no{background:var(--red-bg);border-color:var(--red)}
+.choice .mw-emoji{font-size:48px}
+.choice .mw-svg svg{width:60px;height:60px}
+.choice .mw-sentpic{font-size:.88rem}
+.spell-in{font-size:1.4rem;text-align:center;font-weight:800;max-width:360px;margin:10px auto;display:block}
+.hint{letter-spacing:.35em;font-weight:900;color:var(--plum-mid);font-size:1.2rem}
+
+/* ---- match ---- */
+.match{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.col{display:flex;flex-direction:column;gap:8px}
+.tile{background:#fff;border:2px solid var(--line-dk);border-radius:12px;padding:8px;min-height:62px;font-weight:800;display:grid;place-items:center}
+.tile .mw-emoji{font-size:40px}
+.tile .mw-svg svg{width:50px;height:50px}
+.tile .mw-sentpic{font-size:.84rem}
+.tile.sel{border-color:var(--plum);box-shadow:0 0 0 4px rgba(90,74,138,.2)}
+.tile.done{background:var(--green-bg);border-color:var(--green);opacity:.7;cursor:default}
+.tile.bad{animation:shake .3s}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+
+/* ---- use it: sentence + build ---- */
+.sentence{font-size:1.3rem;font-weight:800;margin:10px 0;line-height:1.5}
+.sentence .gap{display:inline-block;min-width:4em;border-bottom:3px solid var(--plum);color:var(--plum)}
+.tray{min-height:58px;border:2px dashed var(--line-dk);border-radius:12px;padding:8px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:8px 0}
+.chip{background:#fff;border:2px solid var(--plum-mid);border-radius:10px;padding:6px 11px;font-weight:800}
+.chip.used{visibility:hidden}
+.focus{display:inline-block;background:var(--plum-lt);color:var(--plum-dk);border-radius:999px;padding:3px 12px;font-weight:800;font-size:.85rem}
+
+/* ---- say it ---- */
+.rec{background:var(--red);border-bottom-color:#7d1f31}
+.rec.on{animation:pulse 1s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 8px rgba(181,48,74,.25)}}
+.heard{font-weight:800;color:var(--muted);min-height:1.4em}
+
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(140px);opacity:0;visibility:hidden;background:var(--green);color:#fff;font-weight:900;padding:12px 20px;border-radius:14px;transition:transform .35s cubic-bezier(.2,1.3,.4,1);z-index:30}
+.toast.on{transform:translateX(-50%) translateY(0);opacity:1;visibility:visible}
+.saving{font-size:.8rem;opacity:.8}
+@media(max-width:560px){.choices{grid-template-columns:1fr 1fr}.match{gap:8px}.stage .big{font-size:1.6rem}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="in">
+    <div class="grow">
+      <h1>My Words</h1>
+      <div class="sub" id="sub" translate="no">Practice the words you don't know yet</div>
+    </div>
+    <select id="lang" aria-label="My language"></select>
+    <span class="saving" id="saveState"></span>
+    <a href="/readings/student/">My Page</a>
+    <a href="#" id="notMe" class="hide">Not me</a>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ============ SIGN IN ============ -->
+  <div class="card gate hide" id="gate" style="max-width:480px;margin:20px auto">
+    <h2 style="margin-top:0;color:var(--plum-dk)">Sign in</h2>
+    <p class="note" translate="yes">Use the same email you used for the vocabulary check.</p>
+    <div class="field"><label for="gName">Name</label><input id="gName" autocomplete="name"></div>
+    <div class="field"><label for="gMail">School email</label><input id="gMail" placeholder="name@s.sfusd.edu" autocapitalize="off" spellcheck="false"></div>
+    <div class="field"><label for="gPer">Period</label>
+      <select id="gPer"><option value="">Choose</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select></div>
+    <button class="btn" id="gBtn">Start practice</button>
+    <p class="err" id="gErr"></p>
+  </div>
+
+  <!-- ============ NOTHING TO PRACTICE ============ -->
+  <div class="card hide" id="empty"></div>
+
+  <!-- ============ PRACTICE ============ -->
+  <div id="app" class="hide">
+    <div class="strip" id="strip" translate="no"></div>
+    <nav class="tabs" id="tabs" role="tablist"></nav>
+
+    <section class="pane card" id="p-learn">
+      <p class="lead" translate="yes" data-en="Look, listen, and read. Tap a card to hear the word.">Look, listen, and read. Tap a card to hear the word.</p>
+      <div class="grid" id="learnGrid" translate="no"></div>
+    </section>
+
+    <section class="pane card" id="p-say">
+      <p class="lead" translate="yes">Listen. Then press Record and say the word.</p>
+      <div class="stage" id="sayStage" translate="no"></div>
+    </section>
+
+    <section class="pane card" id="p-match">
+      <p class="lead" translate="yes">Tap a picture. Then tap its word.</p>
+      <div class="match" id="matchBox" translate="no"></div>
+      <p style="text-align:center;margin-top:14px"><button class="btn ghost sm" id="matchAgain">Mix them up again</button></p>
+    </section>
+
+    <section class="pane card" id="p-listen">
+      <p class="lead" translate="yes">Listen to the word. Choose the right picture.</p>
+      <div class="stage" id="listenStage" translate="no"></div>
+    </section>
+
+    <section class="pane card" id="p-spell">
+      <p class="lead" translate="yes">Listen, then type the word.</p>
+      <div class="stage" id="spellStage" translate="no"></div>
+    </section>
+
+    <section class="pane card" id="p-use">
+      <p class="lead" translate="yes">Choose the word for the sentence. Then build the sentence.</p>
+      <div class="stage" id="useStage" translate="no"></div>
+    </section>
+
+    <p style="text-align:center" id="moreBox"></p>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* load the newest quiz list without a stale copy from the browser cache */
+document.write('<script src="/readings/vocab/pre/quizzes.js?v=' + Math.floor(Date.now() / 3600000) + '"><\/script>');
+</script>
+<script src="words.js"></script>
+<script>
+(function(){
+var MW = window.MW, esc = MW.esc;
+function $(id){ return document.getElementById(id); }
+function shuffle(a){ a = a.slice(); for (var i = a.length - 1; i > 0; i--){ var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+
+var qs = new URLSearchParams(location.search);
+var ONLY = qs.get('q') || '';              /* one check only */
+var ALL  = qs.get('all') === '1';          /* every word in that check, not just the missed ones */
+var SESSION_MAX = 10;
+
+var ME = { email:'', name:'', period:'' };
+var POOL = [];     /* every word they could practice here */
+var WORDS = [];    /* the 10 (or fewer) on screen now */
+var PR = {};       /* practice record: quiz|word -> row */
+var DIRTY = {};
+var LANG = '';
+
+/* ================= language ================= */
+LANG = MW.getLang('');
+$('lang').innerHTML = MW.langOptions(LANG);
+$('lang').addEventListener('change', function(){ LANG = this.value; MW.setLang(LANG); fillTranslations(); });
+
+/* ================= sign in ================= */
+var EMAIL_RE = /^[^@\s]+@(s\.)?sfusd\.edu$/;
+function canonicalEmail(typed){
+  var lp = MW.local(typed), a = lp + '@s.sfusd.edu', b = lp + '@sfusd.edu';
+  return MW.sb('students?select=email&email=in.(' + encodeURIComponent('"' + a + '","' + b + '"') + ')').then(function(rows){
+    if (rows && rows.length) return rows.some(function(r){ return r.email === a; }) ? a : rows[0].email;
+    return a;
+  });
+}
+$('gBtn').addEventListener('click', function(){
+  var name = $('gName').value.trim(), typed = $('gMail').value.trim().toLowerCase(), per = $('gPer').value;
+  if (!name){ $('gErr').textContent = 'Write your name.'; return; }
+  if (!EMAIL_RE.test(typed)){ $('gErr').textContent = 'Use your school email. It ends with @s.sfusd.edu'; return; }
+  if (!per){ $('gErr').textContent = 'Choose your period.'; return; }
+  $('gErr').textContent = ''; this.disabled = true;
+  var btn = this;
+  canonicalEmail(typed).then(function(email){
+    ME = { email:email, name:name, period:per };
+    try {
+      localStorage.setItem('gal_student_email', email);
+      localStorage.setItem('gal_student_name', name);
+      localStorage.setItem('gal_student_period', per);
+    } catch(e){}
+    MW.sb('students?on_conflict=email', { method:'POST', prefer:'resolution=ignore-duplicates,return=minimal', body:[{ email:email, name:name, period:per }] });
+    if (typed !== email) MW.sb('student_aliases?on_conflict=alias_email', { method:'POST', prefer:'resolution=ignore-duplicates,return=minimal', body:[{ alias_email:typed, email:email }] });
+    $('gate').classList.add('hide');
+    start();
+  }).finally(function(){ btn.disabled = false; });
+});
+$('notMe').addEventListener('click', function(e){
+  e.preventDefault();
+  try { localStorage.removeItem('gal_student_email'); } catch(err){}
+  location.reload();
+});
+
+(function boot(){
+  var saved = '';
+  try {
+    saved = localStorage.getItem('gal_student_email') || '';
+    ME.name = localStorage.getItem('gal_student_name') || '';
+    ME.period = localStorage.getItem('gal_student_period') || '';
+  } catch(e){}
+  if (qs.get('email')) saved = qs.get('email').toLowerCase();
+  if (saved && saved.indexOf('@') > 0){ ME.email = saved; start(); }
+  else { $('gate').classList.remove('hide'); $('gName').value = ME.name; }
+})();
+
+/* ================= load their words ================= */
+function start(){
+  $('notMe').classList.remove('hide');
+  Promise.all([MW.loadChecks(ME.email), MW.loadPractice(ME.email),
+               MW.sb('students?' + MW.inEmails(ME.email) + '&select=home_language&limit=1')])
+  .then(function(res){
+    var checks = res[0] || [], practice = res[1] || [], stu = (res[2] || [])[0];
+    if (!LANG && stu && stu.home_language){ LANG = MW.langFromHome(stu.home_language); $('lang').value = LANG; }
+    practice.forEach(function(p){
+      var k = p.quiz + '|' + p.word, o = PR[k];
+      if (!o) PR[k] = { quiz:p.quiz, word:p.word, correct:p.correct || 0, wrong:p.wrong || 0, modes:p.modes || [], learned:!!p.learned };
+      else { o.correct += p.correct || 0; o.wrong += p.wrong || 0; o.learned = o.learned || !!p.learned;
+             (p.modes || []).forEach(function(m){ if (o.modes.indexOf(m) < 0) o.modes.push(m); }); }
+    });
+    var state = MW.buildState(checks, practice);
+
+    if (ONLY && ALL){
+      var q = MW.quiz(ONLY);
+      POOL = q ? q.items.map(function(it){ return MW.entry(ONLY, it.w); }) : [];
+    } else {
+      state.quizzes.forEach(function(q){
+        if (ONLY && q.id !== ONLY) return;
+        q.learn.forEach(function(en){ POOL.push(en); });
+      });
+    }
+    /* words not learned yet go first; learned ones stay at the back for review */
+    POOL.sort(function(a, b){ return (isGot(a) ? 1 : 0) - (isGot(b) ? 1 : 0); });
+
+    var qz = ONLY ? MW.quiz(ONLY) : null;
+    $('sub').textContent = qz ? qz.title + (ALL ? ': all words' : ': my words') : 'All my words from vocabulary checks';
+
+    if (!POOL.length) return showEmpty(state, qz);
+    pickSession(0);
+  });
+}
+
+function showEmpty(state, qz){
+  var h;
+  if (qz && state.quizzes.some(function(q){ return q.id === qz.id; })){
+    h = '<h2 style="margin-top:0;color:var(--green)">You knew every word in ' + esc(qz.title) + '!</h2>'
+      + '<p><a class="btn" href="?q=' + encodeURIComponent(qz.id) + '&all=1">Practice all ' + qz.items.length + ' words anyway</a></p>';
+  } else if (qz){
+    h = '<h2 style="margin-top:0">First, take the check</h2><p class="note" translate="yes">Take the vocabulary check first. Then your practice words show up here.</p>'
+      + '<p><a class="btn" href="' + MW.CHECK_URL + '?q=' + encodeURIComponent(qz.id) + '">Take the ' + esc(qz.title) + ' check</a></p>';
+  } else if (state.quizzes.length){
+    h = '<h2 style="margin-top:0;color:var(--green)">You know all the words from your checks!</h2>'
+      + '<p><a class="btn" href="' + MW.CHECK_URL + '">Take another vocabulary check</a></p>';
+  } else {
+    h = '<h2 style="margin-top:0">No vocabulary checks yet</h2><p class="note" translate="yes">Take a vocabulary check. The words you don\'t know yet will show up here to practice.</p>'
+      + '<p><a class="btn" href="' + MW.CHECK_URL + '">Take a vocabulary check</a></p>';
+  }
+  $('empty').innerHTML = h + '<p class="note">Signed in as <b translate="no">' + esc(ME.email) + '</b></p>';
+  $('empty').classList.remove('hide');
+}
+
+var OFFSET = 0;
+function pickSession(off){
+  OFFSET = off;
+  WORDS = POOL.slice(off, off + SESSION_MAX);
+  $('app').classList.remove('hide');
+  var more = POOL.length - (off + SESSION_MAX);
+  $('moreBox').innerHTML = POOL.length > SESSION_MAX
+    ? '<button class="btn ghost" id="nextSet">' + (more > 0 ? 'Next words (' + Math.min(more, SESSION_MAX) + ' more)' : 'Back to the first words') + '</button>'
+    : '';
+  if ($('nextSet')) $('nextSet').onclick = function(){ pickSession(more > 0 ? off + SESSION_MAX : 0); window.scrollTo(0, 0); };
+  renderStrip(); buildLearn(); buildSay(); buildMatch(); buildListen(); buildSpell(); buildUse();
+}
+
+/* ================= practice record ================= */
+function key(en){ return en.quiz + '|' + en.w; }
+function rec(en){
+  var k = key(en);
+  if (!PR[k]) PR[k] = { quiz:en.quiz, word:en.w, correct:0, wrong:0, modes:[], learned:false };
+  return PR[k];
+}
+function isGot(en){ var p = PR[key(en)]; return !!(p && p.learned); }
+function mark(en, mode, ok){
+  var p = rec(en), was = p.learned;
+  if (ok){ p.correct++; if (p.modes.indexOf(mode) < 0) p.modes.push(mode); }
+  else p.wrong++;
+  p.learned = p.learned || MW.isLearned(p);
+  DIRTY[key(en)] = 1;
+  if (p.learned && !was) toast('Got it: ' + en.w);
+  renderStrip();
+}
+function modeOnly(en, mode){  /* counts the activity, not a right answer */
+  var p = rec(en);
+  if (p.modes.indexOf(mode) < 0){ p.modes.push(mode); DIRTY[key(en)] = 1; }
+}
+setInterval(save, 3000);
+window.addEventListener('pagehide', save);
+function save(){
+  var keys = Object.keys(DIRTY); if (!keys.length || !ME.email) return;
+  DIRTY = {};
+  var rows = keys.map(function(k){
+    var p = PR[k];
+    return { email:ME.email, quiz:p.quiz, word:p.word, correct:p.correct, wrong:p.wrong,
+             modes:p.modes, learned:p.learned, updated_at:new Date().toISOString() };
+  });
+  $('saveState').textContent = 'Saving\u2026';
+  MW.sb('vocab_word_practice?on_conflict=email,quiz,word', { method:'POST', prefer:'resolution=merge-duplicates,return=minimal', body:rows })
+    .then(function(r){
+      if (r === null){ keys.forEach(function(k){ DIRTY[k] = 1; }); $('saveState').textContent = 'Not saved'; }
+      else $('saveState').textContent = 'Saved';
+    });
+}
+function toast(t){
+  var el = $('toast'); el.textContent = t; el.classList.add('on');
+  clearTimeout(toast.t); toast.t = setTimeout(function(){ el.classList.remove('on'); }, 2200);
+}
+
+function renderStrip(){
+  $('strip').innerHTML = WORDS.map(function(en){
+    var p = PR[key(en)] || {}, got = !!p.learned;
+    var pct = got ? 100 : Math.min(95, Math.round(100 * (p.correct || 0) / MW.LEARN_CORRECT));
+    return '<span class="bead' + (got ? ' got' : '') + '" title="' + (got ? 'Learned' : 'Practicing') + '"><span class="ring" style="--p:' + pct + '"></span>' + esc(en.w) + '</span>';
+  }).join('');
+}
+
+/* ================= tabs ================= */
+var PANES = [['p-learn','Learn'],['p-say','Say it'],['p-match','Match'],['p-listen','Listen'],['p-spell','Spell'],['p-use','Use it']];
+(function(){
+  var nav = $('tabs');
+  PANES.forEach(function(p, i){
+    var b = document.createElement('button');
+    b.textContent = p[1]; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
+    b.addEventListener('click', function(){
+      PANES.forEach(function(q){ $(q[0]).classList.remove('on'); });
+      Array.prototype.forEach.call(nav.children, function(c){ c.setAttribute('aria-selected', 'false'); });
+      $(p[0]).classList.add('on'); b.setAttribute('aria-selected', 'true');
+      if (p[0] === 'p-listen') playListen();
+    });
+    nav.appendChild(b);
+  });
+  $('p-learn').classList.add('on');
+})();
+
+function hearBtns(txt){
+  return '<button class="btn sm" data-say="' + esc(txt) + '">Hear it</button> '
+       + '<button class="btn ghost sm" data-say="' + esc(txt) + '" data-slow="1">Slow</button>';
+}
+document.addEventListener('click', function(e){
+  var b = e.target.closest('[data-say]'); if (!b) return;
+  e.stopPropagation(); MW.speak(b.getAttribute('data-say'), !!b.getAttribute('data-slow'));
+});
+function filled(en){ return en.sent ? en.sent.replace('___', en.w) : ''; }
+
+/* ================= LEARN ================= */
+function buildLearn(){
+  $('learnGrid').innerHTML = WORDS.map(function(en, i){
+    var s = en.sent ? esc(en.sent).replace('___', '<b>' + esc(en.w) + '</b>') : '';
+    return '<div class="lc" data-i="' + i + '">' + (en.s ? '' : MW.pic(en))
+      + '<div class="w">' + esc(en.w) + '</div>'
+      + '<div class="tr" data-tr="' + esc(en.w) + '"></div>'
+      + '<div class="row">' + hearBtns(en.w) + '</div>'
+      + (s ? '<div class="sent">' + s + ' <button class="btn ghost sm" data-say="' + esc(filled(en)) + '">Hear</button></div>' : '')
+      + '</div>';
+  }).join('');
+  Array.prototype.forEach.call($('learnGrid').querySelectorAll('.lc'), function(c){
+    c.addEventListener('click', function(){ MW.speak(WORDS[+c.getAttribute('data-i')].w); });
+  });
+  fillTranslations();
+}
+function fillTranslations(){
+  var els = document.querySelectorAll('[data-tr]');
+  Array.prototype.forEach.call(els, function(el){ el.textContent = LANG ? '\u2026' : ''; el.removeAttribute('dir'); });
+  if (!LANG) return;
+  var words = WORDS.map(function(en){ return en.w; });
+  MW.translateMany(words, LANG, function(w, t){
+    Array.prototype.forEach.call(document.querySelectorAll('[data-tr]'), function(el){
+      if (el.getAttribute('data-tr') !== w) return;
+      el.textContent = t || '';
+      if (MW.RTL[LANG]) el.setAttribute('dir', 'rtl');
+    });
+  });
+}
+
+/* ================= SAY IT ================= */
+var SAY_I = 0, MEDIA = null, CHUNKS = [], SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+function buildSay(){ SAY_I = 0; renderSay(); }
+function renderSay(){
+  var en = WORDS[SAY_I];
+  $('sayStage').innerHTML = '<div class="count">' + (SAY_I + 1) + ' of ' + WORDS.length + '</div>' + MW.pic(en)
+    + '<div class="big">' + esc(en.w) + '</div><div class="tr" data-tr="' + esc(en.w) + '" style="font-weight:700;color:var(--muted)"></div>'
+    + '<div class="row" style="margin:10px 0">' + hearBtns(en.w) + '</div>'
+    + '<div class="row"><button class="btn rec" id="recBtn">Record</button> <button class="btn ghost hide" id="playMine">My voice</button></div>'
+    + '<div class="heard" id="heard"></div>'
+    + '<div class="row hide" id="selfCheck"><button class="btn sm" id="saidIt">I said it</button></div>'
+    + '<div class="row" style="margin-top:12px"><button class="btn ghost sm" id="sayPrev"' + (SAY_I ? '' : ' disabled') + '>Back</button> <button class="btn ghost sm" id="sayNext">Next word</button></div>';
+  fillTranslations();
+  $('sayPrev').onclick = function(){ SAY_I = Math.max(0, SAY_I - 1); renderSay(); };
+  $('sayNext').onclick = function(){ SAY_I = (SAY_I + 1) % WORDS.length; renderSay(); };
+  $('recBtn').onclick = function(){ record(en); };
+  $('saidIt').onclick = function(){ modeOnly(en, 'say'); $('heard').textContent = 'Nice. Try the next word.'; this.disabled = true; };
+}
+function record(en){
+  var btn = $('recBtn');
+  if (MEDIA && MEDIA.state === 'recording'){ MEDIA.stop(); return; }
+  if (!navigator.mediaDevices || !window.MediaRecorder){ $('heard').textContent = 'This computer cannot record. Say the word out loud.'; $('selfCheck').classList.remove('hide'); return; }
+  navigator.mediaDevices.getUserMedia({ audio:true }).then(function(stream){
+    CHUNKS = []; MEDIA = new MediaRecorder(stream);
+    MEDIA.ondataavailable = function(e){ if (e.data.size) CHUNKS.push(e.data); };
+    MEDIA.onstop = function(){
+      stream.getTracks().forEach(function(t){ t.stop(); });
+      btn.classList.remove('on'); btn.textContent = 'Record again';
+      var url = URL.createObjectURL(new Blob(CHUNKS, { type:MEDIA.mimeType || 'audio/webm' }));
+      var pm = $('playMine'); pm.classList.remove('hide'); pm.onclick = function(){ new Audio(url).play(); };
+      if (!SR) $('selfCheck').classList.remove('hide');
+    };
+    MEDIA.start(); btn.classList.add('on'); btn.textContent = 'Stop';
+    $('heard').textContent = 'Listening\u2026';
+    if (SR) listenFor(en);
+    setTimeout(function(){ if (MEDIA && MEDIA.state === 'recording') MEDIA.stop(); }, 5000);
+  }).catch(function(){ $('heard').textContent = 'Allow the microphone to record. Or say it out loud.'; $('selfCheck').classList.remove('hide'); });
+}
+function listenFor(en){
+  try {
+    var r = new SR(); r.lang = 'en-US'; r.maxAlternatives = 5; r.interimResults = false;
+    r.onresult = function(ev){
+      var alts = [], i; for (i = 0; i < ev.results[0].length; i++) alts.push(MW.norm(ev.results[0][i].transcript));
+      var target = MW.norm(en.w), ok = alts.some(function(a){ return a === target || (' ' + a + ' ').indexOf(' ' + target + ' ') > -1; });
+      $('heard').innerHTML = ok ? '<span style="color:var(--green)">I heard: ' + esc(alts[0]) + '. Great!</span>'
+        : 'I heard: <b>' + esc(alts[0] || '?') + '</b>. Listen again and try one more time.';
+      if (ok) mark(en, 'say', true); else modeOnly(en, 'say');
+      if (MEDIA && MEDIA.state === 'recording') MEDIA.stop();
+    };
+    r.onerror = function(){ $('selfCheck').classList.remove('hide'); };
+    r.onnomatch = function(){ $('heard').textContent = 'I did not hear the word. Try again.'; };
+    r.start();
+  } catch(e){ $('selfCheck').classList.remove('hide'); }
+}
+
+/* ================= MATCH ================= */
+var M_SEL = null;
+function buildMatch(){
+  var set = WORDS.slice(0, 8);
+  var pics = shuffle(set), words = shuffle(set);
+  $('matchBox').innerHTML = '<div class="col">' + pics.map(function(en){
+      return '<button class="tile" data-k="' + esc(key(en)) + '" data-side="pic">' + MW.pic(en) + '</button>'; }).join('') + '</div>'
+    + '<div class="col">' + words.map(function(en){
+      return '<button class="tile" data-k="' + esc(key(en)) + '" data-side="word">' + esc(en.w) + '</button>'; }).join('') + '</div>';
+  M_SEL = null;
+  Array.prototype.forEach.call($('matchBox').querySelectorAll('.tile'), function(t){
+    t.addEventListener('click', function(){
+      if (t.classList.contains('done')) return;
+      if (t.getAttribute('data-side') === 'word') MW.speak(t.textContent);
+      if (!M_SEL || M_SEL.getAttribute('data-side') === t.getAttribute('data-side')){
+        if (M_SEL) M_SEL.classList.remove('sel');
+        M_SEL = t; t.classList.add('sel'); return;
+      }
+      var a = M_SEL, en = WORDS.filter(function(x){ return key(x) === a.getAttribute('data-k'); })[0];
+      var picSide = a.getAttribute('data-side') === 'pic' ? a : t;
+      var picEn = WORDS.filter(function(x){ return key(x) === picSide.getAttribute('data-k'); })[0];
+      if (a.getAttribute('data-k') === t.getAttribute('data-k')){
+        a.classList.remove('sel'); a.classList.add('done'); t.classList.add('done'); a.disabled = t.disabled = true;
+        mark(en, 'match', true);
+      } else {
+        a.classList.remove('sel'); t.classList.add('bad'); setTimeout(function(){ t.classList.remove('bad'); }, 320);
+        mark(picEn, 'match', false);
+      }
+      M_SEL = null;
+    });
+  });
+}
+$('matchAgain').addEventListener('click', buildMatch);
+
+/* ================= LISTEN (hear it, pick the picture) ================= */
+var L_Q = [], L_I = 0;
+function distractors(en, n){
+  /* other words from this session first, then the same check's other words */
+  var pool = WORDS.filter(function(x){ return key(x) !== key(en); });
+  var q = MW.quiz(en.quiz);
+  if (pool.length < n && q) q.items.forEach(function(it){
+    if (it.w !== en.w && !pool.some(function(p){ return p.w === it.w; })) pool.push(MW.entry(en.quiz, it.w));
+  });
+  return shuffle(pool).slice(0, n);
+}
+function buildListen(){ L_Q = shuffle(WORDS); L_I = 0; renderListen(); }
+function renderListen(){
+  if (L_I >= L_Q.length){
+    $('listenStage').innerHTML = '<div class="big">Done!</div><button class="btn" id="lAgain">Do it again</button>';
+    $('lAgain').onclick = function(){ buildListen(); playListen(); }; return;
+  }
+  var en = L_Q[L_I], opts = shuffle([en].concat(distractors(en, 3)));
+  $('listenStage').innerHTML = '<div class="count">' + (L_I + 1) + ' of ' + L_Q.length + '</div>'
+    + '<div class="row">' + hearBtns(en.w) + '</div>'
+    + '<div class="choices">' + opts.map(function(o){ return '<button class="choice" data-w="' + esc(o.w) + '">' + MW.pic(o) + '</button>'; }).join('') + '</div>'
+    + '<div class="fb" id="lFb"></div>';
+  var tried = false;
+  Array.prototype.forEach.call($('listenStage').querySelectorAll('.choice'), function(c){
+    c.addEventListener('click', function(){
+      var ok = c.getAttribute('data-w') === en.w;
+      c.classList.add(ok ? 'ok' : 'no');
+      if (!tried) mark(en, 'listen', ok);
+      tried = true;
+      if (ok){ $('lFb').className = 'fb ok'; $('lFb').textContent = en.w; setTimeout(function(){ L_I++; renderListen(); playListen(); }, 900); }
+      else { $('lFb').className = 'fb no'; $('lFb').textContent = 'Listen again.'; MW.speak(en.w, true); }
+    });
+  });
+}
+function playListen(){ var en = L_Q[L_I]; if (en && $('p-listen').classList.contains('on')) setTimeout(function(){ MW.speak(en.w); }, 250); }
+
+/* ================= SPELL ================= */
+var S_Q = [], S_I = 0;
+function buildSpell(){ S_Q = shuffle(WORDS); S_I = 0; renderSpell(); }
+function renderSpell(){
+  if (S_I >= S_Q.length){
+    $('spellStage').innerHTML = '<div class="big">Done!</div><button class="btn" id="sAgain">Do it again</button>';
+    $('sAgain').onclick = buildSpell; return;
+  }
+  var en = S_Q[S_I], tries = 0;
+  var dashes = en.w.replace(/[A-Za-z]/g, '_');
+  $('spellStage').innerHTML = '<div class="count">' + (S_I + 1) + ' of ' + S_Q.length + '</div>' + MW.pic(en)
+    + '<div class="row">' + hearBtns(en.w) + '</div>'
+    + '<div class="hint" id="sHint">' + esc(dashes) + '</div>'
+    + '<input class="spell-in" id="sIn" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Type the word">'
+    + '<div class="row"><button class="btn" id="sCheck">Check</button> <button class="btn ghost" id="sLetter">First letter</button></div>'
+    + '<div class="fb" id="sFb"></div>';
+  $('sIn').focus();
+  $('sLetter').onclick = function(){ $('sHint').textContent = en.w.charAt(0) + dashes.slice(1); };
+  function check(){
+    var ok = MW.norm($('sIn').value) === MW.norm(en.w);
+    if (tries === 0) mark(en, 'spell', ok);
+    tries++;
+    if (ok){ $('sFb').className = 'fb ok'; $('sFb').textContent = 'Yes! ' + en.w; setTimeout(function(){ S_I++; renderSpell(); }, 900); }
+    else if (tries >= 2){ $('sFb').className = 'fb no'; $('sFb').textContent = 'It is: ' + en.w + '. Type it one time.'; $('sIn').value = ''; $('sIn').focus(); MW.speak(en.w, true); }
+    else { $('sFb').className = 'fb no'; $('sFb').textContent = 'Not yet. Listen and try again.'; MW.speak(en.w, true); }
+  }
+  $('sCheck').onclick = check;
+  $('sIn').addEventListener('keydown', function(e){ if (e.key === 'Enter') check(); });
+}
+
+/* ================= USE IT (grammar: fill the gap, then build the sentence) ================= */
+var U_Q = [], U_I = 0;
+function buildUse(){ U_Q = shuffle(WORDS.filter(function(en){ return en.sent; })); U_I = 0; renderUse(); }
+function renderUse(){
+  if (!U_Q.length){ $('useStage').innerHTML = '<p class="note">No sentences for these words yet.</p>'; return; }
+  if (U_I >= U_Q.length){
+    $('useStage').innerHTML = '<div class="big">Done!</div><button class="btn" id="uAgain">Do it again</button>';
+    $('uAgain').onclick = buildUse; return;
+  }
+  var en = U_Q[U_I];
+  var wrong = shuffle((en.opts || []).filter(function(o){ return o !== en.w; })).slice(0, 2);
+  var opts = shuffle([en.w].concat(wrong));
+  var parts = esc(en.sent).split('___');
+  $('useStage').innerHTML = '<div class="count">' + (U_I + 1) + ' of ' + U_Q.length + '</div>'
+    + (en.s ? '' : MW.pic(en))
+    + '<div class="sentence">' + parts[0] + '<span class="gap" id="uGap">&nbsp;</span>' + (parts[1] || '') + '</div>'
+    + '<div class="choices" style="grid-template-columns:repeat(' + opts.length + ',1fr)">'
+    + opts.map(function(o){ return '<button class="choice" data-w="' + esc(o) + '">' + esc(o) + '</button>'; }).join('') + '</div>'
+    + '<div class="fb" id="uFb"></div><div id="uBuild"></div>';
+  var first = true;
+  Array.prototype.forEach.call($('useStage').querySelectorAll('.choice'), function(c){
+    c.addEventListener('click', function(){
+      var ok = c.getAttribute('data-w') === en.w;
+      c.classList.add(ok ? 'ok' : 'no');
+      if (!ok){ if (first) mark(en, 'use', false); first = false; $('uFb').className = 'fb no'; $('uFb').textContent = 'Read the sentence again.'; return; }
+      $('uGap').textContent = en.w; $('uFb').className = 'fb ok'; $('uFb').textContent = '';
+      MW.speak(filled(en));
+      Array.prototype.forEach.call($('useStage').querySelectorAll('.choice'), function(x){ x.disabled = true; });
+      buildSentence(en, first);
+    });
+  });
+}
+function buildSentence(en, firstTry){
+  /* build only the sentence that holds the blank: "Mia is ___." not the whole story */
+  var hit = en.sent.match(/[^.!?]*___[^.!?]*[.!?]*/), one = hit ? hit[0].trim() : en.sent;
+  var full = one.replace('___', en.w);
+  /* keep the target phrase together as one chip, so "brush my teeth" is one piece,
+     and glue end punctuation onto the chip before it */
+  var parts = one.split('___'), before = parts[0].trim(), after = (parts[1] || '').trim(), target = en.w;
+  var m = after.match(/^[.,!?]+/); if (m){ target += m[0]; after = after.slice(m[0].length).trim(); }
+  var chips = [].concat(before ? before.split(/\s+/) : [], [target], after ? after.split(/\s+/) : []);
+  chips = chips.map(function(c, i){ return i === 0 ? c.charAt(0).toUpperCase() + c.slice(1) : c; });
+  if (chips.length > 11 || chips.length < 3){ mark(en, 'use', firstTry); U_I++; setTimeout(renderUse, 1100); return; }
+  var shuffled = shuffle(chips.map(function(c, i){ return { t:c, i:i }; }));
+  if (shuffled.every(function(c, i){ return c.i === i; })) shuffled.reverse();
+  $('uBuild').innerHTML = '<p class="note" translate="yes">Now build the sentence. Tap the words in order.</p>'
+    + '<div class="tray" id="uTray"></div>'
+    + '<div class="tray" id="uBank" style="border-style:solid;background:var(--field)">' + shuffled.map(function(c, n){
+        return '<button class="chip" data-n="' + n + '">' + esc(c.t) + '</button>'; }).join('') + '</div>'
+    + '<div class="row"><button class="btn ghost sm" id="uClear">Start over</button> <button class="btn sm" id="uDone">Check</button></div>';
+  var picked = [];
+  function draw(){
+    $('uTray').innerHTML = picked.map(function(n, j){ return '<button class="chip" data-j="' + j + '">' + esc(shuffled[n].t) + '</button>'; }).join('');
+    Array.prototype.forEach.call($('uBank').children, function(b){ b.classList.toggle('used', picked.indexOf(+b.getAttribute('data-n')) > -1); });
+    Array.prototype.forEach.call($('uTray').children, function(b){ b.onclick = function(){ picked.splice(+b.getAttribute('data-j'), 1); draw(); }; });
+  }
+  Array.prototype.forEach.call($('uBank').children, function(b){
+    b.onclick = function(){ var n = +b.getAttribute('data-n'); if (picked.indexOf(n) < 0){ picked.push(n); draw(); } };
+  });
+  $('uClear').onclick = function(){ picked = []; draw(); };
+  var built = false;
+  $('uDone').onclick = function(){
+    var said = picked.map(function(n){ return shuffled[n].t; }).join(' ');
+    if (MW.norm(said) === MW.norm(chips.join(' '))){
+      if (!built) mark(en, 'use', firstTry);
+      built = true;
+      $('uFb').className = 'fb ok'; $('uFb').textContent = full; MW.speak(full);
+      setTimeout(function(){ U_I++; renderUse(); }, 1500);
+    } else { $('uFb').className = 'fb no'; $('uFb').textContent = 'Not yet. Check the order.'; }
+  };
+  draw();
+}
+
+/* ================= quiet browser-translation check =================
+   Tab labels are English and we know what they say. If they change,
+   a browser translator is running. Logged silently, never shown. */
+var TR_SENT = '';
+function checkTranslation(){
+  if (!ME.email) return;
+  var btns = document.querySelectorAll('nav.tabs button'), observed = '', i;
+  for (i = 0; i < btns.length && i < PANES.length; i++){
+    var got = (btns[i].textContent || '').trim();
+    if (got && got !== PANES[i][1]){ observed = got; break; }
+  }
+  var cls = document.documentElement.className || '';
+  if (!observed && !/translated/.test(cls)) return;
+  var sig = observed + '|' + document.documentElement.lang;
+  if (sig === TR_SENT) return; TR_SENT = sig;
+  MW.sb('page_translation?on_conflict=email,set_slug', { method:'POST', prefer:'resolution=merge-duplicates,return=minimal',
+    body:[{ email:ME.email, set_slug:'mywords', translated:true, observed:observed,
+            html_lang:document.documentElement.lang || '', html_class:cls, updated_at:new Date().toISOString() }] });
+}
+setInterval(checkTranslation, 20000); setTimeout(checkTranslation, 4000);
+})();
+</script>
+<script src="/readings/track.js"></script>
+</body>
+</html>
