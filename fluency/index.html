@@ -64,10 +64,7 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
     <label class="q">School email</label>
     <input class="txt" id="siEmail" placeholder="name@s.sfusd.edu" autocomplete="email">
     <label class="q">Period</label>
-    <select class="txt" id="siPeriod">
-    <option value="">—</option>
-    <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option>
-  </select>
+    <select class="txt" id="siPeriod"><option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select>
     <label class="q">Your first language</label>
     <select class="txt" id="siL1">
       <option value="">—</option>
@@ -100,12 +97,8 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
     <h2>Read aloud</h2>
     <label class="q">Which text?</label>
     <select id="pick"></select>
-    <label class="q">Is this your first time, or are you reading it again after practice?</label>
-    <select id="attempt">
-      <option value="cold">First time today</option>
-      <option value="hot">Again, after practice</option>
-    </select>
-    <button class="big" id="toRead" style="margin-top:16px;width:100%">Show me the text</button>
+    <p class="muted" id="attemptNote" style="margin-top:14px"></p>
+    <button class="big" id="toRead" style="margin-top:6px;width:100%">Show me the text</button>
   </div>
 </section>
 
@@ -129,12 +122,13 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 <!-- STEP 3 : mark -->
 <section id="s3" class="hide">
   <div class="steps"><div class="on"></div><div class="on"></div><div class="on"></div><div></div></div>
-  <div class="note"><b>Listen to yourself.</b> Tap a word <b>once</b> if you read it wrong or skipped it. Tap <b>twice</b> if you said it wrong and then fixed it yourself. Tap a third time to clear it.</div>
+  <div class="note" id="savedNote"><b>Saved.</b> Mr. Toby has your recording.</div>
+  <div class="note"><b>Now listen to yourself.</b> Tap a word <b>once</b> if you read it wrong or skipped it. Tap <b>twice</b> if you said it wrong and then fixed it yourself. Tap a third time to clear it. This part is optional, but it is how you find out which sounds to practice.</div>
   <div class="card">
     <audio id="aud" controls style="width:100%;margin-bottom:12px"></audio>
     <div class="passage" id="markText"></div>
     <div class="tiles" id="liveTiles"></div>
-    <button class="big" id="toDrill" style="margin-top:16px;width:100%">Save this reading</button>
+    <button class="big" id="toDrill" style="margin-top:16px;width:100%">Done — show me my sounds</button>
     <p class="muted" id="saveMsg" style="min-height:20px"></p>
   </div>
 </section>
@@ -174,6 +168,7 @@ var EMAIL_RE=/^[^@\s]+@(s\.)?sfusd\.edu$/;
 
 var ME={email:'',name:'',period:'',l1:''};
 var PASSAGES=[],P=null,WORDS=[],MARKS={},BLOB=null,SECS=0,RUNS=[];
+var ATTEMPT='cold',RUNID=null,saveTimer=null;
 
 function $(i){return document.getElementById(i);}
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
@@ -206,6 +201,7 @@ $('siGo').onclick=function(){
   fetch(SUPA_URL+'/rest/v1/students?on_conflict=email',{method:'POST',headers:Object.assign({},H,{'Prefer':'resolution=ignore-duplicates,return=minimal'}),body:JSON.stringify({email:c,name:n,period:p})}).catch(function(){});
   $('signin').style.display='none';
   $('who').textContent=n.split(' ')[0]+' \u00b7 P'+p;
+  peek();
 };
 (function(){
   var e=localStorage.getItem('gal_student_email'),n=localStorage.getItem('gal_student_name'),
@@ -225,11 +221,24 @@ function loadPassages(){
     }).join('');
     var want=new URLSearchParams(location.search).get('p');
     if(want&&PASSAGES.some(function(p){return p.slug===want;})) $('pick').value=want;
+    peek();
   }).catch(function(){$('pick').innerHTML='<option>Could not load texts</option>';});
 }
 function countWords(b){return String(b||'').trim().split(/\s+/).filter(Boolean).length;}
 loadPassages();
 
+$('pick').onchange=peek;
+function peek(){
+  if(!ME.email||!$('pick').value)return;
+  fetch(SUPA_URL+'/rest/v1/fluency_runs?select=id&email=eq.'+encodeURIComponent(ME.email)+
+        '&passage_slug=eq.'+encodeURIComponent($('pick').value),{headers:H})
+  .then(function(r){return r.json();}).then(function(rows){
+    ATTEMPT=(rows&&rows.length)?'hot':'cold';
+    $('attemptNote').textContent=ATTEMPT==='cold'
+      ? 'This will be your first reading of this text.'
+      : 'You have read this before. This one counts as your practice re-read.';
+  }).catch(function(){ATTEMPT='cold';});
+}
 $('toRead').onclick=function(){
   if(!ME.email){showSignin();return;}
   P=PASSAGES.filter(function(p){return p.slug===$('pick').value;})[0];
@@ -265,7 +274,8 @@ $('recBtn').onclick=function(){
       SECS=(Date.now()-t0)/1000;BLOB=new Blob(chunks,{type:'audio/webm'});
       b.textContent='Start reading';b.classList.remove('stop');
       $('aud').src=URL.createObjectURL(BLOB);
-      MARKS={};drawMark();show('s3');
+      MARKS={};RUNID=null;drawMark();show('s3');
+      autoSave();
     };
     mr.start();t0=Date.now();
     b.textContent='I finished';b.classList.add('stop');
@@ -284,6 +294,7 @@ function drawMark(){
 $('markText').addEventListener('click',function(e){
   var s=e.target.closest('span.w');if(!s)return;
   var i=+s.dataset.i;MARKS[i]=((MARKS[i]||0)+1)%3;drawMark();
+  clearTimeout(saveTimer);saveTimer=setTimeout(pushMarks,1500);
 });
 function stats(){
   var errs=0,sc=0;
@@ -303,34 +314,63 @@ function tiles(){
 }
 
 /* ---------- save ---------- */
-$('toDrill').onclick=function(){
+function note(msg,bad){
+  var n=$('savedNote');
+  n.innerHTML=msg;
+  n.style.background=bad?'#fdf0f0':'#fff8e6';
+  n.style.borderColor=bad?'#f0bcbc':'#f0dfae';
+}
+function autoSave(){
   if(!ME.email){showSignin();return;}
-  var s=stats(),msg=$('saveMsg');
+  var s0=stats();
+  var folder=(P.slug.indexOf('news-')===0?'news/':'passages/')+P.slug+'/';
+  var path=folder+ME.email.replace(/[^a-z0-9]/g,'_')+'_'+Date.now()+'.webm';
+  note('<b>Saving\u2026</b> keep this page open.');
+  fetch(SUPA_URL+'/storage/v1/object/'+BUCKET+'/'+path,{method:'POST',
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'audio/webm'},body:BLOB})
+  .then(function(r){return r.ok?null:r.text().then(function(t){throw new Error('status '+r.status+'. '+t.slice(0,160));});})
+  .then(function(){
+    return fetch(SUPA_URL+'/rest/v1/fluency_runs',{method:'POST',
+      headers:Object.assign({},H,{'Prefer':'return=representation'}),
+      body:JSON.stringify({email:ME.email,student_name:ME.name,period:ME.period,l1:ME.l1,
+        passage_slug:P.slug,attempt:ATTEMPT,seconds:Math.round(SECS*10)/10,
+        word_count:s0.total,errors:0,wpm:s0.wpm,wcpm:s0.wpm,accuracy:100,
+        error_words:[],audio_path:path})
+    }).then(function(r){
+      if(!r.ok)return r.text().then(function(t){throw new Error('status '+r.status+'. '+t.slice(0,160));});
+      return r.json();
+    });
+  })
+  .then(function(rows){
+    RUNID=(rows&&rows[0]&&rows[0].id)||null;
+    note('<b>Saved.</b> Mr. Toby has your recording.');
+  })
+  .catch(function(e){
+    note('<b>It did not save.</b> '+esc(e.message)+' <button class="sbtn" id="retry">Try again</button>',true);
+    var rb=$('retry'); if(rb) rb.onclick=autoSave;
+  });
+}
+function pushMarks(){
+  if(!RUNID)return;
+  var s0=stats(),errWords=[];
+  Object.keys(MARKS).forEach(function(k){
+    if(MARKS[k]>0) errWords.push({i:+k,word:WORDS[+k].word,type:MARKS[k]===1?'error':'selfcorrect'});
+  });
+  fetch(SUPA_URL+'/rest/v1/fluency_runs?id=eq.'+RUNID,{method:'PATCH',
+    headers:Object.assign({},H,{'Prefer':'return=minimal'}),
+    body:JSON.stringify({errors:s0.errors,wcpm:s0.wcpm,accuracy:s0.accuracy,error_words:errWords})
+  }).then(function(r){ if(r.ok) note('<b>Saved.</b> Your marks are in too.'); }).catch(function(){});
+}
+$('toDrill').onclick=function(){
   var errWords=[];
   Object.keys(MARKS).forEach(function(k){
     if(MARKS[k]>0) errWords.push({i:+k,word:WORDS[+k].word,type:MARKS[k]===1?'error':'selfcorrect'});
   });
-  var folder=(P.slug.indexOf('news-')===0?'news/':'passages/')+P.slug+'/';
-  var path=folder+ME.email.replace(/[^a-z0-9]/g,'_')+'_'+Date.now()+'.webm';
-  msg.style.color='';msg.textContent='Saving\u2026';
-  $('toDrill').disabled=true;
-  fetch(SUPA_URL+'/storage/v1/object/'+BUCKET+'/'+path,{method:'POST',
-    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'audio/webm'},body:BLOB})
-  .then(function(r){return r.ok?null:r.text().then(function(t){throw new Error('Audio did not save \u2014 status '+r.status+'. '+t.slice(0,200));});})
-  .then(function(){
-    return fetch(SUPA_URL+'/rest/v1/fluency_runs',{method:'POST',
-      headers:Object.assign({},H,{'Prefer':'return=minimal'}),
-      body:JSON.stringify({email:ME.email,student_name:ME.name,period:ME.period,l1:ME.l1,
-        passage_slug:P.slug,attempt:$('attempt').value,seconds:Math.round(SECS*10)/10,
-        word_count:s.total,errors:s.errors,wpm:s.wpm,wcpm:s.wcpm,accuracy:s.accuracy,
-        error_words:errWords,audio_path:path})
-    }).then(function(r){return r.ok?null:r.text().then(function(t){throw new Error('Your score did not save \u2014 status '+r.status+'. '+t.slice(0,200));});});
-  })
-  .then(function(){msg.style.color='var(--ok)';msg.textContent='Saved.';buildDrills(errWords);show('s4');})
-  .catch(function(e){msg.style.color='var(--no)';msg.textContent=e.message;console.error(e);})
-  .then(function(){$('toDrill').disabled=false;});
+  pushMarks();
+  buildDrills(errWords);
+  show('s4');
 };
-$('again').onclick=function(){$('attempt').value='hot';show('s1');};
+$('again').onclick=function(){peek();show('s1');};
 
 /* ---------- phonics ---------- */
 var PATTERNS=[
