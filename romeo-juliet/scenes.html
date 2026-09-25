@@ -101,11 +101,20 @@ textarea:focus{outline:2px solid var(--pine-lt);outline-offset:1px}
   .q{break-inside:avoid;border-left:4px solid #333}
   .shead svg{filter:grayscale(1)}
 }
+
+#btn-dir.on,#btn-tap.on{background:#1F4D3D;color:#fff}
+.dirtr{display:block;margin-top:4px;color:#2f6f57;font-weight:700}
+.dirtr:empty{display:none}
+body.tap-on .wt-tap{cursor:pointer;border-bottom:1px dotted #8aa79a}
+body.tap-on .wt-tap:hover{background:#eef5f1}
+.wt-bub{display:inline-block;margin-left:5px;padding:1px 6px;border-radius:6px;
+  background:#1F4D3D;color:#fff;font-size:.85em;font-weight:700}
 </style>
 </head>
+<span id="canary" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden">the quick brown fox jumps over the lazy dog</span>
 <body>
 
-<div class="bar">
+<button id="btn-dir" title="Show the directions in your language">Directions</button><button id="btn-tap" title="Tap any word for its meaning">Tap words</button><div class="bar">
   <h1>R+J · Scenes</h1>
   <span class="dot" id="dot" title="save status"></span>
   <span class="sp"></span>
@@ -118,15 +127,7 @@ textarea:focus{outline:2px solid var(--pine-lt);outline-offset:1px}
   <button id="bEasy" class="on" onclick="setLevel('easy')">Easier</button>
   <button id="bOrig" onclick="setLevel('orig')">Original</button>
   <button id="bBoth" onclick="setLevel('both')">Both</button>
-  <select id="lang" onchange="saveLocal()">
-    <option value="">No translation</option>
-    <option value="es">Español</option>
-    <option value="zh">中文</option>
-    <option value="ar">العربية</option>
-    <option value="vi">Tiếng Việt</option>
-    <option value="th">ไทย</option>
-    <option value="ne">नेपाली</option>
-  </select>
+  <select id="lang" onchange="saveLocal()"><option value="">No translation</option><option value="es">Español</option><option value="zh">中文</option><option value="ar">العربية</option><option value="vi">Tiếng Việt</option><option value="ru">Русский</option><option value="ur">اردو</option><option value="tl">Tagalog</option><option value="fr">Français</option><option value="ko">한국어</option><option value="hi">हिन्दी</option><option value="so">Soomaali</option><option value="ne">नेपाली</option><option value="th">ไทย</option></select>
   <button onclick="window.print()">Print</button>
   <button onclick="turnIn()">Turn in</button>
   <a href="index.html">Unit</a>
@@ -540,7 +541,7 @@ function buildNav(){
 }
 
 function sceneHTML(sc, idx){
-  var h = '<div class="scene" id="sc' + idx + '">';
+  var h = '<div class="scene" translate="no" data-tap="1" id="sc' + idx + '">';
   h += '<div class="shead">' + SVGS[sc.icon] + '<div class="t"><div class="act">' + sc.act + '</div><h2>' + sc.title + '</h2></div></div>';
   h += '<p class="what"><b>What happens.</b> ' + gloss(sc.what) + '</p>';
 
@@ -558,14 +559,14 @@ function sceneHTML(sc, idx){
   }
   h += '</div></div>';
 
-  h += '<div class="panel"><h3>Your reading group</h3><div class="roles">';
+  h += '<div class="panel" translate="no" data-tap="1"><h3>Your reading group</h3><div class="roles">';
   h += '<div class="role"><b>Summarizer</b><i>first, then, next, finally</i><p>' + esc(sc.roles.s) + '</p></div>';
   h += '<div class="role"><b>Visualizer</b><i>I picture\u2026</i><p>' + esc(sc.roles.v) + '</p></div>';
   h += '<div class="role"><b>Connector</b><i>This reminds me of\u2026</i><p>' + esc(sc.roles.c) + '</p></div>';
   h += '<div class="role"><b>Predictor</b><i>I think next\u2026</i><p>' + esc(sc.roles.p) + '</p></div>';
   h += '</div></div>';
 
-  h += '<div class="panel"><h3>Questions</h3><div class="qs">';
+  h += '<div class="panel" translate="no" data-tap="1"><h3>Questions</h3><div class="qs">';
   for(var q=0;q<sc.qs.length;q++){
     var it = sc.qs[q];
     var cls = it.t === 'build' ? 'build' : (it.t === 'stretch' ? 'stretch' : '');
@@ -828,5 +829,210 @@ updateProgress();
 });
 </script>
 <script src="/readings/track.js"></script>
+<script>
+(function(){
+  function ready(){
+    var mail=document.getElementById('sEmail'), nm=document.getElementById('sName'),
+        per=document.getElementById('sPeriod');
+    if(!mail){ setTimeout(ready,400); return; }
+    try{ var g=localStorage.getItem('gal_student_email'); if(g&&!mail.value) mail.value=g; }catch(e){}
+    function settle(){
+      var raw=String(mail.value||'').trim().toLowerCase();
+      if(!raw) return;
+      if(!validMail(raw)){ mail.setCustomValidity('School email only'); mail.reportValidity&&mail.reportValidity(); return; }
+      mail.setCustomValidity('');
+      var c=canonMail(raw);
+      if(c!==raw) mail.value=c;
+      recordAlias(raw,c); seedStudent(nm?nm.value:'', c, per?per.value:'');
+      try{ localStorage.setItem('gal_student_email',c); }catch(e){}
+      window.RJ_ME={name:nm?nm.value:'',email:c,period:per?per.value:''};
+    }
+    mail.addEventListener('blur',settle); mail.addEventListener('change',settle);
+    if(per) per.addEventListener('change',settle);
+    if(mail.value) settle();
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',ready); else ready();
+})();
+</script>
+
+<script>
+/* ============ Galileo standard: identity, directions, tap words, canary ============ */
+(function(){
+  /* some pages in this family define SLUG, some do not */
+  var PAGE_SLUG=(typeof SLUG!=='undefined'&&SLUG)?SLUG:'romeo-juliet-scenes';
+  var CANON_DOMAIN='@s.sfusd.edu', ROSTER=[];
+  /* some pages in this repo never defined these */
+  var SUPA_URL=(typeof window.SUPA_URL!=='undefined')?window.SUPA_URL:'https://lhmwtfyceilgndpygivj.supabase.co';
+  var SUPA_KEY=(typeof window.SUPA_KEY!=='undefined')?window.SUPA_KEY:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+  var PROXY='https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
+  function ME_(){ return (window.RJ_ME&&RJ_ME.email)?RJ_ME:null; }
+  window.cleanMail=function(x){ return String(x||'').trim().toLowerCase(); };
+  window.localPart=function(e){ return cleanMail(e).split('@')[0]; };
+  window.validMail=function(e){ return /^[^@\s]+@(s\.)?sfusd\.edu$/.test(cleanMail(e)); };
+  window.canonMail=function(raw){
+    var lp=localPart(raw), i;
+    for(i=0;i<ROSTER.length;i++){ if(localPart(ROSTER[i].email)===lp) return cleanMail(ROSTER[i].email); }
+    return lp+CANON_DOMAIN;
+  };
+  function head(pref){
+    var h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};
+    if(pref) h['Prefer']=pref; return h;
+  }
+  window.recordAlias=function(alias, canon){
+    if(!alias||alias===canon) return;
+    fetch(SUPA_URL+'/rest/v1/student_aliases?on_conflict=alias_email',{
+      method:'POST', headers:head('resolution=merge-duplicates,return=minimal'),
+      body:JSON.stringify([{alias_email:alias, email:canon}])}).catch(function(){});
+  };
+  window.seedStudent=function(name,email,period){
+    fetch(SUPA_URL+'/rest/v1/students?on_conflict=email',{
+      method:'POST', headers:head('resolution=ignore-duplicates,return=minimal'),
+      body:JSON.stringify([{email:email, name:name, period:period}])}).catch(function(){});
+  };
+  fetch(SUPA_URL+'/rest/v1/students?select=name,email,period&order=name',{headers:head()})
+    .then(function(r){ return r.ok?r.json():[]; })
+    .then(function(rows){ ROSTER=rows||[]; }).catch(function(){});
+
+  /* prefill from a sign-in anywhere else on the site */
+  try{
+    var saved=JSON.parse(localStorage.getItem('rj_me')||'null');
+    if(saved&&saved.email){
+      if(document.getElementById('sName')) document.getElementById('sName').value=saved.name||'';
+      if(document.getElementById('sEmail')) document.getElementById('sEmail').value=saved.email;
+      if(saved.period&&document.getElementById('sPeriod')) document.getElementById('sPeriod').value=String(saved.period);
+    } else {
+      var g=localStorage.getItem('gal_student_email');
+      if(g&&document.getElementById('sEmail')) document.getElementById('sEmail').value=g;
+    }
+  }catch(e){}
+
+  /* ---------- translate through the proxy ---------- */
+  var tcache={};
+  var C2N={es:'Spanish',zh:'Chinese (Simplified)','zh-CN':'Chinese (Simplified)',ar:'Arabic',
+    vi:'Vietnamese',ru:'Russian',ur:'Urdu',tl:'Tagalog',fr:'French',ko:'Korean',hi:'Hindi',
+    so:'Somali',ne:'Nepali',th:'Thai'};
+  function tr(text, code){
+    var lang=(!code||code==='none')?'':(C2N[code]||code);
+    var key=text+'|'+lang;
+    if(tcache[key]) return Promise.resolve(tcache[key]);
+    var url=PROXY+'?action=translate&idiom='+encodeURIComponent(text)+'&meaning=&lang='+encodeURIComponent(lang);
+    return fetch(url).then(function(r){return r.json();}).then(function(d){
+      if(!d||!d.ok||!d.translation) return null;
+      tcache[key]=d.translation; return d.translation;
+    }).catch(function(){return null;});
+  }
+
+  /* ---------- directions in the student's language ---------- */
+  var DIR_ON=false, SENT={};
+  try{ DIR_ON=localStorage.getItem('song_dir')==='1'; }catch(e){}
+  function logReveal(k, lang){
+    if(!ME_()) return;
+    var sig=k+'|'+lang; if(SENT[sig]) return; SENT[sig]=true;
+    fetch(SUPA_URL+'/rest/v1/instruction_reveals',{
+      method:'POST', headers:head('return=minimal'),
+      body:JSON.stringify([{email:ME_().email, set_slug:PAGE_SLUG, activity:k, lang:lang}])}).catch(function(){});
+  }
+  function showDirections(){
+    var lang=document.getElementById('lang').value;
+    var list=document.querySelectorAll('[data-dir]');
+    Array.prototype.forEach.call(list,function(p){
+      var out=p.querySelector('.dirtr');
+      if(!out){ out=document.createElement('span'); out.className='dirtr'; p.appendChild(out); }
+      if(!DIR_ON||!lang){ out.textContent=''; return; }
+      var k=p.getAttribute('data-dir'), en=p.getAttribute('data-en')||'';
+      out.textContent='…';
+      tr(en, lang).then(function(t){
+        out.textContent=t?(t.equiv||t.meaning||''):'';
+        if(out.textContent) logReveal(k, lang);
+      });
+    });
+  }
+  var dirBtn=document.getElementById('btn-dir');
+  if(dirBtn){
+    dirBtn.classList.toggle('on', DIR_ON);
+    dirBtn.addEventListener('click',function(){
+      DIR_ON=!DIR_ON;
+      try{ localStorage.setItem('song_dir', DIR_ON?'1':'0'); }catch(e){}
+      dirBtn.classList.toggle('on', DIR_ON);
+      showDirections();
+    });
+  }
+  var langSel=document.getElementById('lang');
+  if(langSel) langSel.addEventListener('change', function(){ if(DIR_ON) showDirections(); });
+  if(DIR_ON) setTimeout(showDirections, 600);
+
+  /* ---------- tap any word ---------- */
+  var TAP_ON=false;
+  try{ TAP_ON=localStorage.getItem('song_tap')==='1'; }catch(e){}
+  function wrapWords(root){
+    if(root.getAttribute('data-wrapped')) return;
+    root.setAttribute('data-wrapped','1');
+    var walker=document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), nodes=[], n;
+    while((n=walker.nextNode())) if(n.nodeValue.trim()) nodes.push(n);
+    nodes.forEach(function(node){
+      if(node.parentNode.closest('textarea,input,button,select,.wt-tap')) return;
+      var frag=document.createDocumentFragment();
+      node.nodeValue.split(/(\s+)/).forEach(function(piece){
+        if(!piece.trim()){ frag.appendChild(document.createTextNode(piece)); return; }
+        var s=document.createElement('span');
+        s.className='wt-tap'; s.textContent=piece;
+        frag.appendChild(s);
+      });
+      node.parentNode.replaceChild(frag, node);
+    });
+  }
+  function tapTargets(){ return document.querySelectorAll('[data-tap]'); }
+  function setTap(on){
+    TAP_ON=on;
+    try{ localStorage.setItem('song_tap', on?'1':'0'); }catch(e){}
+    document.body.classList.toggle('tap-on', on);
+    var b=document.getElementById('btn-tap');
+    if(b) b.classList.toggle('on', on);
+    if(on) Array.prototype.forEach.call(tapTargets(), wrapWords);
+  }
+  var tapBtn=document.getElementById('btn-tap');
+  if(tapBtn) tapBtn.addEventListener('click', function(){ setTap(!TAP_ON); });
+  document.addEventListener('click', function(ev){
+    if(!TAP_ON) return;
+    var s=ev.target.closest('.wt-tap'); if(!s) return;
+    var lang=document.getElementById('lang').value;
+    if(!lang){ document.getElementById('lang').focus(); return; }
+    var word=(s.textContent||'').replace(/[^A-Za-zÀ-ÿ'’-]/g,'');
+    if(!word) return;
+    var old=s.getAttribute('data-shown');
+    if(old){ s.removeAttribute('data-shown'); var t=s.querySelector('.wt-bub'); if(t) t.remove(); return; }
+    var bub=document.createElement('span'); bub.className='wt-bub'; bub.textContent='…';
+    s.appendChild(bub); s.setAttribute('data-shown','1');
+    tr(word, lang).then(function(t){ bub.textContent=t?(t.equiv||t.meaning||'?'):'?'; });
+  });
+  if(TAP_ON) setTimeout(function(){ setTap(true); }, 400);
+
+  /* ---------- quiet browser-translation canary ---------- */
+  var CANARY='the quick brown fox jumps over the lazy dog', TR_SENT='';
+  function detectTranslation(){
+    var c=document.querySelector('#canary');
+    var got=c?(c.textContent||'').trim().toLowerCase():'';
+    var cls=document.documentElement.className||'';
+    var drift=(c&&got!==CANARY)?got:'';
+    if(!drift&&!/translated|notranslate-off/.test(cls)) return null;
+    return {observed:drift, html_lang:document.documentElement.lang||'', html_class:cls};
+  }
+  function checkTranslation(){
+    var d=detectTranslation();
+    if(!d||!ME_()) return;
+    var sig=d.observed+'|'+d.html_lang;
+    if(sig===TR_SENT) return;
+    TR_SENT=sig;
+    fetch(SUPA_URL+'/rest/v1/page_translation?on_conflict=email,set_slug',{
+      method:'POST', headers:head('resolution=merge-duplicates,return=minimal'),
+      body:JSON.stringify([{email:ME_().email, set_slug:PAGE_SLUG, translated:true,
+        observed:d.observed, html_lang:d.html_lang, html_class:d.html_class,
+        updated_at:new Date().toISOString()}])}).catch(function(){});
+  }
+  window.checkTranslation=checkTranslation;
+  setInterval(checkTranslation, 20000);
+  setTimeout(checkTranslation, 4000);
+})();
+</script>
 </body>
 </html>

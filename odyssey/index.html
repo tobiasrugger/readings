@@ -178,11 +178,20 @@ details[open] summary{margin-bottom:8px}
   h2{page-break-after:avoid}
 }
 .printonly{display:none}
+
+#btn-dir.on,#btn-tap.on{background:#1F4D3D;color:#fff}
+.dirtr{display:block;margin-top:4px;color:#2f6f57;font-weight:700}
+.dirtr:empty{display:none}
+body.tap-on .wt-tap{cursor:pointer;border-bottom:1px dotted #8aa79a}
+body.tap-on .wt-tap:hover{background:#eef5f1}
+.wt-bub{display:inline-block;margin-left:5px;padding:1px 6px;border-radius:6px;
+  background:#1F4D3D;color:#fff;font-size:.85em;font-weight:700}
 </style>
 </head>
+<span id="canary" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden">the quick brown fox jumps over the lazy dog</span>
 <body>
 
-<div id="bar"><div class="in">
+<button id="btn-dir" title="Show the directions in your language">Directions</button><button id="btn-tap" title="Tap any word for its meaning">Tap words</button><div id="bar"><div class="in">
   <b>The Odyssey</b>
   <span class="sp"></span>
   <span id="who"></span>
@@ -198,15 +207,7 @@ details[open] summary{margin-bottom:8px}
   <button class="lvl" data-lv="c">Challenge</button>
   <span class="sp" style="flex:1"></span>
   <span style="opacity:.8">Translate:</span>
-  <select id="lang" style="font-family:inherit;font-size:13px;border-radius:999px;border:0;padding:4px 9px">
-    <option value="">off</option>
-    <option value="Spanish">Español</option>
-    <option value="Chinese (Simplified)">简体中文</option>
-    <option value="Arabic">العربية</option>
-    <option value="Vietnamese">Tiếng Việt</option>
-    <option value="Thai">ไทย</option>
-    <option value="Nepali">नेपाली</option>
-  </select>
+  <select id="lang" style="font-family:inherit;font-size:13px;border-radius:999px;border:0;padding:4px 9px"><option value="">off</option><option value="es">Español</option><option value="zh">中文</option><option value="ar">العربية</option><option value="vi">Tiếng Việt</option><option value="ru">Русский</option><option value="ur">اردو</option><option value="tl">Tagalog</option><option value="fr">Français</option><option value="ko">한국어</option><option value="hi">हिन्दी</option><option value="so">Soomaali</option><option value="ne">नेपाली</option><option value="th">ไทย</option></select>
 </div></div>
 
 <div id="nav"><div class="in" id="tabs"></div></div>
@@ -232,7 +233,7 @@ details[open] summary{margin-bottom:8px}
   <button class="btn sm sea" onclick="saveNow()">Save</button>
 </div>
 
-<div id="login"><div class="box">
+<div id="login"><div class="box" translate="no" data-tap="1">
   <h2>The Odyssey</h2>
   <p>Sign in so your work saves. Use your school email.</p>
   <input id="li-name" placeholder="First and last name" autocomplete="name">
@@ -1072,7 +1073,7 @@ function renderQ(q,i,sec){
   var id=qid(sec,i), v=S.ans[id]||'';
   var h='<div class="q'+(showQ(q)?'':' hide-lvl')+'" data-lv="'+(q.lv||'all')+'" id="w_'+id+'">';
   var tagmap={e:'<span class="tag e">Easier</span>',s:'<span class="tag s">Standard</span>',c:'<span class="tag c">Challenge</span>'};
-  h+='<div class="prompt"><span class="num">'+(i+1)+'.</span>'+(q.lv&&q.lv!=='all'?tagmap[q.lv]:'')+(q.ts?'<span class="ts">'+esc(q.ts)+'</span>':'')+mark(q.p)+'</div>';
+  h+='<div class="prompt" translate="no" data-tap="1"><span class="num">'+(i+1)+'.</span>'+(q.lv&&q.lv!=='all'?tagmap[q.lv]:'')+(q.ts?'<span class="ts">'+esc(q.ts)+'</span>':'')+mark(q.p)+'</div>';
 
   if(q.t==='mc'){
     h+='<div class="opts" data-id="'+id+'">';
@@ -1229,7 +1230,7 @@ function turnIn(){
 function login(){
   var n=$('#li-name').value.trim(), e=$('#li-email').value.trim(), p=$('#li-per').value;
   if(!n||!e||!p){ $('#li-msg').textContent='Please fill in all three boxes.'; return; }
-  if(e.indexOf('@')<0){ $('#li-msg').textContent='That email does not look right.'; return; }
+  if(!odValid($('#li-email').value)){ $('#li-msg').textContent='Please use your school email — it ends with @s.sfusd.edu'; return; }
   S.name=n; S.email=e; S.period=p;
   $('#li-msg').textContent='Loading your work…';
   fetch(SUPA_URL+'/rest/v1/'+TABLE+'?email=eq.'+encodeURIComponent(e.toLowerCase())+'&select=*',{
@@ -1306,7 +1307,7 @@ function secOpen(id){ return '<section id="sec_'+id+'"'+(cur===id?' class="on"':
 function rMap(){
   var h=secOpen('map');
   h+='<div class="hero"><h1>The Odyssey</h1><p>A soldier tries to get home. It takes him twenty years. Along the way he has to decide, again and again, what kind of person he is going to be — and the story never tells you whether he got it right.</p></div>';
-  h+='<p class="lede">Five chapters, four movie sessions, two big Greek ideas, a debate, and an essay. Pick your reading level at the top of the screen at any time. Everything you type saves by itself.</p>';
+  h+='<p class="lede" translate="yes" data-dir="fivechaptersfour" data-en="Five chapters, four movie sessions, two big Greek ideas, a debate, and an essay. Pick your reading level at the top of the screen at any time. Everything you type saves by itself.">Five chapters, four movie sessions, two big Greek ideas, a debate, and an essay. Pick your reading level at the top of the screen at any time. Everything you type saves by itself.<span class="dirtr"></span></p>';
   h+=ART.map;
   h+='<h2>The five chapters</h2><div class="gridcards">';
   [['ch1','1. The Trojan War','When is it right to go to war?'],
@@ -1346,7 +1347,7 @@ function rChapter(c){
   h+=ART[c.id]||'';
 
   var t = c.text[S.level==='e'?'e':'s'];
-  h+='<div class="story">'+t.map(function(p){return '<p>'+mark(p)+'</p>'}).join('')+'</div>';
+  h+='<div class="story" translate="no" data-tap="1">'+t.map(function(p){return '<p>'+mark(p)+'</p>'}).join('')+'</div>';
 
   if(c.stop){
     var sid=qid(c.id+'_stop',0);
@@ -1354,7 +1355,7 @@ function rChapter(c){
     h+='<div class="frames no-print">'+c.stop.frames.map(function(f){return '<button class="frame" onclick="pushFrame(\''+sid+'\',this)">'+esc(f)+'</button>'}).join('')+'</div>';
     h+='<textarea id="'+sid+'" oninput="mark_dirty()" style="width:100%;min-height:80px;font-family:inherit;font-size:16.5px;padding:9px 11px;border:1px solid var(--line);border-radius:10px">'+esc(S.ans[sid]||'')+'</textarea></div>';
     var t2=c.text2[S.level==='e'?'e':'s'];
-    h+='<div class="story">'+t2.map(function(p){return '<p>'+mark(p)+'</p>'}).join('')+'</div>';
+    h+='<div class="story" translate="no" data-tap="1">'+t2.map(function(p){return '<p>'+mark(p)+'</p>'}).join('')+'</div>';
   }
 
   if(S.level==='c' && c.closeup){
@@ -1374,7 +1375,7 @@ function rChapter(c){
 
 function rMovie(){
   var h=secOpen('movie');
-  h+='<h1>Movie guide</h1><p class="lede">Four viewing sessions. Answer as you watch — you can pause and go back.</p>';
+  h+='<h1>Movie guide</h1><p class="lede" translate="yes" data-dir="fourviewingsessi" data-en="Four viewing sessions. Answer as you watch — you can pause and go back.">Four viewing sessions. Answer as you watch — you can pause and go back.<span class="dirtr"></span></p>';
   var url = LS(MEDIA_KEY)||'';
   h+='<div class="card no-print"><p class="kicker">Video</p>';
   if(url){ h+='<div class="vid"><iframe src="'+esc(url)+'" allowfullscreen title="The Odyssey"></iframe></div>'; }
@@ -1419,9 +1420,9 @@ function rEthics(key){
 
 function rGram(){
   var h=secOpen('gram');
-  h+='<h1>Grammar gym</h1><p class="lede">Seven workouts. Every sentence comes from The Odyssey, so the grammar and the story practise each other.</p>';
+  h+='<h1>Grammar gym</h1><p class="lede" translate="yes" data-dir="sevenworkoutseve" data-en="Seven workouts. Every sentence comes from The Odyssey, so the grammar and the story practise each other.">Seven workouts. Every sentence comes from The Odyssey, so the grammar and the story practise each other.<span class="dirtr"></span></p>';
   GRAM.forEach(function(g){
-    h+='<div class="card"><h3 style="margin-top:0">'+esc(g.title)+' <span class="muted" style="font-size:14px;font-weight:400">· '+esc(g.ch)+'</span></h3>';
+    h+='<div class="card" translate="no" data-tap="1"><h3 style="margin-top:0">'+esc(g.title)+' <span class="muted" style="font-size:14px;font-weight:400">· '+esc(g.ch)+'</span></h3>';
     h+='<div class="card pine" style="margin:10px 0"><p style="margin:0">'+(g.rule[S.level]||g.rule.s)+'</p></div>';
     h+='<p class="muted" style="margin:0 0 4px">From the text:</p><ul style="margin:0 0 12px">'+g.ex.map(function(e){return '<li>'+e+'</li>'}).join('')+'</ul>';
     g.items.forEach(function(it,i){
@@ -1432,7 +1433,7 @@ function rGram(){
       h+='<button class="btn sm sea no-print" onclick="checkGram(\''+g.id+'\','+i+',this)">Check</button>';
       h+='<span id="gv_'+id+'" style="font-weight:800"></span></div>';
     });
-    h+='<div class="q" style="background:var(--gold-lt);border-color:var(--gold)"><div class="prompt">Write it yourself: '+g.prod.p+'</div>';
+    h+='<div class="q" translate="no" data-tap="1" style="background:var(--gold-lt);border-color:var(--gold)"><div class="prompt" translate="no" data-tap="1">Write it yourself: '+g.prod.p+'</div>';
     h+='<div class="frames no-print">'+g.prod.fr.map(function(f){return '<button class="frame" onclick="pushFrame(\'gr_'+g.id+'_prod\',this)">'+esc(f)+'</button>'}).join('')+'</div>';
     h+='<textarea id="gr_'+g.id+'_prod" oninput="mark_dirty()">'+esc(S.ans['gr_'+g.id+'_prod']||'')+'</textarea></div>';
     h+='<button class="btn sm no-print" style="background:var(--pine);color:#fff" onclick="checkAllGram(\''+g.id+'\')">Check this whole workout</button>';
@@ -1463,13 +1464,13 @@ function rDebate(){
   h+='<h2>Your notes</h2>';
   ['My team\u2019s definition of a good person','My three strongest pieces of evidence','Questions I will ask the other team','What the other team will say, and my answer'].forEach(function(p,i){
     var id='db_'+i;
-    h+='<div class="q"><div class="prompt"><span class="num">'+(i+1)+'.</span>'+esc(p)+'</div><textarea id="'+id+'" oninput="mark_dirty()">'+esc(S.ans[id]||'')+'</textarea></div>';
+    h+='<div class="q" translate="no" data-tap="1"><div class="prompt" translate="no" data-tap="1"><span class="num">'+(i+1)+'.</span>'+esc(p)+'</div><textarea id="'+id+'" oninput="mark_dirty()">'+esc(S.ans[id]||'')+'</textarea></div>';
   });
   h+='<h2>Task cards</h2><p class="muted">Find your number. Open your card.</p>';
   DEBATE.roles.forEach(function(r){
     h+='<details><summary>'+r.n+'. '+esc(r.t)+'</summary><ul>'+r.job.map(function(j){return '<li>'+esc(j)+'</li>'}).join('')+'</ul>';
     h+='<div class="card gold"><p class="kicker" style="color:var(--gold)">How to start</p><p style="margin:0;font-style:italic">'+esc(r.ex)+'</p></div>';
-    h+='<div class="q"><div class="prompt">My speech</div><textarea id="db_sp_'+r.n+'" oninput="mark_dirty()" style="min-height:150px">'+esc(S.ans['db_sp_'+r.n]||'')+'</textarea></div></details>';
+    h+='<div class="q" translate="no" data-tap="1"><div class="prompt" translate="no" data-tap="1">My speech</div><textarea id="db_sp_'+r.n+'" oninput="mark_dirty()" style="min-height:150px">'+esc(S.ans['db_sp_'+r.n]||'')+'</textarea></div></details>';
   });
   h+='<div class="card no-print"><p class="kicker">Speech timer</p><p style="margin:0 0 8px">Two minutes per speaker.</p><div style="display:flex;gap:10px;align-items:center"><span id="tclock" style="font-size:34px;font-weight:800;font-variant-numeric:tabular-nums">2:00</span><button class="btn sm sea" onclick="tToggle()" id="tbtn">Start</button><button class="btn sm ghost" style="background:var(--line);color:var(--ink)" onclick="tReset()">Reset</button></div></div>';
   return h+'</section>';
@@ -1487,7 +1488,7 @@ function rEssay(){
   h+='<div class="card sea"><p class="kicker">HOTPEARC</p><p style="margin:0"><b>H</b>ook · <b>O</b>verview · <b>T</b>hesis — then two body paragraphs of <b>P</b>oint, <b>E</b>vidence, <b>A</b>nalysis, <b>E</b>vidence, <b>A</b>nalysis — then <b>R</b>estate · <b>C</b>onnection.</p></div>';
   ESSAY.parts.forEach(function(p){
     var id='es_'+p.k, v=S.ans[id]||'';
-    h+='<div class="q"><div class="prompt"><span class="num">'+p.k+'</span>'+esc(p.n)+'</div><p class="muted" style="margin:0 0 7px">'+esc(p.g)+'</p>';
+    h+='<div class="q" translate="no" data-tap="1"><div class="prompt" translate="no" data-tap="1"><span class="num">'+p.k+'</span>'+esc(p.n)+'</div><p class="muted" style="margin:0 0 7px">'+esc(p.g)+'</p>';
     if(S.level!=='c'){
       h+='<div class="frames no-print">'+p.fr.map(function(f){return '<button class="frame" onclick="pushFrame(\''+id+'\',this)">'+esc(f)+'</button>'}).join('')+'</div>';
     } else {
@@ -1516,17 +1517,17 @@ function buildEssay(){
   var p4=[g('R'),g('C')].filter(Boolean).join(' ');
   var all=[p1,p2,p3,p4].filter(Boolean);
   var words=all.join(' ').trim().split(/\s+/).filter(Boolean).length;
-  $('#essayout').innerHTML='<div class="card" style="background:#fff"><p class="muted">'+words+' words · 4 paragraphs</p>'+
+  $('#essayout').innerHTML='<div class="card" translate="no" data-tap="1" style="background:#fff"><p class="muted">'+words+' words · 4 paragraphs</p>'+
     all.map(function(p){return '<p>'+esc(p)+'</p>'}).join('')+'</div>';
 }
 
 function rTest(){
   var h=secOpen('test');
-  h+='<h1>Unit test</h1><p class="lede">Twenty questions about the story, the ideas, and the grammar. Then three paragraphs. Take your time.</p>';
+  h+='<h1>Unit test</h1><p class="lede" translate="yes" data-dir="twentyquestionsa" data-en="Twenty questions about the story, the ideas, and the grammar. Then three paragraphs. Take your time.">Twenty questions about the story, the ideas, and the grammar. Then three paragraphs. Take your time.<span class="dirtr"></span></p>';
   h+='<div class="card gold no-print"><p style="margin:0">You may use your reading guides and your word lists. You may not use a classmate\u2019s answers.</p></div>';
   TEST.forEach(function(q,i){
     var id='tst_'+i, v=S.ans[id]||'';
-    h+='<div class="q"><div class="prompt"><span class="num">'+(i+1)+'.</span>'+esc(q.p)+(q.pts?' <span class="muted">('+q.pts+' points)</span>':'')+'</div>';
+    h+='<div class="q" translate="no" data-tap="1"><div class="prompt" translate="no" data-tap="1"><span class="num">'+(i+1)+'.</span>'+esc(q.p)+(q.pts?' <span class="muted">('+q.pts+' points)</span>':'')+'</div>';
     if(q.t==='mc'){
       h+='<div class="opts" data-id="'+id+'">';
       q.o.forEach(function(o,j){ h+='<label class="opt'+(v===String(j)?' sel':'')+'"><input type="radio" name="'+id+'" value="'+j+'"'+(v===String(j)?' checked':'')+'><span>'+esc(o)+'</span></label>'; });
@@ -1588,5 +1589,188 @@ $('#li-name').addEventListener('keydown',function(e){ if(e.key==='Enter') $('#li
 
 </script>
 <script src="/readings/track.js"></script>
+
+<script>
+/* ============ Galileo standard: identity, directions, tap words, canary ============ */
+(function(){
+  /* some pages in this family define SLUG, some do not */
+  var PAGE_SLUG=(typeof SLUG!=='undefined'&&SLUG)?SLUG:'odyssey';
+  var CANON_DOMAIN='@s.sfusd.edu', ROSTER=[];
+  /* some pages in this repo never defined these */
+  var SUPA_URL=(typeof window.SUPA_URL!=='undefined')?window.SUPA_URL:'https://lhmwtfyceilgndpygivj.supabase.co';
+  var SUPA_KEY=(typeof window.SUPA_KEY!=='undefined')?window.SUPA_KEY:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+  var PROXY='https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
+  function ME_(){ return (typeof S!=='undefined'&&S&&S.email)?S:null; }
+  window.cleanMail=function(x){ return String(x||'').trim().toLowerCase(); };
+  window.localPart=function(e){ return cleanMail(e).split('@')[0]; };
+  window.validMail=function(e){ return /^[^@\s]+@(s\.)?sfusd\.edu$/.test(cleanMail(e)); };
+  window.canonMail=function(raw){
+    var lp=localPart(raw), i;
+    for(i=0;i<ROSTER.length;i++){ if(localPart(ROSTER[i].email)===lp) return cleanMail(ROSTER[i].email); }
+    return lp+CANON_DOMAIN;
+  };
+  function head(pref){
+    var h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};
+    if(pref) h['Prefer']=pref; return h;
+  }
+  window.recordAlias=function(alias, canon){
+    if(!alias||alias===canon) return;
+    fetch(SUPA_URL+'/rest/v1/student_aliases?on_conflict=alias_email',{
+      method:'POST', headers:head('resolution=merge-duplicates,return=minimal'),
+      body:JSON.stringify([{alias_email:alias, email:canon}])}).catch(function(){});
+  };
+  window.seedStudent=function(name,email,period){
+    fetch(SUPA_URL+'/rest/v1/students?on_conflict=email',{
+      method:'POST', headers:head('resolution=ignore-duplicates,return=minimal'),
+      body:JSON.stringify([{email:email, name:name, period:period}])}).catch(function(){});
+  };
+  fetch(SUPA_URL+'/rest/v1/students?select=name,email,period&order=name',{headers:head()})
+    .then(function(r){ return r.ok?r.json():[]; })
+    .then(function(rows){ ROSTER=rows||[]; }).catch(function(){});
+
+  /* prefill from a sign-in anywhere else on the site */
+  try{
+    var saved=JSON.parse(localStorage.getItem('odyssey_me')||'null');
+    if(saved&&saved.email){
+      if(document.getElementById('li-name')) document.getElementById('li-name').value=saved.name||'';
+      if(document.getElementById('li-email')) document.getElementById('li-email').value=saved.email;
+      if(saved.period&&document.getElementById('li-per')) document.getElementById('li-per').value=String(saved.period);
+    } else {
+      var g=localStorage.getItem('gal_student_email');
+      if(g&&document.getElementById('li-email')) document.getElementById('li-email').value=g;
+    }
+  }catch(e){}
+
+  window.odClean=cleanMail; window.odValid=validMail; window.odCanon=canonMail;
+  window.odAlias=recordAlias; window.odSeed=seedStudent;
+
+  /* ---------- translate through the proxy ---------- */
+  var tcache={};
+  var C2N={es:'Spanish',zh:'Chinese (Simplified)','zh-CN':'Chinese (Simplified)',ar:'Arabic',
+    vi:'Vietnamese',ru:'Russian',ur:'Urdu',tl:'Tagalog',fr:'French',ko:'Korean',hi:'Hindi',
+    so:'Somali',ne:'Nepali',th:'Thai'};
+  function tr(text, code){
+    var lang=(!code||code==='none')?'':(C2N[code]||code);
+    var key=text+'|'+lang;
+    if(tcache[key]) return Promise.resolve(tcache[key]);
+    var url=PROXY+'?action=translate&idiom='+encodeURIComponent(text)+'&meaning=&lang='+encodeURIComponent(lang);
+    return fetch(url).then(function(r){return r.json();}).then(function(d){
+      if(!d||!d.ok||!d.translation) return null;
+      tcache[key]=d.translation; return d.translation;
+    }).catch(function(){return null;});
+  }
+
+  /* ---------- directions in the student's language ---------- */
+  var DIR_ON=false, SENT={};
+  try{ DIR_ON=localStorage.getItem('song_dir')==='1'; }catch(e){}
+  function logReveal(k, lang){
+    if(!ME_()) return;
+    var sig=k+'|'+lang; if(SENT[sig]) return; SENT[sig]=true;
+    fetch(SUPA_URL+'/rest/v1/instruction_reveals',{
+      method:'POST', headers:head('return=minimal'),
+      body:JSON.stringify([{email:ME_().email, set_slug:PAGE_SLUG, activity:k, lang:lang}])}).catch(function(){});
+  }
+  function showDirections(){
+    var lang=document.getElementById('lang').value;
+    var list=document.querySelectorAll('[data-dir]');
+    Array.prototype.forEach.call(list,function(p){
+      var out=p.querySelector('.dirtr');
+      if(!out){ out=document.createElement('span'); out.className='dirtr'; p.appendChild(out); }
+      if(!DIR_ON||!lang){ out.textContent=''; return; }
+      var k=p.getAttribute('data-dir'), en=p.getAttribute('data-en')||'';
+      out.textContent='…';
+      tr(en, lang).then(function(t){
+        out.textContent=t?(t.equiv||t.meaning||''):'';
+        if(out.textContent) logReveal(k, lang);
+      });
+    });
+  }
+  var dirBtn=document.getElementById('btn-dir');
+  if(dirBtn){
+    dirBtn.classList.toggle('on', DIR_ON);
+    dirBtn.addEventListener('click',function(){
+      DIR_ON=!DIR_ON;
+      try{ localStorage.setItem('song_dir', DIR_ON?'1':'0'); }catch(e){}
+      dirBtn.classList.toggle('on', DIR_ON);
+      showDirections();
+    });
+  }
+  var langSel=document.getElementById('lang');
+  if(langSel) langSel.addEventListener('change', function(){ if(DIR_ON) showDirections(); });
+  if(DIR_ON) setTimeout(showDirections, 600);
+
+  /* ---------- tap any word ---------- */
+  var TAP_ON=false;
+  try{ TAP_ON=localStorage.getItem('song_tap')==='1'; }catch(e){}
+  function wrapWords(root){
+    if(root.getAttribute('data-wrapped')) return;
+    root.setAttribute('data-wrapped','1');
+    var walker=document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), nodes=[], n;
+    while((n=walker.nextNode())) if(n.nodeValue.trim()) nodes.push(n);
+    nodes.forEach(function(node){
+      if(node.parentNode.closest('textarea,input,button,select,.wt-tap')) return;
+      var frag=document.createDocumentFragment();
+      node.nodeValue.split(/(\s+)/).forEach(function(piece){
+        if(!piece.trim()){ frag.appendChild(document.createTextNode(piece)); return; }
+        var s=document.createElement('span');
+        s.className='wt-tap'; s.textContent=piece;
+        frag.appendChild(s);
+      });
+      node.parentNode.replaceChild(frag, node);
+    });
+  }
+  function tapTargets(){ return document.querySelectorAll('[data-tap]'); }
+  function setTap(on){
+    TAP_ON=on;
+    try{ localStorage.setItem('song_tap', on?'1':'0'); }catch(e){}
+    document.body.classList.toggle('tap-on', on);
+    var b=document.getElementById('btn-tap');
+    if(b) b.classList.toggle('on', on);
+    if(on) Array.prototype.forEach.call(tapTargets(), wrapWords);
+  }
+  var tapBtn=document.getElementById('btn-tap');
+  if(tapBtn) tapBtn.addEventListener('click', function(){ setTap(!TAP_ON); });
+  document.addEventListener('click', function(ev){
+    if(!TAP_ON) return;
+    var s=ev.target.closest('.wt-tap'); if(!s) return;
+    var lang=document.getElementById('lang').value;
+    if(!lang){ document.getElementById('lang').focus(); return; }
+    var word=(s.textContent||'').replace(/[^A-Za-zÀ-ÿ'’-]/g,'');
+    if(!word) return;
+    var old=s.getAttribute('data-shown');
+    if(old){ s.removeAttribute('data-shown'); var t=s.querySelector('.wt-bub'); if(t) t.remove(); return; }
+    var bub=document.createElement('span'); bub.className='wt-bub'; bub.textContent='…';
+    s.appendChild(bub); s.setAttribute('data-shown','1');
+    tr(word, lang).then(function(t){ bub.textContent=t?(t.equiv||t.meaning||'?'):'?'; });
+  });
+  if(TAP_ON) setTimeout(function(){ setTap(true); }, 400);
+
+  /* ---------- quiet browser-translation canary ---------- */
+  var CANARY='the quick brown fox jumps over the lazy dog', TR_SENT='';
+  function detectTranslation(){
+    var c=document.querySelector('#canary');
+    var got=c?(c.textContent||'').trim().toLowerCase():'';
+    var cls=document.documentElement.className||'';
+    var drift=(c&&got!==CANARY)?got:'';
+    if(!drift&&!/translated|notranslate-off/.test(cls)) return null;
+    return {observed:drift, html_lang:document.documentElement.lang||'', html_class:cls};
+  }
+  function checkTranslation(){
+    var d=detectTranslation();
+    if(!d||!ME_()) return;
+    var sig=d.observed+'|'+d.html_lang;
+    if(sig===TR_SENT) return;
+    TR_SENT=sig;
+    fetch(SUPA_URL+'/rest/v1/page_translation?on_conflict=email,set_slug',{
+      method:'POST', headers:head('resolution=merge-duplicates,return=minimal'),
+      body:JSON.stringify([{email:ME_().email, set_slug:PAGE_SLUG, translated:true,
+        observed:d.observed, html_lang:d.html_lang, html_class:d.html_class,
+        updated_at:new Date().toISOString()}])}).catch(function(){});
+  }
+  window.checkTranslation=checkTranslation;
+  setInterval(checkTranslation, 20000);
+  setTimeout(checkTranslation, 4000);
+})();
+</script>
 </body>
 </html>
