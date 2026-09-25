@@ -9,9 +9,9 @@
 :root{
   --pine:#1F4D3D; --pine-soft:#e8f0ec; --ink:#16241f; --muted:#6b7b74;
   --edge:#d9e2dd; --paper:#f6f8f7;
-  --ok:#1F7A4D; --ok-bg:#e4f4ea;
-  --warn:#9a6b06; --warn-bg:#fdf1d7;
-  --bad:#b23a2c; --bad-bg:#fbe6e3;
+  --ok:#0f5c34; --ok-bg:#b9e3c9; --ok-edge:#1F7A4D;
+  --warn:#6d4a00; --warn-bg:#f8dd9e; --warn-edge:#b5820c;
+  --bad:#8c2418; --bad-bg:#f4bcb3; --bad-edge:#b23a2c;
 }
 *{box-sizing:border-box}
 body{margin:0;font-family:Nunito,system-ui,sans-serif;color:var(--ink);background:var(--paper)}
@@ -43,7 +43,19 @@ tr.grouprow th{position:sticky;left:0;background:var(--pine-soft);z-index:2}
 .mark{font-weight:800;font-size:.9rem;line-height:1}
 .mark.ok{color:var(--ok)} .mark.warn{color:var(--warn)} .mark.bad{color:var(--bad)}
 .det{color:var(--muted);font-size:.68rem;white-space:normal;max-width:190px}
-td.ok{background:var(--ok-bg)} td.warn{background:var(--warn-bg)} td.bad{background:var(--bad-bg)}
+td.ok{background:var(--ok-bg);box-shadow:inset 4px 0 0 var(--ok-edge)}
+td.warn{background:var(--warn-bg);box-shadow:inset 4px 0 0 var(--warn-edge)}
+td.bad{background:var(--bad-bg);box-shadow:inset 4px 0 0 var(--bad-edge)}
+td.ok .det,td.warn .det,td.bad .det{color:inherit;opacity:.8}
+td.ok{color:var(--ok)} td.warn{color:var(--warn)} td.bad{color:var(--bad)}
+.mark{font-size:1rem}
+
+/* bold mode: solid fills, for monitors that wash the tints out */
+body.bold td.ok{background:#177a47;color:#fff}
+body.bold td.warn{background:#b5820c;color:#fff}
+body.bold td.bad{background:#b23a2c;color:#fff}
+body.bold td.ok .mark,body.bold td.warn .mark,body.bold td.bad .mark{color:#fff}
+body.bold .det{opacity:.92}
 .kind{display:inline-block;font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;
   color:var(--muted);background:var(--pine-soft);border-radius:4px;padding:1px 5px;margin-right:5px}
 .tally{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 14px}
@@ -57,7 +69,7 @@ a{color:var(--pine)}
 <body>
 <header>
   <h1>Feature audit — readings repo</h1>
-  <p>Generated September 24, 2026 from github.com/tobiasrugger/readings (main)</p>
+  <p>Generated September 25, 2026 from github.com/tobiasrugger/readings (main)</p>
 </header>
 
 <div class="wrap">
@@ -68,6 +80,7 @@ a{color:var(--pine)}
     <button data-f="all">Everything</button>
     <button data-f="needs">Needs work</button>
     <input id="q" placeholder="filter by name…">
+    <button id="boldbtn" style="margin-left:auto;border-color:#1F4D3D">Bold colors</button>
   </div>
 
   <div class="tally" id="tally"></div>
@@ -183,6 +196,21 @@ document.getElementById('q').addEventListener('input', function(e){
   q = e.target.value.trim().toLowerCase();
   render();
 });
+
+var boldBtn = document.getElementById('boldbtn');
+function setBold(on){
+  document.body.classList.toggle('bold', on);
+  boldBtn.classList.toggle('on', on);
+  boldBtn.textContent = on ? 'Soft colors' : 'Bold colors';
+  try{ localStorage.setItem('audit_bold', on ? '1' : '0'); }catch(e){}
+}
+boldBtn.addEventListener('click', function(){
+  setBold(!document.body.classList.contains('bold'));
+});
+var saved = '0';
+try{ saved = localStorage.getItem('audit_bold') || '0'; }catch(e){}
+setBold(saved === '1');
+
 render();
 </script>
 </body>
