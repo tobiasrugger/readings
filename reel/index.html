@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Story Reel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,700;0,800;0,900;1,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="reel.css">
+<style>
+  .wrap{max-width:1180px;margin:0 auto;padding:0 16px}
+  .hero{padding:26px 0 8px}
+  .hero a{color:var(--purple);font-weight:800;text-decoration:none;font-size:15px}
+  .hero h1{font-size:clamp(40px,6vw,64px);font-weight:900;margin:6px 0 4px;line-height:1}
+  .hero p{margin:0;color:var(--soft);font-size:19px;max-width:60ch}
+  h2.sec{font-size:26px;font-weight:900;margin:34px 0 12px}
+  .eps{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:18px}
+  .ep{display:block;background:var(--plum);color:#fff;border-radius:16px;overflow:hidden;text-decoration:none}
+  .ep svg{display:block;width:100%;height:auto}
+  .ep .t{padding:12px 16px 14px}
+  .ep .n{color:#d6cbe6;font-weight:800;font-size:14px}
+  .ep h3{margin:2px 0 0;font-size:24px;font-weight:900}
+  .ep.soon{background:#fff;color:var(--plum);border:2px dashed var(--line);display:flex;flex-direction:column;justify-content:center;padding:26px;min-height:200px}
+  .ep.soon .n{color:var(--purple)}
+  .ep.soon p{margin:6px 0 0;color:var(--soft)}
+  .castbar{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+  .cast{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+  .person{background:#fff;border-radius:16px;border:2px solid var(--line);overflow:hidden;display:flex;flex-direction:column}
+  .person .pic{background:#e3ecf0;display:flex;justify-content:center;padding-top:10px}
+  .person svg{width:62%;height:auto;display:block}
+  .person .b{padding:10px 14px 14px;flex:1;display:flex;flex-direction:column;gap:6px}
+  .person h3{margin:0;font-size:22px;font-weight:900;display:flex;justify-content:space-between;align-items:center}
+  .person .about{margin:0;font-size:17px;line-height:1.4}
+  .person .say{border:0;background:#f1e8f6;border-radius:999px;width:38px;height:38px;font-size:17px}
+  .teacher{margin:40px 0 60px;background:#fff;border-radius:16px;border:2px solid var(--line);padding:18px}
+  .teacher h2{margin:0 0 8px;font-size:22px;font-weight:900}
+  table{border-collapse:collapse;width:100%;font-size:15px}
+  th,td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left;vertical-align:top}
+  th{background:#f5f2f8;position:sticky;top:0}
+  .tscroll{overflow-x:auto;max-height:70vh;margin-top:10px}
+  .pill{display:inline-block;border-radius:999px;padding:1px 9px;font-weight:800;font-size:13px}
+  .yes{background:#e3f4e8;color:#2d7a47}.no{background:#f3eff6;color:var(--soft)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <a href="../" translate="yes">Readings</a>
+    <h1>Story Reel</h1>
+    <p translate="yes">Watch, listen, and read with the same group of friends. A new episode comes every week.</p>
+  </header>
+
+  <h2 class="sec" translate="yes">Episodes</h2>
+  <div class="eps" id="eps"></div>
+
+  <div class="castbar">
+    <h2 class="sec" translate="yes">Meet the cast</h2>
+    <div class="seg" id="levelSeg" role="group" aria-label="Level">
+      <button data-l="A" aria-pressed="true" translate="yes">Level A</button>
+      <button data-l="B" aria-pressed="false" translate="yes">Level B</button>
+    </div>
+  </div>
+  <div class="cast" id="cast"></div>
+
+  <section class="teacher">
+    <h2 translate="yes">Teacher</h2>
+    <div id="tGate" class="row">
+      <input class="txt" id="tPass" type="password" style="max-width:240px" aria-label="Password" placeholder="Password">
+      <button class="btn" id="tGo">Open results</button>
+    </div>
+    <div id="tBody" style="display:none">
+      <div class="row">
+        <select class="txt" id="tEp" style="max-width:220px"></select>
+        <select class="txt" id="tPer" style="max-width:160px"><option value="">All periods</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select>
+        <button class="btn alt" id="tRefresh">Refresh</button>
+        <button class="btn alt" id="tCsv">Download CSV</button>
+        <span id="tCount"></span>
+      </div>
+      <div class="tscroll"><table id="tTable"></table></div>
+    </div>
+  </section>
+</div>
+
+<script src="cast.js"></script>
+<script>
+(function () {
+  var R = window.REEL;
+  var SUPA_URL = 'https://lhmwtfyceilgndpygivj.supabase.co';
+  var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+  var TPASS = 'galileo2026';
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+  /* ---------- episode list (add one object per new episode) ---------- */
+  var EPISODES = [
+    { id: 'ep01', num: 1, title: 'The New Student', topic: 'Describing and comparing people',
+      thumb: { bg: 'classroom', board: ['ELD 101', 'Talk to every classmate!'],
+               chars: [ { id: 'mateo', x: 250, expr: 'happy' }, { id: 'linh', x: 520, expr: 'happy' }, { id: 'paolo', x: 780, expr: 'happy' },
+                        { id: 'amira', x: 1060, face: -1, expr: 'happy' }, { id: 'jun', x: 1340, face: -1, expr: 'smile' } ] } }
+  ];
+  var NEXT = { num: 2, teaser: 'Where is Jun’s backpack?' };
+
+  var h = '';
+  EPISODES.forEach(function (e) {
+    h += '<a class="ep" href="' + e.id + '/">' + R.sceneSVG(e.thumb) +
+         '<div class="t"><div class="n">Episode ' + e.num + '</div><h3 translate="no">' + esc(e.title) + '</h3></div></a>';
+  });
+  if (NEXT) h += '<div class="ep soon"><div class="n">Episode ' + NEXT.num + '</div><h3 translate="no">Coming soon</h3><p translate="no">' + esc(NEXT.teaser) + '</p></div>';
+  $('eps').innerHTML = h;
+
+  /* ---------- cast gallery ---------- */
+  var level = 'A';
+  function drawCast() {
+    var out = '';
+    Object.keys(R.CAST).forEach(function (id) {
+      var c = R.CAST[id];
+      out += '<article class="person"><div class="pic"><svg viewBox="-140 -625 280 640" aria-label="' + esc(c.name) + '">' +
+             '<g transform="scale(' + c.h + ')">' + R.drawChar(id, { expr: 'smile' }) + '</g></svg></div>' +
+             '<div class="b"><h3 translate="no">' + esc(c.name) + '<button class="say" data-id="' + id + '" aria-label="Listen">🔊</button></h3>' +
+             '<p class="about" translate="no">' + esc(level === 'B' ? c.aboutB : c.aboutA) + '</p></div></article>';
+    });
+    $('cast').innerHTML = out;
+  }
+  drawCast();
+  $('cast').addEventListener('click', function (e) {
+    var b = e.target.closest('.say'); if (!b || !window.speechSynthesis) return;
+    var c = R.CAST[b.getAttribute('data-id')];
+    speechSynthesis.cancel();
+    var u = new SpeechSynthesisUtterance(level === 'B' ? c.aboutB : c.aboutA);
+    u.lang = 'en-US'; u.rate = 0.88; speechSynthesis.speak(u);
+  });
+  document.querySelectorAll('#levelSeg button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      level = b.getAttribute('data-l');
+      document.querySelectorAll('#levelSeg button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      drawCast();
+    });
+  });
+
+  /* ---------- teacher results ---------- */
+  var ROWS = [];
+  EPISODES.forEach(function (e) { $('tEp').innerHTML += '<option value="' + e.id + '">Episode ' + e.num + ': ' + esc(e.title) + '</option>'; });
+  function openT() {
+    if ($('tPass').value !== TPASS) { $('tPass').value = ''; $('tPass').placeholder = 'Try again'; return; }
+    $('tGate').style.display = 'none'; $('tBody').style.display = ''; fetchRows();
+  }
+  $('tGo').addEventListener('click', openT);
+  $('tPass').addEventListener('keydown', function (e) { if (e.key === 'Enter') openT(); });
+  function fetchRows() {
+    $('tCount').textContent = 'Loading…';
+    fetch(SUPA_URL + '/rest/v1/reel_views?episode=eq.' + encodeURIComponent($('tEp').value) + '&select=*&order=period,student_name',
+      { headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY } })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function (rows) { ROWS = rows || []; draw(); })
+      .catch(function (s) { $('tCount').textContent = 'Could not load results (' + s + '). Check that the reel_views table exists.'; });
+  }
+  function summarize(r) {
+    var w = r.work || {}, sc = r.scores || {}, ans = w.answers || {}, preds = [];
+    Object.keys(ans).forEach(function (k) { if (ans[k].kind === 'predict') preds.push(k + ':' + (ans[k].pick != null ? 'ABC'.charAt(ans[k].pick) : '?')); });
+    var yt = (w.yt && (w.yt[r.level] || w.yt.A)) || [];
+    return { checks: (sc.checks_first_try || 0) + ' / ' + (sc.checks_total || 0), preds: preds.join(' '),
+             s1: yt[0] || '', s2: yt[1] || '', s3: yt[2] || '', mins: Math.round((w.secs || 0) / 60),
+             done: !!w.done, reached: w.maxPos || 0 };
+  }
+  function draw() {
+    var per = $('tPer').value, list = ROWS.filter(function (r) { return !per || String(r.period) === per; });
+    var h = '<tr><th>Per</th><th>Name</th><th>Level</th><th>Finished</th><th>Checks (1st try)</th><th>Sentence 1</th><th>Sentence 2</th><th>Sentence 3</th><th>Turned in</th><th>Min</th></tr>';
+    list.forEach(function (r) {
+      var s = summarize(r);
+      h += '<tr><td>' + esc(r.period) + '</td><td>' + esc(r.student_name) + '</td><td>' + esc(r.level) + '</td>' +
+           '<td><span class="pill ' + (s.done ? 'yes' : 'no') + '">' + (s.done ? 'yes' : 'not yet') + '</span></td>' +
+           '<td>' + s.checks + '</td><td>' + esc(s.s1) + '</td><td>' + esc(s.s2) + '</td><td>' + esc(s.s3) + '</td>' +
+           '<td><span class="pill ' + (r.turned_in ? 'yes' : 'no') + '">' + (r.turned_in ? 'yes' : 'no') + '</span></td><td>' + s.mins + '</td></tr>';
+    });
+    $('tTable').innerHTML = h;
+    $('tCount').textContent = list.length + ' students';
+  }
+  $('tPer').addEventListener('change', draw);
+  $('tEp').addEventListener('change', fetchRows);
+  $('tRefresh').addEventListener('click', fetchRows);
+  $('tCsv').addEventListener('click', function () {
+    var rows = [['period', 'name', 'email', 'episode', 'level', 'finished', 'checks_first_try', 'predictions', 'sentence_1', 'sentence_2', 'sentence_3', 'turned_in', 'minutes', 'updated_at']];
+    ROWS.forEach(function (r) {
+      var s = summarize(r);
+      rows.push([r.period, r.student_name, r.email, r.episode, r.level, s.done, s.checks, s.preds, s.s1, s.s2, s.s3, r.turned_in, s.mins, r.updated_at]);
+    });
+    var csv = rows.map(function (row) { return row.map(function (v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; }).join(','); }).join('\n');
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = 'story-reel-' + $('tEp').value + '.csv'; a.click();
+  });
+})();
+</script>
+<script src="/readings/track.js"></script>
+</body>
+</html>
