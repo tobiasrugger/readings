@@ -97,14 +97,22 @@ ol.steps li{margin:7px 0}
  .draw{min-height:1.6in}
  .pb{page-break-before:always}
 }
+
+#btn-dir.on,#btn-tap.on{background:#1F4D3D;color:#fff}
+.dirtr{display:block;margin-top:4px;color:#2f6f57;font-weight:700}
+.dirtr:empty{display:none}
+body.tap-on .wt-tap{cursor:pointer;border-bottom:1px dotted #8aa79a}
+body.tap-on .wt-tap:hover{background:#eef5f1}
+.wt-bub{display:inline-block;margin-left:5px;padding:1px 6px;border-radius:6px;
+  background:#1F4D3D;color:#fff;font-size:.85em;font-weight:700}
 </style>
 </head>
 <body class="lvl-2">
 <div class="bar">
 <h1>Unit Assessment</h1>
 <button id="bL1" onclick="setLevel(1)">Easier</button><button id="bL2" onclick="setLevel(2)">Standard</button><button id="bL3" onclick="setLevel(3)">Challenge</button>
-<select id="lang" onchange="setLang()"><option value="es">Espa&#241;ol</option><option value="zh-CN">&#20013;&#25991;</option><option value="ar">&#1575;&#1604;&#1593;&#1585;&#1576;&#1610;&#1577;</option><option value="vi">Ti&#7871;ng Vi&#7879;t</option><option value="th">&#3652;&#3607;&#3618;</option><option value="ne">&#2344;&#2375;&#2346;&#2366;&#2354;&#2368;</option><option value="pt">Portugu&#234;s</option><option value="fr">Fran&#231;ais</option><option value="ru">&#1056;&#1091;&#1089;&#1089;&#1082;&#1080;&#1081;</option><option value="uk">&#1059;&#1082;&#1088;&#1072;&#1111;&#1085;&#1089;&#1100;&#1082;&#1072;</option><option value="fa">&#1601;&#1575;&#1585;&#1587;&#1740;</option><option value="ko">&#54620;&#44397;&#50612;</option></select>
-<button onclick="turnIn()">Turn In</button><button onclick="location.href='index.html'">Unit</button><button onclick="window.print()">Print</button><span id="who"></span><span id="dot"></span>
+<select id="lang" onchange="setLang()"><option value="es">Espa&#241;ol</option><option value="zh-CN">&#20013;&#25991;</option><option value="ar">&#1575;&#1604;&#1593;&#1585;&#1576;&#1610;&#1577;</option><option value="vi">Ti&#7871;ng Vi&#7879;t</option><option value="th">&#3652;&#3607;&#3618;</option><option value="ne">&#2344;&#2375;&#2346;&#2366;&#2354;&#2368;</option><option value="pt">Portugu&#234;s</option><option value="fr">Fran&#231;ais</option><option value="ru">&#1056;&#1091;&#1089;&#1089;&#1082;&#1080;&#1081;</option><option value="uk">&#1059;&#1082;&#1088;&#1072;&#1111;&#1085;&#1089;&#1100;&#1082;&#1072;</option><option value="fa">&#1601;&#1575;&#1585;&#1587;&#1740;</option><option value="ur">&#1575;&#1585;&#1583;&#1608;</option><option value="tl">Tagalog</option><option value="hi">&#2361;&#2367;&#2344;&#2381;&#2342;&#2368;</option><option value="so">Soomaali</option><option value="ko">&#54620;&#44397;&#50612;</option></select>
+<button onclick="turnIn()">Turn In</button><button onclick="location.href='index.html'">Unit</button><button id="btn-dir" title="Show the directions in your language">Directions</button><button id="btn-tap" title="Tap any word for its meaning">Tap words</button><button onclick="window.print()">Print</button><span id="who"></span><span id="dot"></span>
 </div>
 <div class="overlay" id="login">
   <div class="box">
@@ -114,6 +122,11 @@ ol.steps li{margin:7px 0}
     <input type="text" id="iname" placeholder="First and last name">
     <label for="iemail">Your school email</label>
     <input type="text" id="iemail" placeholder="name@sfusd.edu">
+    <label for="iper">Your class period</label>
+    <select id="iper">
+      <option value="">Choose your period</option>
+      <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option>
+    </select>
     <label for="ilang">Your home language</label>
     <select id="ilang">
       <option value="es">Espa&#241;ol / Spanish</option>
@@ -127,6 +140,10 @@ ol.steps li{margin:7px 0}
       <option value="ru">&#1056;&#1091;&#1089;&#1089;&#1082;&#1080;&#1081; / Russian</option>
       <option value="uk">&#1059;&#1082;&#1088;&#1072;&#1111;&#1085;&#1089;&#1100;&#1082;&#1072; / Ukrainian</option>
       <option value="fa">&#1601;&#1575;&#1585;&#1587;&#1740; / Farsi</option>
+      <option value="ur">&#1575;&#1585;&#1583;&#1608; / Urdu</option>
+      <option value="tl">Tagalog</option>
+      <option value="hi">&#2361;&#2367;&#2344;&#2381;&#2342;&#2368; / Hindi</option>
+      <option value="so">Soomaali / Somali</option>
       <option value="ko">&#54620;&#44397;&#50612; / Korean</option>
     </select>
     <button class="btn" onclick="doLogin()">Start</button>
@@ -134,7 +151,8 @@ ol.steps li{margin:7px 0}
   </div>
 </div>
 <div id="gloss"><span class="x" onclick="hideGloss()">&#10005;</span><div class="w"></div><div class="d"></div><div class="t">&#8230;</div></div>
-<div class="wrap">
+<span id="canary" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden">the quick brown fox jumps over the lazy dog</span>
+<div class="wrap" translate="no">
 
 <p class="small noprint">Name ____________________________ &nbsp;&nbsp; Class ______ &nbsp;&nbsp; Date ______</p>
 <h2>Unit Assessment &middot; Who Am I?</h2>
@@ -144,48 +162,48 @@ ol.steps li{margin:7px 0}
 </div>
 
 <h2>Part A &middot; Vocabulary <span class="tag">10 points</span></h2>
-<div class="card">
+<div class="card" data-tap="1">
 <p class="small L12">Word bank: <span class="wordbank">psychology &middot; personality &middot; trait &middot; influence &middot; actual &middot; ideal &middot; ought &middot; evidence &middot; analysis &middot; culture</span></p>
 <p class="small L3">No word bank. Spell carefully.</p>
-<div class="q"><span class="num">1.</span> The study of the mind and behavior. <input class="sm" type="text" data-q="a1"> <span id="m_a1"></span></div>
-<div class="q"><span class="num">2.</span> The usual way a person thinks, feels, and acts. <input class="sm" type="text" data-q="a2"> <span id="m_a2"></span></div>
-<div class="q"><span class="num">3.</span> One piece of a personality, like &ldquo;brave.&rdquo; <input class="sm" type="text" data-q="a3"> <span id="m_a3"></span></div>
-<div class="q"><span class="num">4.</span> When something changes your mind or your choices. <input class="sm" type="text" data-q="a4"> <span id="m_a4"></span></div>
-<div class="q"><span class="num">5.</span> The self you really are, right now. <input class="sm" type="text" data-q="a5"> <span id="m_a5"></span></div>
-<div class="q"><span class="num">6.</span> The self you want to be. <input class="sm" type="text" data-q="a6"> <span id="m_a6"></span></div>
-<div class="q"><span class="num">7.</span> The self you think you should be. <input class="sm" type="text" data-q="a7"> <span id="m_a7"></span></div>
-<div class="q"><span class="num">8.</span> A real example that proves your idea. <input class="sm" type="text" data-q="a8"> <span id="m_a8"></span></div>
-<div class="q"><span class="num">9.</span> The sentence that explains why your evidence matters. <input class="sm" type="text" data-q="a9"> <span id="m_a9"></span></div>
-<div class="q"><span class="num">10.</span> The shared language, food, and beliefs of a group. <input class="sm" type="text" data-q="a10"> <span id="m_a10"></span></div>
+<div class="q" data-tap="1"><span class="num">1.</span> The study of the mind and behavior. <input class="sm" type="text" data-q="a1"> <span id="m_a1"></span></div>
+<div class="q" data-tap="1"><span class="num">2.</span> The usual way a person thinks, feels, and acts. <input class="sm" type="text" data-q="a2"> <span id="m_a2"></span></div>
+<div class="q" data-tap="1"><span class="num">3.</span> One piece of a personality, like &ldquo;brave.&rdquo; <input class="sm" type="text" data-q="a3"> <span id="m_a3"></span></div>
+<div class="q" data-tap="1"><span class="num">4.</span> When something changes your mind or your choices. <input class="sm" type="text" data-q="a4"> <span id="m_a4"></span></div>
+<div class="q" data-tap="1"><span class="num">5.</span> The self you really are, right now. <input class="sm" type="text" data-q="a5"> <span id="m_a5"></span></div>
+<div class="q" data-tap="1"><span class="num">6.</span> The self you want to be. <input class="sm" type="text" data-q="a6"> <span id="m_a6"></span></div>
+<div class="q" data-tap="1"><span class="num">7.</span> The self you think you should be. <input class="sm" type="text" data-q="a7"> <span id="m_a7"></span></div>
+<div class="q" data-tap="1"><span class="num">8.</span> A real example that proves your idea. <input class="sm" type="text" data-q="a8"> <span id="m_a8"></span></div>
+<div class="q" data-tap="1"><span class="num">9.</span> The sentence that explains why your evidence matters. <input class="sm" type="text" data-q="a9"> <span id="m_a9"></span></div>
+<div class="q" data-tap="1"><span class="num">10.</span> The shared language, food, and beliefs of a group. <input class="sm" type="text" data-q="a10"> <span id="m_a10"></span></div>
 <button class="btn sm noprint" onclick="scoreAll()">Check Part A</button>
 <span class="scorebox noprint" id="A_score" style="display:inline-block;margin-left:10px;font-size:16px;padding:8px 14px"></span>
 <input type="hidden" data-q="A_pts">
 </div>
 
 <h2 class="pb">Part B &middot; Reading <span class="tag">10 points</span></h2>
-<div class="card">
+<div class="card" data-tap="1">
 <h4>&ldquo;The Somebody&rdquo; by Danny Santiago</h4>
-<div class="q"><span class="num">1.</span> Why is Chato alone at the start of the story? <span id="m_b1"></span>
+<div class="q" data-tap="1"><span class="num">1.</span> Why is Chato alone at the start of the story? <span id="m_b1"></span>
 <div class="opts">
 <label><input type="radio" name="b1" value="a" data-q="b1"> His family moved to a new city.</label>
 <label><input type="radio" name="b1" value="b" data-q="b1"> His gang broke up &mdash; some moved, one is in jail, one joined the Navy.</label>
 <label><input type="radio" name="b1" value="c" data-q="b1"> He chose to have no friends.</label>
 </div></div>
-<div class="q"><span class="num">2.</span> Chato writes his name on buildings mainly because &mdash; <span id="m_b2"></span>
+<div class="q" data-tap="1"><span class="num">2.</span> Chato writes his name on buildings mainly because &mdash; <span id="m_b2"></span>
 <div class="opts">
 <label><input type="radio" name="b2" value="a" data-q="b2"> he wants to prove he exists and that things belong to him.</label>
 <label><input type="radio" name="b2" value="b" data-q="b2"> he is practicing for an art class.</label>
 <label><input type="radio" name="b2" value="c" data-q="b2"> the Sierra gang paid him to do it.</label>
 </div></div>
-<div class="q"><span class="num">3.</span> Chato says no to Rabbit because &mdash; <span id="m_b3"></span>
+<div class="q" data-tap="1"><span class="num">3.</span> Chato says no to Rabbit because &mdash; <span id="m_b3"></span>
 <div class="opts">
 <label><input type="radio" name="b3" value="a" data-q="b3"> he is afraid of her.</label>
 <label><input type="radio" name="b3" value="b" data-q="b3"> he wants to protect his reputation.</label>
 <label><input type="radio" name="b3" value="c" data-q="b3"> she writes badly.</label>
 </div></div>
-<div class="q"><span class="num">4.</span> True or false: at the end, Chato believes he will become famous. <span id="m_b4"></span>
+<div class="q" data-tap="1"><span class="num">4.</span> True or false: at the end, Chato believes he will become famous. <span id="m_b4"></span>
 <div class="opts"><label><input type="radio" name="b4" value="true" data-q="b4"> True</label><label><input type="radio" name="b4" value="false" data-q="b4"> False</label></div></div>
-<div class="q"><span class="num">5.</span> Chato&rsquo;s father wanted him to become &mdash; <span id="m_b5"></span>
+<div class="q" data-tap="1"><span class="num">5.</span> Chato&rsquo;s father wanted him to become &mdash; <span id="m_b5"></span>
 <div class="opts">
 <label><input type="radio" name="b5" value="a" data-q="b5"> a lawyer who defends Mexican people.</label>
 <label><input type="radio" name="b5" value="b" data-q="b5"> a boxer.</label>
@@ -193,31 +211,31 @@ ol.steps li{margin:7px 0}
 </div></div>
 
 <h4>&ldquo;The Jacket&rdquo; by Gary Soto</h4>
-<div class="q"><span class="num">6.</span> The boy asked his mother for a jacket that was &mdash; <span id="m_b6"></span>
+<div class="q" data-tap="1"><span class="num">6.</span> The boy asked his mother for a jacket that was &mdash; <span id="m_b6"></span>
 <div class="opts">
 <label><input type="radio" name="b6" value="a" data-q="b6"> green and warm.</label>
 <label><input type="radio" name="b6" value="b" data-q="b6"> black leather with silver studs, like bikers wear.</label>
 <label><input type="radio" name="b6" value="c" data-q="b6"> the same as his sister&rsquo;s.</label>
 </div></div>
-<div class="q"><span class="num">7.</span> How long does he wear the green jacket? <span id="m_b7"></span>
+<div class="q" data-tap="1"><span class="num">7.</span> How long does he wear the green jacket? <span id="m_b7"></span>
 <div class="opts">
 <label><input type="radio" name="b7" value="a" data-q="b7"> One week.</label>
 <label><input type="radio" name="b7" value="b" data-q="b7"> One year.</label>
 <label><input type="radio" name="b7" value="c" data-q="b7"> Three years.</label>
 </div></div>
-<div class="q"><span class="num">8.</span> When he passes his mother in the kitchen, he &mdash; <span id="m_b8"></span>
+<div class="q" data-tap="1"><span class="num">8.</span> When he passes his mother in the kitchen, he &mdash; <span id="m_b8"></span>
 <div class="opts">
 <label><input type="radio" name="b8" value="a" data-q="b8"> yells at her about the jacket.</label>
 <label><input type="radio" name="b8" value="b" data-q="b8"> smiles and says thank you, even though he hates it.</label>
 <label><input type="radio" name="b8" value="c" data-q="b8"> hides the jacket from her.</label>
 </div></div>
-<div class="q"><span class="num">9.</span> He calls the jacket his &ldquo;green ugly brother&rdquo; because &mdash; <span id="m_b9"></span>
+<div class="q" data-tap="1"><span class="num">9.</span> He calls the jacket his &ldquo;green ugly brother&rdquo; because &mdash; <span id="m_b9"></span>
 <div class="opts">
 <label><input type="radio" name="b9" value="a" data-q="b9"> his real brother gave it to him.</label>
 <label><input type="radio" name="b9" value="b" data-q="b9"> it follows him everywhere and he cannot get rid of it.</label>
 <label><input type="radio" name="b9" value="c" data-q="b9"> it is the same color as his brother&rsquo;s jacket.</label>
 </div></div>
-<div class="q"><span class="num">10.</span> True or false: both stories are told by the main character in his own voice. <span id="m_b10"></span>
+<div class="q" data-tap="1"><span class="num">10.</span> True or false: both stories are told by the main character in his own voice. <span id="m_b10"></span>
 <div class="opts"><label><input type="radio" name="b10" value="true" data-q="b10"> True</label><label><input type="radio" name="b10" value="false" data-q="b10"> False</label></div></div>
 <button class="btn sm noprint" onclick="scoreAll()">Check Part B</button>
 <span class="scorebox noprint" id="B_score" style="display:inline-block;margin-left:10px;font-size:16px;padding:8px 14px"></span>
@@ -225,47 +243,47 @@ ol.steps li{margin:7px 0}
 </div>
 
 <h2 class="pb">Part C &middot; Psychology Concepts <span class="tag">8 points</span></h2>
-<div class="card">
-<div class="q"><span class="num">1.</span> &ldquo;I speak three languages.&rdquo; Which self? <input class="sm" type="text" data-q="c1"> <span id="m_c1"></span></div>
-<div class="q"><span class="num">2.</span> &ldquo;My family expects me to become an engineer.&rdquo; Which self? <input class="sm" type="text" data-q="c2"> <span id="m_c2"></span></div>
-<div class="q"><span class="num">3.</span> &ldquo;Someday I want to be a person who is not afraid.&rdquo; Which self? <input class="sm" type="text" data-q="c3"> <span id="m_c3"></span></div>
-<div class="q"><span class="num">4.</span> A big gap between actual and <b>ideal</b> usually makes a person feel &mdash; <span id="m_c4"></span>
+<div class="card" data-tap="1">
+<div class="q" data-tap="1"><span class="num">1.</span> &ldquo;I speak three languages.&rdquo; Which self? <input class="sm" type="text" data-q="c1"> <span id="m_c1"></span></div>
+<div class="q" data-tap="1"><span class="num">2.</span> &ldquo;My family expects me to become an engineer.&rdquo; Which self? <input class="sm" type="text" data-q="c2"> <span id="m_c2"></span></div>
+<div class="q" data-tap="1"><span class="num">3.</span> &ldquo;Someday I want to be a person who is not afraid.&rdquo; Which self? <input class="sm" type="text" data-q="c3"> <span id="m_c3"></span></div>
+<div class="q" data-tap="1"><span class="num">4.</span> A big gap between actual and <b>ideal</b> usually makes a person feel &mdash; <span id="m_c4"></span>
 <div class="opts">
 <label><input type="radio" name="c4" value="a" data-q="c4"> sad and disappointed</label>
 <label><input type="radio" name="c4" value="b" data-q="c4"> guilty and afraid</label>
 <label><input type="radio" name="c4" value="c" data-q="c4"> proud and confident</label>
 </div></div>
-<div class="q"><span class="num">5.</span> A big gap between actual and <b>ought</b> usually makes a person feel &mdash; <span id="m_c5"></span>
+<div class="q" data-tap="1"><span class="num">5.</span> A big gap between actual and <b>ought</b> usually makes a person feel &mdash; <span id="m_c5"></span>
 <div class="opts">
 <label><input type="radio" name="c5" value="a" data-q="c5"> sad and disappointed</label>
 <label><input type="radio" name="c5" value="b" data-q="c5"> guilty and afraid</label>
 <label><input type="radio" name="c5" value="c" data-q="c5"> bored</label>
 </div></div>
-<div class="q"><span class="num">6.</span> Which is <b>not</b> one of the Big Five factors we studied? <span id="m_c6"></span>
+<div class="q" data-tap="1"><span class="num">6.</span> Which is <b>not</b> one of the Big Five factors we studied? <span id="m_c6"></span>
 <div class="opts">
 <label><input type="radio" name="c6" value="a" data-q="c6"> Trust</label>
 <label><input type="radio" name="c6" value="b" data-q="c6"> Self-discipline</label>
 <label><input type="radio" name="c6" value="c" data-q="c6"> Intelligence</label>
 <label><input type="radio" name="c6" value="d" data-q="c6"> Emotional stability</label>
 </div></div>
-<div class="q"><span class="num">7.</span> &ldquo;I live with my parents and send money to my grandmother.&rdquo; This is a value of an ______ culture. <input class="sm" type="text" data-q="c7" placeholder="independent / collaborative"> <span id="m_c7"></span></div>
-<div class="q"><span class="num">8.</span> The strength or size of an influence is called its ______ . <input class="sm" type="text" data-q="c8"> <span id="m_c8"></span></div>
+<div class="q" data-tap="1"><span class="num">7.</span> &ldquo;I live with my parents and send money to my grandmother.&rdquo; This is a value of an ______ culture. <input class="sm" type="text" data-q="c7" placeholder="independent / collaborative"> <span id="m_c7"></span></div>
+<div class="q" data-tap="1"><span class="num">8.</span> The strength or size of an influence is called its ______ . <input class="sm" type="text" data-q="c8"> <span id="m_c8"></span></div>
 <button class="btn sm noprint" onclick="scoreAll()">Check Part C</button>
 <span class="scorebox noprint" id="C_score" style="display:inline-block;margin-left:10px;font-size:16px;padding:8px 14px"></span>
 <input type="hidden" data-q="C_pts">
 </div>
 
 <h2 class="pb">Part D &middot; Grammar <span class="tag">8 points</span></h2>
-<div class="card">
-<div class="q"><span class="num">1.</span> Chato ______ not ashamed of being Mexican. <input class="sm" type="text" data-q="d1"> <span id="m_d1"></span></div>
-<div class="q"><span class="num">2.</span> The boy (wear) ______ the jacket for three years. <input class="sm" type="text" data-q="d2"> <span id="m_d2"></span></div>
-<div class="q"><span class="num">3.</span> His mother (say) ______ children in Mexico would love it. <input class="sm" type="text" data-q="d3"> <span id="m_d3"></span></div>
-<div class="q"><span class="num">4.</span> (patient) My ideal self is ______ than my actual self. <input class="sm" type="text" data-q="d4" placeholder="two words"> <span id="m_d4"></span></div>
-<div class="q"><span class="num">5.</span> My parents think I should ______ harder. <span id="m_d5"></span>
+<div class="card" data-tap="1">
+<div class="q" data-tap="1"><span class="num">1.</span> Chato ______ not ashamed of being Mexican. <input class="sm" type="text" data-q="d1"> <span id="m_d1"></span></div>
+<div class="q" data-tap="1"><span class="num">2.</span> The boy (wear) ______ the jacket for three years. <input class="sm" type="text" data-q="d2"> <span id="m_d2"></span></div>
+<div class="q" data-tap="1"><span class="num">3.</span> His mother (say) ______ children in Mexico would love it. <input class="sm" type="text" data-q="d3"> <span id="m_d3"></span></div>
+<div class="q" data-tap="1"><span class="num">4.</span> (patient) My ideal self is ______ than my actual self. <input class="sm" type="text" data-q="d4" placeholder="two words"> <span id="m_d4"></span></div>
+<div class="q" data-tap="1"><span class="num">5.</span> My parents think I should ______ harder. <span id="m_d5"></span>
 <div class="opts"><label><input type="radio" name="d5" value="a" data-q="d5"> to study</label><label><input type="radio" name="d5" value="b" data-q="d5"> study</label><label><input type="radio" name="d5" value="c" data-q="d5"> studies</label></div></div>
-<div class="q"><span class="num">6.</span> He took the jacket off ______ he was embarrassed. <input class="sm" type="text" data-q="d6" placeholder="because / so"> <span id="m_d6"></span></div>
-<div class="q"><span class="num">7.</span> ______ his gang, Chato used to feel safe. (2 words) <input class="sm" type="text" data-q="d7"> <span id="m_d7"></span></div>
-<div class="q"><span class="num">8.</span> Which sentence is correct? <span id="m_d8"></span>
+<div class="q" data-tap="1"><span class="num">6.</span> He took the jacket off ______ he was embarrassed. <input class="sm" type="text" data-q="d6" placeholder="because / so"> <span id="m_d6"></span></div>
+<div class="q" data-tap="1"><span class="num">7.</span> ______ his gang, Chato used to feel safe. (2 words) <input class="sm" type="text" data-q="d7"> <span id="m_d7"></span></div>
+<div class="q" data-tap="1"><span class="num">8.</span> Which sentence is correct? <span id="m_d8"></span>
 <div class="opts">
 <label><input type="radio" name="d8" value="a" data-q="d8"> My friends make me to feel brave.</label>
 <label><input type="radio" name="d8" value="b" data-q="d8"> My friends make me feel brave.</label>
@@ -281,42 +299,42 @@ ol.steps li{margin:7px 0}
 
 <h2 class="pb">Part E &middot; Short Answer <span class="tag">12 points</span></h2>
 <div class="card L1">
-<p class="small">Answer in one or two sentences. Use the frames.</p>
-<div class="q"><span class="num">1.</span> What is one thing Chato and the boy in &ldquo;The Jacket&rdquo; have in common?
+<p class="small" translate="yes" data-dir="answerinoneortwo" data-en="Answer in one or two sentences. Use the frames.">Answer in one or two sentences. Use the frames.</p>
+<div class="q" data-tap="1"><span class="num">1.</span> What is one thing Chato and the boy in &ldquo;The Jacket&rdquo; have in common?
 <div class="frame">Both boys ______ .</div>
 <textarea data-q="e1_L1"></textarea></div>
-<div class="q"><span class="num">2.</span> Name one influence on your life and say what it makes you do.
+<div class="q" data-tap="1"><span class="num">2.</span> Name one influence on your life and say what it makes you do.
 <div class="frame">______ influences me to ______ .</div>
 <textarea data-q="e2_L1"></textarea></div>
-<div class="q"><span class="num">3.</span> Describe your actual self in one sentence.
+<div class="q" data-tap="1"><span class="num">3.</span> Describe your actual self in one sentence.
 <div class="frame">My actual self is ______ .</div>
 <textarea data-q="e3_L1"></textarea></div>
-<div class="q"><span class="num">4.</span> Why is it useful to know about your three selves?
+<div class="q" data-tap="1"><span class="num">4.</span> Why is it useful to know about your three selves?
 <div class="frame">It is useful because ______ .</div>
 <textarea data-q="e4_L1"></textarea></div>
 </div>
 
 <div class="card L2">
-<p class="small">Answer each in two to four sentences. Include evidence.</p>
-<div class="q"><span class="num">1.</span> Both Chato and the boy in &ldquo;The Jacket&rdquo; care a lot about how other people see them. Give one example from each story.
+<p class="small" translate="yes" data-dir="answereachintwot" data-en="Answer each in two to four sentences. Include evidence.">Answer each in two to four sentences. Include evidence.</p>
+<div class="q" data-tap="1"><span class="num">1.</span> Both Chato and the boy in &ldquo;The Jacket&rdquo; care a lot about how other people see them. Give one example from each story.
 <textarea data-q="e1_L2" style="min-height:100px"></textarea></div>
-<div class="q"><span class="num">2.</span> Choose one Big Five factor and use it to describe Chato. Give evidence from the story.
+<div class="q" data-tap="1"><span class="num">2.</span> Choose one Big Five factor and use it to describe Chato. Give evidence from the story.
 <textarea data-q="e2_L2" style="min-height:100px"></textarea></div>
-<div class="q"><span class="num">3.</span> Explain the difference between an ideal self and an ought self. Give one example of each from your own life.
+<div class="q" data-tap="1"><span class="num">3.</span> Explain the difference between an ideal self and an ought self. Give one example of each from your own life.
 <textarea data-q="e3_L2" style="min-height:100px"></textarea></div>
-<div class="q"><span class="num">4.</span> Name the influence with the biggest magnitude in your life and explain how it changes your choices.
+<div class="q" data-tap="1"><span class="num">4.</span> Name the influence with the biggest magnitude in your life and explain how it changes your choices.
 <textarea data-q="e4_L2" style="min-height:100px"></textarea></div>
 </div>
 
 <div class="card L3">
-<p class="small">Answer each in a developed response with textual evidence. Short quotes where useful.</p>
-<div class="q"><span class="num">1.</span> Chato makes himself visible; the boy in &ldquo;The Jacket&rdquo; tries to disappear. Argue which boy is more controlled by other people&rsquo;s opinions, using evidence from both stories.
+<p class="small" translate="yes" data-dir="answereachinadev" data-en="Answer each in a developed response with textual evidence. Short quotes where useful.">Answer each in a developed response with textual evidence. Short quotes where useful.</p>
+<div class="q" data-tap="1"><span class="num">1.</span> Chato makes himself visible; the boy in &ldquo;The Jacket&rdquo; tries to disappear. Argue which boy is more controlled by other people&rsquo;s opinions, using evidence from both stories.
 <textarea data-q="e1_L3" style="min-height:130px"></textarea></div>
-<div class="q"><span class="num">2.</span> The boy blames the jacket and blames his mother. Using the three selves, explain what he is actually angry at.
+<div class="q" data-tap="1"><span class="num">2.</span> The boy blames the jacket and blames his mother. Using the three selves, explain what he is actually angry at.
 <textarea data-q="e2_L3" style="min-height:130px"></textarea></div>
-<div class="q"><span class="num">3.</span> Mr. Calderon tells Chato that maybe he puts the Sierra mark on his own house. If that is true, what does it reveal about the relationship between Chato&rsquo;s actual self and his ideal self?
+<div class="q" data-tap="1"><span class="num">3.</span> Mr. Calderon tells Chato that maybe he puts the Sierra mark on his own house. If that is true, what does it reveal about the relationship between Chato&rsquo;s actual self and his ideal self?
 <textarea data-q="e3_L3" style="min-height:130px"></textarea></div>
-<div class="q"><span class="num">4.</span> A person raised in a collaborative culture and a person raised in an independent culture read &ldquo;The Jacket.&rdquo; How might their reactions to the mother differ? Explain using unit vocabulary.
+<div class="q" data-tap="1"><span class="num">4.</span> A person raised in a collaborative culture and a person raised in an independent culture read &ldquo;The Jacket.&rdquo; How might their reactions to the mother differ? Explain using unit vocabulary.
 <textarea data-q="e4_L3" style="min-height:130px"></textarea></div>
 </div>
 
@@ -327,11 +345,11 @@ ol.steps li{margin:7px 0}
 <div class="L2"><p style="margin:0"><b>Write a PEEA paragraph (6&ndash;8 sentences):</b> Describe the three selves of the boy in &ldquo;The Jacket&rdquo; and explain why they matter in his life. Use at least two pieces of evidence from the text.</p></div>
 <div class="L3"><p style="margin:0"><b>Write a PEEEA paragraph (9&ndash;12 sentences):</b> Choose <i>either</i> Chato <i>or</i> the boy in &ldquo;The Jacket.&rdquo; Argue which force shapes him more &mdash; his own ideal self, or the influence of the people around him. Use three pieces of evidence, at least two with short quotes.</p></div>
 </div>
-<div class="card">
+<div class="card" data-tap="1">
 <textarea data-q="para" style="min-height:300px" oninput="wc('para','awc')"></textarea>
 <span class="small noprint" id="awc">0 words</span>
 </div>
-<div class="card">
+<div class="card" data-tap="1">
 <table>
 <tr><th></th><th>10</th><th>8</th><th>6</th><th>Mr. Toby</th></tr>
 <tr><td><b>Point &amp; evidence</b></td><td>Clear point, all evidence connected</td><td>Clear point, some connected</td><td>Unclear or disconnected</td><td></td></tr>
@@ -342,15 +360,15 @@ ol.steps li{margin:7px 0}
 
 <h3>Reflection</h3>
 <div class="card warn">
-<div class="q"><span class="num">1.</span> Back to the essential question: <b>Who am I?</b> Answer it in one sentence, after eight weeks.
+<div class="q" data-tap="1"><span class="num">1.</span> Back to the essential question: <b>Who am I?</b> Answer it in one sentence, after eight weeks.
 <textarea data-q="rf1"></textarea></div>
-<div class="q"><span class="num">2.</span> What was the hardest part of this unit for you?
+<div class="q" data-tap="1"><span class="num">2.</span> What was the hardest part of this unit for you?
 <textarea data-q="rf2"></textarea></div>
-<div class="q"><span class="num">3.</span> What is one thing you want Mr. Toby to explain again?
+<div class="q" data-tap="1"><span class="num">3.</span> What is one thing you want Mr. Toby to explain again?
 <textarea data-q="rf3"></textarea></div>
 <button class="btn noprint" onclick="turnIn()">Turn in my test</button>
 </div>
-<p class="small">English binder # __________</p>
+<p class="small" translate="yes" data-dir="englishbinder" data-en="English binder # __________">English binder # __________</p>
 
 </div>
 <script>
@@ -377,11 +395,20 @@ function setLevel(l){
 
 /* ---------- login ---------- */
 function doLogin(){
-  var n=$('iname').value.trim(), e=$('iemail').value.trim().toLowerCase();
+  var n=$('iname').value.trim(), raw=psyClean($('iemail').value), p=$('iper')?$('iper').value:'';
   if(n.length<2){ $('loginerr').textContent='Please type your name.'; return; }
-  if(e.indexOf('@')<1){ $('loginerr').textContent='Please type your school email.'; return; }
-  ME.name=n; ME.email=e; ME.lang=$('ilang').value;
-  try{localStorage.setItem('psy_name',n);localStorage.setItem('psy_email',e);localStorage.setItem('psy_lang',ME.lang);}catch(err){}
+  if(!psyValid(raw)){ $('loginerr').textContent='Please use your school email — it ends with @s.sfusd.edu'; return; }
+  if(!p){ $('loginerr').textContent='Please choose your class period.'; return; }
+  $('loginerr').textContent='';
+  var canon=psyCanon(raw);
+  psyAlias(raw, canon);
+  psySeed(n, canon, p);
+  ME.name=n; ME.email=canon; ME.lang=$('ilang').value; ME.period=p;
+  try{
+    localStorage.setItem('psy_name',n);localStorage.setItem('psy_email',canon);
+    localStorage.setItem('psy_lang',ME.lang);localStorage.setItem('psy_period',p);
+    localStorage.setItem('gal_student_email',canon);
+  }catch(err){}
   startApp();
 }
 function startApp(){
@@ -452,11 +479,15 @@ function translate(text,target,cb){
   var key='tr::'+target+'::'+text;
   var c=null; try{c=localStorage.getItem(key);}catch(e){}
   if(c){cb(c);return;}
-  fetch(PROXY+'?text='+encodeURIComponent(text)+'&target='+encodeURIComponent(target))
-   .then(function(r){return r.text();})
-   .then(function(t){
-      var out=t;
-      try{ var j=JSON.parse(t); out=j.translation||j.text||j.result||j.translatedText||t; }catch(e){}
+  var PSY_NAME={es:'Spanish','zh-CN':'Chinese (Simplified)',ar:'Arabic',vi:'Vietnamese',
+    th:'Thai',ne:'Nepali',pt:'Portuguese',fr:'French',ru:'Russian',uk:'Ukrainian',fa:'Persian',
+    ko:'Korean',ur:'Urdu',tl:'Tagalog',hi:'Hindi',so:'Somali'};
+  fetch(PROXY+'?action=translate&idiom='+encodeURIComponent(text)+'&meaning=&lang='+
+        encodeURIComponent(PSY_NAME[target]||target))
+   .then(function(r){return r.json();})
+   .then(function(j){
+      var out='';
+      if(j&&j.ok&&j.translation) out=j.translation.equiv||j.translation.meaning||'';
       if(typeof out!=='string') out=String(out);
       try{localStorage.setItem(key,out);}catch(e){}
       cb(out);
@@ -547,4 +578,183 @@ function scoreAll(){
 function afterLoad(){ }
 </script>
 <script src="/readings/track.js"></script>
+
+<script>
+/* ============ Galileo standard: identity, directions, tap words, canary ============ */
+(function(){
+  /* some pages in this family define SLUG, some do not */
+  var PAGE_SLUG=(typeof SLUG!=='undefined'&&SLUG)?SLUG:'psychology-assessment';
+  var CANON_DOMAIN='@s.sfusd.edu', ROSTER=[];
+  function ME_(){ return (typeof ME!=='undefined'&&ME&&ME.email)?ME:null; }
+  window.cleanMail=function(x){ return String(x||'').trim().toLowerCase(); };
+  window.localPart=function(e){ return cleanMail(e).split('@')[0]; };
+  window.validMail=function(e){ return /^[^@\s]+@(s\.)?sfusd\.edu$/.test(cleanMail(e)); };
+  window.canonMail=function(raw){
+    var lp=localPart(raw), i;
+    for(i=0;i<ROSTER.length;i++){ if(localPart(ROSTER[i].email)===lp) return cleanMail(ROSTER[i].email); }
+    return lp+CANON_DOMAIN;
+  };
+  function head(pref){
+    var h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};
+    if(pref) h['Prefer']=pref; return h;
+  }
+  window.recordAlias=function(alias, canon){
+    if(!alias||alias===canon) return;
+    fetch(SUPA_URL+'/rest/v1/student_aliases?on_conflict=alias_email',{
+      method:'POST', headers:head('resolution=merge-duplicates,return=minimal'),
+      body:JSON.stringify([{alias_email:alias, email:canon}])}).catch(function(){});
+  };
+  window.seedStudent=function(name,email,period){
+    fetch(SUPA_URL+'/rest/v1/students?on_conflict=email',{
+      method:'POST', headers:head('resolution=ignore-duplicates,return=minimal'),
+      body:JSON.stringify([{email:email, name:name, period:period}])}).catch(function(){});
+  };
+  fetch(SUPA_URL+'/rest/v1/students?select=name,email,period&order=name',{headers:head()})
+    .then(function(r){ return r.ok?r.json():[]; })
+    .then(function(rows){ ROSTER=rows||[]; }).catch(function(){});
+
+  /* prefill from a sign-in anywhere else on the site */
+  try{
+    var saved=JSON.parse(localStorage.getItem('psy_me')||'null');
+    if(saved&&saved.email){
+      if(document.getElementById('iname')) document.getElementById('iname').value=saved.name||'';
+      if(document.getElementById('iemail')) document.getElementById('iemail').value=saved.email;
+      if(saved.period&&document.getElementById('iper')) document.getElementById('iper').value=String(saved.period);
+    } else {
+      var g=localStorage.getItem('gal_student_email');
+      if(g&&document.getElementById('iemail')) document.getElementById('iemail').value=g;
+    }
+  }catch(e){}
+
+  window.psyClean=cleanMail; window.psyValid=validMail; window.psyCanon=canonMail;
+  window.psyAlias=recordAlias; window.psySeed=seedStudent;
+
+  /* ---------- translate through the proxy ---------- */
+  var tcache={};
+  var C2N={es:'Spanish','zh-CN':'Chinese (Simplified)',ar:'Arabic',vi:'Vietnamese',th:'Thai',
+    ne:'Nepali',pt:'Portuguese',fr:'French',ru:'Russian',uk:'Ukrainian',fa:'Persian',ko:'Korean',
+    ur:'Urdu',tl:'Tagalog',hi:'Hindi',so:'Somali'};
+  function tr(text, code){
+    var lang=C2N[code]||code;
+    var key=text+'|'+lang;
+    if(tcache[key]) return Promise.resolve(tcache[key]);
+    var url=PROXY+'?action=translate&idiom='+encodeURIComponent(text)+'&meaning=&lang='+encodeURIComponent(lang);
+    return fetch(url).then(function(r){return r.json();}).then(function(d){
+      if(!d||!d.ok||!d.translation) return null;
+      tcache[key]=d.translation; return d.translation;
+    }).catch(function(){return null;});
+  }
+
+  /* ---------- directions in the student's language ---------- */
+  var DIR_ON=false, SENT={};
+  try{ DIR_ON=localStorage.getItem('song_dir')==='1'; }catch(e){}
+  function logReveal(k, lang){
+    if(!ME_()) return;
+    var sig=k+'|'+lang; if(SENT[sig]) return; SENT[sig]=true;
+    fetch(SUPA_URL+'/rest/v1/instruction_reveals',{
+      method:'POST', headers:head('return=minimal'),
+      body:JSON.stringify([{email:ME_().email, set_slug:PAGE_SLUG, activity:k, lang:lang}])}).catch(function(){});
+  }
+  function showDirections(){
+    var lang=document.getElementById('lang').value;
+    var list=document.querySelectorAll('[data-dir]');
+    Array.prototype.forEach.call(list,function(p){
+      var out=p.querySelector('.dirtr');
+      if(!out){ out=document.createElement('span'); out.className='dirtr'; p.appendChild(out); }
+      if(!DIR_ON||!lang){ out.textContent=''; return; }
+      var k=p.getAttribute('data-dir'), en=p.getAttribute('data-en')||'';
+      out.textContent='…';
+      tr(en, lang).then(function(t){
+        out.textContent=t?(t.equiv||t.meaning||''):'';
+        if(out.textContent) logReveal(k, lang);
+      });
+    });
+  }
+  var dirBtn=document.getElementById('btn-dir');
+  if(dirBtn){
+    dirBtn.classList.toggle('on', DIR_ON);
+    dirBtn.addEventListener('click',function(){
+      DIR_ON=!DIR_ON;
+      try{ localStorage.setItem('song_dir', DIR_ON?'1':'0'); }catch(e){}
+      dirBtn.classList.toggle('on', DIR_ON);
+      showDirections();
+    });
+  }
+  var langSel=document.getElementById('lang');
+  if(langSel) langSel.addEventListener('change', function(){ if(DIR_ON) showDirections(); });
+  if(DIR_ON) setTimeout(showDirections, 600);
+
+  /* ---------- tap any word ---------- */
+  var TAP_ON=false;
+  try{ TAP_ON=localStorage.getItem('song_tap')==='1'; }catch(e){}
+  function wrapWords(root){
+    if(root.getAttribute('data-wrapped')) return;
+    root.setAttribute('data-wrapped','1');
+    var walker=document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), nodes=[], n;
+    while((n=walker.nextNode())) if(n.nodeValue.trim()) nodes.push(n);
+    nodes.forEach(function(node){
+      if(node.parentNode.closest('textarea,input,button,select,.wt-tap')) return;
+      var frag=document.createDocumentFragment();
+      node.nodeValue.split(/(\s+)/).forEach(function(piece){
+        if(!piece.trim()){ frag.appendChild(document.createTextNode(piece)); return; }
+        var s=document.createElement('span');
+        s.className='wt-tap'; s.textContent=piece;
+        frag.appendChild(s);
+      });
+      node.parentNode.replaceChild(frag, node);
+    });
+  }
+  function tapTargets(){ return document.querySelectorAll('[data-tap]'); }
+  function setTap(on){
+    TAP_ON=on;
+    try{ localStorage.setItem('song_tap', on?'1':'0'); }catch(e){}
+    document.body.classList.toggle('tap-on', on);
+    var b=document.getElementById('btn-tap');
+    if(b) b.classList.toggle('on', on);
+    if(on) Array.prototype.forEach.call(tapTargets(), wrapWords);
+  }
+  var tapBtn=document.getElementById('btn-tap');
+  if(tapBtn) tapBtn.addEventListener('click', function(){ setTap(!TAP_ON); });
+  document.addEventListener('click', function(ev){
+    if(!TAP_ON) return;
+    var s=ev.target.closest('.wt-tap'); if(!s) return;
+    var lang=document.getElementById('lang').value;
+    if(!lang){ document.getElementById('lang').focus(); return; }
+    var word=(s.textContent||'').replace(/[^A-Za-zÀ-ÿ'’-]/g,'');
+    if(!word) return;
+    var old=s.getAttribute('data-shown');
+    if(old){ s.removeAttribute('data-shown'); var t=s.querySelector('.wt-bub'); if(t) t.remove(); return; }
+    var bub=document.createElement('span'); bub.className='wt-bub'; bub.textContent='…';
+    s.appendChild(bub); s.setAttribute('data-shown','1');
+    tr(word, lang).then(function(t){ bub.textContent=t?(t.equiv||t.meaning||'?'):'?'; });
+  });
+  if(TAP_ON) setTimeout(function(){ setTap(true); }, 400);
+
+  /* ---------- quiet browser-translation canary ---------- */
+  var CANARY='the quick brown fox jumps over the lazy dog', TR_SENT='';
+  function detectTranslation(){
+    var c=document.getElementById('canary');
+    var got=c?(c.textContent||'').trim().toLowerCase():'';
+    var cls=document.documentElement.className||'';
+    var drift=(c&&got!==CANARY)?got:'';
+    if(!drift&&!/translated|notranslate-off/.test(cls)) return null;
+    return {observed:drift, html_lang:document.documentElement.lang||'', html_class:cls};
+  }
+  function checkTranslation(){
+    var d=detectTranslation();
+    if(!d||!ME_()) return;
+    var sig=d.observed+'|'+d.html_lang;
+    if(sig===TR_SENT) return;
+    TR_SENT=sig;
+    fetch(SUPA_URL+'/rest/v1/page_translation?on_conflict=email,set_slug',{
+      method:'POST', headers:head('resolution=merge-duplicates,return=minimal'),
+      body:JSON.stringify([{email:ME_().email, set_slug:PAGE_SLUG, translated:true,
+        observed:d.observed, html_lang:d.html_lang, html_class:d.html_class,
+        updated_at:new Date().toISOString()}])}).catch(function(){});
+  }
+  window.checkTranslation=checkTranslation;
+  setInterval(checkTranslation, 20000);
+  setTimeout(checkTranslation, 4000);
+})();
+</script>
 </body></html>

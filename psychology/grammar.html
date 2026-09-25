@@ -97,14 +97,22 @@ ol.steps li{margin:7px 0}
  .draw{min-height:1.6in}
  .pb{page-break-before:always}
 }
+
+#btn-dir.on,#btn-tap.on{background:#1F4D3D;color:#fff}
+.dirtr{display:block;margin-top:4px;color:#2f6f57;font-weight:700}
+.dirtr:empty{display:none}
+body.tap-on .wt-tap{cursor:pointer;border-bottom:1px dotted #8aa79a}
+body.tap-on .wt-tap:hover{background:#eef5f1}
+.wt-bub{display:inline-block;margin-left:5px;padding:1px 6px;border-radius:6px;
+  background:#1F4D3D;color:#fff;font-size:.85em;font-weight:700}
 </style>
 </head>
 <body class="lvl-2">
 <div class="bar">
 <h1>Grammar Gym</h1>
 <button id="bL1" onclick="setLevel(1)">Easier</button><button id="bL2" onclick="setLevel(2)">Standard</button><button id="bL3" onclick="setLevel(3)">Challenge</button>
-<select id="lang" onchange="setLang()"><option value="es">Espa&#241;ol</option><option value="zh-CN">&#20013;&#25991;</option><option value="ar">&#1575;&#1604;&#1593;&#1585;&#1576;&#1610;&#1577;</option><option value="vi">Ti&#7871;ng Vi&#7879;t</option><option value="th">&#3652;&#3607;&#3618;</option><option value="ne">&#2344;&#2375;&#2346;&#2366;&#2354;&#2368;</option><option value="pt">Portugu&#234;s</option><option value="fr">Fran&#231;ais</option><option value="ru">&#1056;&#1091;&#1089;&#1089;&#1082;&#1080;&#1081;</option><option value="uk">&#1059;&#1082;&#1088;&#1072;&#1111;&#1085;&#1089;&#1100;&#1082;&#1072;</option><option value="fa">&#1601;&#1575;&#1585;&#1587;&#1740;</option><option value="ko">&#54620;&#44397;&#50612;</option></select>
-<button onclick="turnIn()">Turn In</button><button onclick="location.href='index.html'">Unit</button><button onclick="window.print()">Print</button><span id="who"></span><span id="dot"></span>
+<select id="lang" onchange="setLang()"><option value="es">Espa&#241;ol</option><option value="zh-CN">&#20013;&#25991;</option><option value="ar">&#1575;&#1604;&#1593;&#1585;&#1576;&#1610;&#1577;</option><option value="vi">Ti&#7871;ng Vi&#7879;t</option><option value="th">&#3652;&#3607;&#3618;</option><option value="ne">&#2344;&#2375;&#2346;&#2366;&#2354;&#2368;</option><option value="pt">Portugu&#234;s</option><option value="fr">Fran&#231;ais</option><option value="ru">&#1056;&#1091;&#1089;&#1089;&#1082;&#1080;&#1081;</option><option value="uk">&#1059;&#1082;&#1088;&#1072;&#1111;&#1085;&#1089;&#1100;&#1082;&#1072;</option><option value="fa">&#1601;&#1575;&#1585;&#1587;&#1740;</option><option value="ur">&#1575;&#1585;&#1583;&#1608;</option><option value="tl">Tagalog</option><option value="hi">&#2361;&#2367;&#2344;&#2381;&#2342;&#2368;</option><option value="so">Soomaali</option><option value="ko">&#54620;&#44397;&#50612;</option></select>
+<button onclick="turnIn()">Turn In</button><button onclick="location.href='index.html'">Unit</button><button id="btn-dir" title="Show the directions in your language">Directions</button><button id="btn-tap" title="Tap any word for its meaning">Tap words</button><button onclick="window.print()">Print</button><span id="who"></span><span id="dot"></span>
 </div>
 <div class="overlay" id="login">
   <div class="box">
@@ -114,6 +122,11 @@ ol.steps li{margin:7px 0}
     <input type="text" id="iname" placeholder="First and last name">
     <label for="iemail">Your school email</label>
     <input type="text" id="iemail" placeholder="name@sfusd.edu">
+    <label for="iper">Your class period</label>
+    <select id="iper">
+      <option value="">Choose your period</option>
+      <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option>
+    </select>
     <label for="ilang">Your home language</label>
     <select id="ilang">
       <option value="es">Espa&#241;ol / Spanish</option>
@@ -127,6 +140,10 @@ ol.steps li{margin:7px 0}
       <option value="ru">&#1056;&#1091;&#1089;&#1089;&#1082;&#1080;&#1081; / Russian</option>
       <option value="uk">&#1059;&#1082;&#1088;&#1072;&#1111;&#1085;&#1089;&#1100;&#1082;&#1072; / Ukrainian</option>
       <option value="fa">&#1601;&#1575;&#1585;&#1587;&#1740; / Farsi</option>
+      <option value="ur">&#1575;&#1585;&#1583;&#1608; / Urdu</option>
+      <option value="tl">Tagalog</option>
+      <option value="hi">&#2361;&#2367;&#2344;&#2381;&#2342;&#2368; / Hindi</option>
+      <option value="so">Soomaali / Somali</option>
       <option value="ko">&#54620;&#44397;&#50612; / Korean</option>
     </select>
     <button class="btn" onclick="doLogin()">Start</button>
@@ -134,7 +151,8 @@ ol.steps li{margin:7px 0}
   </div>
 </div>
 <div id="gloss"><span class="x" onclick="hideGloss()">&#10005;</span><div class="w"></div><div class="d"></div><div class="t">&#8230;</div></div>
-<div class="wrap">
+<span id="canary" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden">the quick brown fox jumps over the lazy dog</span>
+<div class="wrap" translate="no">
 
 <p class="small noprint">Name ____________________________ &nbsp;&nbsp; Class ______</p>
 <h2>Grammar Gym</h2>
@@ -154,18 +172,18 @@ ol.steps li{margin:7px 0}
 </table>
 <div class="warn card" style="margin:10px 0"><p style="margin:0"><b>Careful.</b> In English you cannot leave BE out.<br>&#10007; <i>He organized.</i> &nbsp;&#10003; <b>He is organized.</b><br>&#10007; <i>I very shy.</i> &nbsp;&#10003; <b>I am very shy.</b></p></div>
 </div>
-<div class="card">
+<div class="card" data-tap="1">
 <p class="small">Write <b>am</b>, <b>is</b>, or <b>are</b>.</p>
-<div class="q"><span class="num">1.</span> Chato ______ not ashamed of being Mexican. <input class="sm" type="text" data-q="a1"> <span id="m_a1"></span></div>
-<div class="q"><span class="num">2.</span> I ______ usually calm and relaxed. <input class="sm" type="text" data-q="a2"> <span id="m_a2"></span></div>
-<div class="q"><span class="num">3.</span> The boy and his mother ______ very different. <input class="sm" type="text" data-q="a3"> <span id="m_a3"></span></div>
-<div class="q"><span class="num">4.</span> My ideal self ______ braver than my actual self. <input class="sm" type="text" data-q="a4"> <span id="m_a4"></span></div>
-<div class="q"><span class="num">5.</span> We ______ studying psychology this year. <input class="sm" type="text" data-q="a5"> <span id="m_a5"></span></div>
-<div class="q"><span class="num">6.</span> My friends ______ more open to new experiences than I ______ . <input class="sm" type="text" data-q="a6"> <span id="m_a6"></span></div>
+<div class="q" data-tap="1"><span class="num">1.</span> Chato ______ not ashamed of being Mexican. <input class="sm" type="text" data-q="a1"> <span id="m_a1"></span></div>
+<div class="q" data-tap="1"><span class="num">2.</span> I ______ usually calm and relaxed. <input class="sm" type="text" data-q="a2"> <span id="m_a2"></span></div>
+<div class="q" data-tap="1"><span class="num">3.</span> The boy and his mother ______ very different. <input class="sm" type="text" data-q="a3"> <span id="m_a3"></span></div>
+<div class="q" data-tap="1"><span class="num">4.</span> My ideal self ______ braver than my actual self. <input class="sm" type="text" data-q="a4"> <span id="m_a4"></span></div>
+<div class="q" data-tap="1"><span class="num">5.</span> We ______ studying psychology this year. <input class="sm" type="text" data-q="a5"> <span id="m_a5"></span></div>
+<div class="q" data-tap="1"><span class="num">6.</span> My friends ______ more open to new experiences than I ______ . <input class="sm" type="text" data-q="a6"> <span id="m_a6"></span></div>
 <button class="btn sm noprint" onclick="checkSet('w1',K1)">Check Workout 1</button>
 <span class="scorebox noprint" id="w1_score" style="display:inline-block;margin-left:10px;font-size:16px;padding:8px 14px"></span>
 <input type="hidden" data-q="w1_pts">
-<div class="q" style="margin-top:16px"><span class="num">&#9997;</span> <b>Write your own.</b>
+<div class="q" data-tap="1" style="margin-top:16px"><span class="num">&#9997;</span> <b>Write your own.</b>
 <div class="frame L1">Write 3 sentences: I am ______ . My friend is ______ . My family is ______ .</div>
 <div class="frame L2">Write 4 sentences about 4 different people using BE + adjective.</div>
 <div class="frame L3">Write 4 sentences, each with a different subject, and add a <i>because</i> clause to two of them.</div>
@@ -187,20 +205,20 @@ ol.steps li{margin:7px 0}
 <tr><td>write</td><td><b>wrote</b></td><td>quit</td><td><b>quit</b></td><td>see</td><td><b>saw</b></td></tr>
 </table>
 </div>
-<div class="card">
+<div class="card" data-tap="1">
 <p class="small">Write the past form.</p>
-<div class="q"><span class="num">1.</span> The boy (wear) ______ the jacket for three years. <input class="sm" type="text" data-q="b1"> <span id="m_b1"></span></div>
-<div class="q"><span class="num">2.</span> Chato (quit) ______ school in the morning. <input class="sm" type="text" data-q="b2"> <span id="m_b2"></span></div>
-<div class="q"><span class="num">3.</span> His mother (say) ______ that children in Mexico would love it. <input class="sm" type="text" data-q="b3"> <span id="m_b3"></span></div>
-<div class="q"><span class="num">4.</span> He (want) ______ a black leather jacket. <input class="sm" type="text" data-q="b4"> <span id="m_b4"></span></div>
-<div class="q"><span class="num">5.</span> Chato (write) ______ his name all over the city. <input class="sm" type="text" data-q="b5"> <span id="m_b5"></span></div>
-<div class="q"><span class="num">6.</span> The dog (bite) ______ him and (tear) ______ the sleeve. <input class="sm" type="text" data-q="b6" placeholder="bit / bit"> <span id="m_b6"></span></div>
-<div class="q"><span class="num">7.</span> He (feel) ______ ashamed at lunch. <input class="sm" type="text" data-q="b7"> <span id="m_b7"></span></div>
-<div class="q"><span class="num">8.</span> Rabbit (run) ______ down the alley. <input class="sm" type="text" data-q="b8"> <span id="m_b8"></span></div>
+<div class="q" data-tap="1"><span class="num">1.</span> The boy (wear) ______ the jacket for three years. <input class="sm" type="text" data-q="b1"> <span id="m_b1"></span></div>
+<div class="q" data-tap="1"><span class="num">2.</span> Chato (quit) ______ school in the morning. <input class="sm" type="text" data-q="b2"> <span id="m_b2"></span></div>
+<div class="q" data-tap="1"><span class="num">3.</span> His mother (say) ______ that children in Mexico would love it. <input class="sm" type="text" data-q="b3"> <span id="m_b3"></span></div>
+<div class="q" data-tap="1"><span class="num">4.</span> He (want) ______ a black leather jacket. <input class="sm" type="text" data-q="b4"> <span id="m_b4"></span></div>
+<div class="q" data-tap="1"><span class="num">5.</span> Chato (write) ______ his name all over the city. <input class="sm" type="text" data-q="b5"> <span id="m_b5"></span></div>
+<div class="q" data-tap="1"><span class="num">6.</span> The dog (bite) ______ him and (tear) ______ the sleeve. <input class="sm" type="text" data-q="b6" placeholder="bit / bit"> <span id="m_b6"></span></div>
+<div class="q" data-tap="1"><span class="num">7.</span> He (feel) ______ ashamed at lunch. <input class="sm" type="text" data-q="b7"> <span id="m_b7"></span></div>
+<div class="q" data-tap="1"><span class="num">8.</span> Rabbit (run) ______ down the alley. <input class="sm" type="text" data-q="b8"> <span id="m_b8"></span></div>
 <button class="btn sm noprint" onclick="checkSet('w2',K2)">Check Workout 2</button>
 <span class="scorebox noprint" id="w2_score" style="display:inline-block;margin-left:10px;font-size:16px;padding:8px 14px"></span>
 <input type="hidden" data-q="w2_pts">
-<div class="q" style="margin-top:16px"><span class="num">&#9997;</span> <b>Retell it.</b>
+<div class="q" data-tap="1" style="margin-top:16px"><span class="num">&#9997;</span> <b>Retell it.</b>
 <div class="frame L1">Write 3 past-tense sentences about &ldquo;The Jacket.&rdquo;</div>
 <div class="frame L2">Retell Part 3 of &ldquo;The Jacket&rdquo; in 5 past-tense sentences.</div>
 <div class="frame L3">Retell one full part of either story in past tense, using at least 5 irregular verbs. Underline them.</div>
@@ -220,18 +238,18 @@ ol.steps li{margin:7px 0}
 </table>
 <p class="small"><b>Also useful:</b> &ldquo;My actual self is <b>very different from</b> my ideal self.&rdquo; &nbsp;&middot;&nbsp; &ldquo;They are <b>similar to</b> each other.&rdquo; &nbsp;&middot;&nbsp; &ldquo;<b>In comparison</b>, my ought self is&hellip;&rdquo;</p>
 </div>
-<div class="card">
-<p class="small">Write the comparative form.</p>
-<div class="q"><span class="num">1.</span> (tall) My brother is ______ than me. <input class="sm" type="text" data-q="c1"> <span id="m_c1"></span></div>
-<div class="q"><span class="num">2.</span> (organized) My ideal self is ______ than my actual self. <input class="sm" type="text" data-q="c2" placeholder="two words"> <span id="m_c2"></span></div>
-<div class="q"><span class="num">3.</span> (happy) Chato seems ______ at the end than at the start. <input class="sm" type="text" data-q="c3"> <span id="m_c3"></span></div>
-<div class="q"><span class="num">4.</span> (good) His new jacket was not ______ than his old one. <input class="sm" type="text" data-q="c4"> <span id="m_c4"></span></div>
-<div class="q"><span class="num">5.</span> (confident) Chato is ______ than the boy in &ldquo;The Jacket.&rdquo; <input class="sm" type="text" data-q="c5" placeholder="two words"> <span id="m_c5"></span></div>
-<div class="q"><span class="num">6.</span> (young) The boy was ______ than Chato. <input class="sm" type="text" data-q="c6"> <span id="m_c6"></span></div>
+<div class="card" data-tap="1">
+<p class="small" translate="yes" data-dir="writethecomparat" data-en="Write the comparative form.">Write the comparative form.</p>
+<div class="q" data-tap="1"><span class="num">1.</span> (tall) My brother is ______ than me. <input class="sm" type="text" data-q="c1"> <span id="m_c1"></span></div>
+<div class="q" data-tap="1"><span class="num">2.</span> (organized) My ideal self is ______ than my actual self. <input class="sm" type="text" data-q="c2" placeholder="two words"> <span id="m_c2"></span></div>
+<div class="q" data-tap="1"><span class="num">3.</span> (happy) Chato seems ______ at the end than at the start. <input class="sm" type="text" data-q="c3"> <span id="m_c3"></span></div>
+<div class="q" data-tap="1"><span class="num">4.</span> (good) His new jacket was not ______ than his old one. <input class="sm" type="text" data-q="c4"> <span id="m_c4"></span></div>
+<div class="q" data-tap="1"><span class="num">5.</span> (confident) Chato is ______ than the boy in &ldquo;The Jacket.&rdquo; <input class="sm" type="text" data-q="c5" placeholder="two words"> <span id="m_c5"></span></div>
+<div class="q" data-tap="1"><span class="num">6.</span> (young) The boy was ______ than Chato. <input class="sm" type="text" data-q="c6"> <span id="m_c6"></span></div>
 <button class="btn sm noprint" onclick="checkSet('w3',K3)">Check Workout 3</button>
 <span class="scorebox noprint" id="w3_score" style="display:inline-block;margin-left:10px;font-size:16px;padding:8px 14px"></span>
 <input type="hidden" data-q="w3_pts">
-<div class="q" style="margin-top:16px"><span class="num">&#9997;</span> <b>Compare your selves.</b>
+<div class="q" data-tap="1" style="margin-top:16px"><span class="num">&#9997;</span> <b>Compare your selves.</b>
 <div class="frame L1">My ideal self is ______ than my actual self.</div>
 <div class="frame L2">Write 3 comparative sentences about your actual, ideal, and ought selves.</div>
 <div class="frame L3">Write 4 comparative sentences: two about your own selves, two comparing Chato and the boy in &ldquo;The Jacket.&rdquo;</div>
@@ -250,24 +268,24 @@ ol.steps li{margin:7px 0}
 </table>
 <div class="warn card" style="margin:10px 0"><p style="margin:0"><b>Careful.</b> After a <b class="g">modal</b> (should, must, can), use the base form with no <i>to</i> and no <i>-s</i>.<br>&#10007; <i>I should to study.</i> &nbsp;&#10007; <i>He should studies.</i> &nbsp;&#10003; <b>He should study.</b></p></div>
 </div>
-<div class="card">
+<div class="card" data-tap="1">
 <p class="small">Choose the right form.</p>
-<div class="q"><span class="num">1.</span> I want ______ more patient. <span id="m_d1"></span>
+<div class="q" data-tap="1"><span class="num">1.</span> I want ______ more patient. <span id="m_d1"></span>
 <div class="opts"><label><input type="radio" name="d1" value="a" data-q="d1"> to be</label><label><input type="radio" name="d1" value="b" data-q="d1"> be</label><label><input type="radio" name="d1" value="c" data-q="d1"> being</label></div></div>
-<div class="q"><span class="num">2.</span> My parents think I should ______ a doctor. <span id="m_d2"></span>
+<div class="q" data-tap="1"><span class="num">2.</span> My parents think I should ______ a doctor. <span id="m_d2"></span>
 <div class="opts"><label><input type="radio" name="d2" value="a" data-q="d2"> to become</label><label><input type="radio" name="d2" value="b" data-q="d2"> become</label><label><input type="radio" name="d2" value="c" data-q="d2"> becomes</label></div></div>
-<div class="q"><span class="num">3.</span> Chato&rsquo;s father wanted him ______ a lawyer. <span id="m_d3"></span>
+<div class="q" data-tap="1"><span class="num">3.</span> Chato&rsquo;s father wanted him ______ a lawyer. <span id="m_d3"></span>
 <div class="opts"><label><input type="radio" name="d3" value="a" data-q="d3"> to be</label><label><input type="radio" name="d3" value="b" data-q="d3"> be</label><label><input type="radio" name="d3" value="c" data-q="d3"> should be</label></div></div>
-<div class="q"><span class="num">4.</span> The boy ______ a black leather jacket, but he got a green one. <span id="m_d4"></span>
+<div class="q" data-tap="1"><span class="num">4.</span> The boy ______ a black leather jacket, but he got a green one. <span id="m_d4"></span>
 <div class="opts"><label><input type="radio" name="d4" value="a" data-q="d4"> should want</label><label><input type="radio" name="d4" value="b" data-q="d4"> wanted</label><label><input type="radio" name="d4" value="c" data-q="d4"> wants to</label></div></div>
-<div class="q"><span class="num">5.</span> A good son ______ say thank you to his mother. <span id="m_d5"></span>
+<div class="q" data-tap="1"><span class="num">5.</span> A good son ______ say thank you to his mother. <span id="m_d5"></span>
 <div class="opts"><label><input type="radio" name="d5" value="a" data-q="d5"> should</label><label><input type="radio" name="d5" value="b" data-q="d5"> should to</label><label><input type="radio" name="d5" value="c" data-q="d5"> wants</label></div></div>
-<div class="q"><span class="num">6.</span> Which sentence describes an <b>ideal self</b>? <span id="m_d6"></span>
+<div class="q" data-tap="1"><span class="num">6.</span> Which sentence describes an <b>ideal self</b>? <span id="m_d6"></span>
 <div class="opts"><label><input type="radio" name="d6" value="a" data-q="d6"> I have to help at home every night.</label><label><input type="radio" name="d6" value="b" data-q="d6"> I would like to play in a band someday.</label><label><input type="radio" name="d6" value="c" data-q="d6"> I am fifteen years old.</label></div></div>
 <button class="btn sm noprint" onclick="checkSet('w4',K4)">Check Workout 4</button>
 <span class="scorebox noprint" id="w4_score" style="display:inline-block;margin-left:10px;font-size:16px;padding:8px 14px"></span>
 <input type="hidden" data-q="w4_pts">
-<div class="q" style="margin-top:16px"><span class="num">&#9997;</span> <b>Three selves, three sentences.</b>
+<div class="q" data-tap="1" style="margin-top:16px"><span class="num">&#9997;</span> <b>Three selves, three sentences.</b>
 <div class="frame L12">I am ______ . I want to ______ . I should ______ .</div>
 <div class="frame L3">Write six sentences: three about yourself, three about the boy in &ldquo;The Jacket.&rdquo; Vary the structures.</div>
 <textarea data-q="d_write" style="min-height:100px"></textarea></div>
@@ -285,18 +303,18 @@ ol.steps li{margin:7px 0}
 </table>
 <div class="warn card" style="margin:10px 0"><p style="margin:0"><b>Careful.</b> <i>because</i> + sentence. <i>because of</i> + noun.<br>&#10007; <i>Because of he was poor.</i> &nbsp;&#10003; <b>Because he was poor.</b> &nbsp;&#10003; <b>Because of his family&rsquo;s money problems.</b></p></div>
 </div>
-<div class="card">
+<div class="card" data-tap="1">
 <p class="small">Write <b>because</b>, <b>so</b>, or <b>because of</b>.</p>
-<div class="q"><span class="num">1.</span> Chato was alone, ______ he wrote his name everywhere. <input class="sm" type="text" data-q="e1"> <span id="m_e1"></span></div>
-<div class="q"><span class="num">2.</span> He felt like a nobody ______ his gang was gone. <input class="sm" type="text" data-q="e2"> <span id="m_e2"></span></div>
-<div class="q"><span class="num">3.</span> ______ the green jacket, the boy felt ashamed for three years. <input class="sm" type="text" data-q="e3"> <span id="m_e3"></span></div>
-<div class="q"><span class="num">4.</span> His ought self is loud, ______ he says thank you even when he is angry. <input class="sm" type="text" data-q="e4"> <span id="m_e4"></span></div>
-<div class="q"><span class="num">5.</span> The gap is painful ______ his ideal self is very far from his actual self. <input class="sm" type="text" data-q="e5"> <span id="m_e5"></span></div>
-<div class="q"><span class="num">6.</span> ______ peer pressure, many teenagers change how they dress. <input class="sm" type="text" data-q="e6"> <span id="m_e6"></span></div>
+<div class="q" data-tap="1"><span class="num">1.</span> Chato was alone, ______ he wrote his name everywhere. <input class="sm" type="text" data-q="e1"> <span id="m_e1"></span></div>
+<div class="q" data-tap="1"><span class="num">2.</span> He felt like a nobody ______ his gang was gone. <input class="sm" type="text" data-q="e2"> <span id="m_e2"></span></div>
+<div class="q" data-tap="1"><span class="num">3.</span> ______ the green jacket, the boy felt ashamed for three years. <input class="sm" type="text" data-q="e3"> <span id="m_e3"></span></div>
+<div class="q" data-tap="1"><span class="num">4.</span> His ought self is loud, ______ he says thank you even when he is angry. <input class="sm" type="text" data-q="e4"> <span id="m_e4"></span></div>
+<div class="q" data-tap="1"><span class="num">5.</span> The gap is painful ______ his ideal self is very far from his actual self. <input class="sm" type="text" data-q="e5"> <span id="m_e5"></span></div>
+<div class="q" data-tap="1"><span class="num">6.</span> ______ peer pressure, many teenagers change how they dress. <input class="sm" type="text" data-q="e6"> <span id="m_e6"></span></div>
 <button class="btn sm noprint" onclick="checkSet('w5',K5)">Check Workout 5</button>
 <span class="scorebox noprint" id="w5_score" style="display:inline-block;margin-left:10px;font-size:16px;padding:8px 14px"></span>
 <input type="hidden" data-q="w5_pts">
-<div class="q" style="margin-top:16px"><span class="num">&#9997;</span> <b>Write analysis sentences.</b>
+<div class="q" data-tap="1" style="margin-top:16px"><span class="num">&#9997;</span> <b>Write analysis sentences.</b>
 <div class="frame L12">This evidence is important because ______ . &nbsp;/&nbsp; He felt ______ , so he ______ .</div>
 <div class="frame L3">Write three analysis sentences about &ldquo;The Jacket.&rdquo; Each must name a psychological concept (self, gap, self-esteem, influence) <i>and</i> use because or so.</div>
 <textarea data-q="e_write" style="min-height:100px"></textarea></div>
@@ -315,21 +333,21 @@ ol.steps li{margin:7px 0}
 </table>
 <div class="warn card" style="margin:10px 0"><p style="margin:0"><b>Careful.</b> <i>make</i> takes no <i>to</i>. &#10007; <i>It makes me to feel sad.</i> &#10003; <b>It makes me feel sad.</b></p></div>
 </div>
-<div class="card">
-<p class="small">Fix or complete each sentence.</p>
-<div class="q"><span class="num">1.</span> My mother influences me ______ study every night. <input class="sm" type="text" data-q="f1"> <span id="m_f1"></span></div>
-<div class="q"><span class="num">2.</span> The gossip at school makes him ______ ashamed. <input class="sm" type="text" data-q="f2" placeholder="one word"> <span id="m_f2"></span></div>
-<div class="q"><span class="num">3.</span> ______ his gang, Chato felt safe. (2 words) <input class="sm" type="text" data-q="f3"> <span id="m_f3"></span></div>
-<div class="q"><span class="num">4.</span> Which sentence is correct? <span id="m_f4"></span>
+<div class="card" data-tap="1">
+<p class="small" translate="yes" data-dir="fixorcompleteeac" data-en="Fix or complete each sentence.">Fix or complete each sentence.</p>
+<div class="q" data-tap="1"><span class="num">1.</span> My mother influences me ______ study every night. <input class="sm" type="text" data-q="f1"> <span id="m_f1"></span></div>
+<div class="q" data-tap="1"><span class="num">2.</span> The gossip at school makes him ______ ashamed. <input class="sm" type="text" data-q="f2" placeholder="one word"> <span id="m_f2"></span></div>
+<div class="q" data-tap="1"><span class="num">3.</span> ______ his gang, Chato felt safe. (2 words) <input class="sm" type="text" data-q="f3"> <span id="m_f3"></span></div>
+<div class="q" data-tap="1"><span class="num">4.</span> Which sentence is correct? <span id="m_f4"></span>
 <div class="opts"><label><input type="radio" name="f4" value="a" data-q="f4"> My friends make me to laugh.</label><label><input type="radio" name="f4" value="b" data-q="f4"> My friends make me laugh.</label><label><input type="radio" name="f4" value="c" data-q="f4"> My friends make me laughing.</label></div></div>
-<div class="q"><span class="num">5.</span> Which sentence is correct? <span id="m_f5"></span>
+<div class="q" data-tap="1"><span class="num">5.</span> Which sentence is correct? <span id="m_f5"></span>
 <div class="opts"><label><input type="radio" name="f5" value="a" data-q="f5"> Culture has a big influence on my life.</label><label><input type="radio" name="f5" value="b" data-q="f5"> Culture has a big influence in my life.</label><label><input type="radio" name="f5" value="c" data-q="f5"> Culture has a big influence for my life.</label></div></div>
-<div class="q"><span class="num">6.</span> Which sentence is correct? <span id="m_f6"></span>
+<div class="q" data-tap="1"><span class="num">6.</span> Which sentence is correct? <span id="m_f6"></span>
 <div class="opts"><label><input type="radio" name="f6" value="a" data-q="f6"> My brother influences me to be patient.</label><label><input type="radio" name="f6" value="b" data-q="f6"> My brother influences me be patient.</label><label><input type="radio" name="f6" value="c" data-q="f6"> My brother influences me being patient.</label></div></div>
 <button class="btn sm noprint" onclick="checkSet('w6',K6)">Check Workout 6</button>
 <span class="scorebox noprint" id="w6_score" style="display:inline-block;margin-left:10px;font-size:16px;padding:8px 14px"></span>
 <input type="hidden" data-q="w6_pts">
-<div class="q" style="margin-top:16px"><span class="num">&#9997;</span> <b>Write about your influences.</b>
+<div class="q" data-tap="1" style="margin-top:16px"><span class="num">&#9997;</span> <b>Write about your influences.</b>
 <div class="frame L1">Use two patterns. ______ influences me to ______ . ______ makes me ______ .</div>
 <div class="frame L2">Write 3 sentences. Use 3 different patterns.</div>
 <div class="frame L3">Write 4 sentences using all four patterns, about four different influences. Then rank them by magnitude.</div>
@@ -337,7 +355,7 @@ ol.steps li{margin:7px 0}
 </div>
 
 <h2 class="pb">My Gym Record</h2>
-<div class="card">
+<div class="card" data-tap="1">
 <table>
 <tr><th>Workout</th><th>Score</th><th>Date</th><th>One thing I still need to practice</th></tr>
 <tr><td>1 &middot; BE + adjectives</td><td><input type="text" data-q="r1s"></td><td><input type="text" data-q="r1d"></td><td><input type="text" data-q="r1n"></td></tr>
@@ -349,7 +367,7 @@ ol.steps li{margin:7px 0}
 </table>
 <button class="btn noprint" onclick="turnIn()">Turn in Grammar Gym</button>
 </div>
-<p class="small">English binder # __________</p>
+<p class="small" translate="yes" data-dir="englishbinder" data-en="English binder # __________">English binder # __________</p>
 
 </div>
 <script>
@@ -376,11 +394,20 @@ function setLevel(l){
 
 /* ---------- login ---------- */
 function doLogin(){
-  var n=$('iname').value.trim(), e=$('iemail').value.trim().toLowerCase();
+  var n=$('iname').value.trim(), raw=psyClean($('iemail').value), p=$('iper')?$('iper').value:'';
   if(n.length<2){ $('loginerr').textContent='Please type your name.'; return; }
-  if(e.indexOf('@')<1){ $('loginerr').textContent='Please type your school email.'; return; }
-  ME.name=n; ME.email=e; ME.lang=$('ilang').value;
-  try{localStorage.setItem('psy_name',n);localStorage.setItem('psy_email',e);localStorage.setItem('psy_lang',ME.lang);}catch(err){}
+  if(!psyValid(raw)){ $('loginerr').textContent='Please use your school email — it ends with @s.sfusd.edu'; return; }
+  if(!p){ $('loginerr').textContent='Please choose your class period.'; return; }
+  $('loginerr').textContent='';
+  var canon=psyCanon(raw);
+  psyAlias(raw, canon);
+  psySeed(n, canon, p);
+  ME.name=n; ME.email=canon; ME.lang=$('ilang').value; ME.period=p;
+  try{
+    localStorage.setItem('psy_name',n);localStorage.setItem('psy_email',canon);
+    localStorage.setItem('psy_lang',ME.lang);localStorage.setItem('psy_period',p);
+    localStorage.setItem('gal_student_email',canon);
+  }catch(err){}
   startApp();
 }
 function startApp(){
@@ -451,11 +478,15 @@ function translate(text,target,cb){
   var key='tr::'+target+'::'+text;
   var c=null; try{c=localStorage.getItem(key);}catch(e){}
   if(c){cb(c);return;}
-  fetch(PROXY+'?text='+encodeURIComponent(text)+'&target='+encodeURIComponent(target))
-   .then(function(r){return r.text();})
-   .then(function(t){
-      var out=t;
-      try{ var j=JSON.parse(t); out=j.translation||j.text||j.result||j.translatedText||t; }catch(e){}
+  var PSY_NAME={es:'Spanish','zh-CN':'Chinese (Simplified)',ar:'Arabic',vi:'Vietnamese',
+    th:'Thai',ne:'Nepali',pt:'Portuguese',fr:'French',ru:'Russian',uk:'Ukrainian',fa:'Persian',
+    ko:'Korean',ur:'Urdu',tl:'Tagalog',hi:'Hindi',so:'Somali'};
+  fetch(PROXY+'?action=translate&idiom='+encodeURIComponent(text)+'&meaning=&lang='+
+        encodeURIComponent(PSY_NAME[target]||target))
+   .then(function(r){return r.json();})
+   .then(function(j){
+      var out='';
+      if(j&&j.ok&&j.translation) out=j.translation.equiv||j.translation.meaning||'';
       if(typeof out!=='string') out=String(out);
       try{localStorage.setItem(key,out);}catch(e){}
       cb(out);
@@ -537,4 +568,183 @@ var K5={"e1":"so","e2":"because","e3":"because of","e4":"so","e5":"because","e6"
 var K6={"f1":"to","f2":"feel","f3":"because of","f4":"b","f5":"a","f6":"a"};
 </script>
 <script src="/readings/track.js"></script>
+
+<script>
+/* ============ Galileo standard: identity, directions, tap words, canary ============ */
+(function(){
+  /* some pages in this family define SLUG, some do not */
+  var PAGE_SLUG=(typeof SLUG!=='undefined'&&SLUG)?SLUG:'psychology-grammar';
+  var CANON_DOMAIN='@s.sfusd.edu', ROSTER=[];
+  function ME_(){ return (typeof ME!=='undefined'&&ME&&ME.email)?ME:null; }
+  window.cleanMail=function(x){ return String(x||'').trim().toLowerCase(); };
+  window.localPart=function(e){ return cleanMail(e).split('@')[0]; };
+  window.validMail=function(e){ return /^[^@\s]+@(s\.)?sfusd\.edu$/.test(cleanMail(e)); };
+  window.canonMail=function(raw){
+    var lp=localPart(raw), i;
+    for(i=0;i<ROSTER.length;i++){ if(localPart(ROSTER[i].email)===lp) return cleanMail(ROSTER[i].email); }
+    return lp+CANON_DOMAIN;
+  };
+  function head(pref){
+    var h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};
+    if(pref) h['Prefer']=pref; return h;
+  }
+  window.recordAlias=function(alias, canon){
+    if(!alias||alias===canon) return;
+    fetch(SUPA_URL+'/rest/v1/student_aliases?on_conflict=alias_email',{
+      method:'POST', headers:head('resolution=merge-duplicates,return=minimal'),
+      body:JSON.stringify([{alias_email:alias, email:canon}])}).catch(function(){});
+  };
+  window.seedStudent=function(name,email,period){
+    fetch(SUPA_URL+'/rest/v1/students?on_conflict=email',{
+      method:'POST', headers:head('resolution=ignore-duplicates,return=minimal'),
+      body:JSON.stringify([{email:email, name:name, period:period}])}).catch(function(){});
+  };
+  fetch(SUPA_URL+'/rest/v1/students?select=name,email,period&order=name',{headers:head()})
+    .then(function(r){ return r.ok?r.json():[]; })
+    .then(function(rows){ ROSTER=rows||[]; }).catch(function(){});
+
+  /* prefill from a sign-in anywhere else on the site */
+  try{
+    var saved=JSON.parse(localStorage.getItem('psy_me')||'null');
+    if(saved&&saved.email){
+      if(document.getElementById('iname')) document.getElementById('iname').value=saved.name||'';
+      if(document.getElementById('iemail')) document.getElementById('iemail').value=saved.email;
+      if(saved.period&&document.getElementById('iper')) document.getElementById('iper').value=String(saved.period);
+    } else {
+      var g=localStorage.getItem('gal_student_email');
+      if(g&&document.getElementById('iemail')) document.getElementById('iemail').value=g;
+    }
+  }catch(e){}
+
+  window.psyClean=cleanMail; window.psyValid=validMail; window.psyCanon=canonMail;
+  window.psyAlias=recordAlias; window.psySeed=seedStudent;
+
+  /* ---------- translate through the proxy ---------- */
+  var tcache={};
+  var C2N={es:'Spanish','zh-CN':'Chinese (Simplified)',ar:'Arabic',vi:'Vietnamese',th:'Thai',
+    ne:'Nepali',pt:'Portuguese',fr:'French',ru:'Russian',uk:'Ukrainian',fa:'Persian',ko:'Korean',
+    ur:'Urdu',tl:'Tagalog',hi:'Hindi',so:'Somali'};
+  function tr(text, code){
+    var lang=C2N[code]||code;
+    var key=text+'|'+lang;
+    if(tcache[key]) return Promise.resolve(tcache[key]);
+    var url=PROXY+'?action=translate&idiom='+encodeURIComponent(text)+'&meaning=&lang='+encodeURIComponent(lang);
+    return fetch(url).then(function(r){return r.json();}).then(function(d){
+      if(!d||!d.ok||!d.translation) return null;
+      tcache[key]=d.translation; return d.translation;
+    }).catch(function(){return null;});
+  }
+
+  /* ---------- directions in the student's language ---------- */
+  var DIR_ON=false, SENT={};
+  try{ DIR_ON=localStorage.getItem('song_dir')==='1'; }catch(e){}
+  function logReveal(k, lang){
+    if(!ME_()) return;
+    var sig=k+'|'+lang; if(SENT[sig]) return; SENT[sig]=true;
+    fetch(SUPA_URL+'/rest/v1/instruction_reveals',{
+      method:'POST', headers:head('return=minimal'),
+      body:JSON.stringify([{email:ME_().email, set_slug:PAGE_SLUG, activity:k, lang:lang}])}).catch(function(){});
+  }
+  function showDirections(){
+    var lang=document.getElementById('lang').value;
+    var list=document.querySelectorAll('[data-dir]');
+    Array.prototype.forEach.call(list,function(p){
+      var out=p.querySelector('.dirtr');
+      if(!out){ out=document.createElement('span'); out.className='dirtr'; p.appendChild(out); }
+      if(!DIR_ON||!lang){ out.textContent=''; return; }
+      var k=p.getAttribute('data-dir'), en=p.getAttribute('data-en')||'';
+      out.textContent='…';
+      tr(en, lang).then(function(t){
+        out.textContent=t?(t.equiv||t.meaning||''):'';
+        if(out.textContent) logReveal(k, lang);
+      });
+    });
+  }
+  var dirBtn=document.getElementById('btn-dir');
+  if(dirBtn){
+    dirBtn.classList.toggle('on', DIR_ON);
+    dirBtn.addEventListener('click',function(){
+      DIR_ON=!DIR_ON;
+      try{ localStorage.setItem('song_dir', DIR_ON?'1':'0'); }catch(e){}
+      dirBtn.classList.toggle('on', DIR_ON);
+      showDirections();
+    });
+  }
+  var langSel=document.getElementById('lang');
+  if(langSel) langSel.addEventListener('change', function(){ if(DIR_ON) showDirections(); });
+  if(DIR_ON) setTimeout(showDirections, 600);
+
+  /* ---------- tap any word ---------- */
+  var TAP_ON=false;
+  try{ TAP_ON=localStorage.getItem('song_tap')==='1'; }catch(e){}
+  function wrapWords(root){
+    if(root.getAttribute('data-wrapped')) return;
+    root.setAttribute('data-wrapped','1');
+    var walker=document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), nodes=[], n;
+    while((n=walker.nextNode())) if(n.nodeValue.trim()) nodes.push(n);
+    nodes.forEach(function(node){
+      if(node.parentNode.closest('textarea,input,button,select,.wt-tap')) return;
+      var frag=document.createDocumentFragment();
+      node.nodeValue.split(/(\s+)/).forEach(function(piece){
+        if(!piece.trim()){ frag.appendChild(document.createTextNode(piece)); return; }
+        var s=document.createElement('span');
+        s.className='wt-tap'; s.textContent=piece;
+        frag.appendChild(s);
+      });
+      node.parentNode.replaceChild(frag, node);
+    });
+  }
+  function tapTargets(){ return document.querySelectorAll('[data-tap]'); }
+  function setTap(on){
+    TAP_ON=on;
+    try{ localStorage.setItem('song_tap', on?'1':'0'); }catch(e){}
+    document.body.classList.toggle('tap-on', on);
+    var b=document.getElementById('btn-tap');
+    if(b) b.classList.toggle('on', on);
+    if(on) Array.prototype.forEach.call(tapTargets(), wrapWords);
+  }
+  var tapBtn=document.getElementById('btn-tap');
+  if(tapBtn) tapBtn.addEventListener('click', function(){ setTap(!TAP_ON); });
+  document.addEventListener('click', function(ev){
+    if(!TAP_ON) return;
+    var s=ev.target.closest('.wt-tap'); if(!s) return;
+    var lang=document.getElementById('lang').value;
+    if(!lang){ document.getElementById('lang').focus(); return; }
+    var word=(s.textContent||'').replace(/[^A-Za-zÀ-ÿ'’-]/g,'');
+    if(!word) return;
+    var old=s.getAttribute('data-shown');
+    if(old){ s.removeAttribute('data-shown'); var t=s.querySelector('.wt-bub'); if(t) t.remove(); return; }
+    var bub=document.createElement('span'); bub.className='wt-bub'; bub.textContent='…';
+    s.appendChild(bub); s.setAttribute('data-shown','1');
+    tr(word, lang).then(function(t){ bub.textContent=t?(t.equiv||t.meaning||'?'):'?'; });
+  });
+  if(TAP_ON) setTimeout(function(){ setTap(true); }, 400);
+
+  /* ---------- quiet browser-translation canary ---------- */
+  var CANARY='the quick brown fox jumps over the lazy dog', TR_SENT='';
+  function detectTranslation(){
+    var c=document.getElementById('canary');
+    var got=c?(c.textContent||'').trim().toLowerCase():'';
+    var cls=document.documentElement.className||'';
+    var drift=(c&&got!==CANARY)?got:'';
+    if(!drift&&!/translated|notranslate-off/.test(cls)) return null;
+    return {observed:drift, html_lang:document.documentElement.lang||'', html_class:cls};
+  }
+  function checkTranslation(){
+    var d=detectTranslation();
+    if(!d||!ME_()) return;
+    var sig=d.observed+'|'+d.html_lang;
+    if(sig===TR_SENT) return;
+    TR_SENT=sig;
+    fetch(SUPA_URL+'/rest/v1/page_translation?on_conflict=email,set_slug',{
+      method:'POST', headers:head('resolution=merge-duplicates,return=minimal'),
+      body:JSON.stringify([{email:ME_().email, set_slug:PAGE_SLUG, translated:true,
+        observed:d.observed, html_lang:d.html_lang, html_class:d.html_class,
+        updated_at:new Date().toISOString()}])}).catch(function(){});
+  }
+  window.checkTranslation=checkTranslation;
+  setInterval(checkTranslation, 20000);
+  setTimeout(checkTranslation, 4000);
+})();
+</script>
 </body></html>
