@@ -228,8 +228,17 @@ footer.pg a{color:var(--pine);font-weight:800}
   textarea{min-height:70px}
   .box,table tr,ol.caps li{page-break-inside:avoid}
 }
+
+#btn-dir.on,#btn-tap.on{background:#1F4D3D;color:#fff}
+.dirtr{display:block;margin-top:4px;color:#2f6f57;font-weight:700}
+.dirtr:empty{display:none}
+body.tap-on .wt-tap{cursor:pointer;border-bottom:1px dotted #8aa79a}
+body.tap-on .wt-tap:hover{background:#eef5f1}
+.wt-bub{display:inline-block;margin-left:5px;padding:1px 6px;border-radius:6px;
+  background:#1F4D3D;color:#fff;font-size:.85em;font-weight:700}
 </style>
 </head>
+<span id="canary" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden">the quick brown fox jumps over the lazy dog</span>
 <body>
 
 <div id="bar">
@@ -243,11 +252,20 @@ footer.pg a{color:var(--pine);font-weight:800}
     <option value="">Translation: none</option>
     <option value="es">Espa&ntilde;ol</option>
     <option value="zh">&#20013;&#25991;</option>
-    <option value="vi">Ti&#7871;ng Vi&#7879;t</option>
-    <option value="tl">Tagalog</option>
     <option value="ar">&#1575;&#1604;&#1593;&#1585;&#1576;&#1610;&#1577;</option>
+    <option value="vi">Ti&#7871;ng Vi&#7879;t</option>
     <option value="ru">&#1056;&#1091;&#1089;&#1089;&#1082;&#1080;&#1081;</option>
+    <option value="ur">&#1575;&#1585;&#1583;&#1608;</option>
+    <option value="tl">Tagalog</option>
+    <option value="fr">Fran&ccedil;ais</option>
+    <option value="ko">&#54620;&#44397;&#50612;</option>
+    <option value="hi">&#2361;&#2367;&#2344;&#2381;&#2342;&#2368;</option>
+    <option value="so">Soomaali</option>
+    <option value="ne">&#2344;&#2375;&#2346;&#2366;&#2354;&#2368;</option>
+    <option value="th">&#3652;&#3607;&#3618;</option>
   </select>
+  <button id="btn-dir" title="Show the directions in your language">Directions</button>
+  <button id="btn-tap" title="Tap any word for its meaning">Tap words</button>
   <button id="bigBtn">Big text</button>
   <button id="printBtn">Print</button>
   <button id="turninBtn">Turn in</button>
@@ -271,7 +289,7 @@ footer.pg a{color:var(--pine);font-weight:800}
 </footer>
 
 <div id="gate">
-  <div class="card">
+  <div class="card" translate="no" data-tap="1">
     <h2>Sign in</h2>
     <p>Your work saves by itself. Use your school email.</p>
     <input id="gName" placeholder="First and last name" autocomplete="name">
@@ -834,7 +852,7 @@ var ANSWERS = {};   /* auto-scored keys -> correct value */
 function startPane(){
   return '' +
   '<h2 class="ch">Start here</h2>' +
-  '<p class="chsub">Read this page before chapter 1.</p>' +
+  '<p class="chsub" translate="yes" data-dir="readthispagebefo" data-en="Read this page before chapter 1.">Read this page before chapter 1.<span class="dirtr"></span></p>' +
 
   '<h3 class="step"><span class="num">1</span>A book with no words</h3>' +
   '<p>Shaun Tan drew <i>The Arrival</i> in 2006. It has about 128 pages and zero words. ' +
@@ -847,7 +865,7 @@ function startPane(){
   wordTable(["aspiration","oppression","transition","symbol","represent","immigrant"]) +
 
   '<h3 class="step"><span class="num">3</span>What we do in every chapter</h3>' +
-  '<div class="box"><p><b>Look</b> at the pictures. <b>Read</b> the sentences out loud. ' +
+  '<div class="box" translate="no" data-tap="1"><p><b>Look</b> at the pictures. <b>Read</b> the sentences out loud. ' +
   '<b>Order</b> the events. <b>Say</b> what you see. <b>Then</b> say what you think it means.</p>' +
   '<p>Description comes first, always. Before you say what a picture <i>means</i>, ' +
   'you say what is <i>there</i>. Start every answer with <b>I see</b>.</p></div>' +
@@ -877,8 +895,8 @@ function wordsPane(){
   var all = Object.keys(DICT);
   return '' +
   '<h2 class="ch">All the words</h2>' +
-  '<p class="chsub">Every word in the unit, in one place. Pick a language in the green bar above.</p>' +
-  '<div class="box"><p>You do not need to memorize all of these. Each chapter has twelve. ' +
+  '<p class="chsub" translate="yes" data-dir="everywordintheun" data-en="Every word in the unit, in one place. Pick a language in the green bar above.">Every word in the unit, in one place. Pick a language in the green bar above.<span class="dirtr"></span></p>' +
+  '<div class="box" translate="no" data-tap="1"><p>You do not need to memorize all of these. Each chapter has twelve. ' +
   'This page is for checking a word when you forget it.</p></div>' +
   wordTable(all) +
   '<h3 class="step"><span class="num">&#10003;</span>Which words do you already know?</h3>' +
@@ -895,7 +913,7 @@ function chapterPane(c){
 
   /* 1 before */
   h += '<h3 class="step"><span class="num">1</span>Before you look</h3>';
-  h += '<p class="how">Answer with a partner first. Talking comes before writing.</p>';
+  h += '<p class="how" translate="yes" data-dir="answerwithapartn" data-en="Answer with a partner first. Talking comes before writing.">Answer with a partner first. Talking comes before writing.<span class="dirtr"></span></p>';
   c.before.forEach(function(q,i){
     h += '<label class="q">' + esc(q) + '</label>' + ta("ch" + n + "_before" + (i+1), "");
   });
@@ -919,7 +937,7 @@ function chapterPane(c){
   /* 4 order */
   var sh = shuffle6(c.order);
   h += '<h3 class="step"><span class="num">4</span>Put it in order</h3>';
-  h += '<p class="how">Write 1 to 6. Number 1 happens first.</p>';
+  h += '<p class="how" translate="yes" data-dir="writetonumberhap" data-en="Write 1 to 6. Number 1 happens first.">Write 1 to 6. Number 1 happens first.<span class="dirtr"></span></p>';
   h += '<ol class="order" id="ord' + n + '">';
   sh.forEach(function(s,i){
     var correct = c.order.indexOf(s) + 1;
@@ -977,7 +995,7 @@ function chapterPane(c){
   h += '<p class="how">Look for: ' + esc(c.hint) + '</p>';
   h += '<div class="levelbar"><span data-lvchip="easy">Easier</span><span data-lvchip="std">Standard</span><span data-lvchip="chal">Challenge</span></div>';
 
-  h += '<div class="lv" data-lv="easy" data-lvname="Easier">' +
+  h += '<div class="lv" translate="no" data-tap="1" data-lv="easy" data-lvname="Easier">' +
        '<span class="picklab">Which picture?</span>' + capSelect(c, "ch" + n + "_th_e_img") +
        '<p><b>Theme:</b> ' + themeSelect("ch" + n + "_th_e_theme") + '</p>' +
        '<p>I see a ' + li("ch" + n + "_th_e_1","what?") + ' .</p>' +
@@ -985,7 +1003,7 @@ function chapterPane(c){
        '<p>This picture is about ' + li("ch" + n + "_th_e_3","the theme") + ' because ' + li("ch" + n + "_th_e_4","why?","200px") + ' .</p>' +
        '</div>';
 
-  h += '<div class="lv" data-lv="std" data-lvname="Standard">' +
+  h += '<div class="lv" translate="no" data-tap="1" data-lv="std" data-lvname="Standard">' +
        '<span class="picklab">Which picture?</span>' + capSelect(c, "ch" + n + "_th_s_img") +
        '<p><b>Theme:</b> ' + themeSelect("ch" + n + "_th_s_theme") + '</p>' +
        '<label class="q">What is happening? Who is there? Where are they?</label>' +
@@ -996,7 +1014,7 @@ function chapterPane(c){
        ta("ch" + n + "_th_s_eval","I think Shaun Tan shows the feeling of ______ well / not well because ...") +
        '</div>';
 
-  h += '<div class="lv" data-lv="chal" data-lvname="Challenge">' +
+  h += '<div class="lv" translate="no" data-tap="1" data-lv="chal" data-lvname="Challenge">' +
        '<span class="picklab">Which picture?</span>' + capSelect(c, "ch" + n + "_th_c_img") +
        '<p><b>Theme:</b> ' + themeSelect("ch" + n + "_th_c_theme") + '</p>' +
        '<label class="q">Describe the picture, then argue for your theme using two details as evidence.</label>' +
@@ -1022,9 +1040,9 @@ function chapterPane(c){
   /* 10 write */
   h += '<h3 class="step"><span class="num">10</span>Write</h3>';
   h += '<div class="levelbar"><span data-lvchip="easy">Easier</span><span data-lvchip="std">Standard</span><span data-lvchip="chal">Challenge</span></div>';
-  h += '<div class="lv" data-lv="easy" data-lvname="Easier"><p>' + c.write.easy + '</p>' + ta("ch" + n + "_w_e","") + '</div>';
-  h += '<div class="lv" data-lv="std" data-lvname="Standard"><p>' + c.write.std + '</p>' + ta("ch" + n + "_w_s","") + '</div>';
-  h += '<div class="lv" data-lv="chal" data-lvname="Challenge"><p>' + c.write.chal + '</p>' + ta("ch" + n + "_w_c","") + '</div>';
+  h += '<div class="lv" translate="no" data-tap="1" data-lv="easy" data-lvname="Easier"><p>' + c.write.easy + '</p>' + ta("ch" + n + "_w_e","") + '</div>';
+  h += '<div class="lv" translate="no" data-tap="1" data-lv="std" data-lvname="Standard"><p>' + c.write.std + '</p>' + ta("ch" + n + "_w_s","") + '</div>';
+  h += '<div class="lv" translate="no" data-tap="1" data-lv="chal" data-lvname="Challenge"><p>' + c.write.chal + '</p>' + ta("ch" + n + "_w_c","") + '</div>';
 
   h += '<div class="box note" style="margin-top:26px"><p><b>Keep this.</b> Your theme searches are the evidence ' +
        'for your final project. Do not throw them away &mdash; you will use them in week 7.</p></div>';
@@ -1268,8 +1286,12 @@ document.getElementById("gBtn").addEventListener("click", function(){
   var period = document.getElementById("gPeriod").value;
   var err = document.getElementById("gateErr");
   if(name.length < 2){ err.textContent = "Please write your name."; return; }
-  if(email.indexOf("@") < 1){ err.textContent = "Please write your school email."; return; }
+  if(!validMail(email)){ err.textContent = "Please use your school email — it ends with @s.sfusd.edu"; return; }
+  email = canonMail(email);
   if(!period){ err.textContent = "Please choose your period."; return; }
+  recordAlias(document.getElementById("gEmail").value.trim().toLowerCase(), email);
+  seedStudent(name, email, period);
+  try{ localStorage.setItem("gal_student_email", email); }catch(e){}
   student = { name:name, email:email, period:period };
   try{ localStorage.setItem(STU_KEY, JSON.stringify(student)); }catch(e){}
   signedIn();
@@ -1283,5 +1305,182 @@ document.getElementById("gEmail").addEventListener("keydown", function(e){ if(e.
 })();
 </script>
 <script src="/readings/track.js"></script>
+
+<script>
+/* ============ Galileo standard: identity, directions, tap words, canary ============ */
+(function(){
+  /* some pages in this family define SLUG, some do not */
+  var PAGE_SLUG=(typeof SLUG!=='undefined'&&SLUG)?SLUG:'arrival-index';
+  var CANON_DOMAIN='@s.sfusd.edu', ROSTER=[];
+  var PROXY='https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
+  function ME_(){ return (typeof student!=='undefined'&&student&&student.email)?student:null; }
+  window.cleanMail=function(x){ return String(x||'').trim().toLowerCase(); };
+  window.localPart=function(e){ return cleanMail(e).split('@')[0]; };
+  window.validMail=function(e){ return /^[^@\s]+@(s\.)?sfusd\.edu$/.test(cleanMail(e)); };
+  window.canonMail=function(raw){
+    var lp=localPart(raw), i;
+    for(i=0;i<ROSTER.length;i++){ if(localPart(ROSTER[i].email)===lp) return cleanMail(ROSTER[i].email); }
+    return lp+CANON_DOMAIN;
+  };
+  function head(pref){
+    var h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};
+    if(pref) h['Prefer']=pref; return h;
+  }
+  window.recordAlias=function(alias, canon){
+    if(!alias||alias===canon) return;
+    fetch(SUPA_URL+'/rest/v1/student_aliases?on_conflict=alias_email',{
+      method:'POST', headers:head('resolution=merge-duplicates,return=minimal'),
+      body:JSON.stringify([{alias_email:alias, email:canon}])}).catch(function(){});
+  };
+  window.seedStudent=function(name,email,period){
+    fetch(SUPA_URL+'/rest/v1/students?on_conflict=email',{
+      method:'POST', headers:head('resolution=ignore-duplicates,return=minimal'),
+      body:JSON.stringify([{email:email, name:name, period:period}])}).catch(function(){});
+  };
+  fetch(SUPA_URL+'/rest/v1/students?select=name,email,period&order=name',{headers:head()})
+    .then(function(r){ return r.ok?r.json():[]; })
+    .then(function(rows){ ROSTER=rows||[]; }).catch(function(){});
+
+  /* prefill from a sign-in anywhere else on the site */
+  try{
+    var saved=JSON.parse(localStorage.getItem('arrival_student')||'null');
+    if(saved&&saved.email){
+      if(document.getElementById('gName')) document.getElementById('gName').value=saved.name||'';
+      if(document.getElementById('gEmail')) document.getElementById('gEmail').value=saved.email;
+      if(saved.period&&document.getElementById('gPeriod')) document.getElementById('gPeriod').value=String(saved.period);
+    } else {
+      var g=localStorage.getItem('gal_student_email');
+      if(g&&document.getElementById('gEmail')) document.getElementById('gEmail').value=g;
+    }
+  }catch(e){}
+
+  /* ---------- translate through the proxy ---------- */
+  var tcache={};
+  var C2N={es:'Spanish',zh:'Chinese (Simplified)','zh-CN':'Chinese (Simplified)',ar:'Arabic',
+    vi:'Vietnamese',ru:'Russian',ur:'Urdu',tl:'Tagalog',fr:'French',ko:'Korean',hi:'Hindi',
+    so:'Somali',ne:'Nepali',th:'Thai'};
+  function tr(text, code){
+    var lang=(!code||code==='none')?'':(C2N[code]||code);
+    var key=text+'|'+lang;
+    if(tcache[key]) return Promise.resolve(tcache[key]);
+    var url=PROXY+'?action=translate&idiom='+encodeURIComponent(text)+'&meaning=&lang='+encodeURIComponent(lang);
+    return fetch(url).then(function(r){return r.json();}).then(function(d){
+      if(!d||!d.ok||!d.translation) return null;
+      tcache[key]=d.translation; return d.translation;
+    }).catch(function(){return null;});
+  }
+
+  /* ---------- directions in the student's language ---------- */
+  var DIR_ON=false, SENT={};
+  try{ DIR_ON=localStorage.getItem('song_dir')==='1'; }catch(e){}
+  function logReveal(k, lang){
+    if(!ME_()) return;
+    var sig=k+'|'+lang; if(SENT[sig]) return; SENT[sig]=true;
+    fetch(SUPA_URL+'/rest/v1/instruction_reveals',{
+      method:'POST', headers:head('return=minimal'),
+      body:JSON.stringify([{email:ME_().email, set_slug:PAGE_SLUG, activity:k, lang:lang}])}).catch(function(){});
+  }
+  function showDirections(){
+    var lang=document.getElementById('langSel').value;
+    var list=document.querySelectorAll('[data-dir]');
+    Array.prototype.forEach.call(list,function(p){
+      var out=p.querySelector('.dirtr');
+      if(!out){ out=document.createElement('span'); out.className='dirtr'; p.appendChild(out); }
+      if(!DIR_ON||!lang){ out.textContent=''; return; }
+      var k=p.getAttribute('data-dir'), en=p.getAttribute('data-en')||'';
+      out.textContent='…';
+      tr(en, lang).then(function(t){
+        out.textContent=t?(t.equiv||t.meaning||''):'';
+        if(out.textContent) logReveal(k, lang);
+      });
+    });
+  }
+  var dirBtn=document.getElementById('btn-dir');
+  if(dirBtn){
+    dirBtn.classList.toggle('on', DIR_ON);
+    dirBtn.addEventListener('click',function(){
+      DIR_ON=!DIR_ON;
+      try{ localStorage.setItem('song_dir', DIR_ON?'1':'0'); }catch(e){}
+      dirBtn.classList.toggle('on', DIR_ON);
+      showDirections();
+    });
+  }
+  var langSel=document.getElementById('langSel');
+  if(langSel) langSel.addEventListener('change', function(){ if(DIR_ON) showDirections(); });
+  if(DIR_ON) setTimeout(showDirections, 600);
+
+  /* ---------- tap any word ---------- */
+  var TAP_ON=false;
+  try{ TAP_ON=localStorage.getItem('song_tap')==='1'; }catch(e){}
+  function wrapWords(root){
+    if(root.getAttribute('data-wrapped')) return;
+    root.setAttribute('data-wrapped','1');
+    var walker=document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), nodes=[], n;
+    while((n=walker.nextNode())) if(n.nodeValue.trim()) nodes.push(n);
+    nodes.forEach(function(node){
+      if(node.parentNode.closest('textarea,input,button,select,.wt-tap')) return;
+      var frag=document.createDocumentFragment();
+      node.nodeValue.split(/(\s+)/).forEach(function(piece){
+        if(!piece.trim()){ frag.appendChild(document.createTextNode(piece)); return; }
+        var s=document.createElement('span');
+        s.className='wt-tap'; s.textContent=piece;
+        frag.appendChild(s);
+      });
+      node.parentNode.replaceChild(frag, node);
+    });
+  }
+  function tapTargets(){ return document.querySelectorAll('[data-tap]'); }
+  function setTap(on){
+    TAP_ON=on;
+    try{ localStorage.setItem('song_tap', on?'1':'0'); }catch(e){}
+    document.body.classList.toggle('tap-on', on);
+    var b=document.getElementById('btn-tap');
+    if(b) b.classList.toggle('on', on);
+    if(on) Array.prototype.forEach.call(tapTargets(), wrapWords);
+  }
+  var tapBtn=document.getElementById('btn-tap');
+  if(tapBtn) tapBtn.addEventListener('click', function(){ setTap(!TAP_ON); });
+  document.addEventListener('click', function(ev){
+    if(!TAP_ON) return;
+    var s=ev.target.closest('.wt-tap'); if(!s) return;
+    var lang=document.getElementById('langSel').value;
+    if(!lang){ document.getElementById('langSel').focus(); return; }
+    var word=(s.textContent||'').replace(/[^A-Za-zÀ-ÿ'’-]/g,'');
+    if(!word) return;
+    var old=s.getAttribute('data-shown');
+    if(old){ s.removeAttribute('data-shown'); var t=s.querySelector('.wt-bub'); if(t) t.remove(); return; }
+    var bub=document.createElement('span'); bub.className='wt-bub'; bub.textContent='…';
+    s.appendChild(bub); s.setAttribute('data-shown','1');
+    tr(word, lang).then(function(t){ bub.textContent=t?(t.equiv||t.meaning||'?'):'?'; });
+  });
+  if(TAP_ON) setTimeout(function(){ setTap(true); }, 400);
+
+  /* ---------- quiet browser-translation canary ---------- */
+  var CANARY='the quick brown fox jumps over the lazy dog', TR_SENT='';
+  function detectTranslation(){
+    var c=document.getElementById('canary');
+    var got=c?(c.textContent||'').trim().toLowerCase():'';
+    var cls=document.documentElement.className||'';
+    var drift=(c&&got!==CANARY)?got:'';
+    if(!drift&&!/translated|notranslate-off/.test(cls)) return null;
+    return {observed:drift, html_lang:document.documentElement.lang||'', html_class:cls};
+  }
+  function checkTranslation(){
+    var d=detectTranslation();
+    if(!d||!ME_()) return;
+    var sig=d.observed+'|'+d.html_lang;
+    if(sig===TR_SENT) return;
+    TR_SENT=sig;
+    fetch(SUPA_URL+'/rest/v1/page_translation?on_conflict=email,set_slug',{
+      method:'POST', headers:head('resolution=merge-duplicates,return=minimal'),
+      body:JSON.stringify([{email:ME_().email, set_slug:PAGE_SLUG, translated:true,
+        observed:d.observed, html_lang:d.html_lang, html_class:d.html_class,
+        updated_at:new Date().toISOString()}])}).catch(function(){});
+  }
+  window.checkTranslation=checkTranslation;
+  setInterval(checkTranslation, 20000);
+  setTimeout(checkTranslation, 4000);
+})();
+</script>
 </body>
 </html>

@@ -267,13 +267,22 @@ figure.art figcaption{
   figure.art{float:none;width:100%;max-width:300px;margin:12px auto}
   h1{font-size:2rem}
 }
+
+#btn-dir.on,#btn-tap.on{background:#1F4D3D;color:#fff}
+.dirtr{display:block;margin-top:4px;color:#2f6f57;font-weight:700}
+.dirtr:empty{display:none}
+body.tap-on .wt-tap{cursor:pointer;border-bottom:1px dotted #8aa79a}
+body.tap-on .wt-tap:hover{background:#eef5f1}
+.wt-bub{display:inline-block;margin-left:5px;padding:1px 6px;border-radius:6px;
+  background:#1F4D3D;color:#fff;font-size:.85em;font-weight:700}
 </style>
 </head>
+<span id="canary" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden">the quick brown fox jumps over the lazy dog</span>
 <body>
 
 
 <div id="gate">
-  <div class="card">
+  <div class="card" translate="no" data-tap="1">
     <h2>September 11, 2001</h2>
     <p class="hi">Sign in so Mr. Toby can see your work.</p>
     <label for="gEmail">School email address</label>
@@ -287,7 +296,7 @@ figure.art figcaption{
   </select>
     <button id="gGo" type="button">Start reading</button>
     <div class="err" id="gErr"></div>
-    <p class="note">Your answers save automatically while you work. You can close the page and come back later.</p>
+    <p class="note" translate="yes" data-dir="youranswerssavea" data-en="Your answers save automatically while you work. You can close the page and come back later.">Your answers save automatically while you work. You can close the page and come back later.<span class="dirtr"></span></p>
   </div>
 </div>
 
@@ -295,13 +304,22 @@ figure.art figcaption{
   <span class="brand">September 11, 2001 — Reading Guide</span>
   <select id="lang" aria-label="Translation language">
     <option value="none">Language: English only</option>
-    <option value="es">Español</option>
-    <option value="zh">中文 (简体)</option>
-    <option value="ar">العربية</option>
-    <option value="vi">Tiếng Việt</option>
-    <option value="th">ไทย</option>
-    <option value="ne">नेपाली</option>
+    <option value="es">Espa&ntilde;ol</option>
+    <option value="zh">&#20013;&#25991;</option>
+    <option value="ar">&#1575;&#1604;&#1593;&#1585;&#1576;&#1610;&#1577;</option>
+    <option value="vi">Ti&#7871;ng Vi&#7879;t</option>
+    <option value="ru">&#1056;&#1091;&#1089;&#1089;&#1082;&#1080;&#1081;</option>
+    <option value="ur">&#1575;&#1585;&#1583;&#1608;</option>
+    <option value="tl">Tagalog</option>
+    <option value="fr">Fran&ccedil;ais</option>
+    <option value="ko">&#54620;&#44397;&#50612;</option>
+    <option value="hi">&#2361;&#2367;&#2344;&#2381;&#2342;&#2368;</option>
+    <option value="so">Soomaali</option>
+    <option value="ne">&#2344;&#2375;&#2346;&#2366;&#2354;&#2368;</option>
+    <option value="th">&#3652;&#3607;&#3618;</option>
   </select>
+  <button id="btn-dir" title="Show the directions in your language">Directions</button>
+  <button id="btn-tap" title="Tap any word for its meaning">Tap words</button>
   <button id="bigBtn" type="button">Bigger text</button>
   <button id="pBlank" type="button">Print blank copy</button>
   <button id="pMine" type="button">Print my answers</button>
@@ -314,10 +332,10 @@ figure.art figcaption{
 
 <div id="tip" role="tooltip"></div>
 
-<div class="sheet">
+<div class="sheet" translate="no" data-tap="1">
 
   <h1>September 11, 2001</h1>
-  <p class="sub">Reading Guide &middot; Simplified Text</p>
+  <p class="sub" translate="yes" data-dir="readingguidemidd" data-en="Reading Guide &middot; Simplified Text">Reading Guide &middot; Simplified Text<span class="dirtr"></span></p>
   <p class="byline">Mr. Toby &middot; Galileo Academy of Science and Technology &middot; ELD</p>
 
   <div class="nameline">
@@ -644,7 +662,7 @@ function qboxHTML(tag,q){
   var id="q"+idn;
   var label=tag.toUpperCase();
   var lines=esc(q).split("\n").join("<br>");
-  return '<div class="qbox"><span class="tag '+tag+'">'+label+'</span>'+
+  return '<div class="qbox" translate="no" data-tap="1"><span class="tag '+tag+'">'+label+'</span>'+
          '<p class="qtext">'+lines+'</p>'+
          '<textarea data-id="'+id+'" rows="3"></textarea></div>';
 }
@@ -673,7 +691,7 @@ function render(){
       h+='</div>';
     }
     else if(b.k==="qrow"){
-      h+='<div class="qgrid">';
+      h+='<div class="qgrid" translate="no" data-tap="1">';
       for(var j=0;j<b.qs.length;j++){ h+=qboxHTML(b.qs[j].tag,b.qs[j].q); }
       h+='</div>';
     }
@@ -1116,10 +1134,15 @@ document.getElementById("gGo").addEventListener("click", function(){
   var name = document.getElementById("gName").value.trim();
   var per = document.getElementById("gPeriod").value;
   var err = document.getElementById("gErr");
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){ err.textContent = "Please type a real email address."; return; }
+  if(!validMail(email)){ err.textContent = "Please use your school email — it ends with @s.sfusd.edu"; return; }
   if(name.length < 2){ err.textContent = "Please type your full name."; return; }
   if(!per){ err.textContent = "Please choose your class period."; return; }
   err.textContent = "";
+  var rawMail = email;
+  email = canonMail(email);
+  recordAlias(rawMail, email);
+  seedStudent(name, email, per);
+  try{ localStorage.setItem("gal_student_email", email); }catch(e){}
   student = { email: email, name: name, period: per };
   try{ localStorage.setItem(STU_KEY, JSON.stringify(student)); }catch(e){}
   signedIn();
@@ -1163,5 +1186,182 @@ document.getElementById("who").addEventListener("click", function(){
 
 </script>
 <script src="/readings/track.js"></script>
+
+<script>
+/* ============ Galileo standard: identity, directions, tap words, canary ============ */
+(function(){
+  /* some pages in this family define SLUG, some do not */
+  var PAGE_SLUG=(typeof SLUG!=='undefined'&&SLUG)?SLUG:'sept11';
+  var CANON_DOMAIN='@s.sfusd.edu', ROSTER=[];
+  var PROXY='https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
+  function ME_(){ return (typeof student!=='undefined'&&student&&student.email)?student:null; }
+  window.cleanMail=function(x){ return String(x||'').trim().toLowerCase(); };
+  window.localPart=function(e){ return cleanMail(e).split('@')[0]; };
+  window.validMail=function(e){ return /^[^@\s]+@(s\.)?sfusd\.edu$/.test(cleanMail(e)); };
+  window.canonMail=function(raw){
+    var lp=localPart(raw), i;
+    for(i=0;i<ROSTER.length;i++){ if(localPart(ROSTER[i].email)===lp) return cleanMail(ROSTER[i].email); }
+    return lp+CANON_DOMAIN;
+  };
+  function head(pref){
+    var h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};
+    if(pref) h['Prefer']=pref; return h;
+  }
+  window.recordAlias=function(alias, canon){
+    if(!alias||alias===canon) return;
+    fetch(SUPA_URL+'/rest/v1/student_aliases?on_conflict=alias_email',{
+      method:'POST', headers:head('resolution=merge-duplicates,return=minimal'),
+      body:JSON.stringify([{alias_email:alias, email:canon}])}).catch(function(){});
+  };
+  window.seedStudent=function(name,email,period){
+    fetch(SUPA_URL+'/rest/v1/students?on_conflict=email',{
+      method:'POST', headers:head('resolution=ignore-duplicates,return=minimal'),
+      body:JSON.stringify([{email:email, name:name, period:period}])}).catch(function(){});
+  };
+  fetch(SUPA_URL+'/rest/v1/students?select=name,email,period&order=name',{headers:head()})
+    .then(function(r){ return r.ok?r.json():[]; })
+    .then(function(rows){ ROSTER=rows||[]; }).catch(function(){});
+
+  /* prefill from a sign-in anywhere else on the site */
+  try{
+    var saved=JSON.parse(localStorage.getItem('sept11_student')||'null');
+    if(saved&&saved.email){
+      if(document.getElementById('gName')) document.getElementById('gName').value=saved.name||'';
+      if(document.getElementById('gEmail')) document.getElementById('gEmail').value=saved.email;
+      if(saved.period&&document.getElementById('gPeriod')) document.getElementById('gPeriod').value=String(saved.period);
+    } else {
+      var g=localStorage.getItem('gal_student_email');
+      if(g&&document.getElementById('gEmail')) document.getElementById('gEmail').value=g;
+    }
+  }catch(e){}
+
+  /* ---------- translate through the proxy ---------- */
+  var tcache={};
+  var C2N={es:'Spanish',zh:'Chinese (Simplified)','zh-CN':'Chinese (Simplified)',ar:'Arabic',
+    vi:'Vietnamese',ru:'Russian',ur:'Urdu',tl:'Tagalog',fr:'French',ko:'Korean',hi:'Hindi',
+    so:'Somali',ne:'Nepali',th:'Thai'};
+  function tr(text, code){
+    var lang=(!code||code==='none')?'':(C2N[code]||code);
+    var key=text+'|'+lang;
+    if(tcache[key]) return Promise.resolve(tcache[key]);
+    var url=PROXY+'?action=translate&idiom='+encodeURIComponent(text)+'&meaning=&lang='+encodeURIComponent(lang);
+    return fetch(url).then(function(r){return r.json();}).then(function(d){
+      if(!d||!d.ok||!d.translation) return null;
+      tcache[key]=d.translation; return d.translation;
+    }).catch(function(){return null;});
+  }
+
+  /* ---------- directions in the student's language ---------- */
+  var DIR_ON=false, SENT={};
+  try{ DIR_ON=localStorage.getItem('song_dir')==='1'; }catch(e){}
+  function logReveal(k, lang){
+    if(!ME_()) return;
+    var sig=k+'|'+lang; if(SENT[sig]) return; SENT[sig]=true;
+    fetch(SUPA_URL+'/rest/v1/instruction_reveals',{
+      method:'POST', headers:head('return=minimal'),
+      body:JSON.stringify([{email:ME_().email, set_slug:PAGE_SLUG, activity:k, lang:lang}])}).catch(function(){});
+  }
+  function showDirections(){
+    var lang=document.getElementById('lang').value;
+    var list=document.querySelectorAll('[data-dir]');
+    Array.prototype.forEach.call(list,function(p){
+      var out=p.querySelector('.dirtr');
+      if(!out){ out=document.createElement('span'); out.className='dirtr'; p.appendChild(out); }
+      if(!DIR_ON||!lang){ out.textContent=''; return; }
+      var k=p.getAttribute('data-dir'), en=p.getAttribute('data-en')||'';
+      out.textContent='…';
+      tr(en, lang).then(function(t){
+        out.textContent=t?(t.equiv||t.meaning||''):'';
+        if(out.textContent) logReveal(k, lang);
+      });
+    });
+  }
+  var dirBtn=document.getElementById('btn-dir');
+  if(dirBtn){
+    dirBtn.classList.toggle('on', DIR_ON);
+    dirBtn.addEventListener('click',function(){
+      DIR_ON=!DIR_ON;
+      try{ localStorage.setItem('song_dir', DIR_ON?'1':'0'); }catch(e){}
+      dirBtn.classList.toggle('on', DIR_ON);
+      showDirections();
+    });
+  }
+  var langSel=document.getElementById('lang');
+  if(langSel) langSel.addEventListener('change', function(){ if(DIR_ON) showDirections(); });
+  if(DIR_ON) setTimeout(showDirections, 600);
+
+  /* ---------- tap any word ---------- */
+  var TAP_ON=false;
+  try{ TAP_ON=localStorage.getItem('song_tap')==='1'; }catch(e){}
+  function wrapWords(root){
+    if(root.getAttribute('data-wrapped')) return;
+    root.setAttribute('data-wrapped','1');
+    var walker=document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), nodes=[], n;
+    while((n=walker.nextNode())) if(n.nodeValue.trim()) nodes.push(n);
+    nodes.forEach(function(node){
+      if(node.parentNode.closest('textarea,input,button,select,.wt-tap')) return;
+      var frag=document.createDocumentFragment();
+      node.nodeValue.split(/(\s+)/).forEach(function(piece){
+        if(!piece.trim()){ frag.appendChild(document.createTextNode(piece)); return; }
+        var s=document.createElement('span');
+        s.className='wt-tap'; s.textContent=piece;
+        frag.appendChild(s);
+      });
+      node.parentNode.replaceChild(frag, node);
+    });
+  }
+  function tapTargets(){ return document.querySelectorAll('[data-tap]'); }
+  function setTap(on){
+    TAP_ON=on;
+    try{ localStorage.setItem('song_tap', on?'1':'0'); }catch(e){}
+    document.body.classList.toggle('tap-on', on);
+    var b=document.getElementById('btn-tap');
+    if(b) b.classList.toggle('on', on);
+    if(on) Array.prototype.forEach.call(tapTargets(), wrapWords);
+  }
+  var tapBtn=document.getElementById('btn-tap');
+  if(tapBtn) tapBtn.addEventListener('click', function(){ setTap(!TAP_ON); });
+  document.addEventListener('click', function(ev){
+    if(!TAP_ON) return;
+    var s=ev.target.closest('.wt-tap'); if(!s) return;
+    var lang=document.getElementById('lang').value;
+    if(!lang){ document.getElementById('lang').focus(); return; }
+    var word=(s.textContent||'').replace(/[^A-Za-zÀ-ÿ'’-]/g,'');
+    if(!word) return;
+    var old=s.getAttribute('data-shown');
+    if(old){ s.removeAttribute('data-shown'); var t=s.querySelector('.wt-bub'); if(t) t.remove(); return; }
+    var bub=document.createElement('span'); bub.className='wt-bub'; bub.textContent='…';
+    s.appendChild(bub); s.setAttribute('data-shown','1');
+    tr(word, lang).then(function(t){ bub.textContent=t?(t.equiv||t.meaning||'?'):'?'; });
+  });
+  if(TAP_ON) setTimeout(function(){ setTap(true); }, 400);
+
+  /* ---------- quiet browser-translation canary ---------- */
+  var CANARY='the quick brown fox jumps over the lazy dog', TR_SENT='';
+  function detectTranslation(){
+    var c=document.getElementById('canary');
+    var got=c?(c.textContent||'').trim().toLowerCase():'';
+    var cls=document.documentElement.className||'';
+    var drift=(c&&got!==CANARY)?got:'';
+    if(!drift&&!/translated|notranslate-off/.test(cls)) return null;
+    return {observed:drift, html_lang:document.documentElement.lang||'', html_class:cls};
+  }
+  function checkTranslation(){
+    var d=detectTranslation();
+    if(!d||!ME_()) return;
+    var sig=d.observed+'|'+d.html_lang;
+    if(sig===TR_SENT) return;
+    TR_SENT=sig;
+    fetch(SUPA_URL+'/rest/v1/page_translation?on_conflict=email,set_slug',{
+      method:'POST', headers:head('resolution=merge-duplicates,return=minimal'),
+      body:JSON.stringify([{email:ME_().email, set_slug:PAGE_SLUG, translated:true,
+        observed:d.observed, html_lang:d.html_lang, html_class:d.html_class,
+        updated_at:new Date().toISOString()}])}).catch(function(){});
+  }
+  window.checkTranslation=checkTranslation;
+  setInterval(checkTranslation, 20000);
+  setTimeout(checkTranslation, 4000);
+})();
+</script>
 </body>
 </html>
