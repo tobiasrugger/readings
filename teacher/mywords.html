@@ -60,6 +60,7 @@ input:focus,select:focus{outline:0;border-color:var(--plum);background:#fff}
 .w.got{background:var(--green-bg);color:var(--green);border-color:var(--green)}
 .w.work{background:var(--yellow-bg);color:var(--yellow);border-color:var(--yellow)}
 .w.hard{background:var(--red-bg);color:var(--red);border-color:var(--red)}
+.w.todo{background:var(--grey-bg);color:var(--muted);border-color:var(--line-dk)}
 .w .n{font-size:.76rem;opacity:.85;font-weight:700}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.84rem;font-weight:700;margin:10px 0 16px}
 .legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
@@ -121,6 +122,7 @@ tbody tr:nth-child(even) td{background:#faf9fd}
     <span><i style="background:var(--green)"></i>Knows it</span>
     <span><i style="background:var(--yellow)"></i>Still practicing</span>
     <span><i style="background:var(--red)"></i>Getting it wrong a lot</span>
+    <span><i style="background:var(--grey)"></i>Needs it, has not practiced</span>
     <span class="muted">&middot; click a name to open that student's page</span>
   </div>
 
@@ -133,6 +135,7 @@ var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
 var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
 var PASSWORD='galileo2026';
 var LEARN_CORRECT=3, LEARN_MODES=2;   // same rule My Words itself uses
+var IDK='__idk';
 
 function $(i){return document.getElementById(i);}
 function esc(s){return (s==null?'':String(s)).replace(/[&<>"]/g,function(c){
@@ -155,7 +158,7 @@ function loadAll(){
   Promise.all([
     sb('students?select=email,first_name,last_name,period').catch(function(){return [];}),
     sb('vocab_word_practice?select=*').catch(function(){return [];}),
-    sb('vocab_preassess?select=quiz,quiz_title').catch(function(){return [];})
+    sb('vocab_preassess?select=email,quiz,quiz_title,items,answers').catch(function(){return [];})
   ]).then(function(r){build(r[0],r[1],r[2]);})
    .catch(function(e){$('msg').innerHTML='<div class="msg err">Could not load.<br>'+
      esc(String(e.message).slice(0,300))+'</div>';});
@@ -165,32 +168,65 @@ function key(e){return String(e||'').trim().toLowerCase();}
 function learned(p){return (p.correct||0)>=LEARN_CORRECT && (p.modes||[]).length>=LEARN_MODES;}
 function state(p){
   if(p.learned||learned(p))return 'got';
+  if(!p.practiced)return 'todo';
   if((p.wrong||0)>=3 && (p.wrong||0)>(p.correct||0))return 'hard';
   return 'work';
 }
 
-function build(students,practice,quizzes){
+function build(students,practice,checks){
   STUD={};QUIZNAME={};
-  (quizzes||[]).forEach(function(q){if(q.quiz)QUIZNAME[q.quiz]=q.quiz_title||q.quiz;});
   (students||[]).forEach(function(s){
     var k=key(s.email); if(!k)return;
     STUD[k]={email:k,name:((s.first_name||'')+' '+(s.last_name||'')).trim()||k.split('@')[0],
-             period:s.period||'',words:[]};
+             period:s.period||'',words:[],index:{}};
   });
+  function who(email){
+    var k=key(email); if(!k)return null;
+    if(!STUD[k])STUD[k]={email:k,name:k.split('@')[0],period:'',words:[],index:{}};
+    return STUD[k];
+  }
+
+  // 1. every word a student missed on a pre-check is a word they need
+  (checks||[]).forEach(function(c){
+    if(c.quiz)QUIZNAME[c.quiz]=c.quiz_title||c.quiz;
+    var s=who(c.email); if(!s)return;
+    var items=c.items||[], ans=c.answers||{};
+    items.forEach(function(it){
+      if(!it||!it.w)return;
+      var picked=ans[it.k];
+      var knew=(picked===it.w);
+      if(knew)return;                       // they already knew it
+      var kk=c.quiz+'||'+it.w;
+      if(s.index[kk])return;
+      var rec={quiz:c.quiz,word:it.w,correct:0,wrong:0,modes:[],learned:false,
+               practiced:false,idk:(picked===IDK||picked==null||picked==='')};
+      s.index[kk]=rec; s.words.push(rec);
+    });
+  });
+
+  // 2. overlay whatever practice exists
   (practice||[]).forEach(function(p){
-    var k=key(p.email); if(!k)return;
-    if(!STUD[k])STUD[k]={email:k,name:k.split('@')[0],period:'',words:[]};
-    STUD[k].words.push(p);
+    var s=who(p.email); if(!s)return;
+    var kk=p.quiz+'||'+p.word;
+    var rec=s.index[kk];
+    if(!rec){
+      rec={quiz:p.quiz,word:p.word,idk:false};
+      s.index[kk]=rec; s.words.push(rec);
+    }
+    rec.correct=p.correct||0; rec.wrong=p.wrong||0;
+    rec.modes=p.modes||[]; rec.learned=!!p.learned; rec.practiced=true;
   });
+
   ROWS=Object.keys(STUD).map(function(k){return STUD[k];})
         .filter(function(s){return s.words.length;});
   ROWS.forEach(function(s){
     s.got=s.words.filter(function(p){return state(p)==='got';}).length;
     s.hard=s.words.filter(function(p){return state(p)==='hard';}).length;
+    s.todo=s.words.filter(function(p){return state(p)==='todo';}).length;
   });
   ROWS.sort(function(a,b){return a.name.toLowerCase()<b.name.toLowerCase()?-1:1;});
   $('msg').innerHTML=ROWS.length?'':
-    '<div class="msg info">No My Words practice saved yet. It appears here once students start practising.</div>';
+    '<div class="msg info">No vocabulary checks saved yet. Words appear here once students take a check.</div>';
   buildPeriods();render();
 }
 
@@ -219,14 +255,15 @@ function shown(){
 
 function render(){
   var rows=shown(), hideGot=$('hideGot').checked;
-  var totalWords=0,totalGot=0,totalHard=0;
+  var totalWords=0,totalGot=0,totalHard=0,totalTodo=0;
   rows.forEach(function(s){
-    totalWords+=s.words.length;totalGot+=s.got;totalHard+=s.hard;});
+    totalWords+=s.words.length;totalGot+=s.got;totalHard+=s.hard;totalTodo+=s.todo;});
   $('stats').innerHTML=
     stat(rows.length,'students')+
-    stat(totalWords,'words being practiced')+
+    stat(totalWords,'words they need')+
     stat(totalGot,'known')+
-    stat(totalHard,'giving trouble');
+    stat(totalHard,'giving trouble')+
+    stat(totalTodo,'not practiced yet');
 
   $('out').innerHTML = VIEW==='student' ? byStudent(rows,hideGot) : byWord(rows,hideGot);
 }
@@ -244,7 +281,7 @@ function byStudent(rows,hideGot){
     var quizKeys=Object.keys(byQuiz).sort();
     var body=quizKeys.length?quizKeys.map(function(q){
       var list=byQuiz[q].slice().sort(function(a,b){
-        var o={hard:0,work:1,got:2};return o[state(a)]-o[state(b)];});
+        var o={hard:0,work:1,todo:2,got:3};return o[state(a)]-o[state(b)];});
       return '<div class="quiz"><div class="qname">'+esc(QUIZNAME[q]||q)+'</div><div class="words">'+
         list.map(function(p){
           return '<span class="w '+state(p)+'">'+esc(p.word)+
@@ -272,8 +309,9 @@ function byWord(rows,hideGot){
       var st=state(p);
       if(hideGot&&st==='got')return;
       var k=p.quiz+'||'+p.word;
-      if(!W[k])W[k]={quiz:p.quiz,word:p.word,n:0,got:0,hard:0,who:[]};
-      W[k].n++; if(st==='got')W[k].got++; if(st==='hard'){W[k].hard++;W[k].who.push(s.name);}
+      if(!W[k])W[k]={quiz:p.quiz,word:p.word,n:0,got:0,hard:0,todo:0,who:[]};
+      W[k].n++; if(st==='got')W[k].got++; if(st==='todo')W[k].todo++;
+      if(st==='hard'){W[k].hard++;W[k].who.push(s.name);}
     });
   });
   var list=Object.keys(W).map(function(k){return W[k];});
@@ -283,13 +321,14 @@ function byWord(rows,hideGot){
     if(ra!==rb)return ra-rb;
     return b.n-a.n;});
   return '<div class="card" style="padding:0;overflow:hidden"><table>'+
-    '<thead><tr><th>Word</th><th>Set</th><th>Practising</th><th>Know it</th>'+
+    '<thead><tr><th>Word</th><th>Set</th><th>Need it</th><th>Know it</th><th>Not started</th>'+
     '<th>Struggling</th><th>Who is stuck</th></tr></thead><tbody>'+
     list.map(function(w){
       var pct=w.n?Math.round(100*w.got/w.n):0;
       return '<tr><td><b>'+esc(w.word)+'</b></td><td class="muted">'+esc(QUIZNAME[w.quiz]||w.quiz)+'</td>'+
         '<td>'+w.n+'</td>'+
         '<td><span class="bar"><i style="width:'+pct+'%"></i></span> '+pct+'%</td>'+
+        '<td class="muted">'+(w.todo||'&mdash;')+'</td>'+
         '<td>'+(w.hard?'<b style="color:var(--red)">'+w.hard+'</b>':'&mdash;')+'</td>'+
         '<td class="muted">'+esc(w.who.slice(0,6).join(', ')+(w.who.length>6?' +'+(w.who.length-6):''))+'</td></tr>';
     }).join('')+'</tbody></table></div>';
