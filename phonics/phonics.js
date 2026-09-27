@@ -32,8 +32,25 @@ PH.RULES = {
     /* activities that count toward finishing the lesson */
     parts: ['sortC', 'sortG', 'look', 'spell'],
     partNames: { sortC:'Sort C', sortG:'Sort G', look:'Look first', say:'Say it', spell:'Spell' }
+  },
+  'magic-e': {
+    title: 'Magic E',
+    short: 'A silent e at the end makes the vowel say its name.',
+    url: '/readings/phonics/magic-e/',
+    emoji: '\ud83e\ude84',
+    parts: ['sort', 'adde', 'look', 'spell'],
+    partNames: { sort:'Hear it', adde:'Add the e', look:'Look first', say:'Say it', spell:'Spell' }
   }
 };
+
+/* e at the end, but the vowel does NOT say its name: heart words */
+PH.MAGIC_E_HEART = ['have','give','live','love','glove','above','come','some','done','gone','none','one','once',
+  'are','were','where','there','here','move','lose','whose','prove','shove','dove','sure','eye','axe','machine',
+  'police','office','notice','promise','practice','justice','engine','imagine','favorite','minute','definite','purchase'];
+var VOW = { a:1, e:1, i:1, o:1, u:1 };
+/* spelling a long vowel the way it sounds in Spanish and many other languages:
+   name -> "neim", nice -> "nais", these -> "tis" */
+var LONG_ALIKE = { a:['e'], i:['a'], e:['i'], o:[], u:[] };
 
 /* hard G even though e, i, or y comes next */
 PH.HARD_G = ['get','gets','getting','give','gives','given','forgive','girl','girls','gift','gifts','begin',
@@ -52,7 +69,57 @@ var SOFT = { e:1, i:1, y:1 };
 /* What is this letter doing in this word?
    Returns null for letters no rule covers, or
    { rule, letter, sound, alike:[letters that make the same sound], why } */
-PH.letterInfo = function(word, i){
+/* the word (one token of a phrase) that position i sits in */
+function tokenAt(T, i){
+  var a = i, b = i;
+  while (a > 0 && /[a-z]/i.test(T.charAt(a - 1))) a--;
+  while (b < T.length && /[a-z]/i.test(T.charAt(b))) b++;
+  return { start:a, word:T.slice(a, b).toLowerCase() };
+}
+/* Magic E: vowel + one consonant + e at the end of the word (or + s / d: makes, hoped).
+   Returns the vowel's position inside the token, or -1. */
+PH.magicVowel = function(tok){
+  var w = String(tok || '').toLowerCase();
+  if (PH.MAGIC_E_HEART.indexOf(w) > -1) return -1;
+  var end = w.length;
+  if (/[sd]$/.test(w) && w.charAt(end - 2) === 'e') end--;
+  if (w.charAt(end - 1) !== 'e') return -1;
+  var v = end - 3, c = w.charAt(end - 2);
+  if (v < 0 || !VOW[w.charAt(v)] || VOW[c] || c === 'r' || c === 'y' || c === 'w' || c === 'x') return -1;
+  if (v > 0 && VOW[w.charAt(v - 1)]) return -1;              /* house, cause: vowel teams, not magic e */
+  return v;
+};
+function magicInfos(T, i){
+  var t = tokenAt(T, i), v = PH.magicVowel(t.word); if (v < 0) return [];
+  var at = i - t.start, vowel = t.word.charAt(v), out = [];
+  var base = { rule:'magic-e', vowel:vowel, word:t.word };
+  if (at === v && LONG_ALIKE[vowel].length)
+    out.push(Object.assign({}, base, { letter:vowel, sound:vowel, alike:LONG_ALIKE[vowel], why:'magic-e-vowel' }));
+  if (at === v + 1)                                           /* a vowel where the consonant goes: "caek", "caik" */
+    out.push(Object.assign({}, base, { letter:vowel, sound:vowel, alike:['a','e','i','o','u','y','w'], why:'magic-e-team' }));
+  return out;
+}
+PH.letterInfos = function(word, i){
+  var out = [], a = cgInfo(word, i);
+  if (a) out.push(a);
+  return out.concat(magicInfos(String(word || ''), i));
+};
+PH.letterInfo = function(word, i){ return PH.letterInfos(word, i)[0] || null; };
+/* which rule explains THIS typed letter (or null) */
+PH.matchInfo = function(word, i, typed){
+  var ch = String(typed || '').toLowerCase();
+  return PH.letterInfos(word, i).filter(function(x){ return x.alike.indexOf(ch) > -1; })[0] || null;
+};
+/* they typed everything but the silent e: "cak" for "cake" */
+PH.missingE = function(word, typed){
+  var T = String(word || ''), v = String(typed || '');
+  if (!/e$/i.test(T) || v.toLowerCase() !== T.slice(0, -1).toLowerCase()) return null;
+  var t = tokenAt(T, T.length - 1), p = PH.magicVowel(t.word); if (p < 0) return null;
+  var vowel = t.word.charAt(p);
+  return { rule:'magic-e', vowel:vowel, letter:vowel, word:t.word, alike:[], why:'missing-e' };
+};
+
+function cgInfo(word, i){
   var T = String(word || ''), c = T.charAt(i).toLowerCase(), nx = T.charAt(i + 1).toLowerCase(), pv = T.charAt(i - 1).toLowerCase();
   if (!c) return null;
   if (c === 'c'){
@@ -73,7 +140,7 @@ PH.letterInfo = function(word, i){
   if (c === 's' && SOFT[nx]) return { rule:'c-and-g', letter:'s', sound:'s', alike:['c'], next:nx, why:'s-not-c' };
   if (c === 'j' && SOFT[nx]) return { rule:'c-and-g', letter:'j', sound:'j', alike:['g'], next:nx, why:'j-not-g' };
   return null;
-};
+}
 
 /* Compare what they typed with the word, letter by letter.
    Each position: 'ok', 'bad', 'sound' (right sound, other spelling), or null (empty). */
@@ -83,8 +150,7 @@ PH.analyze = function(word, typed){
     var ch = v.charAt(i);
     if (!ch){ out.push(null); continue; }
     if (ch.toLowerCase() === T.charAt(i).toLowerCase()){ out.push('ok'); continue; }
-    var info = PH.letterInfo(T, i);
-    out.push(info && info.alike.indexOf(ch.toLowerCase()) > -1 ? 'sound' : 'bad');
+    out.push(PH.matchInfo(T, i, ch) ? 'sound' : 'bad');
   }
   return out;
 };
@@ -111,6 +177,23 @@ PH.EXPLAIN = {
     ex:['jeans','jelly','jet','jeep'] }
 };
 
+/* Magic E explanations depend on the vowel */
+PH.VOWEL = {
+  a:{ name:'long A', ex:['cake','name','game','face'] }, i:{ name:'long I', ex:['bike','five','time','nice'] },
+  o:{ name:'long O', ex:['home','nose','rope','bone'] }, u:{ name:'long U', ex:['cute','huge','cube','use'] },
+  e:{ name:'long E', ex:['these','Pete','theme','eve'] }
+};
+PH.explain = function(info){
+  if (!info) return null;
+  if (info.rule !== 'magic-e') return PH.EXPLAIN[info.why];
+  var V = PH.VOWEL[info.vowel] || PH.VOWEL.a, L = info.vowel;
+  var pattern = L + '_e';
+  if (info.why === 'missing-e') return { head:'Almost! Something is missing at the end.',
+    body:'You hear ' + V.name + ': the ' + L + ' says its name. Add a silent e at the end. The e makes the ' + L + ' say its name.', ex:V.ex };
+  return { head:'Good ear! You hear ' + V.name + '.',
+    body:'In this word, ' + V.name + ' is spelled ' + pattern + ': the letter ' + L + ', one consonant, then a silent e at the end. The e makes the ' + L + ' say its name.', ex:V.ex };
+};
+
 /* Notes for each home language: what is the same, what is different.
    Written in simple English; pages translate them on request. */
 PH.L1 = {
@@ -122,6 +205,15 @@ PH.L1 = {
     so: 'In Somali, the letter c is a sound from the throat (like in "caano"). In English, c never makes that sound. It says /k/ or /s/. In Somali, g always sounds like in "gabar." In English, g before e, i, or y often says /j/.',
     ru: 'Be careful: the Russian letter С looks like the English c, and it always says /s/. The English c says /s/ only before e, i, or y. Before a, o, u, or a consonant, it says /k/.',
     _other: 'Your language does not use the letters c and g, so this rule is new for you. Here is the trick: look at the next letter. It tells you the sound.'
+  },
+  'magic-e': {
+    es: 'In Spanish, every letter makes a sound, and an e at the end is always read (nube, leche). In English, the e at the end of "cake" is silent. It only changes the vowel before it. Also: English long A (cake) sounds like Spanish "ei," and long I (bike) sounds like Spanish "ai." But English does not spell them that way. It uses a_e and i_e.',
+    fr: 'In French, an e at the end is often silent too (porte, table), so this may feel familiar! In English, that silent e has a job: it makes the vowel before it say its name. cap becomes cape.',
+    tl: 'In Tagalog, every letter is read, and an e at the end is pronounced. In English, the e at the end of "cake" is silent. It changes the vowel before it, so the vowel says its name.',
+    vi: 'In Vietnamese, every written vowel is pronounced. In English, the e at the end of "cake" is silent. It is a signal: the vowel before it says its name.',
+    so: 'In Somali, every letter is pronounced, and long vowels are written with two letters (aa, ee, oo). In English, a long vowel is often written with one vowel and a silent e at the end: cake, bike, home.',
+    ru: 'In Russian, every vowel letter is pronounced. In English, the e at the end of "cake" is silent. It changes the vowel before it: cap becomes cape.',
+    _other: 'In English, some letters are silent. The e at the end of "cake" makes no sound. It is a signal: the vowel before it says its name.'
   }
 };
 PH.l1Note = function(rule, lang){
