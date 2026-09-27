@@ -52,6 +52,39 @@ PH.RULES['digraphs'] = {
   partNames: { sort:'Sort sh / ch', hear:'Which team?', match:'Read and match', say:'Say it', spell:'Spell' }
 };
 
+PH.RULES['bossy-r'] = {
+  title: 'Bossy R: ar, or, er, ir, ur',
+  short: 'R changes the vowel before it.',
+  url: '/readings/phonics/bossy-r/',
+  emoji: '\ud83d\udc51',
+  parts: ['sort', 'which', 'match', 'spell'],
+  partNames: { sort:'Sort by sound', which:'er, ir, or ur?', match:'Read and match', say:'Say it', spell:'Spell' }
+};
+
+/* ---------------- Bossy R ---------------- */
+var R_ODD = ['very','every','carry','sorry','berry','cherry','mirror','arrow','error','hurry','worry','story','parent','carol',
+  'hero','zero','area','iron','are','fire','here','there','where','were','more','store','care','sure','pure','your','four','our','hour'];
+function bossyInfos(T, i){
+  var t = tokenAt(T, i), w = t.word, at = i - t.start, out = [];
+  if (!w || R_ODD.indexOf(w) > -1) return out;
+  var base = { rule:'bossy-r', word:w };
+  function isR(v){      /* vowel at v is bossed by an r: r follows, then a consonant or the end */
+    return VOW[w.charAt(v)] && w.charAt(v + 1) === 'r' && !VOW[w.charAt(v + 2)] && w.charAt(v + 2) !== 'r' && !(v > 0 && VOW[w.charAt(v - 1)]);
+  }
+  if (isR(at)){
+    var vw = w.charAt(at), endR = (at + 2 === w.length || (at + 3 === w.length && w.charAt(at + 2) === 's'));
+    var others = function(list){ return list.filter(function(x){ return x !== vw; }); };
+    if (endR && at >= 2 && w.length >= 5)                                    /* teacher, doctor, dollar */
+      out.push(Object.assign({}, base, { letter:vw + 'r', alike:others(['a','e','i','o','u']), why:'r-final' }));
+    else if (vw === 'e' || vw === 'i' || vw === 'u' || (vw === 'o' && w.charAt(at - 1) === 'w'))   /* her, bird, fur, word */
+      out.push(Object.assign({}, base, { letter:vw + 'r', alike:others(['e','i','u']), why:'r-er' }));
+    out.push(Object.assign({}, base, { letter:vw + 'r', alike:['r'], why:'r-novowel', shift:true }));   /* "brd" */
+  }
+  if (w.charAt(at) === 'r' && at > 0 && isR(at - 1) && at + 1 < w.length)   /* "bid" for bird */
+    out.push(Object.assign({}, base, { letter:w.charAt(at - 1) + 'r', alike:[w.charAt(at + 1)], why:'r-drop', shift:true }));
+  return out;
+}
+
 /* ---------------- letter teams (digraphs) ---------------- */
 PH.DG = {
   sh:{ snd:'/sh/', say:'like "shh!"', ex:['ship','fish','shoe','shell'] },
@@ -140,7 +173,7 @@ function magicInfos(T, i){
 PH.letterInfos = function(word, i){
   var out = [], a = cgInfo(word, i);
   if (a) out.push(a);
-  return out.concat(magicInfos(String(word || ''), i), dgInfos(String(word || ''), i));
+  return out.concat(magicInfos(String(word || ''), i), dgInfos(String(word || ''), i), bossyInfos(String(word || ''), i));
 };
 PH.letterInfo = function(word, i){ return PH.letterInfos(word, i)[0] || null; };
 /* which rule explains THIS typed letter (or null) */
@@ -151,6 +184,10 @@ PH.matchInfo = function(word, i, typed){
 /* they typed everything but the silent e: "cak" for "cake" */
 PH.missingE = function(word, typed){
   var T = String(word || ''), v = String(typed || '');
+  /* also: "ca" for "car", the bossy r left off the end */
+  var lt = tokenAt(T, T.length - 1).word;
+  if (/[aeiou]r$/i.test(T) && v.toLowerCase() === T.slice(0, -1).toLowerCase() && R_ODD.indexOf(lt) < 0 && !VOW[lt.charAt(lt.length - 3)])
+    return { rule:'bossy-r', word:lt, letter:lt.slice(-2), alike:[], why:'r-drop' };
   /* also: "fis" for "fish", the h of a letter team left off the end */
   var tail = T.slice(-2).toLowerCase();
   if (PH.DG[tail] && v.toLowerCase() === T.slice(0, -1).toLowerCase() && PH.DG_ODD.indexOf(tokenAt(T, T.length - 1).word) < 0)
@@ -256,6 +293,18 @@ PH.explain = function(info){
     if (info.why === 'ch-sh') return { head:'Listen closely: /ch/ or /sh/?',
       body:'This word has /ch/, like the start of "chair." It is spelled c and h.', ex:D.ex };
   }
+  if (info.rule === 'bossy-r'){
+    if (info.why === 'r-er') return { head:'Good ear! You hear /er/.',
+      body:'In English, er, ir, and ur all make the same sound: /er/. After w, or makes it too (word, work). You have to learn which one each word uses.',
+      ex:['her','bird','fur','word'] };
+    if (info.why === 'r-final') return { head:'Good ear! The end sounds like /er/.',
+      body:'At the end of a longer word, er, or, and ar can all sound like /er/: teacher, doctor, dollar. Learn this word\'s spelling.',
+      ex:['teacher','doctor','dollar','sister'] };
+    if (info.why === 'r-drop') return { head:'Almost! Don\'t forget the bossy r.',
+      body:'When r comes after a vowel, it bosses the vowel and changes its sound. Write the r.', ex:['car','bird','fork','her'] };
+    if (info.why === 'r-novowel') return { head:'Almost! English writes a vowel before the r.',
+      body:'You hear /er/ or /ar/, and English still writes a vowel before the r: bird, not brd.', ex:['bird','her','turn','car'] };
+  }
   if (info.rule !== 'magic-e') return PH.EXPLAIN[info.why];
   var V = PH.VOWEL[info.vowel] || PH.VOWEL.a, L = info.vowel;
   var pattern = L + '_e';
@@ -285,6 +334,18 @@ PH.L1 = {
     so: 'In Somali, every letter is pronounced, and long vowels are written with two letters (aa, ee, oo). In English, a long vowel is often written with one vowel and a silent e at the end: cake, bike, home.',
     ru: 'In Russian, every vowel letter is pronounced. In English, the e at the end of "cake" is silent. It changes the vowel before it: cap becomes cape.',
     _other: 'In English, some letters are silent. The e at the end of "cake" makes no sound. It is a signal: the vowel before it says its name.'
+  },
+  'bossy-r': {
+    es: 'In Spanish, r is tapped or rolled (pero, perro), and the vowel keeps its sound. In English, r bosses the vowel before it: car, her, fork. Do not roll it. Pull your tongue back, and do not touch the top of your mouth. Also: er, ir, and ur all sound the same (/er/), so learn how each word is spelled.',
+    fr: 'French r is made in the throat. English r is made with the tongue pulled back, not touching anything. In English, r also changes the vowel before it. er, ir, and ur all say /er/: her, bird, fur.',
+    tl: 'In Tagalog, r is tapped, and every vowel keeps its sound. In English, r bosses the vowel before it and changes its sound: car, her, fork. er, ir, and ur all sound the same.',
+    vi: 'Vietnamese words never end with an r sound, so English words like car and teacher can feel hard. Keep the r at the end: pull your tongue back. In English, er, ir, and ur all sound the same (/er/).',
+    so: 'Somali r is rolled. English r is not rolled: pull your tongue back. In English, r changes the vowel before it. er, ir, and ur all say /er/: her, bird, fur.',
+    ru: 'Russian р is rolled. English r is not: pull your tongue back and do not touch the top of your mouth. English r also changes the vowel before it. er, ir, and ur all say /er/.',
+    ar: 'Arabic writing often leaves out short vowels, but English always writes them. Write "bird," not "brd." Also, English r is not rolled: pull your tongue back. er, ir, and ur all say /er/.',
+    ary: 'Arabic writing often leaves out short vowels, but English always writes them. Write "bird," not "brd." Also, English r is not rolled: pull your tongue back. er, ir, and ur all say /er/.',
+    ur: 'Urdu writing often leaves out short vowels, but English always writes them. Write "bird," not "brd." Also, English r is not rolled: pull your tongue back. er, ir, and ur all say /er/.',
+    _other: 'In English, r changes the vowel before it. ar says /ar/ (car). or says /or/ (fork). er, ir, and ur all say /er/ (her, bird, fur).'
   },
   'digraphs': {
     es: 'Spanish has ch (chico), and it sounds like English ch. But Latin American Spanish has no sh sound and no th sound. Many Spanish speakers say "chip" for "ship." Try this: sh is long and soft, like "shh!" ch is short, like a sneeze: "choo!" For th, put your tongue between your teeth.',
