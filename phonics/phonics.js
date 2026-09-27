@@ -43,6 +43,44 @@ PH.RULES = {
   }
 };
 
+PH.RULES['digraphs'] = {
+  title: 'Letter Teams: sh, ch, th, ph, wh',
+  short: 'Two letters, one sound.',
+  url: '/readings/phonics/digraphs/',
+  emoji: '\ud83e\udd1d',
+  parts: ['sort', 'hear', 'match', 'spell'],
+  partNames: { sort:'Sort sh / ch', hear:'Which team?', match:'Read and match', say:'Say it', spell:'Spell' }
+};
+
+/* ---------------- letter teams (digraphs) ---------------- */
+PH.DG = {
+  sh:{ snd:'/sh/', say:'like "shh!"', ex:['ship','fish','shoe','shell'] },
+  ch:{ snd:'/ch/', say:'like the start of "chair"', ex:['chair','lunch','cheese','peach'] },
+  th:{ snd:'/th/', say:'put your tongue between your teeth and blow', ex:['three','teeth','the','mother'] },
+  ph:{ snd:'/f/',  say:'p and h together say /f/', ex:['phone','photo','elephant','dolphin'] },
+  wh:{ snd:'/w/',  say:'most question words start with wh', ex:['what','when','where','why'] }
+};
+/* ch that says /k/, and other look-alikes that are not teams */
+PH.DG_ODD = ['school','schools','chemistry','character','chorus','stomach','echo','ache','christmas','chaos','orchestra',
+  'technology','mechanic','anchor','choir','chrome','shepherd','uphill','haphazard','mishap','thomas','thailand','thai','thyme'];
+function dgInfos(T, i){
+  var t = tokenAt(T, i), w = t.word, at = i - t.start, out = [];
+  if (!w || PH.DG_ODD.indexOf(w) > -1) return out;
+  var pair = w.substr(at, 2), prevPair = at > 0 ? w.substr(at - 1, 2) : '';
+  var base = { rule:'digraphs', word:w };
+  /* first letter of a team: another sound's spelling */
+  if (PH.DG[pair]){
+    var sub = { sh:['c'], ch:['s'], th:['d','f','s','z'], ph:['f'], wh:[] }[pair];
+    var why = { sh:'sh-ch', ch:'ch-sh', th:'th-sub', ph:'ph-f', wh:'' }[pair];
+    /* th -> d and ph -> f: one letter for two, so the rest of the word shifts */
+    if (sub.length) out.push(Object.assign({}, base, { dg:pair, letter:pair, alike:sub, why:why, shift:pair === 'th' || pair === 'ph' }));
+  }
+  /* second letter (the h) left out: "sip" for ship, "wen" for when */
+  if (PH.DG[prevPair] && prevPair.charAt(1) === 'h' && at + 1 < w.length)
+    out.push(Object.assign({}, base, { dg:prevPair, letter:prevPair, alike:[w.charAt(at + 1)], why:'dg-drop', shift:true }));
+  return out;
+}
+
 /* e at the end, but the vowel does NOT say its name: heart words */
 PH.MAGIC_E_HEART = ['have','give','live','love','glove','above','come','some','done','gone','none','one','once',
   'are','were','where','there','here','move','lose','whose','prove','shove','dove','sure','eye','axe','machine',
@@ -102,7 +140,7 @@ function magicInfos(T, i){
 PH.letterInfos = function(word, i){
   var out = [], a = cgInfo(word, i);
   if (a) out.push(a);
-  return out.concat(magicInfos(String(word || ''), i));
+  return out.concat(magicInfos(String(word || ''), i), dgInfos(String(word || ''), i));
 };
 PH.letterInfo = function(word, i){ return PH.letterInfos(word, i)[0] || null; };
 /* which rule explains THIS typed letter (or null) */
@@ -113,6 +151,10 @@ PH.matchInfo = function(word, i, typed){
 /* they typed everything but the silent e: "cak" for "cake" */
 PH.missingE = function(word, typed){
   var T = String(word || ''), v = String(typed || '');
+  /* also: "fis" for "fish", the h of a letter team left off the end */
+  var tail = T.slice(-2).toLowerCase();
+  if (PH.DG[tail] && v.toLowerCase() === T.slice(0, -1).toLowerCase() && PH.DG_ODD.indexOf(tokenAt(T, T.length - 1).word) < 0)
+    return { rule:'digraphs', dg:tail, letter:tail, word:tokenAt(T, T.length - 1).word, alike:[], why:'dg-drop' };
   if (!/e$/i.test(T) || v.toLowerCase() !== T.slice(0, -1).toLowerCase()) return null;
   var t = tokenAt(T, T.length - 1), p = PH.magicVowel(t.word); if (p < 0) return null;
   var vowel = t.word.charAt(p);
@@ -144,15 +186,31 @@ function cgInfo(word, i){
 
 /* Compare what they typed with the word, letter by letter.
    Each position: 'ok', 'bad', 'sound' (right sound, other spelling), or null (empty). */
-PH.analyze = function(word, typed){
-  var T = String(word || ''), v = String(typed || ''), out = [], i;
-  for (i = 0; i < T.length; i++){
-    var ch = v.charAt(i);
-    if (!ch){ out.push(null); continue; }
-    if (ch.toLowerCase() === T.charAt(i).toLowerCase()){ out.push('ok'); continue; }
-    out.push(PH.matchInfo(T, i, ch) ? 'sound' : 'bad');
+/* Walk through what they typed. Usually letter i matches letter i of the word.
+   After "f" for "ph" (or a dropped h), the rest of the word is one letter behind,
+   so we keep comparing one letter further along. */
+PH.align = function(word, typed){
+  var T = String(word || ''), v = String(typed || ''), out = [], off = 0, j;
+  for (j = 0; j < v.length; j++){
+    var ti = j + off, ch = v.charAt(j);
+    if (ti >= T.length){ out.push({ m:'bad' }); continue; }
+    if (ch.toLowerCase() === T.charAt(ti).toLowerCase()){ out.push({ m:'ok', ti:ti }); continue; }
+    var info = PH.matchInfo(T, ti, ch);
+    if (info){ out.push({ m:'sound', ti:ti, info:info }); if (info.shift) off++; }
+    else out.push({ m:'bad', ti:ti });
   }
   return out;
+};
+/* one mark per box: 'ok', 'sound', 'bad', or null (empty) */
+PH.analyze = function(word, typed){
+  var T = String(word || ''), a = PH.align(word, typed), out = [], i;
+  for (i = 0; i < T.length; i++) out.push(a[i] ? a[i].m : null);
+  return out;
+};
+/* the rule behind the letter they just typed, if it was right-sound-wrong-spelling */
+PH.lastInfo = function(word, typed){
+  var a = PH.align(word, typed), x = a[a.length - 1];
+  return x && x.m === 'sound' ? x.info : null;
 };
 
 /* ---------------- what to tell them ---------------- */
@@ -185,6 +243,19 @@ PH.VOWEL = {
 };
 PH.explain = function(info){
   if (!info) return null;
+  if (info.rule === 'digraphs'){
+    var D = PH.DG[info.dg], two = info.dg.charAt(0) + ' and ' + info.dg.charAt(1);
+    if (info.why === 'dg-drop') return { head:'Almost! ' + info.dg + ' is a team.',
+      body:'The letters ' + two + ' work together to make one sound: ' + D.snd + ' (' + D.say + '). Two letters, one sound.', ex:D.ex };
+    if (info.why === 'th-sub') return { head:'Good try! This is the /th/ sound.',
+      body:'Many languages do not have /th/. English writes it with t and h. To say it, put your tongue between your teeth and blow.', ex:D.ex };
+    if (info.why === 'ph-f') return { head:'Good ear! You hear /f/.',
+      body:'In this word, the /f/ sound is spelled ph. p and h together say /f/.', ex:D.ex };
+    if (info.why === 'sh-ch') return { head:'Listen closely: /sh/ or /ch/?',
+      body:'This word has /sh/, like "shh!" It is spelled s and h.', ex:D.ex };
+    if (info.why === 'ch-sh') return { head:'Listen closely: /ch/ or /sh/?',
+      body:'This word has /ch/, like the start of "chair." It is spelled c and h.', ex:D.ex };
+  }
   if (info.rule !== 'magic-e') return PH.EXPLAIN[info.why];
   var V = PH.VOWEL[info.vowel] || PH.VOWEL.a, L = info.vowel;
   var pattern = L + '_e';
@@ -214,6 +285,15 @@ PH.L1 = {
     so: 'In Somali, every letter is pronounced, and long vowels are written with two letters (aa, ee, oo). In English, a long vowel is often written with one vowel and a silent e at the end: cake, bike, home.',
     ru: 'In Russian, every vowel letter is pronounced. In English, the e at the end of "cake" is silent. It changes the vowel before it: cap becomes cape.',
     _other: 'In English, some letters are silent. The e at the end of "cake" makes no sound. It is a signal: the vowel before it says its name.'
+  },
+  'digraphs': {
+    es: 'Spanish has ch (chico), and it sounds like English ch. But Latin American Spanish has no sh sound and no th sound. Many Spanish speakers say "chip" for "ship." Try this: sh is long and soft, like "shh!" ch is short, like a sneeze: "choo!" For th, put your tongue between your teeth.',
+    fr: 'Careful: French ch (chat) sounds like English sh, not English ch! English "chair" starts with t + sh together. French ph and English ph both say /f/ (photo). French has no th sound: put your tongue between your teeth.',
+    tl: 'Tagalog writes the /ch/ sound as ts (tsinelas), and a sound close to /sh/ as sy (siyempre). English writes them ch and sh. Tagalog has no th sound: put your tongue between your teeth.',
+    vi: 'Careful: Vietnamese th is a t with air, but English th puts your tongue between your teeth (think, the). Good news: Vietnamese ph says /f/, just like English ph (phở, phone).',
+    so: 'Somali sh (shan) is the same sound as English sh. Somali has no th sound: put your tongue between your teeth and blow.',
+    ru: 'Russian has ш and ч, the same sounds as English sh and ch. English writes each one with two letters. Russian has no th sound: put your tongue between your teeth. It is not t, s, or f.',
+    _other: 'In English, two letters can make one new sound: sh, ch, th, ph, wh. Say them as one sound, not two.'
   }
 };
 PH.l1Note = function(rule, lang){

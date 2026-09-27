@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Letter Teams &middot; Mr. Toby</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/readings/phonics/lesson.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="in">
+    <div class="grow">
+      <h1>Letter Teams: sh, ch, th, ph, wh</h1>
+      <div class="prog" id="prog" translate="no"></div>
+    </div>
+    <select id="lang" aria-label="My language"></select>
+    <a href="/readings/student/">My Page</a>
+    <a href="#" id="notMe" class="hide">Not me</a>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="card gate hide" id="gate" style="max-width:480px;margin:20px auto">
+    <h2 style="margin-top:0;color:var(--teal-dk)">Sign in</h2>
+    <div class="field"><label for="gName">Name</label><input id="gName" autocomplete="name"></div>
+    <div class="field"><label for="gMail">School email</label><input id="gMail" placeholder="name@s.sfusd.edu" autocapitalize="off" spellcheck="false"></div>
+    <div class="field"><label for="gPer">Period</label>
+      <select id="gPer"><option value="">Choose</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select></div>
+    <button class="btn" id="gBtn">Start</button>
+    <p class="err" id="gErr"></p>
+  </div>
+
+  <div id="app" class="hide">
+    <nav class="tabs" id="tabs" role="tablist"></nav>
+
+    <section class="pane card" id="p-learn">
+      <p class="trick" translate="yes" data-k="trick" data-en="Some letters work as a team. Two letters make one new sound.">Some letters work as a team. Two letters make one new sound.</p>
+      <div class="teamcards" id="teams" translate="no"></div>
+      <div class="row" style="margin-top:14px;justify-content:flex-start">
+        <button class="btn ghost sm" id="ruleTrBtn">Show in my language</button>
+      </div>
+      <div class="trbox hide" id="ruleTr"></div>
+      <div class="l1 hide" id="l1"><h3 id="l1h">For you</h3><p id="l1t" style="margin:0"></p>
+        <button class="btn ghost sm" id="l1Btn" style="margin-top:8px">Show in my language</button><div class="trbox hide" id="l1Tr"></div></div>
+    </section>
+
+    <section class="pane card" id="p-sort">
+      <p class="lead" translate="yes" data-k="sort" data-en="Listen. Is it /sh/ or /ch/? Drag the word to the right box. Or tap the box.">Listen. Is it /sh/ or /ch/? Drag the word to the right box. Or tap the box.</p>
+      <div class="sortwrap" id="sortBox" translate="no"></div>
+    </section>
+
+    <section class="pane card" id="p-hear">
+      <p class="lead" translate="yes" data-k="hear" data-en="Listen to the word. Which letter team do you hear?">Listen to the word. Which letter team do you hear?</p>
+      <div class="stage" id="hearStage" translate="no"></div>
+    </section>
+
+    <section class="pane card" id="p-match">
+      <p class="lead" translate="yes" data-k="match" data-en="Look at the picture. Read both words. Which word is right?">Look at the picture. Read both words. Which word is right?</p>
+      <div class="stage" id="matchStage" translate="no"></div>
+    </section>
+
+    <section class="pane card" id="p-say">
+      <p class="lead" translate="yes" data-k="say" data-en="Listen. Press Record and say the word. Make the team sound clear.">Listen. Press Record and say the word. Make the team sound clear.</p>
+      <div class="stage" id="sayStage" translate="no"></div>
+    </section>
+
+    <section class="pane card" id="p-spell">
+      <p class="lead" translate="yes" data-k="spell" data-en="Listen and type the word. Green is right. Yellow is the right sound, but a different spelling. Red is wrong.">Listen and type the word. Green is right. Yellow is the right sound, but a different spelling. Red is wrong.</p>
+      <div class="stage" id="spellStage" translate="no"></div>
+    </section>
+  </div>
+</div>
+
+<script src="/readings/vocab/mywords/words.js"></script>
+<script src="/readings/phonics/phonics.js"></script>
+<script src="/readings/phonics/lesson.js"></script>
+<script>
+(function(){
+var esc = PL.esc, $ = PL.$, shuffle = PL.shuffle;
+
+/* ================= WORDS ================= */
+var E = {
+  ship:'\ud83d\udea2', fish:'\ud83d\udc1f', shoe:'\ud83d\udc5f', shell:'\ud83d\udc1a', sheep:'\ud83d\udc11', shirt:'\ud83d\udc55',
+  shark:'\ud83e\udd88', shower:'\ud83d\udebf', brush:'\ud83d\udd8c\ufe0f',
+  chair:'\ud83e\ude91', cheese:'\ud83e\uddc0', chicken:'\ud83d\udc14', lunch:'\ud83c\udf71', peach:'\ud83c\udf51', chocolate:'\ud83c\udf6b',
+  cherries:'\ud83c\udf52', church:'\u26ea', beach:'\ud83c\udfd6\ufe0f', watch:'\u231a', chess:'\u265f\ufe0f', chip:'\ud83c\udf5f',
+  three:'3\ufe0f\u20e3', thumb:'\ud83d\udc4d', teeth:'\ud83e\uddb7', bath:'\ud83d\udec1', mouth:'\ud83d\udc44', think:'\ud83e\udd14',
+  phone:'\ud83d\udcf1', photo:'\ud83d\udcf8', elephant:'\ud83d\udc18', dolphin:'\ud83d\udc2c', alphabet:'\ud83d\udd24', graph:'\ud83d\udcc8',
+  whale:'\ud83d\udc0b', white:'\u26aa', tree:'\ud83c\udf33', sink:'\ud83d\udeb0', mouse:'\ud83d\udc01'
+};
+var TEAMS = [
+  ['sh', '\ud83e\udd2b', 'Long and soft, like "shh!"', ['ship','fish','shoe','shell','sheep','shirt']],
+  ['ch', '\ud83e\udd27', 'Short, like a sneeze: "choo!"', ['chair','cheese','chicken','lunch','peach','chocolate']],
+  ['th', '\ud83d\udc45', 'Tongue between your teeth. Blow air.', ['three','thumb','teeth','bath','mouth','think']],
+  ['ph', '\ud83d\udcf1', 'p + h says /f/.', ['phone','photo','elephant','dolphin','alphabet','graph']],
+  ['wh', '\u2753', 'Says /w/. Question words start with wh.', ['whale','white']]
+];
+var WH_WORDS = ['what','when','where','why','which'];
+var TH_BUZZ = ['the','this','that','mother','brother'];
+var SH = ['ship','fish','shoe','shell','sheep','shirt','shark','shower','brush'];
+var CH = ['chair','cheese','chicken','lunch','peach','chocolate','cherries','church','beach','watch','chess'];
+var HEAR = ['ship','fish','shell','sheep','chair','cheese','peach','chicken','three','teeth','bath','thumb','mouth','phone','photo','elephant','dolphin','whale','white'];
+/* [right word, look-alike, picture] */
+var MATCH = [['ship','chip'],['sheep','cheap'],['shoe','chew'],['watch','wash'],['three','tree'],['thumb','sum'],['mouth','mouse'],
+  ['bath','bat'],['phone','fone'],['photo','foto'],['elephant','elefant'],['dolphin','dolfin'],['whale','wale'],['cheese','sheese'],
+  ['chair','share'],['shell','chell'],['teeth','teef'],['fish','fich']];
+var SAYW = ['ship','chip','sheep','cheese','three','tree','think','sink','thumb','mouth','phone','whale'];
+var SPELLW = ['ship','fish','shoe','shell','chair','lunch','cheese','peach','three','bath','teeth','thumb','phone','photo','whale','white'];
+
+/* highlight every letter team in a word */
+function mark(w){ return esc(w).replace(/(sh|ch|th|ph|wh)/gi, '<span class="rl">$1</span>'); }
+function teamOf(w){ var m = String(w).toLowerCase().match(/sh|ch|th|ph|wh/); return m ? m[0] : ''; }
+function whyOf(w){ var t = teamOf(w); return t ? t + ' \u2192 ' + PH.DG[t].snd + ': two letters, one sound' : ''; }
+function wb(w){ return '<button class="wbtn" data-say="' + esc(w) + '">' + (E[w] ? '<span class="e">' + E[w] + '</span>' : '') + mark(w) + '</button>'; }
+
+/* ================= LEARN ================= */
+function buildLearn(){
+  $('teams').innerHTML = TEAMS.map(function(t){
+    var extra = '';
+    if (t[0] === 'th') extra = '<p class="how" style="margin-top:8px">Two th sounds: quiet (three, think) and buzzy (the, this). Put your hand on your throat. Buzzy th shakes.</p>'
+      + '<div class="words">' + TH_BUZZ.map(wb).join('') + '</div>';
+    if (t[0] === 'wh') extra = '<p class="how" style="margin-top:8px">Question words:</p><div class="words">' + WH_WORDS.map(wb).join('') + '</div>';
+    return '<div class="team"><h2><span class="rl">' + t[0] + '</span> <span style="font-size:1.6rem">' + t[1] + '</span> '
+      + '<button class="btn ghost sm" data-say="' + t[3][0] + '">' + PH.DG[t[0]].snd + '</button></h2>'
+      + '<p class="how">' + esc(t[2]) + '</p><div class="words">' + t[3].map(wb).join('') + '</div>' + extra + '</div>';
+  }).join('');
+}
+
+/* ================= SORT sh / ch ================= */
+function buildSort(){
+  var items = shuffle(shuffle(SH).slice(0, 6).map(function(w){ return { w:w, e:E[w], s:'sh' }; })
+    .concat(shuffle(CH).slice(0, 6).map(function(w){ return { w:w, e:E[w], s:'ch' }; })));
+  PL.sort({ el:$('sortBox'), pane:'p-sort', part:'sort', items:items, mark:mark,
+    bins:{ sh:{ label:'sh (shh!)', e:'\ud83e\udd2b', key:'ship' }, ch:{ label:'ch (choo!)', e:'\ud83e\udd27', key:'chair' } },
+    why:function(it){ return whyOf(it.w); }, restart:buildSort });
+}
+
+/* ================= WHICH TEAM? (hear it, pick the letters) ================= */
+function buildHear(){
+  PL.choose({ el:$('hearStage'), part:'hear', items:shuffle(HEAR).slice(0, 12), restart:buildHear,
+    render:function(w){
+      var t = teamOf(w);
+      return { autoplay:w,
+        html:'<div class="pic">' + (E[w] || '') + '</div><div class="bigword" data-w="' + esc(w) + '">?</div>'
+          + '<div class="row"><button class="btn sm" data-say="' + esc(w) + '">Hear it</button><button class="btn ghost sm" data-say="' + esc(w) + '" data-slow="1">Slow</button></div>',
+        options:['sh','ch','th','ph','wh'].map(function(x){ return { html:x, ok:x === t }; }) };
+    },
+    after:function(w){ $('hearStage').querySelector('.bigword').innerHTML = mark(w); PL.speak(w); },
+    why:function(w){ return whyOf(w); },
+    noText:function(){ return 'Listen again.'; },
+    onWrong:function(w){ PL.speak(w, true); },
+    good:'Great ears!' });
+}
+
+/* ================= READ AND MATCH (picture + two look-alike words) ================= */
+function buildMatch(){
+  PL.choose({ el:$('matchStage'), part:'match', items:shuffle(MATCH).slice(0, 12), restart:buildMatch,
+    render:function(m){
+      return { cls:'pairpick', html:'<div class="pic" style="font-size:5rem">' + (E[m[0]] || '') + '</div>',
+        options:shuffle([{ html:mark(m[0]), ok:true }, { html:mark(m[1]), ok:false }]) };
+    },
+    after:function(m){ PL.speak(m[0]); },
+    why:function(m){ return whyOf(m[0]); },
+    okText:function(m){ return 'Yes! ' + m[0]; },
+    noText:function(){ return 'Read it again. Look at the letter team.'; },
+    good:'You can read letter teams!' });
+}
+
+/* ================= SAY / SPELL ================= */
+function buildSay(){
+  PL.say({ el:$('sayStage'), part:'say', items:SAYW.map(function(w){ return [w, E[w]]; }), mark:mark,
+    why:function(w){ return whyOf(w) || 'Listen: no letter team here.'; }, restart:buildSay });
+}
+function buildSpell(){
+  PL.spell({ el:$('spellStage'), part:'spell', words:shuffle(SPELLW).slice(0, 10),
+    emoji:function(w){ return E[w]; }, restart:buildSpell });
+}
+
+PL.init({
+  rule:'digraphs', slug:'phonics-digraphs',
+  panes:[['p-learn','Learn'],['p-sort','Sort sh / ch'],['p-hear','Which team?'],['p-match','Read and match'],['p-say','Say it'],['p-spell','Spell']],
+  prog:['sort','hear','match','say','spell'],
+  ruleText:'Some letters work as a team. Two letters make one new sound. sh says /sh/, like in ship. ch says /ch/, like in chair. th says /th/: put your tongue between your teeth, like in three and the. ph says /f/, like in phone. wh says /w/, like in whale and what.',
+  onStart:function(){ buildLearn(); buildSort(); buildHear(); buildMatch(); buildSay(); buildSpell(); }
+});
+})();
+</script>
+<script src="/readings/track.js"></script>
+</body>
+</html>

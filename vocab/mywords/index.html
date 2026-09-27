@@ -732,7 +732,7 @@ function phonicsNote(en, info, i, typed){
   var exHtml = X.ex.map(function(w){
     /* underline the letter the rule is about */
     var j = w.toLowerCase().indexOf(L);
-    var shown = j < 0 ? esc(w) : esc(w.slice(0, j)) + '<b>' + esc(w.charAt(j)) + '</b>' + esc(w.slice(j + 1));
+    var shown = j < 0 ? esc(w) : esc(w.slice(0, j)) + '<b>' + esc(w.substr(j, L.length)) + '</b>' + esc(w.slice(j + L.length));
     return '<button data-say="' + esc(w) + '">' + shown + '</button>';
   }).join('');
   var note = PH.l1Note(info.rule, LANG);
@@ -796,7 +796,7 @@ function renderSpell(){
       b.className = 'lbox';
       if (st.hintSet[i]){ b.classList.add('hint'); b.textContent = T[i]; }
       else if (ch == null){ b.textContent = ''; if (i === v.length && !st.done) b.classList.add('cur'); }
-      else if (same(ch, T[i])){ b.classList.add('ok'); b.textContent = T[i]; }
+      else if (same(ch, T[i]) || marks[i] === 'ok'){ b.classList.add('ok'); b.textContent = same(ch, T[i]) ? T[i] : ch; }
       else if (marks[i] === 'sound'){ b.classList.add('snd'); b.textContent = ch; }
       else { b.classList.add('bad'); b.textContent = ch === ' ' ? '\u2423' : ch; }
     });
@@ -843,9 +843,9 @@ function renderSpell(){
     if (st.hintLen && !same(v.slice(0, st.hintLen), T.slice(0, st.hintLen))) v = T.slice(0, st.hintLen) + v.slice(st.hintLen);
     if (v.length > st.prev){
       var i = v.length - 1;
-      if (!same(v[i], T[i])){
+      if (window.PH ? PH.analyze(T, v)[i] !== 'ok' : !same(v[i], T[i])){
         st.wrongAt[i] = (st.wrongAt[i] || 0) + 1; st.wrongs++;
-        var info = window.PH ? PH.matchInfo(T, i, v[i]) : null;
+        var info = window.PH ? PH.lastInfo(T, v) : null;
         if (info) phonicsNote(en, info, i, v);
         if (st.wrongAt[i] >= SPELL_MISS_ONE || st.wrongs >= SPELL_MISS_ALL) openSpellHelp();
         else if (st.wrongAt[i] === 2) { $('sFb').className = 'fb no'; $('sFb').textContent = 'Letter ' + (i + 1) + ' is not right. Listen again.'; MW.speak(T, true); }
