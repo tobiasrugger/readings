@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Heart Words &middot; Mr. Toby</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/readings/phonics/lesson.css">
+<style>
+/* heart word maps: one box per sound */
+.map{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:18px 0 8px}
+.seg{position:relative;display:flex;flex-direction:column;align-items:center;min-width:52px;border:2px solid var(--line-dk);border-radius:12px;background:#fff;padding:6px 10px 4px}
+.seg .l{font-size:2.1rem;font-weight:900;line-height:1.1;color:var(--ink)}
+.seg .s{font-size:.85rem;font-weight:800;color:var(--muted)}
+.seg.h{border-color:#d0587b;background:#fff0f4}
+.seg.h .l{color:#b0254f}
+.seg .hrt{position:absolute;top:-16px;font-size:1.2rem;animation:pop .45s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop{from{transform:scale(0)}to{transform:none}}
+button.seg{cursor:pointer;font:inherit}
+button.seg:hover{border-color:var(--teal)}
+button.seg.pick{border-color:#d0587b;background:#fff0f4;box-shadow:0 0 0 4px rgba(208,88,123,.2)}
+button.seg.miss{border-style:dashed}
+.sets{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+.sets button{background:#fff;border:2px solid var(--line-dk);border-radius:999px;padding:6px 14px;font-weight:800;color:var(--teal-dk)}
+.sets button.on{background:var(--teal);border-color:var(--teal-dp);color:#fff}
+.sets .known{margin-left:auto;font-weight:800;color:#b0254f}
+.hcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.hcard{background:var(--field);border:2px solid var(--line);border-radius:var(--r);padding:10px 12px;text-align:center}
+.hcard .map{margin:14px 0 4px}
+.hcard .seg{min-width:40px;padding:4px 7px 2px}
+.hcard .seg .l{font-size:1.5rem}
+.hcard .tr{font-weight:700;color:var(--muted);font-size:.9rem}
+.hcard .gotit{color:#b0254f;font-weight:900;font-size:.85rem}
+.steps{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:0 0 16px}
+.steps div{background:#fff0f4;border:1.5px solid #f1bccb;border-radius:12px;padding:8px 10px;font-weight:700;font-size:.92rem}
+.steps b{display:block;color:#b0254f;font-size:1rem}
+.cover{font-size:3rem;font-weight:900;letter-spacing:.04em;margin:16px 0}
+.sentence{font-size:1.3rem;font-weight:800;margin:14px 0}
+.sentence .gap{display:inline-block;min-width:3.5em;border-bottom:3px solid var(--teal)}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="in">
+    <div class="grow">
+      <h1>Heart Words &#10084;&#65039;</h1>
+      <div class="prog" id="prog" translate="no"></div>
+    </div>
+    <select id="lang" aria-label="My language"></select>
+    <a href="/readings/student/">My Page</a>
+    <a href="#" id="notMe" class="hide">Not me</a>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="card gate hide" id="gate" style="max-width:480px;margin:20px auto">
+    <h2 style="margin-top:0;color:var(--teal-dk)">Sign in</h2>
+    <div class="field"><label for="gName">Name</label><input id="gName" autocomplete="name"></div>
+    <div class="field"><label for="gMail">School email</label><input id="gMail" placeholder="name@s.sfusd.edu" autocapitalize="off" spellcheck="false"></div>
+    <div class="field"><label for="gPer">Period</label>
+      <select id="gPer"><option value="">Choose</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select></div>
+    <button class="btn" id="gBtn">Start</button>
+    <p class="err" id="gErr"></p>
+  </div>
+
+      <div id="app" class="hide">
+    <nav class="tabs" id="tabs" role="tablist"></nav>
+    <div class="sets" id="sets" translate="no"></div>
+
+    <section class="pane card" id="p-learn">
+      <p class="trick" translate="yes" data-k="trick" data-en="Heart words break the rules. Most of the word is normal. Only one part is tricky. Learn the tricky part by heart.">Heart words break the rules. Most of the word is normal. Only one part is tricky. Learn the tricky part by heart.</p>
+      <div class="steps" translate="no">
+        <div><b>1. Hear it</b>Say the word.</div>
+        <div><b>2. Map it</b>One box for each sound.</div>
+        <div><b>3. Heart it &#10084;&#65039;</b>Find the tricky part.</div>
+        <div><b>4. Write it</b>Look, cover, write, check.</div>
+      </div>
+      <div class="hcards" id="hcards" translate="no"></div>
+      <div class="row" style="margin-top:14px;justify-content:flex-start"><button class="btn ghost sm" id="ruleTrBtn">Show in my language</button></div>
+      <div class="trbox hide" id="ruleTr"></div>
+      <div class="l1 hide" id="l1"><h3 id="l1h">For you</h3><p id="l1t" style="margin:0"></p>
+        <button class="btn ghost sm" id="l1Btn" style="margin-top:8px">Show in my language</button><div class="trbox hide" id="l1Tr"></div></div>
+    </section>
+
+    <section class="pane card" id="p-find">
+      <p class="lead" translate="yes" data-k="find" data-en="Listen. Look at the sound boxes. Which part is tricky? Tap it, then check.">Listen. Look at the sound boxes. Which part is tricky? Tap it, then check.</p>
+      <div class="stage" id="findStage" translate="no"></div>
+    </section>
+
+    <section class="pane card" id="p-spot">
+      <p class="lead" translate="yes" data-k="spot" data-en="Listen. Which spelling is right?">Listen. Which spelling is right?</p>
+      <div class="stage" id="spotStage" translate="no"></div>
+    </section>
+
+    <section class="pane card" id="p-write">
+      <p class="lead" translate="yes" data-k="write" data-en="Look at the word. Say it. Look at the heart. Then cover it and write it from memory.">Look at the word. Say it. Look at the heart. Then cover it and write it from memory.</p>
+      <div class="stage" id="writeStage" translate="no"></div>
+    </section>
+
+    <section class="pane card" id="p-use">
+      <p class="lead" translate="yes" data-k="use" data-en="Read the sentence. Choose the word that fits.">Read the sentence. Choose the word that fits.</p>
+      <div class="stage" id="useStage" translate="no"></div>
+    </section>
+
+    <section class="pane card" id="p-say">
+      <p class="lead" translate="yes" data-k="say" data-en="Listen. Press Record and say the word.">Listen. Press Record and say the word.</p>
+      <div class="stage" id="sayStage" translate="no"></div>
+    </section>
+  </div>
+</div>
+
+<script src="/readings/vocab/mywords/words.js"></script>
+<script src="/readings/phonics/phonics.js"></script>
+<script src="/readings/phonics/lesson.js"></script>
+<script>
+(function(){
+var esc = PL.esc, $ = PL.$, shuffle = PL.shuffle;
+var SETS = PH.HEART_SETS, SET = 0;
+try { SET = Math.min(SETS.length - 1, +(localStorage.getItem('heart_set') || 0)); } catch(e){}
+
+/* [sentence with ___, [two words that do not fit]] */
+var USE = {
+  the:['I read ___ book.',['of','was']], said:['Mom ___, "Good morning!"',['want','of']], was:['Yesterday ___ Monday.',['are','do']],
+  of:['I want a cup ___ tea.',['they','was']], to:['I go ___ school every day.',['of','said']], 'do':['What ___ you want?',['was','of']],
+  you:['Thank ___ very much.',['they','was']], they:['Maria and Ali are here, and ___ are happy.',['was','of']],
+  who:['Do you know ___ my teacher is?',['of','two']], two:['I have ___ brothers.',['one','want']], what:['Tell me ___ you want.',['of','two']],
+  want:['I ___ a glass of water.',['were','who']], are:['We ___ in the same class.',['was','one']], were:['Yesterday we ___ at the park.',['are','once']],
+  one:['I have ___ sister and two brothers.',['two','want']], once:['I play soccer ___ a week.',['one','want']],
+  have:['I ___ a new backpack.',['give','done']], give:['Please ___ me the pencil.',['love','done']], live:['I ___ in San Francisco.',['give','some']],
+  love:['I ___ my family.',['done','some']], come:['Please ___ to my house.',['give','some']], some:['Can I have ___ water?',['come','done']],
+  done:['I am ___ with my homework.',['come','live']], gone:['The bus is ___. We are late!',['come','give']],
+  could:['I ___ not find my phone yesterday.',['does','friend']], would:['I ___ like some pizza, please.',['does','because']],
+  should:['You ___ drink more water.',['does','again']], friend:['Ana is my best ___.',['people','again']],
+  people:['Many ___ live in the city.',['friend','does']], because:['I am tired ___ I did not sleep.',['again','people']],
+  again:['Please say it ___.',['because','people']], does:['She ___ her homework every day.',['could','people']],
+  there:['My school is over ___.',['their','your']], where:['I don\'t know ___ my keys are.',['their','many']],
+  their:['The students opened ___ books.',['there','any']], your:['Is this ___ pencil?',['there','many']],
+  many:['How ___ students are in the class?',['any','says']], any:['I don\'t have ___ money.',['many','says']],
+  put:['Please ___ your bag here.',['says','where']], says:['My teacher always ___, "Good job!"',['put','any']]
+};
+
+function words(){ return SETS[SET]; }
+function known(){ var w = PL.work(); if (!w.known) w.known = {}; return w.known; }
+function mapHtml(w, opts){
+  opts = opts || {};
+  return '<div class="map">' + PH.heartParts(w).map(function(p, n){
+    var tag = opts.buttons ? 'button' : 'div';
+    var h = opts.hideHearts ? false : p.heart;
+    return '<' + tag + ' class="seg' + (h ? ' h' : '') + '" data-n="' + n + '">' + (h ? '<span class="hrt">\u2764\ufe0f</span>' : '')
+      + '<span class="l">' + esc(p.l) + '</span>' + (opts.noSounds ? '' : '<span class="s">' + (p.s === '-' ? 'silent' : '/' + esc(p.s) + '/') + '</span>') + '</' + tag + '>';
+  }).join('') + '</div>';
+}
+
+/* ================= SET PICKER ================= */
+function drawSets(){
+  var k = known(), total = 0; SETS.forEach(function(s){ s.forEach(function(w){ if (k[w]) total++; }); });
+  $('sets').innerHTML = SETS.map(function(s, n){
+    var got = s.filter(function(w){ return k[w]; }).length;
+    return '<button data-s="' + n + '" class="' + (n === SET ? 'on' : '') + '">Set ' + (n + 1) + (got ? ' \u00b7 ' + got + '/8' : '') + '</button>';
+  }).join('') + '<span class="known">\u2764\ufe0f ' + total + ' of 40 learned</span>';
+  Array.prototype.forEach.call($('sets').querySelectorAll('button'), function(b){
+    b.onclick = function(){ SET = +b.getAttribute('data-s'); try { localStorage.setItem('heart_set', SET); } catch(e){} rebuild(); };
+  });
+}
+function rebuild(){ drawSets(); buildLearn(); buildFind(); buildSpot(); buildWrite(); buildUse(); buildSay(); }
+
+/* ================= LEARN ================= */
+function buildLearn(){
+  var k = known();
+  $('hcards').innerHTML = words().map(function(w){
+    return '<div class="hcard">' + mapHtml(w)
+      + '<div class="row"><button class="btn sm" data-say="' + esc(w) + '">Hear it</button></div>'
+      + '<div class="tr" style="margin-top:6px">' + esc(PH.heartTricky(w)) + '</div>'
+      + (k[w] ? '<div class="gotit">\u2764\ufe0f learned</div>' : '') + '</div>';
+  }).join('');
+}
+
+/* ================= FIND THE HEART ================= */
+function buildFind(){
+  var list = shuffle(words()), I = 0, R = 0, st = $('findStage');
+  function draw(){
+    if (I >= list.length){ var pct = Math.round(100 * R / list.length); PL.score('find', pct);
+      PL.doneCard(st, R + ' of ' + list.length, pct >= 80 ? 'You can find the tricky parts!' : 'Look for the part that does not sound like its letters.', 'Do it again', buildFind); return; }
+    var w = list[I], parts = PH.heartParts(w), picked = {}, first = true;
+    st.innerHTML = '<div class="count">' + (I + 1) + ' of ' + list.length + '</div>'
+      + '<div class="row"><button class="btn sm" data-say="' + esc(w) + '">Hear it</button><button class="btn ghost sm" data-say="' + esc(w) + '" data-slow="1">Slow</button></div>'
+      + mapHtml(w, { buttons:true, hideHearts:true, noSounds:true })
+      + '<div class="row" style="margin-top:10px"><button class="btn" id="fCheck">Check</button></div><div class="why" id="fWhy" style="margin-top:10px"></div><div class="fb" id="fFb"></div>';
+    setTimeout(function(){ PL.speak(w); }, 250);
+    Array.prototype.forEach.call(st.querySelectorAll('button.seg'), function(b){
+      b.onclick = function(){ var n = +b.getAttribute('data-n'); picked[n] = !picked[n]; b.classList.toggle('pick', !!picked[n]); };
+    });
+    $('fCheck').onclick = function(){
+      var ok = parts.every(function(p, n){ return !!picked[n] === p.heart; });
+      var some = parts.some(function(p, n){ return picked[n] && p.heart; });
+      if (first && ok) R++;
+      first = false;
+      if (ok || !some){
+        /* show the real map with hearts and sounds */
+        st.querySelector('.map').outerHTML = mapHtml(w);
+      }
+      $('fWhy').textContent = 'The tricky part: ' + PH.heartTricky(w) + '.';
+      if (ok){ $('fFb').className = 'fb ok'; $('fFb').textContent = 'Yes! You found the heart.'; PL.speak(w); this.disabled = true; setTimeout(function(){ I++; draw(); }, 2200); }
+      else if (some){ $('fFb').className = 'fb no'; $('fFb').textContent = 'Close! Look again. Tap only the tricky part.'; }
+      else { $('fFb').className = 'fb no'; $('fFb').textContent = 'Here it is. Listen and look.'; PL.speak(w, true); this.textContent = 'Next'; this.onclick = function(){ I++; draw(); }; }
+    };
+  }
+  draw();
+}
+
+/* ================= WHICH SPELLING? ================= */
+function buildSpot(){
+  PL.choose({ el:$('spotStage'), part:'spot', items:shuffle(words()), restart:buildSpot,
+    render:function(w){
+      var wrong = shuffle(PH.heartMiss(w)).slice(0, 2);
+      return { autoplay:w, cls:'many',
+        html:'<div class="row"><button class="btn sm" data-say="' + esc(w) + '">Hear it</button><button class="btn ghost sm" data-say="' + esc(w) + '" data-slow="1">Slow</button></div>',
+        options:shuffle([{ html:esc(w), ok:true }].concat(wrong.map(function(x){ return { html:esc(x), ok:false }; }))) };
+    },
+    after:function(w){ $('spotStage').querySelector('.why').insertAdjacentHTML('afterend', mapHtml(w)); PL.speak(w); },
+    why:function(w){ return 'The tricky part: ' + PH.heartTricky(w) + '.'; },
+    okText:function(w){ return 'Yes! ' + w; },
+    noText:function(){ return 'That is how it sounds, but not how it is spelled. Try again.'; },
+    good:'Great memory!' });
+}
+
+/* ================= WRITE IT: look, say, cover, write, check ================= */
+function buildWrite(){
+  var list = shuffle(words()), I = 0, R = 0, st = $('writeStage');
+  function draw(){
+    if (I >= list.length){ var pct = Math.round(100 * R / list.length); PL.score('write', pct); drawSets(); buildLearn();
+      PL.doneCard(st, R + ' of ' + list.length, 'written from memory the first time', 'Do it again', buildWrite); return; }
+    var w = list[I], tries = 0;
+    function look(){
+      st.innerHTML = '<div class="count">' + (I + 1) + ' of ' + list.length + '</div>' + mapHtml(w)
+        + '<div class="why">' + esc(PH.heartTricky(w)) + '</div>'
+        + '<div class="row" style="margin-top:12px"><button class="btn sm" data-say="' + esc(w) + '">Hear it</button><button class="btn" id="wCover">Cover it and write</button></div>';
+      PL.speak(w);
+      $('wCover').onclick = write;
+    }
+    function write(){
+      var boxes = ''; for (var i = 0; i < w.length; i++) boxes += '<span class="lbox" data-i="' + i + '"></span>';
+      st.innerHTML = '<div class="count">' + (I + 1) + ' of ' + list.length + '</div><div class="cover">\u2764\ufe0f</div>'
+        + '<div class="row"><button class="btn sm" data-say="' + esc(w) + '">Hear it</button></div>'
+        + '<label class="lbwrap">' + boxes + '<input class="lbin" maxlength="' + w.length + '" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Write the word"></label>'
+        + '<div class="row"><button class="btn" id="wCheck">Check</button></div><div class="fb" id="wFb"></div>';
+      var inp = st.querySelector('.lbin'); inp.focus();
+      function paint(){
+        var v = inp.value;
+        Array.prototype.forEach.call(st.querySelectorAll('.lbox'), function(b){
+          var k = +b.getAttribute('data-i'); b.className = 'lbox'; b.textContent = v[k] || '';
+          if (!v[k] && k === v.length) b.classList.add('cur');
+        });
+      }
+      inp.addEventListener('input', paint);
+      inp.addEventListener('keydown', function(e){ if (e.key === 'Enter') check(); });
+      $('wCheck').onclick = check;
+      function check(){
+        var v = inp.value.trim().toLowerCase(), m = PH.analyze(w, v);
+        Array.prototype.forEach.call(st.querySelectorAll('.lbox'), function(b){
+          var k = +b.getAttribute('data-i'); if (!v[k]) return;
+          b.classList.add(m[k] === 'ok' ? 'ok' : m[k] === 'sound' ? 'snd' : 'bad');
+        });
+        if (v === w){
+          if (!tries){ R++; known()[w] = true; PL.save(); }
+          $('wFb').className = 'fb ok'; $('wFb').textContent = tries ? 'Yes! ' + w : '\u2764\ufe0f Learned: ' + w;
+          PL.speak(w); setTimeout(function(){ I++; draw(); }, 1600);
+        } else {
+          tries++;
+          $('wFb').className = 'fb no'; $('wFb').textContent = 'Not yet. Look again at the heart.';
+          setTimeout(look, 1400);
+        }
+      }
+      paint();
+    }
+    look();
+  }
+  draw();
+}
+
+/* ================= USE IT ================= */
+function buildUse(){
+  PL.choose({ el:$('useStage'), part:'use', items:shuffle(words()), restart:buildUse, cls:'many',
+    render:function(w){
+      var u = USE[w];
+      return { cls:'many', html:'<div class="sentence">' + esc(u[0]).replace('___', '<span class="gap" id="uGap">&nbsp;</span>') + '</div>',
+        options:shuffle([{ html:esc(w), ok:true }].concat(u[1].map(function(x){ return { html:esc(x), ok:false }; }))) };
+    },
+    after:function(w){ $('uGap').textContent = w; PL.speak(USE[w][0].replace('___', w)); },
+    okText:function(w){ return 'Yes!'; },
+    noText:function(){ return 'Read the sentence again.'; },
+    good:'You can use your heart words!' });
+}
+
+/* ================= SAY IT ================= */
+function buildSay(){
+  PL.say({ el:$('sayStage'), part:'say', items:words().map(function(w){ return [w, '']; }),
+    mark:function(w){ return esc(w); }, why:function(w){ return PH.heartTricky(w); }, restart:buildSay });
+}
+
+PL.onLoaded = function(){ drawSets(); buildLearn(); };
+PL.init({
+  rule:'heart-words', slug:'phonics-heart-words',
+  panes:[['p-learn','Learn'],['p-find','Find the heart'],['p-spot','Which spelling?'],['p-write','Write it'],['p-use','Use it'],['p-say','Say it']],
+  prog:['find','spot','write','use','say'],
+  ruleText:'Heart words are words that break the rules. Most of the word sounds like its letters. Only one part is tricky. For example, in "said," ai says /e/. To learn a heart word: hear it, find the sounds, find the tricky part, and learn that part by heart. Then cover the word and write it from memory.',
+  onStart:rebuild
+});
+})();
+</script>
+<script src="/readings/track.js"></script>
+</body>
+</html>

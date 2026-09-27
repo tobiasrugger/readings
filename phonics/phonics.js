@@ -130,6 +130,80 @@ PH.vtAlts = function(word){
   return out;
 };
 
+PH.RULES['heart-words'] = {
+  title: 'Heart Words',
+  short: 'Words that break the rules. Learn the tricky part by heart.',
+  url: '/readings/phonics/heart-words/',
+  emoji: '\u2764\ufe0f',
+  parts: ['find', 'spot', 'write', 'use'],
+  partNames: { find:'Find the heart', spot:'Which spelling?', write:'Write it', say:'Say it', use:'Use it' },
+  total: 40
+};
+
+/* ---------------- Heart words ----------------
+   Each word is split into its sounds: "letters=sound". A * marks the tricky
+   part, the part to learn by heart. "-" means silent. */
+PH.HEART_SETS = [
+  ['the','said','was','of','to','do','you','they'],
+  ['who','two','what','want','are','were','one','once'],
+  ['have','give','live','love','come','some','done','gone'],
+  ['could','would','should','friend','people','because','again','does'],
+  ['there','where','their','your','many','any','put','says']
+];
+var HEART_MAP = {
+  the:'th=th e=uh*', said:'s=s ai=e* d=d', was:'w=w a=u* s=z', of:'o=u* f=v*', to:'t=t o=oo*', 'do':'d=d o=oo*',
+  you:'y=y ou=oo*', they:'th=th ey=ay*', who:'wh=h* o=oo*', two:'t=t wo=oo*', what:'wh=w a=u* t=t', want:'w=w a=o* n=n t=t',
+  are:'ar=ar e=-*', were:'w=w ere=er*', one:'o=wu* n=n e=-*', once:'o=wu* n=n ce=s', have:'h=h a=a ve=v*', give:'g=g i=i ve=v*',
+  live:'l=l i=i ve=v*', love:'l=l o=u* ve=v*', come:'c=k o=u* me=m*', some:'s=s o=u* me=m*', done:'d=d o=u* ne=n*',
+  gone:'g=g o=aw* ne=n*', could:'c=k oul=oo* d=d', would:'w=w oul=oo* d=d', should:'sh=sh oul=oo* d=d',
+  friend:'f=f r=r ie=e* n=n d=d', people:'p=p eo=ee* p=p le=ul', because:'b=b e=ee c=k au=u* se=z', again:'a=u g=g ai=e* n=n',
+  does:'d=d oe=u* s=z', there:'th=th ere=air*', where:'wh=w ere=air*', their:'th=th eir=air*', your:'y=y our=or*',
+  many:'m=m a=e* n=n y=ee', any:'a=e* n=n y=ee', put:'p=p u=oo* t=t', says:'s=s ay=e* s=z'
+};
+/* how students often spell them by sound */
+var HEART_MISS = {
+  the:['da','de','tha','di'], said:['sed','sayd','seid','sead'], was:['wuz','woz','waz','wus'], of:['uv','ov','off'], to:['tu','tou'], 'do':['du','doo'],
+  you:['yu','iu','yoo'], they:['thay','dey','dei','thei'], who:['hu','hoo','ju'], two:['tu','tou'], what:['wat','wut','guat','wot'],
+  want:['wont','uant','wan'], are:['ar'], were:['wer','wur','wir'], one:['wun','uan','won','wan'], once:['wuns','uans','wance'],
+  have:['hav','hab'], give:['giv','gib'], live:['liv','lib'], love:['luv','lov','lob'], come:['cum','com','kom'], some:['sum','som'],
+  done:['dun','don'], gone:['gon'], could:['cud','coud','cood'], would:['wud','woud','wood'], should:['shud','shoud','shood'],
+  friend:['frend','freind','frind'], people:['pipol','peepul','peple','pepol'], because:['becuz','bicos','becos','becaus'],
+  again:['agen','agein','agan'], does:['duz','dos','dus'], there:['ther','dere','thare'], where:['wer','wher','ware'],
+  their:['ther','thier','thir'], your:['yor','yur','yoor'], many:['meny','mani','meni'], any:['eny','ani','eni'], put:['poot','pud'],
+  says:['sez','sais','seys']
+};
+PH.heartParts = function(w){
+  var m = HEART_MAP[String(w || '').toLowerCase()]; if (!m) return null;
+  return m.split(' ').map(function(x){
+    var heart = /\*$/.test(x); x = x.replace('*', '');
+    var bits = x.split('='); return { l:bits[0], s:bits[1], heart:heart };
+  });
+};
+PH.isHeart = function(w){ return !!HEART_MAP[String(w || '').toLowerCase()]; };
+PH.heartMiss = function(w){ return (HEART_MISS[String(w || '').toLowerCase()] || []).slice(); };
+/* "ai says /e/", "e is silent" */
+PH.heartTricky = function(w){
+  return (PH.heartParts(w) || []).filter(function(p){ return p.heart; }).map(function(p){
+    return p.s === '-' ? p.l + ' is silent' : p.l + ' says /' + p.s + '/';
+  }).join(', and ');
+};
+/* whole-word alternate spellings, like vtAlts: "sed" for said */
+PH.heartAlts = function(word){
+  var T = String(word || ''), out = [], re = /[a-z]+/gi, m;
+  while ((m = re.exec(T))){
+    var tok = m[0].toLowerCase(), base = m.index;
+    if (!HEART_MAP[tok]) continue;
+    HEART_MISS[tok].forEach(function(x){
+      var alt = T.slice(0, base) + x + T.slice(base + tok.length), span = {}, k, first = -1;
+      for (k = 0; k < x.length; k++) if (first < 0 && x.charAt(k) !== tok.charAt(k)) first = k;
+      if (first < 0) first = x.length - 1;
+      for (k = first; k < x.length; k++) span[base + k] = 1;
+      out.push({ alt:alt, span:span, info:{ rule:'heart-words', word:tok, letter:'', alike:[], why:'heart' } });
+    });
+  }
+  return out;
+};
+
 /* ---------------- Bossy R ---------------- */
 var R_ODD = ['very','every','carry','sorry','berry','cherry','mirror','arrow','error','hurry','worry','story','parent','carol',
   'hero','zero','area','iron','are','fire','here','there','where','were','more','store','care','sure','pure','your','four','our','hour'];
@@ -255,7 +329,7 @@ PH.missingE = function(word, typed){
   var T = String(word || ''), v = String(typed || '');
   /* stopped on another whole spelling: "sno" for snow, "tri" for tree */
   if (v && v.toLowerCase() !== T.toLowerCase()){
-    var alts = PH.vtAlts(T);
+    var alts = PH.heartAlts(T).concat(PH.vtAlts(T));
     for (var a = 0; a < alts.length; a++) if (alts[a].alt.toLowerCase() === v.toLowerCase()) return alts[a].info;
   }
   /* also: "ca" for "car", the bossy r left off the end */
@@ -306,7 +380,7 @@ PH.align = function(word, typed){
     var ti = j + off, ch = v.charAt(j);
     if (ti >= T.length){ out.push({ m:'bad' }); continue; }
     if (ch.toLowerCase() === T.charAt(ti).toLowerCase()){ out.push({ m:'ok', ti:ti }); continue; }
-    var info = PH.matchInfo(T, ti, ch);
+    var info = PH.isHeart(tokenAt(T, ti).word) ? null : PH.matchInfo(T, ti, ch);
     if (info){ out.push({ m:'sound', ti:ti, info:info }); if (info.shift) off++; continue; }
     /* another spelling of a vowel team's sound? follow that spelling from here on */
     var pick = off ? null : altFor(T, v, j);
@@ -326,7 +400,7 @@ PH.align = function(word, typed){
   return out;
 };
 function altFor(T, v, j){
-  var alts = PH.vtAlts(T); if (!alts.length) return null;
+  var alts = PH.heartAlts(T).concat(PH.vtAlts(T)); if (!alts.length) return null;
   var all = v.toLowerCase(), upto = all.slice(0, j + 1), i;
   for (i = 0; i < alts.length; i++) if (alts[i].alt.toLowerCase().indexOf(all) === 0) return alts[i];
   for (i = 0; i < alts.length; i++) if (alts[i].alt.toLowerCase().indexOf(upto) === 0) return alts[i];
@@ -389,6 +463,11 @@ PH.explain = function(info){
     if (info.why === 'ch-sh') return { head:'Listen closely: /ch/ or /sh/?',
       body:'This word has /ch/, like the start of "chair." It is spelled c and h.', ex:D.ex };
   }
+  if (info.rule === 'heart-words'){
+    return { head:'Good ear! That is how it sounds.',
+      body:'But "' + info.word + '" is a heart word. It does not follow the usual rules. The tricky part: ' + PH.heartTricky(info.word) + '. Learn that part by heart.',
+      ex:[info.word] };
+  }
   if (info.rule === 'vowel-teams'){
     var S = PH.VT_SOUND[info.sound];
     var ways = S.teams.join(' or ');
@@ -440,6 +519,11 @@ PH.L1 = {
     so: 'In Somali, every letter is pronounced, and long vowels are written with two letters (aa, ee, oo). In English, a long vowel is often written with one vowel and a silent e at the end: cake, bike, home.',
     ru: 'In Russian, every vowel letter is pronounced. In English, the e at the end of "cake" is silent. It changes the vowel before it: cap becomes cape.',
     _other: 'In English, some letters are silent. The e at the end of "cake" makes no sound. It is a signal: the vowel before it says its name.'
+  },
+  'heart-words': {
+    es: 'Spanish spelling is very regular: you write what you hear. English has many "heart words" that are not written the way they sound, like said, was, and of. They are some of the most common words in English, so learning them by heart helps you read much faster.',
+    fr: 'French has many silent letters, so you already know that spelling and sound can be different! English heart words are like that: said, was, of. Learn the tricky part by heart.',
+    _other: 'Some English words are very old and do not follow the rules. We call them heart words. Most of the word is normal. Only one part is tricky, so you learn that part by heart.'
   },
   'vowel-teams': {
     es: 'Spanish writes each vowel sound one way: a, e, i, o, u. English writes long vowel sounds in many ways. Long E is often ee or ea (tree, beach), not i. Long A is often ai or ay (rain, day), not ei. The oo in moon sounds like Spanish u. And ow in cow sounds like Spanish au.',
@@ -508,7 +592,7 @@ PH.logHit = function(email, info, word, typed, source){
     created_at:new Date().toISOString() }] });
 };
 PH.loadHits = function(email){ return sb('phonics_hits?' + inEmails(email) + '&select=rule,why,word,typed,source,created_at&order=created_at.desc&limit=200'); };
-PH.loadWork = function(email){ return sb('phonics_work?' + inEmails(email) + '&select=rule,scores,updated_at'); };
+PH.loadWork = function(email){ return sb('phonics_work?' + inEmails(email) + '&select=rule,scores,work,updated_at'); };
 
 /* Which rules should this student practice, and how far along are they?
    A rule is assigned after ASSIGN_AFTER mix-ups, or once they have started it. */
@@ -523,6 +607,7 @@ PH.assigned = function(hits, work){
     var s = w.scores || {};
     Object.keys(s).forEach(function(k){ o.scores[k] = Math.max(o.scores[k] || 0, s[k] || 0); });
     o.started = true;
+    if (w.work && w.work.known) o.known = Math.max(o.known || 0, Object.keys(w.work.known).length);
   });
   return Object.keys(by).map(function(k){ return by[k]; }).filter(function(o){
     return PH.RULES[o.rule] && (o.started || o.hits.length >= PH.ASSIGN_AFTER);

@@ -34,6 +34,10 @@ function save(){
     body:[{ email:PL.ME.email, rule:CFG.rule, name:PL.ME.name || null, period:PL.ME.period || null,
             scores:SC, work:WORK, updated_at:new Date().toISOString() }] });
 }
+/* extra saved data for a lesson (heart words keeps "known" here) */
+PL.work = function(){ return WORK; };
+PL.save = function(){ save(); };
+PL.onLoaded = null;
 PL.score = function(part, pct){
   WORK.rounds[part] = (WORK.rounds[part] || 0) + 1;
   SC[part] = Math.max(SC[part] || 0, pct);
@@ -151,6 +155,7 @@ function start(){
   PH.sb('phonics_work?email=eq.' + encodeURIComponent(PL.ME.email) + '&rule=eq.' + CFG.rule + '&select=scores,work').then(function(rows){
     if (rows && rows[0]){ SC = rows[0].scores || {}; WORK = rows[0].work || { rounds:{} }; if (!WORK.rounds) WORK.rounds = {}; }
     drawProg();
+    if (PL.onLoaded) PL.onLoaded();
   });
   if (!PL.LANG) PH.sb('students?email=eq.' + encodeURIComponent(PL.ME.email) + '&select=home_language').then(function(r){
     if (r && r[0] && r[0].home_language){ PL.LANG = MW.langFromHome(r[0].home_language); $('lang').value = PL.LANG; drawLeads(); drawL1(); }
