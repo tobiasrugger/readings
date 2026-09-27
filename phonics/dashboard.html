@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phonics Dashboard &middot; Mr. Toby</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --teal:#1e6468; --teal-dk:#134649; --teal-dp:#0c3133; --teal-lt:#e2f0f0; --teal-mid:#6aa7a9;
+  --paper:#eef4f3; --card:#fff; --field:#f5f9f9; --ink:#1d2b2c; --muted:#56686a; --line:#cfe0df; --line-dk:#a9c6c5;
+  --gold:#e3a92b; --gold-bg:#fff1bf; --gold-dk:#8a5a00; --green:#1f7a4d; --green-bg:#e0f2e8;
+  --red:#b5304a; --red-bg:#fbe4e9; --orange:#c25400; --orange-bg:#fde8d4; --r:14px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:Nunito,system-ui,sans-serif;font-size:15px;line-height:1.45}
+.hide{display:none!important}
+button,select,input{font:inherit}
+button{cursor:pointer}
+.top{background:var(--teal-dk);color:#fff;border-bottom:4px solid var(--teal-dp)}
+.top .in{max-width:1400px;margin:0 auto;padding:12px 18px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.top h1{margin:0;font-size:1.3rem;font-weight:900;flex:1}
+.top a{color:#fff;font-weight:800;font-size:.88rem}
+.wrap{max-width:1400px;margin:0 auto;padding:16px 18px 60px}
+.card{background:var(--card);border:1.5px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:14px}
+.btn{background:var(--teal);color:#fff;border:0;border-bottom:3px solid var(--teal-dp);border-radius:10px;padding:8px 14px;font-weight:800}
+.btn:hover{background:var(--teal-dk)}
+.btn.ghost{background:#fff;color:var(--teal-dk);border:2px solid var(--teal);border-bottom-width:3px}
+.btn.sm{padding:4px 10px;font-size:.84rem;border-radius:8px}
+.btn:disabled{opacity:.45;cursor:default}
+.gate{max-width:380px;margin:60px auto;text-align:center}
+.gate input{width:100%;padding:10px 12px;border:2px solid var(--line-dk);border-radius:10px;margin:10px 0}
+.err{color:var(--red);font-weight:800}
+
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.bar label{font-weight:800;font-size:.85rem;color:var(--teal-dk)}
+.bar select,.bar input[type=search]{padding:7px 10px;border:2px solid var(--line-dk);border-radius:9px;background:#fff}
+.bar .grow{flex:1}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:14px}
+.tile{background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:10px 14px}
+.tile b{display:block;font-size:1.7rem;font-weight:900;color:var(--teal-dk);line-height:1.1}
+.tile span{font-weight:800;font-size:.84rem;color:var(--muted)}
+.tile.flag b{color:var(--red)}
+
+nav.tabs{display:flex;gap:6px;margin-bottom:12px}
+nav.tabs button{background:#fff;border:2px solid var(--line-dk);border-radius:10px;padding:7px 14px;font-weight:800;color:var(--teal-dk)}
+nav.tabs button.on{background:var(--teal);border-color:var(--teal-dp);color:#fff}
+
+.tblwrap{overflow-x:auto;border:1.5px solid var(--line);border-radius:12px;background:#fff}
+table{border-collapse:collapse;width:100%;min-width:1000px}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+th{background:var(--teal-lt);font-size:.8rem;font-weight:900;color:var(--teal-dk);position:sticky;top:0;cursor:pointer;white-space:nowrap}
+th.rule{text-align:center;min-width:104px}
+tr.st:hover td{background:#f7fbfb}
+tr.st td.name{font-weight:800;cursor:pointer;color:var(--teal-dk)}
+tr.st td.name:hover{text-decoration:underline}
+td.num{text-align:center;font-weight:900}
+.flag{color:var(--red);font-weight:900}
+.cell{display:flex;flex-direction:column;align-items:center;gap:2px;border-radius:8px;padding:4px 2px;font-size:.78rem;font-weight:800;min-height:40px;justify-content:center}
+.cell .hits{font-size:.95rem;font-weight:900}
+.cell.none{color:#b9c9c8}
+.cell.hitsonly{background:var(--orange-bg);color:var(--orange)}
+.cell.assigned{background:var(--gold-bg);color:var(--gold-dk)}
+.cell.progress{background:#fff6d9;color:var(--gold-dk);border:1.5px solid var(--gold)}
+.cell.done{background:var(--green-bg);color:var(--green)}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:.8rem;font-weight:800;margin:10px 0 0;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{display:inline-block;width:14px;height:14px;border-radius:4px}
+.assignbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;background:var(--field);border:1.5px solid var(--line);border-radius:10px;padding:8px 10px}
+.assignbar select{padding:6px 8px;border:2px solid var(--line-dk);border-radius:8px}
+
+/* class view */
+.rulegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.rc{border:1.5px solid var(--line);border-radius:12px;padding:12px;background:#fff}
+.rc h3{margin:0 0 6px;font-size:1.05rem;color:var(--teal-dk)}
+.rc .meter{height:10px;background:var(--teal-lt);border-radius:999px;overflow:hidden;margin:6px 0}
+.rc .meter i{display:block;height:100%;background:var(--orange)}
+.rc .stat{font-size:.86rem;font-weight:700;color:var(--muted)}
+.words{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.words span{background:var(--field);border:1px solid var(--line);border-radius:8px;padding:2px 8px;font-size:.84rem;font-weight:700}
+.words span b{color:var(--orange)}
+
+/* student drawer */
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(560px,100%);background:#fff;border-left:3px solid var(--teal);box-shadow:-10px 0 30px rgba(0,0,0,.15);overflow-y:auto;z-index:20;padding:18px;transform:translateX(105%);transition:transform .25s}
+.drawer.on{transform:none}
+.drawer h2{margin:0 0 2px;color:var(--teal-dk)}
+.drawer h3{margin:16px 0 6px;font-size:1rem;color:var(--teal-dk);border-bottom:2px solid var(--teal-lt);padding-bottom:4px}
+.drawer .close{position:absolute;top:12px;right:14px}
+.hitrow{display:flex;gap:8px;align-items:baseline;font-size:.9rem;padding:3px 0;border-bottom:1px dashed var(--line)}
+.hitrow .w{font-weight:900;min-width:90px}
+.hitrow .t{color:var(--orange);font-weight:800;min-width:80px}
+.hitrow .d{color:var(--muted);font-size:.8rem;margin-left:auto;white-space:nowrap}
+.parts{display:flex;gap:5px;flex-wrap:wrap}
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.78rem;font-weight:900;background:var(--field);border:1px solid var(--line);color:var(--muted)}
+.pill.ok{background:var(--green-bg);border-color:#b7dcc6;color:var(--green)}
+.pill.mid{background:#fff6d9;border-color:var(--gold);color:var(--gold-dk)}
+.note{color:var(--muted);font-size:.88rem}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--teal-dk);color:#fff;font-weight:800;padding:10px 18px;border-radius:12px;z-index:30}
+@media print{.top,.bar,.assignbar,nav.tabs,.drawer{display:none!important}}
+</style>
+</head>
+<body>
+
+<header class="top"><div class="in">
+  <h1>Phonics Dashboard</h1>
+  <a href="/readings/">Readings hub</a>
+</div></header>
+
+<div class="card gate" id="gate">
+  <h2 style="margin-top:0;color:var(--teal-dk)">Teacher sign in</h2>
+  <input id="pw" type="password" placeholder="Password" autocomplete="current-password">
+  <button class="btn" id="pwBtn">Open</button>
+  <p class="err" id="pwErr"></p>
+</div>
+
+<div class="wrap hide" id="app">
+  <div class="card">
+    <div class="bar">
+      <label for="fPer">Period</label>
+      <select id="fPer"><option value="">All</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select>
+      <label for="fWin">Mix-ups from</label>
+      <select id="fWin"><option value="7">last 7 days</option><option value="30" selected>last 30 days</option><option value="0">all time</option></select>
+      <label><input type="checkbox" id="fAll"> show students with no phonics data</label>
+      <span class="grow"></span>
+      <input type="search" id="fQ" placeholder="Search name">
+      <button class="btn ghost sm" id="csvBtn">Download CSV</button>
+      <button class="btn ghost sm" id="reloadBtn">Refresh</button>
+    </div>
+  </div>
+
+  <div class="tiles" id="tiles"></div>
+
+  <nav class="tabs"><button class="on" data-v="students">Students</button><button data-v="class">Class view</button></nav>
+
+  <section id="v-students">
+    <div class="assignbar">
+      <b style="color:var(--teal-dk)">Assign a lesson:</b>
+      <select id="aRule"></select>
+      <button class="btn sm" id="aBtn" disabled>Assign to 0 selected</button>
+      <span class="note">It shows up on their My Page. Progress is never overwritten.</span>
+    </div>
+    <div class="tblwrap"><table id="tbl"></table></div>
+    <div class="legend">
+      <span><i style="background:var(--orange-bg);border:1px solid var(--orange)"></i>mix-ups, lesson not started</span>
+      <span><i style="background:var(--gold-bg)"></i>assigned, not started</span>
+      <span><i style="background:#fff6d9;border:1px solid var(--gold)"></i>in progress</span>
+      <span><i style="background:var(--green-bg)"></i>all parts at 80%+</span>
+      <span class="flag">&#128681; likely needs intensive phonics</span>
+    </div>
+  </section>
+
+  <section id="v-class" class="hide">
+    <div class="card">
+      <p class="note" style="margin-top:0">Which sounds does this group mix up? A rule that many students miss is a good whole-class mini-lesson. A rule only a few students miss is a small group.</p>
+      <div class="rulegrid" id="rulegrid"></div>
+    </div>
+    <div class="card">
+      <h3 style="margin:0 0 8px;color:var(--teal-dk)">Most-missed words</h3>
+      <div class="words" id="topwords"></div>
+    </div>
+  </section>
+</div>
+
+<aside class="drawer" id="drawer" aria-label="Student detail"><button class="btn ghost sm close" id="dClose">Close</button><div id="dBody"></div></aside>
+
+<script src="/readings/vocab/mywords/words.js"></script>
+<script src="/readings/phonics/phonics.js"></script>
+<script>
+(function(){
+var PASSWORD = 'galileo2026', esc = MW.esc;
+function $(id){ return document.getElementById(id); }
+var RULE_IDS = ['c-and-g','magic-e','digraphs','bossy-r','vowel-teams','heart-words'];
+var SHORT = { 'c-and-g':'C / G', 'magic-e':'Magic E', 'digraphs':'sh ch th', 'bossy-r':'Bossy R', 'vowel-teams':'Vowel teams', 'heart-words':'Heart words' };
+var WHY = { 'soft-c':'c = /s/', 'hard-c':'c = /k/', 'soft-g':'g = /j/', 'k-not-c':'k before e/i/y', 's-not-c':'s, not c', 'j-not-g':'j, not g',
+  'magic-e-vowel':'long vowel', 'magic-e-team':'vowel in wrong spot', 'missing-e':'left off the e',
+  'sh-ch':'sh vs ch', 'ch-sh':'ch vs sh', 'th-sub':'th sound', 'ph-f':'ph = /f/', 'dg-drop':'left off the h',
+  'r-er':'er / ir / ur', 'r-final':'-er / -or / -ar', 'r-drop':'left off the r', 'r-novowel':'no vowel before r',
+  'vt-alt':'other vowel spelling', 'heart':'heart word' };
+var STUDENTS = {}, HITS = [], WORK = [], SORT = { k:'flag', dir:-1 }, SEL = {}, VIEW = 'students';
+
+/* ---------------- sign in ---------------- */
+function open(){ $('gate').classList.add('hide'); $('app').classList.remove('hide'); load(); }
+$('pwBtn').onclick = function(){
+  if ($('pw').value === PASSWORD){ try { sessionStorage.setItem('ph_dash_ok', '1'); } catch(e){} open(); }
+  else $('pwErr').textContent = 'That password is not right.';
+};
+$('pw').addEventListener('keydown', function(e){ if (e.key === 'Enter') $('pwBtn').click(); });
+try { if (sessionStorage.getItem('ph_dash_ok') === '1') open(); } catch(e){}
+
+/* ---------------- data ---------------- */
+function key(email){ return String(email || '').toLowerCase().split('@')[0]; }
+function load(){
+  $('tiles').innerHTML = '<div class="tile"><span>Loading&hellip;</span></div>';
+  Promise.all([
+    PH.sb('students?select=*&limit=5000'),
+    PH.sb('phonics_hits?select=email,rule,why,word,typed,source,created_at&order=created_at.desc&limit=10000'),
+    PH.sb('phonics_work?select=email,rule,name,period,scores,work,updated_at&limit=5000')
+  ]).then(function(r){
+    STUDENTS = {};
+    (r[0] || []).forEach(function(s){
+      var k = key(s.email); if (!k) return;
+      var nm = s.name || [s.first_name, s.last_name].filter(Boolean).join(' ') || s.full_name || '';
+      var o = STUDENTS[k] = STUDENTS[k] || { k:k, email:s.email, name:'', period:'', lang:'' };
+      if (nm && !o.name) o.name = nm;
+      if (s.period && !o.period) o.period = String(s.period);
+      if (s.home_language && !o.lang) o.lang = s.home_language;
+      if (/@s\.sfusd\.edu$/.test(s.email || '')) o.email = s.email;
+    });
+    HITS = r[1] || []; WORK = r[2] || [];
+    function ensure(email, name, period){
+      var k = key(email), o = STUDENTS[k];
+      if (!o) o = STUDENTS[k] = { k:k, email:email, name:name || '', period:period ? String(period) : '', lang:'' };
+      if (!o.name && name) o.name = name; if (!o.period && period) o.period = String(period);
+      return o;
+    }
+    HITS.forEach(function(h){ ensure(h.email); });
+    WORK.forEach(function(w){ ensure(w.email, w.name, w.period); });
+    render();
+  });
+}
+
+/* one summary per student per rule, for the current time window */
+function build(){
+  var win = +$('fWin').value, since = win ? Date.now() - win * 864e5 : 0;
+  var by = {};
+  Object.keys(STUDENTS).forEach(function(k){
+    var r = by[k] = { s:STUDENTS[k], total:0, rules:{} };
+    RULE_IDS.forEach(function(id){ r.rules[id] = { hits:[], work:null }; });
+  });
+  HITS.forEach(function(h){
+    if (since && new Date(h.created_at).getTime() < since) return;
+    var r = by[key(h.email)]; if (!r || !r.rules[h.rule]) return;
+    r.rules[h.rule].hits.push(h); r.total++;
+  });
+  WORK.forEach(function(w){
+    var r = by[key(w.email)]; if (!r || !r.rules[w.rule]) return;
+    var cur = r.rules[w.rule].work;
+    if (!cur) r.rules[w.rule].work = { scores:Object.assign({}, w.scores || {}), work:w.work || {}, updated:w.updated_at };
+    else Object.keys(w.scores || {}).forEach(function(p){ cur.scores[p] = Math.max(cur.scores[p] || 0, w.scores[p]); });
+  });
+  Object.keys(by).forEach(function(k){
+    var r = by[k], rulesHit = 0, heavy = false;
+    RULE_IDS.forEach(function(id){
+      var c = r.rules[id], R = PH.RULES[id];
+      c.done = c.work ? R.parts.filter(function(p){ return (c.work.scores[p] || 0) >= 80; }).length : 0;
+      c.parts = R.parts.length;
+      c.known = c.work && c.work.work && c.work.work.known ? Object.keys(c.work.work.known).length : 0;
+      c.state = !c.work ? (c.hits.length ? 'hitsonly' : 'none')
+        : c.done === c.parts ? 'done' : (Object.keys(c.work.scores).length ? 'progress' : 'assigned');
+      if (c.hits.length) rulesHit++;
+      if (c.hits.length >= 4 && c.state !== 'done') heavy = true;
+    });
+    r.flag = (r.total >= 6 && rulesHit >= 2) || heavy;
+    r.active = r.total > 0 || RULE_IDS.some(function(id){ return r.rules[id].work; });
+  });
+  return by;
+}
+function visible(by){
+  var per = $('fPer').value, q = $('fQ').value.trim().toLowerCase(), all = $('fAll').checked;
+  return Object.keys(by).map(function(k){ return by[k]; }).filter(function(r){
+    if (per && r.s.period !== per) return false;
+    if (q && (r.s.name + ' ' + r.s.email).toLowerCase().indexOf(q) < 0) return false;
+    return all || r.active;
+  });
+}
+
+/* ---------------- render ---------------- */
+function render(){
+  var by = build(), rows = visible(by);
+  /* tiles */
+  var flagged = rows.filter(function(r){ return r.flag; }).length, mix = 0, act = 0, ruleTot = {};
+  rows.forEach(function(r){ mix += r.total; if (r.active) act++; RULE_IDS.forEach(function(id){ ruleTot[id] = (ruleTot[id] || 0) + r.rules[id].hits.length; }); });
+  var topRule = RULE_IDS.slice().sort(function(a, b){ return ruleTot[b] - ruleTot[a]; })[0];
+  $('tiles').innerHTML = '<div class="tile"><b>' + act + '</b><span>students with phonics data</span></div>'
+    + '<div class="tile flag"><b>' + flagged + '</b><span>&#128681; likely need intensive phonics</span></div>'
+    + '<div class="tile"><b>' + mix + '</b><span>sound mix-ups in this window</span></div>'
+    + '<div class="tile"><b style="font-size:1.2rem">' + (ruleTot[topRule] ? esc(PH.RULES[topRule].title.split(':')[0]) : '&mdash;') + '</b><span>most-missed rule</span></div>';
+  drawTable(rows); drawClass(rows);
+}
+function sortRows(rows){
+  var k = SORT.k, d = SORT.dir;
+  return rows.sort(function(a, b){
+    var x, y;
+    if (k === 'name'){ x = a.s.name || a.s.email; y = b.s.name || b.s.email; return d * String(x).localeCompare(String(y)); }
+    if (k === 'period'){ x = +a.s.period || 99; y = +b.s.period || 99; }
+    else if (k === 'total'){ x = a.total; y = b.total; }
+    else if (k === 'flag'){ x = (a.flag ? 1000 : 0) + a.total; y = (b.flag ? 1000 : 0) + b.total; }
+    else { x = a.rules[k].hits.length * 10 - a.rules[k].done; y = b.rules[k].hits.length * 10 - b.rules[k].done; }
+    return d * (x - y) || String(a.s.name).localeCompare(String(b.s.name));
+  });
+}
+function cellHtml(c, id){
+  if (c.state === 'none') return '<div class="cell none">&middot;</div>';
+  var top = c.hits.length ? '<span class="hits">' + c.hits.length + ' &#10007;</span>' : '';
+  var bottom = c.state === 'hitsonly' ? 'not started' : c.state === 'assigned' ? 'assigned'
+    : c.state === 'done' ? '&#10003; ' + c.done + '/' + c.parts : c.done + '/' + c.parts + ' parts';
+  if (id === 'heart-words' && c.known) bottom += ' &middot; &#10084;&#65039;' + c.known;
+  return '<div class="cell ' + c.state + '">' + top + '<span>' + bottom + '</span></div>';
+}
+function drawTable(rows){
+  rows = sortRows(rows);
+  var h = '<thead><tr><th style="width:28px"><input type="checkbox" id="selAll" aria-label="Select all"></th>'
+    + '<th data-k="flag">&#128681;</th><th data-k="name">Student</th><th data-k="period">Per.</th><th>Language</th><th data-k="total" style="text-align:center">Mix-ups</th>'
+    + RULE_IDS.map(function(id){ return '<th class="rule" data-k="' + id + '">' + SHORT[id] + '</th>'; }).join('') + '</tr></thead><tbody>';
+  if (!rows.length) h += '<tr><td colspan="' + (6 + RULE_IDS.length) + '" class="note" style="padding:18px">No students match. Try "show students with no phonics data" or a longer time window.</td></tr>';
+  h += rows.map(function(r){
+    return '<tr class="st" data-k="' + esc(r.s.k) + '"><td><input type="checkbox" class="sel" data-k="' + esc(r.s.k) + '"' + (SEL[r.s.k] ? ' checked' : '') + '></td>'
+      + '<td class="flag">' + (r.flag ? '&#128681;' : '') + '</td>'
+      + '<td class="name">' + esc(r.s.name || r.s.k) + '</td><td>' + esc(r.s.period || '') + '</td><td>' + esc(r.s.lang || '') + '</td>'
+      + '<td class="num">' + (r.total || '') + '</td>'
+      + RULE_IDS.map(function(id){ return '<td>' + cellHtml(r.rules[id], id) + '</td>'; }).join('') + '</tr>';
+  }).join('') + '</tbody>';
+  $('tbl').innerHTML = h;
+  Array.prototype.forEach.call($('tbl').querySelectorAll('th[data-k]'), function(th){
+    th.onclick = function(){ var k = th.getAttribute('data-k'); SORT.dir = SORT.k === k ? -SORT.dir : (k === 'name' || k === 'period' ? 1 : -1); SORT.k = k; render(); };
+  });
+  Array.prototype.forEach.call($('tbl').querySelectorAll('td.name'), function(td){
+    td.onclick = function(){ openStudent(td.parentNode.getAttribute('data-k')); };
+  });
+  Array.prototype.forEach.call($('tbl').querySelectorAll('.sel'), function(cb){
+    cb.onchange = function(){ SEL[cb.getAttribute('data-k')] = cb.checked; assignLabel(); };
+  });
+  $('selAll').onchange = function(){
+    var on = this.checked;
+    Array.prototype.forEach.call($('tbl').querySelectorAll('.sel'), function(cb){ cb.checked = on; SEL[cb.getAttribute('data-k')] = on; });
+    assignLabel();
+  };
+  assignLabel();
+}
+
+/* ---------------- class view ---------------- */
+function drawClass(rows){
+  var n = rows.length || 1;
+  $('rulegrid').innerHTML = RULE_IDS.map(function(id){
+    var R = PH.RULES[id], hits = 0, who = 0, started = 0, done = 0, whyCount = {};
+    rows.forEach(function(r){
+      var c = r.rules[id];
+      if (c.hits.length){ who++; hits += c.hits.length; }
+      c.hits.forEach(function(h){ whyCount[h.why] = (whyCount[h.why] || 0) + 1; });
+      if (c.work) started++;
+      if (c.state === 'done') done++;
+    });
+    var pct = Math.round(100 * who / n);
+    var whys = Object.keys(whyCount).sort(function(a, b){ return whyCount[b] - whyCount[a]; }).slice(0, 3)
+      .map(function(w){ return '<span>' + esc(WHY[w] || w) + ' <b>' + whyCount[w] + '</b></span>'; }).join('');
+    var advice = pct >= 40 ? 'Whole-class mini-lesson' : who >= 2 ? 'Small group' : who ? 'One student' : '';
+    return '<div class="rc"><h3>' + R.emoji + ' ' + esc(R.title.split(':')[0]) + '</h3>'
+      + '<div class="stat">' + who + ' of ' + rows.length + ' students mixed it up &middot; ' + hits + ' mix-ups</div>'
+      + '<div class="meter"><i style="width:' + pct + '%"></i></div>'
+      + '<div class="stat">' + started + ' started the lesson &middot; ' + done + ' finished</div>'
+      + (advice ? '<div class="stat" style="color:var(--teal-dk);margin-top:4px">&#10148; ' + advice + '</div>' : '')
+      + (whys ? '<div class="words">' + whys + '</div>' : '') + '</div>';
+  }).join('');
+  var words = {};
+  rows.forEach(function(r){ RULE_IDS.forEach(function(id){ r.rules[id].hits.forEach(function(h){
+    var o = words[h.word] = words[h.word] || { n:0, typed:{} }; o.n++; o.typed[h.typed] = (o.typed[h.typed] || 0) + 1;
+  }); }); });
+  var top = Object.keys(words).sort(function(a, b){ return words[b].n - words[a].n; }).slice(0, 24);
+  $('topwords').innerHTML = top.length ? top.map(function(w){
+    var t = Object.keys(words[w].typed).sort(function(a, b){ return words[w].typed[b] - words[w].typed[a]; })[0];
+    return '<span>' + esc(w) + ' <b>&times;' + words[w].n + '</b> <span style="border:0;padding:0;color:var(--orange)">(' + esc(t) + '&hellip;)</span></span>';
+  }).join('') : '<span class="note" style="border:0">No mix-ups in this window.</span>';
+}
+
+/* ---------------- student drawer ---------------- */
+function openStudent(k){
+  var r = build()[k]; if (!r) return;
+  var h = '<h2>' + esc(r.s.name || r.s.k) + (r.flag ? ' <span class="flag">&#128681;</span>' : '') + '</h2>'
+    + '<div class="note">' + esc(r.s.email) + (r.s.period ? ' &middot; Period ' + esc(r.s.period) : '') + (r.s.lang ? ' &middot; ' + esc(r.s.lang) : '') + '</div>'
+    + '<p><a class="btn ghost sm" target="_blank" href="/readings/student/?email=' + encodeURIComponent(r.s.email) + '">Open My Page</a></p>';
+  RULE_IDS.forEach(function(id){
+    var c = r.rules[id], R = PH.RULES[id];
+    if (c.state === 'none') return;
+    h += '<h3>' + R.emoji + ' ' + esc(R.title) + '</h3>';
+    if (c.work){
+      h += '<div class="parts">' + ['find','spot','write','use','sortC','sortG','sort','adde','two','which','hear','match','look','say','spell']
+        .filter(function(p){ return R.partNames[p]; }).map(function(p){
+          var v = c.work.scores[p], cls = v >= 80 ? 'ok' : v != null ? 'mid' : '';
+          var rounds = c.work.work && c.work.work.rounds && c.work.work.rounds[p];
+          return '<span class="pill ' + cls + '">' + esc(R.partNames[p]) + (v != null ? ' ' + v + '%' : ' &mdash;') + (rounds > 1 ? ' &middot; ' + rounds + ' rounds' : '') + '</span>';
+        }).join('') + '</div>';
+      if (c.known) h += '<p class="note">&#10084;&#65039; Learned (' + c.known + '): ' + esc(Object.keys(c.work.work.known).join(', ')) + '</p>';
+      if (c.work.work && c.work.work.assigned) h += '<p class="note">Assigned ' + new Date(c.work.work.assigned).toLocaleDateString() + '</p>';
+    } else {
+      h += '<p><button class="btn sm" data-assign="' + id + '">Assign ' + esc(R.title.split(':')[0]) + '</button> <span class="note">Not started yet.</span></p>';
+    }
+    if (c.hits.length){
+      h += '<div class="note" style="margin:6px 0 2px">Mix-ups (' + c.hits.length + '):</div>' + c.hits.slice(0, 40).map(function(x){
+        return '<div class="hitrow"><span class="w">' + esc(x.word) + '</span><span class="t">' + esc(x.typed) + '&hellip;</span><span>' + esc(WHY[x.why] || x.why || '') + '</span>'
+          + '<span class="d">' + new Date(x.created_at).toLocaleDateString() + '</span></div>';
+      }).join('');
+    }
+  });
+  if (!r.active) h += '<p class="note">No phonics data yet.</p>';
+  $('dBody').innerHTML = h;
+  Array.prototype.forEach.call($('dBody').querySelectorAll('[data-assign]'), function(b){
+    b.onclick = function(){ b.disabled = true; assign([k], b.getAttribute('data-assign')).then(function(){ openStudent(k); }); };
+  });
+  $('drawer').classList.add('on');
+}
+$('dClose').onclick = function(){ $('drawer').classList.remove('on'); };
+
+/* ---------------- assigning ---------------- */
+$('aRule').innerHTML = RULE_IDS.map(function(id){ return '<option value="' + id + '">' + esc(PH.RULES[id].title) + '</option>'; }).join('');
+function selected(){ return Object.keys(SEL).filter(function(k){ return SEL[k]; }); }
+function assignLabel(){ var n = selected().length; $('aBtn').textContent = 'Assign to ' + n + ' selected'; $('aBtn').disabled = !n; }
+$('aBtn').onclick = function(){
+  var ks = selected(), id = $('aRule').value;
+  if (!confirm('Assign ' + PH.RULES[id].title + ' to ' + ks.length + ' student' + (ks.length === 1 ? '' : 's') + '?')) return;
+  assign(ks, id).then(function(){ SEL = {}; });
+};
+/* a phonics_work row with no scores = assigned. ignore-duplicates keeps existing progress safe. */
+function assign(keys, rule){
+  var rows = keys.map(function(k){
+    var s = STUDENTS[k];
+    return { email:s.email, rule:rule, name:s.name || null, period:s.period || null, scores:{}, work:{ rounds:{}, assigned:new Date().toISOString() },
+             updated_at:new Date().toISOString() };
+  });
+  return PH.sb('phonics_work?on_conflict=email,rule', { method:'POST', prefer:'resolution=ignore-duplicates,return=minimal', body:rows })
+    .then(function(r){
+      toast(r === null ? 'Could not save. Try again.' : 'Assigned to ' + keys.length + '.');
+      if (r !== null) keys.forEach(function(k){
+        if (!WORK.some(function(w){ return key(w.email) === k && w.rule === rule; }))
+          WORK.push({ email:STUDENTS[k].email, rule:rule, scores:{}, work:{ rounds:{}, assigned:new Date().toISOString() } });
+      });
+      render();
+    });
+}
+function toast(t){
+  var el = document.createElement('div'); el.className = 'toast'; el.textContent = t; document.body.appendChild(el);
+  setTimeout(function(){ el.remove(); }, 2200);
+}
+
+/* ---------------- CSV ---------------- */
+$('csvBtn').onclick = function(){
+  var rows = sortRows(visible(build()));
+  var head = ['name','email','period','language','flag','mixups'];
+  RULE_IDS.forEach(function(id){ head.push(id + '_mixups', id + '_parts_done', id + '_status'); });
+  head.push('heart_words_learned');
+  var lines = [head.join(',')].concat(rows.map(function(r){
+    var v = [r.s.name, r.s.email, r.s.period, r.s.lang, r.flag ? 'yes' : '', r.total];
+    RULE_IDS.forEach(function(id){ var c = r.rules[id]; v.push(c.hits.length, c.done + '/' + c.parts, c.state); });
+    v.push(r.rules['heart-words'].known);
+    return v.map(function(x){ x = x == null ? '' : String(x); return /[",\n]/.test(x) ? '"' + x.replace(/"/g, '""') + '"' : x; }).join(',');
+  }));
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([lines.join('\n')], { type:'text/csv' }));
+  a.download = 'phonics-' + new Date().toISOString().slice(0, 10) + '.csv'; a.click();
+};
+
+/* ---------------- controls ---------------- */
+['fPer','fWin','fAll'].forEach(function(id){ $(id).onchange = render; });
+$('fQ').oninput = render;
+$('reloadBtn').onclick = load;
+Array.prototype.forEach.call(document.querySelectorAll('nav.tabs button'), function(b){
+  b.onclick = function(){
+    VIEW = b.getAttribute('data-v');
+    Array.prototype.forEach.call(document.querySelectorAll('nav.tabs button'), function(x){ x.classList.toggle('on', x === b); });
+    $('v-students').classList.toggle('hide', VIEW !== 'students'); $('v-class').classList.toggle('hide', VIEW !== 'class');
+  };
+});
+})();
+</script>
+</body>
+</html>
