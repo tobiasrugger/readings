@@ -68,24 +68,46 @@ MW.TR_HINT = { fall:'autumn', right:'to the right', left:'to the left', last:'la
   leave:'to leave', draw:'to draw', speak:'to speak', listen:'to listen', read:'to read',
   cook:'a cook (person)', mean:'mean (not kind)', smart:'smart (intelligent)' };
 
-/* ---------------- translation (proxy, cached on the device) ---------------- */
+/* ---------------- translation (proxy, cached on the device) ----------------
+   The proxy answers two kinds of request:
+     words:      ?text=...&target=...            (what the vocab pages use)
+     sentences:  ?action=translate&idiom=...     (what the grammar page uses)
+   Try the one that fits first. If it comes back empty, try the other. */
 var tmem = {};
+function pickText(d, prefer){
+  if (d == null) return '';
+  if (typeof d === 'string') return d.trim();
+  if (typeof d !== 'object') return '';
+  var keys = ['translation','translatedText','text','result','output'].concat(prefer);
+  for (var i = 0; i < keys.length; i++) if (d[keys[i]] != null){ var v = pickText(d[keys[i]], prefer); if (v) return v; }
+  for (var k in d) if (k !== 'ok' && typeof d[k] === 'string' && d[k].trim()) return d[k].trim();
+  return '';
+}
+function askProxy(params, prefer){
+  return fetch(MW.PROXY + '?' + params).then(function(r){ return r.text(); }).then(function(t){
+    var j; t = String(t || '').trim();
+    try { j = JSON.parse(t); } catch(e){ return t.charAt(0) === '<' ? '' : t; }   /* HTML = an error page */
+    if (j && j.ok === false) return '';
+    return pickText(j, prefer);
+  }).catch(function(){ return ''; });
+}
 MW.translate = function(word, lang){
   if (!lang || !word) return Promise.resolve('');
-  var text = MW.TR_HINT[String(word).toLowerCase()] || word;
-  var key = 'mw_tr|' + lang + '|' + text;
+  var text = MW.TR_HINT[String(word).toLowerCase()] || String(word);
+  var key = 'mw_tr2|' + lang + '|' + text;
   if (tmem[key]) return Promise.resolve(tmem[key]);
   try { var c = localStorage.getItem(key); if (c){ tmem[key] = c; return Promise.resolve(c); } } catch(e){}
-  var u = MW.PROXY + '?text=' + encodeURIComponent(text) + '&q=' + encodeURIComponent(text)
-    + '&target=' + encodeURIComponent(lang) + '&lang=' + encodeURIComponent(lang) + '&to=' + encodeURIComponent(lang);
-  return fetch(u).then(function(r){ return r.text(); }).then(function(t){
-    var v = t;
-    try { var j = JSON.parse(t); v = j.translation || j.text || j.result || j.translatedText || ''; } catch(e){}
-    if (v && typeof v === 'object') v = v.equiv || v.meaning || '';
-    v = String(v || '').trim();
-    if (v && v.length < 120){ tmem[key] = v; try { localStorage.setItem(key, v); } catch(e){} }
+  var e = encodeURIComponent, L = e(lang);
+  var wordCall = function(){ return askProxy('text=' + e(text) + '&q=' + e(text) + '&target=' + L + '&lang=' + L + '&to=' + L, ['equiv','meaning']); };
+  var sentCall = function(){ return askProxy('action=translate&idiom=' + e(text) + '&meaning=&lang=' + L, ['meaning','equiv']); };
+  var sentence = text.trim().split(/\s+/).length > 3;
+  var first = sentence ? sentCall : wordCall, second = sentence ? wordCall : sentCall;
+  function good(v){ return v && v.toLowerCase() !== text.toLowerCase() && v.indexOf('[object') < 0; }
+  return first().then(function(v){ return good(v) ? v : second(); }).then(function(v){
+    if (!good(v)) return '';
+    tmem[key] = v; try { localStorage.setItem(key, v); } catch(e){}
     return v;
-  }).catch(function(){ return ''; });
+  });
 };
 /* run translations a few at a time so 30 words don't hit the proxy at once */
 MW.translateMany = function(words, lang, onEach){
