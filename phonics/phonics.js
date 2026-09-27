@@ -61,6 +61,75 @@ PH.RULES['bossy-r'] = {
   partNames: { sort:'Sort by sound', which:'er, ir, or ur?', match:'Read and match', say:'Say it', spell:'Spell' }
 };
 
+PH.RULES['vowel-teams'] = {
+  title: 'Vowel Teams: ai, ay, ee, ea, oa, ow, oo',
+  short: 'Two vowels, one sound.',
+  url: '/readings/phonics/vowel-teams/',
+  emoji: '\ud83d\udc6f',
+  parts: ['sort', 'two', 'which', 'spell'],
+  partNames: { sort:'Sort by sound', two:'Two sounds', which:'Which team?', say:'Say it', spell:'Spell' }
+};
+
+/* ---------------- Vowel teams ----------------
+   Each team makes one sound. oo, ow, and ea can make two, so word lists decide. */
+PH.VT_SOUND = {
+  A:  { name:'long A', teams:['ai','ay'], alts:['ai','ay','a?e','ei','e'], ex:['rain','day','train','play'] },
+  E:  { name:'long E', teams:['ee','ea'], alts:['ee','ea','e?e','i','ie'], ex:['tree','beach','green','leaf'] },
+  O:  { name:'long O', teams:['oa','ow'], alts:['oa','ow','o?e','o'], ex:['boat','snow','coat','yellow'] },
+  OO: { name:'/oo/, like in moon', teams:['oo'], alts:['oo','u','u?e','ue'], ex:['moon','food','spoon','zoo'] },
+  UU: { name:'/oo/, like in book', teams:['oo'], alts:['oo','u'], ex:['book','look','foot','good'] },
+  OW: { name:'/ow/, like in cow', teams:['ow'], alts:['ow','ou','au'], ex:['cow','owl','clown','flower'] },
+  ES: { name:'short e, like in bread', teams:['ea'], alts:['ea','e'], ex:['bread','head','weather','breakfast'] }
+};
+var EA_SHORT = ['bread','head','heavy','breakfast','weather','ready','dead','sweater','feather','thread','health','instead','spread','already','meant','heaven','leather','deaf','meadow','pleasant'];
+var EA_LONGA = ['steak','break','great'];
+var OO_SHORT = ['book','books','look','looks','good','foot','football','cook','cooking','wood','wool','hook','stood','took','shook','cookie','hood','notebook','facebook','goodbye'];
+var OW_LONG  = ['snow','grow','show','slow','low','blow','bowl','window','yellow','know','throw','own','row','tomorrow','follow','elbow',
+  'arrow','rainbow','pillow','shadow','below','snowman','crow','glow','mow','bow','grown','shown','known','borrow','narrow','swallow','owner','growth'];
+var VT_ODD = ['said','again','against','captain','mountain','certain','fountain','been','idea','create','area','ocean','react','reality',
+  'theater','cooperate','zoology','blood','flood','door','floor','poor','knowledge','bowling'];
+PH.vtTeams = function(tok){
+  var w = String(tok || '').toLowerCase(), out = [], i;
+  if (VT_ODD.indexOf(w) > -1) return out;
+  for (i = 0; i < w.length - 1; i++){
+    var t = w.substr(i, 2);
+    if (['ai','ay','ee','ea','oa','ow','oo'].indexOf(t) < 0) continue;
+    if (w.charAt(i + 2) === 'r') { i++; continue; }                 /* hair, ear, door: bossy r */
+    var snd = t === 'ai' || t === 'ay' ? 'A' : t === 'ee' ? 'E' : t === 'oa' ? 'O'
+      : t === 'ea' ? (EA_SHORT.indexOf(w) > -1 ? 'ES' : EA_LONGA.indexOf(w) > -1 ? 'A' : 'E')
+      : t === 'oo' ? (OO_SHORT.indexOf(w) > -1 ? 'UU' : 'OO')
+      : (OW_LONG.indexOf(w) > -1 ? 'O' : 'OW');
+    out.push({ start:i, team:t, sound:snd });
+    i++;
+  }
+  return out;
+};
+/* every other way to spell the team's sound, as a whole alternate word */
+PH.vtAlts = function(word){
+  var T = String(word || ''), out = [], re = /[a-z]+/gi, m;
+  while ((m = re.exec(T))){
+    var tok = m[0], base = m.index;
+    PH.vtTeams(tok).forEach(function(tm){
+      var S = PH.VT_SOUND[tm.sound], after = tok.slice(tm.start + 2).toLowerCase();
+      S.alts.forEach(function(x){
+        if (x === tm.team) return;
+        var alt, span = {};
+        if (x.indexOf('?') > -1){                                        /* split: rain -> rane */
+          if (!/^[^aeiouwy]$/.test(after)) return;
+          alt = tok.slice(0, tm.start) + x.charAt(0) + after + 'e';
+          span[base + tm.start] = 1; span[base + alt.length - 1] = 1;
+        } else {
+          alt = tok.slice(0, tm.start) + x + tok.slice(tm.start + 2);
+          for (var k = 0; k < x.length; k++) span[base + tm.start + k] = 1;
+        }
+        out.push({ alt:T.slice(0, base) + alt + T.slice(base + tok.length), span:span,
+          info:{ rule:'vowel-teams', word:tok.toLowerCase(), team:tm.team, sound:tm.sound, typedTeam:x.replace('?', '_'), letter:tm.team, alike:[], why:'vt-alt' } });
+      });
+    });
+  }
+  return out;
+};
+
 /* ---------------- Bossy R ---------------- */
 var R_ODD = ['very','every','carry','sorry','berry','cherry','mirror','arrow','error','hurry','worry','story','parent','carol',
   'hero','zero','area','iron','are','fire','here','there','where','were','more','store','care','sure','pure','your','four','our','hour'];
@@ -184,6 +253,11 @@ PH.matchInfo = function(word, i, typed){
 /* they typed everything but the silent e: "cak" for "cake" */
 PH.missingE = function(word, typed){
   var T = String(word || ''), v = String(typed || '');
+  /* stopped on another whole spelling: "sno" for snow, "tri" for tree */
+  if (v && v.toLowerCase() !== T.toLowerCase()){
+    var alts = PH.vtAlts(T);
+    for (var a = 0; a < alts.length; a++) if (alts[a].alt.toLowerCase() === v.toLowerCase()) return alts[a].info;
+  }
   /* also: "ca" for "car", the bossy r left off the end */
   var lt = tokenAt(T, T.length - 1).word;
   if (/[aeiou]r$/i.test(T) && v.toLowerCase() === T.slice(0, -1).toLowerCase() && R_ODD.indexOf(lt) < 0 && !VOW[lt.charAt(lt.length - 3)])
@@ -233,11 +307,31 @@ PH.align = function(word, typed){
     if (ti >= T.length){ out.push({ m:'bad' }); continue; }
     if (ch.toLowerCase() === T.charAt(ti).toLowerCase()){ out.push({ m:'ok', ti:ti }); continue; }
     var info = PH.matchInfo(T, ti, ch);
-    if (info){ out.push({ m:'sound', ti:ti, info:info }); if (info.shift) off++; }
-    else out.push({ m:'bad', ti:ti });
+    if (info){ out.push({ m:'sound', ti:ti, info:info }); if (info.shift) off++; continue; }
+    /* another spelling of a vowel team's sound? follow that spelling from here on */
+    var pick = off ? null : altFor(T, v, j);
+    if (pick){
+      /* letters already typed that belong to the other spelling ("o" in "bot") turn yellow too */
+      for (var r = 0; r < j; r++) if (pick.span[r] && out[r].m === 'ok') out[r] = { m:'sound', ti:r, info:pick.info };
+      out.pickAt = j; out.pickInfo = pick.info;
+      for (var k = j; k < v.length; k++){
+        var c = v.charAt(k).toLowerCase();
+        if (k < pick.alt.length && c === pick.alt.charAt(k).toLowerCase()) out.push(pick.span[k] ? { m:'sound', ti:k, info:pick.info } : { m:'ok', ti:k });
+        else out.push({ m:'bad', ti:k });
+      }
+      return out;
+    }
+    out.push({ m:'bad', ti:ti });
   }
   return out;
 };
+function altFor(T, v, j){
+  var alts = PH.vtAlts(T); if (!alts.length) return null;
+  var all = v.toLowerCase(), upto = all.slice(0, j + 1), i;
+  for (i = 0; i < alts.length; i++) if (alts[i].alt.toLowerCase().indexOf(all) === 0) return alts[i];
+  for (i = 0; i < alts.length; i++) if (alts[i].alt.toLowerCase().indexOf(upto) === 0) return alts[i];
+  return null;
+}
 /* one mark per box: 'ok', 'sound', 'bad', or null (empty) */
 PH.analyze = function(word, typed){
   var T = String(word || ''), a = PH.align(word, typed), out = [], i;
@@ -247,7 +341,9 @@ PH.analyze = function(word, typed){
 /* the rule behind the letter they just typed, if it was right-sound-wrong-spelling */
 PH.lastInfo = function(word, typed){
   var a = PH.align(word, typed), x = a[a.length - 1];
-  return x && x.m === 'sound' ? x.info : null;
+  if (x && x.m === 'sound') return x.info;
+  if (a.pickAt === a.length - 1) return a.pickInfo;     /* "bot": the t finished a different spelling */
+  return null;
 };
 
 /* ---------------- what to tell them ---------------- */
@@ -293,6 +389,16 @@ PH.explain = function(info){
     if (info.why === 'ch-sh') return { head:'Listen closely: /ch/ or /sh/?',
       body:'This word has /ch/, like the start of "chair." It is spelled c and h.', ex:D.ex };
   }
+  if (info.rule === 'vowel-teams'){
+    var S = PH.VT_SOUND[info.sound];
+    var ways = S.teams.join(' or ');
+    var tip = (info.team === 'ai' || info.team === 'ay') ? ' Tip: ay usually comes at the end of a word (day), and ai in the middle (rain).'
+      : (info.team === 'oa' || (info.team === 'ow' && info.sound === 'O')) ? ' Tip: ow often comes at the end (snow), and oa in the middle (boat).' : '';
+    var single = /^[aeiou]$/.test(info.typedTeam) ? ' In English, this sound is not written with just one letter here.' : '';
+    return { head:'Good ear! You hear ' + S.name + '.',
+      body:'You wrote ' + info.typedTeam + '. This sound can be spelled ' + ways + (S.teams.length > 1 ? '' : '') + '. This word uses ' + info.team + '.' + single + tip,
+      ex:S.ex };
+  }
   if (info.rule === 'bossy-r'){
     if (info.why === 'r-er') return { head:'Good ear! You hear /er/.',
       body:'In English, er, ir, and ur all make the same sound: /er/. After w, or makes it too (word, work). You have to learn which one each word uses.',
@@ -334,6 +440,15 @@ PH.L1 = {
     so: 'In Somali, every letter is pronounced, and long vowels are written with two letters (aa, ee, oo). In English, a long vowel is often written with one vowel and a silent e at the end: cake, bike, home.',
     ru: 'In Russian, every vowel letter is pronounced. In English, the e at the end of "cake" is silent. It changes the vowel before it: cap becomes cape.',
     _other: 'In English, some letters are silent. The e at the end of "cake" makes no sound. It is a signal: the vowel before it says its name.'
+  },
+  'vowel-teams': {
+    es: 'Spanish writes each vowel sound one way: a, e, i, o, u. English writes long vowel sounds in many ways. Long E is often ee or ea (tree, beach), not i. Long A is often ai or ay (rain, day), not ei. The oo in moon sounds like Spanish u. And ow in cow sounds like Spanish au.',
+    fr: 'French has vowel teams too (ai, au, ou), but English teams sound different. English ai says long A (rain). ea says long E (beach). English oo sounds like French ou (moon).',
+    tl: 'Tagalog writes each vowel sound with one letter. English often uses two letters for one vowel sound: ai (rain), ee (tree), oa (boat), oo (moon).',
+    vi: 'Vietnamese has many vowel combinations, but English teams sound different. Learn each English team with its sound: ai (rain), ee (tree), oa (boat), oo (moon), ow (cow).',
+    so: 'Somali writes long vowels with double letters, like English! But the sounds are different. English ee sounds like Somali ii (tree). English oo sounds like Somali uu (moon).',
+    ru: 'In Russian, each vowel letter has its own sound. English often uses two letters for one vowel sound: ai (rain), ee (tree), oa (boat). English oo sounds like Russian у (moon).',
+    _other: 'In English, two vowels together often make one sound. Learn each team with its sound: ai (rain), ee (tree), oa (boat), oo (moon).'
   },
   'bossy-r': {
     es: 'In Spanish, r is tapped or rolled (pero, perro), and the vowel keeps its sound. In English, r bosses the vowel before it: car, her, fork. Do not roll it. Pull your tongue back, and do not touch the top of your mouth. Also: er, ir, and ur all sound the same (/er/), so learn how each word is spelled.',
