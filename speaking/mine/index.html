@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Speaking · Readings</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../speak.css">
+</head>
+<body>
+<span id="canary" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden">the quick brown fox jumps over the lazy dog</span>
+
+<header class="mast">
+  <div class="mast-in">
+    <h1>My Speaking</h1>
+    <p class="by">Your recordings from every interview &middot; Mr. Toby</p>
+    <div class="tools">
+      <button id="btnDir" class="tool" aria-pressed="false" title="Show the directions in your language">Directions</button>
+      <button id="btnTap" class="tool" aria-pressed="false" title="Tap any word for its meaning">Tap words</button>
+      <label class="sr" for="gsLang">Language</label>
+      <select id="gsLang" class="tool"></select>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section id="pSign">
+    <h2 class="step" data-dir="sign" data-en="Who are you? Choose your period and your name.">Who are you?</h2>
+    <div class="form">
+      <label>Period
+        <select id="gsPer"><option value="">Choose</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select>
+      </label>
+      <label>Name
+        <select id="gsWho"><option value="">Choose your period first</option></select>
+      </label>
+      <label class="hide">School email
+        <input id="gsMail" type="email" placeholder="name@s.sfusd.edu" autocomplete="email">
+      </label>
+    </div>
+    <p id="gsMsg" class="msg" aria-live="polite"></p>
+  </section>
+
+  <section id="pMine" class="hide">
+    <p class="note" data-dir="mine" data-en="Only you can see this page. Listen to yourself. Practice any sentence as many times as you want.">Only you see this page. Listen to yourself. Practice any sentence as many times as you want.</p>
+    <div class="tabs">
+      <button data-t="practice" class="on">Practice these</button>
+      <button data-t="all">All my conversations</button>
+    </div>
+    <div id="list"></div>
+  </section>
+
+  <section id="pTeach" class="hide">
+    <h2 class="step">Teacher view</h2>
+    <div class="form">
+      <label>Period
+        <select id="tPer"><option value="">Choose</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select>
+      </label>
+    </div>
+    <p><button class="side" id="tCsv">Download CSV</button></p>
+    <div class="tablewrap"><table class="sum" id="tSum"></table></div>
+    <div id="tOne" style="margin-top:20px"></div>
+  </section>
+</main>
+
+<footer class="foot">
+  <a href="../describe-a-classmate/">Interview: Describe a classmate</a>
+  <a href="/readings/">Readings hub</a>
+  <a href="#" id="teachLink">Teacher view</a>
+</footer>
+
+<script src="../speak-core.js"></script>
+<script>
+(function(){
+var $ = GS.$, esc = GS.esc;
+var ROWS = [], VIEW = 'practice', WHO = null, TEACH = false;
+var TITLES = {'describe-a-classmate':'Describe a classmate'};
+var QTEXT = {};  /* filled from the rows themselves (the ask line's target) */
+
+/* ---------- load ---------- */
+function load(email){
+  var e = encodeURIComponent(email);
+  return fetch(GS.SUPA_URL + '/rest/v1/' + GS.TABLE + '?or=(email.eq.' + e + ',partner_email.eq.' + e + ')&order=created_at.asc&select=*',
+    {headers:GS.H()}).then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; });
+}
+
+/* group rows into conversations, and pick the kept attempt for each line */
+function conversations(rows, me){
+  var by = {}, order = [];
+  rows.forEach(function(r){
+    var k = r.exchange_id || ('x' + r.id);
+    if (!by[k]){ by[k] = {id:k, activity:r.activity, item:r.item_id, when:r.created_at, lines:{}, practice:{}}; order.push(k); }
+    var c = by[k], ln = r.line_no;
+    if (r.role === 'ask') QTEXT[r.activity + '|' + r.item_id] = r.target_text;
+    if (r.practice){ (c.practice[ln] = c.practice[ln] || []).push(r); return; }
+    var cur = c.lines[ln];
+    if (!cur || r.accepted || !cur.accepted) c.lines[ln] = r;
+  });
+  return order.map(function(k){ return by[k]; }).reverse();
+}
+
+function meter(score){
+  if (score == null) return '<span class="meter">No words heard</span>';
+  if (score >= 0.8) return '<span class="meter good">Clear</span>';
+  if (score >= 0.5) return '<span class="meter mid">Almost</span>';
+  return '<span class="meter">Practice this one</span>';
+}
+function needsPractice(r, prac){
+  var best = r.match_score == null ? 0 : r.match_score;
+  (prac || []).forEach(function(p){ if (p.match_score != null && p.match_score > best) best = p.match_score; });
+  return best < 0.8;
+}
+function sentenceOf(r){ return r.said_text || r.target_text || ''; }
+
+/* the sentence, word by word: green = the computer heard it, gold = say it again */
+function heardHtml(target, transcript){
+  if (!transcript) return '<span class="meter">The computer did not catch any words. Try practicing below.</span>';
+  var sc = GS.scoreOne(transcript, target), words = target.split(/\s+/), toks = GS.tokens(target);
+  if (toks.length !== words.length) return 'The computer heard: <i>' + esc(transcript) + '</i>';
+  return words.map(function(w, i){
+    return sc.hitWords[i] ? '<span class="w-hit">' + esc(w) + '</span>'
+      : '<span class="w-miss" data-say="' + esc(w.replace(/[.,?!]/g, '')) + '" title="Tap to hear this word">' + esc(w) + '</span>';
+  }).join(' ');
+}
+
+function audioTag(path){
+  if (!path) return '';
+  return '<audio controls preload="none" data-p="' + esc(path) + '" src="' + esc(GS.audioUrl(path)) + '"></audio>';
+}
+document.addEventListener('error', function(e){
+  var a = e.target; if (!a || a.tagName !== 'AUDIO' || a.dataset.signed) return;
+  a.dataset.signed = '1';
+  fetch(GS.SUPA_URL + '/storage/v1/object/sign/' + GS.BUCKET + '/' + a.dataset.p, {method:'POST', headers:GS.H(), body:JSON.stringify({expiresIn:3600})})
+    .then(function(r){ return r.json(); }).then(function(d){ if (d && d.signedURL) a.src = GS.SUPA_URL + '/storage/v1' + d.signedURL; }).catch(function(){});
+}, true);
+
+var MIC = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M8.5 21h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+var EAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8.5a4.5 4.5 0 0 1 0 7M18.5 6a8 8 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+function ears(t){
+  return '<span class="ears"><button class="ear" data-say="' + esc(t) + '">' + EAR + '<span>Listen</span></button>' +
+    '<button class="ear slow" data-say="' + esc(t) + '" data-slow="1">Slow</button></span>';
+}
+document.addEventListener('click', function(e){
+  var b = e.target.closest('[data-say]'); if (!b) return;
+  GS.say(b.getAttribute('data-say'), !!b.getAttribute('data-slow'), b.tagName === 'BUTTON' ? b : null);
+});
+
+/* ---------- draw ---------- */
+function draw(){
+  var me = WHO.email, list = conversations(ROWS, me), h = '', count = 0;
+  list.forEach(function(c){
+    var nos = Object.keys(c.lines).sort();
+    if (!nos.length) return;
+    var ask = c.lines[1] || c.lines[nos[0]];
+    var iAsked = ask && ask.email === me;
+    var other = iAsked ? (ask.partner_name || 'a classmate') : (ask ? ask.speaker_name : 'a classmate');
+    var mine = nos.filter(function(n){ return c.lines[n].email === me; });
+    if (VIEW === 'practice' && !TEACH){
+      mine = mine.filter(function(n){ return needsPractice(c.lines[n], c.practice[n]); });
+      if (!mine.length) return;
+    }
+    count++;
+    var title = (TITLES[c.activity] || c.activity) + ' \u00b7 ' + (iAsked ? 'You asked ' : '') + esc(GS.firstName(other)) + (iAsked ? '' : ' asked you');
+    if (TEACH) title = (TITLES[c.activity] || c.activity) + ' \u00b7 ' + esc(ask ? ask.speaker_name : '') + ' asked ' + esc(ask ? ask.partner_name : '');
+    h += '<div class="convo"><h3>' + title + ' <span class="when">' + new Date(c.when).toLocaleDateString() + '</span></h3>';
+    nos.forEach(function(n){
+      var r = c.lines[n], isMe = r.email === me, cls = (r.role === 'ask' || r.role === 'why_ask') ? 'a' : 'b';
+      if (VIEW === 'practice' && !TEACH && isMe && mine.indexOf(n) < 0) return;
+      var sent = sentenceOf(r);
+      if (!isMe && !TEACH){
+        h += '<div class="mline other ' + cls + '"><div class="who">' + esc(GS.firstName(r.speaker_name)) + '</div>' +
+          '<div class="sent" translate="no" data-tap="1">' + esc(sent || '(recording)') + '</div></div>';
+        return;
+      }
+      var prac = c.practice[n] || [], last = prac[prac.length - 1];
+      h += '<div class="mline ' + cls + '" data-c="' + esc(c.id) + '" data-n="' + n + '">' +
+        '<div class="who">' + (TEACH ? esc(r.speaker_name) : 'You') + ' ' + meter(r.match_score) +
+        (prac.length ? ' <span class="meter">' + prac.length + ' practice' + (prac.length > 1 ? 's' : '') + '</span>' : '') + '</div>' +
+        '<div class="sent"><span translate="no" data-tap="1">' + esc(sent) + '</span>' + ears(sent) + '</div>' +
+        '<div class="heard" translate="no">' + heardHtml(sent, r.transcript) + '</div>' +
+        audioTag(r.audio_path) +
+        (TEACH && last ? '<div class="heard">Latest practice: ' + heardHtml(sent, last.transcript) + ' ' + audioTag(last.audio_path) + '</div>' : '') +
+        (TEACH ? '' : '<div class="prac"><button class="mic" aria-label="Practice this sentence">' + MIC + '</button><div class="prac-out">Practice: tap and say it again.</div></div>') +
+        '</div>';
+    });
+    h += '</div>';
+  });
+  if (!count){
+    h = VIEW === 'practice' && !TEACH
+      ? '<p class="empty">Nothing to practice right now. Every sentence came through clearly. Open <b>All my conversations</b> to listen again.</p>'
+      : '<p class="empty">No recordings yet. Do an interview, and your sentences will show up here.</p>';
+  }
+  var box = TEACH ? $('tOne') : $('list');
+  box.innerHTML = h;
+  if (!TEACH) wirePractice(list);
+  GS.rewrap();
+}
+
+function wirePractice(list){
+  var byId = {};
+  list.forEach(function(c){ byId[c.id] = c; });
+  Array.prototype.forEach.call(document.querySelectorAll('.mline[data-c]'), function(el){
+    var btn = el.querySelector('.prac .mic'); if (!btn) return;
+    var c = byId[el.getAttribute('data-c')], n = el.getAttribute('data-n'), r = c.lines[n];
+    var target = sentenceOf(r), out = el.querySelector('.prac-out');
+    GS.micButton(btn, {
+      label:'Practice this sentence',
+      onStart:function(){ out.innerHTML = '<b>Listening\u2026</b> tap again when you finish.'; },
+      onInterim:function(t){ out.innerHTML = '<i>' + esc(t) + '</i>'; },
+      onDone:function(res){
+        if (res.error === 'not-allowed'){ out.textContent = 'Turn on the microphone: click the lock next to the web address.'; return; }
+        var best = null;
+        (res.alts || []).forEach(function(a){
+          var s = GS.scoreOne(a.t, target);
+          if (!best || s.score > best.score) best = {score:s.score, heard:a.t};
+        });
+        out.innerHTML = best ? (meter(best.score) + ' ' + heardHtml(target, best.heard)) : 'I did not hear you. Try again, a little closer.';
+        GS.saveAttempt({
+          activity:r.activity, item_id:r.item_id, exchange_id:r.exchange_id, round:r.round,
+          line_no:r.line_no, role:r.role, email:WHO.email, speaker_name:r.speaker_name,
+          partner_email:r.partner_email, partner_name:r.partner_name, period:WHO.period || r.period,
+          device_email:WHO.email, target_text:target, said_text:best ? target : null,
+          transcript:best ? best.heard : null, alternatives:(res.alts || []).slice(0, 5),
+          match_score:best ? Math.round(best.score * 1000) / 1000 : null,
+          attempt_no:null, accepted:true, practice:true,
+          seconds:res.secs ? Math.round(res.secs * 10) / 10 : null
+        }, res.blob);
+      }
+    });
+  });
+}
+
+Array.prototype.forEach.call(document.querySelectorAll('.tabs button'), function(b){
+  b.addEventListener('click', function(){
+    VIEW = b.getAttribute('data-t');
+    Array.prototype.forEach.call(document.querySelectorAll('.tabs button'), function(x){ x.classList.toggle('on', x === b); });
+    draw();
+  });
+});
+
+GS.initAll('speaking-mine', function(me){
+  WHO = me; TEACH = false;
+  load(me.email).then(function(rows){ ROWS = rows; $('pMine').classList.remove('hide'); draw(); });
+});
+
+/* ---------- teacher ---------- */
+var PER_ROWS = [];
+$('teachLink').addEventListener('click', function(e){
+  e.preventDefault();
+  var pw = prompt('Teacher password');
+  if (pw !== 'galileo2026') return;
+  $('pSign').classList.add('hide'); $('pMine').classList.add('hide'); $('pTeach').classList.remove('hide');
+});
+if (/[?&]teacher=1/.test(location.search)) setTimeout(function(){ $('teachLink').click(); }, 300);
+$('tPer').addEventListener('change', function(){
+  var p = $('tPer').value; if (!p) return;
+  fetch(GS.SUPA_URL + '/rest/v1/' + GS.TABLE + '?period=eq.' + encodeURIComponent(p) + '&order=created_at.asc&select=*', {headers:GS.H()})
+    .then(function(r){ return r.ok ? r.json() : []; }).then(function(rows){
+      PER_ROWS = rows; summary();
+    });
+});
+function summary(){
+  var by = {};
+  PER_ROWS.forEach(function(r){
+    var s = by[r.email] = by[r.email] || {email:r.email, name:r.speaker_name, lines:0, clear:0, prac:0, partners:{}, last:r.created_at};
+    s.last = r.created_at;
+    if (r.practice){ s.prac++; return; }
+    if (!r.accepted) return;
+    s.lines++; if (r.match_score != null && r.match_score >= 0.8) s.clear++;
+    if (r.partner_name) s.partners[r.partner_name] = 1;
+  });
+  var list = Object.keys(by).map(function(k){ return by[k]; }).sort(function(a, b){ return String(a.name).localeCompare(String(b.name)); });
+  var h = '<tr><th>Student</th><th>Sentences</th><th>Clear</th><th>Classmates</th><th>Practice</th><th>Last</th></tr>';
+  list.forEach(function(s){
+    h += '<tr data-e="' + esc(s.email) + '"><td>' + esc(s.name) + '</td><td>' + s.lines + '</td><td>' +
+      (s.lines ? Math.round(s.clear / s.lines * 100) + '%' : '\u2013') + '</td><td>' + Object.keys(s.partners).length +
+      '</td><td>' + s.prac + '</td><td>' + new Date(s.last).toLocaleDateString() + '</td></tr>';
+  });
+  if (!list.length) h += '<tr><td colspan="6">No recordings for this period yet.</td></tr>';
+  $('tSum').innerHTML = h;
+  $('tOne').innerHTML = '';
+}
+$('tSum').addEventListener('click', function(e){
+  var tr = e.target.closest('tr[data-e]'); if (!tr) return;
+  var em = tr.getAttribute('data-e');
+  TEACH = true; WHO = {email:em};
+  load(em).then(function(rows){ ROWS = rows; VIEW = 'all'; draw(); $('tOne').scrollIntoView({behavior:'smooth'}); });
+});
+$('tCsv').addEventListener('click', function(){
+  if (!PER_ROWS.length) return;
+  var cols = ['created_at','period','activity','item_id','round','line_no','role','speaker_name','email','partner_name','partner_email','target_text','said_text','transcript','match_score','attempt_no','accepted','practice','audio_path'];
+  var lines = [cols.join(',')];
+  PER_ROWS.forEach(function(r){
+    lines.push(cols.map(function(c){ var v = r[c] == null ? '' : String(r[c]); return '"' + v.replace(/"/g, '""') + '"'; }).join(','));
+  });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([lines.join('\n')], {type:'text/csv'}));
+  a.download = 'speaking_period_' + $('tPer').value + '.csv';
+  a.click();
+});
+})();
+</script>
+<script src="/readings/track.js"></script>
+</body>
+</html>
