@@ -224,5 +224,89 @@ var UNITS = [
      why:'Use <b>, so</b> to join two full sentences.'}
   ]
 }
-
+,
+/* ============================================================
+   NEW FORMAT units (same question types as the Grammar Checks).
+   See the note at the top of grammar/index.html's item logic.
+   ============================================================ */
+{
+  slug: 'articles-1',
+  title: 'A, An, The, or Nothing 1',
+  level: '101',
+  directions: 'Fill in the blanks. Some blanks need NO word. Choose \u2205 for those.',
+  skills: ['articles'],
+  items: [
+    {type:'slots', skill:'articles', empty:true, opts:['a','an','the'],
+     text:'I have {a} dog. {the} dog is {} brown.',
+     why:'Use <b>a</b> the first time you talk about something. Use <b>the</b> after that. Use no word before a color alone.'},
+    {type:'slots', skill:'articles', empty:true, opts:['a','an','the'],
+     text:'Can I have {an} orange, please?',
+     why:'Use <b>an</b> before a vowel sound: an orange, an apple, an egg.'},
+    {type:'slots', skill:'articles', empty:true, opts:['a','an','the'],
+     text:'The bus is late. I wait {an} hour every day!',
+     why:'<b>Hour</b> starts with a vowel sound (the h is silent), so we say <b>an</b> hour.'},
+    {type:'slots', skill:'articles', empty:true, opts:['a','an','the'],
+     text:'My sister loves {} cats, but she does not like {} dogs.',
+     why:'When we talk about all cats or all dogs, we use no word: I love cats.'},
+    {type:'slots', skill:'articles', empty:true, opts:['a','an','the'],
+     text:'We play {} soccer after {} school.',
+     why:'No word before sports (soccer, basketball) and in <b>after school</b>, <b>go to school</b>.'},
+    {type:'slots', skill:'articles', empty:true, opts:['a','an','the'],
+     text:'Look at {the} moon! It is so bright tonight.',
+     why:'There is only one moon, so we say <b>the</b> moon, <b>the</b> sun, <b>the</b> sky.'},
+    {type:'slots', skill:'articles', dir:'Tap the underlined words. Fix the ones that are wrong.',
+     text:'I ate [a apple>an apple:a apple,an apple,the apples,apple] for lunch.',
+     why:'<b>Apple</b> starts with a vowel sound, so we say <b>an</b> apple.'},
+    {type:'slots', skill:'articles', dir:'Tap the underlined words. Fix the ones that are wrong.',
+     text:'My aunt is [doctor>a doctor:doctor,a doctor,an doctor,the doctors]. She works at night.',
+     why:'Use <b>a</b> or <b>an</b> before a job: She is <b>a</b> doctor. He is <b>an</b> engineer.'},
+    {type:'slots', skill:'articles', empty:true, opts:['a','an','the'],
+     text:'There is {a} cat in our yard. {the} cat is {} hungry.',
+     why:'First time: <b>a</b> cat. Second time: <b>the</b> cat. No word before <b>hungry</b>.'},
+    {type:'slots', skill:'articles', empty:true, opts:['a','an','the'],
+     text:'Omar is {an} honest student. He always tells {the} truth.',
+     why:'<b>Honest</b> starts with a vowel sound (silent h), so <b>an</b> honest. We say <b>tell the truth</b>.'}
+  ]
+},
+{
+  slug: 'joining-sentences-1',
+  title: 'Joining Sentences 1',
+  level: '101/103',
+  directions: 'Combine the sentences into one sentence. Use the joining word.',
+  skills: ['compound-subjects','compound-predicates','compound-sentences'],
+  items: [
+    {type:'write', skill:'compound-subjects', words:['and'],
+     prompt:'Mario is tired. Luis is tired.',
+     accept:['Mario and Luis are tired.','Luis and Mario are tired.'],
+     why:'Two people doing the same thing: join them with <b>and</b>. Two people means <b>are</b>, not is.'},
+    {type:'write', skill:'compound-subjects', words:['and'],
+     prompt:'My mom works at night. My dad works at night.',
+     accept:['My mom and my dad work at night.','My mom and dad work at night.','My dad and my mom work at night.','My dad and mom work at night.'],
+     why:'Two people is plural, so the verb loses the <b>-s</b>: works \u2192 <b>work</b>.'},
+    {type:'write', skill:'compound-predicates', words:['and'],
+     prompt:'Kenji opens his book. Kenji reads the first page.',
+     accept:['Kenji opens his book and reads the first page.'],
+     why:'Same person, two actions. Say the name once and join the actions with <b>and</b>. No comma.'},
+    {type:'write', skill:'compound-predicates', words:['and'],
+     prompt:'Birds build nests. Birds lay eggs.',
+     accept:['Birds build nests and lay eggs.'],
+     why:'Same subject, two actions: <b>Birds build nests and lay eggs.</b>'},
+    {type:'write', skill:'compound-sentences', words:['and','but','so'],
+     prompt:'I was hungry. I made a sandwich.',
+     accept:['I was hungry, so I made a sandwich.'],
+     why:'The second idea is the result, so use <b>so</b>. Put a comma before <b>so</b> when it joins two full sentences.'},
+    {type:'write', skill:'compound-sentences', words:['and','but','so'],
+     prompt:'Rosa likes math. She does not like science.',
+     accept:['Rosa likes math, but she does not like science.'],
+     why:'The ideas are different, so use <b>but</b>. Put a comma before <b>but</b>.'},
+    {type:'write', skill:'compound-sentences', words:['and','but','so'],
+     prompt:'It was cold. We wore jackets.',
+     accept:['It was cold, so we wore jackets.'],
+     why:'Cold is the reason, jackets are the result: use <b>, so</b>.'},
+    {type:'order', skill:'compound-sentences', dir:'Put the words in order to make one sentence.',
+     tiles:['late,','the','was','bus','so','walked','I'], post:'.',
+     accept:['The bus was late, so I walked.'],
+     why:'Sentence one, then a comma, then <b>so</b>, then sentence two.'}
+  ]
+}
 ];

@@ -101,6 +101,31 @@ body.tap-on .wt-tap{cursor:pointer;border-bottom:1px dotted #8aa79a}
 body.tap-on .wt-tap:hover{background:#eef5f1}
 .wt-bub{display:inline-block;margin-left:5px;padding:1px 6px;border-radius:6px;
   background:#1F4D3D;color:#fff;font-size:.85em;font-weight:700}
+
+/* ---- multi-format items (slots / order / write) ---- */
+.prompt .slot{display:inline-block;min-width:78px;margin:0 3px;padding:0 10px;font:inherit;font-weight:900;line-height:1.5;border:0;
+  background:#efedf9;color:#4b3f8f;border-bottom:4px dashed #6c5fb5;border-radius:8px 8px 0 0;cursor:pointer;text-align:center}
+.prompt .slot.set{border-bottom-style:solid}
+.prompt .slot.none{color:var(--muted);background:#eef0ee;border-bottom-color:var(--muted)}
+.prompt .slot.active{background:#5a4a8a;color:#fff;border-bottom-color:#3b2f63}
+.prompt .slot.fix{min-width:0;background:transparent;color:var(--ink);border-bottom:3px solid var(--ink);border-radius:4px;padding:0 4px}
+.prompt .slot.fix.changed{background:#efedf9;color:#4b3f8f;border-bottom-color:#6c5fb5}
+.prompt .slot.good{background:var(--green-bg);color:var(--green);border-bottom:4px solid var(--green)}
+.prompt .slot.bad{background:var(--red-bg);color:var(--red);border-bottom:4px solid var(--red)}
+.prompt .slot:disabled{cursor:default}
+.traylbl{font-size:.85rem;font-weight:800;color:var(--muted);margin-bottom:6px;width:100%}
+.choice.nothing{font-style:italic;color:var(--muted)}
+.choice.nothing.pick{color:#fff}
+.line{min-height:60px;border:2px dashed var(--line-dk);border-radius:12px;padding:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:1.2rem;font-weight:700;margin-bottom:12px}
+.tile{background:#fff;border:2px solid #5a4a8a;border-bottom:4px solid #5a4a8a;color:#5a4a8a;border-radius:10px;padding:7px 14px;font:inherit;font-weight:900;font-size:1.1rem;cursor:pointer}
+.tile.used{visibility:hidden}
+.line .tile{background:#5a4a8a;color:#fff}
+.given{font-size:1.2rem;font-weight:700;background:var(--field);border-radius:11px;padding:12px 16px;margin-bottom:10px}
+.jw{display:inline-block;background:#fff;border:2px solid var(--pine);color:var(--pine);border-radius:8px;padding:1px 10px;margin:0 6px 8px 0;font-weight:900;font-size:1rem}
+textarea.wr{font:inherit;font-size:1.15rem;width:100%;min-height:90px;padding:11px 12px;border:2px solid var(--line-dk);border-radius:11px;background:var(--field)}
+textarea.wr:focus{outline:0;border-color:var(--pine);background:#fff}
+.keyline{font-weight:900}
+#btn-dir,#btn-tap{background:#fff;color:var(--pine);border:2px solid var(--pine);border-radius:9px;padding:6px 12px;margin-right:8px;font:inherit;font-size:.88rem;font-weight:800;cursor:pointer}
 </style>
 </head>
 <span id="canary" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden">the quick brown fox jumps over the lazy dog</span>
@@ -185,6 +210,7 @@ body.tap-on .wt-tap:hover{background:#eef5f1}
 </div>
 
 <script src="items.js"></script>
+<script src="../diagnostic/engine.js"></script>
 <script>
 var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
 var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
@@ -314,8 +340,9 @@ function pickText(d){
   return '';
 }
 
+function curDir(){var it=UNIT&&UNIT.items[IDX];return (it&&it.dir)||UNIT.directions;}
 function showDirections(){
-  var en=UNIT.directions;
+  var en=curDir();
   $('dirBox').innerHTML='<div class="en">'+esc(en)+'</div>';
   if(!ME.lang)return;
   var url=PROXY+'?action=translate&idiom='+encodeURIComponent(en)+
@@ -332,63 +359,156 @@ function changeLang(){ME.lang=$('qLang').value;
   try{localStorage.setItem('gal_student_lang',ME.lang);}catch(e){}
   showDirections();}
 
+/* ---------- items: old one-blank items become "slots" items ----------
+   Old shape  {prompt:'I go ___ school.', answer:'to', choices:[...], skill, why}
+   New shapes (same as the Grammar Checks):
+     {type:'slots', text:'I have {a} cat. It is {} black.', opts:['a','the'], empty:true, skill, why, dir}
+     {type:'slots', text:'She [go>goes:go,goes,going] home.', skill, why}
+     {type:'order', tiles:[...], pre:'', post:'.', accept:['...'], skill, why}
+     {type:'write', prompt:'Two sentences.', words:['and'], accept:['...'], skill, why}  */
+function upgrade(it){
+  if(it.type)return it;
+  var t=String(it.prompt).replace('___','{'+it.answer+'}');
+  return {type:'slots',text:t,opts:it.choices,skill:it.skill,why:it.why,dir:it.dir,_legacy:true};
+}
+UNITS.forEach(function(u){u.items=u.items.map(upgrade);});
+
+var RESP=null, ACTIVE=-1, LOCK=false, LASTDIR='', WRONG=[];
+
 /* ---------- render one item ---------- */
 function render(){
   var it=UNIT.items[IDX];
-  TRIES=0;PICK=null;
+  TRIES=0;LOCK=false;WRONG=[];
+  RESP=it.type==='slots'?DX.blankResp(it):(it.type==='order'?[]:'');
   $('cCount').textContent='Question '+(IDX+1)+' of '+UNIT.items.length;
   var right=ANS.filter(function(a){return a.correct;}).length;
   $('cScore').textContent=right+' correct';
   $('cBar').style.width=Math.round(100*IDX/UNIT.items.length)+'%';
-  $('promptBox').innerHTML=promptHtml(it,'');
-  $('choiceBox').innerHTML=it.choices.map(function(c){
-    return '<button class="choice" data-c="'+esc(c)+'" onclick="pick(this)">'+esc(c)+'</button>';}).join('');
   $('fbBox').innerHTML='';
-  $('btnCheck').classList.remove('hide');$('btnCheck').disabled=true;
+  $('btnCheck').classList.remove('hide');
   $('btnNext').classList.add('hide');
+  if(it.type==='slots'){ACTIVE=firstBlank(it);drawSlots(it,null);}
+  else if(it.type==='order')drawOrder(it);
+  else drawWrite(it);
+  canCheck();
+  var d=curDir(); if(d!==LASTDIR){LASTDIR=d;showDirections();}
+  if(window.GAL_rewrap)GAL_rewrap();
 }
-function promptHtml(it,word,cls){
-  var b='<span class="blank '+(cls||'')+'">'+(word?esc(word):'&nbsp;&nbsp;&nbsp;&nbsp;')+'</span>';
-  return esc(it.prompt).replace('___',b);
+function canCheck(){$('btnCheck').disabled=LOCK||!DX.complete(UNIT.items[IDX],RESP);}
+function firstBlank(it){
+  var sl=DX.slots(it);
+  for(var i=0;i<sl.length;i++)if(sl[i].t==='blank'&&RESP[i]===null)return i;
+  return -1;
 }
-function pick(btn){
-  if(btn.disabled)return;
-  PICK=btn.getAttribute('data-c');
-  var all=$('choiceBox').querySelectorAll('.choice');
-  for(var i=0;i<all.length;i++)all[i].classList.remove('pick');
-  btn.classList.add('pick');
-  $('promptBox').innerHTML=promptHtml(UNIT.items[IDX],PICK,'filled');
-  $('btnCheck').disabled=false;
+
+/* ----- slots ----- */
+function slotLabel(p,v){if(v===null||v===undefined)return '?';if(v==='')return '\u2205';return p.start?DX.cap(v):v;}
+function drawSlots(it,marks){
+  var parts=it._parts||DX.parse(it.text);it._parts=parts;
+  var h='';
+  parts.forEach(function(p){
+    if(p.t==='text'){h+=esc(p.s);return;}
+    var v=RESP[p.i],c='slot';
+    if(p.t==='fix'){c+=' fix'+(v!==p.orig?' changed':'');}
+    else{if(v!==null)c+=' set';if(v==='')c+=' none';}
+    if(marks)c+=marks[p.i]?' good':' bad';
+    else if(p.i===ACTIVE)c+=' active';
+    else if(WRONG[p.i])c+=' bad';
+    h+='<button class="'+c+'" '+(LOCK?'disabled ':'')+'onclick="pickSlot('+p.i+')">'+esc(slotLabel(p,v))+'</button>';
+  });
+  $('promptBox').innerHTML=h;
+  drawTray(it);
+  if(window.GAL_rewrap)GAL_rewrap();
+}
+function drawTray(it){
+  var box=$('choiceBox');
+  if(LOCK){box.innerHTML='';return;}
+  var sl=DX.slots(it);
+  if(ACTIVE<0){
+    box.innerHTML='<div class="traylbl">'+(sl.some(function(p){return p.t==='fix';})?'Tap an underlined word to change it.':'Tap a blank to change it.')+'</div>';
+    return;
+  }
+  var p=sl[ACTIVE],opts=p.t==='fix'?p.choices:it.opts,v=RESP[ACTIVE];
+  var h=sl.length>1?'<div class="traylbl">'+(p.t==='fix'?'Choose the right word:':'Blank '+(ACTIVE+1)+':')+'</div>':'';
+  opts.forEach(function(o){
+    h+='<button class="choice'+(v!==null&&DX.low(v)===DX.low(o)?' pick':'')+'" data-v="'+esc(o)+'">'+esc(o)+'</button>';});
+  if(p.t==='blank'&&it.empty)h+='<button class="choice nothing'+(v===''?' pick':'')+'" data-v="">\u2205 no word</button>';
+  box.innerHTML=h;
+  Array.prototype.forEach.call(box.querySelectorAll('.choice'),function(b){
+    b.addEventListener('click',function(){choose(b.getAttribute('data-v'));});});
+}
+function pickSlot(i){if(LOCK)return;ACTIVE=i;drawSlots(UNIT.items[IDX],null);}
+function choose(v){
+  var it=UNIT.items[IDX],sl=DX.slots(it);
+  RESP[ACTIVE]=v; WRONG[ACTIVE]=false;
+  if(sl[ACTIVE].t==='blank'){
+    for(var k=1;k<=sl.length;k++){var j=(ACTIVE+k)%sl.length;if(sl[j].t==='blank'&&RESP[j]===null){ACTIVE=j;break;}}
+  }
+  drawSlots(it,null);canCheck();
+}
+
+/* ----- order ----- */
+function drawOrder(it){
+  var h='<div class="line">'+(it.pre?'<span>'+esc(it.pre)+'</span>':'');
+  RESP.forEach(function(k,pos){h+='<button class="tile" '+(LOCK?'disabled ':'')+'onclick="unplace('+pos+')">'+esc(it.tiles[k])+'</button>';});
+  if(!RESP.length&&!it.pre)h+='<span class="note">Tap the words below.</span>';
+  h+=(it.post?'<span>'+esc(it.post)+'</span>':'')+'</div>';
+  $('promptBox').innerHTML=h;
+  $('choiceBox').innerHTML=LOCK?'':it.tiles.map(function(w,k){
+    return '<button class="tile'+(RESP.indexOf(k)>-1?' used':'')+'" onclick="place('+k+')">'+esc(w)+'</button>';}).join('');
+  if(window.GAL_rewrap)GAL_rewrap();
+}
+function place(k){if(LOCK||RESP.indexOf(k)>-1)return;RESP.push(k);drawOrder(UNIT.items[IDX]);canCheck();}
+function unplace(pos){if(LOCK)return;RESP.splice(pos,1);drawOrder(UNIT.items[IDX]);canCheck();}
+
+/* ----- write ----- */
+function drawWrite(it){
+  $('promptBox').innerHTML='<div class="given">'+esc(it.prompt)+'</div>'+
+    (it.words?it.words.map(function(w){return '<span class="jw">'+esc(w)+'</span>';}).join(''):'');
+  $('choiceBox').innerHTML='<textarea class="wr" id="wr" autocapitalize="sentences" spellcheck="false" autocomplete="off" placeholder="Write one sentence."></textarea>';
+  $('wr').addEventListener('input',function(){RESP=$('wr').value;canCheck();});
 }
 
 /* ---------- check, with a second try like Quill ---------- */
 function check(){
   var it=UNIT.items[IDX];
-  if(PICK==null)return;
+  if(LOCK||!DX.complete(it,RESP))return;
   TRIES++;
-  var ok=clean(PICK)===clean(it.answer);
+  var ok=DX.score(it,RESP).correct, why=it.why||'';
   if(ok){
-    $('promptBox').innerHTML=promptHtml(it,PICK,'filled');
-    $('fbBox').innerHTML='<div class="fb ok"><b>Well done!</b> '+it.why+'</div>';
+    LOCK=true;
+    if(it.type==='slots')drawSlots(it,DX.slotResults(it,RESP));
+    else if(it.type==='order')drawOrder(it);
+    else $('wr').disabled=true;
+    $('fbBox').innerHTML='<div class="fb ok"><b>Well done!</b> '+why+'</div>';
     finishItem(true);
   }else if(TRIES===1){
-    $('promptBox').innerHTML=promptHtml(it,PICK,'bad');
-    $('fbBox').innerHTML='<div class="fb no"><b>Not quite.</b> Look at the sentence again and try one more time.</div>';
-    $('btnCheck').disabled=true;PICK=null;
-    var all=$('choiceBox').querySelectorAll('.choice');
-    for(var i=0;i<all.length;i++)all[i].classList.remove('pick');
+    var msg='Look again and try one more time.';
+    if(it.type==='slots'){
+      var m=DX.slotResults(it,RESP), bad=m.filter(function(x){return !x;}).length;
+      WRONG=m.map(function(x){return !x;});
+      ACTIVE=m.indexOf(false);
+      drawSlots(it,null);
+      if(m.length>1)msg='The red '+(bad===1?'one is':'ones are')+' not right yet. Change '+(bad===1?'it':'them')+' and check again.';
+    } else if(it.type==='write'){
+      msg='Check the joining word, the comma, and the verb. Then try again.';
+    }
+    $('fbBox').innerHTML='<div class="fb no"><b>Not quite.</b> '+msg+'</div>';
   }else{
-    $('promptBox').innerHTML=promptHtml(it,it.answer,'filled');
-    $('fbBox').innerHTML='<div class="fb rev">The answer is <b>'+esc(it.answer)+'</b>. '+it.why+'</div>';
+    LOCK=true;
+    if(it.type==='slots')drawSlots(it,DX.slotResults(it,RESP));
+    else if(it.type==='order')drawOrder(it);
+    else $('wr').disabled=true;
+    var key=DX.keyText(it).replace(/[\u27e8\u27e9]/g,'');
+    $('fbBox').innerHTML='<div class="fb rev">The answer is: <span class="keyline">'+esc(key)+'</span><br>'+why+'</div>';
     finishItem(false);
   }
+  canCheck();
 }
 function finishItem(correct){
   ANS.push({skill:UNIT.items[IDX].skill,correct:correct,tries:TRIES});
   $('btnCheck').classList.add('hide');
   $('btnNext').classList.remove('hide');
-  var all=$('choiceBox').querySelectorAll('.choice');
-  for(var i=0;i<all.length;i++)all[i].disabled=true;
   var right=ANS.filter(function(a){return a.correct;}).length;
   $('cScore').textContent=right+' correct';
 }
@@ -597,6 +717,7 @@ function again(){IDX=0;ANS=[];$('done').classList.add('hide');
     s.appendChild(bub); s.setAttribute('data-shown','1');
     tr(word, lang).then(function(t){ bub.textContent=t?(t.equiv||t.meaning||'?'):'?'; });
   });
+  window.GAL_rewrap=function(){ if(TAP_ON) Array.prototype.forEach.call(tapTargets(), function(r){ r.removeAttribute('data-wrapped'); wrapWords(r); }); };
   if(TAP_ON) setTimeout(function(){ setTap(true); }, 400);
 
   /* ---------- quiet browser-translation canary ---------- */

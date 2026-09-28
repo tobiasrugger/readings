@@ -100,6 +100,17 @@ var DX = (function () {
     return { correct: c, strict: st && c, n: c ? 1 : 0, d: 1 };
   }
 
+  /* which slots are right (for practice feedback) */
+  function slotResults(item, resp) {
+    var sl = slots(item), used = {};
+    return sl.map(function (p, i) {
+      var v = low(resp ? resp[i] : null);
+      var ok = p.ans.map(low).indexOf(v) > -1;
+      if (ok && item.distinct) { if (used[v]) ok = false; used[v] = 1; }
+      return ok;
+    });
+  }
+
   function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
 
   /* ---------- text for the teacher ---------- */
@@ -144,5 +155,5 @@ var DX = (function () {
 
   return { parse: parse, slots: slots, blankResp: blankResp, complete: complete, score: score,
     orderSentence: orderSentence, keyText: keyText, respText: respText, promptText: promptText,
-    findTest: findTest, low: low, loose: loose, cap: cap };
+    findTest: findTest, slotResults: slotResults, low: low, loose: loose, cap: cap };
 })();
