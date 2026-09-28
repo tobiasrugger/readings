@@ -206,6 +206,18 @@ GS.translate = function(text, lang){
   });
 };
 
+/* spoken language name -> proxy code (blank when the proxy has no such language) */
+var LANG_NAMES = [['spanish','es'],['espanol','es'],['cantonese','yue'],['mandarin','zh-CN'],['chinese','zh-CN'],
+  ['darija','ary'],['moroccan','ary'],['arabic','ar'],['vietnamese','vi'],['russian','ru'],['urdu','ur'],['tagalog','tl'],
+  ['filipino','tl'],['french','fr'],['korean','ko'],['hindi','hi'],['somali','so'],['nepali','ne'],['thai','th'],
+  ['portuguese','pt'],['japanese','ja'],['ukrainian','uk'],['punjabi','pa'],['bengali','bn'],['turkish','tr'],
+  ['persian','fa'],['farsi','fa'],['dari','fa'],['pashto','ps'],['tigrinya','ti'],['amharic','am'],['english','en']];
+GS.langCode = function(name){
+  var n = String(name || '').toLowerCase(), i;
+  for (i = 0; i < LANG_NAMES.length; i++) if (n.indexOf(LANG_NAMES[i][0]) > -1) return LANG_NAMES[i][1];
+  return '';
+};
+
 /* ---------------- directions toggle ---------------- */
 var DIR_ON = false, SENT = {};
 try { DIR_ON = localStorage.getItem('song_dir') === '1'; } catch(e){}
@@ -429,10 +441,28 @@ var CONTRACT = [
   [/\bi'?m\b/g,'i am'],[/\byou'?re\b/g,'you are'],[/\bdon'?t\b/g,'do not'],[/\bi'?ve\b/g,'i have'],
   [/\bdoesn'?t\b/g,'does not'],[/\bisn'?t\b/g,'is not'],[/\baren'?t\b/g,'are not'],[/\bit'?s\b/g,'it is']
 ];
-GS.tokens = function(s){
+var LETTER = {'ay':'a','be':'b','bee':'b','see':'c','sea':'c','si':'c','dee':'d','ef':'f','eff':'f','gee':'g','ji':'g',
+  'aitch':'h','age':'h','eye':'i','eyes':'i','jay':'j','kay':'k','okay':'k','ok':'k','el':'l','elle':'l','em':'m','en':'n','and':'n',
+  'oh':'o','owe':'o','pee':'p','pea':'p','queue':'q','cue':'q','ar':'r','are':'r','es':'s','ess':'s','tee':'t','tea':'t',
+  'you':'u','vee':'v','ex':'x','why':'y','wye':'y','zee':'z','zed':'z'};
+GS.tokens = function(s, opts){
+  var out = baseTokens(s);
+  if (!opts || !opts.spell) return out;
+  var ex = {}, res = [], i;
+  (opts.expand || []).forEach(function(w){ ex[String(w).toLowerCase()] = 1; });
+  for (i = 0; i < out.length; i++){
+    var w = out[i];
+    if (w === 'double' && (out[i+1] === 'you' || out[i+1] === 'u')){ res.push('w'); i++; continue; }
+    if (ex[w]){ w.split('').forEach(function(c){ res.push(c); }); continue; }
+    if (/^[a-z]+$/.test(w) && w.length > 1 && w.length <= 12 && w === w.replace(/[aeiou]/g, '') ){ w.split('').forEach(function(c){ res.push(c); }); continue; }
+    res.push(LETTER[w] || w);
+  }
+  return res;
+};
+function baseTokens(s){
   s = String(s || '').toLowerCase().replace(/[\u2018\u2019]/g, "'");
   CONTRACT.forEach(function(c){ s = s.replace(c[0], c[1]); });
-  s = s.replace(/_+/g, ' ___ ').replace(/[^a-z0-9'_ -]/g, ' ').replace(/-/g, ' ');
+  s = s.replace(/upper case/g, 'uppercase').replace(/_+/g, ' ___ ').replace(/[^a-z0-9'_ -]/g, ' ').replace(/-/g, ' ');
   return s.split(/\s+/).filter(Boolean).map(function(w){
     if (w === '___') return w;
     w = w.replace(/'/g, '');
@@ -487,8 +517,8 @@ GS.tidy = tidy;
 
 /* Score one heard string against one target (a sentence, or a frame with ___).
    Returns {score 0..1, display, hitWords:[bool per target word]} */
-GS.scoreOne = function(heard, target){
-  var s = GS.tokens(heard), tw = GS.tokens(target);
+GS.scoreOne = function(heard, target, opts){
+  var s = GS.tokens(heard, opts), tw = GS.tokens(target, opts);
   var fixed = tw.filter(function(w){ return w !== '___'; });
   var isFrame = fixed.length !== tw.length;
   if (!s.length || !fixed.length) return {score:0, display:target, hitWords:[]};
@@ -505,7 +535,7 @@ GS.scoreOne = function(heard, target){
   var tToS = {};
   L.pairs.forEach(function(p){ tToS[p[1]] = p[0]; });
   var rawWords = String(heard || '').replace(/[.?!,]/g, '').trim().split(/\s+/);
-  var normIdxToRaw = rawWords.length === s.length;
+  var normIdxToRaw = !(opts && opts.spell) && rawWords.length === s.length;
   var out = [], filled = 0, used = 0, k;
   for (k = 0; k < tw.length; k++){
     if (tw[k] !== '___') continue;
@@ -532,11 +562,11 @@ GS.scoreOne = function(heard, target){
 
 /* Best match over every alternative the recognizer gave and every target.
    targets: array of strings. Returns {score, index, display, heard, hitWords} */
-GS.bestMatch = function(alts, targets){
+GS.bestMatch = function(alts, targets, opts){
   var best = {score:0, index:0, display:targets[0] || '', heard:(alts[0] && alts[0].t) || '', hitWords:[]};
   alts.forEach(function(a, ai){
     targets.forEach(function(t, ti){
-      var r = GS.scoreOne(a.t, t);
+      var r = GS.scoreOne(a.t, t, opts);
       var adj = r.score + (r.frame ? -0.02 : 0) + (ai === 0 ? 0.01 : 0);
       if (r.frame && !r.complete) adj -= 0.15;
       if (adj > best.adj || best.adj == null){

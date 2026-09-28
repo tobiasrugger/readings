@@ -4,29 +4,63 @@
    speak-core.js, then this file.
 
    One Chromebook, two students. The owner signs in, picks a classmate
-   from the roster, picks a question. The asker records the question,
-   the classmate records the answer. Every recording is saved under the
-   email of the person who SPOKE it, so both students get their own copy.
+   from the roster, picks a question (skipped when the lesson has only
+   one). Each line is recorded by the student who says it and saved
+   under THAT student's email, so both students get their own copy.
 
    Public feedback is kind on purpose: close-enough speech snaps to the
    clean sentence, a weak try gets ONE friendly "try once more," and the
    second try is always accepted. Detailed feedback lives on My Speaking.
 
+   ITEM FORMATS
+   Short form (question + answers):
+     {id, grp, q:'Are you tall or short?', a:[['I am tall.','emoji'],...], why:true}
+   Long form (any number of lines):
+     {id, title, lines:[LINE,...], more:{label, lines:[LINE,...], reset:['word']}}
+   LINE:
+     who:'A' (asker) or 'B' (answerer)
+     say:'text'                 one sentence to say (can use {tokens})
+     choices:[['text','icon'],...]  pick-one sentences; ___ = student fills in
+     also:['text',...]          other sentences that also count
+     bank:{words:[...], sets:'word', say:'I speak {x}.'}  tappable word chips
+     capture:{name:'lang', re:'^I speak (.+?)(?: and .*)?$'}  keep a piece of the answer
+     translate:'word'           fill the last ___ with {word} translated into {lang}
+     spell:true                 letters mode (for spelling names)
+     role, verb, hint, long
+   TOKENS: {A} {B} first names, {Aspell} {Bspell} L-I-N-H, {Ainit} {Binit},
+     plus anything captured or set by a word bank ({lang}, {word}, {adj}...).
+
    String concatenation only. No template literals.
    ===================================================================== */
 (function(){
 var $ = GS.$, esc = GS.esc;
-var S = {me:null, partner:null, item:null, round:1, asker:null, answerer:null, lines:[], exchange:'', chosen:null, busy:false};
+var S = {me:null, partner:null, item:null, round:1, asker:null, answerer:null, lines:[], exchange:'', vars:{}, moreUsed:0};
 var PANELS = ['pSign','pPartner','pPick','pTalk'];
 var PRAISE = ['Nice!','Great!','Clear!','Good job!','Got it!'];
 var ACCEPT = 0.6;   /* close enough to snap to the sentence */
 var SHOW   = 0.35;  /* below this on the last try, show nothing we are unsure of */
+var SINGLE = LESSON.items.length === 1;
 
 function show(id){
   PANELS.forEach(function(p){ $(p).classList.toggle('hide', p !== id); });
   window.scrollTo(0, 0);
   GS.rewrap();
   GS.showDirections();
+}
+
+/* ---------------- short form -> long form ---------------- */
+function linesOf(it){
+  if (it.lines) return it;
+  var out = {id:it.id, grp:it.grp, q:it.q, lines:[
+    {who:'A', say:it.q, hint:'say the question.'},
+    {who:'B', choices:it.a, hint:'say your answer.', capture:{name:'adj', re:'^I am (.+?)[.!?]*$'}}
+  ]};
+  if (it.why) out.more = {label:'Ask \u201cWhy?\u201d (extra)', once:true, lines:[
+    {who:'A', role:'why_ask', say:'Why?', also:['Why are you {adj}?'], hint:'say \u201cWhy?\u201d'},
+    {who:'B', role:'why_answer', verb:'explains', choices:[['I am {adj} because ___.','\ud83d\udca1']], also:['Because ___.'],
+     long:true, hint:'say your reason with \u201cbecause.\u201d'}
+  ]};
+  return out;
 }
 
 /* ---------------- progress on this device ---------------- */
@@ -74,6 +108,18 @@ document.addEventListener('click', function(e){
   GS.say(b.getAttribute('data-say'), !!b.getAttribute('data-slow'), b);
 });
 
+/* ---------------- tokens ---------------- */
+function spellOf(name){ return GS.firstName(name).replace(/[^A-Za-z]/g, '').toUpperCase().split('').join('-'); }
+function setPeople(){
+  var a = GS.firstName(S.asker.name), b = GS.firstName(S.answerer.name);
+  S.vars.A = a; S.vars.B = b;
+  S.vars.Aspell = spellOf(a); S.vars.Bspell = spellOf(b);
+  S.vars.Ainit = S.vars.Aspell.charAt(0); S.vars.Binit = S.vars.Bspell.charAt(0);
+}
+function fill(t){
+  return String(t == null ? '' : t).replace(/\{(\w+)\}/g, function(_, k){ return S.vars[k] || '___'; });
+}
+
 /* ---------------- sign in ---------------- */
 function onSigned(me){
   S.me = me;
@@ -89,6 +135,7 @@ $('goPartner').addEventListener('click', function(){
   show('pPartner');
 });
 $('backSign').addEventListener('click', function(){ show('pSign'); });
+if (SINGLE) $('goPick').textContent = 'Start';
 
 /* ---------------- partner ---------------- */
 function setPartner(email, name){
@@ -120,7 +167,10 @@ function partnerMail(){
 }
 $('ptMail').addEventListener('change', partnerMail);
 $('ptMail').addEventListener('blur', partnerMail);
-$('goPick').addEventListener('click', function(){ renderPick(); show('pPick'); });
+$('goPick').addEventListener('click', function(){
+  if (SINGLE){ startItem(LESSON.items[0]); return; }
+  renderPick(); show('pPick');
+});
 $('newPartner').addEventListener('click', function(){ $('goPartner').click(); });
 
 function pairHtml(){
@@ -132,17 +182,23 @@ function pairHtml(){
 /* ---------------- pick a question ---------------- */
 function renderPick(){
   $('pairTop').innerHTML = pairHtml();
-  var prog = getProg(), pf = GS.firstName(S.partner.name), have = '', be = '';
+  var prog = getProg(), pf = GS.firstName(S.partner.name), groups = {}, order = [];
   LESSON.items.forEach(function(it, i){
     var done = prog[it.id] || [];
     var withNow = done.indexOf(pf) > -1;
     var h = '<button class="qcard' + (done.length ? ' done' : '') + (withNow ? ' now' : '') + '" data-i="' + i + '">' +
       '<span class="qn">' + (i + 1) + '</span>' +
-      '<span class="qt" translate="no" data-tap="1">' + esc(it.q) + '</span>' +
+      '<span class="qt" translate="no" data-tap="1">' + esc(it.title || it.q) + '</span>' +
       (done.length ? '<span class="qd">\u2713 ' + esc(done.join(', ')) + '</span>' : '') + '</button>';
-    if (it.grp === 'have') have += h; else be += h;
+    var g = it.grp || 'all';
+    if (!groups[g]){ groups[g] = ''; order.push(g); }
+    groups[g] += h;
   });
-  $('gridHave').innerHTML = have; $('gridBe').innerHTML = be;
+  if ($('gridHave')){
+    $('gridHave').innerHTML = groups.have || '';
+    $('gridBe').innerHTML = groups.be || '';
+    if (groups.all) $('gridHave').innerHTML += groups.all;
+  }
   GS.rewrap();
 }
 document.addEventListener('click', function(e){
@@ -153,25 +209,23 @@ document.addEventListener('click', function(e){
 
 /* ---------------- the interview ---------------- */
 function startItem(it){
-  S.item = it; S.round = 1;
+  S.item = linesOf(it); S.round = 1;
   S.asker = S.me; S.answerer = S.partner;
   buildScript();
   show('pTalk');
 }
 function buildScript(){
   flushAll();
-  S.lines = []; S.chosen = null; S.exchange = GS.uid();
+  S.lines = []; S.vars = {}; S.exchange = GS.uid(); S.moreUsed = 0;
+  setPeople();
   $('script').innerHTML = '';
   $('endBar').classList.add('hide'); $('endBar').innerHTML = '';
+  var label = SINGLE ? '' : '<span class="qnum">Question ' + (LESSON.items.map(function(x){ return x.id; }).indexOf(S.item.id) + 1) + '</span>';
   $('pairTalk').innerHTML =
-    '<span class="chip a"><b>' + esc(GS.firstName(S.asker.name)) + '</b> asks</span>' +
+    '<span class="chip a"><b>' + esc(S.vars.A) + '</b> starts</span>' +
     '<span class="amp">and</span>' +
-    '<span class="chip b"><b>' + esc(GS.firstName(S.answerer.name)) + '</b> answers</span>' +
-    '<span class="qnum">Question ' + (LESSON.items.indexOf(S.item) + 1) + '</span>';
-  addLine({role:'ask', no:1, speaker:S.asker, other:S.answerer, cls:'a', verb:'asks',
-    text:S.item.q, targets:[S.item.q], hint:'say the question.'});
-  addLine({role:'answer', no:2, speaker:S.answerer, other:S.asker, cls:'b', verb:'answers',
-    choices:S.item.a, targets:S.item.a.map(function(x){ return x[0]; }), hint:'say your answer.'});
+    '<span class="chip b"><b>' + esc(S.vars.B) + '</b> answers</span>' + label;
+  S.item.lines.forEach(function(spec){ addLine(spec); });
   if (!GS.canRecognize){
     var w = document.createElement('p'); w.className = 'warn';
     w.textContent = 'This browser cannot turn speech into words. Use Chrome. Your voice still saves.';
@@ -183,34 +237,75 @@ function buildScript(){
 
 var MIC = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M8.5 21h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 
-function addLine(cfg){
-  var L = {cfg:cfg, attempts:0, done:false, held:null, url:''};
-  var el = document.createElement('div');
-  el.className = 'line ' + cfg.cls;
-  var first = esc(GS.firstName(cfg.speaker.name));
-  var h = '<div class="tag"><span class="nm">' + first + '</span> ' + cfg.verb + '</div>';
-  if (cfg.text){
-    h += '<div class="say"><span class="txt" translate="no" data-tap="1">' + esc(cfg.text) + '</span>' + ears(cfg.text) + '</div>';
+function speakerOf(spec){ return spec.who === 'A' ? S.asker : S.answerer; }
+function otherOf(spec){ return spec.who === 'A' ? S.answerer : S.asker; }
+function targetsOf(L){
+  var sp = L.spec, t = [];
+  if (sp.say) t.push(sp.say);
+  (sp.choices || []).forEach(function(c){ t.push(c[0]); });
+  (sp.also || []).forEach(function(x){ t.push(x); });
+  return t.map(fill);
+}
+
+function promptHtml(L){
+  var sp = L.spec, h = '';
+  if (sp.say){
+    var t = fill(sp.say);
+    h += '<div class="say"><span class="txt" translate="no" data-tap="1">' + esc(t).replace(/_{3,}/g, '<span class="blank">&nbsp;</span>') + '</span>' + ears(t) + '</div>';
   }
-  if (cfg.choices){
+  if (sp.choices){
     h += '<ul class="choices">';
-    cfg.choices.forEach(function(c, i){
-      var t = c[0], shown = esc(t).replace(/_+/g, '<span class="blank">&nbsp;</span>');
+    sp.choices.forEach(function(c, i){
+      var t = fill(c[0]), shown = esc(t).replace(/_{3,}/g, '<span class="blank">&nbsp;</span>');
       h += '<li data-c="' + i + '"><span class="ico">' + icon(c[1]) + '</span>' +
         '<span class="txt" translate="no" data-tap="1">' + shown + '</span>' + ears(t) + '</li>';
     });
     h += '</ul>';
   }
-  h += '<div class="slot"><button class="mic" aria-label="Record ' + first + '">' + MIC + '</button>' +
-    '<div class="rule"><span class="hint">' + first + ', tap the red button and ' + esc(cfg.hint) + '</span></div></div>' +
+  if (sp.bank){
+    var cur = sp.bank.sets ? S.vars[sp.bank.sets] : '';
+    h += '<div class="bank" translate="no">' + (sp.bank.label ? '<span class="banklbl">' + esc(sp.bank.label) + '</span>' : '');
+    sp.bank.words.forEach(function(w){
+      h += '<button class="bw' + (cur === w ? ' on' : '') + '" data-w="' + esc(w) + '">' + esc(w) + '</button>';
+    });
+    h += '</div>';
+  }
+  return h;
+}
+function refreshPrompts(){
+  S.lines.forEach(function(L){
+    if (L.done) return;
+    L.el.querySelector('.prompt').innerHTML = promptHtml(L);
+    var hint = L.el.querySelector('.rule .hint');
+    if (hint && !L.held) hint.textContent = GS.firstName(L.speaker.name) + ', tap the red button and ' + (L.spec.hint || 'say your sentence.');
+  });
+  GS.rewrap();
+}
+
+function addLine(spec){
+  var L = {spec:spec, attempts:0, done:false, held:null, url:'', no:S.lines.length + 1,
+    speaker:speakerOf(spec), other:otherOf(spec),
+    role:spec.role || (spec.who === 'A' ? 'ask' : 'answer')};
+  var el = document.createElement('div');
+  el.className = 'line ' + (spec.who === 'A' ? 'a' : 'b');
+  var first = esc(GS.firstName(L.speaker.name));
+  el.innerHTML = '<div class="tag"><span class="nm">' + first + '</span> ' + (spec.verb || (spec.who === 'A' ? 'asks' : 'answers')) + '</div>' +
+    '<div class="prompt">' + promptHtml(L) + '</div>' +
+    '<div class="slot"><button class="mic" aria-label="Record ' + first + '">' + MIC + '</button>' +
+    '<div class="rule"><span class="hint">' + first + ', tap the red button and ' + esc(spec.hint || 'say your sentence.') + '</span></div></div>' +
     '<div class="nudge hide" aria-live="polite"></div>';
-  el.innerHTML = h;
   $('script').appendChild(el);
   L.el = el;
+  el.addEventListener('click', function(e){
+    var b = e.target.closest('.bw'); if (!b || L.done) return;
+    var w = b.getAttribute('data-w'), bk = spec.bank;
+    if (bk.sets){ S.vars[bk.sets] = w; refreshPrompts(); }
+    if (bk.say) GS.say(fill(bk.say.replace('{x}', w)));
+  });
   var rule = el.querySelector('.rule'), mic = el.querySelector('.mic');
   GS.micButton(mic, {
     label:'Record ' + first,
-    maxMs: cfg.role === 'why_answer' ? 22000 : 12000,
+    maxMs: spec.long ? 22000 : 12000,
     onStart:function(){
       if (L.held){ saveRow(L, L.held.m, L.held.res, false); L.held = null; }
       el.querySelector('.nudge').classList.add('hide');
@@ -238,8 +333,12 @@ function resetRule(L, text){
   L.el.querySelector('.rule').innerHTML = '<span class="hint">' + esc(text) + '</span>';
 }
 
+function matchOpts(L){
+  if (!L.spec.spell) return null;
+  return {spell:true, expand:[S.vars.A, S.vars.B].map(function(x){ return String(x || '').toLowerCase(); })};
+}
+
 function judge(L, res){
-  var first = GS.firstName(L.cfg.speaker.name);
   if (res.error === 'not-allowed' || res.error === 'nomic' || res.error === 'service-not-allowed'){
     resetRule(L, 'The microphone is off.');
     nudge(L, '<p>Click the lock next to the web address. Set <b>Microphone</b> to <b>Allow</b>. Then try again.</p>');
@@ -256,13 +355,14 @@ function judge(L, res){
     }
     accept(L, null, res); return;
   }
-  var m = GS.bestMatch(res.alts, L.cfg.targets);
+  var targets = targetsOf(L);
+  var m = GS.bestMatch(res.alts, targets, matchOpts(L));
+  m.target = targets[m.index] || targets[0];
   if (m.score >= ACCEPT || L.attempts >= 2){ accept(L, m, res); return; }
   /* one kind retry */
   L.held = {m:m, res:res};
-  var target = L.cfg.targets[m.index] || L.cfg.targets[0];
-  if (/_/.test(target)) target = m.display;
-  var heardN = GS.tokens(m.heard).length, needN = GS.tokens(target).length;
+  var target = /_{3,}/.test(m.target) ? m.display : m.target;
+  var heardN = GS.tokens(m.heard, matchOpts(L)).length, needN = GS.tokens(target, matchOpts(L)).length;
   var tip = heardN < needN - 1 ? 'Say the whole sentence.' : 'Almost! Listen, then try one more time.';
   resetRule(L, tip);
   nudge(L, '<p class="tipline"><span class="txt" translate="no" data-tap="1">' + esc(target) + '</span>' + ears(target) + '</p>' +
@@ -283,18 +383,36 @@ function typeInto(el, text){
   }, 24);
 }
 
+/* keep a piece of what was said, for later lines */
+function capture(L, text){
+  var c = L.spec.capture; if (!c || !text) return;
+  var m = String(text).match(new RegExp(c.re, 'i'));
+  if (!m || !m[1] || /_{3,}/.test(m[1])) return;
+  var v = m[1].trim().replace(/[.!?]+$/, '');
+  if (c.cap) v = v.replace(/\b[a-z]/g, function(x){ return x.toUpperCase(); });
+  S.vars[c.name] = v;
+  if (c.name === 'lang') S.vars.langCode = GS.langCode(v);
+}
+
 function accept(L, m, res){
   L.done = true; L.held = null;
-  saveRow(L, m, res, true);
-  var show = null;
-  if (m && m.score >= SHOW) show = m.display;
-  else if (L.cfg.role === 'ask' || L.cfg.role === 'why_ask') show = L.cfg.targets[0];
+  var shown = null;
+  if (m && m.score >= SHOW) shown = m.display;
+  else if (L.spec.say && !/_{3,}/.test(fill(L.spec.say))) shown = fill(L.spec.say);
+  if (m && m.score >= SHOW){
+    /* a line with only one sentence shows that sentence, names spelled right */
+    if (!/_{3,}/.test(m.target)) shown = m.target;
+  }
+  if (shown) capture(L, shown);
+  if (shown && L.spec.capture && L.spec.capture.cap){
+    shown = shown.replace(/\b(spanish|cantonese|mandarin|chinese|arabic|vietnamese|russian|urdu|tagalog|filipino|french|korean|hindi|somali|nepali|thai|mam|english|portuguese|japanese|darija|punjabi|ukrainian|farsi|dari|pashto|tigrinya|amharic|turkish|bengali)\b/gi,
+      function(w){ return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(); });
+  }
+  var rule = L.el.querySelector('.rule');
   if (L.url) URL.revokeObjectURL(L.url);
   L.url = res.blob ? URL.createObjectURL(res.blob) : '';
-  var rule = L.el.querySelector('.rule');
-  rule.innerHTML = (show ? '<span class="said" translate="no"></span>' : '<span class="saved">Saved. Hear it on My Speaking.</span>') +
+  rule.innerHTML = (shown ? '<span class="said" translate="no"></span>' : '<span class="saved">Saved. Hear it on My Speaking.</span>') +
     '<span class="ok">' + PRAISE[Math.floor(Math.random() * PRAISE.length)] + '</span>';
-  if (show) typeInto(rule.querySelector('.said'), show);
   var n = L.el.querySelector('.nudge');
   n.innerHTML = (L.url ? '<button class="linkish hear">\u25b6 Hear yourself</button>' : '') +
     '<button class="linkish again">Record again</button>';
@@ -302,15 +420,38 @@ function accept(L, m, res){
   if (L.url) n.querySelector('.hear').addEventListener('click', function(){ new Audio(L.url).play(); });
   n.querySelector('.again').addEventListener('click', function(){
     L.attempts = 1;   /* a voluntary redo is always accepted, no second prompt */
+    L.done = false;
     L.el.querySelector('.mic').click();
   });
   L.el.classList.add('fin');
-  if (L.cfg.role === 'answer'){
-    S.chosen = show;
-    Array.prototype.forEach.call(L.el.querySelectorAll('.choices li'), function(li){ li.classList.remove('picked'); });
-    if (m && m.score >= SHOW){ var li = L.el.querySelector('.choices li[data-c="' + m.index + '"]'); if (li) li.classList.add('picked'); }
+  Array.prototype.forEach.call(L.el.querySelectorAll('.choices li'), function(li){ li.classList.remove('picked'); });
+  if (m && m.score >= SHOW && L.spec.choices){
+    var ci = m.index - (L.spec.say ? 1 : 0);
+    var li = L.el.querySelector('.choices li[data-c="' + ci + '"]'); if (li) li.classList.add('picked');
   }
-  afterLine(L);
+  var finish = function(text){
+    if (text) typeInto(rule.querySelector('.said'), text);
+    saveRow(L, m, res, true, text);
+    refreshPrompts();
+    afterLine(L);
+  };
+  /* The language line: a Chromebook listening in English cannot spell the
+     other language, so the page writes the word in that language itself. */
+  if (L.spec.translate && S.vars[L.spec.translate] && S.vars.langCode && S.vars.langCode !== 'en'){
+    var frame = fill((L.spec.choices && L.spec.choices[0][0]) || L.spec.say);
+    if (rule.querySelector('.said')) rule.querySelector('.said').textContent = '\u2026';
+    else rule.innerHTML = '<span class="said" translate="no">\u2026</span>' + rule.innerHTML;
+    GS.translate(S.vars[L.spec.translate], S.vars.langCode).then(function(tr){
+      finish(tr ? frame.replace(/_{3,}([^_]*)$/, tr + '$1') : shown);
+    });
+    return;
+  }
+  if (L.spec.translate && shown && !(S.vars.langCode && S.vars.langCode !== 'en')){
+    /* no translator for this language: do not print a guess, the recording is the answer */
+    var fr = fill((L.spec.choices && L.spec.choices[0][0]) || L.spec.say);
+    if (S.vars.langCode !== 'en') shown = fr.replace(/_{3,}([^_]*)$/, '\u2026$1');
+  }
+  finish(shown);
 }
 
 function afterLine(L){
@@ -319,60 +460,61 @@ function afterLine(L){
     next.el.scrollIntoView({behavior:'smooth', block:'center'});
     next.el.querySelector('.mic').focus({preventScroll:true});
   }
-  if (S.lines[1] && S.lines[1].done) drawEnd();
+  var core = S.item.lines.length;
+  var allCore = S.lines.slice(0, core).every(function(x){ return x.done; });
+  if (allCore) drawEnd();
 }
 
-function whyAdj(){
-  var c = String(S.chosen || '').replace(/^I am\s+/i, '').replace(/[.!?]+$/, '').trim();
-  return c || '___';
-}
-function addWhy(){
-  var adj = whyAdj();
-  var frame = 'I am ' + adj + ' because ___.';
-  addLine({role:'why_ask', no:3, speaker:S.asker, other:S.answerer, cls:'a', verb:'asks',
-    text:'Why?', targets:['Why?', 'Why are you ' + adj + '?'], hint:'say \u201cWhy?\u201d'});
-  var L = addLine({role:'why_answer', no:4, speaker:S.answerer, other:S.asker, cls:'b', verb:'explains',
-    choices:[[frame, '\ud83d\udca1']], targets:[frame, 'Because ___.'], hint:'say your reason with \u201cbecause.\u201d'});
+function addMore(){
+  var mo = S.item.more;
+  (mo.reset || []).forEach(function(k){ delete S.vars[k]; });
+  S.moreUsed++;
+  var firstNew = S.lines.length;
+  mo.lines.forEach(function(spec){ addLine(spec); });
   GS.rewrap(); GS.showDirections();
-  S.lines[2].el.scrollIntoView({behavior:'smooth', block:'center'});
+  S.lines[firstNew].el.scrollIntoView({behavior:'smooth', block:'center'});
   drawEnd();
 }
 
 function drawEnd(){
-  var bar = $('endBar'), a = GS.firstName(S.asker.name), b = GS.firstName(S.answerer.name);
+  var bar = $('endBar'), a = S.vars.A, b = S.vars.B;
   if (S.round === 1) markDone(S.item.id, GS.firstName(S.partner.name));
-  var h = '';
-  if (S.item.why && S.lines.length === 2) h += '<button class="side" id="btnWhy">Ask \u201cWhy?\u201d (extra)</button>';
+  var h = '', mo = S.item.more;
+  var lastDone = S.lines[S.lines.length - 1].done;
+  if (mo && (!mo.once || !S.moreUsed) && lastDone) h += '<button class="side" id="btnMore">' + esc(mo.label) + '</button>';
   if (S.round === 1){
-    h += '<button class="big" id="btnSwitch">Switch: now ' + esc(b) + ' asks ' + esc(a) + '</button>';
-    h += '<button class="quiet" id="btnSkip">Skip switching</button>';
+    h += '<button class="big" id="btnSwitch">Switch: now ' + esc(b) + ' starts</button>';
+    h += '<button class="quiet" id="btnSkip">' + (SINGLE ? 'Talk to the next classmate' : 'Skip switching') + '</button>';
   } else {
     h += '<button class="big" id="btnNextMate">Talk to the next classmate</button>';
-    h += '<button class="quiet" id="btnSameMate">Ask ' + esc(GS.firstName(S.partner.name)) + ' a new question</button>';
+    if (!SINGLE) h += '<button class="quiet" id="btnSameMate">Ask ' + esc(GS.firstName(S.partner.name)) + ' a new question</button>';
   }
   bar.innerHTML = h; bar.classList.remove('hide');
-  var w = $('btnWhy'); if (w) w.addEventListener('click', function(){ w.remove(); addWhy(); });
+  var w = $('btnMore'); if (w) w.addEventListener('click', function(){ w.remove(); addMore(); });
   var sw = $('btnSwitch'); if (sw) sw.addEventListener('click', function(){
     S.round = 2; var t = S.asker; S.asker = S.answerer; S.answerer = t; buildScript();
     window.scrollTo({top:0, behavior:'smooth'});
   });
-  var sk = $('btnSkip'); if (sk) sk.addEventListener('click', function(){ flushAll(); renderPick(); show('pPick'); });
+  var sk = $('btnSkip'); if (sk) sk.addEventListener('click', function(){
+    flushAll();
+    if (SINGLE){ $('goPartner').click(); return; }
+    renderPick(); show('pPick');
+  });
   var nm = $('btnNextMate'); if (nm) nm.addEventListener('click', function(){ flushAll(); $('goPartner').click(); });
   var sm = $('btnSameMate'); if (sm) sm.addEventListener('click', function(){ flushAll(); renderPick(); show('pPick'); });
 }
 
 /* ---------------- saving ---------------- */
-function saveRow(L, m, res, accepted){
-  var c = L.cfg, alts = (res && res.alts) || [];
-  var tgt = m ? (c.targets[m.index] || c.targets[0]) : c.targets[0];
+function saveRow(L, m, res, accepted, shownText){
+  var alts = (res && res.alts) || [], targets = targetsOf(L);
   var row = {
     activity: LESSON.slug, item_id: S.item.id, exchange_id: S.exchange, round: S.round,
-    line_no: c.no, role: c.role,
-    email: c.speaker.email, speaker_name: c.speaker.name,
-    partner_email: c.other.email, partner_name: c.other.name,
+    line_no: L.no, role: L.role,
+    email: L.speaker.email, speaker_name: L.speaker.name,
+    partner_email: L.other.email, partner_name: L.other.name,
     period: S.me.period, device_email: S.me.email,
-    target_text: tgt,
-    said_text: (m && m.score >= SHOW) ? m.display : null,
+    target_text: m ? m.target : targets[0],
+    said_text: shownText || ((m && m.score >= SHOW) ? m.display : null),
     transcript: m ? m.heard : ((alts[0] && alts[0].t) || null),
     alternatives: alts.slice(0, 5),
     match_score: m ? Math.round(m.score * 1000) / 1000 : null,
