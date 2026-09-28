@@ -22,6 +22,7 @@ body{background:var(--paper);color:var(--ink);font-family:'Nunito',-apple-system
 #levelbar .lbl{color:var(--muted)}
 .lvbtn{font-family:inherit;font-weight:800;font-size:.8rem;border:1px solid var(--edge);background:#fff;color:var(--muted);border-radius:20px;padding:4px 14px;cursor:pointer}
 .lvbtn.on{background:var(--pine);color:#fff;border-color:var(--pine)}
+#levelbar select{font-family:inherit;font-weight:700;font-size:.78rem;border:1px solid var(--edge);background:#fff;color:var(--ink);border-radius:8px;padding:3px 7px;max-width:170px}
 .wrap{max-width:840px;margin:0 auto;padding:22px 18px 90px}
 h1{font-size:clamp(1.7rem,5vw,2.3rem);margin:.2em 0 .1em;font-weight:800;letter-spacing:-.7px}
 .sub{color:var(--muted);font-weight:700;margin:0 0 16px}
@@ -80,6 +81,9 @@ body.locked .opt,body.locked .mi,body.locked .bw{pointer-events:none;opacity:.85
   .printhead{display:block!important}
 }
 .printhead{display:none;border-bottom:2px solid #333;margin-bottom:14px;padding-bottom:8px;font-weight:800}
+#btn-dir.on{background:#eef6f1;color:var(--pine)}
+.dirtr{display:block;margin-top:4px;color:#2f6f57;font-weight:700;font-size:.92rem}
+.dirtr:empty{display:none}
 </style>
 </head>
 <body class="easy">
@@ -91,7 +95,30 @@ body.locked .opt,body.locked .mi,body.locked .bw{pointer-events:none;opacity:.85
     <label for="gname">Your full name</label>
     <input id="gname" placeholder="Ana Lopez">
     <label for="gmail">Your school email</label>
-    <input id="gmail" type="email" placeholder="alopez@sfusd.edu">
+    <input id="gmail" type="email" autocomplete="email" placeholder="alopez@sfusd.edu">
+    <label for="glang">Your first language</label>
+    <select id="glang">
+      <option value="">— choose —</option>
+      <option value="es">Español (Spanish)</option>
+      <option value="zh-CN">中文 (Chinese)</option>
+      <option value="ar">العربية (Arabic)</option>
+      <option value="vi">Tiếng Việt (Vietnamese)</option>
+      <option value="ru">Русский (Russian)</option>
+      <option value="ur">اردو (Urdu)</option>
+      <option value="tl">Tagalog</option>
+      <option value="fr">Français (French)</option>
+      <option value="ko">한국어 (Korean)</option>
+      <option value="hi">हिन्दी (Hindi)</option>
+      <option value="so">Soomaali (Somali)</option>
+      <option value="ne">नेपाली (Nepali)</option>
+      <option value="th">ไทย (Thai)</option>
+      <option value="none">English only</option>
+    </select>
+    <label for="gper">Your class period</label>
+    <select id="gper">
+      <option value="">— choose —</option>
+      <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option>
+    </select>
     <div class="err" id="gerr">Please fill in your name and email.</div>
     <button class="btn" style="width:100%;margin-top:18px" id="gbtn">Start the test</button>
   </div>
@@ -101,6 +128,7 @@ body.locked .opt,body.locked .mi,body.locked .bw{pointer-events:none;opacity:.85
   <span class="brand">Unit 1 Test</span>
   <span class="spacer"></span>
   <span><span id="dot"></span><span id="who">not signed in</span></span>
+  <button id="btn-dir" title="Show the directions in your language">Directions</button>
   <button id="btnPrint">Print</button>
   <button id="btnSubmit">Submit</button>
 </div>
@@ -110,6 +138,8 @@ body.locked .opt,body.locked .mi,body.locked .bw{pointer-events:none;opacity:.85
   <button class="lvbtn on" data-lv="easy">Easier English</button>
   <button class="lvbtn" data-lv="hard">Harder English</button>
   <span class="lbl" style="margin-left:auto">Every question is worth 1 point.</span>
+  <span class="lbl">Voice:</span>
+  <select id="voicepick" title="Choose the reading voice" translate="no"></select>
 </div>
 
 <div class="wrap">
@@ -134,6 +164,11 @@ var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
 var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
 var TABLE='se_unit1_test';
 var LS='se_unit1_test_v1';
+var PROXY='https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
+var SLUG='survival-english-test';
+var LANGNAME={es:'Spanish','zh-CN':'Chinese (Simplified)',ar:'Arabic',vi:'Vietnamese',
+  ru:'Russian',ur:'Urdu',tl:'Tagalog',fr:'French',ko:'Korean',hi:'Hindi',so:'Somali',
+  ne:'Nepali',th:'Thai'};
 
 var PARTS=[
 {part:'A',title:'Vocabulary',note:'Choose or match the correct word.',qs:[
@@ -199,7 +234,7 @@ var PARTS=[
 var ALLQ=[];PARTS.forEach(function(P){P.qs.forEach(function(q){q.part=P.part;ALLQ.push(q)})});
 var AUTO=ALLQ.filter(function(q){return q.type!=='short'});
 
-var ME={name:'',email:'',level:'easy'};
+var ME={name:'',email:'',lang:'',period:'',level:'easy'};
 var ANS={};var LOCKED=false;
 
 function $(s,r){return (r||document).querySelector(s)}
@@ -207,12 +242,70 @@ function $$(s,r){return Array.prototype.slice.call((r||document).querySelectorAl
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 function norm(s){return String(s||'').toLowerCase().replace(/[.,!?;:"']/g,'').replace(/\s+/g,' ').trim()}
 function hash(s){var h=0,i;for(i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))|0}return Math.abs(h)}
-function say(t){try{speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(String(t));u.lang='en-US';u.rate=.82;speechSynthesis.speak(u)}catch(e){}}
+/* ---------- speech ---------- */
+var VOICE=null,VOICES=[],VKEY='se_voice';
+var FEM=['samantha','ava','allison','susan','zira','aria','jenny','karen','moira','tessa','fiona','serena','joanna','victoria','catherine','nicky','google us english','google uk english female','female'];
+var MASC=/david|mark|alex|daniel|fred|george|james|guy|ryan|oliver|thomas|aaron|arthur|\btom\b|male/i;
+
+/* never say "slash", "ampersand", etc. */
+function speakable(t){
+  return String(t)
+    .replace(/<[^>]+>/g,'')
+    .replace(/\s*\/\s*/g,', ')
+    .replace(/\s*&\s*/g,' and ')
+    .replace(/_{2,}/g,' blank ')
+    .replace(/\s*&middot;\s*/g,', ')
+    .replace(/\s+/g,' ').trim();
+}
+
+function loadVoices(){
+  try{VOICES=(window.speechSynthesis.getVoices()||[]).filter(function(v){return /^en/i.test(v.lang)})}
+  catch(e){VOICES=[]}
+  if(!VOICES.length)return;
+  var saved=null;try{saved=localStorage.getItem(VKEY)}catch(e){}
+  if(saved)VOICE=VOICES.filter(function(v){return v.name===saved})[0]||null;
+  if(!VOICE){
+    for(var i=0;i<FEM.length&&!VOICE;i++){
+      VOICE=VOICES.filter(function(v){return v.name.toLowerCase().indexOf(FEM[i])>=0})[0]||null;
+    }
+  }
+  if(!VOICE)VOICE=VOICES.filter(function(v){return !MASC.test(v.name)})[0]||VOICES[0];
+  fillVoices();
+}
+function fillVoices(){
+  var s=document.getElementById('voicepick');if(!s)return;
+  if(!VOICES.length){s.style.display='none';return}
+  s.style.display='';
+  s.innerHTML=VOICES.map(function(v,i){
+    return '<option value="'+i+'">'+String(v.name).replace(/[<>]/g,'')+'</option>';
+  }).join('');
+  var k=VOICES.indexOf(VOICE);if(k>=0)s.value=String(k);
+  s.onchange=function(){
+    VOICE=VOICES[parseInt(s.value,10)]||VOICE;
+    try{localStorage.setItem(VKEY,VOICE.name)}catch(e){}
+    say('Hello. My name is your new reading voice.');
+  };
+}
+function say(t){
+  try{
+    window.speechSynthesis.cancel();
+    var u=new SpeechSynthesisUtterance(speakable(t));
+    if(VOICE){u.voice=VOICE;u.lang=VOICE.lang}else{u.lang='en-US'}
+    u.rate=.92;u.pitch=1.08;
+    window.speechSynthesis.speak(u);
+  }catch(e){}
+}
+try{window.speechSynthesis.onvoiceschanged=loadVoices}catch(e){}
+loadVoices();
+setTimeout(loadVoices,400);
+
 
 function build(){
   var host=$('#test');var n=0;
   PARTS.forEach(function(P){
     var h3=document.createElement('h3');h3.className='bh';
+    h3.setAttribute('data-dir','part'+P.part);
+    h3.setAttribute('data-en',P.title+'. '+P.note);
     h3.innerHTML='PART '+P.part+' &middot; '+P.title.toUpperCase()+' <span>— '+esc(P.note)+'</span>';
     host.appendChild(h3);
     P.qs.forEach(function(q){n++;host.appendChild(buildQ(q,n))});
@@ -220,7 +313,7 @@ function build(){
 }
 
 function buildQ(q,num){
-  var d=document.createElement('div');d.className='q';d.id='q-'+q.id;
+  var d=document.createElement('div');d.className='q';d.id='q-'+q.id;d.setAttribute('translate','no');
   var h='<div class="qn">'+num+'</div><div class="qt">'+q.q+'</div>';
   if(q.type==='listen'){
     h+='<button class="playbtn" data-say="'+esc(q.say)+'">&#9658; Play</button> ';
@@ -344,7 +437,7 @@ function submit(){
     method:'POST',
     headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
     body:JSON.stringify([{
-      email:ME.email.toLowerCase(),name:ME.name,level:ME.level,
+      email:ME.email.toLowerCase(),name:ME.name,lang:ME.lang,period:ME.period,level:ME.level,
       answers:ANS,score:score,total:AUTO.length,skills:bySkill(),
       turned_in:true,updated_at:new Date().toISOString()
     }])
@@ -376,9 +469,18 @@ $('#btnSubmit').onclick=submit;
 $('#btnSubmit2').onclick=submit;
 
 $('#gbtn').onclick=function(){
-  var n=$('#gname').value.trim(),m=$('#gmail').value.trim();
-  if(n.length<2||m.indexOf('@')<1){$('#gerr').style.display='block';return}
-  ME.name=n;ME.email=m;$('#who').textContent=n.split(' ')[0];
+  var n=$('#gname').value.trim(),raw=cleanMail($('#gmail').value),l=$('#glang').value,p=$('#gper').value;
+  var err=$('#gerr');
+  if(n.length<2){err.textContent='Please write your first and last name.';err.style.display='block';return}
+  if(!validMail(raw)){err.textContent='Please use your school email — it ends with @s.sfusd.edu';err.style.display='block';return}
+  if(!p){err.textContent='Please choose your class period.';err.style.display='block';return}
+  err.style.display='none';
+  var canon=canonMail(raw);
+  recordAlias(raw, canon);
+  seedStudent(n, canon, p);
+  try{ localStorage.setItem('gal_student_email', canon); }catch(e){}
+  ME.name=n;ME.email=canon;ME.lang=l;ME.period=p;
+  $('#who').textContent=n.split(' ')[0];
   $('#gate').style.display='none';setDot('ok');stash();
 };
 
@@ -386,7 +488,8 @@ $('#gbtn').onclick=function(){
   try{
     var o=JSON.parse(localStorage.getItem(LS)||'null');
     if(o){
-      if(o.me){ME=o.me;$('#gname').value=ME.name;$('#gmail').value=ME.email}
+      if(o.me){ME=o.me;$('#gname').value=ME.name;$('#gmail').value=ME.email;$('#glang').value=ME.lang||'';
+               if(ME.period)$('#gper').value=String(ME.period).replace(/[^0-9]/g,'')}
       if(o.ans)ANS=o.ans;
       if(o.locked)LOCKED=true;
     }
@@ -399,5 +502,139 @@ $('#gbtn').onclick=function(){
 })();
 </script>
 <script src="/readings/track.js"></script>
+<script src="/readings/track.js"></script>
+
+<script>
+/* ============ Galileo standard: identity, directions, canary ============ */
+(function(){
+  var PAGE_SLUG=(typeof SLUG!=='undefined'&&SLUG)?SLUG:'survival-english-test';
+  var CANON_DOMAIN='@s.sfusd.edu', ROSTER=[];
+  function ME_(){ return (typeof ME!=='undefined'&&ME&&ME.email)?ME:null; }
+  window.cleanMail=function(x){ return String(x||'').trim().toLowerCase(); };
+  window.localPart=function(e){ return cleanMail(e).split('@')[0]; };
+  window.validMail=function(e){ return /^[^@\s]+@(s\.)?sfusd\.edu$/.test(cleanMail(e)); };
+  window.canonMail=function(raw){
+    var lp=localPart(raw), i;
+    for(i=0;i<ROSTER.length;i++){ if(localPart(ROSTER[i].email)===lp) return cleanMail(ROSTER[i].email); }
+    return lp+CANON_DOMAIN;
+  };
+  function head(pref){
+    var h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};
+    if(pref) h['Prefer']=pref; return h;
+  }
+  window.recordAlias=function(alias, canon){
+    if(!alias||alias===canon) return;
+    fetch(SUPA_URL+'/rest/v1/student_aliases?on_conflict=alias_email',{
+      method:'POST', headers:head('resolution=merge-duplicates,return=minimal'),
+      body:JSON.stringify([{alias_email:alias, email:canon}])}).catch(function(){});
+  };
+  window.seedStudent=function(name,email,period){
+    fetch(SUPA_URL+'/rest/v1/students?on_conflict=email',{
+      method:'POST', headers:head('resolution=ignore-duplicates,return=minimal'),
+      body:JSON.stringify([{email:email, name:name, period:period}])}).catch(function(){});
+  };
+  fetch(SUPA_URL+'/rest/v1/students?select=name,email,period&order=name',{headers:head()})
+    .then(function(r){ return r.ok?r.json():[]; })
+    .then(function(rows){ ROSTER=rows||[]; }).catch(function(){});
+
+  /* prefill from a sign-in anywhere else on the site */
+  try{
+    var saved=JSON.parse(localStorage.getItem('se_user')||'null');
+    if(saved&&saved.email){
+      if(document.getElementById('gname')) document.getElementById('gname').value=saved.name||'';
+      if(document.getElementById('gmail')) document.getElementById('gmail').value=saved.email;
+      if(saved.period&&document.getElementById('gper')) document.getElementById('gper').value=String(saved.period);
+    } else {
+      var g=localStorage.getItem('gal_student_email');
+      if(g&&document.getElementById('gmail')) document.getElementById('gmail').value=g;
+    }
+  }catch(e){}
+
+  /* ---------- translate through the proxy ---------- */
+  var tcache={};
+  function tr(text, lang){
+    var key=text+'|'+lang;
+    if(tcache[key]) return Promise.resolve(tcache[key]);
+    var url=PROXY+'?action=translate&idiom='+encodeURIComponent(text)+'&meaning=&lang='+encodeURIComponent(lang);
+    return fetch(url).then(function(r){return r.json();}).then(function(d){
+      if(!d||!d.ok||!d.translation) return null;
+      tcache[key]=d.translation; return d.translation;
+    }).catch(function(){return null;});
+  }
+
+  /* ---------- directions in the student's language ---------- */
+  var DIR_ON=false, SENT={};
+  try{ DIR_ON=localStorage.getItem('song_dir')==='1'; }catch(e){}
+  function logReveal(k, lang){
+    if(!ME_()) return;
+    var sig=k+'|'+lang; if(SENT[sig]) return; SENT[sig]=true;
+    fetch(SUPA_URL+'/rest/v1/instruction_reveals',{
+      method:'POST', headers:head('return=minimal'),
+      body:JSON.stringify([{email:ME_().email, set_slug:PAGE_SLUG, activity:k, lang:lang}])}).catch(function(){});
+  }
+  function showDirections(){
+    var sel=document.getElementById('glang');
+    var lang=(typeof LANGNAME!=='undefined'&&sel&&LANGNAME[sel.value])||'';
+    var list=document.querySelectorAll('[data-dir]');
+    Array.prototype.forEach.call(list,function(p){
+      var out=p.querySelector('.dirtr');
+      if(!out){ out=document.createElement('span'); out.className='dirtr'; p.appendChild(out); }
+      if(!DIR_ON||!lang){ out.textContent=''; return; }
+      var k=p.getAttribute('data-dir'), en=p.getAttribute('data-en')||'';
+      out.textContent='…';
+      tr(en, lang).then(function(t){
+        out.textContent=t?(t.equiv||t.meaning||''):'';
+        if(out.textContent) logReveal(k, lang);
+      });
+    });
+  }
+  var dirBtn=document.getElementById('btn-dir');
+  if(dirBtn){
+    dirBtn.classList.toggle('on', DIR_ON);
+    dirBtn.addEventListener('click',function(){
+      DIR_ON=!DIR_ON;
+      try{ localStorage.setItem('song_dir', DIR_ON?'1':'0'); }catch(e){}
+      dirBtn.classList.toggle('on', DIR_ON);
+      showDirections();
+    });
+  }
+  var langSel=document.getElementById('glang');
+  if(langSel) langSel.addEventListener('change', function(){ if(DIR_ON) showDirections(); });
+  if(DIR_ON) setTimeout(showDirections, 600);
+
+  /* ---------- quiet browser-translation canary ---------- */
+  var EXPECT=[], TR_SENT='';
+  setTimeout(function(){
+    Array.prototype.forEach.call(document.querySelectorAll('#test h3.bh'), function(h){
+      EXPECT.push((h.textContent||'').trim());
+    });
+  }, 1200);
+  function detectTranslation(){
+    var hs=document.querySelectorAll('#test h3.bh'), observed='', i;
+    for(i=0;i<hs.length&&i<EXPECT.length;i++){
+      var got=(hs[i].textContent||'').trim();
+      if(got&&got!==EXPECT[i]){ observed=got; break; }
+    }
+    var cls=document.documentElement.className||'';
+    if(!observed&&!/translated|notranslate-off/.test(cls)) return null;
+    return {observed:observed, html_lang:document.documentElement.lang||'', html_class:cls};
+  }
+  function checkTranslation(){
+    var d=detectTranslation();
+    if(!d||!ME_()) return;
+    var sig=d.observed+'|'+d.html_lang;
+    if(sig===TR_SENT) return;
+    TR_SENT=sig;
+    fetch(SUPA_URL+'/rest/v1/page_translation?on_conflict=email,set_slug',{
+      method:'POST', headers:head('resolution=merge-duplicates,return=minimal'),
+      body:JSON.stringify([{email:ME_().email, set_slug:PAGE_SLUG, translated:true,
+        observed:d.observed, html_lang:d.html_lang, html_class:d.html_class,
+        updated_at:new Date().toISOString()}])}).catch(function(){});
+  }
+  window.checkTranslation=checkTranslation;
+  setInterval(checkTranslation, 20000);
+  setTimeout(checkTranslation, 4000);
+})();
+</script>
 </body>
 </html>

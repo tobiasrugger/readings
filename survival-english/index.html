@@ -58,6 +58,7 @@ body{
   color:var(--muted);border-radius:20px;padding:4px 14px;cursor:pointer;
 }
 .lvbtn.on{background:var(--pine);color:#fff;border-color:var(--pine)}
+#levelbar select{font-family:inherit;font-weight:700;font-size:.78rem;border:1px solid var(--edge);background:#fff;color:var(--ink);border-radius:8px;padding:3px 7px;max-width:170px}
 
 /* ---------- layout ---------- */
 .wrap{max-width:880px;margin:0 auto;padding:22px 18px 90px}
@@ -297,6 +298,8 @@ body.tap-on .wt-tap:hover{background:#eef5f1}
   <button class="lvbtn on" data-lv="easy">Easier English</button>
   <button class="lvbtn" data-lv="hard">Harder English</button>
   <span class="lbl" style="margin-left:auto">Tap any <span class="g">underlined word</span> for help.</span>
+  <span class="lbl">Voice:</span>
+  <select id="voicepick" title="Choose the reading voice" translate="no"></select>
 </div>
 
 <div id="tip"></div>
@@ -702,13 +705,61 @@ function norm(s){return String(s||'').toLowerCase().replace(/[.,!?;:"']/g,'').re
 function hash(s){var h=0,i;for(i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))|0}return Math.abs(h)}
 
 /* ---------- speech ---------- */
+var VOICE=null,VOICES=[],VKEY='se_voice';
+var FEM=['samantha','ava','allison','susan','zira','aria','jenny','karen','moira','tessa','fiona','serena','joanna','victoria','catherine','nicky','google us english','google uk english female','female'];
+var MASC=/david|mark|alex|daniel|fred|george|james|guy|ryan|oliver|thomas|aaron|arthur|\btom\b|male/i;
+
+/* never say "slash", "ampersand", etc. */
+function speakable(t){
+  return String(t)
+    .replace(/<[^>]+>/g,'')
+    .replace(/\s*\/\s*/g,', ')
+    .replace(/\s*&\s*/g,' and ')
+    .replace(/_{2,}/g,' blank ')
+    .replace(/\s*&middot;\s*/g,', ')
+    .replace(/\s+/g,' ').trim();
+}
+
+function loadVoices(){
+  try{VOICES=(window.speechSynthesis.getVoices()||[]).filter(function(v){return /^en/i.test(v.lang)})}
+  catch(e){VOICES=[]}
+  if(!VOICES.length)return;
+  var saved=null;try{saved=localStorage.getItem(VKEY)}catch(e){}
+  if(saved)VOICE=VOICES.filter(function(v){return v.name===saved})[0]||null;
+  if(!VOICE){
+    for(var i=0;i<FEM.length&&!VOICE;i++){
+      VOICE=VOICES.filter(function(v){return v.name.toLowerCase().indexOf(FEM[i])>=0})[0]||null;
+    }
+  }
+  if(!VOICE)VOICE=VOICES.filter(function(v){return !MASC.test(v.name)})[0]||VOICES[0];
+  fillVoices();
+}
+function fillVoices(){
+  var s=document.getElementById('voicepick');if(!s)return;
+  if(!VOICES.length){s.style.display='none';return}
+  s.style.display='';
+  s.innerHTML=VOICES.map(function(v,i){
+    return '<option value="'+i+'">'+String(v.name).replace(/[<>]/g,'')+'</option>';
+  }).join('');
+  var k=VOICES.indexOf(VOICE);if(k>=0)s.value=String(k);
+  s.onchange=function(){
+    VOICE=VOICES[parseInt(s.value,10)]||VOICE;
+    try{localStorage.setItem(VKEY,VOICE.name)}catch(e){}
+    say('Hello. My name is your new reading voice.');
+  };
+}
 function say(t){
   try{
     window.speechSynthesis.cancel();
-    var u=new SpeechSynthesisUtterance(String(t).replace(/<[^>]+>/g,''));
-    u.lang='en-US';u.rate=.85;window.speechSynthesis.speak(u);
+    var u=new SpeechSynthesisUtterance(speakable(t));
+    if(VOICE){u.voice=VOICE;u.lang=VOICE.lang}else{u.lang='en-US'}
+    u.rate=.92;u.pitch=1.08;
+    window.speechSynthesis.speak(u);
   }catch(e){}
 }
+try{window.speechSynthesis.onvoiceschanged=loadVoices}catch(e){}
+loadVoices();
+setTimeout(loadVoices,400);
 
 /* ---------- translation via Apps Script proxy ---------- */
 var TCACHE={};
