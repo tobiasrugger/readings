@@ -138,33 +138,53 @@ $('backSign').addEventListener('click', function(){ show('pSign'); });
 if (SINGLE) $('goPick').textContent = 'Start';
 
 /* ---------------- partner ---------------- */
+var PN = null;   /* partner name boxes, added under the email box */
+function partnerNames(){ if (!PN) PN = GS.nameBoxes($('ptMailBox'), 'pt'); return PN; }
 function setPartner(email, name){
   S.partner = {email:email, name:name};
-  $('ptMsg').textContent = '\u2713 ' + name;
+  $('ptMsg').textContent = '\u2713 ' + name + ' \u00b7 ' + email;
   $('goPick').disabled = false;
 }
 $('ptWho').addEventListener('change', function(){
-  var v = $('ptWho').value;
+  var v = $('ptWho').value, pn = partnerNames();
   S.partner = null; $('goPick').disabled = true; $('ptMsg').textContent = '';
-  if (v === '__other'){ $('ptMailBox').classList.remove('hide'); $('ptMail').focus(); return; }
+  pn.first.value = ''; pn.last.value = '';
+  if (v === '__other'){ $('ptMail').value = ''; $('ptMailBox').classList.remove('hide'); pn.box.classList.remove('hide'); $('ptMail').focus(); return; }
   $('ptMailBox').classList.add('hide');
-  if (!v) return;
+  if (!v){ pn.box.classList.add('hide'); return; }
   var r = GS.findByEmail(v);
-  setPartner(GS.cleanMail(v), r ? GS.displayName(r) : v);
+  if (GS.hasName(r)){ pn.box.classList.add('hide'); setPartner(GS.cleanMail(v), GS.displayName(r)); return; }
+  /* on the roster, but no name saved yet: ask for it */
+  $('ptMail').value = GS.cleanMail(v);
+  pn.box.classList.remove('hide'); pn.first.focus();
+  $('ptMsg').textContent = 'Type your classmate\u2019s first name and last name.';
 });
 function partnerMail(){
-  var raw = GS.cleanMail($('ptMail').value);
+  var raw = GS.cleanMail($('ptMail').value), pn = partnerNames();
   if (!raw) return;
   if (!GS.validMail(raw)){ $('ptMsg').textContent = 'Use their school email (@s.sfusd.edu).'; return; }
   var c = GS.canonMail(raw);
   if (c === S.me.email){ $('ptMsg').textContent = 'That is your email. Type your classmate\u2019s email.'; return; }
+  var r = GS.findByEmail(c), nm, first = '', last = '';
+  if (GS.hasName(r)){
+    pn.box.classList.add('hide'); nm = GS.displayName(r);
+  } else {
+    pn.box.classList.remove('hide');
+    first = GS.cleanName(pn.first.value); last = GS.cleanName(pn.last.value);
+    if (!first || !last){ S.partner = null; $('goPick').disabled = true; $('ptMsg').textContent = 'Type your classmate\u2019s first name and last name.'; return; }
+    nm = first + ' ' + last;
+  }
   GS.recordAlias(raw, c);
-  var r = GS.findByEmail(c);
-  var nm = r ? GS.displayName(r) : GS.localPart(c).replace(/[._]/g, ' ');
-  GS.seedStudent(nm, c, S.me.period);
+  GS.seedStudent(nm, c, S.me.period, first, last);
   $('ptMail').value = c;
+  var sel = $('ptWho'); if (sel.value && sel.value !== '__other') sel.options[sel.selectedIndex].text = nm;
   setPartner(c, nm);
 }
+partnerNames();
+['ptFirst','ptLast'].forEach(function(id){
+  $(id).addEventListener('change', partnerMail);
+  $(id).addEventListener('blur', partnerMail);
+});
 $('ptMail').addEventListener('change', partnerMail);
 $('ptMail').addEventListener('blur', partnerMail);
 $('goPick').addEventListener('click', function(){

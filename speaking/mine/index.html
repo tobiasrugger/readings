@@ -83,11 +83,24 @@ var TITLES = {'describe-a-classmate':'Describe a classmate','share-translations'
   'meet-and-greet':'Meet and greet','want-at-school':'What do you want to do at school?','spell-your-name':'Spell your name'};
 var QTEXT = {};  /* filled from the rows themselves (the ask line's target) */
 
+/* ---------- names: the roster wins over whatever was saved with the recording ---------- */
+function nameFor(email, stored){
+  var r = GS.findByEmail(email);
+  return GS.hasName(r) ? GS.displayName(r) : (stored || GS.localPart(email));
+}
+function fixNames(rows){
+  (rows || []).forEach(function(r){
+    r.speaker_name = nameFor(r.email, r.speaker_name);
+    if (r.partner_email) r.partner_name = nameFor(r.partner_email, r.partner_name);
+  });
+  return rows;
+}
+
 /* ---------- load ---------- */
 function load(email){
   var e = encodeURIComponent(email);
   return fetch(GS.SUPA_URL + '/rest/v1/' + GS.TABLE + '?or=(email.eq.' + e + ',partner_email.eq.' + e + ')&order=created_at.asc&select=*',
-    {headers:GS.H()}).then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; });
+    {headers:GS.H()}).then(function(r){ return r.ok ? r.json() : []; }).then(fixNames).catch(function(){ return []; });
 }
 
 /* group rows into conversations, and pick the kept attempt for each line */
@@ -256,13 +269,14 @@ $('teachLink').addEventListener('click', function(e){
   var pw = prompt('Teacher password');
   if (pw !== 'galileo2026') return;
   $('pSign').classList.add('hide'); $('pMine').classList.add('hide'); $('pTeach').classList.remove('hide');
+  if (!GS.ROSTER.length) GS.loadRoster();
 });
 if (/[?&]teacher=1/.test(location.search)) setTimeout(function(){ $('teachLink').click(); }, 300);
 $('tPer').addEventListener('change', function(){
   var p = $('tPer').value; if (!p) return;
   fetch(GS.SUPA_URL + '/rest/v1/' + GS.TABLE + '?period=eq.' + encodeURIComponent(p) + '&order=created_at.asc&select=*', {headers:GS.H()})
     .then(function(r){ return r.ok ? r.json() : []; }).then(function(rows){
-      PER_ROWS = rows; summary();
+      PER_ROWS = fixNames(rows); summary();
     });
 });
 function summary(){

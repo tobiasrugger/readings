@@ -62,10 +62,40 @@ GS.recordAlias = function(alias, canon){
     method:'POST', headers:GS.H('resolution=merge-duplicates,return=minimal'),
     body:JSON.stringify([{alias_email:alias, email:canon}])}).catch(function(){});
 };
-GS.seedStudent = function(name, email, period){
+GS.hasName = function(r){
+  return !!(r && (String(r.name || '').trim() || String(r.first_name || '').trim()));
+};
+/* first/last are only sent when a student typed them. A roster row that
+   has no name yet gets the typed name filled in. */
+GS.seedStudent = function(name, email, period, first, last){
+  var row = {email:email, name:name, period:period};
+  if (first){ row.first_name = first; row.last_name = last || null; }
   fetch(GS.SUPA_URL + '/rest/v1/students?on_conflict=email', {
     method:'POST', headers:GS.H('resolution=ignore-duplicates,return=minimal'),
-    body:JSON.stringify([{email:email, name:name, period:period}])}).catch(function(){});
+    body:JSON.stringify([row])}).catch(function(){});
+  var r = GS.findByEmail(email);
+  if (first && r && !GS.hasName(r)){
+    fetch(GS.SUPA_URL + '/rest/v1/students?email=eq.' + encodeURIComponent(r.email), {
+      method:'PATCH', headers:GS.H('return=minimal'),
+      body:JSON.stringify({name:name, first_name:first, last_name:last || null})}).catch(function(){});
+    r.name = name; r.first_name = first; r.last_name = last || null;
+  }
+  if (first && !r) GS.ROSTER.push({email:email, name:name, first_name:first, last_name:last || null, period:period});
+};
+/* Adds First name / Last name boxes right after a label, once. Returns {box, first, last}. */
+GS.nameBoxes = function(afterLabel, idPrefix){
+  var box = document.getElementById(idPrefix + 'Names');
+  if (!box){
+    box = document.createElement('div');
+    box.id = idPrefix + 'Names'; box.className = 'namebox hide';
+    box.innerHTML = '<label>First name<input id="' + idPrefix + 'First" type="text" autocomplete="given-name"></label>' +
+      '<label>Last name<input id="' + idPrefix + 'Last" type="text" autocomplete="family-name"></label>';
+    afterLabel.parentNode.insertBefore(box, afterLabel.nextSibling);
+  }
+  return {box:box, first:document.getElementById(idPrefix + 'First'), last:document.getElementById(idPrefix + 'Last')};
+};
+GS.cleanName = function(x){
+  return String(x || '').trim().replace(/\s+/g, ' ').replace(/(^|[\s'-])([a-z])/g, function(_, a, b){ return a + b.toUpperCase(); });
 };
 GS.loadRoster = function(){
   return fetch(GS.SUPA_URL + '/rest/v1/students?select=*', {headers:GS.H()})
@@ -100,6 +130,7 @@ GS.fillNames = function(sel, period, skipEmail, firstLabel){
    onReady(ME) fires whenever a valid sign-in settles. */
 GS.initSignin = function(onReady){
   var per = $('gsPer'), who = $('gsWho'), mail = $('gsMail'), msg = $('gsMsg');
+  var nb = GS.nameBoxes(mail.parentNode, 'gs');
   var saved = '';
   try { saved = localStorage.getItem('gal_student_email') || ''; } catch(e){}
   function settle(){
@@ -109,30 +140,41 @@ GS.initSignin = function(onReady){
     if (!per.value){ msg.textContent = 'Choose your period.'; return; }
     var c = GS.canonMail(raw);
     if (c !== raw) mail.value = c;
-    var r = GS.findByEmail(c);
-    var name = r ? GS.displayName(r) : (who.value && who.value !== '__other' ? who.options[who.selectedIndex].text : GS.localPart(c).replace(/[._]/g,' '));
+    var r = GS.findByEmail(c), name, first = '', last = '';
+    if (GS.hasName(r)){
+      nb.box.classList.add('hide');
+      name = GS.displayName(r);
+    } else {
+      nb.box.classList.remove('hide');
+      first = GS.cleanName(nb.first.value); last = GS.cleanName(nb.last.value);
+      if (!first || !last){ msg.textContent = 'Type your first name and last name.'; GS.ME = null; (first ? nb.last : nb.first).focus(); return; }
+      name = first + ' ' + last;
+    }
     GS.recordAlias(raw, c);
-    GS.seedStudent(name, c, per.value);
+    GS.seedStudent(name, c, per.value, first, last);
     try { localStorage.setItem('gal_student_email', c); localStorage.setItem('gal_student_period', per.value); } catch(e){}
+    if (who.value && who.value !== '__other') who.options[who.selectedIndex].text = name;
     GS.ME = {email:c, name:name, period:per.value};
-    msg.textContent = '\u2713 ' + name;
+    msg.textContent = '\u2713 ' + name + ' \u00b7 ' + c;
     if (onReady) onReady(GS.ME);
   }
   per.addEventListener('change', function(){
     GS.fillNames(who, per.value, null, 'Choose your name');
     mail.value = ''; GS.ME = null; msg.textContent = '';
-    mail.parentNode.classList.add('hide');
+    mail.parentNode.classList.add('hide'); nb.box.classList.add('hide');
   });
   who.addEventListener('change', function(){
     if (who.value === '__other'){
-      mail.value = ''; mail.parentNode.classList.remove('hide'); mail.focus(); return;
+      mail.value = ''; mail.parentNode.classList.remove('hide'); nb.box.classList.remove('hide'); mail.focus(); return;
     }
     mail.parentNode.classList.add('hide');
     mail.value = who.value;
     settle();
   });
-  mail.addEventListener('change', settle);
-  mail.addEventListener('blur', settle);
+  [mail, nb.first, nb.last].forEach(function(el){
+    el.addEventListener('change', settle);
+    el.addEventListener('blur', settle);
+  });
   GS.loadRoster().then(function(){
     var p = '';
     try { p = localStorage.getItem('gal_student_period') || ''; } catch(e){}
