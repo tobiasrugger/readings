@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grammar Check &middot; Mr. Toby</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pine:#1F4D3D;--pine-dk:#163a2d;--pine-dp:#0f2a20;--pine-lt:#e7f0ec;
+  --ink-blue:#2b4a8b;--ink-blue-lt:#e8eef9;--ink-blue-dp:#1c3263;
+  --paper:#fbfaf6;--card:#fff;--field:#f4f7f5;
+  --ink:#1d2320;--muted:#5f6b66;--line:#dfe3e0;--line-dk:#c3ccc7;
+  --green:#1c7a3e;--green-bg:#e0f2e6;--red:#b5304a;--red-bg:#fbdde4;
+  --gold:#8a6414;--gold-bg:#fdf4e3;
+  --r:14px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:Nunito,system-ui,sans-serif;font-size:18px;line-height:1.55}
+.wrap{max-width:780px;margin:0 auto;padding:16px 16px 80px}
+h1,h2{margin:0 0 10px;font-weight:900;color:var(--pine)}
+.hide{display:none!important}
+a{color:var(--pine)}
+.card{background:var(--card);border:1.5px solid var(--line);border-radius:var(--r);padding:20px;margin-bottom:16px;box-shadow:0 2px 0 var(--line)}
+.btn{background:var(--pine);color:#fff;border:0;border-bottom:3px solid var(--pine-dp);border-radius:11px;padding:12px 22px;font:inherit;font-weight:800;cursor:pointer}
+.btn:hover{background:var(--pine-dk)}.btn:active{transform:translateY(2px);border-bottom-width:1px}
+.btn:disabled{background:var(--line-dk);border-bottom-color:var(--muted);cursor:not-allowed;transform:none}
+.btn.ghost{background:#fff;color:var(--pine);border:2px solid var(--pine);border-bottom:3px solid var(--pine)}
+.btn.sm{padding:7px 14px;font-size:.9rem;border-radius:9px}
+button:focus-visible,.slot:focus-visible,.chip:focus-visible,.tile:focus-visible{outline:3px solid #f0b429;outline-offset:2px}
+input,select,textarea{font:inherit;padding:11px 12px;border:2px solid var(--line-dk);border-radius:11px;width:100%;background:var(--field);color:var(--ink)}
+input:focus,select:focus,textarea:focus{outline:0;border-color:var(--pine);background:#fff;box-shadow:0 0 0 4px rgba(31,77,61,.14)}
+label{display:block;font-weight:800;font-size:.88rem;color:var(--pine);margin:0 0 5px}
+.field{margin-bottom:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:600px){.grid2{grid-template-columns:1fr}}
+.note{color:var(--muted);font-size:.92rem}
+.msg{padding:12px 15px;border-radius:11px;font-weight:700;margin-bottom:14px}
+.msg.err{background:var(--red-bg);color:var(--red);border:1.5px solid var(--red)}
+.msg.ok{background:var(--green-bg);color:var(--green);border:1.5px solid var(--green)}
+
+.hero{background:var(--pine);color:#fff;border-radius:var(--r);padding:18px 20px;margin-bottom:16px;border-bottom:5px solid var(--pine-dp)}
+.hero h1{color:#fff;margin:0;font-size:1.5rem}
+.hero .sub{opacity:.92;font-weight:700;font-size:.92rem;margin-top:3px}
+
+/* menu */
+.tcard{display:block;background:#fff;border:1.5px solid var(--line);border-left:8px solid var(--pine);border-radius:12px;padding:14px 18px;margin-bottom:10px;text-decoration:none;color:var(--ink)}
+.tcard:hover{background:var(--pine-lt)}
+.tcard h3{margin:0;font-size:1.12rem;font-weight:900;color:var(--pine)}
+.tcard .m{font-size:.86rem;color:var(--muted);font-weight:700}
+.tcard.combo{border-left-color:var(--ink-blue)}
+.tcard.combo h3{color:var(--ink-blue)}
+.menuhead{font-weight:900;color:var(--muted);font-size:.95rem;margin:20px 0 8px}
+
+/* test top bar */
+.topbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.topbar select{width:auto;min-width:160px;padding:7px 10px;font-size:.9rem}
+.topbar .who{font-weight:800;color:var(--muted);font-size:.9rem;margin-right:auto}
+#btn-dir,#btn-tap{background:#fff;color:var(--pine);border:2px solid var(--pine);border-radius:9px;padding:6px 12px;font:inherit;font-size:.88rem;font-weight:800;cursor:pointer}
+#btn-dir.on,#btn-tap.on{background:#1F4D3D;color:#fff}
+.counter{display:flex;justify-content:space-between;font-weight:800;font-size:.9rem;color:var(--muted)}
+.bar{height:10px;border-radius:99px;background:var(--line);overflow:hidden;margin:6px 0 14px}
+.bar i{display:block;height:100%;background:var(--pine);width:0;transition:width .25s}
+.practice-tag{display:inline-block;background:var(--gold-bg);color:var(--gold);border:1.5px solid #e6cf9c;border-radius:999px;padding:2px 12px;font-weight:900;font-size:.85rem;margin-bottom:10px}
+
+.dir{background:var(--pine-lt);border-left:7px solid var(--pine);border-radius:11px;padding:12px 16px;margin-bottom:16px;font-weight:800;color:var(--pine)}
+.dirtr{display:block;margin-top:4px;color:#2f6f57;font-weight:700}
+.dirtr:empty{display:none}
+.words{margin-top:8px}
+.jw{display:inline-block;background:#fff;border:2px solid var(--pine);color:var(--pine);border-radius:8px;padding:1px 10px;margin:3px 6px 0 0;font-weight:900}
+
+/* slots */
+.prompt{font-size:1.3rem;font-weight:700;line-height:2.25;margin:4px 0 14px}
+.slot{display:inline-block;min-width:84px;margin:0 3px;padding:0 10px;font:inherit;font-weight:900;line-height:1.5;border:0;background:var(--ink-blue-lt);color:var(--ink-blue);border-bottom:4px dashed var(--ink-blue);border-radius:8px 8px 0 0;cursor:pointer;text-align:center;vertical-align:baseline}
+.slot.set{border-bottom-style:solid}
+.slot.none{color:var(--muted);background:#eef0ee;border-bottom-color:var(--muted)}
+.slot.active{background:var(--ink-blue);color:#fff;border-bottom-color:var(--ink-blue-dp)}
+.slot.fix{min-width:0;background:transparent;color:var(--ink);border-bottom:3px solid var(--ink);border-radius:4px;padding:0 4px}
+.slot.fix.changed{background:var(--ink-blue-lt);color:var(--ink-blue);border-bottom-color:var(--ink-blue)}
+.slot.fix.active{background:var(--ink-blue);color:#fff}
+.tray{border-top:1.5px solid var(--line);padding-top:12px;min-height:58px}
+.tray .lbl{font-size:.85rem;font-weight:800;color:var(--muted);margin-bottom:6px}
+.chips{display:flex;gap:9px;flex-wrap:wrap}
+.chip{background:#fff;border:2px solid var(--line-dk);border-bottom:4px solid var(--line-dk);border-radius:11px;padding:9px 18px;font:inherit;font-weight:800;font-size:1.05rem;cursor:pointer;color:var(--ink)}
+.chip:hover{border-color:var(--ink-blue);background:var(--ink-blue-lt)}
+.chip.pick{background:var(--ink-blue);color:#fff;border-color:var(--ink-blue-dp)}
+.chip.nothing{font-style:italic;color:var(--muted)}
+.chip.nothing.pick{color:#fff}
+
+/* order */
+.line{min-height:62px;border:2px dashed var(--line-dk);border-radius:12px;padding:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:1.2rem;font-weight:700;margin-bottom:12px}
+.tile{background:#fff;border:2px solid var(--ink-blue);border-bottom:4px solid var(--ink-blue);color:var(--ink-blue);border-radius:10px;padding:7px 14px;font:inherit;font-weight:900;font-size:1.1rem;cursor:pointer}
+.tile.used{visibility:hidden}
+.line .tile{background:var(--ink-blue);color:#fff}
+
+/* write */
+.given{font-size:1.2rem;font-weight:700;background:var(--field);border-radius:11px;padding:12px 16px;margin-bottom:12px}
+textarea{min-height:92px;font-size:1.15rem;line-height:1.5}
+
+.nav{display:flex;justify-content:space-between;gap:10px;margin-top:16px;flex-wrap:wrap}
+.fb{border-radius:11px;padding:12px 16px;margin-top:14px;font-weight:700;border:1.5px solid}
+.fb.ok{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+.fb.no{background:var(--gold-bg);color:var(--gold);border-color:#e0c68c}
+
+/* done */
+.big{font-size:3rem;font-weight:900;color:var(--pine);line-height:1}
+.skillrow{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 14px;border:1.5px solid var(--line);border-radius:11px;margin-bottom:8px;background:#fff}
+.skillrow b{font-weight:800}
+.v{display:inline-block;min-width:62px;text-align:center;padding:3px 10px;border-radius:9px;font-weight:900}
+.v.g{background:var(--green-bg);color:var(--green)}
+.v.y{background:var(--gold-bg);color:var(--gold)}
+.v.r{background:var(--red-bg);color:var(--red)}
+
+body.tap-on .wt-tap{cursor:pointer;border-bottom:1px dotted #8aa79a}
+body.tap-on .wt-tap:hover{background:#eef5f1}
+.wt-bub{display:inline-block;margin-left:5px;padding:1px 6px;border-radius:6px;background:#1F4D3D;color:#fff;font-size:.8em;font-weight:700;line-height:1.3}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+</head>
+<body>
+<span id="canary" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden">the quick brown fox jumps over the lazy dog</span>
+<div class="wrap">
+
+<!-- ========== MENU ========== -->
+<div id="menu" class="hide">
+  <div class="hero"><h1>Grammar Checks</h1><div class="sub">Mr. Toby &middot; Galileo Academy</div></div>
+  <p class="note" style="margin-top:0">Open the check your teacher gave you.</p>
+  <div class="menuhead">Full checks</div>
+  <div id="menuFull"></div>
+  <div class="menuhead">Short checks (two in one)</div>
+  <div id="menuCombo"></div>
+  <p style="margin-top:22px"><a href="../" style="font-weight:800">&larr; All readings</a> &nbsp; <a href="report.html" style="font-weight:800;color:var(--muted)">Teacher report</a></p>
+</div>
+
+<!-- ========== SIGN IN ========== -->
+<div id="signin" class="hide">
+  <div class="hero"><h1 id="siTitle">Grammar Check</h1><div class="sub">Mr. Toby &middot; Galileo Academy</div></div>
+  <div class="card">
+    <div id="siMsg"></div>
+    <div class="field"><label for="inName">My name</label><input id="inName" placeholder="First and last name" autocomplete="name"></div>
+    <div class="grid2">
+      <div class="field"><label for="inEmail">My school email</label>
+        <input id="inEmail" placeholder="name@s.sfusd.edu" autocapitalize="off" spellcheck="false"></div>
+      <div class="field"><label for="inPeriod">Period</label><select id="inPeriod"></select></div>
+    </div>
+    <div class="field"><label for="inLang">My language</label><select id="inLang"></select></div>
+    <button class="btn" onclick="signIn()">Start</button>
+    <p id="siErr" class="note" style="color:var(--red);font-weight:800" role="alert"></p>
+  </div>
+</div>
+
+<!-- ========== INTRO ========== -->
+<div id="intro" class="hide">
+  <div class="hero"><h1 id="inTitle">Grammar Check</h1><div class="sub" id="inWho"></div></div>
+  <div class="card" translate="no" data-tap="1">
+    <h2>Before you start</h2>
+    <p>This is a check, not a grade. It shows what you know <b>now</b>, so we can see how much you grow.</p>
+    <p>First, try <span id="inWarmN"></span> practice questions. They show you how the check works. They do not count.</p>
+    <p class="note">You can go back and change answers before you send them.</p>
+    <div class="nav" style="justify-content:flex-start">
+      <button class="btn" onclick="startWarmup()">Practice first</button>
+      <button class="btn ghost" onclick="startTest()">I know how. Start the check.</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== QUESTION (warm-up and test share this) ========== -->
+<div id="quiz" class="hide">
+  <div class="topbar">
+    <span class="who" id="qWho"></span>
+    <select id="qLang" aria-label="My language"></select>
+    <button id="btn-dir" title="Show the directions in your language">Directions</button>
+    <button id="btn-tap" title="Tap any word for its meaning">Tap words</button>
+  </div>
+  <div class="counter"><span id="cCount"></span><span id="cSkill"></span></div>
+  <div class="bar"><i id="cBar"></i></div>
+  <div id="pTag"></div>
+  <div class="dir" id="dirBox" translate="no"></div>
+  <div class="card" translate="no">
+    <div id="qBody"></div>
+    <div id="fbBox"></div>
+    <div class="nav">
+      <button class="btn ghost" id="btnBack" onclick="goBack()">Back</button>
+      <button class="btn" id="btnNext" onclick="goNext()" disabled>Next</button>
+    </div>
+  </div>
+  <p class="note" style="text-align:right"><a href="#" onclick="signOut();return false" style="color:var(--muted)">Not me</a></p>
+</div>
+
+<!-- ========== DONE ========== -->
+<div id="done" class="hide">
+  <div class="hero"><h1>Sent. Thank you!</h1><div class="sub" id="dWho"></div></div>
+  <div class="card" translate="no" data-tap="1" style="text-align:center">
+    <div class="big" id="dScore"></div>
+    <p class="note" id="dSub" style="margin-bottom:0"></p>
+  </div>
+  <div class="card" translate="no" data-tap="1">
+    <h2>Your skills today</h2>
+    <div id="dSkills"></div>
+    <p class="note">Green = strong. Yellow = almost. Red = we will practice this.</p>
+  </div>
+  <div id="saveMsg"></div>
+  <p style="text-align:center"><a class="btn ghost" href="../student/" style="text-decoration:none;display:inline-block">My page</a></p>
+</div>
+
+</div>
+
+<script src="tests.js"></script>
+<script src="engine.js"></script>
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var LANGS=[['es','Espa\u00f1ol (Spanish)'],['zh-TW','\u7cb5\u8a9e (Cantonese)'],['zh-CN','\u666e\u901a\u8bdd (Mandarin)'],
+ ['ar','\u0627\u0644\u0639\u0631\u0628\u064a\u0629 (Arabic)'],['ary','\u0627\u0644\u062f\u0627\u0631\u062c\u0629 (Darija)'],
+ ['vi','Ti\u1ebfng Vi\u1ec7t (Vietnamese)'],['ru','\u0420\u0443\u0441\u0441\u043a\u0438\u0439 (Russian)'],
+ ['ur','\u0627\u0631\u062f\u0648 (Urdu)'],['tl','Tagalog'],['fr','Fran\u00e7ais (French)'],
+ ['ko','\ud55c\uad6d\uc5b4 (Korean)'],['hi','\u0939\u093f\u0928\u094d\u0926\u0940 (Hindi)'],
+ ['so','Soomaali (Somali)'],['ne','\u0928\u0947\u092a\u093e\u0932\u0940 (Nepali)'],['th','\u0e44\u0e17\u0e22 (Thai)']];
+
+function $(i){return document.getElementById(i);}
+function esc(s){return (s==null?'':String(s)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function H(x){var h={apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY,'Content-Type':'application/json'};if(x)for(var k in x)h[k]=x[k];return h;}
+function clean(e){return String(e||'').trim().toLowerCase();}
+function show(id){['menu','signin','intro','quiz','done'].forEach(function(x){$(x).classList.toggle('hide',x!==id);});window.scrollTo(0,0);}
+
+var qs=new URLSearchParams(location.search);
+var TEST=DX.findTest(qs.get('t'));
+var SLUG=TEST?'diagnostic/'+TEST.id:'diagnostic';
+window.GAL_META=TEST?{title:TEST.title,unit:'Grammar Checks',skills:uniqSkills(TEST)}:{title:'Grammar Checks',unit:'Grammar Checks'};
+
+var ME={name:'',email:'',period:'',lang:''};
+var MODE='test';          /* 'warm' or 'test' */
+var LIST=[];              /* items being shown */
+var IDX=0, ANS=[], ACTIVE=0, STARTED=null, ATTEMPT='';
+var WARM=[], WARM_DONE={};
+
+function uniqSkills(t){var s=[];t.items.forEach(function(i){if(s.indexOf(i.skill)<0)s.push(i.skill);});return s;}
+
+/* ---------- boot ---------- */
+(function boot(){
+  var ps='<option value="">Choose your period</option>';
+  for(var p=1;p<=7;p++)ps+='<option value="'+p+'">Period '+p+'</option>';
+  $('inPeriod').innerHTML=ps;
+  var ls='<option value="">English only</option>'+LANGS.map(function(l){return '<option value="'+l[0]+'">'+l[1]+'</option>';}).join('');
+  $('inLang').innerHTML=ls; $('qLang').innerHTML=ls;
+  $('qLang').addEventListener('change',function(){
+    $('inLang').value=$('qLang').value; ME.lang=$('qLang').value;
+    try{localStorage.setItem('gal_student_lang',ME.lang);}catch(e){}
+    var ev=document.createEvent('HTMLEvents'); ev.initEvent('change',true,false); $('inLang').dispatchEvent(ev);
+  });
+  if(!TEST){
+    $('menuFull').innerHTML=TESTS.slice(0,4).map(menuCard).join('');
+    $('menuCombo').innerHTML=TESTS.slice(4).map(menuCard).join('');
+    show('menu'); return;
+  }
+  document.title=TEST.title+' \u00b7 Mr. Toby';
+  $('siTitle').textContent=TEST.title; $('inTitle').textContent=TEST.title;
+  try{
+    var e=localStorage.getItem('gal_student_email'); if(e)$('inEmail').value=e;
+    var n=localStorage.getItem('gal_student_name'); if(n)$('inName').value=n;
+    var pp=localStorage.getItem('gal_student_period'); if(pp)$('inPeriod').value=pp;
+    var lg=localStorage.getItem('gal_student_lang'); if(lg)$('inLang').value=lg;
+  }catch(err){}
+  show('signin');
+})();
+function menuCard(t,i){
+  var combo=t.id.indexOf('check-')===0;
+  return '<a class="tcard'+(combo?' combo':'')+'" href="?t='+t.id+'"><h3>'+esc(t.title)+'</h3>'+
+    '<div class="m">'+esc(t.sub)+' &middot; '+t.items.length+' questions</div></a>';
+}
+
+/* ---------- sign in (Galileo canonical) ---------- */
+function signIn(){
+  var name=$('inName').value.trim(), raw=$('inEmail').value.trim(), email=clean(raw), period=$('inPeriod').value, err=$('siErr');
+  if(!name){err.textContent='Please type your name.';return;}
+  var t=email.match(/^test[\s_-]*([a-z0-9]*)$/i);
+  if(t)email='test'+(t[1]||'')+'@test.local';
+  else if(/@test\.local$/.test(email)){}
+  else if(!/^[^@\s]+@(s\.)?sfusd\.edu$/.test(email)){err.textContent='Please use your school email ending in @s.sfusd.edu or @sfusd.edu';return;}
+  if(!period){err.textContent='Please choose your period.';return;}
+  err.textContent='';
+  var canon=email.indexOf('@test.local')>-1?email:(window.canonMail?canonMail(email):email.replace('@sfusd.edu','@s.sfusd.edu'));
+  ME={name:name,email:canon,period:period,lang:$('inLang').value};
+  try{
+    localStorage.setItem('gal_student_email',canon);localStorage.setItem('gal_student_name',name);
+    localStorage.setItem('gal_student_period',period);localStorage.setItem('gal_student_lang',ME.lang);
+  }catch(e){}
+  if(canon!==email&&window.recordAlias)recordAlias(email,canon);
+  var parts=name.split(/\s+/);
+  fetch(SUPA_URL+'/rest/v1/students?on_conflict=email',{method:'POST',headers:H({Prefer:'resolution=merge-duplicates,return=minimal'}),
+    body:JSON.stringify([{email:canon,first_name:parts.shift()||null,last_name:parts.length?parts.join(' '):null,period:period,updated_at:new Date().toISOString()}])}).catch(function(){});
+  $('qLang').value=ME.lang;
+  $('qWho').textContent=name+' \u00b7 Period '+period;
+  $('inWho').textContent=name+' \u00b7 Period '+period;
+
+  if(loadProgress()){ MODE='test'; LIST=TEST.items; show('quiz'); render(); return; }
+  WARM=warmupsFor(TEST);
+  $('inWarmN').textContent=WARM.length===1?'one':(WARM.length===2?'two':(WARM.length===3?'three':'four'));
+  show('intro');
+}
+function signOut(){try{localStorage.removeItem('gal_student_email');}catch(e){}location.href=location.pathname+location.search;}
+
+/* ---------- which warm-ups this test needs ---------- */
+function warmupsFor(t){
+  var need={};
+  t.items.forEach(function(it){
+    if(it.type==='slots'){
+      if(/\{/.test(it.text))need.slots_empty=1;
+      if(/\[/.test(it.text))need.slots_fix=1;
+    } else need[it.type]=1;
+  });
+  return ['slots_empty','slots_fix','order','write'].filter(function(k){return need[k];}).map(function(k){return WARMUPS[k];});
+}
+
+/* ---------- progress (so a closed tab is not a lost test) ---------- */
+function progKey(){return 'diag_prog_'+TEST.id+'_'+ME.email;}
+function saveProgress(){
+  if(MODE!=='test')return;
+  try{localStorage.setItem(progKey(),JSON.stringify({idx:IDX,ans:ANS,start:STARTED,attempt:ATTEMPT}));}catch(e){}
+}
+function loadProgress(){
+  try{
+    var p=JSON.parse(localStorage.getItem(progKey())||'null');
+    if(!p||!p.ans||p.ans.length!==TEST.items.length)return false;
+    ANS=p.ans; IDX=Math.min(p.idx||0,TEST.items.length-1); STARTED=p.start||new Date().toISOString(); ATTEMPT=p.attempt||newId();
+    return true;
+  }catch(e){return false;}
+}
+function newId(){return 'dx'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);}
+function freshAnswers(items){return items.map(function(it){return it.type==='slots'?DX.blankResp(it):(it.type==='order'?[]:'');});}
+
+function startWarmup(){MODE='warm';LIST=WARM;IDX=0;ANS=freshAnswers(WARM);WARM_DONE={};show('quiz');render();}
+function startTest(){
+  MODE='test';LIST=TEST.items;IDX=0;ANS=freshAnswers(LIST);STARTED=new Date().toISOString();ATTEMPT=newId();
+  saveProgress();show('quiz');render();
+}
+
+/* ---------- render one question ---------- */
+function render(){
+  var it=LIST[IDX];
+  ACTIVE=firstOpen(it);
+  $('cCount').textContent=(MODE==='warm'?'Practice ':'Question ')+(IDX+1)+' of '+LIST.length;
+  $('cSkill').textContent='';
+  $('cBar').style.width=Math.round(100*IDX/LIST.length)+'%';
+  $('pTag').innerHTML=MODE==='warm'?'<span class="practice-tag">Practice &middot; does not count</span>':'';
+  var dir=it.dir||'';
+  var dh='<span data-dir="'+esc(it.id)+'" data-en="'+esc(dir)+'" data-tap="1">'+esc(dir)+'</span>';
+  if(it.type==='write'&&it.words&&it.words.length)
+    dh+='<div class="words">'+it.words.map(function(w){return '<span class="jw">'+esc(w)+'</span>';}).join('')+'</div>';
+  $('dirBox').innerHTML=dh;
+  $('fbBox').innerHTML='';
+  if(it.type==='slots')renderSlots(it);
+  else if(it.type==='order')renderOrder(it);
+  else renderWrite(it);
+  $('btnBack').style.visibility=IDX>0?'visible':'hidden';
+  updateNext();
+  if(window.GAL_showDirections)GAL_showDirections();
+  if(window.GAL_wrapTap)GAL_wrapTap();
+}
+function firstOpen(it){
+  if(it.type!=='slots')return 0;
+  var r=ANS[IDX],sl=DX.slots(it);
+  for(var i=0;i<sl.length;i++)if(sl[i].t==='blank'&&(r[i]===null||r[i]===undefined))return i;
+  return sl[0].t==='blank'?-1:-1;
+}
+function nextLabel(){
+  if(MODE==='warm')return (WARM_DONE[IDX]?(IDX===LIST.length-1?'Start the check':'Next'):'Check');
+  return IDX===LIST.length-1?'Send my answers':'Next';
+}
+function updateNext(){
+  var it=LIST[IDX];
+  $('btnNext').disabled=!DX.complete(it,ANS[IDX]);
+  $('btnNext').textContent=nextLabel();
+}
+
+/* ----- slots ----- */
+function slotLabel(p,v){
+  if(v===null||v===undefined)return '?';
+  if(v==='')return '\u2205';
+  return p.start?DX.cap(v):v;
+}
+function renderSlots(it){
+  var parts=it._parts||DX.parse(it.text); it._parts=parts;
+  var r=ANS[IDX], h='<div class="prompt">';
+  parts.forEach(function(p){
+    if(p.t==='text'){h+='<span data-tap="1">'+esc(p.s)+'</span>';return;}
+    var v=r[p.i], cls='slot';
+    if(p.t==='fix'){cls+=' fix'+(v!==p.orig?' changed':'');}
+    else{ if(v!==null&&v!==undefined)cls+=' set'; if(v==='')cls+=' none'; }
+    if(p.i===ACTIVE)cls+=' active';
+    h+='<button class="'+cls+'" data-i="'+p.i+'" onclick="pickSlot('+p.i+')" aria-label="'+(p.t==='fix'?'underlined word ':'blank ')+(p.i+1)+'">'+esc(slotLabel(p,v))+'</button>';
+  });
+  h+='</div><div class="tray" id="tray"></div>';
+  $('qBody').innerHTML=h;
+  renderTray(it);
+}
+function renderTray(it){
+  var sl=DX.slots(it), tray=$('tray'), r=ANS[IDX];
+  if(ACTIVE<0){
+    tray.innerHTML='<div class="lbl">'+(sl.some(function(p){return p.t==='fix';})?'Tap an underlined word to change it.':'Tap a blank to change it.')+'</div>';
+    return;
+  }
+  var p=sl[ACTIVE], opts=p.t==='fix'?p.choices:it.opts.slice(), v=r[ACTIVE];
+  var h='<div class="lbl">'+(p.t==='fix'?'Choose the right word:':'Choose for blank '+(ACTIVE+1)+':')+'</div><div class="chips">';
+  opts.forEach(function(o){
+    h+='<button class="chip'+(v!==null&&DX.low(v)===DX.low(o)?' pick':'')+'" data-v="'+esc(o)+'">'+esc(o)+'</button>';
+  });
+  if(p.t==='blank'&&it.empty)
+    h+='<button class="chip nothing'+(v===''?' pick':'')+'" data-v="">\u2205 no word</button>';
+  h+='</div>';
+  tray.innerHTML=h;
+  Array.prototype.forEach.call(tray.querySelectorAll('.chip'),function(b){
+    b.addEventListener('click',function(){choose(b.getAttribute('data-v'));});
+  });
+}
+function pickSlot(i){ACTIVE=i;refreshSlots();}
+function choose(v){
+  var it=LIST[IDX], sl=DX.slots(it);
+  ANS[IDX][ACTIVE]=v;
+  if(sl[ACTIVE].t==='blank'){
+    var nxt=-1;
+    for(var k=1;k<=sl.length;k++){var j=(ACTIVE+k)%sl.length;if(sl[j].t==='blank'&&(ANS[IDX][j]===null||ANS[IDX][j]===undefined)){nxt=j;break;}}
+    if(nxt>-1)ACTIVE=nxt;
+  }
+  refreshSlots(); saveProgress(); updateNext();
+}
+function refreshSlots(){
+  var it=LIST[IDX], sl=DX.slots(it), r=ANS[IDX];
+  Array.prototype.forEach.call(document.querySelectorAll('#qBody .slot'),function(b){
+    var i=+b.getAttribute('data-i'), p=sl[i], v=r[i];
+    b.textContent=slotLabel(p,v);
+    b.classList.toggle('active',i===ACTIVE);
+    if(p.t==='fix')b.classList.toggle('changed',v!==p.orig);
+    else{b.classList.toggle('set',v!==null&&v!==undefined);b.classList.toggle('none',v==='');}
+  });
+  renderTray(it);
+}
+
+/* ----- order ----- */
+function renderOrder(it){
+  var r=ANS[IDX], h='<div class="line" id="line">';
+  if(it.pre)h+='<span data-tap="1">'+esc(it.pre)+'</span>';
+  r.forEach(function(k,pos){h+='<button class="tile" onclick="unplace('+pos+')">'+esc(it.tiles[k])+'</button>';});
+  if(!r.length&&!it.pre)h+='<span class="note">Tap the words below.</span>';
+  if(it.post)h+='<span>'+esc(it.post)+'</span>';
+  h+='</div><div class="chips">';
+  it.tiles.forEach(function(w,k){h+='<button class="tile'+(r.indexOf(k)>-1?' used':'')+'" onclick="place('+k+')">'+esc(w)+'</button>';});
+  $('qBody').innerHTML=h+'</div>';
+}
+function place(k){if(ANS[IDX].indexOf(k)>-1)return;ANS[IDX].push(k);renderOrder(LIST[IDX]);saveProgress();updateNext();}
+function unplace(pos){ANS[IDX].splice(pos,1);renderOrder(LIST[IDX]);saveProgress();updateNext();}
+
+/* ----- write ----- */
+function renderWrite(it){
+  $('qBody').innerHTML='<div class="given" data-tap="1">'+esc(it.prompt)+'</div>'+
+    '<label for="wr">Write one new sentence:</label>'+
+    '<textarea id="wr" autocapitalize="sentences" spellcheck="false" autocomplete="off"></textarea>';
+  var ta=$('wr'); ta.value=ANS[IDX]||'';
+  ta.addEventListener('input',function(){ANS[IDX]=ta.value;saveProgress();updateNext();});
+  ta.addEventListener('paste',function(e){e.preventDefault();});
+}
+
+/* ---------- navigation ---------- */
+function goBack(){if(IDX>0){IDX--;render();saveProgress();}}
+function goNext(){
+  var it=LIST[IDX];
+  if(!DX.complete(it,ANS[IDX]))return;
+  if(MODE==='warm'){
+    if(!WARM_DONE[IDX]){
+      WARM_DONE[IDX]=1;
+      var s=DX.score(it,ANS[IDX]);
+      $('fbBox').innerHTML=s.correct?'<div class="fb ok">Yes! That is how it works.</div>':
+        '<div class="fb no">Almost. The answer is: '+esc(DX.keyText(it).replace(/[\u27e8\u27e9]/g,''))+'</div>';
+      updateNext(); return;
+    }
+    if(IDX<LIST.length-1){IDX++;render();return;}
+    startTest(); return;
+  }
+  if(IDX<LIST.length-1){IDX++;saveProgress();render();return;}
+  finish();
+}
+
+/* ---------- finish and save ---------- */
+var LAST_PAYLOAD=null;
+function finish(){
+  var items=TEST.items, now=new Date().toISOString(), right=0, by={}, rows=[];
+  items.forEach(function(it,i){
+    var s=DX.score(it,ANS[i]);
+    if(s.correct)right++;
+    if(!by[it.skill])by[it.skill]={n:0,d:0};
+    by[it.skill].d++; if(s.correct)by[it.skill].n++;
+    rows.push({attempt_id:ATTEMPT,email:ME.email,period:ME.period,test:TEST.id,item_id:it.id,item_no:i+1,
+      skill:it.skill,correct:s.correct,strict_ok:s.strict,part_n:s.n,part_d:s.d,
+      response:DX.respText(it,ANS[i]),raw:JSON.stringify(ANS[i])});
+  });
+  var secs=STARTED?Math.round((Date.now()-new Date(STARTED).getTime())/1000):null;
+  var total=items.length;
+  $('dWho').textContent=ME.name+' \u00b7 '+TEST.title;
+  $('dScore').textContent=right+' / '+total;
+  $('dSub').textContent=Math.round(100*right/total)+'% of questions all correct';
+  $('dSkills').innerHTML=Object.keys(by).map(function(k){
+    var s=by[k],p=s.n/s.d,c=p>=0.8?'g':(p>=0.5?'y':'r');
+    return '<div class="skillrow"><b>'+esc(SKILLS[k]||k)+'</b><span class="v '+c+'">'+s.n+' / '+s.d+'</span></div>';
+  }).join('');
+  show('done');
+  window.GAL_SCORE=right; window.GAL_MAX=total;
+  LAST_PAYLOAD={
+    attempt:[{attempt_id:ATTEMPT,email:ME.email,name:ME.name,period:ME.period,test:TEST.id,score:right,max_score:total,
+      skills:by,lang:ME.lang||null,started_at:STARTED,finished_at:now,seconds:secs}],
+    rows:rows,
+    act:[{slug:SLUG,title:TEST.title,unit:'Grammar Checks',url:'https://tobiasrugger.github.io/readings/diagnostic/?t='+TEST.id,
+      max_score:total,skills:uniqSkills(TEST),sort_order:480}],
+    aa:[{email:ME.email,slug:SLUG,score:right,max_score:total,
+      detail:{source:'diagnostic',test:TEST.id,attempt_id:ATTEMPT,period:ME.period,seconds:secs},completed_at:now}],
+    sk:Object.keys(by).map(function(k){return {email:ME.email,slug:SLUG,skill:k,n:by[k].n,d:by[k].d,completed_at:now};})
+  };
+  save();
+}
+function post(table,body,pref){
+  return fetch(SUPA_URL+'/rest/v1/'+table,{method:'POST',headers:H({Prefer:pref||'return=minimal'}),body:JSON.stringify(body)})
+    .then(function(r){if(!r.ok)throw new Error(table+' '+r.status);return r;});
+}
+function save(){
+  var P=LAST_PAYLOAD; if(!P)return;
+  $('saveMsg').innerHTML='<div class="msg" style="background:#f4f7f5">Sending&hellip;</div>';
+  post('diag_attempts?on_conflict=attempt_id',P.attempt,'resolution=merge-duplicates,return=minimal')
+    .then(function(){return post('diag_responses?on_conflict=attempt_id,item_id',P.rows,'resolution=merge-duplicates,return=minimal');})
+    .then(function(){
+      try{localStorage.removeItem(progKey());}catch(e){}
+      $('saveMsg').innerHTML='<div class="msg ok">Your answers were sent to Mr. Toby.</div>';
+      post('activities?on_conflict=slug',P.act,'resolution=merge-duplicates,return=minimal').catch(function(){});
+      post('activity_attempts',P.aa).catch(function(){});
+      post('skill_attempts',P.sk).catch(function(){});
+    })
+    .catch(function(){
+      $('saveMsg').innerHTML='<div class="msg err">Your answers did not send. Check the internet, then tap Try again. '+
+        '<button class="btn sm" onclick="save()" style="margin-left:8px">Try again</button></div>';
+    });
+}
+</script>
+<script src="/readings/track.js"></script>
+
+<script>
+/* ============ Galileo standard: identity, directions, tap words, canary ============ */
+(function(){
+  var PAGE_SLUG=(typeof SLUG!=='undefined'&&SLUG)?SLUG:'diagnostic';
+  var CANON_DOMAIN='@s.sfusd.edu', ROSTER=[];
+  var SUPA_URL=(typeof window.SUPA_URL!=='undefined')?window.SUPA_URL:'https://lhmwtfyceilgndpygivj.supabase.co';
+  var SUPA_KEY=(typeof window.SUPA_KEY!=='undefined')?window.SUPA_KEY:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+  var PROXY='https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
+  function ME_(){ return (window.ME&&ME.email)?ME:null; }
+  window.cleanMail=function(x){ return String(x||'').trim().toLowerCase(); };
+  window.localPart=function(e){ return cleanMail(e).split('@')[0]; };
+  window.validMail=function(e){ return /^[^@\s]+@(s\.)?sfusd\.edu$/.test(cleanMail(e)); };
+  window.canonMail=function(raw){
+    var lp=localPart(raw), i;
+    for(i=0;i<ROSTER.length;i++){ if(localPart(ROSTER[i].email)===lp) return cleanMail(ROSTER[i].email); }
+    return lp+CANON_DOMAIN;
+  };
+  function head(pref){
+    var h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};
+    if(pref) h['Prefer']=pref; return h;
+  }
+  window.recordAlias=function(alias, canon){
+    if(!alias||alias===canon) return;
+    fetch(SUPA_URL+'/rest/v1/student_aliases?on_conflict=alias_email',{
+      method:'POST', headers:head('resolution=merge-duplicates,return=minimal'),
+      body:JSON.stringify([{alias_email:alias, email:canon}])}).catch(function(){});
+  };
+  fetch(SUPA_URL+'/rest/v1/students?select=name,email,period&order=name',{headers:head()})
+    .then(function(r){ return r.ok?r.json():[]; })
+    .then(function(rows){ ROSTER=rows||[]; }).catch(function(){});
+
+  var tcache={};
+  function tr(text, lang){
+    var key=text+'|'+lang;
+    if(tcache[key]) return Promise.resolve(tcache[key]);
+    var url=PROXY+'?action=translate&idiom='+encodeURIComponent(text)+'&meaning=&lang='+encodeURIComponent(lang);
+    return fetch(url).then(function(r){return r.json();}).then(function(d){
+      if(!d||!d.ok||!d.translation) return null;
+      tcache[key]=d.translation; return d.translation;
+    }).catch(function(){return null;});
+  }
+
+  /* ---------- directions in the student's language ---------- */
+  var DIR_ON=false, SENT={};
+  try{ DIR_ON=localStorage.getItem('song_dir')==='1'; }catch(e){}
+  function logReveal(k, lang){
+    if(!ME_()) return;
+    var sig=k+'|'+lang; if(SENT[sig]) return; SENT[sig]=true;
+    fetch(SUPA_URL+'/rest/v1/instruction_reveals',{
+      method:'POST', headers:head('return=minimal'),
+      body:JSON.stringify([{email:ME_().email, set_slug:PAGE_SLUG, activity:k, lang:lang}])}).catch(function(){});
+  }
+  function showDirections(){
+    var lang=document.getElementById('inLang').value;
+    var list=document.querySelectorAll('[data-dir]');
+    Array.prototype.forEach.call(list,function(p){
+      var out=p.querySelector('.dirtr');
+      if(!out){ out=document.createElement('span'); out.className='dirtr'; out.setAttribute('translate','no'); p.appendChild(out); }
+      if(!DIR_ON||!lang){ out.textContent=''; return; }
+      var k=p.getAttribute('data-dir'), en=p.getAttribute('data-en')||'';
+      out.textContent='\u2026';
+      tr(en, lang).then(function(t){
+        out.textContent=t?(t.equiv||t.meaning||(typeof t==='string'?t:'')):'';
+        if(out.textContent) logReveal(k, lang);
+      });
+    });
+  }
+  window.GAL_showDirections=function(){ if(DIR_ON) showDirections(); };
+  var dirBtn=document.getElementById('btn-dir');
+  if(dirBtn){
+    dirBtn.classList.toggle('on', DIR_ON);
+    dirBtn.addEventListener('click',function(){
+      DIR_ON=!DIR_ON;
+      try{ localStorage.setItem('song_dir', DIR_ON?'1':'0'); }catch(e){}
+      dirBtn.classList.toggle('on', DIR_ON);
+      showDirections();
+    });
+  }
+  var langSel=document.getElementById('inLang');
+  if(langSel) langSel.addEventListener('change', function(){ if(DIR_ON) showDirections(); });
+
+  /* ---------- tap any word ---------- */
+  var TAP_ON=false;
+  try{ TAP_ON=localStorage.getItem('song_tap')==='1'; }catch(e){}
+  function wrapWords(root){
+    if(root.getAttribute('data-wrapped')) return;
+    root.setAttribute('data-wrapped','1');
+    var walker=document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), nodes=[], n;
+    while((n=walker.nextNode())) if(n.nodeValue.trim()) nodes.push(n);
+    nodes.forEach(function(node){
+      if(node.parentNode.closest('textarea,input,button,select,.wt-tap,.dirtr')) return;
+      var frag=document.createDocumentFragment();
+      node.nodeValue.split(/(\s+)/).forEach(function(piece){
+        if(!piece.trim()){ frag.appendChild(document.createTextNode(piece)); return; }
+        var s=document.createElement('span');
+        s.className='wt-tap'; s.textContent=piece;
+        frag.appendChild(s);
+      });
+      node.parentNode.replaceChild(frag, node);
+    });
+  }
+  function tapTargets(){ return document.querySelectorAll('[data-tap]'); }
+  function setTap(on){
+    TAP_ON=on;
+    try{ localStorage.setItem('song_tap', on?'1':'0'); }catch(e){}
+    document.body.classList.toggle('tap-on', on);
+    var b=document.getElementById('btn-tap');
+    if(b) b.classList.toggle('on', on);
+    if(on) Array.prototype.forEach.call(tapTargets(), wrapWords);
+  }
+  window.GAL_wrapTap=function(){ if(TAP_ON) Array.prototype.forEach.call(tapTargets(), wrapWords); };
+  var tapBtn=document.getElementById('btn-tap');
+  if(tapBtn) tapBtn.addEventListener('click', function(){ setTap(!TAP_ON); });
+  document.addEventListener('click', function(ev){
+    if(!TAP_ON) return;
+    var s=ev.target.closest('.wt-tap'); if(!s) return;
+    var lang=document.getElementById('inLang').value;
+    if(!lang){ document.getElementById('qLang').focus(); return; }
+    var word=(s.textContent||'').replace(/[^A-Za-z\u00c0-\u00ff'\u2019-]/g,'');
+    if(!word) return;
+    var old=s.getAttribute('data-shown');
+    if(old){ s.removeAttribute('data-shown'); var t=s.querySelector('.wt-bub'); if(t) t.remove(); return; }
+    var bub=document.createElement('span'); bub.className='wt-bub'; bub.textContent='\u2026';
+    s.appendChild(bub); s.setAttribute('data-shown','1');
+    tr(word, lang).then(function(t){ bub.textContent=t?(t.equiv||t.meaning||'?'):'?'; });
+  });
+  if(TAP_ON) setTimeout(function(){ setTap(true); }, 400);
+
+  /* ---------- quiet browser-translation canary ---------- */
+  var CANARY='the quick brown fox jumps over the lazy dog', TR_SENT='';
+  function detectTranslation(){
+    var c=document.querySelector('#canary');
+    var got=c?(c.textContent||'').trim().toLowerCase():'';
+    var cls=document.documentElement.className||'';
+    var drift=(c&&got!==CANARY)?got:'';
+    if(!drift&&!/translated|notranslate-off/.test(cls)) return null;
+    return {observed:drift, html_lang:document.documentElement.lang||'', html_class:cls};
+  }
+  function checkTranslation(){
+    var d=detectTranslation();
+    if(!d||!ME_()) return;
+    var sig=d.observed+'|'+d.html_lang;
+    if(sig===TR_SENT) return;
+    TR_SENT=sig;
+    fetch(SUPA_URL+'/rest/v1/page_translation?on_conflict=email,set_slug',{
+      method:'POST', headers:head('resolution=merge-duplicates,return=minimal'),
+      body:JSON.stringify([{email:ME_().email, set_slug:PAGE_SLUG, translated:true,
+        observed:d.observed, html_lang:d.html_lang, html_class:d.html_class,
+        updated_at:new Date().toISOString()}])}).catch(function(){});
+  }
+  window.checkTranslation=checkTranslation;
+  setInterval(checkTranslation, 20000);
+  setTimeout(checkTranslation, 4000);
+})();
+</script>
+</body>
+</html>

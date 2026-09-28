@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grammar Checks &middot; Teacher report</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--pine:#1F4D3D;--pine-dp:#0f2a20;--pine-lt:#e7f0ec;--paper:#fbfaf6;--ink:#1d2320;--muted:#5f6b66;--line:#dfe3e0;--line-dk:#c3ccc7;
+  --g:#1c7a3e;--gb:#e0f2e6;--y:#8a6414;--yb:#fdf4e3;--r:#b5304a;--rb:#fbdde4;--blue:#2b4a8b;--blueb:#e8eef9}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:Nunito,system-ui,sans-serif;font-size:15px;line-height:1.45}
+.wrap{max-width:1400px;margin:0 auto;padding:16px}
+h1{margin:0;font-size:1.4rem;font-weight:900;color:var(--pine)}
+h2{margin:0 0 8px;font-size:1.1rem;font-weight:900;color:var(--pine)}
+.hide{display:none!important}
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0}
+select,input{font:inherit;padding:7px 10px;border:2px solid var(--line-dk);border-radius:9px;background:#fff}
+.btn{background:var(--pine);color:#fff;border:0;border-bottom:3px solid var(--pine-dp);border-radius:9px;padding:8px 14px;font:inherit;font-weight:800;cursor:pointer}
+.btn.ghost{background:#fff;color:var(--pine);border:2px solid var(--pine)}
+.btn.sm{padding:3px 9px;font-size:.82rem;border-bottom-width:2px}
+.tabs button{background:none;border:0;border-bottom:3px solid transparent;font:inherit;font-weight:900;color:var(--muted);padding:6px 10px;cursor:pointer}
+.tabs button.on{color:var(--pine);border-bottom-color:var(--pine)}
+.scroll{overflow-x:auto;background:#fff;border:1.5px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:100%}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+thead th{position:sticky;top:0;background:#f4f7f5;font-size:.78rem;color:var(--muted);font-weight:900;cursor:pointer;white-space:nowrap}
+thead th.sk{writing-mode:vertical-rl;transform:rotate(180deg);height:210px;white-space:nowrap;text-align:left;vertical-align:bottom}
+tbody tr.st:hover{background:var(--pine-lt);cursor:pointer}
+tbody tr.sel{background:var(--pine-lt)}
+tr.avg td{font-weight:900;background:#f4f7f5}
+.c{display:inline-block;min-width:44px;text-align:center;border-radius:7px;padding:1px 6px;font-weight:900;font-size:.85rem}
+.c.g{background:var(--gb);color:var(--g)}.c.y{background:var(--yb);color:var(--y)}.c.r{background:var(--rb);color:var(--r)}.c.n{color:var(--line-dk)}
+.muted{color:var(--muted)}
+.panel{background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:14px;margin-top:14px}
+.item{border-bottom:1px solid var(--line);padding:8px 0;display:grid;grid-template-columns:34px 1fr 190px;gap:10px}
+.item:last-child{border-bottom:0}
+.item .n{font-weight:900;color:var(--muted)}
+.item .p{color:var(--muted);font-size:.86rem}
+.item .a{font-weight:800}
+.item .k{color:var(--g);font-size:.88rem}
+.ok{color:var(--g);font-weight:900}.no{color:var(--r);font-weight:900}
+.tag{display:inline-block;border-radius:999px;padding:0 8px;font-size:.75rem;font-weight:900;margin-left:6px}
+.tag.mech{background:var(--yb);color:var(--y)}
+.tag.ov{background:var(--blueb);color:var(--blue)}
+.gate{max-width:360px;margin:80px auto;background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:22px}
+.gate input{width:100%;margin:10px 0}
+.legend{font-size:.82rem;color:var(--muted);margin-top:8px}
+</style>
+</head>
+<body>
+<div class="gate" id="gate">
+  <h1>Grammar Checks</h1>
+  <p class="muted">Teacher report</p>
+  <input id="pw" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')unlock()">
+  <button class="btn" onclick="unlock()">Open</button>
+  <p id="pwErr" class="no"></p>
+</div>
+
+<div class="wrap hide" id="app">
+  <div class="bar">
+    <h1 style="margin-right:auto">Grammar Checks &middot; report</h1>
+    <a href="./" class="muted" style="font-weight:800">Student page</a>
+  </div>
+  <div class="bar">
+    <select id="fTest"></select>
+    <select id="fPeriod"></select>
+    <select id="fWhich">
+      <option value="latest">Latest try per student</option>
+      <option value="first">First try per student</option>
+      <option value="all">Every try</option>
+    </select>
+    <button class="btn ghost" onclick="load()">Refresh</button>
+    <button class="btn ghost" onclick="csv()">Download CSV</button>
+    <span id="status" class="muted"></span>
+  </div>
+  <div class="tabs"><button id="tbS" class="on" onclick="tab('S')">Students by skill</button><button id="tbI" onclick="tab('I')">Questions</button></div>
+  <div id="viewS">
+    <div class="scroll"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
+    <div class="legend">Each cell = questions all correct / questions for that skill. Green 80%+, yellow 50&ndash;79%, red under 50%. Click a student to see every answer.</div>
+    <div id="detail"></div>
+  </div>
+  <div id="viewI" class="hide"><div class="scroll"><table><thead id="ihead"></thead><tbody id="ibody"></tbody></table></div></div>
+</div>
+
+<script src="tests.js"></script>
+<script src="engine.js"></script>
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+function $(i){return document.getElementById(i);}
+function esc(s){return (s==null?'':String(s)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function H(x){var h={apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY,'Content-Type':'application/json'};if(x)for(var k in x)h[k]=x[k];return h;}
+function band(n,d){if(!d)return 'n';var p=n/d;return p>=0.8?'g':(p>=0.5?'y':'r');}
+
+function unlock(){
+  if($('pw').value.trim()!=='galileo2026'){$('pwErr').textContent='Wrong password.';return;}
+  try{sessionStorage.setItem('diag_ok','1');}catch(e){}
+  open_();
+}
+function open_(){$('gate').classList.add('hide');$('app').classList.remove('hide');load();}
+(function(){
+  $('fTest').innerHTML=TESTS.map(function(t){return '<option value="'+t.id+'">'+esc(t.title)+' ('+esc(t.mirrors)+')</option>';}).join('');
+  var ps='<option value="">All periods</option>';for(var p=1;p<=7;p++)ps+='<option value="'+p+'">Period '+p+'</option>';
+  $('fPeriod').innerHTML=ps;
+  var q=new URLSearchParams(location.search);if(q.get('t'))$('fTest').value=q.get('t');
+  $('fTest').onchange=load;$('fPeriod').onchange=draw;$('fWhich').onchange=draw;
+  try{if(sessionStorage.getItem('diag_ok')==='1')open_();}catch(e){}
+})();
+
+var TEST=null, ATT=[], RESP={}, SEL=null, SORT={k:'name',dir:1};
+
+function getAll(path){
+  var out=[], size=1000;
+  function page(from){
+    return fetch(SUPA_URL+'/rest/v1/'+path,{headers:H({'Range-Unit':'items',Range:from+'-'+(from+size-1)})})
+      .then(function(r){if(!r.ok)throw new Error(r.status);return r.json();})
+      .then(function(rows){out=out.concat(rows);return rows.length===size?page(from+size):out;});
+  }
+  return page(0);
+}
+function load(){
+  TEST=DX.findTest($('fTest').value); SEL=null; $('detail').innerHTML='';
+  $('status').textContent='Loading\u2026';
+  var t=encodeURIComponent(TEST.id);
+  Promise.all([
+    getAll('diag_attempts?test=eq.'+t+'&order=finished_at.asc'),
+    getAll('diag_responses?test=eq.'+t+'&select=attempt_id,item_id,item_no,skill,correct,strict_ok,part_n,part_d,response,override')
+  ]).then(function(r){
+    ATT=r[0]; RESP={};
+    r[1].forEach(function(x){(RESP[x.attempt_id]=RESP[x.attempt_id]||{})[x.item_id]=x;});
+    $('status').textContent=ATT.length+' tries loaded';
+    draw();
+  }).catch(function(e){$('status').textContent='Could not load ('+e.message+'). Are the diag tables created?';});
+}
+function eff(x){return x.override===true||x.override===false?x.override:!!x.correct;}
+
+/* per-attempt skill tallies from responses (so overrides count) */
+function tally(a){
+  var rs=RESP[a.attempt_id], by={}, right=0;
+  if(!rs){return {by:a.skills||{},right:a.score||0,max:a.max_score||TEST.items.length};}
+  TEST.items.forEach(function(it){
+    var x=rs[it.id]; if(!by[it.skill])by[it.skill]={n:0,d:0};
+    by[it.skill].d++; if(x&&eff(x)){by[it.skill].n++;right++;}
+  });
+  return {by:by,right:right,max:TEST.items.length};
+}
+function rows(){
+  var per=$('fPeriod').value, which=$('fWhich').value, list=ATT.filter(function(a){return !per||String(a.period)===per;});
+  if(which!=='all'){
+    var pick={};
+    list.forEach(function(a){var k=a.email;if(!pick[k]||(which==='latest'?a.finished_at>pick[k].finished_at:a.finished_at<pick[k].finished_at))pick[k]=a;});
+    list=Object.keys(pick).map(function(k){return pick[k];});
+  }
+  list.forEach(function(a){a._t=tally(a);});
+  list.sort(function(x,y){
+    var k=SORT.k,a,b;
+    if(k==='name'){a=(x.name||x.email).toLowerCase();b=(y.name||y.email).toLowerCase();}
+    else if(k==='score'){a=x._t.right;b=y._t.right;}
+    else if(k==='date'){a=x.finished_at;b=y.finished_at;}
+    else if(k==='period'){a=+x.period;b=+y.period;}
+    else{var s1=x._t.by[k],s2=y._t.by[k];a=s1?s1.n/s1.d:-1;b=s2?s2.n/s2.d:-1;}
+    return a<b?-SORT.dir:(a>b?SORT.dir:0);
+  });
+  return list;
+}
+function skillsOf(t){var s=[];t.items.forEach(function(i){if(s.indexOf(i.skill)<0)s.push(i.skill);});return s;}
+function sortBy(k){SORT.dir=SORT.k===k?-SORT.dir:1;SORT.k=k;draw();}
+
+function draw(){
+  var sk=skillsOf(TEST), list=rows();
+  $('thead').innerHTML='<tr><th onclick="sortBy(\'name\')">Student</th><th onclick="sortBy(\'period\')">Per.</th><th onclick="sortBy(\'date\')">Date</th>'+
+    '<th onclick="sortBy(\'score\')">Score</th>'+sk.map(function(k){return '<th class="sk" onclick="sortBy(\''+k+'\')" title="'+esc(SKILLS[k])+'">'+esc(SKILLS[k])+'</th>';}).join('')+'<th>Min.</th></tr>';
+  var tot={}, h='';
+  list.forEach(function(a){
+    var t=a._t;
+    h+='<tr class="st'+(SEL===a.attempt_id?' sel':'')+'" onclick="pick(\''+a.attempt_id+'\')"><td><b>'+esc(a.name||a.email)+'</b><div class="muted" style="font-size:.78rem">'+esc(a.email)+'</div></td>'+
+      '<td>'+esc(a.period)+'</td><td class="muted">'+esc((a.finished_at||'').slice(5,10))+'</td>'+
+      '<td><span class="c '+band(t.right,t.max)+'">'+t.right+'/'+t.max+'</span></td>'+
+      sk.map(function(k){var s=t.by[k];if(!tot[k])tot[k]={n:0,d:0};if(s){tot[k].n+=s.n;tot[k].d+=s.d;}
+        return '<td><span class="c '+(s?band(s.n,s.d):'n')+'">'+(s?s.n+'/'+s.d:'\u2013')+'</span></td>';}).join('')+
+      '<td class="muted">'+(a.seconds?Math.round(a.seconds/60):'')+'</td></tr>';
+  });
+  if(list.length){
+    h+='<tr class="avg"><td>Class</td><td></td><td></td><td></td>'+sk.map(function(k){var s=tot[k];
+      return '<td><span class="c '+band(s.n,s.d)+'">'+Math.round(100*s.n/s.d)+'%</span></td>';}).join('')+'<td></td></tr>';
+  } else h='<tr><td colspan="'+(sk.length+5)+'" class="muted">No one has taken this check yet.</td></tr>';
+  $('tbody').innerHTML=h;
+  drawItems(list);
+  if(SEL)detail(SEL);
+}
+function pick(id){SEL=SEL===id?null:id;draw();if(!SEL)$('detail').innerHTML='';else $('detail').scrollIntoView({behavior:'smooth',block:'start'});}
+
+function detail(id){
+  var a=ATT.filter(function(x){return x.attempt_id===id;})[0]; if(!a)return;
+  var rs=RESP[id]||{};
+  var h='<div class="panel"><h2>'+esc(a.name||a.email)+' &middot; '+esc(TEST.title)+'</h2>'+
+    '<div class="muted">Finished '+esc(new Date(a.finished_at).toLocaleString())+(a.lang?' &middot; language: '+esc(a.lang):'')+'</div>';
+  TEST.items.forEach(function(it,i){
+    var x=rs[it.id];
+    var ok=x?eff(x):false;
+    var tags='';
+    if(x&&x.correct&&!x.strict_ok&&(it.type!=='slots'))tags+='<span class="tag mech" title="Right answer, but capitals, commas or spaces were different">mechanics</span>';
+    if(x&&(x.override===true||x.override===false))tags+='<span class="tag ov">changed by you</span>';
+    var part=(x&&x.part_d>1)?' <span class="muted">('+x.part_n+'/'+x.part_d+' blanks)</span>':'';
+    h+='<div class="item"><div class="n">'+(i+1)+'</div><div>'+
+      '<div class="p">'+esc(SKILLS[it.skill])+' &middot; '+esc(DX.promptText(it))+'</div>'+
+      '<div class="a">'+(x?esc(x.response):'<span class="muted">no answer saved</span>')+'</div>'+
+      '<div class="k">Key: '+esc(DX.keyText(it))+'</div></div>'+
+      '<div><span class="'+(ok?'ok':'no')+'">'+(ok?'\u2713 right':'\u2717 not yet')+'</span>'+part+tags+
+      (x?'<div style="margin-top:4px"><button class="btn sm ghost" onclick="ovr(\''+id+'\',\''+it.id+'\','+(!ok)+')">Mark '+(ok?'wrong':'right')+'</button>'+
+        ((x.override===true||x.override===false)?' <button class="btn sm ghost" onclick="ovr(\''+id+'\',\''+it.id+'\',null)">Undo</button>':'')+'</div>':'')+
+      '</div></div>';
+  });
+  $('detail').innerHTML=h+'</div>';
+}
+function ovr(att,item,val){
+  fetch(SUPA_URL+'/rest/v1/diag_responses?attempt_id=eq.'+encodeURIComponent(att)+'&item_id=eq.'+encodeURIComponent(item),
+    {method:'PATCH',headers:H({Prefer:'return=minimal'}),body:JSON.stringify({override:val})})
+    .then(function(r){if(!r.ok)throw new Error(r.status);RESP[att][item].override=val;draw();})
+    .catch(function(e){alert('Could not save the change ('+e.message+').');});
+}
+
+/* ---------- questions view ---------- */
+function drawItems(list){
+  $('ihead').innerHTML='<tr><th>#</th><th>Skill</th><th>Question</th><th>Right</th><th>Most common wrong answer</th></tr>';
+  var h='';
+  TEST.items.forEach(function(it,i){
+    var n=0,d=0,wrong={};
+    list.forEach(function(a){var x=(RESP[a.attempt_id]||{})[it.id];if(!x)return;d++;if(eff(x))n++;else wrong[x.response]=(wrong[x.response]||0)+1;});
+    var top=Object.keys(wrong).sort(function(p,q){return wrong[q]-wrong[p];})[0];
+    h+='<tr><td>'+(i+1)+'</td><td>'+esc(SKILLS[it.skill])+'</td><td>'+esc(DX.promptText(it))+'<div class="muted" style="font-size:.8rem">Key: '+esc(DX.keyText(it))+'</div></td>'+
+      '<td><span class="c '+band(n,d)+'">'+(d?Math.round(100*n/d)+'%':'\u2013')+'</span> <span class="muted">'+n+'/'+d+'</span></td>'+
+      '<td>'+(top?esc(top)+' <span class="muted">('+wrong[top]+')</span>':'')+'</td></tr>';
+  });
+  $('ibody').innerHTML=h;
+}
+function tab(w){$('viewS').classList.toggle('hide',w!=='S');$('viewI').classList.toggle('hide',w!=='I');$('tbS').classList.toggle('on',w==='S');$('tbI').classList.toggle('on',w==='I');}
+
+/* ---------- CSV: one row per student try, then one column per skill ---------- */
+function csv(){
+  var sk=skillsOf(TEST), list=rows();
+  var head=['name','email','period','test','finished_at','score','max'].concat(sk.map(function(k){return k+'_right';}),sk.map(function(k){return k+'_of';}));
+  var lines=[head.join(',')];
+  list.forEach(function(a){
+    var t=a._t;
+    var r=[a.name,a.email,a.period,TEST.id,a.finished_at,t.right,t.max]
+      .concat(sk.map(function(k){return t.by[k]?t.by[k].n:'';}),sk.map(function(k){return t.by[k]?t.by[k].d:'';}));
+    lines.push(r.map(function(v){v=v==null?'':String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}).join(','));
+  });
+  var blob=new Blob([lines.join('\n')],{type:'text/csv'});
+  var link=document.createElement('a');link.href=URL.createObjectURL(blob);
+  link.download='grammar-check-'+TEST.id+'-'+new Date().toISOString().slice(0,10)+'.csv';link.click();
+}
+</script>
+</body>
+</html>
