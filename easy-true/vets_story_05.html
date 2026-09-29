@@ -778,6 +778,39 @@ function gateSubmit(){
   startStory();
 }
 
+
+function startPeriodicSave(){
+  setInterval(function(){
+    var email = localStorage.getItem('gal_student_email') || '';
+    if(!email) return;
+    var got = VETS.state.score;
+    var total = Object.keys(VETS.state.answered).length;
+    if(total === 0) return;
+    var preds = Object.keys(VETS.state.predicted).length;
+    var body = JSON.stringify({
+      email: email,
+      name: localStorage.getItem('gal_student_name') || '',
+      period: parseInt(localStorage.getItem('gal_student_period')) || null,
+      story: STORY_SLUG,
+      score: got,
+      total: total,
+      predictions: preds,
+      completed: false,
+      completed_at: new Date().toISOString()
+    });
+    fetch(SUPA_URL + '/rest/v1/vets_results', {
+      method: 'POST',
+      headers:{
+        'apikey': SUPA_KEY,
+        'Authorization': 'Bearer ' + SUPA_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates,return=minimal'
+      },
+      body: body
+    }).catch(function(){});
+  }, 20000);
+}
+
 function seedStudent(email, name, period){
   var body = JSON.stringify({email: email, name: name, period: period});
   fetch(SUPA_URL + '/rest/v1/students', {
@@ -806,6 +839,7 @@ function saveResult(score, total, predictions){
     score: score,
     total: total,
     predictions: predictions,
+    completed: true,
     completed_at: new Date().toISOString()
   });
   fetch(SUPA_URL + '/rest/v1/vets_results', {
@@ -814,7 +848,7 @@ function saveResult(score, total, predictions){
       'apikey': SUPA_KEY,
       'Authorization': 'Bearer ' + SUPA_KEY,
       'Content-Type': 'application/json',
-      'Prefer': 'return=minimal'
+      'Prefer': 'resolution=merge-duplicates,return=minimal'
     },
     body: body
   }).catch(function(){});
