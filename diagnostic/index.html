@@ -110,6 +110,9 @@ textarea{min-height:92px;font-size:1.15rem;line-height:1.5}
 .v.g{background:var(--green-bg);color:var(--green)}
 .v.y{background:var(--gold-bg);color:var(--gold)}
 .v.r{background:var(--red-bg);color:var(--red)}
+.nx{border:1.5px solid var(--line);border-radius:11px;padding:10px 14px;margin-bottom:8px;background:#fff}
+.nx b{display:block;margin-bottom:6px}
+.nx a{display:inline-block;margin:0 8px 6px 0;text-decoration:none}
 
 body.tap-on .wt-tap{cursor:pointer;border-bottom:1px dotted #8aa79a}
 body.tap-on .wt-tap:hover{background:#eef5f1}
@@ -198,6 +201,11 @@ body.tap-on .wt-tap:hover{background:#eef5f1}
     <h2>Your skills today</h2>
     <div id="dSkills"></div>
     <p class="note">Green = strong. Yellow = almost. Red = we will practice this.</p>
+  </div>
+  <div class="card hide" id="nextCard" translate="no" data-tap="1">
+    <h2>Practice next</h2>
+    <p class="note" style="margin-top:0">These lessons match the skills you can grow. Start with the first one.</p>
+    <div id="nextList"></div>
   </div>
   <div id="saveMsg"></div>
   <p style="text-align:center"><a class="btn ghost" href="../student/" style="text-decoration:none;display:inline-block">My page</a></p>
@@ -503,6 +511,7 @@ function finish(){
     return '<div class="skillrow"><b>'+esc(SKILLS[k]||k)+'</b><span class="v '+c+'">'+s.n+' / '+s.d+'</span></div>';
   }).join('');
   show('done');
+  showNext(by);
   window.GAL_SCORE=right; window.GAL_MAX=total;
   LAST_PAYLOAD={
     attempt:[{attempt_id:ATTEMPT,email:ME.email,name:ME.name,period:ME.period,test:TEST.id,score:right,max_score:total,
@@ -515,6 +524,29 @@ function finish(){
     sk:Object.keys(by).map(function(k){return {email:ME.email,slug:SLUG,skill:k,n:by[k].n,d:by[k].d,completed_at:now};})
   };
   save();
+}
+
+/* ---------- practice next: weakest skills -> lessons from skill_resources ---------- */
+function showNext(by){
+  var weak=Object.keys(by).filter(function(k){return by[k].n/by[k].d<0.8;})
+    .sort(function(a,b){return by[a].n/by[a].d-by[b].n/by[b].d;});
+  if(!weak.length){
+    $('nextList').innerHTML='<p style="margin:0;font-weight:800;color:var(--green)">Every skill is green. Great work!</p>';
+    $('nextCard').classList.remove('hide');return;
+  }
+  var q='skill_resources?select=skill,label,url,sort_order&skill=in.('+weak.map(function(k){return '"'+k+'"';}).join(',')+')&order=sort_order.asc';
+  fetch(SUPA_URL+'/rest/v1/'+q,{headers:H()}).then(function(r){return r.ok?r.json():[];}).then(function(rows){
+    var by2={};(rows||[]).forEach(function(r){(by2[r.skill]=by2[r.skill]||[]).push(r);});
+    var h='';
+    weak.forEach(function(k){
+      var links=by2[k]||[]; if(!links.length)return;
+      var seen={};
+      h+='<div class="nx"><b>'+esc(SKILLS[k]||k)+' <span class="v '+(by[k].n/by[k].d>=0.5?'y':'r')+'">'+by[k].n+' / '+by[k].d+'</span></b>'+
+        links.filter(function(r){if(seen[r.url])return false;seen[r.url]=1;return true;}).map(function(r){
+          return '<a class="btn sm" href="'+esc(r.url)+'">'+esc(r.label)+'</a>';}).join('')+'</div>';
+    });
+    if(h){$('nextList').innerHTML=h;$('nextCard').classList.remove('hide');}
+  }).catch(function(){});
 }
 function post(table,body,pref){
   return fetch(SUPA_URL+'/rest/v1/'+table,{method:'POST',headers:H({Prefer:pref||'return=minimal'}),body:JSON.stringify(body)})
