@@ -267,6 +267,14 @@ details.wq .qm{font-size:.85rem;color:var(--muted);font-weight:800}
     <div id="wordsBox"><p class="note">Loading your words&hellip;</p></div>
   </div>
 
+  <!-- My Speaking: partner interviews (shows only once there are recordings) -->
+  <div class="card hide" id="speakCard">
+    <div class="whead"><h2>My Speaking</h2></div>
+    <p id="speakLine" style="margin:0 0 14px"></p>
+    <a class="btn sm noprint" href="../speaking/mine/">Hear my recordings</a>
+    <a class="btn sm ghost noprint" href="../speaking/">Speaking interviews</a>
+  </div>
+
   <!-- About me -->
   <div class="card">
     <h2>About Me</h2>
@@ -462,6 +470,27 @@ async function load(email){
   document.getElementById('signin').classList.add('hide');
   document.getElementById('page').classList.remove('hide');
   renderAll();
+  loadSpeaking(email);
+}
+
+/* ---------- My Speaking summary (speaking_attempts; either email domain) ---------- */
+function loadSpeaking(email){
+  var lp=email.split('@')[0], a=encodeURIComponent(lp+'@s.sfusd.edu'), b=encodeURIComponent(lp+'@sfusd.edu');
+  sb('speaking_attempts?or=(email.eq.'+a+',email.eq.'+b+')&select=partner_email,match_score,accepted,practice,exchange_id,line_no').then(function(rows){
+    var card=document.getElementById('speakCard');
+    rows=rows||[];
+    var kept=rows.filter(function(r){return r.accepted&&!r.practice;});
+    if(!kept.length){card.classList.add('hide');return;}
+    var mates={}, best={};
+    kept.forEach(function(r){ if(r.partner_email)mates[r.partner_email.split('@')[0]]=1; });
+    rows.forEach(function(r){ var k=r.exchange_id+'|'+r.line_no; var v=r.match_score==null?0:r.match_score; if(!(k in best)||v>best[k])best[k]=v; });
+    var toPractice=Object.keys(best).filter(function(k){return best[k]<0.8;}).length;
+    var n=Object.keys(mates).length;
+    document.getElementById('speakLine').innerHTML='<b>'+kept.length+'</b> sentence'+(kept.length===1?'':'s')+
+      ' &middot; talked with <b>'+n+'</b> classmate'+(n===1?'':'s')+
+      (toPractice?' &middot; <b>'+toPractice+'</b> to practice':' &middot; all clear');
+    card.classList.remove('hide');
+  });
 }
 
 /* ---------- render ---------- */
