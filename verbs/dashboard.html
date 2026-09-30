@@ -28,6 +28,26 @@ td.name small{display:block;font-weight:400;color:var(--muted)}
 .detail td{text-align:left;background:var(--bg);white-space:normal}
 .detail ul{margin:4px 0;padding-left:18px}
 .muted{color:var(--muted)}
+
+.sk{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.03em;border-radius:5px;padding:0 5px;color:#fff;vertical-align:1px}
+.sk-be{background:#7a3f8f} .sk-have{background:#0f7c78} .sk-s{background:#2c5bc4} .sk-es{background:#c25400} .sk-x{background:#8a93a8}
+th.ub-be{box-shadow:inset 0 -4px 0 #7a3f8f;color:#7a3f8f} th.ub-have{box-shadow:inset 0 -4px 0 #0f7c78;color:#0f7c78}
+th.ub-behave{box-shadow:inset 0 -4px 0 #7a3f8f, inset 0 -8px 0 #0f7c78}
+th.ub-s{box-shadow:inset 0 -4px 0 #2c5bc4} th.ub-es{box-shadow:inset 0 -4px 0 #c25400}
+th.skh{font-weight:800} th.skh.be{color:#7a3f8f} th.skh.have{color:#0f7c78} th.skh.s{color:#2c5bc4} th.skh.es{color:#c25400}
+td.skc{background:#f7f8fc} td.skl{border-right:2px solid var(--line)}
+.c[data-tip]{cursor:help}
+#tip{position:fixed;z-index:50;max-width:380px;background:var(--card);border:1.5px solid var(--line);border-radius:12px;box-shadow:0 10px 30px rgba(28,38,64,.2);
+  padding:10px 12px;font-size:13px;line-height:1.35;pointer-events:none;text-align:left;white-space:normal}
+#tip.hide{display:none}
+#tip h4{margin:0 0 6px;font-size:14px}
+#tip ul{list-style:none;margin:0;padding:0;max-height:60vh;overflow:auto}
+#tip li{display:flex;gap:6px;align-items:baseline;padding:3px 0;border-top:1px solid var(--bg)}
+#tip li:first-child{border-top:0}
+#tip .mk{font-weight:800;width:12px;flex:none} #tip .ok .mk{color:var(--ok)} #tip .no .mk{color:var(--no)}
+#tip .fix{display:block;color:var(--muted);font-size:12px} #tip .fix s{color:var(--no)} #tip .fix b{color:var(--ok)}
+.detail h5{margin:10px 0 2px;font-size:13px}
+.legend{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:13px;margin:-4px 0 12px}
 </style>
 </head>
 <body>
@@ -47,8 +67,11 @@ td.name small{display:block;font-weight:400;color:var(--muted)}
       <button id="csv">Download CSV</button>
       <span class="muted" id="count"></span>
     </div>
-    <p class="muted">Best score shown for each activity. Click a name to see the sentences that student missed most recently, and any story writing.</p>
+    <p class="muted">Best score shown for each activity. <b>Hover over any score</b> to see every answer from that student's latest try: what was right and what was wrong. Click a name to see all their mistakes, grouped by skill.</p>
+    <div class="legend" id="legend"><span class="sk sk-be">BE</span> am, is, are <span class="sk sk-have">HAVE</span> have, has <span class="sk sk-s">-S</span> she plays <span class="sk sk-es">-ES</span> she watches
+      <span class="muted">&middot; The skill columns count answers from the latest try of every activity. Scores saved before today have no answer detail yet.</span></div>
     <div class="tablewrap"><table id="tbl"></table></div>
+    <div id="tip" class="hide"></div>
   </div>
 </div>
 <script>
@@ -87,48 +110,132 @@ function students(){
   });
   return Object.keys(by).map(function(k){return by[k]}).sort(function(a,b){return (a.period+a.name).localeCompare(b.period+b.name)});
 }
-function cell(r, isSpeed){
-  if(!r) return '<span class="muted">–</span>';
-  if(isSpeed) return '<span class="c md" title="'+r.attempts+' tries">'+r.best+'</span>';
-  var pct=r.total?r.best/r.total:0, cls=pct>=.85?'hi':pct>=.65?'md':'lo';
-  return '<span class="c '+cls+'" title="'+r.attempts+' tries, last '+r.correct+'/'+r.total+'">'+r.best+'/'+r.total+'</span>';
+var SK=[['to-be','To be','be','BE'],['to-have','To have','have','HAVE'],['verb-s-ending','-s verbs','s','-S'],['verb-es-ending','-es verbs','es','-ES']];
+var SKT={}; SK.forEach(function(k){ SKT[k[0]]=k; });
+var TIPS=[];
+function isPresent(){ return $('tense').value==='present'; }
+function band(p){ return p>=.85?'hi':p>=.65?'md':'lo'; }
+function tag(k){ var t=SKT[k]; return t?'<span class="sk sk-'+t[2]+'">'+t[3]+'</span>':''; }
+function itemLi(x){
+  return '<li class="'+(x.ok?'ok':'no')+'"><span class="mk">'+(x.ok?'\u2713':'\u2717')+'</span>'+tag(x.k)+
+    '<span>'+esc(x.ok?String(x.s).replace('___',x.c):x.s)+(x.ok?'':'<span class="fix"><s>'+esc(x.g)+'</s> \u2192 <b>'+esc(x.c)+'</b></span>')+'</span></li>';
 }
+function addTip(title, items, note){ TIPS.push({t:title, items:items, note:note||''}); return TIPS.length-1; }
+function tipFor(r, label){
+  var d=r.detail||{}, when=r.updated_at?new Date(r.updated_at).toLocaleDateString(undefined,{month:'short',day:'numeric'}):'';
+  var title=label+' \u00b7 last try '+r.correct+'/'+r.total+(when?' \u00b7 '+when:'');
+  if(d.items&&d.items.length){
+    var w=d.items.filter(function(x){return !x.ok;}), ok=d.items.filter(function(x){return x.ok;});
+    return addTip(title, w.concat(ok), r.attempts+' tr'+(r.attempts===1?'y':'ies')+' \u00b7 best '+r.best+'/'+r.total);
+  }
+  var miss=(d.missed||[]).map(function(m){ return {ok:false, s:m.full, g:m.given, c:'(see sentence)'}; });
+  return addTip(title, miss, miss.length?'Older save: only mistakes were recorded.':'Older save: no answer detail. It will appear after the next try.');
+}
+function cell(r, isSpeed, label){
+  if(!r) return '<span class="muted">–</span>';
+  var ti=tipFor(r, label);
+  if(isSpeed) return '<span class="c md" data-tip="'+ti+'">'+r.best+'</span>';
+  var pct=r.total?r.best/r.total:0;
+  return '<span class="c '+band(pct)+'" data-tip="'+ti+'">'+r.best+'/'+r.total+'</span>';
+}
+function skillStats(s){
+  var out={};
+  SK.forEach(function(k){ out[k[0]]={n:0,d:0,items:[]}; });
+  Object.keys(s.acts).forEach(function(ak){
+    ((s.acts[ak].detail||{}).items||[]).forEach(function(x){
+      var o=out[x.k]; if(!o) return;
+      o.d++; if(x.ok) o.n++;
+      o.items.push({ok:x.ok, s:x.s, g:x.g, c:x.c, k:x.k, from:ak});
+    });
+  });
+  return out;
+}
+function skCell(st, label){
+  if(!st.d) return '<span class="muted">–</span>';
+  var p=st.n/st.d, w=st.items.filter(function(x){return !x.ok;});
+  var ti=addTip(label+' \u00b7 '+st.n+'/'+st.d+' right', w.length?w:st.items.slice(0,15),
+    w.length?(w.length+' mistake'+(w.length===1?'':'s')+' across all activities'):'No mistakes. Showing some right answers.');
+  return '<span class="c '+band(p)+'" data-tip="'+ti+'">'+Math.round(100*p)+'%</span>';
+}
+function niceAct(key){
+  var p=key.split('-'), u='', a=p[1];
+  UNITS.forEach(function(x){ if(x[0]===p[0]) u=x[1].replace(/^\d+\s*/,''); });
+  ACTS.forEach(function(x){ if(x[0]===p[1]) a=x[1]; });
+  return (u||p[0])+' \u00b7 '+a;
+}
+function unitCls(uk){ return {be:'be',have:'have',behave:'behave',s:'s',es:'es'}[uk]||''; }
 function render(){
-  var list=students(), C=cols();
+  var list=students(), C=cols(), pres=isPresent();
+  TIPS=[];
+  $('legend').style.display=pres?'flex':'none';
   $('count').textContent=list.length+' students';
   var h='<tr><th rowspan="2" style="text-align:left">Student</th>';
-  UNITS.forEach(function(u){h+='<th class="u" colspan="'+actsFor(u[0]).length+'">'+u[1]+'</th>';});
+  if(pres) h+='<th colspan="'+SK.length+'" class="u">Skills (all activities)</th>';
+  UNITS.forEach(function(u){h+='<th class="u ub-'+unitCls(u[0])+'" colspan="'+actsFor(u[0]).length+'">'+u[1]+'</th>';});
   h+='</tr><tr>';
+  if(pres) SK.forEach(function(k,i){ h+='<th class="skh '+k[2]+(i===0?' u':'')+'">'+k[1]+'</th>'; });
   C.forEach(function(c){h+='<th'+(c.first?' class="u"':'')+'>'+c.lab+'</th>';});
   h+='</tr>';
+  var ul={}; UNITS.forEach(function(u){ ul[u[0]]=u[1]; });
   list.forEach(function(s,si){
     h+='<tr><td class="name" data-s="'+si+'">'+esc(s.name)+'<small>'+esc(s.period)+'</small></td>';
-    C.forEach(function(c){ h+='<td'+(c.first?' class="u0"':'')+'>'+cell(s.acts[c.u+'-'+c.a], c.a==='speed')+'</td>'; });
+    var st=pres?skillStats(s):null;
+    if(pres) SK.forEach(function(k,i){ h+='<td class="skc'+(i===0?' u0':'')+'">'+skCell(st[k[0]], esc(s.name)+' \u00b7 '+k[1])+'</td>'; });
+    C.forEach(function(c){
+      var lab=esc(s.name)+' \u00b7 '+(ul[c.u]||c.u)+' \u00b7 '+c.lab;
+      h+='<td'+(c.first?' class="u0"':'')+'>'+cell(s.acts[c.u+'-'+c.a], c.a==='speed', lab)+'</td>';
+    });
     h+='</tr>';
     if(open[s.email]){
-      var miss=[], writing='';
+      var body='', writing='';
+      if(pres){
+        SK.forEach(function(k){
+          var w=st[k[0]].items.filter(function(x){return !x.ok;});
+          if(!w.length) return;
+          body+='<h5>'+tag(k[0])+' '+k[1]+' \u00b7 '+w.length+' mistake'+(w.length===1?'':'s')+'</h5><ul>'+
+            w.map(function(x){ return '<li><b>'+esc(niceAct(x.from))+'</b>: <s>'+esc(x.g)+'</s> \u2192 <b>'+esc(x.c)+'</b> &nbsp;<i>'+esc(x.s)+'</i></li>'; }).join('')+'</ul>';
+        });
+      }
+      var older=[];
       Object.keys(s.acts).forEach(function(k){
         var d=s.acts[k].detail||{};
-        (d.missed||[]).forEach(function(m){miss.push('<li><b>'+esc(k)+'</b>: wrote "'+esc(m.given)+'" for <i>'+esc(m.full)+'</i></li>');});
+        if(!(pres&&d.items)) (d.missed||[]).forEach(function(m){older.push('<li><b>'+esc(k)+'</b>: wrote "'+esc(m.given)+'" for <i>'+esc(m.full)+'</i></li>');});
         if(d.writing) writing='<div style="margin-top:8px"><b>Story writing</b><div style="white-space:pre-wrap;background:var(--card);border-radius:8px;padding:8px 10px;margin-top:4px;max-width:70ch">'+esc(d.writing)+'</div></div>';
       });
-      h+='<tr class="detail"><td colspan="'+(1+C.length)+'">'+esc(s.email)+
-        (miss.length?'<ul>'+miss.join('')+'</ul>':'<div class="muted">No missed sentences saved.</div>')+writing+'</td></tr>';
+      if(older.length) body+=(pres?'<h5>Older saves (before skill tracking)</h5>':'')+'<ul>'+older.join('')+'</ul>';
+      h+='<tr class="detail"><td colspan="'+(1+(pres?SK.length:0)+C.length)+'">'+esc(s.email)+
+        (body||'<div class="muted">No mistakes saved.</div>')+writing+'</td></tr>';
     }
   });
-  if(!list.length) h+='<tr><td colspan="'+(1+C.length)+'" class="muted">No work saved yet for this period.</td></tr>';
+  if(!list.length) h+='<tr><td colspan="'+(1+(pres?SK.length:0)+C.length)+'" class="muted">No work saved yet for this period.</td></tr>';
   $('tbl').innerHTML=h;
   $('tbl').onclick=function(e){
+    var ce=e.target.closest('[data-tip]'); if(ce){ showTip(ce); return; }
     var td=e.target.closest('[data-s]'); if(!td) return;
-    var s=list[+td.getAttribute('data-s')]; open[s.email]=!open[s.email]; render();
+    var s=list[+td.getAttribute('data-s')]; open[s.email]=!open[s.email]; hideTip(); render();
   };
 }
+function showTip(el){
+  var t=TIPS[+el.getAttribute('data-tip')], box=$('tip'); if(!t) return;
+  box.innerHTML='<h4>'+t.t+'</h4>'+(t.items.length?'<ul>'+t.items.map(itemLi).join('')+'</ul>':'')+
+    (t.note?'<div class="muted" style="margin-top:4px">'+esc(t.note)+'</div>':'');
+  box.classList.remove('hide');
+  var r=el.getBoundingClientRect(), bw=box.offsetWidth, bh=box.offsetHeight;
+  var x=Math.min(Math.max(8,r.left-20), window.innerWidth-bw-8), y=r.bottom+6;
+  if(y+bh>window.innerHeight-8) y=Math.max(8,r.top-bh-6);
+  box.style.left=x+'px'; box.style.top=y+'px';
+}
+function hideTip(){ $('tip').classList.add('hide'); }
+document.addEventListener('mouseover',function(e){ var c=e.target.closest&&e.target.closest('[data-tip]'); if(c) showTip(c); else hideTip(); });
+window.addEventListener('scroll',hideTip,true);
 function csv(){
-  var list=students(), C=cols(), head=['name','email','period'];
+  var list=students(), C=cols(), head=['name','email','period'], pres=isPresent();
+  if(pres) SK.forEach(function(k){head.push(k[1]+' %');});
   C.forEach(function(c){head.push(c.u+'-'+c.a);});
   var lines=[head.join(',')];
   list.forEach(function(s){
     var row=[s.name,s.email,s.period];
+    if(pres){ var st=skillStats(s); SK.forEach(function(k){ var o=st[k[0]]; row.push(o.d?Math.round(100*o.n/o.d):''); }); }
     C.forEach(function(c){var r=s.acts[c.u+'-'+c.a]; row.push(r?(c.a==='speed'?r.best:r.best+'/'+r.total):'');});
     lines.push(row.map(function(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"';}).join(','));
   });

@@ -432,7 +432,8 @@ function loadAll(){
   });
 }
 
-function keyOf(e){return String(e||'').trim().toLowerCase();}
+function keyOf(e){ // name@sfusd.edu and name@s.sfusd.edu are the same student
+  return String(e||'').trim().toLowerCase().replace(/@sfusd\.edu$/,'@s.sfusd.edu');}
 
 function build(students,attempts,acts,skills,eld,vocab){
   STUD={};
@@ -666,7 +667,9 @@ function syncEld(){
 
   $('msg').innerHTML='<div class="msg info">Writing&hellip;</div>';
   // clear any earlier sync for these students so re-running never doubles up
-  var list=attempts.map(function(a){return '"'+a.email+'"';}).join(',');
+  // both email domains, so an earlier sync under the other spelling is cleared too
+  var list=attempts.map(function(a){var lp=a.email.split('@')[0];
+    return '"'+lp+'@s.sfusd.edu","'+lp+'@sfusd.edu"';}).join(',');
   var del='?slug=eq.'+encodeURIComponent(ELD_SLUG)+'&email=in.('+encodeURIComponent(list)+')';
   fetch(SUPA_URL+'/rest/v1/activity_attempts'+del,{method:'DELETE',headers:H()})
   .then(function(){return fetch(SUPA_URL+'/rest/v1/skill_attempts'+del,{method:'DELETE',headers:H()});})

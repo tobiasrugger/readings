@@ -213,6 +213,25 @@ details.wq .qm{font-size:.85rem;color:var(--muted);font-weight:800}
 @media print{.btn,.noprint{display:none!important}
   body{background:#fff}.card{break-inside:avoid;box-shadow:none}
   .hero{background:var(--plum-dk)!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+
+/* ---- task chips + right/wrong hover (per-task detail.items) ---- */
+.tasks{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.tchip{font-size:.78rem;font-weight:800;border-radius:999px;padding:2px 9px;cursor:help;border:1.5px solid transparent;background:var(--grey-bg);color:var(--muted)}
+.tchip.g{background:var(--green-bg);color:var(--green)} .tchip.l{background:var(--lime-bg);color:var(--lime)}
+.tchip.y{background:var(--yellow-bg);color:var(--yellow)} .tchip.o{background:var(--orange-bg);color:var(--orange)}
+.tchip.r{background:var(--red-bg);color:var(--red)}
+.tchip:hover,.tchip:focus{border-color:currentColor;outline:none}
+#tipBox{position:fixed;z-index:999;max-width:360px;background:#fff;color:var(--ink);border:1.5px solid var(--line-dk);border-radius:12px;
+  box-shadow:0 10px 30px rgba(35,29,53,.22);padding:10px 12px;font-size:.85rem;line-height:1.35;pointer-events:none}
+#tipBox.hide{display:none}
+#tipBox h4{margin:0 0 6px;font-size:.9rem;color:var(--plum-dk)}
+#tipBox ul{list-style:none;margin:0;padding:0;max-height:60vh;overflow:auto}
+#tipBox li{display:flex;gap:6px;align-items:baseline;padding:3px 0;border-top:1px solid var(--field)}
+#tipBox li:first-child{border-top:0}
+#tipBox .mk{font-weight:900;width:14px;flex:none} #tipBox .ok .mk{color:var(--green)} #tipBox .no .mk{color:var(--red)}
+#tipBox .fix{display:block;font-size:.8rem;color:var(--muted)} #tipBox .fix s{color:var(--red)} #tipBox .fix b{color:var(--green)}
+.sk{font-size:.66rem;font-weight:900;letter-spacing:.03em;border-radius:5px;padding:0 5px;flex:none;color:#fff}
+.sk-be{background:#7a3f8f} .sk-have{background:#0f7c78} .sk-s{background:#2c5bc4} .sk-es{background:#c25400} .sk-x{background:#9a92b5}
 </style>
 </head>
 <body>
@@ -443,15 +462,18 @@ async function load(email){
   const al=await sb('student_aliases?alias_email=eq.'+encodeURIComponent(asked)+'&select=email');
   if(al&&al.length)email=al[0].email;
   ME=email;
+  // pages save as either name@s.sfusd.edu or name@sfusd.edu -> read both
+  const lp=email.split('@')[0];
+  const both='in.('+encodeURIComponent(lp+'@s.sfusd.edu')+','+encodeURIComponent(lp+'@sfusd.edu')+')';
 
   const [stu,facts,acts,atts,skills,res,work,checks,practice,phHits,phWork]=await Promise.all([
     sb('students?email=eq.'+encodeURIComponent(email)+'&select=*'),
     sb('student_facts?email=eq.'+encodeURIComponent(email)+'&select=key,value'),
     sb('activities?select=*&order=sort_order.asc'),
-    sb('activity_attempts?email=eq.'+encodeURIComponent(email)+'&select=slug,score,max_score,completed_at&order=completed_at.asc'),
-    sb('student_skills?email=eq.'+encodeURIComponent(email)+'&select=skill,pct,n'),
+    sb('activity_attempts?email='+both+'&select=slug,score,max_score,completed_at,detail&order=completed_at.asc'),
+    sb('student_skills?email='+both+'&select=skill,pct,n'),
     sb('skill_resources?select=*&order=sort_order.asc'),
-    sb('student_work?email=eq.'+encodeURIComponent(email)+'&select=*&order=sort_order.asc'),
+    sb('student_work?email='+both+'&select=*&order=sort_order.asc'),
     window.MW?MW.loadChecks(email):null,
     window.MW?MW.loadPractice(email):null,
     window.PH?PH.loadHits(email):null,
@@ -465,7 +487,7 @@ async function load(email){
     DATA.student={email:email};
     NEW_STUDENT=!SELF_SIGNIN;
   } else DATA.student=stu[0];
-  DATA.facts=facts||[]; DATA.acts=acts||[]; DATA.atts=atts||[]; DATA.skills=skills||[]; DATA.res=res||[]; DATA.work=work||[];
+  DATA.facts=facts||[]; DATA.acts=acts||[]; DATA.atts=atts||[]; DATA.skills=mergeSkills(skills||[]); DATA.res=res||[]; DATA.work=work||[];
 
   document.getElementById('signin').classList.add('hide');
   document.getElementById('page').classList.remove('hide');
@@ -693,7 +715,67 @@ function renderFacts(){
   document.getElementById('factsEmpty').classList.toggle('hide',rows.length>0);
 }
 
+function mergeSkills(rows){
+  // same skill under both email domains -> one bar, weighted by activities
+  var by={};
+  rows.forEach(function(r){
+    var b=by[r.skill]; var n=r.n||1;
+    if(!b){ by[r.skill]={skill:r.skill,pct:r.pct,n:r.n,_w:n,_s:r.pct*n}; return; }
+    b._w+=n; b._s+=r.pct*n; b.n=(b.n||0)+(r.n||0); b.pct=Math.round(b._s/b._w);
+  });
+  return Object.keys(by).map(function(k){ var b=by[k]; delete b._w; delete b._s; return b; });
+}
+var SKILL_TAG={'to-be':['BE','sk-be'],'to-have':['HAVE','sk-have'],'verb-s-ending':['-S','sk-s'],'verb-es-ending':['-ES','sk-es']};
+var TIPS=[];
+function taskChips(list){
+  // latest attempt of each task that saved item-level detail
+  var last={}, order=[];
+  list.forEach(function(a){
+    var d=a.detail||{}; if(!d.task||!d.items)return;
+    if(!last[d.task])order.push(d.task);
+    last[d.task]=a;
+  });
+  if(!order.length)return '';
+  return '<div class="tasks">'+order.map(function(t){
+    var a=last[t], d=a.detail, p=a.max_score?Math.round(100*a.score/a.max_score):null;
+    TIPS.push(a);
+    return '<span class="tchip '+band(p)+'" tabindex="0" data-tipi="'+(TIPS.length-1)+'">'+
+      esc(d.task_title||t)+' '+a.score+'/'+a.max_score+'</span>';
+  }).join('')+'</div>';
+}
+function tipHtml(a){
+  var d=a.detail||{}, items=d.items||[];
+  var when=a.completed_at?new Date(a.completed_at).toLocaleDateString(undefined,{month:'short',day:'numeric'}):'';
+  var wrong=items.filter(function(x){return !x.ok;}), right=items.filter(function(x){return x.ok;});
+  var li=function(x){
+    var t=SKILL_TAG[x.k]||[x.k?String(x.k).replace(/-/g,' '):'','sk-x'];
+    return '<li class="'+(x.ok?'ok':'no')+'"><span class="mk">'+(x.ok?'\u2713':'\u2717')+'</span>'+
+      (t[0]?'<span class="sk '+t[1]+'">'+esc(t[0])+'</span>':'')+
+      '<span>'+esc(x.ok?String(x.s).replace('___',x.c):x.s)+(x.ok?'':'<span class="fix"><s>'+esc(x.g)+'</s> \u2192 <b>'+esc(x.c)+'</b></span>')+'</span></li>';
+  };
+  return '<h4>'+esc(d.task_title||d.task||'')+' \u00b7 '+a.score+'/'+a.max_score+(when?' \u00b7 '+when:'')+'</h4>'+
+    '<ul>'+wrong.map(li).join('')+right.map(li).join('')+'</ul>'+
+    (items.length<a.max_score?'<div class="note" style="margin-top:4px">Showing '+items.length+' answers.</div>':'');
+}
+function showTip(el){
+  var box=document.getElementById('tipBox');
+  if(!box){box=document.createElement('div');box.id='tipBox';box.className='hide';document.body.appendChild(box);}
+  var a=TIPS[+el.getAttribute('data-tipi')]; if(!a)return;
+  box.innerHTML=tipHtml(a); box.classList.remove('hide');
+  var r=el.getBoundingClientRect(), bw=box.offsetWidth, bh=box.offsetHeight;
+  var x=Math.min(Math.max(8,r.left), window.innerWidth-bw-8);
+  var y=r.bottom+6; if(y+bh>window.innerHeight-8)y=Math.max(8,r.top-bh-6);
+  box.style.left=x+'px'; box.style.top=y+'px';
+}
+function hideTip(){var b=document.getElementById('tipBox'); if(b)b.classList.add('hide');}
+document.addEventListener('mouseover',function(e){var c=e.target.closest&&e.target.closest('.tchip'); if(c)showTip(c); else hideTip();});
+document.addEventListener('focusin',function(e){if(e.target.classList&&e.target.classList.contains('tchip'))showTip(e.target);});
+document.addEventListener('focusout',hideTip);
+document.addEventListener('click',function(e){var c=e.target.closest&&e.target.closest('.tchip'); if(c){showTip(c);} else hideTip();});
+window.addEventListener('scroll',hideTip,true);
+
 function renderActs(){
+  TIPS=[];
   var body=document.getElementById('actBody');
   var by={};
   DATA.atts.forEach(function(a){(by[a.slug]=by[a.slug]||[]).push(a);});
@@ -726,7 +808,7 @@ function renderActs(){
       (l.length?'Do it again':'Start')+'</a>':'';
     return '<tr><td><b>'+esc(act.title||act.slug)+'</b><br>'+
       '<span class="tag '+(l.length?'done':'todo')+'">'+(l.length?'Finished':'Not started')+'</span>'+
-      (act.unit?' <span class="note">'+esc(act.unit)+'</span>':'')+'</td>'+
+      (act.unit?' <span class="note">'+esc(act.unit)+'</span>':'')+taskChips(l)+'</td>'+
       '<td class="score">'+(first!=null?first+'%':'&mdash;')+'</td>'+
       '<td class="score">'+(best!=null?best+'%'+gain:'&mdash;')+'</td>'+
       '<td class="noprint">'+btn+'</td></tr>';

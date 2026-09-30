@@ -245,6 +245,19 @@ var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 var TABLE = 'verb_practice';
 var PROXY = 'https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
 var LSKEY = 'verbs_v1';
+/* grab the real fetch before track.js wraps it: this page logs its own
+   per-task attempts (below), so track.js must not log a second, page-level one */
+var rawFetch = window.fetch.bind(window);
+var TENSE_SLUG = 'verbs/present';
+var PAGE_URL = 'https://tobiasrugger.github.io/readings/verbs/present/';
+var UNIT_META = {
+  be:     {title:'Verbs 1 \u00b7 To be (am, is, are)',   skills:['to-be']},
+  have:   {title:'Verbs 2 \u00b7 To have (have, has)',   skills:['to-have']},
+  behave: {title:'Verbs 3 \u00b7 Be or have? (is or has)', skills:['to-be','to-have']},
+  s:      {title:'Verbs 4 \u00b7 -s verbs (she plays)',   skills:['verb-s-ending']},
+  es:     {title:'Verbs 5 \u00b7 -es verbs (she watches)', skills:['verb-es-ending','verb-s-ending']},
+  all:    {title:'Verbs 6 \u00b7 Mix it up',               skills:['verb-s-ending','verb-es-ending','to-have']}
+};
 
 var LANGS = [
   ['none','English only'],['Spanish','Español'],['Cantonese','廣東話'],['Mandarin','中文 (普通话)'],
@@ -336,6 +349,14 @@ function conj(v,g){
   if(v==='be') return g==='i' ? 'am' : g==='s3' ? 'is' : 'are';
   return g==='s3' ? addS(v) : v;
 }
+function skillOf(v){
+  if(v==='be') return 'to-be';
+  if(v==='have') return 'to-have';
+  return ES_END.test(v) ? 'verb-es-ending' : 'verb-s-ending';
+}
+/* every answer in the current activity: {s:sentence, g:given, c:correct, ok, k:skill} */
+var LOG = [];
+function logItem(sen, given, correct, ok, k){ LOG.push({s:sen, g:given, c:correct, ok:!!ok, k:k}); }
 function fam(v,g){ return (v==='be' && g==='i') ? 'i' : (g==='s3' ? 's3' : 'pl'); }
 function markEnd(v,a){
   if(v==='be' || v==='have' || a===v) return esc(a);
@@ -616,6 +637,7 @@ var TITLES = {
 };
 function startQuiz(mode){
   var n = mode==='speed' ? 80 : nItems();
+  LOG = [];
   Q = {mode:mode, items:genItems(n), i:0, right:0, done:false, answered:false, marks:[], missed:[], left:60, total:0};
   if(mode==='rw') Q.items.forEach(function(it){
     it.shown = Math.random()<.5 ? it.ans : pick(optionPool(it).filter(function(x){ return x!==it.ans; }));
@@ -667,6 +689,14 @@ function answer(ok, given){
   var it = Q.items[Q.i];
   Q.marks[Q.i] = ok;
   if(ok) Q.right++; else Q.missed.push({full:it.full, given:given});
+  if(Q.mode==='rw'){
+    var truth = it.shown===it.ans, said = ok ? truth : !truth;
+    logItem(it.s.t+' '+it.shown+' '+it.pr.r+'.', said?'Right':'Wrong', truth?'Right':'Wrong \u2192 '+it.ans, ok, skillOf(it.pr.v));
+  } else if(Q.mode==='build'){
+    logItem(it.target, given, it.target, ok, skillOf(it.pr.v));
+  } else {
+    logItem(it.s.t+' ___ '+it.pr.r+'.', given, it.ans, ok, skillOf(it.pr.v));
+  }
   if(Q.mode==='speed'){
     Q.total = (Q.total||0)+1;
     var b = document.querySelector('[data-opt="'+cssEsc(given)+'"]');
@@ -729,14 +759,17 @@ function startFlash(){
     ['I','you','he','she','it','we','they'].forEach(function(k){
       var v=u, a=conj(v,SUBJ[k].g);
       cards.push({front:'<div class="scene sm">'+SUBJ[k].emo[0]+'</div><div class="big">'+esc(k)+' + '+u+'</div>',
-        back:'<div class="big"><span class="'+fam(v,SUBJ[k].g)+'-c">'+esc(SUBJ[k].t)+' '+esc(a)+'</span></div>', say:SUBJ[k].t+' '+a});
+        back:'<div class="big"><span class="'+fam(v,SUBJ[k].g)+'-c">'+esc(SUBJ[k].t)+' '+esc(a)+'</span></div>', say:SUBJ[k].t+' '+a,
+        q:SUBJ[k].t+' + '+u, k:skillOf(u)});
     });
   } else {
     genItems(u==='behave'?10:12).forEach(function(it){
       var front = scene(it,true)+'<div class="big">'+esc(it.s.t)+' + '+(u==='behave'?'?':esc(it.pr.v))+'</div><div class="hint">… '+esc(it.pr.r)+'</div>';
-      cards.push({front:front, back:scene(it,true)+'<div class="big">'+fullColored(it)+'</div>', say:it.full});
+      cards.push({front:front, back:scene(it,true)+'<div class="big">'+fullColored(it)+'</div>', say:it.full,
+        q:it.s.t+' + '+(u==='behave'?'?':it.pr.v)+' \u2026 '+it.pr.r, k:skillOf(it.pr.v)});
     });
   }
+  LOG = [];
   F = {queue:shuffle(cards), total:cards.length, firstTry:0, seen:{}, flipped:false};
   renderFlash();
 }
@@ -757,12 +790,13 @@ var M = null;
 function startMatch(){
   var u=S.unit, pairs=[];
   if(u==='be' || u==='have'){
-    ['I','you','he','she','it','we','they'].forEach(function(k){ pairs.push({l:k, r:conj(u,SUBJ[k].g)}); });
+    ['I','you','he','she','it','we','they'].forEach(function(k){ pairs.push({l:k, r:conj(u,SUBJ[k].g), k:skillOf(u)}); });
   } else {
     genItems(7).forEach(function(it){
-      pairs.push({l: u==='behave' ? it.s.t+' … '+it.pr.r : it.s.t+' + '+it.pr.v, r:it.ans});
+      pairs.push({l: u==='behave' ? it.s.t+' … '+it.pr.r : it.s.t+' + '+it.pr.v, r:it.ans, k:skillOf(it.pr.v)});
     });
   }
+  LOG = [];
   M = {pairs:pairs, left:shuffle(pairs.map(function(p,i){ return i; })), right:shuffle(pairs.map(function(p,i){ return i; })),
        doneL:{}, doneR:{}, sel:null, errors:0, matched:0};
   renderMatch();
@@ -790,24 +824,25 @@ function startSort(){
     .concat(shuffle(NOUNS).slice(0,5).map(function(n){ return {t:n.t, g:SUBJ[n.like].g}; }));
   if(u==='be'){
     bins=['am','is','are'];
-    subs.forEach(function(s){ tiles.push({t:s.t, b:conj('be',s.g)}); });
+    subs.forEach(function(s){ tiles.push({t:s.t, b:conj('be',s.g), k:'to-be'}); });
   } else if(u==='have'){
     bins=['have','has'];
-    subs.forEach(function(s){ tiles.push({t:s.t, b:conj('have',s.g)}); });
+    subs.forEach(function(s){ tiles.push({t:s.t, b:conj('have',s.g), k:'to-have'}); });
   } else if(u==='behave'){
     bins=['She is …','She has …'];
-    shuffle(BE.filter(function(p){ return p.f===ALLP || p.f===SG; })).slice(0,6).forEach(function(p){ tiles.push({t:p.r, b:bins[0]}); });
-    shuffle(HAVE.filter(function(p){ return p.f===ALLP; })).slice(0,6).forEach(function(p){ tiles.push({t:p.r, b:bins[1]}); });
+    shuffle(BE.filter(function(p){ return p.f===ALLP || p.f===SG; })).slice(0,6).forEach(function(p){ tiles.push({t:p.r, b:bins[0], k:'to-be'}); });
+    shuffle(HAVE.filter(function(p){ return p.f===ALLP; })).slice(0,6).forEach(function(p){ tiles.push({t:p.r, b:bins[1], k:'to-have'}); });
   } else if(u==='s'){
     bins=['… play soccer.','… plays soccer.'];
-    subs.forEach(function(s){ tiles.push({t:s.t, b: s.g==='s3' ? bins[1] : bins[0]}); });
+    subs.forEach(function(s){ tiles.push({t:s.t, b: s.g==='s3' ? bins[1] : bins[0], k:'verb-s-ending'}); });
   } else {
     bins=['add -s','add -es'];
     var verbs = u==='es'
       ? ['watch','wash','fix','go','do','teach','catch','miss','relax','finish','see','play','talk','eat']
       : ['watch','wash','fix','go','do','catch','see','play','talk','eat','read','like','drink','walk'];
-    verbs.forEach(function(v){ tiles.push({t:v, b: ES_END.test(v) ? bins[1] : bins[0]}); });
+    verbs.forEach(function(v){ tiles.push({t:v, b: ES_END.test(v) ? bins[1] : bins[0], k:skillOf(v)}); });
   }
+  LOG = [];
   SO = {bins:bins, tiles:shuffle(tiles).map(function(t,i){ t.id=i; return t; }), placed:{}, sel:null, errors:0};
   renderSort();
 }
@@ -858,22 +893,61 @@ function headers(extra){
   return h;
 }
 function setDot(c){ var d=$('dot'); if(d) d.className=c||''; }
+function trimLog(log){
+  /* keep every mistake, then fill with correct answers, max 40 */
+  var wrong = log.filter(function(x){ return !x.ok; }), right = log.filter(function(x){ return x.ok; });
+  var keep = wrong.slice(0,40);
+  return keep.concat(right.slice(0, Math.max(0, 40-keep.length)));
+}
+function skillCounts(log){
+  var by = {};
+  log.forEach(function(x){ if(!x.k) return; var b=by[x.k]||(by[x.k]={n:0,d:0}); b.d++; if(x.ok) b.n++; });
+  return by;
+}
+var registered = {};
 function saveResult(ak, correct, total, missed){
   var key = S.unit+'-'+ak, prev = S.scores[key] || {best:0, attempts:0};
   var rec = {best:Math.max(prev.best||0, correct), total:total, correct:correct, attempts:(prev.attempts||0)+1};
   S.scores[key] = rec; persist(); renderNav();
   setDot('saving');
+  var items = trimLog(LOG), skills = skillCounts(LOG), when = new Date().toISOString();
   var row = {
     email:S.email, name:S.name, period:S.period, activity:key, unit:S.unit,
     correct:correct, total:total, best:rec.best, attempts:rec.attempts, turned_in:true,
-    detail:{level:S.level, lang:S.lang, missed:missed.slice(0,20)},
-    updated_at:new Date().toISOString()
+    detail:{level:S.level, lang:S.lang, missed:missed.slice(0,20), items:items, skills:skills},
+    updated_at:when
   };
-  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email,activity', {
+  rawFetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email,activity', {
     method:'POST', headers:headers({'Prefer':'resolution=merge-duplicates,return=minimal'}), body:JSON.stringify(row)
   }).then(function(r){
     if(r.ok) setDot('saved'); else { setDot('err'); r.text().then(function(t){ console.warn('save failed', r.status, t); }); }
   }).catch(function(e){ setDot('err'); console.warn(e); });
+  logAttempt(ak, correct, total, items, skills, when);
+}
+/* one row per finished task in activity_attempts (student page + teacher/index),
+   one row per skill in skill_attempts (To Be / To Have skill bars) */
+function logAttempt(ak, correct, total, items, skills, when){
+  var slug = TENSE_SLUG+'/'+S.unit, meta = UNIT_META[S.unit] || {title:slug, skills:[]};
+  var actT = ''; ACTS.forEach(function(a){ if(a.k===ak) actT=a.t; });
+  var post = function(path, body, prefer){
+    return rawFetch(SUPA_URL+'/rest/v1/'+path, {method:'POST', headers:headers({'Prefer':prefer||'return=minimal'}), body:JSON.stringify(body)})
+      .then(function(r){ if(!r.ok) r.text().then(function(t){ console.warn(path, r.status, t); }); })
+      .catch(function(e){ console.warn(e); });
+  };
+  var reg = registered[slug] ? Promise.resolve() : post('activities?on_conflict=slug', [{
+    slug:slug, title:meta.title, unit:'Verbs: present tense', url:PAGE_URL, skills:meta.skills, sort_order:610+unit().n
+  }], 'resolution=merge-duplicates,return=minimal').then(function(){ registered[slug]=1; });
+  reg.then(function(){
+    post('activity_attempts', [{
+      email:S.email, slug:slug, score:correct, max_score:total,
+      detail:{path:location.pathname, source:'page', task:ak, task_title:actT, unit:S.unit, level:S.level, items:items},
+      completed_at:when
+    }]);
+    var sk = Object.keys(skills).filter(function(k){ return skills[k].d>0; }).map(function(k){
+      return {email:S.email, slug:slug, skill:k, n:skills[k].n, d:skills[k].d, completed_at:when};
+    });
+    if(sk.length) post('skill_attempts', sk);
+  });
 }
 function loadScores(){
   return fetch(SUPA_URL+'/rest/v1/'+TABLE+'?email=eq.'+encodeURIComponent(S.email)+'&select=activity,best,total,correct,attempts', {headers:headers()})
@@ -890,8 +964,8 @@ function canonical(email){ return email.trim().toLowerCase().split('@')[0]+'@s.s
 function registerStudent(typed){
   var canon = S.email, parts = S.name.split(/\s+/);
   fetch(SUPA_URL+'/rest/v1/students?on_conflict=email', {
-    method:'POST', headers:headers({'Prefer':'resolution=ignore-duplicates,return=minimal'}),
-    body:JSON.stringify([{email:canon, first_name:parts[0]||null, last_name:parts.slice(1).join(' ')||null}])
+    method:'POST', headers:headers({'Prefer':'resolution=merge-duplicates,return=minimal'}),
+    body:JSON.stringify([{email:canon, name:S.name, first_name:parts[0]||null, last_name:parts.slice(1).join(' ')||null, updated_at:new Date().toISOString()}])
   }).catch(function(){});
   if(typed!==canon){
     fetch(SUPA_URL+'/rest/v1/student_aliases?on_conflict=alias_email', {
@@ -963,6 +1037,7 @@ document.addEventListener('click', function(e){
   if(F && d('flip')){ if(!F.flipped){ F.flipped=true; speak(F.queue[0].say); renderFlash(); } else { F.flipped=false; renderFlash(); } return; }
   if(F && d('fl')){
     var c = F.queue.shift();
+    if(!c.logged){ c.logged=1; logItem(c.q, d('fl')==='got'?'I knew it':'Practice again', c.say, d('fl')==='got', c.k); }
     if(d('fl')==='got'){ if(!F.seen[c.say]) F.firstTry++; }
     else { F.seen[c.say]=1; F.queue.splice(Math.min(F.queue.length,3),0,c); }
     F.flipped=false; renderFlash(); return;
@@ -972,12 +1047,14 @@ document.addEventListener('click', function(e){
   if(M && d('mr')!=null){
     var ri = +d('mr');
     if(M.sel==null){ t.classList.add('shake'); return; }
-    if(M.pairs[ri].r === M.pairs[M.sel].r){
+    var mp = M.pairs[M.sel];
+    if(M.pairs[ri].r === mp.r){
+      if(!mp.err) logItem(mp.l, mp.r, mp.r, true, mp.k);
       M.doneL[M.sel]=1; M.doneR[ri]=1; M.matched++;
       speak(M.pairs[M.sel].l.replace(' + ',' ').replace(' … ',' ')+' '+M.pairs[ri].r);
       M.sel=null;
       if(M.matched===M.pairs.length){ var tot=M.pairs.length; return showSummary('match', Math.max(0,tot-M.errors), tot, []); }
-    } else { M.errors++; renderMatch(); var b=document.querySelector('[data-mr="'+ri+'"]'); if(b) b.classList.add('shake'); return; }
+    } else { M.errors++; mp.err=1; logItem(mp.l, M.pairs[ri].r, mp.r, false, mp.k); renderMatch(); var b=document.querySelector('[data-mr="'+ri+'"]'); if(b) b.classList.add('shake'); return; }
     renderMatch(); return;
   }
   /* sort */
@@ -985,8 +1062,8 @@ document.addEventListener('click', function(e){
   if(SO && d('bin')!=null){
     if(SO.sel==null) return;
     var tile = SO.tiles[SO.sel], bin = SO.bins[+d('bin')];
-    if(tile.b===bin){ SO.placed[tile.id]=1; SO.sel=null; renderSort(); }
-    else { SO.errors++; renderSort(); var bb=document.querySelector('[data-bin="'+d('bin')+'"]'); if(bb) bb.classList.add('shake'); }
+    if(tile.b===bin){ if(!tile.err) logItem(tile.t, bin, bin, true, tile.k); SO.placed[tile.id]=1; SO.sel=null; renderSort(); }
+    else { SO.errors++; tile.err=1; logItem(tile.t, bin, tile.b, false, tile.k); renderSort(); var bb=document.querySelector('[data-bin="'+d('bin')+'"]'); if(bb) bb.classList.add('shake'); }
     return;
   }
 });
