@@ -99,6 +99,22 @@ tbody tr:hover td{background:var(--plum-lt)}
 .msg.info{background:var(--plum-lt);color:var(--plum-dk);border:1.5px solid var(--line-dk)}
 .gate{max-width:380px;margin:60px auto}
 @media print{.noprint{display:none!important}body{background:#fff}}
+
+.sk{display:inline-block;font-size:.66rem;font-weight:900;letter-spacing:.03em;border-radius:5px;padding:0 5px;color:#fff;flex:none}
+.sk-be{background:#7a3f8f} .sk-have{background:#0f7c78} .sk-s{background:#2c5bc4} .sk-es{background:#c25400}
+th.vb-be{box-shadow:inset 0 -4px 0 #7a3f8f} th.vb-have{box-shadow:inset 0 -4px 0 #0f7c78}
+th.vb-s{box-shadow:inset 0 -4px 0 #2c5bc4} th.vb-es{box-shadow:inset 0 -4px 0 #c25400}
+.v[data-tip]{cursor:help}
+#tip{position:fixed;z-index:60;max-width:380px;background:#fff;border:1.5px solid #bdb0dd;border-radius:12px;box-shadow:0 10px 30px rgba(35,29,53,.22);
+  padding:10px 12px;font-size:.84rem;line-height:1.35;pointer-events:none;text-align:left;white-space:normal}
+#tip.hide{display:none}
+#tip h4{margin:0 0 6px;font-size:.9rem}
+#tip ul{list-style:none;margin:0;padding:0;max-height:60vh;overflow:auto}
+#tip li{display:flex;gap:6px;align-items:baseline;padding:3px 0;border-top:1px solid #f1eef8}
+#tip li:first-child{border-top:0}
+#tip .mk{font-weight:900;width:12px;flex:none;color:#b5304a}
+#tip .fix{display:block;font-size:.78rem;color:#5d5575} #tip .fix s{color:#b5304a} #tip .fix b{color:#1f7a4d}
+#tip .from{display:block;font-size:.72rem;color:#9a92b5}
 </style>
 </head>
 <body>
@@ -143,6 +159,8 @@ tbody tr:hover td{background:var(--plum-lt)}
       <div class="toggles" id="togProfile"></div>
       <div class="grp">Overall progress</div>
       <div class="toggles" id="togOverall"></div>
+      <div class="grp">Verbs &mdash; to be vs. to have (hover a score to see mistakes)</div>
+      <div class="toggles" id="togVerbs"></div>
       <div class="grp">English skills &mdash; from every activity</div>
       <div class="toggles" id="togSkills"></div>
       <div class="grp">ELD 103 &mdash; grammar detail</div>
@@ -159,6 +177,7 @@ tbody tr:hover td{background:var(--plum-lt)}
   </div>
 
   <div class="tablewrap"><table id="tbl"><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
+  <div id="tip" class="hide"></div>
 
   <div class="legend">
     <span><i style="background:var(--green)"></i>90&ndash;100</span>
@@ -406,6 +425,61 @@ ELD_COLS.forEach(function(c,i){
 
 var SKILL_COLS=[], VOCAB_COLS=[];
 
+/* verbs: to be / to have / -s / -es, scored from the answers saved by verbs/present
+   (latest try of every task). Always listed, so they never hide in the skill list. */
+var VERB_SK=[['to-be','To be (am, is, are)','be','BE',true],['to-have','To have (have, has)','have','HAVE',true],
+             ['verb-s-ending','-s verbs','s','-S',false],['verb-es-ending','-es verbs','es','-ES',false]];
+var VERB_SKILL_IDS=VERB_SK.map(function(k){return k[0];});
+var TIPS=[];
+VERB_SK.forEach(function(k,i){
+  var at=COLS.map(function(c){return c.id;}).indexOf('turned')+1+i;
+  COLS.splice(at,0,{id:'vb_'+k[2],grp:'togVerbs',label:k[1],on:k[4],pctv:true,grpstart:i===0,cls:'vb-'+k[2],
+    get:function(r){var o=r.verbs&&r.verbs[k[0]];return o&&o.d?Math.round(100*o.n/o.d):null;},
+    html:function(r){
+      var o=r.verbs&&r.verbs[k[0]];
+      if(!o||!o.d)return '<span class="v n">&mdash;</span>';
+      var p=Math.round(100*o.n/o.d), w=o.items.filter(function(x){return !x.ok;});
+      TIPS.push({t:'<span class="sk sk-'+k[2]+'">'+k[3]+'</span> '+esc(r.name)+' &middot; '+o.n+'/'+o.d+' right',items:w});
+      return '<span class="v '+band(p)+'" data-tip="'+(TIPS.length-1)+'">'+p+'%</span>';
+    }});
+});
+var UNIT_NAME={be:'To be',have:'To have',behave:'Be or have',s:'-s verbs',es:'-es verbs',all:'Mix'};
+function buildVerbs(rows){
+  // latest attempt per student + unit + task, then pool its answers by skill
+  var last={};
+  rows.forEach(function(a){
+    var d=a.detail||{}; if(!d.items||!d.task)return;
+    var kk=keyOf(a.email)+'|'+a.slug+'|'+d.task;
+    if(!last[kk]||a.completed_at>last[kk].completed_at)last[kk]=a;
+  });
+  Object.keys(last).forEach(function(kk){
+    var a=last[kk], k=keyOf(a.email), s=STUD[k]; if(!s)return;
+    var d=a.detail, from=(UNIT_NAME[d.unit]||d.unit||'')+' \u00b7 '+(d.task_title||d.task);
+    s.verbs=s.verbs||{};
+    d.items.forEach(function(x){
+      if(VERB_SKILL_IDS.indexOf(x.k)<0)return;
+      var o=s.verbs[x.k]||(s.verbs[x.k]={n:0,d:0,items:[]});
+      o.d++; if(x.ok)o.n++;
+      o.items.push({ok:x.ok,s:x.s,g:x.g,c:x.c,from:from});
+    });
+  });
+}
+function showTip(el){
+  var t=TIPS[+el.getAttribute('data-tip')], box=$('tip'); if(!t||!box)return;
+  box.innerHTML='<h4>'+t.t+'</h4>'+(t.items.length?'<ul>'+t.items.map(function(x){
+    return '<li><span class="mk">\u2717</span><span>'+esc(x.s)+'<span class="fix"><s>'+esc(x.g)+'</s> \u2192 <b>'+esc(x.c)+'</b></span>'+
+      '<span class="from">'+esc(x.from)+'</span></span></li>';}).join('')+'</ul>':'<div class="muted">No mistakes on the latest tries.</div>');
+  box.classList.remove('hide');
+  var r=el.getBoundingClientRect(), bw=box.offsetWidth, bh=box.offsetHeight;
+  var x=Math.min(Math.max(8,r.left-20),window.innerWidth-bw-8), y=r.bottom+6;
+  if(y+bh>window.innerHeight-8)y=Math.max(8,r.top-bh-6);
+  box.style.left=x+'px'; box.style.top=y+'px';
+}
+function hideTip(){var b=$('tip'); if(b)b.classList.add('hide');}
+document.addEventListener('mouseover',function(e){var c=e.target.closest&&e.target.closest('[data-tip]'); if(c)showTip(c); else hideTip();});
+document.addEventListener('click',function(e){var c=e.target.closest&&e.target.closest('[data-tip]'); if(c)showTip(c);});
+window.addEventListener('scroll',hideTip,true);
+
 /* ============ STATE ============ */
 var STUD={}, ROWS=[], PERIOD='', SORT={key:'name',dir:1};
 
@@ -416,6 +490,7 @@ function vcell(v,suffix){if(v==null)return '<span class="v n">&mdash;</span>';
   return '<span class="v '+band(v)+'">'+v+(suffix||'%')+'</span>';}
 
 /* ============ LOAD ============ */
+var VERB_ROWS=[];
 function loadAll(){
   $('msg').innerHTML='<div class="msg info">Loading&hellip;</div>';
   Promise.all([
@@ -424,8 +499,10 @@ function loadAll(){
     sb('activities?select=slug,title,unit,skills').catch(function(){return [];}),
     sb('student_skills?select=*').catch(function(){return [];}),
     sb('eld103_work?select=*').catch(function(){return [];}),
-    sb('vocab_preassess?select=*').catch(function(){return [];})
+    sb('vocab_preassess?select=*').catch(function(){return [];}),
+    sb('activity_attempts?slug=like.verbs/*&select=email,slug,detail,completed_at').catch(function(){return [];})
   ]).then(function(res){
+    VERB_ROWS=res[6]||[];
     build(res[0],res[1],res[2],res[3],res[4],res[5]);
   }).catch(function(e){
     $('msg').innerHTML='<div class="msg err">Could not load.<br>'+esc(String(e.message).slice(0,300))+'</div>';
@@ -482,7 +559,8 @@ function build(students,attempts,acts,skills,eld,vocab){
     var k=keyOf(r.email), s=STUD[k]; if(!s)return;
     s.skills[r.skill]=r.pct; skillNames[r.skill]=1;
   });
-  SKILL_COLS=Object.keys(skillNames).sort();
+  buildVerbs(VERB_ROWS);
+  SKILL_COLS=Object.keys(skillNames).filter(function(k){return VERB_SKILL_IDS.indexOf(k)<0;}).sort();
   // rebuild skill columns
   COLS=COLS.filter(function(c){return c.grp!=='togSkills';});
   SKILL_COLS.forEach(function(sk,i){
@@ -532,7 +610,7 @@ function nice(s){return String(s).replace(/[-_]/g,' ').replace(/\b\w/g,function(
 
 /* ============ TOGGLES ============ */
 function buildToggles(){
-  ['togProfile','togOverall','togSkills','togEld','togVocab'].forEach(function(g){
+  ['togProfile','togOverall','togVerbs','togSkills','togEld','togVocab'].forEach(function(g){
     var box=$(g); if(!box)return;
     var mine=COLS.filter(function(c){return c.grp===g;});
     box.innerHTML=mine.length?mine.map(function(c){
@@ -550,7 +628,7 @@ function setAll(v){COLS.forEach(function(c){c.on=v;});buildToggles();render();}
 function preset(which){
   COLS.forEach(function(c){
     if(which==='basic')c.on=['period','country','done','avg','last'].indexOf(c.id)>-1;
-    else if(which==='grammar')c.on=c.id==='period'||c.grp==='togEld'||c.id.indexOf('sk_grammar')===0;
+    else if(which==='grammar')c.on=c.id==='period'||c.grp==='togEld'||c.id.indexOf('sk_grammar')===0||c.id==='vb_be'||c.id==='vb_have';
   });
   buildToggles();render();
 }
@@ -583,6 +661,7 @@ function sortBy(key){
 function render(){
   var cols=COLS.filter(function(c){return c.on;});
   var rows=shown().slice();
+  TIPS=[]; hideTip();
 
   rows.sort(function(a,b){
     var va,vb;
@@ -595,7 +674,7 @@ function render(){
 
   $('thead').innerHTML='<tr><th class="nm" onclick="sortBy(\'name\')">Student'+
     (SORT.key==='name'?(SORT.dir>0?' &#9650;':' &#9660;'):'')+'</th>'+
-    cols.map(function(c){return '<th'+(c.grpstart?' class="grpstart"':'')+
+    cols.map(function(c){return '<th class="'+(c.grpstart?'grpstart ':'')+(c.cls||'')+'"'+
       ' onclick="sortBy(\''+esc(c.id)+'\')">'+esc(c.label)+
       (SORT.key===c.id?(SORT.dir>0?' &#9650;':' &#9660;'):'')+'</th>';}).join('')+'</tr>';
 
