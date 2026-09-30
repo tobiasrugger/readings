@@ -770,6 +770,7 @@ function startPeriodicSave(){
     if(total === 0) return;
     var got = Object.values(scored).filter(function(s){ return s.firstAttemptCorrect; }).length;
     var preds = Object.keys(VETS.state.predicted || {}).length;
+    var detail = buildDetail();
     var body = JSON.stringify({
       email: email,
       name: localStorage.getItem('gal_student_name') || '',
@@ -779,7 +780,8 @@ function startPeriodicSave(){
       total: total,
       predictions: preds,
       completed: false,
-      completed_at: new Date().toISOString()
+      completed_at: new Date().toISOString(),
+      detail: detail
     });
     fetch(SUPA_URL + '/rest/v1/vets_results?on_conflict=email,story', {
       method: 'POST',
@@ -793,6 +795,49 @@ function startPeriodicSave(){
     }).catch(function(){});
   }, 20000);
 }
+
+function buildDetail(){
+  var scored = VETS.state.scored || {};
+  var predicted = VETS.state.predicted || {};
+  var detail = { scored: {}, predicted: {} };
+
+  // Per scored question
+  Object.keys(scored).forEach(function(qid){
+    var s = scored[qid];
+    var el = document.querySelector('.question[data-qid="' + qid + '"]');
+    var prompt = el ? (el.querySelector('.q-prompt') || {}).textContent || '' : '';
+    var correct = el ? el.dataset.correct : '';
+    var choices = {};
+    if(el){
+      el.querySelectorAll('.choice').forEach(function(btn){
+        var letter = (btn.querySelector('.letter') || {}).textContent || '';
+        var key = letter.replace('.','').trim().toLowerCase();
+        choices[key] = btn.textContent.replace(letter,'').trim();
+      });
+    }
+    detail.scored[qid] = {
+      prompt: prompt.trim(),
+      correct: correct,
+      choices: choices,
+      answer: s.answer,
+      firstAttemptCorrect: s.firstAttemptCorrect,
+      attempts: s.attempts
+    };
+  });
+
+  // Per prediction
+  Object.keys(predicted).forEach(function(qid){
+    var el = document.querySelector('.question[data-qid="' + qid + '"]');
+    var prompt = el ? (el.querySelector('.q-prompt') || {}).textContent || '' : '';
+    detail.predicted[qid] = {
+      prompt: prompt.trim(),
+      answer: predicted[qid]
+    };
+  });
+
+  return detail;
+}
+
 
 function seedStudent(email, name, period){
   var body = JSON.stringify({email: email, name: name, period: period});
@@ -814,6 +859,7 @@ function saveResult(score, total, predictions){
   var period = localStorage.getItem('gal_student_period') || '';
   if(!email) return;
   seedStudent(email, name, period);
+  var detail = buildDetail();
   var body = JSON.stringify({
     email: email,
     name: name,
@@ -823,7 +869,8 @@ function saveResult(score, total, predictions){
     total: total,
     predictions: predictions,
     completed: true,
-    completed_at: new Date().toISOString()
+    completed_at: new Date().toISOString(),
+    detail: detail
   });
   fetch(SUPA_URL + '/rest/v1/vets_results?on_conflict=email,story', {
     method: 'POST',
