@@ -125,6 +125,8 @@ body.tap-on .wt-tap:hover{background:#eef5f1}
 textarea.wr{font:inherit;font-size:1.15rem;width:100%;min-height:90px;padding:11px 12px;border:2px solid var(--line-dk);border-radius:11px;background:var(--field)}
 textarea.wr:focus{outline:0;border-color:var(--pine);background:#fff}
 .keyline{font-weight:900}
+.starmsg{background:#fff6d8;border:2px solid #e6b422;color:#6b4e00;border-radius:12px;padding:12px 16px;margin:12px 0;font-weight:800;text-align:center;font-size:1.05rem}
+.starmsg.soft{background:#f6f3e6;border-color:#d9cfa8;font-weight:700}
 #btn-dir,#btn-tap{background:#fff;color:var(--pine);border:2px solid var(--pine);border-radius:9px;padding:6px 12px;margin-right:8px;font:inherit;font-size:.88rem;font-weight:800;cursor:pointer}
 </style>
 </head>
@@ -195,6 +197,7 @@ textarea.wr:focus{outline:0;border-color:var(--pine);background:#fff}
   <div class="card" translate="no" data-tap="1" style="text-align:center">
     <div class="done-score" id="dScore"></div>
     <p class="note" id="dSub"></p>
+    <div id="dStar"></div>
   </div>
   <div class="card" translate="no" data-tap="1">
     <h2>What you practiced</h2>
@@ -532,7 +535,13 @@ function finish(){
   ANS.forEach(function(a){
     if(!by[a.skill])by[a.skill]={n:0,d:0};
     by[a.skill].d++; if(a.correct)by[a.skill].n++;
+    if(by[a.skill].f==null)by[a.skill].f=0;
+    if(a.correct&&a.tries===1)by[a.skill].f++;
   });
+  var firsts=ANS.filter(function(a){return a.correct&&a.tries===1;}).length;
+  $('dStar').innerHTML=firsts===total?
+    '<div class="starmsg">\u2B50 <b>Gold star!</b> Every answer right on the first try.</div>':
+    (right===total?'<div class="starmsg soft">All correct! Get every answer on the <b>first</b> try to earn a gold star.</div>':'');
   $('dSkills').innerHTML=Object.keys(by).map(function(k){
     var s=by[k],p=Math.round(100*s.n/s.d);
     var c=p>=80?'g':p>=60?'y':'r';
@@ -553,7 +562,8 @@ function save(right,total,by){
       answers:ANS.map(function(a){return {skill:a.skill,correct:a.correct,tries:a.tries};})},
     completed_at:now}];
   var skillRows=Object.keys(by).map(function(k){
-    return {email:ME.email,slug:SLUG,skill:k,n:by[k].n,d:by[k].d,completed_at:now};});
+    return {email:ME.email,slug:SLUG,skill:k,n:by[k].n,d:by[k].d,n_first:by[k].f,completed_at:now};});
+  var skillRowsOld=skillRows.map(function(r){return {email:r.email,slug:r.slug,skill:r.skill,n:r.n,d:r.d,completed_at:r.completed_at};});
 
   function post(table,body,pref){
     return fetch(SUPA_URL+'/rest/v1/'+table,{method:'POST',
@@ -562,6 +572,7 @@ function save(right,total,by){
   post('activities?on_conflict=slug',act,'resolution=merge-duplicates,return=minimal')
     .then(function(){return post('activity_attempts',attempt);})
     .then(function(){return post('skill_attempts',skillRows);})
+    .then(function(r){if(r&&!r.ok)return post('skill_attempts',skillRowsOld);})
     .then(function(){$('saveMsg').innerHTML='<div class="msg ok">Your work was saved.</div>';})
     .catch(function(){$('saveMsg').innerHTML=
       '<div class="msg err">Your work did not save. Tell Mr. Toby.</div>';});

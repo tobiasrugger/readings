@@ -131,6 +131,11 @@ ul{margin:0;padding-left:20px} li{margin-bottom:6px;font-weight:700}
 .skill.g .bar i{background:var(--green)} .skill.l .bar i{background:var(--lime)}
 .skill.y .bar i{background:var(--yellow)} .skill.o .bar i{background:var(--orange)}
 .skill.r .bar i{background:var(--red)}
+.gstar{margin-left:6px;font-size:1rem}
+.tries{display:inline-grid;place-items:center;width:19px;height:19px;border-radius:50%;background:#2E6DB4;color:#fff;font-size:.72rem;font-weight:700;margin-left:3px;vertical-align:1px}
+.skill .tries{color:#fff;font-size:.72rem}
+.skill.next{box-shadow:0 0 0 3px var(--plum) inset}
+@media print{.gstar,.tries{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 .prac{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
 .prac-link{display:inline-block;background:#fff;border:1.5px solid var(--line-dk);
   border-radius:999px;padding:4px 11px;font-size:.8rem;font-weight:800;
@@ -361,7 +366,7 @@ details.wq .qm{font-size:.85rem;color:var(--muted);font-weight:800}
 
   <div class="grid2">
     <div class="card"><h2>My Strengths</h2><ul id="strengths"></ul></div>
-    <div class="card"><h2>I Am Growing In</h2><ul id="growth"></ul></div>
+    <div class="card"><h2>Practice Next</h2><ul id="growth"></ul></div>
   </div>
 
   <p class="noprint" style="text-align:center">
@@ -488,6 +493,7 @@ async function load(email){
     NEW_STUDENT=!SELF_SIGNIN;
   } else DATA.student=stu[0];
   DATA.facts=facts||[]; DATA.acts=acts||[]; DATA.atts=atts||[]; DATA.skills=mergeSkills(skills||[]); DATA.res=res||[]; DATA.work=work||[];
+  DATA.status=(await sb('student_skill_status?lp=eq.'+encodeURIComponent(lp.toLowerCase())+'&select=skill,latest_pct,rounds,star_round'))||[];
 
   document.getElementById('signin').classList.add('hide');
   document.getElementById('page').classList.remove('hide');
@@ -831,36 +837,56 @@ function linksFor(skill,pct){
   }).join('')+'</div>';
 }
 
+/* Skill colour = the LATEST round for that skill (so early misses stop counting
+   once a student shows they have it). Falls back to the all-time % when there is
+   no per-skill data. Links show only for the 3 weakest skills.
+   Gold star = a perfect round (every answer right on the first try).
+   Blue circle = how many rounds it took to get the star (only shown above 1). */
+var NEXT_MAX=3, DONE_AT=80;
+function statusOf(sk){for(var i=0;i<(DATA.status||[]).length;i++)if(DATA.status[i].skill===sk)return DATA.status[i];return null;}
+function curPct(sk,row){var st=statusOf(sk);if(st&&st.latest_pct!=null)return st.latest_pct;return row?row.pct:null;}
+function starHtml(sk){
+  var st=statusOf(sk); if(!st||!st.star_round)return '';
+  return '<span class="gstar" title="Gold star: a perfect round">\u2B50</span>'+
+    (st.star_round>1?'<span class="tries" title="Took '+st.star_round+' rounds">'+st.star_round+'</span>':'');
+}
+function niceSkill(k){return String(k).replace(/-/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});}
+function nextSkills(){
+  var list=(DATA.skills||[]).map(function(r){return {skill:r.skill,pct:curPct(r.skill,r)};})
+    .filter(function(x){return x.pct!=null&&x.pct<DONE_AT;})
+    .sort(function(a,b){return a.pct-b.pct;});
+  return {top:list.slice(0,NEXT_MAX),more:Math.max(0,list.length-NEXT_MAX)};
+}
 function renderSkills(){
-  const box=document.getElementById('skillBox');
-  // only skills from activities this student actually did
-  const did={}; DATA.atts.forEach(a=>{did[a.slug]=1;});
-  const tagged=new Set();
-  DATA.acts.forEach(a=>{ if(did[a.slug]) (a.skills||[]).forEach(s=>tagged.add(s)); });
-  const have={}; DATA.skills.forEach(s=>have[s.skill]=s);
-  const all=[...new Set([...tagged,...Object.keys(have)])].sort();
+  var box=document.getElementById('skillBox');
+  var did={}; DATA.atts.forEach(function(a){did[a.slug]=1;});
+  var tagged={};
+  DATA.acts.forEach(function(a){ if(did[a.slug]) (a.skills||[]).forEach(function(k){tagged[k]=1;}); });
+  var have={}; DATA.skills.forEach(function(r){have[r.skill]=r;tagged[r.skill]=1;});
+  var all=Object.keys(tagged).sort();
   if(!all.length){box.innerHTML='<p class="note">Finish an activity and your skills will show up here in colour.</p>';return;}
+  var nx=nextSkills(), isNext={}; nx.top.forEach(function(x){isNext[x.skill]=1;});
 
-  box.innerHTML=all.map(sk=>{
-    const r=have[sk];
-    const label=sk.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
-    if(!r)return `<div class="skill"><b>${esc(label)}</b><span>Not tried yet</span>${linksFor(sk,null)}</div>`;
-    const bar=`<div class="bar"><i style="width:${Math.max(4,r.pct)}%"></i></div>`;
-    return `<div class="skill ${band(r.pct)}"><span class="pct">${r.pct}%</span><b>${esc(label)}</b>
-      ${bar}<span>${r.n} activit${r.n===1?'y':'ies'}</span>${linksFor(sk,r.pct)}</div>`;
+  box.innerHTML=all.map(function(sk){
+    var r=have[sk], label=niceSkill(sk);
+    if(!r)return '<div class="skill"><b>'+esc(label)+'</b><span>Not tried yet</span></div>';
+    var p=curPct(sk,r), st=statusOf(sk);
+    var bar='<div class="bar"><i style="width:'+Math.max(4,p)+'%"></i></div>';
+    var sub=(st&&st.rounds?st.rounds+' round'+(st.rounds===1?'':'s')+' \u00b7 latest '+p+'%':r.n+' activit'+(r.n===1?'y':'ies'));
+    return '<div class="skill '+band(p)+(isNext[sk]?' next':'')+'"><span class="pct">'+p+'%</span><b>'+esc(label)+starHtml(sk)+'</b>'+
+      bar+'<span>'+esc(sub)+'</span>'+(isNext[sk]?linksFor(sk,p):'')+'</div>';
   }).join('');
 
-  const scored=DATA.skills.slice().sort((a,b)=>b.pct-a.pct);
-  const nice=s=>s.skill.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
-
+  var scored=DATA.skills.map(function(r){return {skill:r.skill,pct:curPct(r.skill,r)};}).sort(function(a,b){return b.pct-a.pct;});
   document.getElementById('strengths').innerHTML=
-    scored.filter(s=>s.pct>=80).slice(0,5).map(s=>
-      `<li><b>${esc(nice(s))}</b> <span class="v g">${s.pct}%</span></li>`).join('')
+    scored.filter(function(s){return s.pct>=DONE_AT;}).slice(0,5).map(function(s){
+      return '<li><b>'+esc(niceSkill(s.skill))+'</b>'+starHtml(s.skill)+' <span class="v '+band(s.pct)+'">'+s.pct+'%</span></li>';}).join('')
     ||'<li class="note">Finish some activities to see your strengths.</li>';
 
   document.getElementById('growth').innerHTML=
-    scored.filter(s=>s.pct<80).slice(-5).reverse().map(s=>
-      `<li><b>${esc(nice(s))}</b> <span class="v ${band(s.pct)}">${s.pct}%</span>${linksFor(s.skill,s.pct)}</li>`).join('')
+    (nx.top.map(function(s){
+      return '<li><b>'+esc(niceSkill(s.skill))+'</b> <span class="v '+band(s.pct)+'">'+s.pct+'%</span>'+linksFor(s.skill,s.pct)+'</li>';}).join('')+
+     (nx.more?'<li class="note">When these turn green, '+nx.more+' more skill'+(nx.more===1?'':'s')+' will show up here.</li>':''))
     ||'<li class="note">Nothing here yet. Keep going!</li>';
 }
 </script>
