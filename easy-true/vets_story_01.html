@@ -2301,21 +2301,25 @@ var VETSX = (function(){
     var tq   = document.querySelector("#title-page .question");
     var hint = document.getElementById("start-hint");
     if(!sb || !tq) return;
+    function unlock(){
+      sb.disabled = false;
+      if(hint){ hint.textContent = "Good guess. Now read and find out."; hint.classList.add("ready"); }
+    }
     function lock(){
       sb.disabled = true;
       if(hint){ hint.textContent = "Answer the question above to begin."; hint.classList.remove("ready"); }
     }
     lock();
     tq.querySelectorAll(".choice").forEach(function(bt){
-      /* the inline onclick is registered first, so the question is already
-         locked by the time this runs */
       bt.addEventListener("click", function(){
-        if(tq.dataset.locked === "1"){
-          sb.disabled = false;
-          if(hint){ hint.textContent = "Good guess. Now read and find out."; hint.classList.add("ready"); }
-        }
+        if(tq.dataset.locked === "1") unlock();
       });
     });
+    /* If restore() already locked this question (returning student), unlock Begin */
+    var observer = new MutationObserver(function(){
+      if(tq.dataset.locked === "1") unlock();
+    });
+    observer.observe(tq, { attributes: true, attributeFilter: ["data-locked"] });
     var orig = window.restart;
     window.restart = function(){ orig(); lock(); };
   }
