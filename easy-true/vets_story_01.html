@@ -1428,95 +1428,6 @@ const VETS = {
     this.updateScorePill();
   },
 
-
-/* ── VETS RESULTS SAVE (added retrofit) ── */
-var STORY_SLUG = 'story-01';
-
-function buildDetail(){
-  var scored = (window.VETS && VETS.state && VETS.state.scored) || {};
-  var predicted = (window.VETS && VETS.state && VETS.state.predicted) || {};
-  var detail = { scored: {}, predicted: {} };
-  Object.keys(scored).forEach(function(qid){
-    var s = scored[qid];
-    var el = document.querySelector('.question[data-qid="' + qid + '"]');
-    var prompt = el ? (el.querySelector('.q-prompt') || {}).textContent || '' : '';
-    var correct = el ? el.dataset.correct : '';
-    var choices = {};
-    if(el){ el.querySelectorAll('.choice').forEach(function(btn){
-      var letter = (btn.querySelector('.letter') || {}).textContent || '';
-      var key = letter.replace('.','').trim().toLowerCase();
-      choices[key] = btn.textContent.replace(letter,'').trim();
-    }); }
-    detail.scored[qid] = { prompt: prompt.trim(), correct: correct, choices: choices, answer: s.answer, firstAttemptCorrect: s.firstAttemptCorrect, attempts: s.attempts };
-  });
-  Object.keys(predicted).forEach(function(qid){
-    var el = document.querySelector('.question[data-qid="' + qid + '"]');
-    var prompt = el ? (el.querySelector('.q-prompt') || {}).textContent || '' : '';
-    detail.predicted[qid] = { prompt: prompt.trim(), answer: predicted[qid] };
-  });
-  return detail;
-}
-
-function vetsPeriodicSave(){
-  setInterval(function(){
-    var email = localStorage.getItem('gal_student_email') || '';
-    if(!email) return;
-    var scored = (window.VETS && VETS.state && VETS.state.scored) || {};
-    var total = Object.keys(scored).length;
-    if(total === 0) return;
-    var got = Object.values(scored).filter(function(s){ return s.firstAttemptCorrect; }).length;
-    var preds = Object.keys((VETS.state && VETS.state.predicted) || {}).length;
-    var detail = buildDetail();
-    fetch('https://lhmwtfyceilgndpygivj.supabase.co' + '/rest/v1/vets_results?on_conflict=email,story', {
-      method: 'POST',
-      headers:{
-        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU',
-        'Authorization': 'Bearer ' + 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU',
-        'Content-Type': 'application/json',
-        'Prefer': 'resolution=merge-duplicates,return=minimal'
-      },
-      body: JSON.stringify({
-        email: email,
-        name: localStorage.getItem('gal_student_name') || '',
-        period: parseInt(localStorage.getItem('gal_student_period')) || null,
-        story: STORY_SLUG,
-        score: got,
-        total: total,
-        predictions: preds,
-        completed: false,
-        completed_at: new Date().toISOString(),
-        detail: detail
-      })
-    }).catch(function(){});
-  }, 20000);
-}
-
-function vetsFinalSave(score, total, preds){
-  var email = localStorage.getItem('gal_student_email') || '';
-  if(!email) return;
-  fetch('https://lhmwtfyceilgndpygivj.supabase.co' + '/rest/v1/vets_results?on_conflict=email,story', {
-    method: 'POST',
-    headers:{
-      'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU',
-      'Authorization': 'Bearer ' + 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU',
-      'Content-Type': 'application/json',
-      'Prefer': 'resolution=merge-duplicates,return=minimal'
-    },
-    body: JSON.stringify({
-      email: email,
-      name: localStorage.getItem('gal_student_name') || '',
-      period: parseInt(localStorage.getItem('gal_student_period')) || null,
-      story: STORY_SLUG,
-      score: score,
-      total: total,
-      predictions: preds,
-      completed: true,
-      completed_at: new Date().toISOString(),
-      detail: buildDetail()
-    })
-  }).catch(function(){});
-}
-
   startStory(){
     const title = document.getElementById('title-page');
     if(title) title.style.display = 'none';
@@ -1696,6 +1607,96 @@ window.answerScored = (btn, qid, choice) => VETS.answerScored(btn, qid, choice);
 window.answerPredict = (btn, qid) => VETS.answerPredict(btn, qid);
 window.showResults = () => VETS.showResults();
 window.restart = () => VETS.restart();
+
+
+/* ── VETS RESULTS SAVE (added retrofit) ── */
+var STORY_SLUG = 'story-01';
+
+function buildDetail(){
+  var scored = (window.VETS && VETS.state && VETS.state.scored) || {};
+  var predicted = (window.VETS && VETS.state && VETS.state.predicted) || {};
+  var detail = { scored: {}, predicted: {} };
+  Object.keys(scored).forEach(function(qid){
+    var s = scored[qid];
+    var el = document.querySelector('.question[data-qid="' + qid + '"]');
+    var prompt = el ? (el.querySelector('.q-prompt') || {}).textContent || '' : '';
+    var correct = el ? el.dataset.correct : '';
+    var choices = {};
+    if(el){ el.querySelectorAll('.choice').forEach(function(btn){
+      var letter = (btn.querySelector('.letter') || {}).textContent || '';
+      var key = letter.replace('.','').trim().toLowerCase();
+      choices[key] = btn.textContent.replace(letter,'').trim();
+    }); }
+    detail.scored[qid] = { prompt: prompt.trim(), correct: correct, choices: choices, answer: s.answer, firstAttemptCorrect: s.firstAttemptCorrect, attempts: s.attempts };
+  });
+  Object.keys(predicted).forEach(function(qid){
+    var el = document.querySelector('.question[data-qid="' + qid + '"]');
+    var prompt = el ? (el.querySelector('.q-prompt') || {}).textContent || '' : '';
+    detail.predicted[qid] = { prompt: prompt.trim(), answer: predicted[qid] };
+  });
+  return detail;
+}
+
+function vetsPeriodicSave(){
+  setInterval(function(){
+    var email = localStorage.getItem('gal_student_email') || '';
+    if(!email) return;
+    var scored = (window.VETS && VETS.state && VETS.state.scored) || {};
+    var total = Object.keys(scored).length;
+    if(total === 0) return;
+    var got = Object.values(scored).filter(function(s){ return s.firstAttemptCorrect; }).length;
+    var preds = Object.keys((VETS.state && VETS.state.predicted) || {}).length;
+    var detail = buildDetail();
+    fetch('https://lhmwtfyceilgndpygivj.supabase.co' + '/rest/v1/vets_results?on_conflict=email,story', {
+      method: 'POST',
+      headers:{
+        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU',
+        'Authorization': 'Bearer ' + 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU',
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates,return=minimal'
+      },
+      body: JSON.stringify({
+        email: email,
+        name: localStorage.getItem('gal_student_name') || '',
+        period: parseInt(localStorage.getItem('gal_student_period')) || null,
+        story: STORY_SLUG,
+        score: got,
+        total: total,
+        predictions: preds,
+        completed: false,
+        completed_at: new Date().toISOString(),
+        detail: detail
+      })
+    }).catch(function(){});
+  }, 20000);
+}
+
+function vetsFinalSave(score, total, preds){
+  var email = localStorage.getItem('gal_student_email') || '';
+  if(!email) return;
+  fetch('https://lhmwtfyceilgndpygivj.supabase.co' + '/rest/v1/vets_results?on_conflict=email,story', {
+    method: 'POST',
+    headers:{
+      'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU',
+      'Authorization': 'Bearer ' + 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU',
+      'Content-Type': 'application/json',
+      'Prefer': 'resolution=merge-duplicates,return=minimal'
+    },
+    body: JSON.stringify({
+      email: email,
+      name: localStorage.getItem('gal_student_name') || '',
+      period: parseInt(localStorage.getItem('gal_student_period')) || null,
+      story: STORY_SLUG,
+      score: score,
+      total: total,
+      predictions: preds,
+      completed: true,
+      completed_at: new Date().toISOString(),
+      detail: buildDetail()
+    })
+  }).catch(function(){});
+}
+
 
 </script>
 
