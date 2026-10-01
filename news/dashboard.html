@@ -97,7 +97,7 @@ audio{height:34px;vertical-align:middle}
     <div class="printhead" id="ph"></div>
     <div class="wrap"><table id="mtx"></table></div>
     <p class="legend" id="legend"></p>
-    <p class="muted" style="margin-top:10px">Each cell counts five parts: questions, grammar, your turn, talk chart, recording. Tap a column header to sort.</p>
+    <p class="muted" style="margin-top:10px">Each cell is a 0\u20134 completion score. Tap a column header to sort.</p>
   </section>
 </main>
 
@@ -227,6 +227,14 @@ function rows(){
 }
 
 /* ---------- completion ---------- */
+// 0 not done · 1 partly · 2 somewhat · 3 mostly · 4 totally
+function band(f){
+  if(f<=0) return 0;
+  if(f<0.35) return 1;
+  if(f<0.65) return 2;
+  if(f<0.90) return 3;
+  return 4;
+}
 function parts(person,slug){
   var A=DOCS[slug]; if(!A) return null;
   var w=person.work[slug], a=(w&&w.answers)||{}, runs=person.runs[slug]||[];
@@ -239,7 +247,18 @@ function parts(person,slug){
     prod:(a.produce||'').trim().length>5, talk:talk, runs:runs.length,
     bestWcpm:runs.reduce(function(m,r){return Math.max(m,+r.wcpm||0);},0),
     level:(w&&w.level)||'', turned:a._turnedIn||'', updated:(w&&w.updated_at)||''};
-  o.done=(qTot?(qDone/qTot>=0.8?1:0):1)+(cTot?(cDone/cTot>=0.8?1:0):1)+(o.prod?1:0)+(talk?1:0)+(runs.length?1:0);
+  // how many chart cells this student was supposed to fill (half the hidden cells)
+  var gaps=0;
+  A.talk.rows.forEach(function(row){row.forEach(function(c){if(/^[AB]:/.test(c))gaps++;});});
+  var talkTarget=Math.max(1,Math.round(gaps/2));
+  var r1=qTot?qDone/qTot:1,
+      r2=cTot?cDone/cTot:1,
+      r3=o.prod?1:0,
+      r4=Math.min(1,talk/talkTarget),
+      r5=runs.length?1:0;
+  o.talkTarget=talkTarget;
+  o.frac=(r1+r2+r3+r4+r5)/5;
+  o.score=band(o.frac);
   o.any=qDone||cDone||o.prod||talk||runs.length;
   return o;
 }
@@ -257,6 +276,7 @@ function draw(){
     var pa=parts(a,slug)||{},pb=parts(b,slug)||{};
     if(SORT==='period')return String(a.period).localeCompare(String(b.period))||(a.name||'').localeCompare(b.name||'');
     if(SORT==='wpm')return (pb.bestWcpm||0)-(pa.bestWcpm||0);
+    if(SORT==='score')return (pb.score||0)-(pa.score||0);
     if(SORT==='updated')return String(pb.updated||'').localeCompare(String(pa.updated||''));
     return (a.name||a.email).localeCompare(b.name||b.email);
   });
@@ -269,8 +289,8 @@ function draw(){
     '<div class="stat"><b>'+withRec+'</b><span>sent a recording</span></div>'+
     '<div class="stat"><b>'+(wpms.length?wpms[Math.floor(wpms.length/2)]:'—')+'</b><span>median wcpm</span></div>';
   var h='<tr><th data-s="name">Student</th><th data-s="period">Per.</th><th>Level</th><th>Questions</th><th>Grammar</th>'+
-        '<th>Your turn</th><th>Talk chart</th><th data-s="wpm">Recording</th><th>Turned in</th><th data-s="updated">Last active</th></tr>';
-  if(!rs.length) h+='<tr><td colspan="10" class="empty">No work yet for this article.</td></tr>';
+        '<th>Your turn</th><th>Talk chart</th><th data-s="wpm">Recording</th><th data-s="score">Score</th><th>Turned in</th><th data-s="updated">Last active</th></tr>';
+  if(!rs.length) h+='<tr><td colspan="11" class="empty">No work yet for this article.</td></tr>';
   rs.forEach(function(r){
     var p=parts(r,slug)||{};
     h+='<tr class="row" data-e="'+esc(r.email)+'"><td><b>'+esc(r.name||'(no name)')+'</b><br><span class="muted">'+esc(r.email)+'</span></td>'+
@@ -285,9 +305,10 @@ function draw(){
       '<td>'+(p.prod?'<span class="pill g">done</span>':'<span class="pill r">no</span>')+'</td>'+
       '<td>'+(p.talk?'<span class="pill g">'+p.talk+' cells</span>':'<span class="pill r">empty</span>')+'</td>'+
       '<td>'+(p.runs?'<b>'+p.bestWcpm+'</b> wcpm <span class="muted">\u00d7'+p.runs+'</span>':'<span class="pill n">none</span>')+'</td>'+
+      '<td><span class="pill '+cellClass(p.score||0)+'" style="font-size:15px">'+(p.score||0)+'</span><span class="muted"> /4</span></td>'+
       '<td>'+(p.turned?'<span class="pill g">'+stamp(p.turned)+'</span>':'')+'</td>'+
       '<td class="muted">'+stamp(p.updated)+'</td></tr>';
-    if(OPEN===r.email) h+='<tr class="detail"><td colspan="10">'+detail(r,slug)+'</td></tr>';
+    if(OPEN===r.email) h+='<tr class="detail"><td colspan="11">'+detail(r,slug)+'</td></tr>';
   });
   $('tbl').innerHTML=h;
 }
@@ -348,14 +369,14 @@ $('tbl').addEventListener('click',function(e){
 });
 
 /* ---------- view: all articles ---------- */
-function cellClass(d){return d>=5?'g':(d>=3?'y':(d>0?'r':'n'));}
+function cellClass(d){return d>=4?'g':(d>=2?'y':(d>0?'r':'n'));}
 function matrix(){
   var rs=rows().slice();
   rs.sort(function(a,b){
     if(MSORT==='period')return String(a.period).localeCompare(String(b.period))||(a.name||'').localeCompare(b.name||'');
     if(MSORT==='total'){
       var ta=0,tb=0;
-      ARTS.forEach(function(x){var p=parts(a,x.slug),q=parts(b,x.slug);ta+=p?p.done:0;tb+=q?q.done:0;});
+      ARTS.forEach(function(x){var p=parts(a,x.slug),q=parts(b,x.slug);ta+=p?p.score:0;tb+=q?q.score:0;});
       return tb-ta;
     }
     return (a.name||a.email).localeCompare(b.name||b.email);
@@ -375,15 +396,15 @@ function matrix(){
     h+='<tr><td class="nm"><b>'+esc(r.name||'(no name)')+'</b></td><td>'+esc(r.period)+'</td>';
     ARTS.forEach(function(a){
       var pr=parts(r,a.slug);
-      var d=pr?pr.done:0;
+      var d=pr?pr.score:0;
       tot+=d;
-      h+='<td class="cell"><span class="pill '+cellClass(d)+'">'+d+'/5</span></td>';
+      h+='<td class="cell"><span class="pill '+cellClass(d)+'">'+d+'</span></td>';
     });
-    h+='<td class="tot">'+tot+'/'+(ARTS.length*5)+'</td><td></td></tr>';
+    h+='<td class="tot">'+tot+'/'+(ARTS.length*4)+'</td><td></td></tr>';
   });
   $('mtx').innerHTML=h;
-  $('legend').innerHTML='Each article is scored out of five parts: questions answered, grammar practice attempted, "your turn" writing, talk chart filled, recording sent. '+
-    '<b>5/5</b> complete \u00b7 <b>3\u20134</b> partly done \u00b7 <b>1\u20132</b> barely started \u00b7 <b>0</b> nothing.';
+  $('legend').innerHTML='Each article is scored <b>0\u20134</b> on how much was completed across five parts: questions, grammar practice, "your turn" writing, talk chart, and recording. &nbsp; '+
+    '<b>4</b> = totally done \u00b7 <b>3</b> = mostly \u00b7 <b>2</b> = somewhat \u00b7 <b>1</b> = partly \u00b7 <b>0</b> = not done.';
 }
 $('mtx').addEventListener('click',function(e){
   var th=e.target.closest('th');if(th&&th.dataset.m){MSORT=th.dataset.m;matrix();}
@@ -394,24 +415,24 @@ $('csv').onclick=function(){
   var lines=[];
   if(VIEW==='all'){
     var head=['name','email','period'];
-    ARTS.forEach(function(a){head.push((a.title||a.slug)+' (of 5)');});
+    ARTS.forEach(function(a){head.push((a.title||a.slug)+' (0-4)');});
     head.push('total','possible');
     lines.push(head);
     rows().forEach(function(r){
       var row=[r.name,r.email,r.period],tot=0;
-      ARTS.forEach(function(a){var p=parts(r,a.slug),d=p?p.done:0;tot+=d;row.push(d);});
-      row.push(tot,ARTS.length*5);
+      ARTS.forEach(function(a){var p=parts(r,a.slug),d=p?p.score:0;tot+=d;row.push(d);});
+      row.push(tot,ARTS.length*4);
       lines.push(row);
     });
   } else {
     var slug=$('art').value,A=DOCS[slug]||{qs:[]};
-    var head=['name','email','period','level','questions_done','grammar_right','your_turn','talk_cells','recordings','best_wcpm','turned_in','last_active'];
+    var head=['name','email','period','level','score_0_4','questions_done','grammar_right','your_turn','talk_cells','recordings','best_wcpm','turned_in','last_active'];
     A.qs.forEach(function(_,i){head.push('Q'+(i+1));});
     head.push('your_turn_text');
     lines.push(head);
     rows().forEach(function(r){
       var p=parts(r,slug)||{},w=r.work[slug],a=(w&&w.answers)||{};
-      var row=[r.name,r.email,r.period,p.level||'',p.qDone||0,p.cRight||0,p.prod?'yes':'no',p.talk||0,p.runs||0,p.bestWcpm||'',p.turned||'',p.updated||''];
+      var row=[r.name,r.email,r.period,p.level||'',p.score||0,p.qDone||0,p.cRight||0,p.prod?'yes':'no',p.talk||0,p.runs||0,p.bestWcpm||'',p.turned||'',p.updated||''];
       A.qs.forEach(function(_,i){row.push(a['q'+i]||'');});
       row.push(a.produce||'');
       lines.push(row);
