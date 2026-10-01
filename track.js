@@ -26,6 +26,8 @@
 
   /* ---------- slug from the page's own path ---------- */
   var SLUG = (function () {
+    /* a page that moved can keep its old name, so students' history stays in one place */
+    if (window.GAL_SLUG_KEEP) return String(window.GAL_SLUG_KEEP);
     var p = location.pathname.replace(/^\/+/, '').replace(/\.html?$/i, '');
     p = p.replace(/^readings\//, '');
     p = p.replace(/\/index$/, '').replace(/\/$/, '');
