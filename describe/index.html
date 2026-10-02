@@ -187,6 +187,7 @@ audio{height:32px;vertical-align:middle}
 <div class="bar">
   <h1>Describe a Classmate</h1>
   <select id="lang" title="Translate language"></select>
+  <button class="btn ghost" id="test" title="Test sound">🔊 Test</button>
   <button class="btn ghost" id="who">Sign in</button>
   <span class="dot" id="dot" title="save status"></span>
 </div>
@@ -550,13 +551,13 @@ function interviewPage(from){ return function(){
     else { var v=el.value.trim(); var hint=[]; if(!/^are you/i.test(v)) hint.push('Start with "Are you".'); if(v.indexOf(' or ')<0) hint.push('Put "or" between the two words.'); if(!/\?$/.test(v)) hint.push('End with a question mark.'); if(!hint.length) hint.push('Check the spelling of "'+q.o[0]+'" and "'+q.o[1]+'".'); f.textContent=hint.join(' '); }
     checkIvDone(); };});
   /* mic lines */
-  box.querySelectorAll('.line').forEach(function(el){ wireLine(el, setAnswer); });
+  box.querySelectorAll('.line[data-q]').forEach(function(el){ wireLine(el, setAnswer); });
   function checkIvDone(){ var all=true; for(var n=from;n<from+4;n++){ var id='q'+(n+1); if(!A.iv[id]) all=false; if(IQ[n].write && normQ(A.ivq[id]||'')!==normQ(IQ[n].q)) all=false; } if(all) A['done_'+key]=true; }
 };}
 PAGES.interview=[interviewPage(0),interviewPage(4),interviewPage(8),interviewPage(12)];
 
 function wireLine(el,setAnswer){
-  if(!window.GS||!GS.micButton){ el.querySelector('.mic').disabled=true; return; }
+  if(!window.GS||!GS.micButton){ el.querySelector('.mic').onclick=function(){ var r=el.querySelector('.rule'); r.innerHTML='<span class="hint">The recording tool did not load on this computer. Reload the page, or tap the answer above.</span>'; }; return; }
   var id=el.getAttribute('data-q'), which=el.getAttribute('data-l'), q=IQ[parseInt(id.slice(1))-1];
   var targets=which==='a'?[q.q]:q.o.map(function(o){return iAnswer(q,o);});
   var rule=el.querySelector('.rule'), mic=el.querySelector('.mic'), nudgeEl=el.querySelector('.nudge');
@@ -863,7 +864,11 @@ PAGES.compare[4]=function(){
       '<input class="txt lsin" id="lsi'+i+'" style="width:'+(it[0].length*1.75+3)+'ch" size="'+it[0].length+'" placeholder="'+blanks+'" value="'+esc(st.typed||'')+'"><span style="color:var(--muted);font-size:15px">listen →</span><button class="ear" data-say="'+esc(it[0])+'" aria-label="Listen">'+EAR+'<span>Listen</span></button><button class="btn line" data-lsc="'+i+'">'+T('Check')+'</button><button class="btn line" data-lsa="'+i+'" style="display:'+(st.tries>=2?'':'none')+'">'+T('Answer')+'</button>')+
       '<span class="fb'+(st.tries&&!st.solved?' hint':'')+'" id="lsf'+i+'" style="margin:0;padding:4px 10px;'+(st.tries&&!st.solved?'display:inline-block':'')+'">'+(st.tries&&!st.solved?esc(hintMask(it[0],st.tries)):'')+'</span></div>'; });
   html+='</div><div class="note">'+T('Hints appear after each mistake. Drag a finished word (or tap it, then tap a circle) into the diagram. Green = right place.')+'</div>';
+  html+='<div class="row" style="justify-content:flex-end"><button class="btn line" id="lsReveal" style="font-size:14px;padding:6px 12px">'+T('No sound? Show the words')+'</button></div>';
   $('page').innerHTML=html;
+  function revealAll(){ items.forEach(function(it,i){ var st=A.ls[i]||{}; if(!st.solved){ A.ls[i]=A.ls[i]||{}; A.ls[i].solved=true; A.ls[i].revealed=true; } }); dirty=true; render(); toast('Words shown. Drag them into the diagram.'); }
+  $('lsReveal').onclick=function(){ if(confirm('Show all the words? (No points for typing.)')) revealAll(); };
+  if(!window.speechSynthesis){ revealAll(); return; }
   var root=$('vls'), sel=null;
   function tally(){ var n=0; items.forEach(function(it,i){ var st=A.ls[i]||{}; if(st.solved&&!st.revealed) n++; if(st.zone===it[1]) n++; }); SC[key].correct=n; SC[key].best=Math.max(SC[key].best,n); if(n===N) A['done_'+key]=true; dirty=true; }
   function placeChips(){ root.querySelectorAll('.zone').forEach(function(z){ z.innerHTML=''; });
@@ -955,6 +960,7 @@ function trFetch(text,cb){ var key=ME.lang+'|'+text; if(trCache[key]) return cb(
 document.addEventListener('click',function(e){
   var t=e.target.closest?e.target.closest('button,.tr'):null; if(!t) return;
   if(t.getAttribute('data-closepop')){ $('pop').classList.add('hidden'); return; }
+  if(t.hasAttribute('data-say')){ e.preventDefault(); speak(t.getAttribute('data-say'),!!t.getAttribute('data-slow'),t); return; }
   if(t.hasAttribute('data-tr')){ translate(t.getAttribute('data-tr')); return; }
   if(t.classList.contains('tr')){ if(t.closest('button')) return; translate(t.textContent); return; }
   if(t.hasAttribute('data-sec')){ SEC=t.getAttribute('data-sec'); render(); return; }
@@ -967,10 +973,18 @@ document.addEventListener('click',function(e){
     A.pos={sec:SEC,pg:PG}; dirty=true; render(); return; }
 });
 
+
+function deviceInfo(){ var vs=[]; try{ vs=(speechSynthesis.getVoices()||[]).map(function(v){return v.name+(v.localService?' (local)':' (net)');}); }catch(e){}
+  return {ua:navigator.userAgent, tts:!!window.speechSynthesis, voices:vs.slice(0,12), voice:VOICE?VOICE.name:null, gs:!!window.GS, recognize:!!(window.GS&&GS.canRecognize), record:!!(window.GS&&GS.canRecord), online:navigator.onLine, at:new Date().toISOString()}; }
+$('test').onclick=function(){ var d=deviceInfo(); A.device=d; dirty=true; speak('Hello! Can you hear me?',false,$('test'));
+  var msg=!d.tts?'This browser has no speech.':!d.voices.length?'No voices installed yet — try again in a few seconds.':'Voice: '+(d.voice||'default')+' · recording: '+(d.record?'yes':'no')+' · speech-to-text: '+(d.recognize?'yes':'no');
+  toast(msg); if(ME.email) save(); };
+
 /* ============ SAVE / LOAD ============ */
 function setDot(s){ $('dot').className='dot '+s; }
 function save(){
   if(!ME.email) return; dirty=false;
+  if(!A.device) A.device=deviceInfo();
   var row={email:ME.email,name:ME.name,period:ME.period,lang:ME.lang,answers:A,scores:SC,partner:A.partner||null,paragraph:(A.para&&A.para.text)||null,completed:!!A.completed,updated_at:new Date().toISOString()};
   fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email',{method:'POST',headers:Object.assign({},H,{'Prefer':'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify(row)})
   .then(function(r){ setDot(r.ok?'on':'err'); if(!r.ok) dirty=true; }).catch(function(){ setDot('err'); dirty=true; });
