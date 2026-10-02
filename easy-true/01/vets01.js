@@ -37,7 +37,8 @@ V.gateHtml = function(){
     '<label for="gEmail">School email</label><input type="email" id="gEmail" placeholder="you@s.sfusd.edu" autocomplete="email">' +
     '<label for="gName">Your name</label><input type="text" id="gName" placeholder="First Last" autocomplete="name">' +
     '<label for="gPer">Period</label><select id="gPer"><option value="">\u2014 choose \u2014</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select>' +
-    '<div class="err" id="gErr">Please fill in all three with a valid SFUSD email.</div>' +
+    '<label for="gLang">Your language</label><select id="gLang"><option value="">\u2014 choose \u2014</option></select>' +
+    '<div class="err" id="gErr">Please fill in all four with a valid SFUSD email.</div>' +
     '<div class="row" style="margin-top:16px"><button class="btn" id="gGo" type="button">Begin \u2192</button></div></div>';
 };
 function readSaved(){
@@ -50,10 +51,17 @@ function initGate(onReady){
   if (s.email) $('gEmail').value = s.email;
   if (s.name) $('gName').value = s.name;
   if (s.period) $('gPer').value = s.period;
+  var gl = $('gLang'), langs = (window.GS && GS.LANGS) || [], saved = '';
+  langs.forEach(function(l){ var o = document.createElement('option'); o.value = l[0]; o.textContent = l[1]; gl.appendChild(o); });
+  try { saved = localStorage.getItem('vocab_lang') || ''; } catch(x){}
+  if (saved) gl.value = saved;
   $('gGo').addEventListener('click', function(){
     var email = V.canon($('gEmail').value), name = $('gName').value.trim(), per = $('gPer').value;
-    if (!V.valid(email) || !name || !per){ $('gErr').style.display = 'block'; return; }
+    var lang = $('gLang').value;
+    if (!V.valid(email) || !name || !per || !lang){ $('gErr').style.display = 'block'; return; }
     $('gErr').style.display = 'none';
+    try { localStorage.setItem('vocab_lang', lang); } catch(x){}
+    var hs = $('gsLang'); if (hs){ hs.value = lang; hs.dispatchEvent(new Event('change')); }
     try { localStorage.setItem('gal_student_email', email); localStorage.setItem('gal_student_name', name); localStorage.setItem('gal_student_period', per); } catch(x){}
     V.me = {email:email, name:name, period:per};
     if (window.GS) GS.ME = V.me;
