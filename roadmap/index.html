@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Build Roadmap · Readings</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pine:#1F4D3D; --pine-soft:#e8f0ec; --ink:#16241f; --muted:#6b7b74;
+  --edge:#d9e2dd; --paper:#f6f8f7;
+  --ok:#0f5c34; --ok-bg:#b9e3c9; --ok-edge:#1F7A4D;
+  --warn:#6d4a00; --warn-bg:#f8dd9e; --warn-edge:#b5820c;
+  --bad:#8c2418; --bad-bg:#f4bcb3; --bad-edge:#b23a2c;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Nunito,system-ui,sans-serif;background:var(--paper);color:var(--ink)}
+header{background:var(--pine);color:#fff;padding:18px 22px}
+header h1{margin:0;font-size:1.3rem}
+header p{margin:4px 0 0;font-size:.82rem;opacity:.85}
+.wrap{max-width:1100px;margin:0 auto;padding:16px 18px 60px}
+.gate{max-width:360px;margin:60px auto;background:#fff;border:1px solid var(--edge);border-radius:12px;padding:22px}
+.gate input{width:100%;padding:10px;border:1px solid var(--edge);border-radius:8px;font:inherit;margin:8px 0}
+.gate button,.btn{background:var(--pine);color:#fff;border:0;border-radius:8px;padding:9px 14px;font:inherit;font-weight:700;cursor:pointer}
+.tally{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 16px}
+.tally div{background:#fff;border:1px solid var(--edge);border-radius:10px;padding:8px 12px;font-size:.76rem;min-width:110px}
+.tally b{display:block;font-size:1.25rem;color:var(--pine)}
+.bar{height:10px;background:#e3e9e6;border-radius:6px;overflow:hidden;margin:4px 0 14px}
+.bar i{display:block;height:100%;background:var(--ok-edge);width:0;transition:width .4s}
+.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.controls button{background:#fff;border:1px solid var(--edge);border-radius:8px;padding:6px 11px;font:inherit;font-size:.82rem;cursor:pointer}
+.controls button.on{background:var(--pine);color:#fff;border-color:var(--pine)}
+.phase{background:#fff;border:1px solid var(--edge);border-radius:12px;margin:14px 0;overflow:hidden}
+.phase h2{margin:0;padding:12px 16px;font-size:1rem;background:var(--pine-soft);display:flex;justify-content:space-between;align-items:center}
+.phase h2 small{font-weight:400;color:var(--muted);font-size:.78rem}
+.item{display:grid;grid-template-columns:120px 1fr 190px;gap:10px;align-items:start;padding:10px 16px;border-top:1px solid var(--edge);font-size:.88rem}
+.item:first-of-type{border-top:0}
+.st{border-radius:8px;padding:5px 8px;font-size:.78rem;font-weight:700;border-left:4px solid;cursor:pointer;text-align:center}
+.st.todo{background:var(--bad-bg);color:var(--bad);border-color:var(--bad-edge)}
+.st.doing{background:var(--warn-bg);color:var(--warn);border-color:var(--warn-edge)}
+.st.done{background:var(--ok-bg);color:var(--ok);border-color:var(--ok-edge)}
+.item .t b{display:block}
+.item .t span{color:var(--muted);font-size:.8rem}
+.item .t a{color:var(--pine)}
+.item textarea{width:100%;min-height:38px;border:1px solid var(--edge);border-radius:8px;font:inherit;font-size:.78rem;padding:5px 7px;resize:vertical}
+.item.hide{display:none}
+.saving{position:fixed;bottom:14px;right:14px;background:var(--pine);color:#fff;padding:6px 12px;border-radius:8px;font-size:.78rem;opacity:0;transition:opacity .3s}
+.saving.on{opacity:1}
+.legend{font-size:.78rem;color:var(--muted);margin:0 0 6px}
+footer{padding:16px;font-size:.72rem;color:var(--muted);line-height:1.6;text-align:center}
+@media(max-width:640px){ .item{grid-template-columns:96px 1fr} .item textarea{grid-column:1/-1} }
+</style>
+</head>
+<body>
+<header>
+  <h1>Build roadmap — unified data, grades &amp; adaptive curriculum</h1>
+  <p>Click a status to cycle red → yellow → green. Saves to Supabase, so it stays current across sessions. Plan doc: see the Claude Doc "Galileo ELD: Unified Data, Grades &amp; Adaptive Curriculum Plan".</p>
+</header>
+
+<div class="wrap">
+  <div class="gate" id="gate">
+    <b>Teacher sign-in</b>
+    <input id="pw" type="password" placeholder="Password" autocomplete="current-password">
+    <button id="go">Open roadmap</button>
+    <div id="pwmsg" style="color:var(--bad);font-size:.8rem"></div>
+  </div>
+
+  <div id="app" style="display:none">
+    <div class="tally" id="tally"></div>
+    <div class="bar"><i id="barfill"></i></div>
+    <div class="controls">
+      <button data-f="all" class="on">Everything</button>
+      <button data-f="todo">Still red</button>
+      <button data-f="doing">In progress</button>
+      <button data-f="done">Done</button>
+      <button id="reload" style="margin-left:auto">Reload</button>
+    </div>
+    <p class="legend">Red = not started · Yellow = in progress · Green = done. Notes save when you click away.</p>
+    <div id="phases"></div>
+  </div>
+</div>
+<div class="saving" id="saving">Saved</div>
+<footer>Mr. Toby · Galileo Academy ELD · readings/roadmap</footer>
+
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var PASS='galileo2026';
+function H(x){var h={apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY,'Content-Type':'application/json'};if(x)for(var k in x)h[k]=x[k];return h;}
+
+/* The plan, in build order. id is the Supabase key; never rename an id once used. */
+var PHASES=[
+ {name:'0 · Data spine', note:'Everything else depends on this. One sitting of SQL.', items:[
+  {id:'spine-skills', t:'skills taxonomy table (~40 codes, families, levels)', d:'code, family, name, level 1-3, parent'},
+  {id:'spine-tag-activities', t:'Tag all 157 activity slugs with skills + level in `activities`', d:'SQL upsert per slug; teacher reviews the table'},
+  {id:'spine-mastery-view', t:'student_skill_mastery view', d:'email × skill → score, attempts, last practiced'},
+  {id:'spine-tables', t:'assignments, daily_message, student_profiles tables', d:'plain-column unique indexes for upserts'},
+  {id:'spine-maxscore', t:'Backfill max_score for activities logging score without max', d:'the source:none rows in activity_attempts'}
+ ]},
+ {name:'1 · Gradebook', note:'All scores, all students, one page, Synergy-ready.', items:[
+  {id:'gb-page', t:'readings/gradebook/index.html', d:'students × activities grid, period filter, best-attempt rule'},
+  {id:'gb-roster-order', t:'Roster order per period saved in students', d:'last name, first name as Synergy lists them'},
+  {id:'gb-copy-column', t:'"Copy column for Synergy" button', d:'scores in roster order, blanks for no attempt'},
+  {id:'gb-gradetransferer', t:'Test GradeTransferer against SFUSD Synergy (7-day trial)', d:'if it works, add the extension-friendly table layout'},
+  {id:'gb-csv-import', t:'Ask Digital Learning whether teacher-side CSV import is enabled', d:'Xander Piper, piperx@sfusd.edu'}
+ ]},
+ {name:'2 · Command center + student view', note:'The daily routine for you and for students.', items:[
+  {id:'cc-rebuild', t:'Rebuild teacher/index.html as the command center', d:'one row per student: goals, next tasks, daily note; period filter; sort'},
+  {id:'cc-period-note', t:'Period note with dropdown: send to all / fill blanks / let AI write', d:''},
+  {id:'cc-translate', t:'Auto-translate notes via the Apps Script proxy; per-period on/off toggle', d:'stored as JSON per language in daily_message'},
+  {id:'cc-tabs', t:'Gradebook, profiles, roadmap, unit dashboards as tabs on the command center', d:''},
+  {id:'stu-simplify', t:'Cut student/index.html to message + 3 task buttons + 3 goals', d:'"See everything" link keeps the old view'},
+  {id:'stu-done-flip', t:'track.js flips assignments.done when the attempt lands', d:'small edit to track.js'}
+ ]},
+ {name:'3 · Recommender', note:'Quill-style next tasks with visible reasons.', items:[
+  {id:'rec-rules', t:'Rule set: weakest skill, right level, not done well, 1-in-5 spaced review', d:''},
+  {id:'rec-table', t:'Recommender tab: student, 3 suggestions with reasons, Assign checkbox', d:'"Assign all suggested" per period'},
+  {id:'rec-thin', t:'"Pool is thin" flag per skill family', d:'this list becomes the build queue'}
+ ]},
+ {name:'4 · Student profile + AI', note:'Where each student is, with their own sentences as evidence.', items:[
+  {id:'prof-page', t:'Profile page: skill bars, weakest 3, most improved 3, example sentences', d:'numbers from the mastery view, examples from per-unit tables'},
+  {id:'prof-edge-fn', t:'Supabase Edge Function holding the Anthropic key', d:'same pattern as the translation proxy; never in a Pages file'},
+  {id:'prof-summary', t:'AI summary + 3 goals per student, cached in student_profiles', d:'refresh on click or after 5+ new attempts'},
+  {id:'prof-class-line', t:'Class view: one line per student sorted by need', d:'feeds the command center goals column'}
+ ]},
+ {name:'5 · Fill the grammar gaps', note:'So the recommender has something for every skill family.', items:[
+  {id:'gap-articles', t:'Articles practice page (a/an/the), 3 levels', d:''},
+  {id:'gap-plurals', t:'Plurals practice page, 3 levels', d:''},
+  {id:'gap-prepositions', t:'Prepositions practice page, 3 levels', d:'Do Now dog story already covers some'},
+  {id:'gap-capitals', t:'Capitals and punctuation practice page, 3 levels', d:''},
+  {id:'gap-galskills-diag', t:'GAL_SKILLS per-question logging on diagnostic/', d:''},
+  {id:'gap-galskills-verbs', t:'GAL_SKILLS on verbs/present and verbs/past', d:''},
+  {id:'gap-galskills-donow', t:'GAL_SKILLS declared on every Do Now page', d:'dog-01 already does'},
+  {id:'gap-phonics-supa', t:'Phonics pages save to Supabase (6 pages)', d:'currently localStorage or none'},
+  {id:'gap-eld1-standard', t:'eld1assessment pages: add tracker + standard sign-in, or retire', d:''}
+ ]},
+ {name:'6 · Adaptive curriculum', note:'Shared text, three levels, personalized grammar block, same end product.', items:[
+  {id:'ad-grammar-bank', t:'grammar_items bank: 12 skills × 3 levels × 6 items (216)', d:'AI-drafted, teacher-reviewed'},
+  {id:'ad-template', t:'One new reading page in the 3-level shape with the grammar block', d:'the template every later reading copies'},
+  {id:'ad-rubric', t:'3-row rubric on writing and speaking pages feeding skill_attempts', d:'topic sentence, organization, thesis; speaking 1-4'},
+  {id:'ad-merge-landlady', t:'Merge landlady / landlady-easy / landlady-hard into one 3-level page', d:''},
+  {id:'ad-merge-omelas', t:'Merge omelas twins into one 3-level page', d:''},
+  {id:'ad-merge-seedfolks', t:'Merge seedfolks twins into one 3-level page', d:''},
+  {id:'ad-merge-sept11', t:'Merge sept11 twins into one 3-level page', d:''},
+  {id:'ad-mixed-review', t:'"Mixed review" and "stretch" modes on the grammar block', d:'spaced review from the recommender rule'}
+ ]}
+];
+var ORDER=['todo','doing','done'], LABEL={todo:'Not started',doing:'In progress',done:'Done'};
+var state={};
+
+function gate(){
+  var g=document.getElementById('gate');
+  if(sessionStorage.getItem('rm_ok')==='1'){open();return;}
+  document.getElementById('go').onclick=function(){
+    if(document.getElementById('pw').value===PASS){sessionStorage.setItem('rm_ok','1');open();}
+    else document.getElementById('pwmsg').textContent='Not it.';
+  };
+  document.getElementById('pw').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('go').click();});
+}
+function open(){
+  document.getElementById('gate').style.display='none';
+  document.getElementById('app').style.display='block';
+  load();
+}
+function load(){
+  fetch(SUPA_URL+'/rest/v1/roadmap_items?select=id,status,note',{headers:H()})
+   .then(function(r){return r.ok?r.json():[];})
+   .then(function(rows){state={};rows.forEach(function(r){state[r.id]=r;});render();})
+   .catch(function(){render();});
+}
+function esc(s){return String(s||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function render(){
+  var host=document.getElementById('phases');host.innerHTML='';
+  var total=0,done=0,doing=0;
+  PHASES.forEach(function(p){
+    var sec=document.createElement('section');sec.className='phase';
+    var pd=0;
+    var html='';
+    p.items.forEach(function(it){
+      var s=(state[it.id]&&state[it.id].status)||'todo';
+      var note=(state[it.id]&&state[it.id].note)||'';
+      total++; if(s==='done'){done++;pd++;} if(s==='doing')doing++;
+      html+='<div class="item" data-s="'+s+'">'+
+        '<div class="st '+s+'" data-id="'+it.id+'">'+LABEL[s]+'</div>'+
+        '<div class="t"><b>'+esc(it.t)+'</b><span>'+esc(it.d)+'</span></div>'+
+        '<textarea data-id="'+it.id+'" placeholder="note…">'+esc(note)+'</textarea></div>';
+    });
+    sec.innerHTML='<h2>'+esc(p.name)+'<small>'+pd+' / '+p.items.length+' done · '+esc(p.note)+'</small></h2>'+html;
+    host.appendChild(sec);
+  });
+  document.getElementById('tally').innerHTML=
+    '<div><b>'+total+'</b>tasks</div><div><b>'+done+'</b>done</div><div><b>'+doing+'</b>in progress</div><div><b>'+(total-done-doing)+'</b>still red</div>';
+  document.getElementById('barfill').style.width=(total?Math.round(100*done/total):0)+'%';
+  host.querySelectorAll('.st').forEach(function(el){el.onclick=function(){
+    var id=el.dataset.id, cur=(state[id]&&state[id].status)||'todo';
+    var nxt=ORDER[(ORDER.indexOf(cur)+1)%ORDER.length];
+    save(id,{status:nxt});
+  };});
+  host.querySelectorAll('textarea').forEach(function(ta){ta.onchange=function(){save(ta.dataset.id,{note:ta.value});};});
+  applyFilter();
+}
+function save(id,patch){
+  var row=Object.assign({id:id,status:'todo',note:''},state[id]||{},patch,{updated_at:new Date().toISOString()});
+  state[id]=row;
+  fetch(SUPA_URL+'/rest/v1/roadmap_items?on_conflict=id',{method:'POST',headers:H({Prefer:'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify([row])})
+   .then(function(r){flash(r.ok?'Saved':'Save failed — is the roadmap_items table created?');})
+   .catch(function(){flash('Save failed');});
+  if(patch.status)render();
+}
+function flash(t){var s=document.getElementById('saving');s.textContent=t;s.classList.add('on');setTimeout(function(){s.classList.remove('on');},1400);}
+var filter='all';
+function applyFilter(){
+  document.querySelectorAll('.item').forEach(function(el){el.classList.toggle('hide',filter!=='all'&&el.dataset.s!==filter);});
+}
+document.querySelectorAll('.controls [data-f]').forEach(function(b){b.onclick=function(){
+  filter=b.dataset.f;document.querySelectorAll('.controls [data-f]').forEach(function(x){x.classList.toggle('on',x===b);});applyFilter();
+};});
+document.getElementById('reload').onclick=load;
+gate();
+</script>
+</body>
+</html>
