@@ -67,6 +67,8 @@
   .chip.ok{background:var(--okbg);border-color:var(--ok);color:var(--ok)}
   .chip.no{background:var(--nobg);border-color:var(--no);color:var(--no)}
   .chip.ghost{border-style:dashed;color:var(--mute)}
+  .chip.ls{cursor:grab;font-size:16px}
+  .zone .chip.ls{cursor:pointer}
   .pic{display:flex;justify-content:center;margin:6px 0 10px}
   .pic svg{max-width:100%;height:auto}
   .two{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
@@ -165,8 +167,11 @@ function figure(o,size){
   /* legs + shoes */
   s+='<rect x="42" y="'+(130)+'" width="14" height="'+legLen+'" rx="6" fill="#2f3d6b"/><rect x="64" y="130" width="14" height="'+legLen+'" rx="6" fill="#2f3d6b"/>';
   s+='<rect x="38" y="'+(128+legLen)+'" width="20" height="9" rx="4" fill="#222"/><rect x="62" y="'+(128+legLen)+'" width="20" height="9" rx="4" fill="#222"/>';
+  if(o.cape) s+='<path d="M30 78 L10 150 L60 138 L110 150 L90 78 Z" fill="'+o.cape+'"/>';
   /* body */
   s+='<rect x="32" y="74" width="56" height="62" rx="16" fill="'+shirt+'"/>';
+  if(o.stripes) s+='<path d="M32 90 h56 M32 104 h56 M32 118 h56" stroke="'+o.stripes+'" stroke-width="6"/>';
+  if(o.logo) s+='<text x="60" y="110" font-size="22" text-anchor="middle">'+o.logo+'</text>';
   s+='<rect x="18" y="80" width="14" height="44" rx="7" fill="'+shirt+'"/><rect x="88" y="80" width="14" height="44" rx="7" fill="'+shirt+'"/>';
   s+='<circle cx="25" cy="128" r="7" fill="'+skin+'"/><circle cx="95" cy="128" r="7" fill="'+skin+'"/>';
   /* long hair behind head */
@@ -183,6 +188,8 @@ function figure(o,size){
   /* mouth */
   s+='<path d="M50 58 Q60 66 70 58" stroke="#8a3b2a" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
   if(o.age==='old'){ s+='<path d="M46 52 q4 -3 8 0 M66 52 q4 -3 8 0" stroke="#b58b70" stroke-width="1.5" fill="none"/><path d="M60 15 l0 -1" stroke="none"/>'; }
+  if(o.mask) s+='<path d="M36 36 Q60 30 84 36 L84 50 Q60 56 36 50 Z" fill="'+o.mask+'"/><ellipse cx="50" cy="44" rx="6" ry="5" fill="#fff"/><ellipse cx="70" cy="44" rx="6" ry="5" fill="#fff"/><circle cx="50" cy="45" r="3.5" fill="'+ec+'"/><circle cx="70" cy="45" r="3.5" fill="'+ec+'"/>';
+  if(o.hat) s+='<rect x="28" y="18" width="64" height="6" rx="3" fill="#222"/><rect x="38" y="0" width="44" height="22" rx="3" fill="#222"/><rect x="38" y="12" width="44" height="7" fill="'+o.hat+'"/>';
   if(o.glasses){ s+='<circle cx="50" cy="45" r="8" stroke="#333" stroke-width="1.8" fill="none"/><circle cx="70" cy="45" r="8" stroke="#333" stroke-width="1.8" fill="none"/><path d="M58 45 h4" stroke="#333" stroke-width="1.8"/>'; }
   s+='</g>';
   if(o.prop) s+='<text x="98" y="150" font-size="30" text-anchor="middle">'+o.prop+'</text>';
@@ -231,7 +238,7 @@ var SECTIONS=[
   {k:'say',       t:'1 Say it',     sub:'hair, eyes, is, has', pages:['Listen','Build','Write']},
   {k:'interview', t:'2 Interview',  sub:'ask a classmate',     pages:['Questions 1–4','Questions 5–8','Write questions 9–12','Write questions 13–16']},
   {k:'because',   t:'3 Because',    sub:'traits + reasons',    pages:['See','Match','Verbs','Write']},
-  {k:'compare',   t:'4 Compare',    sub:'same and different',  pages:['Dog & cat','Frames','Leo & Mia','Me & my classmate']},
+  {k:'compare',   t:'4 Compare',    sub:'same and different',  pages:['Dog & cat','Frames','Leo & Mia','Me & my classmate','Listen & sort']},
   {k:'paragraph', t:'5 Paragraph',  sub:'put it together',     pages:['Topic sentence','Build it']}
 ];
 
@@ -688,6 +695,51 @@ PAGES.compare[3]=function(){
     SC[key].correct=n; SC[key].best=Math.max(SC[key].best,n); SC[key].attempts++; if(n===N) A['done_'+key]=true; dirty=true; toast(n+' / '+N+' correct'); };
 };
 
+
+/* 4.5 Listen & sort: dictation + Venn. Swap in your own pair here. img = optional image URL (replaces the drawing). */
+var LS_PAIR={
+  L:{name:'Captain Comet', img:'', draw:{g:'he',hair:'black',len:'short',style:'straight',eyes:'blue',h:'tall',age:'young',skin:SKINS[2],shirt:'#1d4ed8',cape:'#b91c1c',mask:'#1e3a8a',logo:'☄️'}},
+  R:{name:'Mister Mischief', img:'', draw:{g:'he',hair:'red',len:'medium',style:'curly',eyes:'green',h:'tall',age:'young',skin:SKINS[0],shirt:'#eab308',stripes:'#111',hat:'#7c3aed',glasses:true,prop:'🤹'}},
+  items:[['black hair','L'],['orange hair','R'],['a red cape','L'],['a purple hat','R'],['a mask','L'],['glasses','R'],['tall','M'],['young','M'],['serious','L'],['playful','R']]
+};
+function hintMask(ans,level){ return ans.split(' ').map(function(w){ return w.split('').map(function(ch,i){ return i<level?ch:'_'; }).join(' '); }).join('   '); }
+function normT(s){ return s.toLowerCase().replace(/[^a-z ]/g,'').replace(/\s+/g,' ').trim(); }
+PAGES.compare[4]=function(){
+  var key='compare4', items=LS_PAIR.items, N=items.length*2; A.ls=A.ls||{}; SC[key]=SC[key]||{correct:0,total:N,best:0,attempts:0};
+  function fig(side){ var p=LS_PAIR[side]; return p.img?'<img src="'+esc(p.img)+'" alt="'+esc(p.name)+'" style="height:190px;border-radius:10px">':figure(p.draw,190); }
+  var html='<div class="card"><h2>Listen, type, sort 🎧✍️</h2><p class="dek">'+T('Press 🔊, type what you hear, press Check. Then drag the words into the Venn diagram.')+'</p>'+
+    '<div class="two"><figure>'+fig('L')+'<figcaption>'+esc(LS_PAIR.L.name)+'</figcaption></figure><figure>'+fig('R')+'<figcaption>'+esc(LS_PAIR.R.name)+'</figcaption></figure></div>'+
+    '<div class="venn" id="vls"><svg viewBox="0 0 500 300"><ellipse cx="180" cy="150" rx="170" ry="130" fill="rgba(29,77,63,.07)" stroke="#1d4d3f" stroke-width="2"/><ellipse cx="320" cy="150" rx="170" ry="130" fill="rgba(180,83,9,.06)" stroke="#1d4d3f" stroke-width="2"/></svg>'+
+    '<div class="lab" style="left:6%;top:4%">'+esc(LS_PAIR.L.name)+'</div><div class="lab" style="right:6%;top:4%">'+esc(LS_PAIR.R.name)+'</div><div class="lab" style="left:0;right:0;text-align:center;bottom:2%;font-size:13px;color:var(--mute)">'+T('both')+'</div>'+
+    '<div class="zone" data-z="L" style="left:3%;top:22%;width:30%;height:58%"></div><div class="zone" data-z="M" style="left:33%;top:22%;width:34%;height:58%"></div><div class="zone" data-z="R" style="left:67%;top:22%;width:30%;height:58%"></div></div>'+scoreLine(key)+'</div>';
+  html+='<div class="card" id="lsBoxes">';
+  items.forEach(function(it,i){ var st=A.ls[i]||{};
+    html+='<div class="row" id="lsr'+i+'"><span class="qnum">'+(i+1)+'</span><button class="spk" data-say="'+esc(it[0])+'">🔊</button>'+
+      (st.solved?'<span class="chip ls" draggable="true" data-i="'+i+'">'+esc(it[0])+'</span>':
+      '<input class="txt" id="lsi'+i+'" style="flex:1;min-width:140px" placeholder="listen →" value="'+esc(st.typed||'')+'"><button class="btn line" data-lsc="'+i+'">'+T('Check')+'</button><button class="btn line" data-lsa="'+i+'" style="display:'+(st.tries>=2?'':'none')+'">'+T('Answer')+'</button>')+
+      '<span class="fb'+(st.tries&&!st.solved?' hint':'')+'" id="lsf'+i+'" style="margin:0;padding:4px 10px;'+(st.tries&&!st.solved?'display:inline-block':'')+'">'+(st.tries&&!st.solved?esc(hintMask(it[0],st.tries)):'')+'</span></div>'; });
+  html+='</div><div class="note">'+T('Hints appear after each mistake. Drag a finished word (or tap it, then tap a circle) into the diagram. Green = right place.')+'</div>';
+  $('page').innerHTML=html;
+  var root=$('vls'), sel=null;
+  function tally(){ var n=0; items.forEach(function(it,i){ var st=A.ls[i]||{}; if(st.solved&&!st.revealed) n++; if(st.zone===it[1]) n++; }); SC[key].correct=n; SC[key].best=Math.max(SC[key].best,n); if(n===N) A['done_'+key]=true; dirty=true; }
+  function placeChips(){ root.querySelectorAll('.zone').forEach(function(z){ z.innerHTML=''; });
+    items.forEach(function(it,i){ var st=A.ls[i]||{}; var c=$('lsBoxes').querySelector('.chip[data-i="'+i+'"]'); if(!c||!st.zone) return;
+      var cl=c.cloneNode(true); cl.classList.add(st.zone===it[1]?'ok':'no'); root.querySelector('[data-z="'+st.zone+'"]').appendChild(cl); c.style.opacity='.35'; wireChip(cl); });
+    root.querySelectorAll('.zone').forEach(function(z){ z.classList.toggle('hot',!!sel); }); }
+  function wireChip(c){ var i=parseInt(c.getAttribute('data-i'));
+    c.ondragstart=function(e){ e.dataTransfer.setData('text',String(i)); sel=i; };
+    c.onclick=function(){ sel=(sel===i?null:i); $('lsBoxes').querySelectorAll('.chip').forEach(function(x){x.classList.toggle('sel',parseInt(x.getAttribute('data-i'))===sel);}); root.querySelectorAll('.zone').forEach(function(z){ z.classList.toggle('hot',sel!=null); }); }; }
+  function drop(zone,i){ A.ls[i]=A.ls[i]||{}; A.ls[i].zone=zone; sel=null; $('lsBoxes').querySelectorAll('.chip').forEach(function(x){x.classList.remove('sel');}); placeChips(); tally(); var it=items[i]; toast(zone===it[1]?'✓ '+it[0]:it[0]+': try another place'); }
+  root.querySelectorAll('.zone').forEach(function(z){ z.ondragover=function(e){ e.preventDefault(); z.classList.add('hot'); }; z.ondrop=function(e){ e.preventDefault(); var i=parseInt(e.dataTransfer.getData('text')); if(!isNaN(i)) drop(z.getAttribute('data-z'),i); }; z.onclick=function(e){ if(sel!=null) drop(z.getAttribute('data-z'),sel); }; });
+  $('lsBoxes').querySelectorAll('.chip').forEach(wireChip); placeChips();
+  function solve(i,revealed){ var it=items[i]; A.ls[i]=A.ls[i]||{}; A.ls[i].solved=true; A.ls[i].revealed=!!revealed; dirty=true; speak(it[0]); tally(); render(); }
+  $('lsBoxes').querySelectorAll('[data-lsc]').forEach(function(b){ b.onclick=function(){ var i=parseInt(b.getAttribute('data-lsc')), it=items[i], el=$('lsi'+i), f=$('lsf'+i); A.ls[i]=A.ls[i]||{tries:0}; A.ls[i].typed=el.value;
+    if(normT(el.value)===normT(it[0])){ solve(i,false); return; }
+    A.ls[i].tries=(A.ls[i].tries||0)+1; var t=A.ls[i].tries; el.className='txt no'; f.className='fb hint'; f.style.display='inline-block'; f.textContent=hintMask(it[0],t); speak(it[0]); if(t>=2) $('page').querySelector('[data-lsa="'+i+'"]').style.display=''; dirty=true; }; });
+  $('lsBoxes').querySelectorAll('[data-lsa]').forEach(function(b){ b.onclick=function(){ solve(parseInt(b.getAttribute('data-lsa')),true); }; });
+  $('lsBoxes').querySelectorAll('input').forEach(function(el){ el.onkeydown=function(e){ if(e.key==='Enter'){ var i=el.id.slice(3); $('page').querySelector('[data-lsc="'+i+'"]').click(); } }; });
+};
+
 /* =====================================================================
    SECTION 5 · PARAGRAPH
    ===================================================================== */
@@ -744,7 +796,7 @@ document.addEventListener('click',function(e){
   if(t.getAttribute('data-closepop')){ $('pop').classList.add('hidden'); return; }
   if(t.hasAttribute('data-say')){ speak(t.getAttribute('data-say')); return; }
   if(t.hasAttribute('data-tr')){ translate(t.getAttribute('data-tr')); return; }
-  if(t.classList.contains('tr')){ translate(t.textContent); return; }
+  if(t.classList.contains('tr')){ if(t.closest('button')) return; translate(t.textContent); return; }
   if(t.hasAttribute('data-sec')){ SEC=t.getAttribute('data-sec'); render(); return; }
   if(t.hasAttribute('data-pg')){ PG[SEC]=parseInt(t.getAttribute('data-pg')); render(); return; }
   if(t.hasAttribute('data-nav')){ var d=parseInt(t.getAttribute('data-nav')); var s=SECTIONS.filter(function(x){return x.k===SEC;})[0]; var np=PG[SEC]+d;
