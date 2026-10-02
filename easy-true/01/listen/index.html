@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What did you hear? · Shopping Day · Very Easy True Stories</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;0,9..144,800;1,9..144,400&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../vets01.css">
+</head>
+<body>
+<main class="wrap" id="app">
+<h1>What did <em>you hear?</em></h1>
+<p class="sub">Listen carefully. Some answers are tricky.</p>
+<div class="steps"><span class="step" data-s="word">1 Words</span><span class="step" data-s="phrase">2 Phrases</span><span class="step" data-s="sentence">3 Sentences</span><span class="step" data-s="done">Done</span></div>
+<section class="panel" data-p="word"><p class="dirs" data-tap>Tap <b>listen</b>. Which word did you hear? Tap it.</p><div id="word"></div></section>
+<section class="panel" data-p="phrase"><p class="dirs" data-tap>Tap <b>listen</b>. Tap the words in order to build what you heard. One word does not belong.</p><div id="phrase"></div></section>
+<section class="panel" data-p="sentence"><p class="dirs" data-tap>Tap <b>listen</b>. Build the sentence you heard. One word does not belong.</p><div id="sentence"></div></section>
+<section class="panel" data-p="done"><div id="done"></div></section>
+</main>
+<script src="/readings/speaking/speak-core.js"></script>
+<script src="../data.js"></script>
+<script src="../vets01.js"></script>
+<script>
+var S, STEPS = ['word','phrase','sentence','done'];
+function go(step){
+  S.step = step; V.touch();
+  STEPS.forEach(function(s, i){
+    document.querySelector('.step[data-s="' + s + '"]').className = 'step' + (s === step ? ' on' : (STEPS.indexOf(step) > i ? ' done' : ''));
+    document.querySelector('.panel[data-p="' + s + '"]').classList.toggle('on', s === step);
+  });
+  if (step === 'done') renderDone(); else renderLevel(step);
+  window.scrollTo({top:0, behavior:'smooth'});
+  if (window.GS) GS.rewrap();
+}
+function rec(level, i){ S.ans = S.ans || {}; var k = level + ':' + i; return S.ans[k] || (S.ans[k] = {tries:0, first:null, done:false}); }
+function nextIndex(level){ var items = SD.DICT[level]; for (var i = 0; i < items.length; i++){ if (!rec(level, i).done) return i; } return -1; }
+function tokens(s){ return String(s).replace(/[.,!?\u201c\u201d"]/g, '').split(/\s+/).filter(Boolean); }
+function renderLevel(level){
+  var box = document.getElementById(level), i = nextIndex(level), items = SD.DICT[level];
+  if (i < 0){ go(STEPS[STEPS.indexOf(level) + 1]); return; }
+  var it = items[i], r = rec(level, i);
+  var h = '<div class="card"><div class="row" style="justify-content:space-between"><span class="pill">' + (i + 1) + ' of ' + items.length + '</span><div class="row">' + V.sayBtn(it.say) + V.sayBtn(it.say, true) + '</div></div>';
+  if (level === 'word'){
+    h += '<div class="choices" style="margin-top:14px;justify-content:center">';
+    V.shuffle(it.opts).forEach(function(o){ h += '<button type="button" class="choice" data-w="' + V.esc(o) + '">' + V.esc(o) + '</button>'; });
+    h += '</div>';
+  } else {
+    var tiles = V.shuffle(tokens(it.say).concat(it.extra || []));
+    h += '<div class="answer" id="ans"></div><div class="tiles" id="tiles">';
+    tiles.forEach(function(w, n){ h += '<button type="button" class="tile" data-w="' + V.esc(w) + '" data-n="' + n + '">' + V.esc(w) + '</button>'; });
+    h += '</div><div class="row"><button type="button" class="btn sm ghost" id="undo">\u2190 undo</button><button type="button" class="btn sm" id="check">Check</button></div>';
+  }
+  h += '<div class="fb" id="fb"></div></div>';
+  box.innerHTML = h;
+  setTimeout(function(){ V.say(it.say); }, 400);
+  if (level === 'word'){
+    Array.prototype.forEach.call(box.querySelectorAll('.choice'), function(b){
+      b.addEventListener('click', function(){
+        r.tries++; var right = b.getAttribute('data-w') === it.say;
+        if (r.first === null) r.first = right;
+        if (right){ b.classList.add('right'); r.done = true; Array.prototype.forEach.call(box.querySelectorAll('.choice'), function(x){ x.disabled = true; });
+          document.getElementById('fb').textContent = 'Yes: ' + it.say; V.touch(); setTimeout(function(){ renderLevel(level); }, 900); }
+        else { b.classList.add('wrong'); b.disabled = true; document.getElementById('fb').textContent = 'Listen again.'; V.say(it.say); V.touch(); }
+      });
+    });
+    return;
+  }
+  var picked = [];
+  function draw(){
+    var a = document.getElementById('ans'); a.innerHTML = '';
+    picked.forEach(function(n){ var t = box.querySelector('.tile[data-n="' + n + '"]'); var c = t.cloneNode(true); c.removeAttribute('data-n'); a.appendChild(c); });
+    Array.prototype.forEach.call(box.querySelectorAll('#tiles .tile'), function(t){ t.classList.toggle('used', picked.indexOf(+t.getAttribute('data-n')) > -1); });
+  }
+  Array.prototype.forEach.call(box.querySelectorAll('#tiles .tile'), function(t){
+    t.addEventListener('click', function(){ var n = +t.getAttribute('data-n'); if (picked.indexOf(n) > -1) return; picked.push(n); draw(); });
+  });
+  document.getElementById('undo').addEventListener('click', function(){ picked.pop(); draw(); });
+  document.getElementById('check').addEventListener('click', function(){
+    var got = picked.map(function(n){ return box.querySelector('.tile[data-n="' + n + '"]').getAttribute('data-w'); }).join(' ').toLowerCase();
+    var want = tokens(it.say).join(' ').toLowerCase();
+    r.tries++; var right = got === want; if (r.first === null) r.first = right;
+    var a = document.getElementById('ans'); a.classList.remove('right', 'wrong'); a.classList.add(right ? 'right' : 'wrong');
+    if (right){ r.done = true; document.getElementById('fb').innerHTML = '\u2713 ' + V.esc(it.say); V.touch(); setTimeout(function(){ renderLevel(level); }, 1100); }
+    else { document.getElementById('fb').textContent = 'Not yet. Listen again and check the order.'; V.say(it.say); V.touch(); }
+  });
+}
+function renderDone(){
+  var first = 0, total = 0, per = {};
+  STEPS.slice(0, 3).forEach(function(level){
+    var n = 0, d = SD.DICT[level].length; total += d;
+    SD.DICT[level].forEach(function(x, i){ if (rec(level, i).first) { n++; first++; } });
+    per[level] = {n:n, d:d};
+  });
+  var extra = '<p>Words <b>' + per.word.n + '/' + per.word.d + '</b> \u00b7 Phrases <b>' + per.phrase.n + '/' + per.phrase.d + '</b> \u00b7 Sentences <b>' + per.sentence.n + '/' + per.sentence.d + '</b> (first try)</p>';
+  document.getElementById('done').innerHTML = V.doneBox(first, total, extra);
+  if (!V.completed) V.finish(first, total, {'listening-words':per.word, 'listening-phrases':per.phrase, 'listening-sentences':per.sentence});
+}
+V.init({module:'listen', title:'What did you hear?', skills:['listening-words','listening-phrases','listening-sentences'], onReady:function(){
+  S = V.state; go(S.step && STEPS.indexOf(S.step) > -1 ? S.step : 'word');
+}});
+
+</script>
+<script src="/readings/track.js"></script>
+</body>
+</html>

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Listen and say · Shopping Day · Very Easy True Stories</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;0,9..144,800;1,9..144,400&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../vets01.css">
+</head>
+<body>
+<main class="wrap" id="app">
+<h1>Listen and <em>say</em></h1>
+<p class="sub">Hear each sentence. Then say it. Then try the sounds.</p>
+<div class="steps"><span class="step" data-s="sents">1 Sentences</span><span class="step" data-s="sounds">2 Sounds</span><span class="step" data-s="me">3 You</span><span class="step" data-s="done">Done</span></div>
+
+<section class="panel" data-p="sents">
+  <p class="dirs" data-tap>Tap <b>listen</b>. Then tap the red button and say the sentence. Green words are the words I heard.</p>
+  <div id="sents"></div>
+  <div class="row right"><button class="btn" type="button" id="toSounds">Next: sounds \u2192</button></div>
+</section>
+
+<section class="panel" data-p="sounds">
+  <p class="dirs" data-tap>These words have the same vowel sound. Listen. Then say all the words in the group.</p>
+  <div id="sounds"></div>
+  <div class="row right"><button class="btn" type="button" id="toMe">Next: about you \u2192</button></div>
+</section>
+
+<section class="panel" data-p="me">
+  <p class="dirs" data-tap>Rara goes shopping every Monday. And you? Finish the sentence, then say it.</p>
+  <div class="card">
+    <div class="t" style="font-family:'Fraunces',serif;font-size:22px">I go shopping every <select id="meDay" style="font:inherit;padding:4px 8px;border:2px solid var(--ink);background:var(--paper)"><option value="">\u2014</option><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option><option>day</option></select>.</div>
+    <div class="row" style="margin-top:14px"><button type="button" class="say" id="meSay">\ud83d\udd0a listen</button><button type="button" class="mic" id="meMic" aria-label="Record">\ud83c\udfa4</button></div>
+    <div class="heard" id="meHeard"></div>
+  </div>
+  <div class="row right"><button class="btn" type="button" id="finish">Finish \u2192</button></div>
+</section>
+
+<section class="panel" data-p="done"><div id="done"></div></section>
+</main>
+<script src="/readings/speaking/speak-core.js"></script>
+<script src="../data.js"></script>
+<script src="../vets01.js"></script>
+<script>
+var S, STEPS = ['sents','sounds','me','done'], ACCEPT = 0.7;
+function go(step){
+  S.step = step; V.touch();
+  STEPS.forEach(function(s, i){
+    document.querySelector('.step[data-s="' + s + '"]').className = 'step' + (s === step ? ' on' : (STEPS.indexOf(step) > i ? ' done' : ''));
+    document.querySelector('.panel[data-p="' + s + '"]').classList.toggle('on', s === step);
+  });
+  if (step === 'done') renderDone();
+  window.scrollTo({top:0, behavior:'smooth'});
+  if (window.GS) GS.rewrap();
+}
+function badge(score){ var p = Math.round(score * 100); return '<span class="score-badge ' + V.band(p) + '">' + p + '%</span>'; }
+/* one card with listen + mic, scoring against target; store under S[key][id] */
+function speakCard(key, id, text, label){
+  var r = (S[key] && S[key][id]) || {};
+  return '<div class="sent' + (r.accepted ? ' done' : '') + '" data-key="' + key + '" data-id="' + V.esc(id) + '" data-t="' + V.esc(text) + '">' +
+    (label ? '<div class="hint" style="margin-bottom:4px">' + V.esc(label) + '</div>' : '') +
+    '<div class="t" data-tap>' + V.esc(text) + '</div>' +
+    '<div class="meta">' + V.sayBtn(text) + V.sayBtn(text, true) + '<button type="button" class="mic" aria-label="Record">\ud83c\udfa4</button>' +
+    (r.best != null ? badge(r.best) : '') + '</div><div class="heard" data-heard></div></div>';
+}
+function wireCards(box){
+  Array.prototype.forEach.call(box.querySelectorAll('.sent'), function(card){
+    var key = card.getAttribute('data-key'), id = card.getAttribute('data-id'), t = card.getAttribute('data-t'), heard = card.querySelector('[data-heard]');
+    if (!V.canSpeak()){ card.querySelector('.mic').disabled = true; return; }
+    V.mic(card.querySelector('.mic'), {
+      maxMs:12000,
+      onStart:function(){ heard.innerHTML = '<span class="hint">listening\u2026</span>'; },
+      onInterim:function(x){ heard.textContent = x; },
+      onDone:function(res){
+        var m = V.match(res.alts, [t]);
+        S[key] = S[key] || {};
+        var rec = S[key][id] || (S[key][id] = {tries:0, best:0, accepted:false});
+        rec.tries++; rec.best = Math.max(rec.best, m.score);
+        var ok = m.score >= ACCEPT; if (ok){ rec.accepted = true; card.classList.add('done'); }
+        heard.innerHTML = V.heardHtml(t, m) + ' ' + badge(m.score) + (ok ? ' \u2713' : ' <span class="hint">try again</span>');
+        V.touch(); V.speakSave(key + ':' + id, t, m, res, ok, rec.tries);
+      }
+    });
+  });
+}
+function renderSents(){
+  var box = document.getElementById('sents'), h = '';
+  SD.SENTS.forEach(function(s, i){ h += speakCard('sents', String(i + 1), s, (i + 1) + ' of ' + SD.SENTS.length); });
+  box.innerHTML = h; wireCards(box);
+}
+function renderSounds(){
+  var box = document.getElementById('sounds'), h = '';
+  SD.SOUNDS.forEach(function(g){ h += speakCard('sounds', g.key, g.words.join(', '), g.name); });
+  box.innerHTML = h; wireCards(box);
+}
+function meText(){ var d = document.getElementById('meDay').value; return d ? 'I go shopping every ' + d + '.' : ''; }
+function renderMe(){
+  if (S.me && S.me.day) document.getElementById('meDay').value = S.me.day;
+  document.getElementById('meDay').addEventListener('change', function(){ S.me = S.me || {}; S.me.day = this.value; V.touch(); });
+  document.getElementById('meSay').addEventListener('click', function(){ var t = meText(); if (t) V.say(t, false, this); });
+  var heard = document.getElementById('meHeard');
+  if (!V.canSpeak()){ document.getElementById('meMic').disabled = true; return; }
+  V.mic(document.getElementById('meMic'), {
+    maxMs:8000,
+    onStart:function(){ heard.innerHTML = '<span class="hint">listening\u2026</span>'; },
+    onInterim:function(x){ heard.textContent = x; },
+    onDone:function(res){
+      var t = meText(); if (!t){ heard.textContent = 'Choose a day first.'; return; }
+      var m = V.match(res.alts, [t]); S.me = S.me || {}; S.me.tries = (S.me.tries || 0) + 1;
+      S.me.best = Math.max(S.me.best || 0, m.score); S.me.text = t; var ok = m.score >= ACCEPT; S.me.accepted = S.me.accepted || ok;
+      heard.innerHTML = V.heardHtml(t, m) + ' ' + badge(m.score) + (ok ? ' \u2713' : '');
+      V.touch(); V.speakSave('me', t, m, res, ok, S.me.tries);
+    }
+  });
+}
+function count(key, n){ var o = S[key] || {}, c = 0; Object.keys(o).forEach(function(k){ if (o[k].accepted) c++; }); return c; }
+function renderDone(){
+  var said = count('sents'), snd = count('sounds'), max = SD.SENTS.length;
+  var extra = '<p>You said <b>' + said + '</b> of ' + max + ' sentences clearly and <b>' + snd + '</b> of ' + SD.SOUNDS.length + ' sound groups.</p>' +
+    (S.me && S.me.text ? '<p class="hint">Your sentence: ' + V.esc(S.me.text) + '</p>' : '') +
+    '<p class="hint">Hear your recordings any time on <a href="/readings/speaking/mine/">My Speaking</a>.</p>';
+  document.getElementById('done').innerHTML = V.doneBox(said, max, extra);
+  if (!V.completed){
+    var hl = (S.me && S.me.text) ? [{label:'Shopping Day: about me', text:S.me.text}] : null;
+    V.finish(said, max, {'speaking-fluency':{n:said, d:max}, 'phonics-vowels':{n:snd, d:SD.SOUNDS.length}}, hl);
+  }
+}
+V.init({module:'speak', title:'Listen and say', skills:['speaking-fluency','phonics-vowels'], onReady:function(){
+  S = V.state; renderSents(); renderSounds(); renderMe();
+  document.getElementById('toSounds').addEventListener('click', function(){ go('sounds'); });
+  document.getElementById('toMe').addEventListener('click', function(){ go('me'); });
+  document.getElementById('finish').addEventListener('click', function(){ go('done'); });
+  go(S.step && STEPS.indexOf(S.step) > -1 ? S.step : 'sents');
+}});
+
+</script>
+<script src="/readings/track.js"></script>
+</body>
+</html>

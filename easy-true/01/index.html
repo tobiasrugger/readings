@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shopping Day · Practice · Very Easy True Stories</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;0,9..144,800;1,9..144,400&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="vets01.css">
+</head>
+<body>
+<header class="hdr">
+  <div><a class="back" href="../">&larr; Library</a><span class="crumb">Very Easy True Stories &middot; <b>Story 1</b></span></div>
+  <div class="tools"><span id="who" class="hint"></span></div>
+</header>
+<main class="wrap">
+  <h1>Shopping <em>Day</em></h1>
+  <p class="sub">Read the story first. Then practice in any order. Every activity saves to your account.</p>
+  <div class="menu" id="menu"></div>
+  <p class="hint" style="margin-top:22px">Teacher: <a href="../dashboard.html">dashboard</a></p>
+</main>
+<script src="data.js"></script>
+<script>
+(function(){
+var SUPA_URL = 'https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var MODS = [
+  {id:'story', n:'Read', t:'The story', d:'Who goes shopping every Monday? Read and find out.', url:SD.STORY_URL, story:true},
+  {id:'vocab', n:'1 \u00b7 Words', t:'Words first', d:'Study, match, and say the 12 words.', url:'vocab/'},
+  {id:'speak', n:'2 \u00b7 Speaking', t:'Listen and say', d:'Hear each sentence, then say it. Sounds and a sentence about you.', url:'speak/'},
+  {id:'listen', n:'3 \u00b7 Listening', t:'What did you hear?', d:'Words, phrases and sentences. Some are tricky.', url:'listen/'},
+  {id:'spell', n:'4 \u00b7 Spelling', t:'Spell it', d:'Type the missing letters.', url:'spell/'},
+  {id:'write', n:'5 \u00b7 Writing', t:'Where are the spaces?', d:'Put the spaces back in the sentences.', url:'write/'},
+  {id:'grammar', n:'6 \u00b7 Grammar', t:'Grammar from the story', d:'walks, every Monday, in / on / to, her.', url:'grammar/'}
+];
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function H(){ return {'apikey':SUPA_KEY, 'Authorization':'Bearer ' + SUPA_KEY}; }
+var email = '', name = '';
+try { email = localStorage.getItem('gal_student_email') || ''; name = localStorage.getItem('gal_student_name') || ''; } catch(e){}
+function draw(status){
+  var h = '';
+  MODS.forEach(function(m){
+    var st = status[m.id], line = '';
+    if (st){ line = st.completed ? '\u2713 done \u00b7 ' + st.score + '/' + st.max : 'in progress'; }
+    h += '<a class="mcard' + (m.story ? ' story' : '') + '" href="' + m.url + '"><div class="n">' + esc(m.n) + '</div><div class="t">' + esc(m.t) + '</div><div class="d">' + esc(m.d) + '</div>' +
+         (line ? '<div class="st">' + esc(line) + '</div>' : '') + '</a>';
+  });
+  document.getElementById('menu').innerHTML = h;
+}
+draw({});
+if (email){
+  document.getElementById('who').textContent = name || email;
+  var status = {};
+  var q1 = fetch(SUPA_URL + '/rest/v1/vets_modules?email=eq.' + encodeURIComponent(email) + '&story=eq.' + encodeURIComponent(SD.STORY) + '&select=module,score,max_score,completed', {headers:H()})
+    .then(function(r){ return r.ok ? r.json() : []; }).then(function(rows){ (rows || []).forEach(function(r){ status[r.module] = {score:r.score || 0, max:r.max_score || 0, completed:!!r.completed}; }); }).catch(function(){});
+  var q2 = fetch(SUPA_URL + '/rest/v1/vets_results?email=eq.' + encodeURIComponent(email) + '&story=eq.' + encodeURIComponent(SD.STORY) + '&select=score,total,completed', {headers:H()})
+    .then(function(r){ return r.ok ? r.json() : []; }).then(function(rows){ var r = rows && rows[0]; if (r) status.story = {score:r.score || 0, max:r.total || 0, completed:!!r.completed}; }).catch(function(){});
+  Promise.all([q1, q2]).then(function(){ draw(status); });
+}
+})();
+</script>
+</body>
+</html>

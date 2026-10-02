@@ -195,6 +195,7 @@ table.results tr:hover td{background:var(--ocean-soft);}
     <button class="tab" onclick="switchTab('stories')">By Story</button>
     <button class="tab" onclick="switchTab('questions')">Questions</button>
     <button class="tab" onclick="switchTab('list')">All Results</button>
+    <button class="tab" onclick="switchTab('practice')">Practice</button>
   </div>
 
   <!-- TAB: CLASS GRID -->
@@ -225,6 +226,13 @@ table.results tr:hover td{background:var(--ocean-soft);}
         <tbody id="results-tbody"></tbody>
       </table>
     </div>
+  </div>
+
+  <!-- TAB: PRACTICE MODULES (easy-true/01/) -->
+  <div id="tab-practice" style="display:none">
+    <div class="section-head">Shopping Day practice · students × activities</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Words, speaking, listening, spelling, writing and grammar from <a href="01/">easy-true/01/</a>. Score is first-try correct. Period and name filters apply; the story filter does not.</p>
+    <div class="grid-wrap"><table class="class-grid" id="practice-grid"></table></div>
   </div>
 </div>
 
@@ -287,6 +295,7 @@ function logout(){
 }
 
 function loadData(){
+  loadPractice();
   allRows = [];
   var done = 0;
   function finish(){ done++; if(done===2) applyFilters(); }
@@ -351,10 +360,10 @@ function renderStats(){
 
 function switchTab(name){
   currentTab = name;
-  ['grid','stories','questions','list'].forEach(function(t){
+  ['grid','stories','questions','list','practice'].forEach(function(t){
     document.getElementById('tab-'+t).style.display = t===name?'block':'none';
     document.querySelectorAll('.tab').forEach(function(el,i){
-      el.classList.toggle('active', ['grid','stories','questions','list'][i]===name);
+      el.classList.toggle('active', ['grid','stories','questions','list','practice'][i]===name);
     });
   });
   renderCurrentTab();
@@ -364,7 +373,46 @@ function renderCurrentTab(){
   if(currentTab==='grid') renderGrid();
   else if(currentTab==='stories') renderStoryGrid();
   else if(currentTab==='questions') renderQuestions();
+  else if(currentTab==='practice') renderPractice();
   else renderTable();
+}
+
+/* ── PRACTICE MODULES ── */
+var MOD_ROWS = [];
+var MODS = [['vocab','Words'],['speak','Speak'],['listen','Listen'],['spell','Spell'],['write','Write'],['grammar','Grammar']];
+function loadPractice(){
+  fetch(SUPA_URL+'/rest/v1/vets_modules?select=email,name,period,story,module,score,max_score,completed,updated_at&order=updated_at.desc&limit=5000',{headers:hdrs()})
+    .then(function(r){return r.ok?r.json():[];}).then(function(rows){ MOD_ROWS=rows||[]; if(currentTab==='practice') renderPractice(); }).catch(function(){});
+}
+function renderPractice(){
+  if(!MOD_ROWS.length){ loadPractice(); }
+  var period=document.getElementById('filter-period').value, name=document.getElementById('filter-name').value.trim().toLowerCase();
+  var by={};
+  MOD_ROWS.forEach(function(r){
+    if(period && String(r.period)!==period) return;
+    if(name && !(r.name||'').toLowerCase().includes(name) && !(r.email||'').toLowerCase().includes(name)) return;
+    if(!by[r.email]) by[r.email]={name:r.name||r.email,period:r.period,m:{}};
+    by[r.email].m[r.module]=r;
+  });
+  var emails=Object.keys(by).sort(function(a,b){return (by[a].name||a).localeCompare(by[b].name||b);});
+  var h='<thead><tr><th>Name</th><th>P</th>';
+  MODS.forEach(function(m){ h+='<th>'+m[1]+'</th>'; });
+  h+='</tr></thead><tbody>';
+  emails.forEach(function(e){
+    var st=by[e];
+    h+='<tr><td><span class="student-link" onclick="showStudentModal(\''+e+'\')">'+(st.name||e)+'</span><br><span style="font-size:10px;color:var(--muted)">'+e+'</span></td><td>'+(st.period||'—')+'</td>';
+    MODS.forEach(function(m){
+      var r=st.m[m[0]];
+      if(!r){ h+='<td><span class="cell-score none">—</span></td>'; return; }
+      var pct=r.max_score>0?Math.round(r.score/r.max_score*100):0, cls=r.completed?(pct>=70?'high':pct>=40?'mid':'low'):'none';
+      var label=r.completed?(r.score+'/'+r.max_score):'…';
+      h+='<td><span class="cell-score '+cls+'" title="'+(r.completed?'done':'in progress')+' · '+new Date(r.updated_at).toLocaleString()+'">'+label+'</span></td>';
+    });
+    h+='</tr>';
+  });
+  h+='</tbody>';
+  if(!emails.length) h='<tbody><tr><td colspan="8" class="empty">No practice data yet.</td></tr></tbody>';
+  document.getElementById('practice-grid').innerHTML=h;
 }
 
 /* ── CLASS GRID ── */

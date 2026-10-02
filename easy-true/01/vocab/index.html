@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Words first · Shopping Day · Very Easy True Stories</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;0,9..144,800;1,9..144,400&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../vets01.css">
+</head>
+<body>
+<main class="wrap" id="app">
+<h1>Words <em>first</em></h1>
+<p class="sub">Learn the words. Then match them. Then say them.</p>
+<div class="steps"><span class="step" data-s="study">1 Study</span><span class="step" data-s="match">2 Match</span><span class="step" data-s="say">3 Say</span><span class="step" data-s="done">Done</span></div>
+
+<section class="panel" data-p="study">
+  <p class="dirs" data-tap>Look at each picture. Tap <b>listen</b> and say the word. Choose your language at the top to see each word in your language.</p>
+  <div class="vgrid" id="study"></div>
+  <div class="row right" style="margin-top:16px"><button class="btn" id="toMatch" type="button">I know these words \u2192</button></div>
+</section>
+
+<section class="panel" data-p="match">
+  <p class="dirs" data-tap>Which word goes with the picture? Tap the word.</p>
+  <div id="match"></div>
+</section>
+
+<section class="panel" data-p="say">
+  <p class="dirs" data-tap>Tap <b>listen</b>. Then tap the red button and say the word.</p>
+  <div id="say"></div>
+</section>
+
+<section class="panel" data-p="done"><div id="done"></div></section>
+</main>
+<script src="/readings/speaking/speak-core.js"></script>
+<script src="../data.js"></script>
+<script src="../vets01.js"></script>
+<script>
+var S;   /* V.state */
+var STEPS = ['study','match','say','done'];
+function go(step){
+  S.step = step; V.touch();
+  STEPS.forEach(function(s, i){
+    var tab = document.querySelector('.step[data-s="' + s + '"]'), pan = document.querySelector('.panel[data-p="' + s + '"]');
+    tab.className = 'step' + (s === step ? ' on' : (STEPS.indexOf(step) > i ? ' done' : ''));
+    pan.classList.toggle('on', s === step);
+  });
+  if (step === 'match') renderMatch();
+  if (step === 'say') renderSay();
+  if (step === 'done') renderDone();
+  window.scrollTo({top:0, behavior:'smooth'});
+  if (window.GS) GS.rewrap();
+}
+/* ---------- 1 study ---------- */
+function renderStudy(){
+  var h = '';
+  SD.VOCAB.forEach(function(v){
+    h += '<div class="vcard"><div class="pic">' + V.pic(v) + '</div><div class="w">' + V.esc(v.w) + '</div>' +
+         '<div class="tr" data-w="' + V.esc(v.w) + '"></div><div style="margin-top:6px">' + V.sayBtn(v.w) + '</div></div>';
+  });
+  document.getElementById('study').innerHTML = h;
+  fillTranslations();
+}
+function fillTranslations(){
+  if (!V.lang()) { Array.prototype.forEach.call(document.querySelectorAll('.vcard .tr'), function(el){ el.textContent = ''; }); return; }
+  Array.prototype.forEach.call(document.querySelectorAll('.vcard .tr'), function(el){
+    el.textContent = '\u2026';
+    V.translate(el.getAttribute('data-w')).then(function(t){ el.textContent = t || ''; });
+  });
+}
+/* ---------- 2 match ---------- */
+var order = [];
+function renderMatch(){
+  if (!S.match) S.match = {};
+  if (!order.length) order = V.shuffle(SD.VOCAB.map(function(v){ return v.w; }));
+  var next = order.filter(function(w){ return !S.match[w] || !S.match[w].done; })[0];
+  var box = document.getElementById('match');
+  if (!next){ go('say'); return; }
+  var v = SD.VOCAB.filter(function(x){ return x.w === next; })[0];
+  var n = Object.keys(S.match).filter(function(w){ return S.match[w].done; }).length;
+  var opts = V.shuffle([v.w].concat(V.shuffle(SD.VOCAB.map(function(x){ return x.w; }).filter(function(w){ return w !== v.w; })).slice(0, 3)));
+  var h = '<div class="card"><div class="row" style="justify-content:space-between"><span class="pill">' + (n + 1) + ' of ' + SD.VOCAB.length + '</span>' + V.sayBtn(v.w) + '</div>' +
+          '<div class="pic" style="font-size:80px;text-align:center;margin:10px 0">' + V.pic(v) + '</div>' +
+          '<div class="choices" style="justify-content:center">';
+  opts.forEach(function(o){ h += '<button type="button" class="choice" data-w="' + V.esc(o) + '">' + V.esc(o) + '</button>'; });
+  h += '</div><div class="fb" id="mfb"></div></div>';
+  box.innerHTML = h;
+  Array.prototype.forEach.call(box.querySelectorAll('.choice'), function(b){
+    b.addEventListener('click', function(){
+      var rec = S.match[v.w] || (S.match[v.w] = {tries:0, first:null, done:false});
+      rec.tries++;
+      var right = b.getAttribute('data-w') === v.w;
+      if (rec.first === null) rec.first = right;
+      if (right){
+        b.classList.add('right'); rec.done = true; V.touch();
+        Array.prototype.forEach.call(box.querySelectorAll('.choice'), function(x){ x.disabled = true; });
+        V.say(v.w);
+        setTimeout(renderMatch, 900);
+      } else {
+        b.classList.add('wrong'); b.disabled = true; V.touch();
+        var fb = document.getElementById('mfb');
+        fb.innerHTML = 'Not that one. The word is <b>' + V.esc(v.w) + '</b>. <span id="mtr"></span>';
+        V.translate(v.w).then(function(t){ var el = document.getElementById('mtr'); if (el && t) el.textContent = '(' + t + ')'; });
+      }
+    });
+  });
+  if (window.GS) GS.rewrap();
+}
+/* ---------- 3 say ---------- */
+function renderSay(){
+  if (!S.say) S.say = {};
+  var box = document.getElementById('say');
+  if (!V.canSpeak()){
+    box.innerHTML = '<div class="card"><p>This device cannot record. Say each word out loud to a partner, then continue.</p>' +
+      '<div class="row right"><button class="btn" type="button" id="skipSay">Continue \u2192</button></div></div>';
+    document.getElementById('skipSay').addEventListener('click', function(){ go('done'); });
+    return;
+  }
+  var h = '';
+  SD.VOCAB.forEach(function(v){
+    var r = S.say[v.w] || {};
+    h += '<div class="sent' + (r.accepted ? ' done' : '') + '" data-w="' + V.esc(v.w) + '"><div class="row" style="justify-content:space-between">' +
+         '<div class="t">' + V.esc(v.w) + '</div><div class="row">' + V.sayBtn(v.w) + '<button type="button" class="mic" aria-label="Record">\ud83c\udfa4</button></div></div>' +
+         '<div class="heard" data-heard>' + (r.best != null ? '<span class="score-badge ' + V.band(Math.round(r.best * 100)) + '">' + Math.round(r.best * 100) + '%</span>' : '') + '</div></div>';
+  });
+  h += '<div class="row right"><button class="btn" type="button" id="finishSay">Finish \u2192</button></div>';
+  box.innerHTML = h;
+  Array.prototype.forEach.call(box.querySelectorAll('.sent'), function(card){
+    var w = card.getAttribute('data-w'), heard = card.querySelector('[data-heard]');
+    V.mic(card.querySelector('.mic'), {
+      maxMs:6000,
+      onStart:function(){ heard.innerHTML = '<span class="hint">listening\u2026</span>'; },
+      onInterim:function(t){ heard.textContent = t; },
+      onDone:function(res){
+        var m = V.match(res.alts, [w]);
+        var rec = S.say[w] || (S.say[w] = {tries:0, best:0, accepted:false});
+        rec.tries++; rec.best = Math.max(rec.best, m.score);
+        var ok = m.score >= 0.6;
+        if (ok){ rec.accepted = true; card.classList.add('done'); }
+        var p = Math.round(m.score * 100);
+        heard.innerHTML = (m.heard ? 'I heard: <i>' + V.esc(m.heard) + '</i> ' : '') + '<span class="score-badge ' + V.band(p) + '">' + p + '%</span>' +
+                          (ok ? ' \u2713' : ' <span class="hint">try again, or tap listen first</span>');
+        V.touch(); V.speakSave('word:' + w, w, m, res, ok, rec.tries);
+      }
+    });
+  });
+  document.getElementById('finishSay').addEventListener('click', function(){ go('done'); });
+}
+/* ---------- done ---------- */
+function renderDone(){
+  var m = S.match || {}, s = S.say || {}, first = 0, said = 0, results = [];
+  SD.VOCAB.forEach(function(v){
+    var r = m[v.w]; if (r && r.first) first++;
+    if (s[v.w] && s[v.w].accepted) said++;
+    results.push({w:v.w, right:!!(r && r.first), e:(v.pic === 'svg' ? '' : v.pic), s:v.s});
+  });
+  var missed = results.filter(function(r){ return !r.right; }).map(function(r){ return r.w; });
+  var extra = '<p>You matched <b>' + first + '</b> of ' + SD.VOCAB.length + ' on the first try and said <b>' + said + '</b> clearly.</p>' +
+    (missed.length ? '<p class="hint">Words to practice: ' + V.esc(missed.join(', ')) + ' \u2014 they are now in <a href="/readings/vocab/mywords/">My Words</a>.</p>' : '<p class="hint">Nothing missed. Nice.</p>');
+  document.getElementById('done').innerHTML = V.doneBox(first, SD.VOCAB.length, extra);
+  if (!V.completed){
+    V.myWords(results);
+    V.finish(first, SD.VOCAB.length, {'vocab-shopping-day':{n:first, d:SD.VOCAB.length}, 'speaking-words':{n:said, d:SD.VOCAB.length}});
+  }
+}
+V.init({module:'vocab', title:'Words first', skills:['vocab-shopping-day','speaking-words'], onReady:function(){
+  S = V.state;
+  renderStudy();
+  document.getElementById('toMatch').addEventListener('click', function(){ go('match'); });
+  var sel = document.getElementById('gsLang'); if (sel) sel.addEventListener('change', fillTranslations);
+  go(S.step && STEPS.indexOf(S.step) > -1 ? S.step : 'study');
+}});
+
+</script>
+<script src="/readings/track.js"></script>
+</body>
+</html>

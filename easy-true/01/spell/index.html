@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spell it · Shopping Day · Very Easy True Stories</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;0,9..144,800;1,9..144,400&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../vets01.css">
+</head>
+<body>
+<main class="wrap" id="app">
+<h1>Spell <em>it</em></h1>
+<p class="sub">Listen to the word. Type the missing letters.</p>
+<p class="dirs" data-tap>Tap <b>listen</b>. Type the missing letters. Then tap <b>Check</b>.</p>
+<div id="list"></div>
+<div class="row right"><button class="btn" type="button" id="finish">Finish \u2192</button></div>
+<div id="done"></div>
+</main>
+<script src="/readings/speaking/speak-core.js"></script>
+<script src="../data.js"></script>
+<script src="../vets01.js"></script>
+<script>
+var S;
+function row(it, i){
+  var r = (S.items && S.items[it.w]) || {};
+  var h = '<div class="card spell" data-w="' + V.esc(it.w) + '"><span class="pill">' + (i + 1) + '</span>' + V.sayBtn(it.w) + '<div class="letters">';
+  it.w.split('').forEach(function(ch, n){
+    if (it.hide.indexOf(n) > -1) h += '<input maxlength="1" autocapitalize="none" autocomplete="off" data-n="' + n + '" value="' + (r.typed && r.typed[n] ? V.esc(r.typed[n]) : '') + '"' + (r.done ? ' class="right" disabled' : '') + '>';
+    else h += '<span class="fixed">' + V.esc(ch) + '</span>';
+  });
+  h += '</div><button type="button" class="btn sm" data-check' + (r.done ? ' disabled' : '') + '>Check</button><span class="fb"></span></div>';
+  return h;
+}
+function render(){
+  var box = document.getElementById('list'), h = '';
+  SD.SPELL.forEach(function(it, i){ h += row(it, i); });
+  box.innerHTML = h;
+  Array.prototype.forEach.call(box.querySelectorAll('.spell'), function(card){
+    var w = card.getAttribute('data-w'), it = SD.SPELL.filter(function(x){ return x.w === w; })[0];
+    var inputs = card.querySelectorAll('input');
+    Array.prototype.forEach.call(inputs, function(inp, k){
+      inp.addEventListener('input', function(){
+        S.items = S.items || {}; var r = S.items[w] || (S.items[w] = {tries:0, first:null, done:false, typed:{}});
+        r.typed[inp.getAttribute('data-n')] = inp.value; V.touch();
+        if (inp.value && inputs[k + 1]) inputs[k + 1].focus();
+      });
+      inp.addEventListener('keydown', function(e){ if (e.key === 'Enter') card.querySelector('[data-check]').click(); });
+    });
+    card.querySelector('[data-check]').addEventListener('click', function(){
+      S.items = S.items || {}; var r = S.items[w] || (S.items[w] = {tries:0, first:null, done:false, typed:{}});
+      var allRight = true;
+      Array.prototype.forEach.call(inputs, function(inp){
+        var n = +inp.getAttribute('data-n'), ok = inp.value.toLowerCase() === it.w[n].toLowerCase();
+        inp.classList.toggle('right', ok); inp.classList.toggle('wrong', !ok); if (!ok) allRight = false;
+      });
+      r.tries++; if (r.first === null) r.first = allRight;
+      var fb = card.querySelector('.fb');
+      if (allRight){ r.done = true; Array.prototype.forEach.call(inputs, function(x){ x.disabled = true; }); this.disabled = true; fb.textContent = '\u2713 ' + it.w; V.say(it.w); }
+      else { fb.textContent = 'Listen again.'; V.say(it.w); }
+      V.touch();
+    });
+  });
+}
+function finish(){
+  var first = 0, done = 0;
+  SD.SPELL.forEach(function(it){ var r = S.items && S.items[it.w]; if (r && r.first) first++; if (r && r.done) done++; });
+  if (done < SD.SPELL.length && !confirm('You have ' + (SD.SPELL.length - done) + ' words left. Finish anyway?')) return;
+  document.getElementById('done').innerHTML = V.doneBox(first, SD.SPELL.length, '<p>' + first + ' words right on the first try.</p>');
+  document.getElementById('finish').style.display = 'none';
+  if (!V.completed) V.finish(first, SD.SPELL.length, {'spelling':{n:first, d:SD.SPELL.length}});
+  window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'});
+}
+V.init({module:'spell', title:'Spell it', skills:['spelling'], onReady:function(){
+  S = V.state; render();
+  document.getElementById('finish').addEventListener('click', finish);
+  if (V.completed) finish();
+}});
+
+</script>
+<script src="/readings/track.js"></script>
+</body>
+</html>

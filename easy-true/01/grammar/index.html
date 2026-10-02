@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grammar from the story · Shopping Day · Very Easy True Stories</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;0,9..144,800;1,9..144,400&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../vets01.css">
+</head>
+<body>
+<main class="wrap" id="app">
+<h1>Grammar from the <em>story</em></h1>
+<p class="sub">Four small sets. Tap the word that fits.</p>
+<div class="steps" id="steps"></div>
+<div id="sets"></div>
+<section class="panel" data-p="done"><div id="done"></div></section>
+</main>
+<script src="/readings/speaking/speak-core.js"></script>
+<script src="../data.js"></script>
+<script src="../vets01.js"></script>
+<script>
+var S, IDS = SD.GRAMMAR.map(function(g){ return g.id; }).concat(['done']);
+function go(step){
+  S.step = step; V.touch();
+  IDS.forEach(function(s, i){
+    document.querySelector('.step[data-s="' + s + '"]').className = 'step' + (s === step ? ' on' : (IDS.indexOf(step) > i ? ' done' : ''));
+    document.querySelector('.panel[data-p="' + s + '"]').classList.toggle('on', s === step);
+  });
+  if (step === 'done') renderDone();
+  window.scrollTo({top:0, behavior:'smooth'});
+  if (window.GS) GS.rewrap();
+}
+function build(){
+  var st = '', sets = '';
+  SD.GRAMMAR.forEach(function(g, gi){
+    st += '<span class="step" data-s="' + g.id + '">' + (gi + 1) + ' ' + V.esc(g.title) + '</span>';
+    sets += '<section class="panel" data-p="' + g.id + '"><h2 style="margin-top:0">' + V.esc(g.title) + '</h2>';
+    g.items.forEach(function(it, i){
+      var r = (S.ans && S.ans[g.id + ':' + i]) || {};
+      var prompt = V.esc(it.p).replace('___', '<span class="blank">' + (r.done ? V.esc(it.a) : '&nbsp;') + '</span>');
+      sets += '<div class="q" data-g="' + g.id + '" data-i="' + i + '"><div class="prompt" data-tap>' + prompt + '</div><div class="row" style="justify-content:space-between"><div class="choices">';
+      it.o.forEach(function(o){ sets += '<button type="button" class="choice' + (r.done && o === it.a ? ' right' : '') + '" data-o="' + V.esc(o) + '"' + (r.done ? ' disabled' : '') + '>' + V.esc(o) + '</button>'; });
+      sets += '</div>' + V.sayBtn(it.p.replace('___', it.a)) + '</div><div class="fb"></div></div>';
+    });
+    var nxt = IDS[gi + 1];
+    sets += '<div class="row right"><button type="button" class="btn" data-next="' + nxt + '">' + (nxt === 'done' ? 'Finish' : 'Next set') + ' \u2192</button></div></section>';
+  });
+  st += '<span class="step" data-s="done">Done</span>';
+  document.getElementById('steps').innerHTML = st;
+  document.getElementById('sets').innerHTML = sets;
+  Array.prototype.forEach.call(document.querySelectorAll('.q'), function(q){
+    var gid = q.getAttribute('data-g'), i = +q.getAttribute('data-i');
+    var it = SD.GRAMMAR.filter(function(g){ return g.id === gid; })[0].items[i];
+    S.ans = S.ans || {}; var r = S.ans[gid + ':' + i] || (S.ans[gid + ':' + i] = {tries:0, first:null, done:false});
+    Array.prototype.forEach.call(q.querySelectorAll('.choice'), function(b){
+      b.addEventListener('click', function(){
+        if (r.done) return;
+        r.tries++; var right = b.getAttribute('data-o') === it.a; if (r.first === null) r.first = right;
+        if (right){ r.done = true; b.classList.add('right'); q.querySelector('.blank').textContent = it.a;
+          Array.prototype.forEach.call(q.querySelectorAll('.choice'), function(x){ x.disabled = true; });
+          q.querySelector('.fb').textContent = '\u2713'; V.say(it.p.replace('___', it.a)); }
+        else { b.classList.add('wrong'); b.disabled = true; q.querySelector('.fb').textContent = 'Try another one.'; }
+        V.touch();
+      });
+    });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-next]'), function(b){
+    b.addEventListener('click', function(){ go(b.getAttribute('data-next')); });
+  });
+}
+function renderDone(){
+  var first = 0, total = 0, skills = {}, lines = '';
+  SD.GRAMMAR.forEach(function(g){
+    var n = 0; g.items.forEach(function(it, i){ var r = S.ans && S.ans[g.id + ':' + i]; if (r && r.first) n++; });
+    first += n; total += g.items.length; skills[g.skill] = {n:n, d:g.items.length};
+    lines += '<p>' + V.esc(g.title) + ': <b>' + n + '/' + g.items.length + '</b></p>';
+  });
+  document.getElementById('done').innerHTML = V.doneBox(first, total, lines);
+  if (!V.completed) V.finish(first, total, skills);
+}
+V.init({module:'grammar', title:'Grammar from the story', skills:SD.GRAMMAR.map(function(g){ return g.skill; }), onReady:function(){
+  S = V.state; build(); go(S.step && IDS.indexOf(S.step) > -1 ? S.step : IDS[0]);
+}});
+
+</script>
+<script src="/readings/track.js"></script>
+</body>
+</html>

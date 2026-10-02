@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Where are the spaces? · Shopping Day · Very Easy True Stories</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;0,9..144,800;1,9..144,400&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../vets01.css">
+</head>
+<body>
+<main class="wrap" id="app">
+<h1>Where are the <em>spaces?</em></h1>
+<p class="sub">These sentences lost their spaces. Put them back.</p>
+<p class="dirs" data-tap>Tap between two letters to add a space. Tap again to take it away. Then tap <b>Check</b>.</p>
+<div id="list"></div>
+<div class="row right"><button class="btn" type="button" id="finish">Finish \u2192</button></div>
+<div id="done"></div>
+</main>
+<script src="/readings/speaking/speak-core.js"></script>
+<script src="../data.js"></script>
+<script src="../vets01.js"></script>
+<script>
+var S;
+function squash(s){ return s.replace(/\s+/g, ''); }
+function spacesAt(s){ var out = [], c = 0; for (var i = 0; i < s.length; i++){ if (s[i] === ' ') out.push(c); else c++; } return out; }  /* gap index = letters before the space */
+function render(){
+  var box = document.getElementById('list'), h = '';
+  SD.WRITE.forEach(function(sent, i){
+    var r = (S.items && S.items[i]) || {}, flat = squash(sent);
+    h += '<div class="card" data-i="' + i + '"><div class="row" style="justify-content:space-between"><span class="pill">' + (i + 1) + '</span>' + V.sayBtn(sent) + '</div><div class="seg" data-seg>';
+    for (var k = 0; k < flat.length; k++){
+      if (k > 0) h += '<span class="gap' + (r.gaps && r.gaps.indexOf(k) > -1 ? ' sp' : '') + '" data-g="' + k + '"></span>';
+      h += '<span class="ch">' + V.esc(flat[k]) + '</span>';
+    }
+    h += '</div><div class="row" style="margin-top:8px"><button type="button" class="btn sm" data-check' + (r.done ? ' disabled' : '') + '>Check</button><span class="fb"></span></div></div>';
+  });
+  box.innerHTML = h;
+  Array.prototype.forEach.call(box.querySelectorAll('.card'), function(card){
+    var i = +card.getAttribute('data-i'), sent = SD.WRITE[i], want = spacesAt(sent);
+    S.items = S.items || {};
+    var r = S.items[i] || (S.items[i] = {tries:0, first:null, done:false, gaps:[]});
+    Array.prototype.forEach.call(card.querySelectorAll('.gap'), function(g){
+      g.addEventListener('click', function(){
+        if (r.done) return;
+        var k = +g.getAttribute('data-g'), at = r.gaps.indexOf(k);
+        if (at > -1) r.gaps.splice(at, 1); else r.gaps.push(k);
+        g.classList.toggle('sp', at === -1); g.classList.remove('right', 'wrong'); V.touch();
+      });
+    });
+    card.querySelector('[data-check]').addEventListener('click', function(){
+      r.tries++; var allRight = true;
+      Array.prototype.forEach.call(card.querySelectorAll('.gap'), function(g){
+        var k = +g.getAttribute('data-g'), has = r.gaps.indexOf(k) > -1, should = want.indexOf(k) > -1;
+        g.classList.remove('right', 'wrong');
+        if (has && should) g.classList.add('right');
+        else if (has && !should){ g.classList.add('wrong'); allRight = false; }
+        else if (!has && should){ g.classList.add('wrong'); allRight = false; }
+      });
+      if (r.first === null) r.first = allRight;
+      var fb = card.querySelector('.fb');
+      if (allRight){ r.done = true; this.disabled = true; fb.innerHTML = '\u2713 ' + V.esc(sent); V.say(sent); }
+      else fb.textContent = 'Red marks are wrong. Fix them and check again.';
+      V.touch();
+    });
+  });
+}
+function finish(){
+  var first = 0, done = 0;
+  SD.WRITE.forEach(function(s, i){ var r = S.items && S.items[i]; if (r && r.first) first++; if (r && r.done) done++; });
+  if (done < SD.WRITE.length && !confirm('You have ' + (SD.WRITE.length - done) + ' sentences left. Finish anyway?')) return;
+  document.getElementById('done').innerHTML = V.doneBox(first, SD.WRITE.length, '<p>' + first + ' sentences right on the first try.</p>');
+  document.getElementById('finish').style.display = 'none';
+  if (!V.completed) V.finish(first, SD.WRITE.length, {'sentence-boundaries':{n:first, d:SD.WRITE.length}});
+  window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'});
+}
+V.init({module:'write', title:'Where are the spaces?', skills:['sentence-boundaries'], onReady:function(){
+  S = V.state; render();
+  document.getElementById('finish').addEventListener('click', finish);
+  if (V.completed) finish();
+}});
+
+</script>
+<script src="/readings/track.js"></script>
+</body>
+</html>
