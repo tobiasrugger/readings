@@ -380,7 +380,7 @@ function speak(text,slow,btn){ if(!window.speechSynthesis) return;
   var S=speechSynthesis; try{ S.cancel(); S.resume(); }catch(e){}
   if(!VOICE) pickVoice();
   var started=false, tries=0;
-  function go(useVoice){ tries++; var u=new SpeechSynthesisUtterance(String(text).replace(/_+/g,' blank ')); u.lang='en-US'; u.rate=slow?0.62:0.9; if(useVoice&&VOICE) u.voice=VOICE;
+  function go(useVoice){ tries++; var u=new SpeechSynthesisUtterance(String(text).replace(/_+/g,' blank ')); u.lang='en-US'; u.rate=slow?0.62:0.9; if(useVoice&&VOICE){ try{ u.voice=VOICE; }catch(e){ VOICE=null; } }
     u.onstart=function(){ started=true; if(btn) btn.classList.add('playing'); };
     u.onend=u.onerror=function(){ if(btn) btn.classList.remove('playing'); };
     S.speak(u);
@@ -866,7 +866,7 @@ PAGES.compare[4]=function(){
   html+='</div><div class="note">'+T('Hints appear after each mistake. Drag a finished word (or tap it, then tap a circle) into the diagram. Green = right place.')+'</div>';
   html+='<div class="row" style="justify-content:flex-end"><button class="btn line" id="lsReveal" style="font-size:14px;padding:6px 12px">'+T('No sound? Show the words')+'</button></div>';
   $('page').innerHTML=html;
-  function revealAll(){ items.forEach(function(it,i){ var st=A.ls[i]||{}; if(!st.solved){ A.ls[i]=A.ls[i]||{}; A.ls[i].solved=true; A.ls[i].revealed=true; } }); dirty=true; render(); toast('Words shown. Drag them into the diagram.'); }
+  function revealAll(){ var changed=false; items.forEach(function(it,i){ var st=A.ls[i]||{}; if(!st.solved){ A.ls[i]=A.ls[i]||{}; A.ls[i].solved=true; A.ls[i].revealed=true; changed=true; } }); if(!changed) return; dirty=true; render(); toast('Words shown. Drag them into the diagram.'); }
   $('lsReveal').onclick=function(){ if(confirm('Show all the words? (No points for typing.)')) revealAll(); };
   if(!window.speechSynthesis){ revealAll(); return; }
   var root=$('vls'), sel=null;
