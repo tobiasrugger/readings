@@ -117,7 +117,29 @@ V.finish = function(score, max, skills, highlights){
 /* ---------- speech helpers (speak-core.js) ---------- */
 V.say = function(text, slow, btn){ if (window.GS) GS.say(text, slow, btn); };
 V.lang = function(){ return window.GS ? GS.lang() : ''; };
-V.translate = function(text){ var L = V.lang(); if (!L || !window.GS) return Promise.resolve(''); return GS.translate(text, L); };
+/* translate through the Galileo proxy, the same call the story page makes (action=translate).
+   speak-core's word call returns the proxy's status line for single words, so it is not used here. */
+V.PROXY = 'https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
+var tmem = {};
+/* the proxy takes language names; the picker stores codes */
+V.LANG_NAME = {es:'Spanish', yue:'Chinese (Traditional)', 'zh-CN':'Chinese (Simplified)', ar:'Arabic', ary:'Arabic', vi:'Vietnamese',
+  ru:'Russian', ur:'Urdu', tl:'Tagalog', fr:'French', ko:'Korean', hi:'Hindi', so:'Somali', ne:'Nepali', th:'Thai'};
+V.translate = function(text){
+  var L = V.LANG_NAME[V.lang()] || ''; if (!L || !text) return Promise.resolve('');
+  var key = 'vt|' + L + '|' + text;
+  if (tmem[key]) return Promise.resolve(tmem[key]);
+  try { var c = localStorage.getItem(key); if (c){ tmem[key] = c; return Promise.resolve(c); } } catch(e){}
+  return fetch(V.PROXY + '?action=translate&idiom=' + encodeURIComponent(text) + '&meaning=&lang=' + encodeURIComponent(L))
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var v = (d && d.ok && d.translation) ? String(d.translation).trim() : '';
+      if (/backend is running/i.test(v) || v.toLowerCase() === text.toLowerCase()) v = '';
+      if (v){ tmem[key] = v; try { localStorage.setItem(key, v); } catch(e){} }
+      return v;
+    }).catch(function(){ return ''; });
+};
+/* clear bad entries speak-core cached as translations */
+try { Object.keys(localStorage).forEach(function(k){ if (k.indexOf('gs_tr|') === 0 && /backend is running/i.test(localStorage.getItem(k) || '')) localStorage.removeItem(k); }); } catch(e){}
 V.canSpeak = function(){ return !!(window.GS && (GS.canRecognize || GS.canRecord)); };
 V.mic = function(btn, opts){ if (window.GS) GS.micButton(btn, opts); else btn.disabled = true; };
 V.match = function(alts, targets){ return window.GS ? GS.bestMatch(alts || [], targets) : {score:0, heard:'', hitWords:[]}; };
