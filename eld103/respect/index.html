@@ -66,6 +66,19 @@ textarea:focus,input:focus,select:focus{outline:3px solid var(--sage);outline-of
 .done{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:16px 18px}
 .done .st{font-weight:800;color:var(--muted)}
 .done .st.ok{color:var(--moss)}
+.say{margin-top:12px;border-top:1px dashed var(--line);padding-top:12px}
+.say .t2{font-weight:800;color:var(--pine);margin:0 0 8px}
+.recbtn{font:inherit;font-weight:900;font-size:1.05rem;padding:14px 26px;border-radius:14px;border:0;background:#c0392b;color:#fff;cursor:pointer;display:inline-flex;align-items:center;gap:10px}
+.recbtn::before{content:'';width:14px;height:14px;border-radius:50%;background:#fff}
+.recbtn.on{background:#1f2421}
+.recbtn.on::before{border-radius:3px;animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.3}}
+.say .clock{font-weight:800;color:var(--muted);margin-left:12px}
+.say audio{display:block;width:100%;margin:10px 0 6px;height:36px}
+.say .heard{background:#fffdf8;border:1.5px solid #c9d1cb;border-radius:10px;padding:10px 12px;min-height:44px;margin:8px 0;font-weight:600;color:#4a3d8a}
+.say .heard:empty::before{content:'What you say will appear here, if the browser can hear it.';color:var(--muted);font-weight:600;font-size:.9rem}
+.say .st{font-weight:700;font-size:.9rem;color:var(--muted)}
+.say .st.ok{color:var(--moss)}.say .st.bad{color:#c0392b}
 footer{border-top:1px solid var(--line);padding:16px 18px 40px;color:var(--muted);font-size:.85rem;font-weight:700}
 footer a{color:var(--pine2)}
 #canary{position:absolute;left:-9999px;top:0}
@@ -119,6 +132,13 @@ footer a{color:var(--pine2)}
     <div class="choice" data-k="agree"><button data-v="agree">I agree</button><button data-v="partly">I partly agree</button><button data-v="disagree">I disagree</button></div>
     <label class="t" for="a_agree_why">Why? Give an example from real life if you can.</label>
     <textarea id="a_agree_why" data-k="agree_why"></textarea>
+    <div class="say">
+      <p class="t2">Now say it out loud. Press the red button, say if you agree or disagree and why, then press it again to stop.</p>
+      <button class="recbtn" id="recBtn">Record</button><span class="clock" id="clock"></span>
+      <audio id="aud" controls style="display:none"></audio>
+      <div class="heard" id="heard"></div>
+      <span class="st" id="recSt"></span>
+    </div>
   </div>
 </section>
 
@@ -176,6 +196,25 @@ footer a{color:var(--pine2)}
   <div class="q">
     <label class="t" for="a_one">Look at the poem one more time. Which line is the most true for your life? Why?</label>
     <textarea id="a_one" data-k="one_line" class="short"></textarea>
+  </div>
+</section>
+
+<section class="part">
+  <h2>Part 4: Share</h2>
+  <p class="lead">Do this when Mr. Toby says it is time.</p>
+  <div class="q">
+    <ol style="margin:0 0 10px;padding-left:22px;font-weight:700;line-height:1.7">
+      <li>Stand up and find two people.</li>
+      <li>Say your line: "I agree with the poem because…" or "I disagree with the poem because…" (the same thing you recorded).</li>
+      <li>The listener answers with only one sentence: "I agree because…" or "I disagree because…"</li>
+      <li>Then switch. Listen to their line and answer with one sentence.</li>
+    </ol>
+    <label class="t">Write down 3 to 5 answers you heard from others. Write the person's name and what they said.</label>
+    <input class="line" data-k="share1" placeholder="1. (name) agrees / disagrees because…">
+    <input class="line" data-k="share2" placeholder="2.">
+    <input class="line" data-k="share3" placeholder="3.">
+    <input class="line" data-k="share4" placeholder="4. (optional)">
+    <input class="line" data-k="share5" placeholder="5. (optional)">
   </div>
 </section>
 
@@ -322,7 +361,7 @@ function loadMine(){
   if(!ME)return;
   fetch(SUPA_URL+'/rest/v1/'+TABLE+'?select=answers,completed&email=eq.'+encodeURIComponent(ME.email),{headers:head()})
   .then(function(r){return r.ok?r.json():[];}).then(function(rows){
-    if(rows&&rows[0]){A=rows[0].answers||{};completed=!!rows[0].completed;render();}
+    if(rows&&rows[0]){A=rows[0].answers||{};completed=!!rows[0].completed;render();if(A.audio_path){recSt('You already have a recording saved. You can record again.','ok');document.getElementById('recBtn').textContent='Record again';if(A.said)document.getElementById('heard').textContent=A.said;}}
   }).catch(function(){});
 }
 var dot=document.getElementById('dot');
@@ -330,7 +369,7 @@ function save(force){
   if(!ME){if(force)msg.textContent='Enter your school email first';return Promise.resolve(false);}
   if(!dirty&&!force)return Promise.resolve(true);
   var row={email:ME.email,name:ME.name,period:ME.period?+ME.period:null,lang:A.lang||'',answers:A,completed:completed,
-    norm1:A.norm1||'',norm2:A.norm2||'',norm3:A.norm3||'',updated_at:new Date().toISOString()};
+    norm1:A.norm1||'',norm2:A.norm2||'',norm3:A.norm3||'',audio_path:A.audio_path||null,transcript:A.said||'',updated_at:new Date().toISOString()};
   dot.textContent='Saving…';dot.classList.remove('ok');
   return fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email',{method:'POST',headers:head('resolution=merge-duplicates,return=minimal'),body:JSON.stringify([row])})
   .then(function(r){if(!r.ok)throw 0;dirty=false;dot.textContent='Saved '+new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});dot.classList.add('ok');return true;})
@@ -338,6 +377,50 @@ function save(force){
 }
 setInterval(function(){save(false);},20000);
 window.addEventListener('beforeunload',function(){if(dirty&&ME){try{navigator.sendBeacon&&save(true);}catch(e){}}});
+
+
+/* ---------- record: agree / disagree out loud ---------- */
+var BUCKET='fluency-recordings', mr=null, chunks=[], t0=0, tick=null, BLOB=null, SR=null, heardFinal='', heardTmp='';
+var SRC=window.SpeechRecognition||window.webkitSpeechRecognition;
+function recSt(m,cls){var e=document.getElementById('recSt');e.textContent=m;e.className='st '+(cls||'');}
+document.getElementById('recBtn').addEventListener('click',function(){
+  var b=this;
+  if(mr&&mr.state==='recording'){mr.stop();return;}
+  if(!ME){settle();if(!ME){recSt('Enter your school email first.','bad');return;}}
+  navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+    chunks=[];mr=new MediaRecorder(stream);
+    mr.ondataavailable=function(e){chunks.push(e.data);};
+    mr.onstop=function(){
+      clearInterval(tick);stream.getTracks().forEach(function(t){t.stop();});
+      if(SR){try{SR.stop();}catch(e){}}
+      BLOB=new Blob(chunks,{type:'audio/webm'});
+      b.textContent='Record again';b.classList.remove('on');
+      var a=document.getElementById('aud');a.src=URL.createObjectURL(BLOB);a.style.display='block';
+      A.said=(heardFinal+' '+heardTmp).trim();dirty=true;
+      uploadRec();
+    };
+    heardFinal='';heardTmp='';document.getElementById('heard').textContent='';
+    if(SRC){
+      SR=new SRC();SR.lang='en-US';SR.continuous=true;SR.interimResults=true;
+      SR.onresult=function(ev){heardTmp='';for(var i=ev.resultIndex;i<ev.results.length;i++){var t=ev.results[i][0].transcript;if(ev.results[i].isFinal)heardFinal+=t+' ';else heardTmp+=t;}
+        document.getElementById('heard').textContent=(heardFinal+heardTmp).trim();};
+      SR.onerror=function(){};
+      try{SR.start();}catch(e){}
+    }
+    mr.start();t0=Date.now();
+    b.textContent='Stop';b.classList.add('on');recSt('Recording… press Stop when you finish.');
+    tick=setInterval(function(){document.getElementById('clock').textContent=((Date.now()-t0)/1000).toFixed(0)+'s';},250);
+  }).catch(function(){recSt('I could not turn on the microphone. Allow it for this page and try again.','bad');});
+});
+function uploadRec(){
+  if(!BLOB||!ME)return;
+  var path='respect/'+ME.email.replace(/[^a-z0-9]/g,'_')+'_'+Date.now()+'.webm';
+  recSt('Saving your recording…');
+  fetch(SUPA_URL+'/storage/v1/object/'+BUCKET+'/'+path,{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'audio/webm'},body:BLOB})
+  .then(function(r){if(!r.ok)throw 0;A.audio_path=path;dirty=true;return save(true);})
+  .then(function(ok){recSt(ok?'Saved. Mr. Toby has your recording.':'Recording saved, but the page did not save. Check wifi.',ok?'ok':'bad');})
+  .catch(function(){recSt('The recording did not save. Try again.','bad');});
+}
 
 /* ---------- turn in ---------- */
 function setDone(on){
