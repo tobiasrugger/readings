@@ -276,7 +276,11 @@ var voice=null;
 function speak(text){
   try{ if(!window.speechSynthesis) return; speechSynthesis.cancel();
     var u=new SpeechSynthesisUtterance(text); u.lang='en-US'; u.rate=0.85;
-    if(!voice){ var vs=speechSynthesis.getVoices(); for(var i=0;i<vs.length;i++){ if(/en-US/.test(vs[i].lang)){ voice=vs[i]; break; } } }
+    if(!voice){ var vs=speechSynthesis.getVoices(), en=vs.filter(function(v){return /^en[-_]US/i.test(v.lang);});
+      var pref=['Google US English','Samantha','Microsoft Aria','Microsoft Jenny','Microsoft Zira','Karen','Moira','Tessa','Victoria','Allison','Ava','Susan','Zoe','Female'];
+      for(var p=0;p<pref.length&&!voice;p++){ for(var i=0;i<en.length;i++){ if(en[i].name.indexOf(pref[p])>=0){ voice=en[i]; break; } } }
+      if(!voice){ for(var j=0;j<en.length;j++){ if(!/David|Mark|Guy|Alex|Daniel|Fred|Male/i.test(en[j].name)){ voice=en[j]; break; } } }
+      if(!voice&&en.length) voice=en[0]; }
     if(voice) u.voice=voice; speechSynthesis.speak(u);
   }catch(e){}
 }
