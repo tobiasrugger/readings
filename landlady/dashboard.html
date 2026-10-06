@@ -274,6 +274,9 @@ function draw(){
          '<span>' + (r.answered || 0) + '/' + tot + '</span>' +
          '<span>P' + esc(r.period) + '</span>' +
          '<span>' + (((r.payload && r.payload.meta && r.payload.meta.mode) || r.mode) === "easy" ? "Easier" : "Harder") + '</span>' +
+         '<span>' + (function(){ var n = r.payload && r.payload.notes;
+           var c = n ? Object.keys(n).filter(function(k){ return (n[k]||"").trim(); }).length : 0;
+           return c ? (c + " note" + (c === 1 ? "" : "s")) : "no notes"; })() + '</span>' +
          '<span>' + when(r.updated_at) + '</span>' +
          '</div></li>';
   }
@@ -378,6 +381,21 @@ function showDetail(id){
            esc(it.q) + '</p>' +
            '<div class="a' + (ans ? '' : ' blank') + '">' + (ans ? esc(ans) : "no answer yet") + '</div>' +
            '</div>';
+    }
+  }
+
+  /* margin notes the student wrote while reading */
+  if(p.notes && Object.keys(p.notes).length){
+    var nk = Object.keys(p.notes).filter(function(k){ return (p.notes[k] || "").trim(); });
+    nk.sort(function(a, b){ return (parseFloat(a) || 0) - (parseFloat(b) || 0); });
+    if(nk.length){
+      h += '<h4 class="sec">Margin notes while reading</h4>';
+      for(var nn = 0; nn < nk.length; nn++){
+        h += '<div class="qa">' +
+             '<p class="q"><span class="tag NOTE">NOTE</span>Paragraph ' + esc(nk[nn]) + '</p>' +
+             '<div class="a">' + esc(p.notes[nk[nn]]) + '</div></div>';
+      }
+      h += '<div class="scorebox">Notes written: ' + nk.length + '</div>';
     }
   }
 

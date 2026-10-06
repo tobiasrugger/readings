@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The Landlady — Roald Dahl · Reading Guide</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=IM+Fell+English:ital@0;1&family=Courier+Prime&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=IM+Fell+English:ital@0;1&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Courier+Prime&display=swap" rel="stylesheet">
 <style>
 :root {
   --ink: #1a1208;
@@ -267,6 +268,150 @@ textarea.mcval { position: absolute; left: -9999px; width: 1px; height: 1px; opa
   .prereading, .wordcard { border: 1px solid #999; background: #fff !important; }
   .mapfig { break-inside: avoid; }
 }
+
+/* ================= side rail: running glossary + margin notes ========= */
+#rail { position: fixed; top: 46px; right: 0; width: 290px; bottom: 0; z-index: 400;
+  background: var(--card); border-left: 1px solid var(--border);
+  padding: .9rem .95rem 2rem; overflow-y: auto; }
+body.norail #rail { display: none; }
+#railX { position: absolute; top: .5rem; right: .6rem; background: none; border: none;
+  color: var(--fog); font-size: 1.1rem; line-height: 1; cursor: pointer; padding: .1rem .3rem; }
+#railX:hover { color: var(--blood); }
+#railOpen { display: none; position: fixed; right: .8rem; bottom: calc(.9rem + env(safe-area-inset-bottom,0px));
+  z-index: 401; background: var(--ink); color: var(--amber); border: 1px solid var(--amber);
+  border-radius: 50%; width: 2.6rem; height: 2.6rem; font-size: 1rem; cursor: pointer; }
+body.norail #railOpen { display: block; }
+.rpanel { margin-bottom: 1.1rem; }
+.rpanel h3 { font-family: 'Courier Prime', monospace; font-size: .62rem; letter-spacing: .17em;
+  text-transform: uppercase; color: var(--amber); margin: 0 0 .5rem; }
+.rw { border-bottom: 1px solid var(--border); padding: .38rem 0; cursor: pointer; }
+.rw:last-child { border-bottom: none; }
+.rw .k { font-family: 'Courier Prime', monospace; font-size: .7rem; font-weight: 700;
+  letter-spacing: .05em; text-transform: uppercase; color: var(--ink); }
+.rw .d { font-size: .8rem; color: var(--fog); line-height: 1.5; }
+.rw .tr { font-size: .92rem; color: #4a6b4f; line-height: 1.5; }
+.rw .tr.rtl { direction: rtl; text-align: right; }
+.rempty { font-size: .78rem; color: var(--fog); font-style: italic; line-height: 1.5; }
+.rnote { background: var(--warm-bg); border: 1px solid var(--border); border-left: 3px solid var(--amber);
+  border-radius: 3px; padding: .45rem .55rem; margin-bottom: .55rem; }
+.rnote .lbl { font-family: 'Courier Prime', monospace; font-size: .58rem; letter-spacing: .13em;
+  text-transform: uppercase; color: var(--fog); margin-bottom: .2rem; }
+.rnote .x { float: right; cursor: pointer; color: var(--fog);
+  font-family: 'Courier Prime', monospace; font-size: .62rem; }
+.rnote .x:hover { color: var(--blood); }
+.rnote textarea { width: 100%; min-height: 46px; border: none; background: transparent; color: var(--ink);
+  font-family: 'IM Fell English', Georgia, serif; font-size: .88rem; line-height: 1.6;
+  resize: vertical; outline: none; }
+
+/* the pen that opens a note, out in the margin */
+.story p { position: relative; }
+.pen { position: absolute; right: -1.85rem; top: .1rem; width: 1.35rem; height: 1.35rem;
+  border: 1px solid var(--border); border-radius: 50%; background: var(--card); color: var(--fog);
+  font-size: .68rem; line-height: 1.25rem; text-align: center; cursor: pointer;
+  opacity: 0; transition: opacity .15s; }
+.story p:hover .pen, .pen.has { opacity: 1; }
+.pen.has { border-color: var(--amber); color: var(--amber); }
+
+@media (min-width: 1100px) { body.rail .page { margin-right: 290px; } }
+@media (max-width: 1099px) {
+  #rail { top: auto; left: 0; right: 0; bottom: 0; width: auto; height: 38vh;
+    border-left: none; border-top: 2px solid var(--amber);
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom,0px)); }
+  body.rail .page { padding-bottom: 42vh; }
+  .pen { position: static; display: inline-block; opacity: 1; margin-left: .35rem;
+    vertical-align: middle; }
+}
+
+/* printed work carries the annotations as an appendix */
+.noteprint { display: none; }
+.noteprint .npt { font-family: 'Courier Prime', monospace; font-size: .7rem; letter-spacing: .18em;
+  text-transform: uppercase; color: var(--amber); margin-bottom: .5rem; }
+.npr { border-bottom: 1px solid var(--border); padding: .35rem 0; font-size: .9rem; }
+.npr b { font-family: 'Courier Prime', monospace; font-size: .72rem; color: var(--fog); }
+@media print {
+  #rail, #railOpen, .pen { display: none !important; }
+  body.rail .page { margin-right: 0; padding-bottom: 0; }
+  .noteprint.has { display: block; break-before: page; }
+}
+
+/* ====================================================================
+   READABILITY PASS
+   Lora carries the reading; the old faces stay on the furniture.
+   ==================================================================== */
+:root{
+  --fog: #6b6152;              /* was #9a9080 — 2.5:1 on cream, unreadable */
+  --amber-text: #8a5d12;       /* amber is fine as a rule, poor as small type */
+  --tsize: 1.09rem;
+  --tline: 1.85;
+}
+body.ts2{ --tsize: 1.24rem; --tline: 1.92; }
+body.ts3{ --tsize: 1.4rem;  --tline: 2.0; }
+
+body{ font-family:'Lora', Georgia, serif; font-size:18px; }
+.story p{ font-family:'Lora', Georgia, serif; font-size:var(--tsize);
+  line-height:var(--tline); color:#241d12; }
+body.easy .story p{ font-size:calc(var(--tsize) + .05rem); line-height:calc(var(--tline) + .08); }
+
+/* questions: upright, dark, with an amber rule instead of red italics */
+.qbox .qtext{ font-family:'Lora', Georgia, serif; font-style:normal; font-weight:600;
+  font-size:calc(var(--tsize) - .03rem); line-height:1.6; color:#241d12;
+  border-left:3px solid var(--amber); padding-left:.75rem; margin:.55rem 0 .8rem; }
+.qbox.pause .qtext{ color:#f6eedd; }
+.qbox textarea, .gatebox input, .gatebox select{ font-family:'Lora', Georgia, serif; }
+.qbox textarea{ font-size:calc(var(--tsize) - .08rem); line-height:1.7; }
+.ch{ font-family:'Lora', Georgia, serif; font-size:calc(var(--tsize) - .1rem); }
+.simile-cell .qtext{ font-family:'Lora', Georgia, serif; font-style:normal; font-weight:600;
+  border-left:none; padding-left:0; font-size:.92rem; color:#3a3020; }
+.prereading .setup, .wordcard p{ font-family:'Lora', Georgia, serif; font-size:calc(var(--tsize) - .02rem); }
+
+/* small type was the worst offender: italic, grey, and tiny */
+.artcap{ font-family:'Lora', Georgia, serif; font-style:normal; font-size:.86rem; color:#5d5343; }
+.legend{ font-size:.8rem; color:#4a4030; }
+.login-box p, .gatebox .sub{ font-style:normal; color:#5d5343; }
+.submit-wrap p{ font-style:normal; color:#c4b8a4; }
+.rw .d{ color:#5d5343; font-size:.84rem; }
+.rempty{ font-style:normal; }
+.wc{ color:#6b6152; }
+.vocab-table td{ font-size:.92rem; }
+.atm-note{ font-family:'Lora', Georgia, serif; font-size:.92rem; color:#4a3f2c; }
+.atm-note.signal-wrong{ color:#5a2020; }
+
+/* ---------- signals you can actually hit ---------- */
+.atm-label{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:1.6em; height:1.6em; min-width:28px; min-height:28px;
+  border-radius:50%; background:var(--amber); color:#fff;
+  font-family:'Courier Prime', monospace; font-size:.9rem; line-height:1;
+  letter-spacing:0; text-transform:none; vertical-align:middle;
+  margin:0 .12em; box-shadow:0 1px 2px rgba(0,0,0,.2);
+}
+.atm.wrong-signal .atm-label{ background:var(--blood); color:#fff; }
+.atm-label:hover{ filter:brightness(1.12); }
+.atm{ padding:.1rem .45rem .1rem .6rem; }
+
+/* ---------- the prompt that waits in the margin ---------- */
+.rprompt{ background:#fdf7e8; border:1px dashed var(--amber); border-left:3px solid var(--amber);
+  border-radius:3px; padding:.5rem .6rem; margin-bottom:.55rem; }
+.rprompt.wrong{ background:#fbf0ee; border-color:var(--blood); border-left-color:var(--blood); }
+.rprompt .lbl{ font-family:'Courier Prime', monospace; font-size:.58rem; letter-spacing:.13em;
+  text-transform:uppercase; color:var(--blood); margin-bottom:.2rem; }
+.rprompt:not(.wrong) .lbl{ color:var(--amber-text); }
+.rprompt .ask{ font-family:'Lora', Georgia, serif; font-size:.86rem; line-height:1.5;
+  color:#3a3020; margin-bottom:.35rem; }
+.rprompt textarea{ width:100%; min-height:44px; border:1px solid var(--border); border-radius:3px;
+  background:#fff; color:var(--ink); font-family:'Lora', Georgia, serif; font-size:.88rem;
+  line-height:1.6; resize:vertical; outline:none; padding:.3rem .4rem; }
+
+/* ---------- text size control ---------- */
+.tsz{ display:inline-flex; border:1px solid #5a4a30; border-radius:3px; overflow:hidden; }
+.tsz button{ border:none; border-radius:0; padding:.3rem .6rem; font-size:.72rem; }
+
+@media print{
+  .rprompt{ display:none; }
+  .atm-label{ display:none !important; }
+  .story p{ font-size:12pt; line-height:1.7; color:#000; }
+  .qbox .qtext{ color:#000; }
+}
 </style>
 </head>
 <span id="canary" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden">the quick brown fox jumps over the lazy dog</span>
@@ -311,10 +456,25 @@ textarea.mcval { position: absolute; left: -9999px; width: 1px; height: 1px; opa
   <option value="ru">Русский</option><option value="ur">اردو</option><option value="tl">Tagalog</option><option value="fr">Français</option><option value="ko">한국어</option><option value="hi">हिन्दी</option><option value="so">Soomaali</option></select>
   <button id="btn-dir" title="Show the directions in your language">Directions</button><span class="spacer"></span>
   <span id="saveNote"><span class="dot"></span>Not signed in</span>
+  <span class="tsz" id="tsz"><button type="button" data-ts="down" title="Smaller text">A&minus;</button><button type="button" data-ts="up" title="Bigger text">A+</button></span>
   <button type="button" id="printBlank">Print blank</button>
   <button type="button" id="printMine">Print my answers</button>
   <button type="button" class="turnin" id="turnIn">Turn in</button>
 </div>
+
+<aside id="rail" aria-label="Reading support">
+  <button type="button" id="railX" title="Hide the side panel">&times;</button>
+  <div class="rpanel" id="wordpanel">
+    <h3>Words on screen</h3>
+    <div id="words"></div>
+  </div>
+  <div class="rpanel" id="notepanel">
+    <h3>My notes</h3>
+    <div id="prompts"></div>
+    <div id="notes"></div>
+  </div>
+</aside>
+<button type="button" id="railOpen" title="Show the side panel">&#9776;</button>
 <div id="tip"></div>
 <div class="page">
     <div class="masthead">
@@ -366,7 +526,7 @@ textarea.mcval { position: absolute; left: -9999px; width: 1px; height: 1px; opa
 
 <div class="wordcard">
   <span class="tag language">WORDS FIRST</span>
-  <p translate="yes" data-en="In this story, a young person works for a company. The company's main office is in London. That office is called the Head Office. The important, powerful people who work there are called the big shots." data-dir="wordcardone">In this story, a young person works for a company. The company&#8217;s main office is in London. That office is called the <b>Head Office</b>. The important, powerful people who work there are called the <b>big shots</b>.</p>
+  <p translate="yes" data-en="In this story, a young person works for a company. The company's main office is in London. That office is called the Head Office. The important, powerful people who work there are called the big shots." data-dir="wordcardone">In this story, a young person works for a company. The company&#8217;s main office is in London. That office is called the <span class="gl" tabindex="0" data-k="head office"><b>Head Office</b></span>. The important, powerful people who work there are called the <span class="gl" tabindex="0" data-k="big shots"><b>big shots</b></span>.</p>
 </div>
 
 <div class="qbox language" data-qid="pre3"
@@ -428,7 +588,7 @@ textarea.mcval { position: absolute; left: -9999px; width: 1px; height: 1px; opa
     <button type="button" class="ch" data-i="0" data-right="1">A cheap hotel</button>
     <button type="button" class="ch" data-i="1">A person Billy knows</button>
     <button type="button" class="ch" data-i="2">A street in Bath</button>
-    <button type="button" class="ch" data-i="3">The porter’s name</button>
+    <button type="button" class="ch" data-i="3">The <span class="gl" tabindex="0" data-k="porter">porter</span>’s name</button>
   </div>
   <div class="why" data-why="Billy asked for a cheap hotel, and the porter answered that question — so it must be a place to stay. The capital letters are the clue: The Bell and Dragon is its name."></div>
   <textarea data-id="s1" class="mcval" tabindex="-1" aria-hidden="true"></textarea>
@@ -454,9 +614,9 @@ textarea.mcval { position: absolute; left: -9999px; width: 1px; height: 1px; opa
 </div>
 
 
-<p>Billy was seventeen years old. He was wearing a new navy-blue overcoat, a new brown <span class="gl" tabindex="0" data-k="trilby">trilby</span> hat, and a new brown suit, and he was feeling fine. He walked <span class="gl" tabindex="0" data-k="briskly">briskly</span> down the street. He was trying to do everything briskly these days. <span class="gl" tabindex="0" data-k="briskness">Briskness</span>, he had decided, was the one common <span class="gl" tabindex="0" data-k="characteristic">characteristic</span> of all successful businessmen. The <span class="gl" tabindex="0" data-k="big shots">big shots</span> up at Head Office were absolutely fantastically brisk all the time. They were amazing.</p>
+<p>Billy was seventeen years old. He was wearing a new navy-blue overcoat, a new brown <span class="gl" tabindex="0" data-k="trilby">trilby</span> hat, and a new brown suit, and he was feeling fine. He walked <span class="gl" tabindex="0" data-k="briskly">briskly</span> down the street. He was trying to do everything <span class="gl" tabindex="0" data-k="briskly">briskly</span> these days. <span class="gl" tabindex="0" data-k="briskness">Briskness</span>, he had decided, was the one common <span class="gl" tabindex="0" data-k="characteristic">characteristic</span> of all successful businessmen. The <span class="gl" tabindex="0" data-k="big shots">big shots</span> up at Head Office were absolutely <span class="gl" tabindex="0" data-k="fantastically">fantastically</span> brisk all the time. They were amazing.</p>
 <div class="qbox review" data-qid="s3"
-     data-hard="Billy wants to be like the big shots at Head Office. Write one thing he does, or wears, to seem like them." data-easy="Billy wants to be like the big shots. Write one thing he does to be like them."
+     data-hard="Billy wants to be like the &lt;span class=&quot;gl&quot; tabindex=&quot;0&quot; data-k=&quot;big shots&quot;&gt;big shots&lt;/span&gt; at &lt;span class=&quot;gl&quot; tabindex=&quot;0&quot; data-k=&quot;head office&quot;&gt;Head Office&lt;/span&gt;. Write one thing he does, or wears, to seem like them." data-easy="Billy wants to be like the &lt;span class=&quot;gl&quot; tabindex=&quot;0&quot; data-k=&quot;big shots&quot;&gt;big shots&lt;/span&gt;. Write one thing he does to be like them."
      data-ph-hard="To be like the big shots, Billy…" data-ph-easy="Billy ___ to be like the big shots.">
   <span class="tag review">STOP AND THINK</span>
   <p class="qtext"></p>
@@ -594,7 +754,7 @@ textarea.mcval { position: absolute; left: -9999px; width: 1px; height: 1px; opa
 
 <p>The old girl is slightly <span class="gl" tabindex="0" data-k="dotty">dotty</span>, Billy told himself. But at five and sixpence a night, who gives a damn about that?</p>
 
-<p>"But I'm always ready. Everything is always ready day and night in this house just on the <span class="gl" tabindex="0" data-k="off-chance">off-chance</span> that an <span class="gl" tabindex="0" data-k="acceptable">acceptable</span> young gentleman will come along." She paused on the stairs, <span class="atm wrong-signal">smiling down at him with pale lips. "Like you," she added, and her blue eyes travelled slowly all the way down the length of Billy's body, to his feet, and then up again.<span class="atm-label" tabindex="0" role="button" data-tip="wrong signal — she looks him up and down slowly, like she&#x27;s examining an object.">✦</span></span></p>
+<p>"But I'm always ready. Everything is always ready day and night in this house just on the <span class="gl" tabindex="0" data-k="off-chance">off-chance</span> that an <span class="gl" tabindex="0" data-k="acceptable">acceptable</span> young gentleman will come along." She paused on the stairs, <span class="atm wrong-signal">smiling down at him with pale lips. "Like you," she added, and her blue eyes <span class="gl" tabindex="0" data-k="travelled">travelled</span> slowly all the way down the length of Billy's body, to his feet, and then up again.<span class="atm-label" tabindex="0" role="button" data-tip="wrong signal — she looks him up and down slowly, like she&#x27;s examining an object.">✦</span></span></p>
 
 <div class="qbox predict pause" data-qid="pred1"
      data-hard="She said the room was “all ready” before she even knew Billy was coming. What do you think she has been waiting for? What do you think will happen next?" data-easy="The room was already ready — before Billy knocked. Who do you think she was waiting for?"
@@ -653,7 +813,7 @@ textarea.mcval { position: absolute; left: -9999px; width: 1px; height: 1px; opa
 
 <div class="atm-note signal-wrong">
   <strong>✦ notice what Billy is doing</strong>
-  He saw her look him up and down. He noticed the empty hallway. He knows she's "dotty." But he explains all of it away — choosing comfort over caution.
+  He saw her look him up and down. He noticed the empty hallway. He knows she's "<span class="gl" tabindex="0" data-k="dotty">dotty</span>." But he explains all of it away — choosing comfort over caution.
 </div>
 
 
@@ -720,7 +880,7 @@ textarea.mcval { position: absolute; left: -9999px; width: 1px; height: 1px; opa
 </figure>
 
 
-<p>Billy started sipping his tea. Now and again, he caught a <span class="gl" tabindex="0" data-k="whiff">whiff</span> of a peculiar smell that seemed to <span class="gl" tabindex="0" data-k="emanate">emanate</span> directly from her person. It was not in the least unpleasant, and it reminded him – well, he wasn't quite sure what it reminded him of. <span class="atm wrong-signal">Pickled walnuts? New leather? Or was it the corridors of a hospital?<span class="atm-label" tabindex="0" role="button" data-tip="wrong signal — &quot;hospital corridors&quot; suggests chemicals used to preserve things. What kinds of things get preserved with chemicals?">✦</span></span></p>
+<p>Billy started sipping his tea. Now and again, he caught a <span class="gl" tabindex="0" data-k="whiff">whiff</span> of a <span class="gl" tabindex="0" data-k="peculiar">peculiar</span> smell that seemed to <span class="gl" tabindex="0" data-k="emanate">emanate</span> directly from her person. It was not in the least unpleasant, and it reminded him – well, he wasn't quite sure what it reminded him of. <span class="atm wrong-signal">Pickled walnuts? New leather? Or was it the corridors of a hospital?<span class="atm-label" tabindex="0" role="button" data-tip="wrong signal — &quot;hospital corridors&quot; suggests chemicals used to preserve things. What kinds of things get preserved with chemicals?">✦</span></span></p>
 
 <p>"Mr Mulholland was a great one for his tea," she said. "Never in my life have I seen anyone drink as much tea as dear, sweet Mr Mulholland."</p>
 
@@ -746,7 +906,7 @@ textarea.mcval { position: absolute; left: -9999px; width: 1px; height: 1px; opa
 
 <p>"That parrot," he said at last. "You know something? It had me completely fooled when I first saw it through the window from the street. I could have sworn it was alive." / "Alas, no longer." / "Who did it?" / "I did."</p>
 
-<p>"Of course," she said. "And have you met my little Basil as well?" She nodded towards the dachshund curled up so comfortably in front of the fire. Billy looked at it. And suddenly, he <span class="gl" tabindex="0" data-k="realised">realised</span> that this animal had all the time been just as silent and motionless as the parrot. He put out a hand and touched it gently on the top of its back. <span class="atm wrong-signal">The back was hard and cold, and when he pushed the hair to one side with his fingers, he could see the skin underneath, greyish-black and dry and perfectly <span class="gl" tabindex="0" data-k="preserved">preserved</span>.<span class="atm-label" tabindex="0" role="button" data-tip="wrong signal — the dog was stuffed. It was never asleep. The very first cozy thing Billy saw was dead the whole time.">✦</span></span></p>
+<p>"Of course," she said. "And have you met my little Basil as well?" She nodded towards the <span class="gl" tabindex="0" data-k="dachshund">dachshund</span> curled up so comfortably in front of the fire. Billy looked at it. And suddenly, he <span class="gl" tabindex="0" data-k="realised">realised</span> that this animal had all the time been just as silent and motionless as the parrot. He put out a hand and touched it gently on the top of its back. <span class="atm wrong-signal">The back was hard and cold, and when he pushed the hair to one side with his fingers, he could see the skin underneath, greyish-black and dry and perfectly <span class="gl" tabindex="0" data-k="preserved">preserved</span>.<span class="atm-label" tabindex="0" role="button" data-tip="wrong signal — the dog was stuffed. It was never asleep. The very first cozy thing Billy saw was dead the whole time.">✦</span></span></p>
 
 <p>"Not in the least," she said. "I stuff all my little pets myself when they pass away. Will you have another cup of tea?"</p>
 
@@ -805,7 +965,12 @@ textarea.mcval { position: absolute; left: -9999px; width: 1px; height: 1px; opa
   <div class="wc">0 words</div>
 </div>
 
-    <div class="submit-wrap">
+    
+<div class="noteprint">
+  <div class="npt">My notes</div>
+  <div id="noteprintbody"></div>
+</div>
+<div class="submit-wrap">
   <h3>Finished?</h3>
   <p>Your answers save automatically. Press Turn in when you are done so Mr. Toby knows to look at them.</p>
   <button type="button" id="turnIn2">Turn in my work</button>
@@ -830,6 +995,7 @@ textarea.mcval { position: absolute; left: -9999px; width: 1px; height: 1px; opa
 
 <script>
 var GLOSS = {
+  "head office":{d:"the main office of a company, where the bosses work",t:{es:"la oficina central",zh:"\u603b\u516c\u53f8",ar:"\u0627\u0644\u0645\u0643\u062a\u0628 \u0627\u0644\u0631\u0626\u064a\u0633\u064a",vi:"tr\u1ee5 s\u1edf ch\u00ednh",th:"\u0e2a\u0e33\u0e19\u0e31\u0e01\u0e07\u0e32\u0e19\u0e43\u0e2b\u0e0d\u0e48",ne:"\u092e\u0941\u0916\u094d\u092f \u0915\u093e\u0930\u094d\u092f\u093e\u0932\u092f"}},
   "travelled":{d:"went on a trip",t:{es:"viajó",zh:"旅行（过去式）",ar:"سافر",vi:"đã đi",th:"เดินทาง (อดีต)",ne:"यात्रा गर्‍यो"}},
   "deadly":{d:"here: extremely — very, very cold",t:{es:"aquí: extremadamente",zh:"极其（这里：极冷）",ar:"هنا: شديد جدًا",vi:"ở đây: cực kỳ",th:"ที่นี่: อย่างยิ่ง",ne:"यहाँ: अत्यन्त"}},
   "porter":{d:"a worker at a train station who carries bags",t:{es:"maletero de estación",zh:"行李搬运工",ar:"حمّال الأمتعة",vi:"người khuân vác hành lý",th:"พนักงานยกกระเป๋า",ne:"सामान बोक्ने कर्मचारी"}},
@@ -1205,6 +1371,7 @@ function collectPayload(){
   out.meta.total = total;
   out.meta.mode = curMode;
   out.meta.lang = curLang;
+  out.notes = NOTES;
   return out;
 }
 
@@ -1297,6 +1464,9 @@ function pullRow(){
         if(!qs[i].a) continue;
         var ta = document.querySelector('textarea[data-id="' + qs[i].id + '"]');
         if(ta && !ta.value.trim()){ ta.value = qs[i].a; updateWc(ta); autogrow(ta); }
+      }
+      if(data[0].payload.notes && !Object.keys(NOTES).length){
+        NOTES = data[0].payload.notes; saveNotes(); drawNotes();
       }
       saveLocal();
       restoreChoices();
@@ -1410,6 +1580,261 @@ try{
 
 var all = document.querySelectorAll("textarea");
 for(var i = 0; i < all.length; i++){ autogrow(all[i]); }
+
+
+/* ============================================================
+   SIDE RAIL — running glossary + margin notes
+   ============================================================ */
+var NOTES = {};
+var railOn = true;
+try{
+  var rr = localStorage.getItem(LKEY + "_rail");
+  if(rr !== null) railOn = (rr === "1");
+  else railOn = window.innerWidth >= 1100;
+}catch(e){}
+
+function paragraphs(){ return document.querySelectorAll(".story p"); }
+
+function tagParagraphs(){
+  var ps = paragraphs(), i;
+  for(i = 0; i < ps.length; i++){
+    if(!ps[i].getAttribute("data-p")) ps[i].setAttribute("data-p", String(i + 1));
+  }
+}
+
+/* ---------- the glossary follows what is on screen ---------- */
+function wordsOnScreen(){
+  var ps = paragraphs(), out = [], seen = [], i, j;
+  var h = window.innerHeight, lo = h * 0.08, hi = h * (railOn && window.innerWidth < 1100 ? 0.55 : 0.80);
+  for(i = 0; i < ps.length; i++){
+    var r = ps[i].getBoundingClientRect();
+    if(r.bottom < lo || r.top > hi) continue;
+    var gs = ps[i].querySelectorAll(".gl");
+    for(j = 0; j < gs.length; j++){
+      var k = gs[j].getAttribute("data-k");
+      if(seen.indexOf(k) > -1) continue;
+      seen.push(k); out.push(k);
+    }
+  }
+  return out;
+}
+var lastPaint = "";
+function paintWords(){
+  var box = document.getElementById("words");
+  if(!box) return;
+  var ws = wordsOnScreen(), sig = ws.join("|") + "/" + curLang;
+  if(sig === lastPaint) return;
+  lastPaint = sig;
+  if(!ws.length){
+    box.innerHTML = '<div class="rempty">Scroll into the story \u2014 words appear here as you reach them.</div>';
+    return;
+  }
+  var h = "", i;
+  for(i = 0; i < ws.length; i++){
+    var k = ws[i], g = GLOSS[k];
+    if(!g) continue;
+    var tr = (curLang !== "none" && g.t[curLang]) ? g.t[curLang] : "";
+    h += '<div class="rw" data-k="' + esc(k) + '"><div class="k">' + esc(k) + '</div>' +
+         '<div class="d">' + esc(g.d) + '</div>' +
+         (tr ? '<div class="tr' + (RTL[curLang] ? " rtl" : "") + '">' + esc(tr) + '</div>' : '') +
+         '</div>';
+    /* words with no stored translation yet are fetched once, then cached */
+    if(!tr && curLang !== "none" && window.llTranslate){
+      (function(key){
+        llTranslate(GLOSS[key].d || key, curLang, function(tx){
+          if(!tx) return;
+          GLOSS[key].t[curLang] = tx;
+          lastPaint = ""; paintWords();
+        });
+      })(k);
+    }
+  }
+  box.innerHTML = h;
+}
+
+/* ---------- notes ---------- */
+function noteKey(p){ return p.getAttribute("data-p"); }
+function penFor(p){
+  var b = document.createElement("span");
+  b.className = "pen";
+  b.textContent = "\u270e";
+  b.title = "Write a note about this paragraph";
+  b.addEventListener("click", function(ev){
+    ev.stopPropagation();
+    var id = noteKey(p);
+    if(!NOTES[id]) NOTES[id] = "";
+    if(!railOn) setRail(true);
+    drawNotes();
+    var t = document.querySelector('.rnote[data-for="' + id + '"] textarea');
+    if(t){ t.focus(); if(t.scrollIntoView) t.scrollIntoView({block:"center"}); }
+  });
+  return b;
+}
+function addPens(){
+  var ps = paragraphs(), i;
+  for(i = 0; i < ps.length; i++){
+    if(ps[i].querySelector(".pen")) continue;
+    ps[i].appendChild(penFor(ps[i]));
+  }
+}
+function markPens(){
+  var ps = paragraphs(), i;
+  for(i = 0; i < ps.length; i++){
+    var pen = ps[i].querySelector(".pen");
+    if(pen) pen.className = "pen" + (NOTES[noteKey(ps[i])] ? " has" : "");
+  }
+}
+function drawNotes(){
+  var box = document.getElementById("notes");
+  if(!box) return;
+  var ids = Object.keys(NOTES), h = "", i;
+  if(!ids.length){
+    box.innerHTML = '<div class="rempty">Press the pen beside a paragraph to write a note about it.</div>';
+    markPens(); drawNotePrint(); return;
+  }
+  ids.sort(function(a, b){ return (parseFloat(a) || 0) - (parseFloat(b) || 0); });
+  for(i = 0; i < ids.length; i++){
+    h += '<div class="rnote" data-for="' + esc(ids[i]) + '"><span class="x">remove</span>' +
+         '<div class="lbl">Paragraph ' + esc(ids[i]) + '</div>' +
+         '<textarea placeholder="What do you notice here?"></textarea></div>';
+  }
+  box.innerHTML = h;
+  var cards = box.querySelectorAll(".rnote");
+  for(i = 0; i < cards.length; i++){
+    (function(card){
+      var id = card.getAttribute("data-for");
+      var ta = card.querySelector("textarea");
+      ta.value = NOTES[id] || "";
+      ta.addEventListener("input", function(){
+        NOTES[id] = ta.value;
+        saveNotes(); markPens(); drawNotePrint(); queueSave();
+      });
+      card.querySelector(".x").addEventListener("click", function(){
+        delete NOTES[id]; saveNotes(); drawNotes(); queueSave();
+      });
+    })(cards[i]);
+  }
+  markPens(); drawNotePrint();
+  if(window.drawPrompts) drawPrompts();
+}
+function saveNotes(){
+  try{ localStorage.setItem(LKEY + "_notes", JSON.stringify(NOTES)); }catch(e){}
+}
+function loadNotes(){
+  try{
+    var raw = localStorage.getItem(LKEY + "_notes");
+    if(raw) NOTES = JSON.parse(raw) || {};
+  }catch(e){ NOTES = {}; }
+}
+function drawNotePrint(){
+  var body = document.getElementById("noteprintbody");
+  if(!body) return;
+  var ids = Object.keys(NOTES).filter(function(k){ return (NOTES[k] || "").trim(); });
+  ids.sort(function(a, b){ return (parseFloat(a) || 0) - (parseFloat(b) || 0); });
+  var h = "", i;
+  for(i = 0; i < ids.length; i++){
+    h += '<div class="npr"><b>Paragraph ' + esc(ids[i]) + '</b><br>' + esc(NOTES[ids[i]]) + '</div>';
+  }
+  body.innerHTML = h;
+  body.parentNode.className = "noteprint" + (ids.length ? " has" : "");
+}
+
+/* ---------- show and hide ---------- */
+function setRail(on){
+  railOn = !!on;
+  document.body.classList.toggle("rail", railOn);
+  document.body.classList.toggle("norail", !railOn);
+  try{ localStorage.setItem(LKEY + "_rail", railOn ? "1" : "0"); }catch(e){}
+  lastPaint = ""; paintWords();
+}
+document.getElementById("railX").addEventListener("click", function(){ setRail(false); });
+document.getElementById("railOpen").addEventListener("click", function(){ setRail(true); });
+document.getElementById("words").addEventListener("click", function(e){
+  var w = e.target.closest ? e.target.closest(".rw") : null;
+  if(!w) return;
+  var g = document.querySelector('.gl[data-k="' + w.getAttribute("data-k") + '"]');
+  if(g && g.scrollIntoView) g.scrollIntoView({block:"center", behavior:"smooth"});
+});
+window.addEventListener("scroll", paintWords, { passive: true });
+window.addEventListener("resize", function(){ lastPaint = ""; paintWords(); });
+
+tagParagraphs();
+addPens();
+loadNotes();
+setRail(railOn);
+drawNotes();
+paintWords();
+
+
+/* ---------- text size ---------- */
+var tsStep = 1;
+try{ tsStep = parseInt(localStorage.getItem("gal_textsize") || "1", 10) || 1; }catch(e){}
+function applyTextSize(){
+  document.body.classList.remove("ts2", "ts3");
+  if(tsStep === 2) document.body.classList.add("ts2");
+  if(tsStep === 3) document.body.classList.add("ts3");
+  try{ localStorage.setItem("gal_textsize", String(tsStep)); }catch(e){}
+}
+document.getElementById("tsz").addEventListener("click", function(e){
+  var b = e.target.closest ? e.target.closest("button") : null;
+  if(!b) return;
+  tsStep += (b.getAttribute("data-ts") === "up" ? 1 : -1);
+  if(tsStep < 1) tsStep = 1;
+  if(tsStep > 3) tsStep = 3;
+  applyTextSize();
+});
+applyTextSize();
+
+/* ---------- a question waiting in the margin wherever a signal appears ----------
+   Prompts show for signal paragraphs on screen. Type in one and it becomes
+   an ordinary note, saved with everything else. */
+var SIGQ = {
+  cozy:  "This part is meant to feel warm and safe. Which words make it feel that way?",
+  wrong: "Something here is not right. What makes this feel strange or creepy?"
+};
+function signalParagraphsOnScreen(){
+  var ps = document.querySelectorAll(".story p"), out = [], i;
+  var h = window.innerHeight, lo = h * 0.04, hi = h * 0.86;
+  for(i = 0; i < ps.length; i++){
+    var sig = ps[i].querySelector(".atm-label");
+    if(!sig) continue;
+    var r = ps[i].getBoundingClientRect();
+    if(r.bottom < lo || r.top > hi) continue;
+    var id = ps[i].getAttribute("data-p");
+    if(NOTES[id] !== undefined) continue;          /* already answered or open */
+    out.push({ id: id, wrong: !!ps[i].querySelector(".atm.wrong-signal .atm-label") });
+  }
+  return out;
+}
+function drawPrompts(){
+  var box = document.getElementById("prompts");
+  if(!box) return;
+  var ps = signalParagraphsOnScreen(), sig = ps.map(function(o){ return o.id; }).join(","), i;
+  if(sig === box.getAttribute("data-sig")) return;
+  box.setAttribute("data-sig", sig);
+  if(!ps.length){ box.innerHTML = ""; return; }
+  var h = "";
+  for(i = 0; i < ps.length; i++){
+    h += '<div class="rprompt' + (ps[i].wrong ? " wrong" : "") + '" data-for="' + esc(ps[i].id) + '">' +
+         '<div class="lbl">' + (ps[i].wrong ? "Wrong signal" : "Cozy signal") + ' \u00b7 paragraph ' + esc(ps[i].id) + '</div>' +
+         '<div class="ask">' + esc(ps[i].wrong ? SIGQ.wrong : SIGQ.cozy) + '</div>' +
+         '<textarea placeholder="Write what you notice\u2026"></textarea></div>';
+  }
+  box.innerHTML = h;
+  var cards = box.querySelectorAll(".rprompt");
+  for(i = 0; i < cards.length; i++){
+    (function(card){
+      var id = card.getAttribute("data-for");
+      card.querySelector("textarea").addEventListener("input", function(){
+        NOTES[id] = this.value;
+        saveNotes(); markPens(); drawNotePrint(); queueSave();
+        if(this.value.trim().length > 2){ box.setAttribute("data-sig", ""); drawNotes(); drawPrompts(); }
+      });
+    })(cards[i]);
+  }
+}
+window.addEventListener("scroll", drawPrompts, { passive: true });
+drawPrompts();
 
 </script>
 
