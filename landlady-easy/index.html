@@ -256,6 +256,8 @@ body.tap-on .wt-tap:hover{background:#eef5f1}
     <input type="email" id="gEmail" placeholder="name@s.sfusd.edu" autocomplete="email">
     <label for="gName">Full name</label>
     <input type="text" id="gName" placeholder="First and last name" autocomplete="name">
+    <label for="gLang">Your language</label>
+    <select id="gLang"></select>
     <label for="gPeriod">Class period</label>
     <select id="gPeriod">
       <option value="">Choose…</option>
@@ -748,6 +750,7 @@ var RTL = { ar:1, ur:1, fa:1};
 
 var student = null;
 var curLang = "none";
+var LANG_SAVED = false;
 var curMode = (ASSIGNED === "toggle") ? "hard" : ASSIGNED;
 
 function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
@@ -804,6 +807,29 @@ function buildVocabTable(){
   $("vbody").innerHTML = h;
 }
 
+/* ---- the gate's language picker mirrors the one in the toolbar ---- */
+function buildGateLang(){
+  var src = $("lang"), dst = $("gLang");
+  if(!src || !dst || dst.options.length) return;
+  var ph = document.createElement("option");
+  ph.value = ""; ph.textContent = "Choose\u2026";
+  dst.appendChild(ph);
+  var none = null, i, o, n;
+  for(i = 0; i < src.options.length; i++){
+    o = src.options[i];
+    if(o.value === "none"){ none = o; continue; }
+    n = document.createElement("option");
+    n.value = o.value; n.textContent = o.textContent;
+    dst.appendChild(n);
+  }
+  if(none){
+    n = document.createElement("option");
+    n.value = "none"; n.textContent = "English only";
+    dst.appendChild(n);
+  }
+  if(LANG_SAVED) dst.value = curLang;
+}
+
 function applyLang(){
   var head = $("vhead");
   if(head) head.textContent = (curLang === "none") ? "Your language" : LANGNAME[curLang];
@@ -829,7 +855,7 @@ function applyLang(){
 
 $("lang").addEventListener("change", function(){
   curLang = this.value;
-  try{ localStorage.setItem(LKEY + "_lang", curLang); }catch(e){}
+  try{ localStorage.setItem(LKEY + "_lang", curLang); localStorage.setItem("gal_lang", curLang); }catch(e){}
   applyLang();
   queueSave();
 });
@@ -855,7 +881,7 @@ function showWord(el){
   if(!g) return;
   var h = '<span class="w">' + esc(k) + '</span>' + esc(g.d);
   if(curLang === "none"){
-    h += '<div class="none">Choose your language at the top to see a translation.</div>';
+    h += '<div class="none">You chose English only. Pick a language at the top of the page to add translations.</div>';
   } else if(g.t[curLang]){
     h += '<div class="t' + (RTL[curLang] ? " rtl" : "") + '">' + esc(g.t[curLang]) + '</div>';
   } else {
@@ -938,7 +964,8 @@ function loadLocal(){
   }
   var L = null, M = null;
   try{ L = localStorage.getItem(LKEY + "_lang"); M = localStorage.getItem(LKEY + "_mode"); }catch(e){}
-  if(L){ curLang = L; $("lang").value = L; }
+  if(!L){ try{ L = localStorage.getItem("gal_lang"); }catch(e){} }
+  if(L){ curLang = L; $("lang").value = L; LANG_SAVED = true; }
   if(M && ASSIGNED === "toggle") curMode = M;
 }
 
@@ -1110,7 +1137,13 @@ $("gGo").addEventListener("click", function(){
   if(!llValid(email)){ err.textContent = "Please use your school email — it ends with @s.sfusd.edu"; return; }
   if(name.length < 2){ err.textContent = "Please type your full name."; return; }
   if(!per){ err.textContent = "Please choose your class period."; return; }
+  var gl = $("gLang").value;
+  if(!gl){ err.textContent = "Please choose your language."; return; }
   err.textContent = "";
+  curLang = gl;
+  $("lang").value = gl;
+  try{ localStorage.setItem(LKEY + "_lang", gl); localStorage.setItem("gal_lang", gl); }catch(e){}
+  applyLang();
   var rawMail = email; email = llCanon(email);
   llAlias(rawMail, email); llSeed(name, email, per);
   try{ localStorage.setItem("gal_student_email", email); }catch(e){}
@@ -1175,6 +1208,7 @@ buildVocabTable();
 loadLocal();
 applyMode();
 applyLang();
+buildGateLang();
 
 try{
   var s = localStorage.getItem(STU_KEY);
