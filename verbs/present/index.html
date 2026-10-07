@@ -51,6 +51,10 @@ button{cursor:pointer}
 .who{color:var(--muted);font-size:15px}
 .spacer{flex:1}
 .bar select{padding:7px 8px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);font-size:15px}
+#btn-dir{padding:7px 12px;font-size:15px;box-shadow:none;border-radius:9px}
+#btn-dir.on{background:var(--pl);color:var(--card);border-color:var(--pl)}
+.dirtr{display:block;font-size:15px;color:var(--muted);margin-top:4px;font-weight:400}
+.dirtr[dir=rtl]{text-align:right}
 #dot{width:11px;height:11px;border-radius:50%;background:var(--line);display:inline-block}
 #dot.saving{background:var(--s3-b)} #dot.saved{background:var(--ok)} #dot.err{background:var(--no)}
 
@@ -220,6 +224,7 @@ footer{text-align:center;color:var(--muted);font-size:14px;margin-top:26px}
     <span id="dot" title="Saving status"></span>
     <span class="who" id="whoLbl"></span>
     <span class="spacer"></span>
+    <button class="btn soft" id="btn-dir" title="Show the directions in your language">Directions</button>
     <select id="levelSel" aria-label="Level">
       <option value="easy">Easier</option>
       <option value="std">Standard</option>
@@ -227,14 +232,14 @@ footer{text-align:center;color:var(--muted);font-size:14px;margin-top:26px}
     </select>
     <select id="langSel" aria-label="Language"></select>
   </header>
-  <nav id="units"></nav>
-  <nav id="acts"></nav>
-  <main id="stage"></main>
+  <nav id="units" translate="no"></nav>
+  <nav id="acts" translate="no"></nav>
+  <main id="stage" translate="no"></main>
   <footer>Mr. Toby</footer>
 </div>
 
 </div>
-<div id="pop" class="hidden"></div>
+<div id="pop" class="hidden" translate="no"></div>
 
 <script>
 /* =========================================================
@@ -1113,6 +1118,82 @@ document.addEventListener('DOMContentLoaded', function(){
   $('levelSel').addEventListener('change', function(){ S.level=$('levelSel').value; persist(); renderStage(); });
   if(window.speechSynthesis) speechSynthesis.onvoiceschanged = function(){ voice=null; };
 });
+
+/* ============ Galileo standard: directions in L1 + quiet browser-translation canary ============ */
+(function(){
+  var PAGE_SLUG = TENSE_SLUG;
+  function hd(pref){ var h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'}; if(pref) h['Prefer']=pref; return h; }
+  var RTL = /Arabic|Darija|Urdu/;
+
+  /* ---------- directions: every .lede line gets its translation underneath ---------- */
+  var DIR_ON=true, SENT={}, dcache={};
+  try{ DIR_ON = localStorage.getItem('verbs_dir')!=='0'; }catch(e){}
+  function tr(text, lang){
+    var key=lang+'|'+text;
+    if(dcache[key]) return Promise.resolve(dcache[key]);
+    var url=PROXY+'?action=translate&idiom='+encodeURIComponent(text)+
+      '&meaning='+encodeURIComponent('Directions for a beginner English student. Translate plainly and simply.')+'&lang='+encodeURIComponent(lang);
+    return rawFetch(url).then(function(r){return r.json();}).then(function(d){
+      if(!d||!d.ok||!d.translation) return null;
+      var t=d.translation.equiv||d.translation.meaning||''; if(t) dcache[key]=t; return t||null;
+    }).catch(function(){return null;});
+  }
+  function logReveal(k, lang){
+    if(!S.email) return;
+    var sig=k+'|'+lang; if(SENT[sig]) return; SENT[sig]=true;
+    rawFetch(SUPA_URL+'/rest/v1/instruction_reveals',{method:'POST',headers:hd('return=minimal'),
+      body:JSON.stringify([{email:S.email, set_slug:PAGE_SLUG, activity:k, lang:lang}])}).catch(function(){});
+  }
+  function showDirections(){
+    var lang = S.lang, list=document.querySelectorAll('#stage .lede');
+    Array.prototype.forEach.call(list,function(p){
+      var out=p.querySelector('.dirtr');
+      if(!p.getAttribute('data-en')){
+        var en=(p.textContent||'').replace(out?out.textContent:'','').trim();
+        p.setAttribute('data-en', en); p.setAttribute('translate','yes');
+        p.setAttribute('data-dir', S.unit+'-'+S.act);
+      }
+      if(!out){ out=document.createElement('span'); out.className='dirtr'; p.appendChild(out); }
+      if(!DIR_ON||!lang||lang==='none'){ out.textContent=''; return; }
+      var k=p.getAttribute('data-dir'), en=p.getAttribute('data-en')||'';
+      if(!en) return;
+      out.setAttribute('dir', RTL.test(lang)?'rtl':'ltr');
+      out.textContent='…';
+      tr(en, lang).then(function(t){ out.textContent=t||''; if(t) logReveal(k, lang); });
+    });
+  }
+  var dirBtn=document.getElementById('btn-dir');
+  dirBtn.classList.toggle('on', DIR_ON);
+  dirBtn.addEventListener('click',function(){
+    DIR_ON=!DIR_ON; try{ localStorage.setItem('verbs_dir', DIR_ON?'1':'0'); }catch(e){}
+    dirBtn.classList.toggle('on', DIR_ON); showDirections();
+  });
+  var langSel=document.getElementById('langSel');
+  if(langSel) langSel.addEventListener('change', function(){ setTimeout(showDirections, 50); });
+  /* the stage re-renders itself constantly, so translate whatever is on it right now */
+  var pend=null;
+  new MutationObserver(function(){ if(pend) return; pend=setTimeout(function(){ pend=null; showDirections(); }, 120); })
+    .observe(document.getElementById('stage'), {childList:true});
+
+  /* ---------- quiet browser-translation canary ---------- */
+  var EXPECT=(dirBtn.textContent||'').trim(), TR_SENT='';
+  function detectTranslation(){
+    var got=(dirBtn.textContent||'').trim(), observed = (got&&got!==EXPECT)?got:'';
+    var cls=document.documentElement.className||'';
+    if(!observed && !/translated/.test(cls)) return null;
+    return {observed:observed, html_lang:document.documentElement.lang||'', html_class:cls};
+  }
+  function checkTranslation(){
+    var d=detectTranslation(); if(!d||!S.email) return;
+    var sig=d.observed+'|'+d.html_lang; if(sig===TR_SENT) return; TR_SENT=sig;
+    rawFetch(SUPA_URL+'/rest/v1/page_translation?on_conflict=email,set_slug',{
+      method:'POST', headers:hd('resolution=merge-duplicates,return=minimal'),
+      body:JSON.stringify([{email:S.email, set_slug:PAGE_SLUG, translated:true, observed:d.observed,
+        html_lang:d.html_lang, html_class:d.html_class, updated_at:new Date().toISOString()}])}).catch(function(){});
+  }
+  window.checkTranslation=checkTranslation;
+  setInterval(checkTranslation, 20000); setTimeout(checkTranslation, 4000);
+})();
 </script>
 <script src="/readings/track.js"></script>
 </body>
