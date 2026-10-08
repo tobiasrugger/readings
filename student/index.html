@@ -178,6 +178,27 @@ h2 .tr{font-size:.72em;font-weight:800}
 .actrow .s{font-weight:900}
 .skill{cursor:pointer}
 .skill .more{font-size:.76rem;color:var(--muted);font-weight:800;margin-top:6px;display:block}
+
+.sheet{position:fixed;inset:0;background:rgba(35,29,53,.55);z-index:999;
+  display:flex;align-items:flex-end;justify-content:center;padding:0}
+.sheet-card{background:#fff;width:100%;max-width:640px;max-height:86vh;
+  border-radius:18px 18px 0 0;display:flex;flex-direction:column;
+  box-shadow:0 -6px 30px rgba(0,0,0,.25)}
+.sheet-head{display:flex;align-items:center;gap:12px;padding:15px 18px;
+  border-bottom:2px solid var(--line);background:var(--plum-lt);border-radius:18px 18px 0 0}
+.sheet-head b{flex:1;font-size:1.08rem;font-weight:900;color:var(--plum-dk)}
+.sheet-body{padding:12px 18px 24px;overflow-y:auto}
+.sheet-sec{font-size:.76rem;font-weight:900;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.05em;margin:12px 0 4px}
+.sheet .actrow{border-bottom:1px solid var(--line);padding:10px 0}
+.sheet .actrow .t{font-size:.95rem}
+@media(min-width:620px){.sheet{align-items:center}.sheet-card{border-radius:18px}
+  .sheet-head{border-radius:18px 18px 0 0}}
+
+#focusRow{margin-bottom:16px}
+#nextCard{border-left:8px solid var(--red)}
+#nextCard h2{color:var(--red)}
+#nextCard li{margin-bottom:12px}
 @media print{.gstar,.tries{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 .prac{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
 .prac-link{display:inline-block;background:#fff;border:1.5px solid var(--line-dk);
@@ -325,6 +346,11 @@ details.wq .qm{font-size:.85rem;color:var(--muted);font-weight:800}
     <button class="btn ghost sm noprint" onclick="signOut()">Not me</button>
   </div>
 
+  <div class="grid2" id="focusRow">
+    <div class="card" id="nextCard"><h2>Practice Next</h2><ul id="growth"></ul></div>
+    <div class="card"><h2>My Strengths</h2><ul id="strengths"></ul></div>
+  </div>
+
 <!-- Skills -->
   <div class="card">
     <h2>My English Skills</h2>
@@ -337,11 +363,6 @@ details.wq .qm{font-size:.85rem;color:var(--muted);font-weight:800}
       <span><i style="background:var(--grey)"></i>Not tried yet</span>
     </div>
     <div class="skills" id="skillBox"></div>
-  </div>
-
-  <div class="grid2">
-    <div class="card"><h2>My Strengths</h2><ul id="strengths"></ul></div>
-    <div class="card"><h2>Practice Next</h2><ul id="growth"></ul></div>
   </div>
 
   
@@ -597,6 +618,12 @@ var PROXY='https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc
 var RTL=/Arabic|Darija|Urdu/;
 var MYLANG='none', TCACHE={};
 try{ MYLANG=localStorage.getItem('vocab_lang')||localStorage.getItem('gal_lang')||'none'; }catch(e){}
+try{
+  if(localStorage.getItem('t9n_v')!=='2'){
+    Object.keys(localStorage).forEach(function(k){ if(k.indexOf('t9n:')===0)localStorage.removeItem(k); });
+    localStorage.setItem('t9n_v','2');
+  }
+}catch(e){}
 
 function cacheGet(lang,text){
   var k='t9n:'+lang+'|'+text;
@@ -611,14 +638,18 @@ function cacheSet(lang,text,val){
 function trOne(text,lang){
   var hit=cacheGet(lang,text);
   if(hit!==undefined)return Promise.resolve(hit);
+  // meaning MUST stay empty: the proxy translates whatever is sent there,
+  // so a hint string comes back as the "translation"
   var url=PROXY+'?action=translate&idiom='+encodeURIComponent(text)+
-    '&meaning='+encodeURIComponent('A short label on a beginner English student\u2019s progress page. Translate plainly and simply.')+
-    '&lang='+encodeURIComponent(lang);
+    '&meaning=&lang='+encodeURIComponent(lang);
   return fetch(url).then(function(r){return r.json();}).then(function(d){
     if(!d||!d.ok||!d.translation)return null;
-    var t=d.translation.equiv||d.translation.meaning||'';
-    if(t)cacheSet(lang,text,t);
-    return t||null;
+    var t=d.translation.equiv||'';
+    if(typeof t!=='string')t='';
+    t=t.trim();
+    if(!t||t.toLowerCase()===text.toLowerCase())return null;
+    cacheSet(lang,text,t);
+    return t;
   }).catch(function(){return null;});
 }
 
@@ -659,7 +690,8 @@ function renderAll(){
   buildLangPicker();
   (DATA.skills||[]).forEach(function(r){ if(r.label)SKILL_LABEL[r.skill]=r.label; });
   renderGlance();
-  if(NEW_STUDENT){
+  // a student with work is not a stranger, even without a profile row
+  if(NEW_STUDENT&&!(DATA.atts||[]).length&&!(DATA.skills||[]).length){
     const h=document.getElementById('hMeta');
     setTimeout(function(){
       h.insertAdjacentHTML('beforeend',
@@ -1025,6 +1057,20 @@ function actsForSkill(code){
   });
   return {done:done,todo:todo};
 }
+
+function actTitle(a){
+  var t=(a.title||'').trim();
+  if(t&&t.indexOf('/')<0)return t;
+  var raw=t||a.slug||'';
+  var parts=String(raw).split('/').filter(Boolean);
+  var last=parts.pop()||raw;
+  // 'donow/0918' -> 'Do Now 0918', not '0918'
+  if(/^[0-9]+$/.test(last)&&parts.length)last=parts.pop()+' '+last;
+  last=last.replace(/[-_]+/g,' ').replace(/\b(ll|donow)\b/gi,function(m){
+    return m.toLowerCase()==='ll'?'Language Launch':'Do Now';});
+  last=last.replace(/\b\w/g,function(c){return c.toUpperCase();});
+  return last.length>44?last.slice(0,42)+'\u2026':last;
+}
 function actLink(act,label,cls){
   if(!act.url)return '<span class="muted">'+esc(label)+'</span>';
   var u=act.url+(act.url.indexOf('?')>-1?'&':'?')+'email='+encodeURIComponent(ME);
@@ -1045,16 +1091,53 @@ function skillPanel(code){
   });
   return h+'</div>';
 }
+
+/* a tile opens a sheet: the in-tile list was unreadable on a phone */
+function closeSheet(){
+  var b=document.getElementById('sheet'); if(b)b.remove();
+  document.body.style.overflow='';
+}
+function openSheet(code,label){
+  closeSheet();
+  var r=actsForSkill(code);
+  var h='<div class="sheet-card" onclick="event.stopPropagation()">'+
+    '<div class="sheet-head"><b>'+esc(label)+'</b>'+
+    '<button class="btn ghost sm" onclick="closeSheet()">Close</button></div>'+
+    '<div class="sheet-body">';
+  if(r.done.length){
+    h+='<div class="sheet-sec">What I did</div>';
+    r.done.forEach(function(d){
+      h+='<div class="actrow"><span class="t">'+esc(actTitle(d.act))+'</span>'+
+         '<span class="s">'+(d.pct==null?'&mdash;':d.pct+'%')+'</span>'+
+         actLink(d.act,'Open')+'</div>';
+    });
+  }
+  if(r.todo.length){
+    h+='<div class="sheet-sec">I can try this</div>';
+    r.todo.forEach(function(a){
+      h+='<div class="actrow"><span class="t">'+esc(actTitle(a))+'</span>'+
+         actLink(a,'Try this','')+'</div>';
+    });
+  }
+  if(!r.done.length&&!r.todo.length)h+='<p class="note">Nothing linked to this skill yet.</p>';
+  h+='</div></div>';
+  var b=document.createElement('div');
+  b.id='sheet'; b.className='sheet'; b.innerHTML=h;
+  b.addEventListener('click',closeSheet);
+  document.body.appendChild(b);
+  document.body.style.overflow='hidden';
+  translatePage();
+}
+
 function toggleSkill(el,ev){
-  var t=(window.event||ev)&&(window.event||ev).target;
-  if(t&&t.closest&&t.closest('a'))return;
-  var box=el.querySelector('.actlist-holder');
-  if(!box)return;
-  var open=box.innerHTML!=='';
-  box.innerHTML=open?'':skillPanel(el.getAttribute('data-code')||'');
-  var more=el.querySelector('.more');
-  if(more)more.textContent=open?'Tap to see my activities':'Tap to hide';
-  if(!open)translatePage();
+  if(ev){
+    var t=ev.target;
+    if(t&&t.closest&&t.closest('a'))return;   // let a link be a link
+    ev.stopPropagation();
+  }
+  var code=el.getAttribute('data-code')||'';
+  var b=el.querySelector('b');
+  openSheet(code,b?(b.getAttribute('data-en')||b.textContent):code);
 }
 
 function renderSkills(){
@@ -1073,12 +1156,12 @@ function renderSkills(){
     if(!r){
       var starts=actsForSkill(sk);
       var first=starts.todo[0];
-      return '<div class="skill" data-code="'+esc(sk)+'" onclick="toggleSkill(this)">'+
+      return '<div class="skill" data-code="'+esc(sk)+'" onclick="toggleSkill(this,event)">'+
         '<b>'+esc(label)+'</b><span>Not tried yet</span>'+
         (first?'<div class="actlist">'+actLink(first,'Try this','')+
           (starts.todo.length>1?'<span class="more">Tap to see all '+starts.todo.length+'</span>':'')+
           '</div>':'')+
-        '<div class="actlist-holder"></div></div>';
+        '</div>';
     }
     var p=curPct(sk,r), st=statusOf(sk);
     // a skill with no usable score (activity saved with no points) must not read "null%"
@@ -1089,10 +1172,10 @@ function renderSkills(){
     var feed=actsForSkill(sk);
     var nAct=feed.done.length;
     return '<div class="skill '+band(p)+(isNext[sk]?' next':'')+'" data-code="'+esc(sk)+
-      '" onclick="toggleSkill(this)"><span class="pct">'+p+'%</span><b>'+esc(label)+starHtml(sk)+'</b>'+
+      '" onclick="toggleSkill(this,event)"><span class="pct">'+p+'%</span><b>'+esc(label)+starHtml(sk)+'</b>'+
       bar+'<span>'+esc(sub)+'</span>'+(isNext[sk]?linksFor(sk,p):'')+
       (nAct?'<span class="more">Tap to see my '+nAct+' activit'+(nAct===1?'y':'ies')+'</span>':'')+
-      '<div class="actlist-holder"></div></div>';
+      '</div>';
   }).join('');
 
   var scored=DATA.skills.map(function(r){return {skill:r.skill,pct:curPct(r.skill,r)};}).sort(function(a,b){return b.pct-a.pct;});
