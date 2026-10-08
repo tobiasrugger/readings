@@ -165,6 +165,19 @@ ul{margin:0;padding-left:20px} li{margin-bottom:6px;font-weight:700}
 .topstrip .gbox b{font-size:1.3rem}
 .topstrip .gbox span{font-size:.66rem;letter-spacing:.02em}
 @media(max-width:620px){.topstrip h1{font-size:1.1rem}.topstrip .glance{width:100%;flex:1 0 100%}}
+
+.langsel{font:inherit;font-size:.85rem;font-weight:800;padding:6px 9px;border:2px solid var(--line-dk);
+  border-radius:9px;background:var(--field);color:var(--plum-dk);max-width:160px}
+.tr{display:block;font-weight:700;color:var(--muted);font-size:.88em;margin-top:2px;line-height:1.35}
+h2 .tr{font-size:.72em;font-weight:800}
+.skill .tr{font-size:.82em}
+.actlist{margin-top:10px;padding-top:10px;border-top:1.5px dashed var(--line-dk)}
+.actrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  padding:6px 0;font-size:.88rem;font-weight:700}
+.actrow .t{flex:1;min-width:120px}
+.actrow .s{font-weight:900}
+.skill{cursor:pointer}
+.skill .more{font-size:.76rem;color:var(--muted);font-weight:800;margin-top:6px;display:block}
 @media print{.gstar,.tries{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 .prac{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
 .prac-link{display:inline-block;background:#fff;border:1.5px solid var(--line-dk);
@@ -308,6 +321,7 @@ details.wq .qm{font-size:.85rem;color:var(--muted);font-weight:800}
       </div>
     </div>
     <div class="glance" id="glance"></div>
+    <select id="langSel" class="langsel noprint" onchange="setLang(this.value)" title="My language"></select>
     <button class="btn ghost sm noprint" onclick="signOut()">Not me</button>
   </div>
 
@@ -499,7 +513,7 @@ async function load(email){
   const lp=email.split('@')[0];
   const both='in.('+encodeURIComponent(lp+'@s.sfusd.edu')+','+encodeURIComponent(lp+'@sfusd.edu')+')';
 
-  const [stu,facts,acts,atts,skills,res,work,checks,practice,phHits,phWork]=await Promise.all([
+  const [stu,facts,acts,atts,skills,res,work,checks,practice,phHits,phWork,aliases]=await Promise.all([
     sb('students?email=eq.'+encodeURIComponent(email)+'&select=*'),
     sb('student_facts?email=eq.'+encodeURIComponent(email)+'&select=key,value'),
     sb('activities?select=*&order=sort_order.asc'),
@@ -510,7 +524,8 @@ async function load(email){
     window.MW?MW.loadChecks(email):null,
     window.MW?MW.loadPractice(email):null,
     window.PH?PH.loadHits(email):null,
-    window.PH?PH.loadWork(email):null
+    window.PH?PH.loadWork(email):null,
+    sb('skill_aliases?select=alias,code')
   ]);
   DATA.checks=checks||[]; DATA.practice=practice||[]; DATA.phHits=phHits||[]; DATA.phWork=phWork||[];
 
@@ -520,7 +535,8 @@ async function load(email){
     DATA.student={email:email};
     NEW_STUDENT=!SELF_SIGNIN;
   } else DATA.student=stu[0];
-  DATA.facts=facts||[]; DATA.acts=acts||[]; DATA.atts=atts||[]; DATA.skills=mergeSkills(skills||[]); DATA.res=res||[]; DATA.work=work||[];
+  DATA.facts=facts||[]; DATA.acts=acts||[]; DATA.atts=atts||[]; DATA.skills=mergeSkills(skills||[]); DATA.res=res||[]; DATA.alias={};
+  (aliases||[]).forEach(function(a){DATA.alias[a.alias]=a.code;}); DATA.work=work||[];
   DATA.status=(await sb('student_skill_status?lp=eq.'+encodeURIComponent(lp.toLowerCase())+'&select=skill,latest_pct,rounds,star_round'))||[];
 
   document.getElementById('signin').classList.add('hide');
@@ -568,7 +584,79 @@ function renderGlance(){
   box.innerHTML=html;
 }
 
+
+/* ---------- translation: English on top, their language underneath ---------- */
+var LANGS=[['none','English only'],['Spanish','Espa\u00f1ol'],['Cantonese','\u5ee3\u6771\u8a71'],
+ ['Mandarin','\u4e2d\u6587 (\u666e\u901a\u8bdd)'],['Arabic','\u0627\u0644\u0639\u0631\u0628\u064a\u0629'],
+ ['Darija','\u0627\u0644\u062f\u0627\u0631\u062c\u0629'],['Vietnamese','Ti\u1ebfng Vi\u1ec7t'],
+ ['Russian','\u0420\u0443\u0441\u0441\u043a\u0438\u0439'],['Urdu','\u0627\u0631\u062f\u0648'],
+ ['Tagalog','Tagalog'],['French','Fran\u00e7ais'],['Korean','\ud55c\uad6d\uc5b4'],
+ ['Hindi','\u0939\u093f\u0928\u094d\u0926\u0940'],['Somali','Soomaali'],
+ ['Nepali','\u0928\u0947\u092a\u093e\u0932\u0940'],['Thai','\u0e44\u0e17\u0e22']];
+var PROXY='https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
+var RTL=/Arabic|Darija|Urdu/;
+var MYLANG='none', TCACHE={};
+try{ MYLANG=localStorage.getItem('vocab_lang')||localStorage.getItem('gal_lang')||'none'; }catch(e){}
+
+function cacheGet(lang,text){
+  var k='t9n:'+lang+'|'+text;
+  if(TCACHE[k]!==undefined)return TCACHE[k];
+  try{var v=localStorage.getItem(k); if(v!==null){TCACHE[k]=v;return v;}}catch(e){}
+  return undefined;
+}
+function cacheSet(lang,text,val){
+  var k='t9n:'+lang+'|'+text; TCACHE[k]=val;
+  try{localStorage.setItem(k,val);}catch(e){}
+}
+function trOne(text,lang){
+  var hit=cacheGet(lang,text);
+  if(hit!==undefined)return Promise.resolve(hit);
+  var url=PROXY+'?action=translate&idiom='+encodeURIComponent(text)+
+    '&meaning='+encodeURIComponent('A short label on a beginner English student\u2019s progress page. Translate plainly and simply.')+
+    '&lang='+encodeURIComponent(lang);
+  return fetch(url).then(function(r){return r.json();}).then(function(d){
+    if(!d||!d.ok||!d.translation)return null;
+    var t=d.translation.equiv||d.translation.meaning||'';
+    if(t)cacheSet(lang,text,t);
+    return t||null;
+  }).catch(function(){return null;});
+}
+
+function buildLangPicker(){
+  var sel=document.getElementById('langSel'); if(!sel)return;
+  sel.innerHTML=LANGS.map(function(l){
+    return '<option value="'+l[0]+'"'+(l[0]===MYLANG?' selected':'')+'>'+l[1]+'</option>';}).join('');
+}
+function setLang(v){
+  MYLANG=v;
+  try{localStorage.setItem('vocab_lang',v);localStorage.setItem('gal_lang',v);}catch(e){}
+  translatePage();
+}
+
+/* every heading and skill name gets a line underneath in their language */
+function translatePage(){
+  var nodes=document.querySelectorAll('#page h2, .skill b, .gbox span, .tag, #page .qname');
+  Array.prototype.forEach.call(nodes,function(el){
+    var out=el.querySelector(':scope > .tr');
+    if(!el.hasAttribute('data-en')){
+      var clone=el.cloneNode(true);
+      var kill=clone.querySelector('.tr'); if(kill)kill.remove();
+      el.setAttribute('data-en',(clone.textContent||'').trim());
+    }
+    var en=el.getAttribute('data-en')||'';
+    if(!en)return;
+    if(!MYLANG||MYLANG==='none'){ if(out)out.remove(); return; }
+    if(!out){ out=document.createElement('span'); out.className='tr'; el.appendChild(out); }
+    out.setAttribute('dir',RTL.test(MYLANG)?'rtl':'ltr');
+    var cached=cacheGet(MYLANG,en);
+    if(cached!==undefined){ out.textContent=cached||''; return; }
+    out.textContent='\u2026';
+    trOne(en,MYLANG).then(function(t){ out.textContent=t||''; });
+  });
+}
+
 function renderAll(){
+  buildLangPicker();
   (DATA.skills||[]).forEach(function(r){ if(r.label)SKILL_LABEL[r.skill]=r.label; });
   renderGlance();
   if(NEW_STUDENT){
@@ -578,7 +666,8 @@ function renderAll(){
         '<span style="background:#fff;color:var(--plum-dk)">no account yet &mdash; nothing saved</span>');
     },0);
   }
-  renderHero();renderWords();fillForm();renderFacts();renderWork();renderActs();renderSkills();}
+  renderHero();renderWords();fillForm();renderFacts();renderWork();renderActs();renderSkills();
+  translatePage();}
 
 /* ---------- My Words ----------
    Pulls the newest try of every vocabulary check. Right answer = I know it.
@@ -909,11 +998,71 @@ function nextSkills(){
     .sort(function(a,b){return a.pct-b.pct;});
   return {top:list.slice(0,NEXT_MAX),more:Math.max(0,list.length-NEXT_MAX)};
 }
+
+/* ---------- which activities feed a skill ---------- */
+function canonSkill(t){return (DATA.alias&&DATA.alias[t])||t;}
+function actsForSkill(code){
+  var doneBy={};
+  (DATA.atts||[]).forEach(function(a){
+    var l=doneBy[a.slug]=doneBy[a.slug]||[];
+    l.push(a);
+  });
+  var done=[],todo=[];
+  (DATA.acts||[]).forEach(function(act){
+    var tags=(act.skills||[]).map(canonSkill);
+    if(tags.indexOf(code)<0)return;
+    var att=doneBy[act.slug];
+    if(att){
+      var best=null;
+      att.forEach(function(x){
+        if(x.max_score>0&&x.score!=null){
+          var p=Math.round(100*x.score/x.max_score);
+          if(best==null||p>best)best=p;
+        }
+      });
+      done.push({act:act,pct:best});
+    } else todo.push(act);
+  });
+  return {done:done,todo:todo};
+}
+function actLink(act,label,cls){
+  if(!act.url)return '<span class="muted">'+esc(label)+'</span>';
+  var u=act.url+(act.url.indexOf('?')>-1?'&':'?')+'email='+encodeURIComponent(ME);
+  return '<a class="btn sm '+(cls||'ghost')+'" href="'+esc(u)+'">'+esc(label)+'</a>';
+}
+function skillPanel(code){
+  var r=actsForSkill(code);
+  if(!r.done.length&&!r.todo.length)return '';
+  var h='<div class="actlist">';
+  r.done.forEach(function(d){
+    h+='<div class="actrow"><span class="t">'+esc(d.act.title||d.act.slug)+'</span>'+
+       '<span class="s">'+(d.pct==null?'&mdash;':d.pct+'%')+'</span>'+
+       actLink(d.act,'Open')+'</div>';
+  });
+  r.todo.forEach(function(a){
+    h+='<div class="actrow"><span class="t">'+esc(a.title||a.slug)+'</span>'+
+       actLink(a,'Try this','')+'</div>';
+  });
+  return h+'</div>';
+}
+function toggleSkill(el,ev){
+  var t=(window.event||ev)&&(window.event||ev).target;
+  if(t&&t.closest&&t.closest('a'))return;
+  var box=el.querySelector('.actlist-holder');
+  if(!box)return;
+  var open=box.innerHTML!=='';
+  box.innerHTML=open?'':skillPanel(el.getAttribute('data-code')||'');
+  var more=el.querySelector('.more');
+  if(more)more.textContent=open?'Tap to see my activities':'Tap to hide';
+  if(!open)translatePage();
+}
+
 function renderSkills(){
   var box=document.getElementById('skillBox');
   var did={}; DATA.atts.forEach(function(a){did[a.slug]=1;});
   var tagged={};
-  DATA.acts.forEach(function(a){ if(did[a.slug]) (a.skills||[]).forEach(function(k){tagged[k]=1;}); });
+  // resolve 'to-be' and 'SENT.BE' to one tile
+  DATA.acts.forEach(function(a){ if(did[a.slug]) (a.skills||[]).forEach(function(k){tagged[canonSkill(k)]=1;}); });
   var have={}; DATA.skills.forEach(function(r){have[r.skill]=r;tagged[r.skill]=1;});
   var all=Object.keys(tagged).sort();
   if(!all.length){box.innerHTML='<p class="note">Finish an activity and your skills will show up here in colour.</p>';return;}
@@ -921,15 +1070,29 @@ function renderSkills(){
 
   box.innerHTML=all.map(function(sk){
     var r=have[sk], label=niceSkill(sk);
-    if(!r)return '<div class="skill"><b>'+esc(label)+'</b><span>Not tried yet</span></div>';
+    if(!r){
+      var starts=actsForSkill(sk);
+      var first=starts.todo[0];
+      return '<div class="skill" data-code="'+esc(sk)+'" onclick="toggleSkill(this)">'+
+        '<b>'+esc(label)+'</b><span>Not tried yet</span>'+
+        (first?'<div class="actlist">'+actLink(first,'Try this','')+
+          (starts.todo.length>1?'<span class="more">Tap to see all '+starts.todo.length+'</span>':'')+
+          '</div>':'')+
+        '<div class="actlist-holder"></div></div>';
+    }
     var p=curPct(sk,r), st=statusOf(sk);
     // a skill with no usable score (activity saved with no points) must not read "null%"
     if(p==null||isNaN(p))return '<div class="skill"><b>'+esc(label)+
       '</b><span>Done, but not scored</span></div>';
     var bar='<div class="bar"><i style="width:'+Math.max(4,p)+'%"></i></div>';
     var sub=(st&&st.rounds?st.rounds+' round'+(st.rounds===1?'':'s')+' \u00b7 latest '+p+'%':r.n+' activit'+(r.n===1?'y':'ies'));
-    return '<div class="skill '+band(p)+(isNext[sk]?' next':'')+'"><span class="pct">'+p+'%</span><b>'+esc(label)+starHtml(sk)+'</b>'+
-      bar+'<span>'+esc(sub)+'</span>'+(isNext[sk]?linksFor(sk,p):'')+'</div>';
+    var feed=actsForSkill(sk);
+    var nAct=feed.done.length;
+    return '<div class="skill '+band(p)+(isNext[sk]?' next':'')+'" data-code="'+esc(sk)+
+      '" onclick="toggleSkill(this)"><span class="pct">'+p+'%</span><b>'+esc(label)+starHtml(sk)+'</b>'+
+      bar+'<span>'+esc(sub)+'</span>'+(isNext[sk]?linksFor(sk,p):'')+
+      (nAct?'<span class="more">Tap to see my '+nAct+' activit'+(nAct===1?'y':'ies')+'</span>':'')+
+      '<div class="actlist-holder"></div></div>';
   }).join('');
 
   var scored=DATA.skills.map(function(r){return {skill:r.skill,pct:curPct(r.skill,r)};}).sort(function(a,b){return b.pct-a.pct;});
