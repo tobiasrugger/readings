@@ -230,11 +230,29 @@ function say(t,slow){try{speechSynthesis.cancel();var u=new SpeechSynthesisUtter
 
 /* ---------- translation of directions ---------- */
 var tcache={};
+/* accept only a real translation; a health check or any other JSON is not one */
+function pickTranslation(t){
+  var v=String(t||'').trim();
+  if(!v) return '';
+  if(v[0]==='{'||v[0]==='['){
+    try{
+      var j=JSON.parse(v);
+      var c=j.translation||j.translated||j.translatedText||j.result||j.output||j.text||'';
+      if(typeof c==='object'&&c) c=c.translation||c.text||'';
+      return (typeof c==='string')?c.trim():'';
+    }catch(e){ return ''; }
+  }
+  if(/Galileo backend/i.test(v)) return '';
+  return v;
+}
 function translateText(text,lang,cb){
-  var key=lang+'|'+text; if(tcache[key]){cb(tcache[key]);return;}
-  var u=PROXY+'?text='+encodeURIComponent(text)+'&q='+encodeURIComponent(text)+'&target='+encodeURIComponent(lang)+'&lang='+encodeURIComponent(lang)+'&to='+encodeURIComponent(lang);
+  var key=lang+'|'+text;
+  if(tcache[key]){cb(tcache[key]);return;}
+  var u=PROXY+'?text='+encodeURIComponent(text)+'&q='+encodeURIComponent(text)+
+        '&target='+encodeURIComponent(lang)+'&lang='+encodeURIComponent(lang)+'&to='+encodeURIComponent(lang);
   fetch(u).then(function(r){return r.text();}).then(function(t){
-    var v=t; try{var j=JSON.parse(t);v=j.translation||j.text||j.result||j.translatedText||t;}catch(e){}
+    var v=pickTranslation(t);
+    if(!v) return;            /* nothing usable: show nothing */
     tcache[key]=v;cb(v);
   }).catch(function(){});
 }

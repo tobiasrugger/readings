@@ -55,6 +55,12 @@
   .xl{color:#4b5a52;font-size:15px;line-height:1.55;margin:-8px 0 16px;padding:8px 12px;background:#f1f4f1;border-left:3px solid #bcd1c6;border-radius:0 8px 8px 0;white-space:pre-wrap}
   label.q .xl{display:block;font-weight:400;margin:4px 0 0;padding:6px 10px}
   .note .xl{margin:8px 0 0;background:#fff3d6;border-left-color:#e0b64a}
+  .wtab{width:100%;border-collapse:collapse;margin:4px 0 10px}
+  .wtab th{font-size:12px;color:#6d736b;text-transform:uppercase;text-align:left;padding:4px 6px;border-bottom:1px solid var(--rule)}
+  .wtab td{padding:3px 4px}
+  .wtab input{width:100%;font-family:inherit;font-size:15px;padding:7px 9px;border:1px solid var(--rule);border-radius:7px}
+  .imgrow{margin-bottom:10px}
+  img.prev{display:none;max-width:100%;max-height:220px;border-radius:9px;border:1px solid var(--rule)}
   .crnote{font-size:14px;color:#5b6159;background:#eef3ef;border-left:3px solid var(--pine);padding:8px 12px;border-radius:0 8px 8px 0;margin:0 0 16px}
   .hl{background:#dbeafe;border-radius:3px;padding:0 2px;box-shadow:inset 0 -2px 0 var(--gram)}
   .card{background:#fff;border:1px solid var(--rule);border-radius:12px;padding:16px;margin:0 0 16px}
@@ -124,6 +130,7 @@
   <button data-p="grammar">Grammar</button>
   <button data-p="talk">Talk</button>
   <button data-p="record">Record</button>
+  <button data-p="project" id="tabProject" style="display:none">Project</button>
   <button data-p="teacher">Teacher</button>
 </div>
 
@@ -151,6 +158,10 @@
 
 <section class="pane" id="p-record">
   <div id="recBody"></div>
+</section>
+
+<section class="pane" id="p-project">
+  <div id="projBody"></div>
 </section>
 
 <section class="pane" id="p-teacher">
@@ -268,7 +279,7 @@ function setDot(c){var d=$('dot');d.className='dot'+(c?' '+c:'');}
 /* ---------- document parser ---------- */
 /* Sections are lines like ---READ---  */
 function parseDoc(txt){
-  var out={meta:{},read:[],gram:{note:'',bank:[],practice:[],produce:''},talk:{cols:[],rows:[],frames:[]},qs:[],record:''};
+  var out={meta:{},read:[],gram:{note:'',bank:[],practice:[],produce:''},talk:{cols:[],rows:[],frames:[]},qs:[],record:'',project:null};
   var parts=txt.split(/^\s*---([A-Z]+)(?::([A-Z]))?---\s*$/m);
   var head=parts[0]||'';
   head.split(/\n/).forEach(function(l){
@@ -304,6 +315,19 @@ function parseDoc(txt){
       });
     } else if(name==='RECORD'){
       out.record=body;
+    } else if(name==='PROJECT'){
+      var pj={title:'My Project',intro:'',fields:[],ifs:[]};
+      body.split(/\n/).forEach(function(l){
+        var m;
+        if(m=l.match(/^TITLE:\s*(.*)/)) pj.title=m[1].trim();
+        else if(m=l.match(/^INTRO:\s*(.*)/)) pj.intro=m[1].trim();
+        else if(m=l.match(/^FIELD:\s*(.*)/)){
+          var b=m[1].split('|').map(function(x){return x.trim();});
+          if(b[0]) pj.fields.push({key:b[0].replace(/[^a-z0-9_]/gi,''),label:b[1]||b[0],type:(b[2]||'text').toLowerCase()});
+        }
+        else if(m=l.match(/^IF:\s*([^|]+)\|\s*(.*)/)) pj.ifs.push({langs:m[1].split(',').map(function(x){return x.trim();}),text:m[2].trim()});
+      });
+      if(pj.fields.length) out.project=pj;
     }
   }
   var lvs=Object.keys(out.reads);
@@ -339,22 +363,37 @@ function translate(word,meaning,lang,cb){
   var u=PROXY+'?text='+encodeURIComponent(text)+'&q='+encodeURIComponent(text)+
         '&target='+encodeURIComponent(lang)+'&lang='+encodeURIComponent(lang)+'&to='+encodeURIComponent(lang);
   fetch(u).then(function(r){return r.text();}).then(function(t){
-    var v=t;
-    try{var j=JSON.parse(t);v=j.translation||j.text||j.result||j.translatedText||t;}catch(e){}
+    var v=pickTranslation(t);
+    if(!v){cb('');return;}
     tcache[key]=v;cb(v);
-  }).catch(function(){cb('(translation unavailable)');});
+  }).catch(function(){cb('');});
 }
 
+/* accept only a real translation; a health check or any other JSON is not one */
+function pickTranslation(t){
+  var v=String(t||'').trim();
+  if(!v) return '';
+  if(v[0]==='{'||v[0]==='['){
+    try{
+      var j=JSON.parse(v);
+      var c=j.translation||j.translated||j.translatedText||j.result||j.output||j.text||'';
+      if(typeof c==='object'&&c) c=c.translation||c.text||'';
+      return (typeof c==='string')?c.trim():'';
+    }catch(e){ return ''; }
+  }
+  if(/Galileo backend/i.test(v)) return '';
+  return v;
+}
 function translateText(text,lang,cb){
   var key=lang+'|'+text;
   if(tcache[key]){cb(tcache[key]);return;}
   var u=PROXY+'?text='+encodeURIComponent(text)+'&q='+encodeURIComponent(text)+
         '&target='+encodeURIComponent(lang)+'&lang='+encodeURIComponent(lang)+'&to='+encodeURIComponent(lang);
   fetch(u).then(function(r){return r.text();}).then(function(t){
-    var v=t;
-    try{var j=JSON.parse(t);v=j.translation||j.text||j.result||j.translatedText||t;}catch(e){}
+    var v=pickTranslation(t);
+    if(!v) return;            /* nothing usable: show nothing */
     tcache[key]=v;cb(v);
-  }).catch(function(){cb('(translation unavailable)');});
+  }).catch(function(){});
 }
 /* text of a paragraph for translation: glosses stripped, close-reading parts left out */
 function forTranslation(par){
@@ -368,7 +407,7 @@ function dualTranslate(){
     var text=el.dataset.xl; if(!text) return;
     var tr=el.querySelector('.xl');
     if(!tr){tr=document.createElement('div');tr.className='xl';el.appendChild(tr);}
-    tr.textContent='\u2026';
+    tr.textContent='';
     translateText(text,L,function(v){tr.textContent=v;el.dataset.done=L;});
   });
 }
@@ -504,10 +543,49 @@ function render(){
     '<p class="muted" style="margin-top:10px">Read it once on Monday and again on Thursday after you practice. The second reading is how you see yourself getting better.</p>'+
     '</div>';
 
+  renderProject();
   restore();
   wireInputs();
   dualTranslate();
 }
+function renderProject(){
+  var pj=A.project, tab=$('tabProject'), box=$('projBody');
+  if(!pj){tab.style.display='none';box.innerHTML='';return;}
+  tab.style.display='';tab.textContent=pj.title;
+  var h='<div class="card"><h2 style="font-size:22px;margin:0 0 6px">'+esc(pj.title)+'</h2>';
+  if(pj.intro) h+='<p class="muted" data-xl="'+esc(pj.intro).replace(/"/g,'&quot;')+'" style="margin:0">'+esc(pj.intro)+'</p>';
+  h+='</div>';
+  var mine=pj.ifs.filter(function(f){return f.langs.indexOf(ME.lang)>=0;});
+  if(mine.length){
+    h+='<div class="note" style="border-color:#bcd1c6;background:#eef3ef"><b>For you:</b> ';
+    h+=mine.map(function(f){return '<span data-xl="'+esc(f.text).replace(/"/g,'&quot;')+'">'+esc(f.text)+'</span>';}).join('<br>');
+    h+='</div>';
+  }
+  h+='<div class="card">';
+  pj.fields.forEach(function(f,n){
+    var lab='<label class="q" data-xl="'+esc(f.label).replace(/"/g,'&quot;')+'">'+(n+1)+'. '+esc(f.label)+'</label>';
+    if(f.type==='long'){
+      h+=lab+'<textarea data-k="p_'+f.key+'" lang="en" placeholder="Write in English." style="min-height:96px"></textarea>';
+    } else if(f.type==='words'){
+      h+=lab+'<table class="wtab"><tr><th style="width:50%">English</th><th>'+esc(LANGS[ME.lang]||'Your language')+'</th></tr>';
+      for(var i=0;i<5;i++) h+='<tr><td><input data-k="p_'+f.key+'_'+i+'_en" lang="en"></td><td><input data-k="p_'+f.key+'_'+i+'_l1"></td></tr>';
+      h+='</table>';
+    } else if(f.type==='images'){
+      h+=lab+'<p class="muted" style="margin:0 0 6px">Right-click a picture on the web, choose <b>Copy image address</b>, and paste it here.</p>';
+      for(var j=0;j<3;j++) h+='<div class="imgrow"><input class="txt" data-k="p_'+f.key+'_'+j+'" placeholder="https://..." style="margin-bottom:6px"><img class="prev" data-for="p_'+f.key+'_'+j+'" alt=""></div>';
+    } else {
+      h+=lab+'<input class="txt" data-k="p_'+f.key+'" style="margin-bottom:4px">';
+    }
+  });
+  h+='<p class="muted" style="margin-top:16px">Everything here saves by itself. When you are done, see everyone\u2019s holidays: '+
+     '<a href="gallery.html?a='+encodeURIComponent(A.meta.SLUG)+'" style="color:var(--pine);font-weight:700">open the gallery</a>.</p></div>';
+  box.innerHTML=h;
+}
+document.addEventListener('input',function(e){
+  var el=e.target; if(!el.dataset||!el.dataset.k||!/^p_.*_\d$/.test(el.dataset.k)) return;
+  var img=document.querySelector('img.prev[data-for="'+el.dataset.k+'"]'); if(!img) return;
+  var v=el.value.trim(); img.src=/^https?:\/\//.test(v)?v:''; img.style.display=v?'block':'none';
+});
 
 /* ---------- interactions ---------- */
 document.addEventListener('click',function(e){
@@ -570,6 +648,9 @@ function restore(){
   if(raw){try{ANS=JSON.parse(raw);}catch(e){}}
   [].forEach.call(document.querySelectorAll('[data-k]'),function(el){
     if(ANS[el.dataset.k]!==undefined) el.value=ANS[el.dataset.k];
+  });
+  [].forEach.call(document.querySelectorAll('img.prev'),function(img){
+    var v=(ANS[img.dataset.for]||'').trim(); img.src=/^https?:\/\//.test(v)?v:''; img.style.display=v?'block':'none';
   });
 }
 
