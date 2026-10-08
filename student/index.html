@@ -152,15 +152,16 @@ ul{margin:0;padding-left:20px} li{margin-bottom:6px;font-weight:700}
   border-radius:13px;padding:10px 14px;margin-bottom:16px;box-shadow:0 2px 0 var(--line)}
 .who{display:flex;align-items:center;gap:11px;min-width:0}
 .whotext{min-width:0}
-.topstrip h1{margin:0;font-size:1.25rem;font-weight:900;color:var(--plum-dk);
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topstrip h1{margin:0;font-size:1.2rem;font-weight:900;color:var(--plum-dk);
+  line-height:1.2;overflow-wrap:anywhere}
+.topstrip .whotext{max-width:200px}
 .topstrip .avatar,.topstrip .avatar-ph{width:42px;height:42px;border-radius:10px;
   border:2px solid var(--line-dk);font-size:1.15rem;background:var(--plum-lt);color:var(--plum-dk)}
 .topstrip .hero-meta{margin-top:2px;gap:5px}
 .topstrip .hero-meta span{background:var(--plum-lt);border:1px solid var(--line-dk);
   color:var(--plum-dk);padding:1px 8px;font-size:.76rem}
-.topstrip .glance{display:flex;flex:1;gap:9px;margin:0;overflow-x:auto;padding-bottom:2px}
-.topstrip .gbox{flex:0 0 auto;min-width:92px;padding:6px 12px;border-radius:10px;
+.topstrip .glance{display:flex;flex:1 1 320px;gap:9px;margin:0;flex-wrap:wrap}
+.topstrip .gbox{flex:1 1 86px;min-width:86px;padding:6px 11px;border-radius:10px;
   border-width:1px;border-left-width:5px;box-shadow:none}
 .topstrip .gbox b{font-size:1.3rem}
 .topstrip .gbox span{font-size:.66rem;letter-spacing:.02em}
@@ -334,8 +335,6 @@ details.wq .qm{font-size:.85rem;color:var(--muted);font-weight:800}
 
   <div class="topstrip">
     <div class="who">
-      <img id="avatar" class="avatar hide" alt="">
-      <div id="avatarPh" class="avatar-ph">?</div>
       <div class="whotext">
         <h1 id="hName">Student</h1>
         <div class="hero-meta" id="hMeta"></div>
@@ -614,10 +613,23 @@ var LANGS=[['none','English only'],['Spanish','Espa\u00f1ol'],['Cantonese','\u5e
  ['Tagalog','Tagalog'],['French','Fran\u00e7ais'],['Korean','\ud55c\uad6d\uc5b4'],
  ['Hindi','\u0939\u093f\u0928\u094d\u0926\u0940'],['Somali','Soomaali'],
  ['Nepali','\u0928\u0947\u092a\u093e\u0932\u0940'],['Thai','\u0e44\u0e17\u0e22']];
+
+var LANG_FIX={es:'Spanish','zh-TW':'Cantonese','zh-CN':'Mandarin',zh:'Mandarin',ar:'Arabic',
+ ary:'Darija',vi:'Vietnamese',ru:'Russian',ur:'Urdu',tl:'Tagalog',fr:'French',ko:'Korean',
+ hi:'Hindi',so:'Somali',ne:'Nepali',th:'Thai',en:'none',''
+ :'none'};
+function normLang(v){
+  v=String(v||'').trim();
+  if(!v)return 'none';
+  if(LANG_FIX[v])return LANG_FIX[v];
+  for(var i=0;i<LANGS.length;i++) if(LANGS[i][0].toLowerCase()===v.toLowerCase())return LANGS[i][0];
+  return 'none';
+}
 var PROXY='https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
 var RTL=/Arabic|Darija|Urdu/;
 var MYLANG='none', TCACHE={};
-try{ MYLANG=localStorage.getItem('vocab_lang')||localStorage.getItem('gal_lang')||'none'; }catch(e){}
+try{ MYLANG=normLang(localStorage.getItem('vocab_lang')||localStorage.getItem('gal_lang')); }catch(e){}
+try{ if(MYLANG&&MYLANG!=='none')localStorage.setItem('vocab_lang',MYLANG); }catch(e){}
 try{
   if(localStorage.getItem('t9n_v')!=='2'){
     Object.keys(localStorage).forEach(function(k){ if(k.indexOf('t9n:')===0)localStorage.removeItem(k); });
@@ -643,8 +655,12 @@ function trOne(text,lang){
   var url=PROXY+'?action=translate&idiom='+encodeURIComponent(text)+
     '&meaning=&lang='+encodeURIComponent(lang);
   return fetch(url).then(function(r){return r.json();}).then(function(d){
-    if(!d||!d.ok||!d.translation)return null;
-    var t=d.translation.equiv||'';
+    if(!d||d.ok===false)return null;
+    var tr=d.translation!=null?d.translation:d;
+    var t='';
+    if(typeof tr==='string')t=tr;
+    else if(tr&&typeof tr==='object')
+      t=tr.equiv||tr.meaning||tr.text||tr.translation||tr.result||'';
     if(typeof t!=='string')t='';
     t=t.trim();
     if(!t||t.toLowerCase()===text.toLowerCase())return null;
@@ -657,9 +673,10 @@ function buildLangPicker(){
   var sel=document.getElementById('langSel'); if(!sel)return;
   sel.innerHTML=LANGS.map(function(l){
     return '<option value="'+l[0]+'"'+(l[0]===MYLANG?' selected':'')+'>'+l[1]+'</option>';}).join('');
+  sel.value=MYLANG;
 }
 function setLang(v){
-  MYLANG=v;
+  MYLANG=normLang(v);
   try{localStorage.setItem('vocab_lang',v);localStorage.setItem('gal_lang',v);}catch(e){}
   translatePage();
 }
@@ -682,7 +699,10 @@ function translatePage(){
     var cached=cacheGet(MYLANG,en);
     if(cached!==undefined){ out.textContent=cached||''; return; }
     out.textContent='\u2026';
-    trOne(en,MYLANG).then(function(t){ out.textContent=t||''; });
+    trOne(en,MYLANG).then(function(t){
+      if(t){ out.textContent=t; }
+      else { cacheSet(MYLANG,en,''); out.remove(); }
+    });
   });
 }
 
@@ -820,6 +840,7 @@ function renderHero(){
   const name=((s.first_name||'')+' '+(s.last_name||'')).trim()||s.email.split('@')[0];
   document.getElementById('hName').textContent=name;
   const img=document.getElementById('avatar'),ph=document.getElementById('avatarPh');
+  if(!img||!ph){/* header has no avatar */}else
   if(s.photo_url){img.src=s.photo_url;img.classList.remove('hide');ph.classList.add('hide');
     img.onerror=()=>{img.classList.add('hide');ph.classList.remove('hide');};}
   else{img.classList.add('hide');ph.classList.remove('hide');ph.textContent=(name[0]||'?').toUpperCase();}
