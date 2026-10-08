@@ -203,6 +203,27 @@ h2 .tr{font-size:.72em;font-weight:800}
 
 .ico{margin-right:8px;font-size:1.05em;line-height:1}
 h2 .ico{vertical-align:-1px}
+
+/* Practice Next: a full-width band with its own cells */
+.nextband{display:flex;align-items:stretch;gap:0;margin-bottom:18px}
+.nextpoint{display:flex;align-items:center;font-size:2.1rem;color:var(--red);
+  padding-right:6px;animation:nudge 1.25s ease-in-out infinite}
+@keyframes nudge{0%,100%{transform:translateX(-6px);opacity:.55}50%{transform:translateX(4px);opacity:1}}
+@media(prefers-reduced-motion:reduce){.nextpoint{animation:none;opacity:.9}}
+.nextinner{flex:1;background:#fff;border:1.5px solid var(--line);border-left:8px solid var(--red);
+  border-radius:14px;padding:14px 16px;box-shadow:0 2px 0 var(--line)}
+.nextinner h2{color:var(--red);margin:0 0 12px;padding:0;border:0;font-size:1.15rem}
+.nextinner h2 .ico{font-size:1.25em;filter:none}
+.nextcells{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:11px}
+.ncell{border:1.5px solid var(--line-dk);border-radius:12px;padding:11px 13px;background:var(--field);
+  display:flex;flex-direction:column;gap:7px}
+.ncell .nhead{display:flex;align-items:baseline;gap:8px}
+.ncell .nhead b{flex:1;font-size:.98rem;font-weight:900;line-height:1.25}
+.ncell .sub{font-size:.8rem;color:var(--muted);font-weight:700}
+.ncell .go{align-self:flex-start}
+.ncell.words{background:var(--plum-lt);border-color:var(--plum-mid)}
+.nnone{color:var(--muted);font-weight:700}
+@media(max-width:620px){.nextpoint{display:none}}
 @media print{.gstar,.tries{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 .prac{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
 .prac-link{display:inline-block;background:#fff;border:1.5px solid var(--line-dk);
@@ -348,9 +369,12 @@ details.wq .qm{font-size:.85rem;color:var(--muted);font-weight:800}
     <button class="btn ghost sm noprint" onclick="signOut()">Not me</button>
   </div>
 
-  <div class="grid2" id="focusRow">
-    <div class="card" id="nextCard"><h2><span class="ico">🎯</span>Practice Next</h2><ul id="growth"></ul></div>
-    <div class="card"><h2><span class="ico">⭐</span>My Strengths</h2><ul id="strengths"></ul></div>
+  <div class="nextband" id="nextBand">
+    <div class="nextpoint" aria-hidden="true">&#10148;</div>
+    <div class="nextinner">
+      <h2><span class="ico">&#127919;</span>Practice Next</h2>
+      <div class="nextcells" id="growth"></div>
+    </div>
   </div>
 
 <!-- Skills -->
@@ -365,6 +389,11 @@ details.wq .qm{font-size:.85rem;color:var(--muted);font-weight:800}
       <span><i style="background:var(--grey)"></i>Not tried yet</span>
     </div>
     <div class="skills" id="skillBox"></div>
+  </div>
+
+  <div class="card" id="strengthCard">
+    <h2><span class="ico">&#11088;</span>My Strengths</h2>
+    <ul id="strengths"></ul>
   </div>
 
   
@@ -1209,11 +1238,42 @@ function renderSkills(){
       return '<li><b>'+esc(niceSkill(s.skill))+'</b>'+starHtml(s.skill)+' <span class="v '+band(s.pct)+'">'+s.pct+'%</span></li>';}).join('')
     ||'<li class="note">Finish some activities to see your strengths.</li>';
 
-  document.getElementById('growth').innerHTML=
-    (nx.top.map(function(s){
-      return '<li><b>'+esc(niceSkill(s.skill))+'</b> <span class="v '+band(s.pct)+'">'+s.pct+'%</span>'+linksFor(s.skill,s.pct)+'</li>';}).join('')+
-     (nx.more?'<li class="note">When these turn green, '+nx.more+' more skill'+(nx.more===1?'':'s')+' will show up here.</li>':''))
-    ||'<li class="note">Nothing here yet. Keep going!</li>';
+  // Practice Next pulls from two places: weak skills, and the words
+  // the student still has to learn (previously buried in My Words).
+  var cells=[];
+
+  nx.top.forEach(function(sk){
+    var links=linksFor(sk.skill,sk.pct);
+    cells.push('<div class="ncell"><div class="nhead"><b>'+esc(niceSkill(sk.skill))+'</b>'+
+      '<span class="v '+band(sk.pct)+'">'+sk.pct+'%</span></div>'+
+      (links||'<a class="btn sm go" href="#" onclick="openSheet(\''+esc(sk.skill)+
+        '\',\''+esc(niceSkill(sk.skill))+'\');return false;">See activities</a>')+'</div>');
+  });
+
+  // top word-practice suggestions, same source the My Words card uses
+  try{
+    if(window.MW&&DATA.checks){
+      var wst=MW.buildState(DATA.checks,DATA.practice);
+      var toLearn=wst.totals?wst.totals.learn:0;
+      var sg=MW.suggest(wst)||[];
+      var pick=sg.filter(function(x){return x.kind!=='again';}).slice(0,2);
+      pick.forEach(function(x){
+        cells.push('<div class="ncell words"><div class="nhead"><b>'+
+          (x.emoji?'<span class="ico">'+x.emoji+'</span>':'')+esc(x.title)+'</b></div>'+
+          '<span class="sub" translate="no">'+esc(x.sub||'')+'</span>'+
+          '<a class="btn sm go" href="'+esc(x.url)+'">Practice</a></div>');
+      });
+      if(!pick.length&&toLearn){
+        cells.push('<div class="ncell words"><div class="nhead"><b>'+toLearn+
+          ' words to learn</b></div><a class="btn sm go" href="'+esc(MW.CHECK_URL)+'">Start</a></div>');
+      }
+    }
+  }catch(e){}
+
+  document.getElementById('growth').innerHTML = cells.length
+    ? cells.join('')
+    : '<p class="nnone">Nothing to practice right now. Nice work!</p>';
+
 }
 </script>
 <script src="/readings/track.js"></script>
