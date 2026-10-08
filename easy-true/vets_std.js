@@ -270,7 +270,11 @@ function signIn(){
   if(name.length < 3){ err.textContent = 'Please write your first and last name.'; return; }
   if(!validMail(raw)){ err.textContent = 'Please use your school email — it ends with @s.sfusd.edu'; return; }
   if(!per){ err.textContent = 'Please choose your class period.'; return; }
+  var glang = document.getElementById('vstd-glang').value;
+  if(!glang){ err.textContent = 'Please choose your language.'; return; }
   err.textContent = '';
+  try{ localStorage.setItem('vocab_lang', glang); }catch(e){}
+  var bar = langEl(); if(bar){ bar.value = glang; bar.dispatchEvent(new Event('change')); }
   var canon = canonMail(raw);
   recordAlias(raw, canon);
   seedStudent(name, canon, per);
@@ -278,6 +282,8 @@ function signIn(){
   try{
     localStorage.setItem('vets_me', JSON.stringify(me));
     localStorage.setItem('gal_student_email', canon);
+    localStorage.setItem('gal_student_name', name);
+    localStorage.setItem('gal_student_period', per);
   }catch(e){}
   document.getElementById('vstd-gate').style.display = 'none';
   document.querySelector('#vstd-bar .who').textContent = me.name + ' · P' + me.period;
@@ -298,7 +304,6 @@ function build(){
   var bar = el('div', {id:'vstd-bar'},
     '<span class="who">Not signed in</span>' +
     (ownLang ? '' : '<select id="vstd-lang" title="Translation language">' + opts + '</select>') +
-    '<button id="vstd-dir" title="Show the directions in your language">Directions</button>' +
     (ownTap ? '' : '<button id="vstd-tap" title="Tap any word for its meaning">Tap words</button>') +
     '<span id="vstd-dot"></span>');
   document.body.insertBefore(bar, document.body.firstChild.nextSibling);
@@ -314,6 +319,8 @@ function build(){
       '<select id="vstd-per"><option value="">Choose your period</option>' +
         '<option>1</option><option>2</option><option>3</option><option>4</option>' +
         '<option>5</option><option>6</option><option>7</option></select>' +
+      '<label for="vstd-glang">Your language</label>' +
+      '<select id="vstd-glang">' + opts + '</select>' +
       '<div id="vstd-err"></div>' +
       '<button id="vstd-go">Start</button>' +
     '</div>');
@@ -322,12 +329,6 @@ function build(){
   document.getElementById('vstd-go').addEventListener('click', signIn);
   var tapBtn = document.getElementById('vstd-tap');
   if(tapBtn) tapBtn.addEventListener('click', function(){ setTap(!TAP_ON); });
-  document.getElementById('vstd-dir').addEventListener('click', function(){
-    DIR_ON = !DIR_ON;
-    try{ localStorage.setItem('vets_dir', DIR_ON ? '1' : '0'); }catch(e){}
-    this.classList.toggle('on', DIR_ON);
-    showDirections();
-  });
   var le = langEl();
   if(le) le.addEventListener('change', function(){ if(DIR_ON) showDirections(); });
 
@@ -368,6 +369,8 @@ function build(){
       var g = localStorage.getItem('gal_student_email');
       if(g) document.getElementById('vstd-mail').value = g;
     }
+    var vl = localStorage.getItem('vocab_lang') || '';
+    if(vl){ document.getElementById('vstd-glang').value = vl; var b0 = langEl(); if(b0) b0.value = vl; }
   }catch(e){}
 
   fetch(SUPA_URL+'/rest/v1/students?select=name,email,period&order=name',{headers:head()})
@@ -375,7 +378,6 @@ function build(){
     .then(function(rows){ ROSTER = rows || []; }).catch(function(){});
 
   if(TAP_ON && tapBtn) setTimeout(function(){ setTap(true); }, 300);
-  if(DIR_ON){ document.getElementById('vstd-dir').classList.add('on'); setTimeout(showDirections, 600); }
   setInterval(checkTranslation, 20000);
   setTimeout(checkTranslation, 4000);
   setInterval(save, 15000);
