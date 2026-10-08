@@ -230,8 +230,8 @@ table.results tr:hover td{background:var(--ocean-soft);}
 
   <!-- TAB: PRACTICE MODULES (easy-true/01/) -->
   <div id="tab-practice" style="display:none">
-    <div class="section-head">Shopping Day practice · students × activities</div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Words, speaking, listening, spelling, writing and grammar from <a href="01/">easy-true/01/</a>. Score is first-try correct. Period and name filters apply; the story filter does not.</p>
+    <div class="section-head">Practice · students × activities</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Words, speaking, listening, spelling, writing and grammar for each story (<a href="01/">01</a>, <a href="02/">02</a>, <a href="03/">03</a>, <a href="04/">04</a>, <a href="05/">05</a>, <a href="06/">06</a>). Score is first-try correct. Period, story and name filters all apply.</p>
     <div class="grid-wrap"><table class="class-grid" id="practice-grid"></table></div>
   </div>
 </div>
@@ -386,21 +386,23 @@ function loadPractice(){
 }
 function renderPractice(){
   if(!MOD_ROWS.length){ loadPractice(); }
-  var period=document.getElementById('filter-period').value, name=document.getElementById('filter-name').value.trim().toLowerCase();
+  var period=document.getElementById('filter-period').value, name=document.getElementById('filter-name').value.trim().toLowerCase(), story=document.getElementById('filter-story').value;
   var by={};
   MOD_ROWS.forEach(function(r){
     if(period && String(r.period)!==period) return;
+    if(story && r.story!==story) return;
     if(name && !(r.name||'').toLowerCase().includes(name) && !(r.email||'').toLowerCase().includes(name)) return;
-    if(!by[r.email]) by[r.email]={name:r.name||r.email,period:r.period,m:{}};
-    by[r.email].m[r.module]=r;
+    var k=r.email+'|'+r.story;
+    if(!by[k]) by[k]={email:r.email,name:r.name||r.email,period:r.period,story:r.story,m:{}};
+    by[k].m[r.module]=r;
   });
-  var emails=Object.keys(by).sort(function(a,b){return (by[a].name||a).localeCompare(by[b].name||b);});
-  var h='<thead><tr><th>Name</th><th>P</th>';
+  var emails=Object.keys(by).sort(function(a,b){var A=by[a],B=by[b];return (A.name||A.email).localeCompare(B.name||B.email)||(A.story||'').localeCompare(B.story||'');});
+  var h='<thead><tr><th>Name</th><th>P</th><th>Story</th>';
   MODS.forEach(function(m){ h+='<th>'+m[1]+'</th>'; });
   h+='</tr></thead><tbody>';
   emails.forEach(function(e){
     var st=by[e];
-    h+='<tr><td><span class="student-link" onclick="showStudentModal(\''+e+'\')">'+(st.name||e)+'</span><br><span style="font-size:10px;color:var(--muted)">'+e+'</span></td><td>'+(st.period||'—')+'</td>';
+    h+='<tr><td><span class="student-link" onclick="showStudentModal(\''+st.email+'\')">'+(st.name||st.email)+'</span><br><span style="font-size:10px;color:var(--muted)">'+st.email+'</span></td><td>'+(st.period||'—')+'</td><td style="white-space:nowrap">'+(st.story||'').replace('story-','S')+'<br><span style="font-size:10px;color:var(--muted)">'+(STORY_NAMES[st.story]||'')+'</span></td>';
     MODS.forEach(function(m){
       var r=st.m[m[0]];
       if(!r){ h+='<td><span class="cell-score none">—</span></td>'; return; }
@@ -411,7 +413,7 @@ function renderPractice(){
     h+='</tr>';
   });
   h+='</tbody>';
-  if(!emails.length) h='<tbody><tr><td colspan="8" class="empty">No practice data yet.</td></tr></tbody>';
+  if(!emails.length) h='<tbody><tr><td colspan="9" class="empty">No practice data yet.</td></tr></tbody>';
   document.getElementById('practice-grid').innerHTML=h;
 }
 
