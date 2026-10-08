@@ -282,6 +282,9 @@ function draw(){
          '<span>' + (r.answered || 0) + '/' + tot + '</span>' +
          '<span>P' + esc(r.period) + '</span>' +
          '<span>' + modeOf(r) + '</span>' +
+         '<span>' + (function(){ var n = r.payload && r.payload.notes;
+           var c = n ? Object.keys(n).filter(function(k){ return (n[k]||"").trim(); }).length : 0;
+           return c ? (c + " note" + (c === 1 ? "" : "s")) : "no notes"; })() + '</span>' +
          '<span>' + when(r.updated_at) + '</span>' +
          '</div></li>';
   }
@@ -344,6 +347,20 @@ function showDetail(id){
            esc(it.q) + '</p>' +
            '<div class="a' + (ans ? '' : ' blank') + '">' + (ans ? esc(ans) : "no answer yet") + '</div>' +
            '</div>';
+    }
+  }
+
+  /* margin notes the student wrote while reading */
+  if(p.notes && Object.keys(p.notes).length){
+    var nk = Object.keys(p.notes).filter(function(k){ return (p.notes[k] || "").trim(); });
+    nk.sort(function(a, b){ return (parseFloat(a) || 0) - (parseFloat(b) || 0); });
+    if(nk.length){
+      h += '<h4 class="sec">Margin notes while reading</h4>';
+      for(var nn = 0; nn < nk.length; nn++){
+        h += '<div class="qa"><p class="q"><span class="lbl">Note</span>Paragraph ' + esc(nk[nn]) + '</p>' +
+             '<div class="a">' + esc(p.notes[nk[nn]]) + '</div></div>';
+      }
+      h += '<div class="scorebox">Notes written: ' + nk.length + '</div>';
     }
   }
 
@@ -411,7 +428,7 @@ document.getElementById("csv").addEventListener("click", function(){
   for(var i = 0; i < list.length; i++){
     if(list[i].payload && list[i].payload.questions){ sample = list[i].payload; break; }
   }
-  var cols = ["Name","Email","Period","Version","Turned in","Last saved","Answered","Total","Grade","Feedback"];
+  var cols = ["Name","Email","Period","Version","Turned in","Last saved","Answered","Total","Notes","Grade","Feedback"];
   if(sample){
     for(var q = 0; q < sample.questions.length; q++){
       cols.push(sample.questions[q].label || ("Q" + (q + 1)));
@@ -423,7 +440,11 @@ document.getElementById("csv").addEventListener("click", function(){
     var row = list[r], p = row.payload || {};
     var cells = [row.student_name, row.email, row.period, modeOf(row),
                  row.submitted ? "yes" : "no", when(row.updated_at),
-                 row.answered || 0, row.total || 0, row.grade || "", row.feedback || ""];
+                 row.answered || 0, row.total || 0,
+                 (function(){ var n = row.payload && row.payload.notes; if(!n) return "";
+                   return Object.keys(n).filter(function(k){ return (n[k]||"").trim(); }).sort(function(a,b){ return (parseFloat(a)||0)-(parseFloat(b)||0); })
+                     .map(function(k){ return "P" + k + ": " + n[k]; }).join(" | "); })(),
+                 row.grade || "", row.feedback || ""];
     if(sample){
       var qs = p.questions || [];
       for(var a = 0; a < sample.questions.length; a++){ cells.push(qs[a] ? qs[a].a : ""); }
