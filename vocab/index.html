@@ -30,6 +30,47 @@ h2{font-size:1.05rem;font-weight:900;color:var(--pine);text-transform:uppercase;
 .back{display:inline-block;margin-bottom:14px;color:var(--pine);font-weight:800;
   text-decoration:none;font-size:.92rem}
 .back:hover{text-decoration:underline}
+
+/* ---- progress (shown when signed in) ---- */
+.c{position:relative}
+.pg{height:8px;background:var(--pine-lt);border-radius:999px;overflow:hidden;margin-top:10px}
+.pg i{display:block;height:100%;background:var(--accent,var(--pine));border-radius:999px;transition:width .5s}
+.st{font-size:.8rem;font-weight:900;margin-top:5px;color:var(--muted)}
+.st.done{color:#1f7a4d}
+.st.go{color:var(--accent,var(--pine))}
+.st.low{color:#b5304a}
+.c.islow{background:#fdf2f4}
+.next.assigned{border-color:#b8842c;background:#fffaf0}
+.next .note{display:block;margin-top:4px;font-weight:800;color:#8a5a00}
+.next .lbl.pin{color:#8a5a00}
+.assigndone{font-size:.88rem;font-weight:800;color:#1f7a4d;margin:6px 2px 0}
+.c.isdone{background:#f3faf6}
+.c.isdone::after,.c.islow::after{content:'\2713';position:absolute;top:10px;right:12px;width:26px;height:26px;border-radius:50%;
+  background:#1f7a4d;color:#fff;font-weight:900;display:grid;place-items:center;font-size:.9rem}
+.c.islow::after{background:#b5304a;content:'!'}
+.c.isnext{box-shadow:0 0 0 3px var(--accent,var(--pine))}
+.me{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#fff;border:1.5px solid var(--line);border-radius:12px;
+  padding:10px 14px;margin-bottom:14px;font-weight:700;font-size:.92rem}
+.me b{color:var(--pine)}
+.me a{color:var(--pine);font-weight:800}
+.me .sp{flex:1}
+.next{display:flex;gap:16px;align-items:center;background:#fff;border:2px solid var(--pine);border-left:8px solid var(--accent,var(--pine));
+  border-radius:14px;padding:16px 18px;margin-bottom:6px;text-decoration:none;color:var(--ink)}
+.next:hover{background:var(--pine-lt)}
+.next .e{font-size:2.4rem;line-height:1}
+.next .lbl{font-size:.75rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.next h3{margin:2px 0;font-size:1.3rem;font-weight:900;color:var(--pine)}
+.next .why{font-size:.9rem;font-weight:700;color:var(--muted)}
+.next .go{margin-left:auto;background:var(--pine);color:#fff;font-weight:900;border-radius:10px;padding:10px 16px;white-space:nowrap}
+.summary{font-size:.88rem;font-weight:800;color:var(--muted);margin:6px 2px 0}
+.gate{background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px}
+.gate .row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+.gate label{display:block;font-size:.78rem;font-weight:900;color:var(--pine)}
+.gate input,.gate select{font:inherit;font-size:.95rem;padding:8px 10px;border:2px solid var(--line-dk);border-radius:9px}
+.gate button,.me button{font:inherit;font-weight:900;background:var(--pine);color:#fff;border:0;border-radius:9px;padding:9px 14px;cursor:pointer}
+.gate .err{color:#b5304a;font-weight:800;font-size:.88rem;margin-top:6px}
+.hide{display:none!important}
+@media(max-width:560px){.next{flex-wrap:wrap}.next .go{margin-left:0}}
 </style>
 </head>
 <body>
@@ -40,6 +81,21 @@ h2{font-size:1.05rem;font-weight:900;color:var(--pine);text-transform:uppercase;
   <h1>Vocabulary</h1>
   <p>Mr. Toby &middot; Galileo Academy</p>
 </div>
+
+<!-- progress: who is signed in, and what to do next -->
+<div class="me hide" id="me"><span>Signed in as <b id="meName" translate="no"></b></span><span class="sp"></span><a href="#" id="notMe">Not you?</a></div>
+<div class="gate hide" id="gate">
+  <div style="font-weight:900;color:var(--pine);margin-bottom:8px">Sign in to see your progress</div>
+  <div class="row">
+    <div><label for="gName">Name</label><input id="gName" autocomplete="name"></div>
+    <div><label for="gMail">School email</label><input id="gMail" placeholder="name@s.sfusd.edu" autocapitalize="off" spellcheck="false"></div>
+    <div><label for="gPer">Period</label><select id="gPer"><option value="">&ndash;</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select></div>
+    <button id="gBtn">Show my progress</button>
+  </div>
+  <div class="err" id="gErr"></div>
+</div>
+<a class="next hide" id="next" href="#"></a>
+<div class="summary hide" id="summary"></div>
 
 <h2>Word sets</h2>
 <div class="grid">
@@ -68,6 +124,169 @@ h2{font-size:1.05rem;font-weight:900;color:var(--pine);text-transform:uppercase;
 </div>
 
 </div>
+<script>document.write('<script src="/readings/vocab/pre/quizzes.js?v=' + Math.floor(Date.now() / 3600000) + '"><\/script>');</script>
+<script src="/readings/vocab/mywords/words.js"></script>
+<script>
+/* ===== Progress on each card, for the signed-in student =====
+   Word sets: average of the 6 scored activities saved in vocab_work.
+   Vocabulary Check: how many of the checks they did (vocab_preassess).
+   My Words: how many missed words they have learned (vocab_word_practice).
+   Language Launch 1-2: the pretest (vocab_pretest, form "pre"). */
+(function(){
+var esc = MW.esc;
+function $(id){ return document.getElementById(id); }
+var SETS = ['colors','animals','foods','drinks','sports','school-subjects','verbs-1','verbs-2','verbs-3','verbs-4','verbs-5'];
+var FIX_ITEMS = 6;   /* every word set has 6 "fix the sentence" items */
+var LOW = 60;        /* a turned-in set below this shows red: "try again?" */
+var card = function(href){ return document.querySelector('.grid a.c[href="' + href + '"]'); };
+
+/* ---- who is this? ---- */
+var ME = { email:'', name:'', period:'' };
+try { ME.email = localStorage.getItem('gal_student_email') || ''; ME.name = localStorage.getItem('gal_student_name') || ''; ME.period = localStorage.getItem('gal_student_period') || ''; } catch(e){}
+var qe = new URLSearchParams(location.search).get('email'); if (qe) ME.email = qe.toLowerCase();
+if (ME.email) start(); else $('gate').classList.remove('hide');
+
+$('notMe').onclick = function(e){
+  e.preventDefault();
+  try { localStorage.removeItem('gal_student_email'); localStorage.removeItem('gal_student_name'); } catch(err){}
+  location.href = location.pathname;
+};
+var EMAIL_RE = /^[^@\s]+@(s\.)?sfusd\.edu$/;
+$('gBtn').onclick = function(){
+  var name = $('gName').value.trim(), typed = $('gMail').value.trim().toLowerCase(), per = $('gPer').value, btn = this;
+  if (!name){ $('gErr').textContent = 'Write your name.'; return; }
+  if (!EMAIL_RE.test(typed)){ $('gErr').textContent = 'Use your school email. It ends with @s.sfusd.edu'; return; }
+  if (!per){ $('gErr').textContent = 'Choose your period.'; return; }
+  btn.disabled = true;
+  var lp = typed.split('@')[0], a = lp + '@s.sfusd.edu', b = lp + '@sfusd.edu';
+  MW.sb('students?select=email&email=in.(' + encodeURIComponent('"' + a + '","' + b + '"') + ')').then(function(rows){
+    var email = rows && rows.length ? (rows.some(function(r){ return r.email === a; }) ? a : rows[0].email) : a;
+    try { localStorage.setItem('gal_student_email', email); localStorage.setItem('gal_student_name', name); localStorage.setItem('gal_student_period', per); } catch(e){}
+    MW.sb('students?on_conflict=email', { method:'POST', prefer:'resolution=ignore-duplicates,return=minimal', body:[{ email:email, name:name, period:per }] });
+    if (typed !== email) MW.sb('student_aliases?on_conflict=alias_email', { method:'POST', prefer:'resolution=ignore-duplicates,return=minimal', body:[{ alias_email:typed, email:email }] });
+    ME = { email:email, name:name, period:per };
+    $('gate').classList.add('hide'); start();
+  }).finally(function(){ btn.disabled = false; });
+};
+
+/* ---- load and show ---- */
+function setPct(work){
+  var s = work.scores || {}, n = s.total_words || 0; if (!n) return 0;
+  var parts = [s.match / n, s.wordsearch / n, s.mc / n, s.cloze / n, (s.fix || 0) / FIX_ITEMS, s.spell / n];
+  var sum = parts.reduce(function(a, x){ return a + Math.min(1, x || 0); }, 0);
+  return Math.round(100 * sum / parts.length);
+}
+function paint(el, pct, label, state){
+  if (!el) return;
+  var old = el.querySelector('.pg'); if (old) old.remove();
+  var old2 = el.querySelector('.st'); if (old2) old2.remove();
+  el.classList.toggle('isdone', state === 'done');
+  el.classList.toggle('islow', state === 'low');
+  el.insertAdjacentHTML('beforeend', (pct != null ? '<div class="pg"><i style="width:' + pct + '%"></i></div>' : '')
+    + '<div class="st ' + (state || '') + '" translate="no">' + label + '</div>');
+}
+function start(){
+  $('me').classList.remove('hide');
+  $('meName').textContent = ME.name || ME.email;
+  Promise.all([
+    MW.sb('vocab_work?' + MW.inEmails(ME.email) + '&select=set_slug,scores,turned_in,updated_at'),
+    MW.loadChecks(ME.email),
+    MW.loadPractice(ME.email),
+    MW.sb('vocab_pretest?' + MW.inEmails(ME.email) + '&form=eq.pre&select=score,total,answered,turned_in,updated_at'),
+    MW.sb('students?' + MW.inEmails(ME.email) + '&select=name,period')
+  ]).then(function(r){
+    (r[4] || []).forEach(function(x){
+      if (x.name && !ME.name){ ME.name = x.name; $('meName').textContent = ME.name; }
+      if (x.period && !ME.period) ME.period = String(x.period);
+    });
+    return loadAssignment().then(function(A){ show(r, A); });
+  });
+}
+/* the newest active assignment for this student's period (or for all periods) */
+function loadAssignment(){
+  var now = new Date().toISOString(), per = ['all'].concat(ME.period ? [ME.period] : []);
+  return MW.sb('class_assignments?area=eq.vocab&period=in.(' + per.map(function(p){ return '"' + p + '"'; }).join(',') + ')'
+    + '&or=(expires_at.is.null,expires_at.gt.' + encodeURIComponent(now) + ')&order=created_at.desc&limit=1&select=*')
+    .then(function(rows){ return rows && rows[0] ? rows[0] : null; });
+}
+function show(r, A){
+    /* word sets: best row per set (two email spellings can both have a row) */
+    var W = {};
+    (r[0] || []).forEach(function(w){
+      var pct = setPct(w), cur = W[w.set_slug];
+      if (!cur || pct > cur.pct || (w.turned_in && !cur.turned)) W[w.set_slug] = { pct:pct, turned:!!w.turned_in || (cur && cur.turned), when:w.updated_at };
+    });
+    var doneSets = 0;
+    SETS.forEach(function(slug){
+      var w = W[slug], el = card(slug + '/');
+      if (!w){ paint(el, 0, 'Not started', ''); return; }
+      if (w.turned && w.pct < LOW){ doneSets++; paint(el, w.pct, 'Turned in \u00b7 ' + w.pct + '% \u00b7 try again?', 'low'); }
+      else if (w.turned || w.pct >= 100){ doneSets++; paint(el, Math.max(w.pct, w.turned ? w.pct : 100), (w.turned ? '\u2713 Turned in' : '\u2713 Done') + ' \u00b7 ' + w.pct + '%', 'done'); }
+      else paint(el, w.pct, w.pct + '% \u00b7 keep going', 'go');
+    });
+    /* vocabulary check */
+    var Q = window.QUIZZES || [], taken = {};
+    (r[1] || []).forEach(function(c){ if (c.answers && Object.keys(c.answers).length) taken[c.quiz] = true; });
+    var nTaken = Object.keys(taken).filter(function(id){ return Q.some(function(q){ return q.id === id; }); }).length;
+    paint(card('pre/'), Q.length ? Math.round(100 * nTaken / Q.length) : 0, nTaken + ' of ' + Q.length + ' checks done', nTaken === Q.length && Q.length ? 'done' : nTaken ? 'go' : '');
+    /* my words */
+    var st = MW.buildState(r[1] || [], r[2] || []), toLearn = st.totals.learn + st.totals.got;
+    if (!st.quizzes.length) paint(card('mywords/'), null, 'Take a check first', '');
+    else if (!toLearn) paint(card('mywords/'), 100, 'You knew every word!', 'done');
+    else paint(card('mywords/'), Math.round(100 * st.totals.got / toLearn), st.totals.got + ' of ' + toLearn + ' words learned', st.totals.learn ? 'go' : 'done');
+    /* language launch 1-2 pretest */
+    var P = (r[3] || [])[0];
+    if (!P) paint(card('pretest-ll12/'), 0, 'Not started', '');
+    else if (P.turned_in) paint(card('pretest-ll12/'), 100, '\u2713 Done \u00b7 ' + P.score + ' of ' + P.total, 'done');
+    else paint(card('pretest-ll12/'), P.total ? Math.round(100 * (P.answered || 0) / P.total) : 0, (P.answered || 0) + ' of ' + (P.total || '?') + ' answered', 'go');
+
+    /* ---- what to do next ---- */
+    var next = null, assignDone = false;
+    if (A){
+      var href = A.href, done = false, slug = href.replace(/\/$/, ''), qid = (href.match(/^pre\/\?q=(.+)$/) || [])[1];
+      if (SETS.indexOf(slug) > -1) done = !!(W[slug] && (W[slug].turned || W[slug].pct >= 100));
+      else if (qid) done = !!taken[decodeURIComponent(qid)];
+      else if (href === 'pretest-ll12/') done = !!(P && P.turned_in);
+      else if (href === 'mywords/') done = st.quizzes.length > 0 && !st.totals.learn;
+      if (done) assignDone = true;
+      else next = { href:href, why:A.note || '', lbl:'Start', assigned:true, title:A.title };
+    }
+    if (next){}
+    else if (P && !P.turned_in && (P.answered || 0) > 0) next = { href:'pretest-ll12/', why:'You started this check. Finish it first.', lbl:'Finish' };
+    if (!next){
+      var open = SETS.filter(function(s){ var w = W[s]; return w && !w.turned && w.pct < 100 && w.pct > 0; })
+        .sort(function(a, b){ return String(W[b].when).localeCompare(String(W[a].when)); });
+      if (open.length) next = { href:open[0] + '/', why:'You are ' + W[open[0]].pct + '% done. Keep going!', lbl:'Keep going' };
+    }
+    if (!next && st.totals.learn) next = { href:'mywords/', why:'Practice the ' + st.totals.learn + ' word' + (st.totals.learn === 1 ? '' : 's') + ' you don\'t know yet.', lbl:'Practice' };
+    if (!next){
+      var fresh = SETS.filter(function(s){ return !W[s]; })[0];
+      if (fresh) next = { href:fresh + '/', why:'A new word set.', lbl:'Start' };
+    }
+    var nx = $('next');
+    if (next){
+      var c = card(next.href) || card(next.href.split('?')[0]);
+      if (c) c.classList.add('isnext');
+      nx.href = next.href;
+      nx.classList.toggle('assigned', !!next.assigned);
+      if (c) nx.style.setProperty('--accent', c.style.getPropertyValue('--accent'));
+      var title = next.title || (c ? c.querySelector('h3').innerHTML : esc(next.href));
+      nx.innerHTML = '<span class="e">' + (c && c.querySelector('.e') ? c.querySelector('.e').innerHTML : '') + '</span><span>'
+        + (next.assigned ? '<span class="lbl pin">\ud83d\udccc Mr. Toby\'s assignment</span>' : '<span class="lbl">Next up</span>')
+        + '<h3>' + (next.assigned ? esc(title) : title) + '</h3>'
+        + (next.assigned ? (next.why ? '<span class="note">' + esc(next.why) + '</span>' : '') : '<span class="why">' + esc(next.why) + '</span>')
+        + '</span><span class="go">' + next.lbl + ' &rarr;</span>';
+    } else {
+      nx.removeAttribute('href');
+      nx.innerHTML = '<span class="e">\ud83c\udf89</span><span><span class="lbl">All done</span><h3>You finished every vocabulary activity!</h3><span class="why">Ask Mr. Toby what\'s next.</span></span>';
+    }
+    nx.classList.remove('hide');
+    $('summary').textContent = doneSets + ' of ' + SETS.length + ' word sets done';
+    if (assignDone) $('summary').insertAdjacentHTML('beforebegin', '<div class="assigndone">\u2713 You finished today\'s assignment: ' + esc(A.title || A.href) + '</div>');
+    $('summary').classList.remove('hide');
+}
+})();
+</script>
 <script src="/readings/track.js"></script>
 </body>
 </html>
