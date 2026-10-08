@@ -100,6 +100,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 /* quiz */
 .scene{font-size:76px;line-height:1.1;text-align:center;margin:6px 0}
 .cue{font-size:19px;color:var(--muted);text-align:center}
+.cue-l1{display:block;font-size:16px}
 .frame{font-size:30px;font-weight:600;text-align:center;margin:10px 0 14px}
 .frame .gap{display:inline-block;min-width:90px;border-bottom:3px solid var(--ink);text-align:center;color:var(--fc)}
 .opts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:540px;margin:0 auto}
@@ -112,6 +113,9 @@ button{font:inherit;color:inherit;cursor:pointer}
 .fb{text-align:center;min-height:60px;margin-top:14px;font-size:20px}
 .fb .l1{font-size:16px;color:var(--muted)}
 .fb.ok{color:var(--ok)} .fb.no{color:var(--no)}
+.hint-wrong{margin:12px auto 0;max-width:560px;background:var(--ft);border:1.5px solid var(--fc);border-radius:12px;padding:10px 14px;color:var(--ink);font-size:16px;text-align:left;line-height:1.45}
+.hint-wrong b{color:var(--fc)}
+.hw-l1{margin-top:6px;padding-top:6px;border-top:1px dashed var(--fc)}
 .big-spk{display:block;margin:10px auto;background:var(--card);border:2px solid var(--ink);border-radius:999px;padding:14px 34px;font-size:30px;box-shadow:0 4px 0 rgba(0,0,0,.25)}
 .wrow{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:10px 0}
 #wIn{font:800 30px Lexend,system-ui,sans-serif;width:200px;padding:8px 12px;border:2px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);text-align:center}
@@ -196,14 +200,25 @@ var RTL = /Arabic|Darija|Urdu/;
 
 /* ---------------- the six words ---------------- */
 var PRON = [
-  {k:'I',    f:'i',  emo:['🙋','🙋‍♂️','🙋‍♀️'], cue:'me',                 frame:['','am happy.'],       ex:'I am a student.'},
-  {k:'you',  f:'pl', emo:['👉','🫵'],          cue:'the person I talk to', frame:['','are my friend.'],  ex:'You are my friend.'},
-  {k:'he',   f:'s3', emo:['👦','👨','👴','🧔'], cue:'one boy or man',       frame:['','is a boy.'],      ex:'He is a boy.'},
-  {k:'she',  f:'s3', emo:['👧','👩','👵','👩‍🦱'], cue:'one girl or woman',    frame:['','is a girl.'],     ex:'She is a girl.'},
-  {k:'we',   f:'pl', emo:['🧑‍🤝‍🧑','👩‍👩‍👧','👨‍👩‍👦'], cue:'me + other people', frame:['','are friends.'],   ex:'We are friends.'},
-  {k:'they', f:'pl', emo:['👭','👬','👫','👨‍👩‍👧‍👦'], cue:'two or more people',  frame:['','are students.'],  ex:'They are students.'}
+  {k:'I',    f:'i',  emo:['🙋','🙋‍♂️','🙋‍♀️'], cue:'me',                 rest:['happy','happy'],       ex:'I am a student.'},
+  {k:'you',  f:'pl', emo:['👉','🫵'],          cue:'the person I talk to', rest:['my friend','my friends'],  ex:'You are my friend.'},
+  {k:'he',   f:'s3', emo:['👦','👨','👴','🧔'], cue:'one boy or man',       rest:['a boy','boys'],      ex:'He is a boy.'},
+  {k:'she',  f:'s3', emo:['👧','👩','👵','👩‍🦱'], cue:'one girl or woman',    rest:['a girl','girls'],     ex:'She is a girl.'},
+  {k:'we',   f:'pl', emo:['🙋👫','🙋‍♂️👬','🙋‍♀️👭'], cue:'me + other people', rest:['a friend','friends'],   ex:'We are friends.'},
+  {k:'they', f:'pl', emo:['👉👭','👉👬','👉👫','👉👨‍👩‍👧‍👦'], cue:'other people, not me',  rest:['a student','students'],  ex:'They are students.'}
 ];
-var EN_MEAN = {I:'the person who is talking (me)', you:'the person I am talking to (one person or many)', he:'one boy or man', she:'one girl or woman', we:'me and other people together', they:'two or more people'};
+var VERB = {I:'am', you:'are', he:'is', she:'is', we:'are', they:'are'};
+/* the rest of the sentence after a given pronoun: "is a boy." / "are boys." */
+function tail(k, p){ var pl = (k==='we'||k==='they'); return VERB[k]+' '+p.rest[pl?1:0]+'.'; }
+function sentence(k, p){ return cap(k)+' '+tail(k, p); }
+/* "To use X, say:" in every language, for the wrong-answer hint */
+var USE = {
+  none:'To use "{w}", say:', Spanish:'Para usar "{w}", di:', Mandarin:'要用 "{w}"，就说：', Cantonese:'想用 "{w}"，就要講：',
+  Arabic:'لتستخدم "{w}" قل:', Darija:'باش تستعمل "{w}" قول:', Vietnamese:'Nếu muốn dùng "{w}", hãy nói:', Russian:'Чтобы сказать "{w}", скажи:',
+  Urdu:'"{w}" استعمال کرنے کے لیے کہیں:', Tagalog:'Para gamitin ang "{w}", sabihin:', French:'Pour utiliser "{w}", dis :', Korean:'"{w}"를 쓰려면 이렇게 말해요:',
+  Hindi:'"{w}" इस्तेमाल करने के लिए कहो:', Somali:'Si aad u isticmaasho "{w}", dheh:', Nepali:'"{w}" प्रयोग गर्न यसो भन्नुहोस्:', Thai:'ถ้าจะใช้ "{w}" ให้พูดว่า:'
+};
+var EN_MEAN = {I:'the person who is talking (me)', you:'the person I am talking to (one person or many)', he:'one boy or man', she:'one girl or woman', we:'me and other people together', they:'other people, not me (two or more)'};
 
 /* word + short meaning in each language, shown under every card and every answer */
 var L1 = {
@@ -244,7 +259,7 @@ var SCORED = ['choose','listen','who','write'];
 
 /* ---------------- state + helpers ---------------- */
 var S = {name:'', email:'', period:'', lang:'none', act:'learn', scores:{}};
-var voice=null, Q=null, F=null;
+var voice=null, Q=null, F=null, checkedAt=0;
 function $(id){ return document.getElementById(id); }
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
@@ -351,8 +366,9 @@ function renderQ(){
     '<div class="prog"><i style="width:'+Math.round(100*Q.i/Q.items.length)+'%"></i></div>';
   var fam = byK(it.ans).f;
   if(m==='choose' || m==='write'){
-    h += '<div class="scene">'+it.e+'</div><div class="cue">'+esc(it.p.cue)+'</div>'+
-      '<div class="frame f-'+fam+'"><span class="gap" id="gap">&nbsp;</span> '+esc(it.p.frame[1])+'</div>';
+    var dd = L1[S.lang];
+    h += '<div class="scene">'+it.e+'</div><div class="cue">'+esc(it.p.cue)+(dd?'<span class="cue-l1"'+(RTL.test(S.lang)?' dir="rtl"':'')+'>'+esc(dd[it.ans][1])+'</span>':'')+'</div>'+
+      '<div class="frame f-'+fam+'"><span class="gap" id="gap">&nbsp;</span> '+esc(tail(it.p.k, it.p))+'</div>';
   }
   if(m==='listen'){
     h += '<button class="big-spk" data-say="'+esc(it.ans)+'">🔊 Listen</button><div class="cue">Which word do you hear?</div>';
@@ -369,9 +385,41 @@ function renderQ(){
   h += '<div class="fb" id="fb"></div><div class="row" id="nextRow"></div><div class="cnt">'+(Q.i+1)+' / '+Q.items.length+'</div></div>';
   $('stage').innerHTML=h;
   if(m==='listen') setTimeout(function(){ speak(it.ans); }, 300);
-  if(m==='write'){ var w=$('wIn'); w.focus(); w.addEventListener('keydown', function(e){ if(e.key==='Enter'){ var b=document.querySelector('[data-check]'); if(b) b.click(); else { var n=document.querySelector('[data-next]'); if(n) n.click(); } } }); }
+  if(m==='write'){ var w=$('wIn'); w.focus(); w.addEventListener('keydown', function(e){
+    if(e.key!=='Enter' || e.repeat || e.isComposing) return;
+    e.preventDefault();
+    if(!Q.answered){ var b=document.querySelector('[data-check]'); if(b){ b.click(); checkedAt=Date.now(); } return; }
+    /* Enter again = next, but not the same key press that just checked */
+    if(Date.now()-checkedAt>600){ var n=document.querySelector('[data-next]'); if(n) n.click(); }
+  }); }
+}
+/* why the tapped word was wrong, in English and in the student's language */
+function wrongHint(chosen, it){
+  var k = String(chosen||'').trim(); if(k.toLowerCase()!=='i') k=k.toLowerCase(); else k='I';
+  if(!VERB[k] || k===it.ans) return '';
+  var rtl = RTL.test(S.lang), d = L1[S.lang];
+  var h = '<div class="hint-wrong f-'+byK(k).f+'">';
+  h += '<div class="hw-en">You tapped <b>'+esc(cap(k))+'</b>. '+esc(cap(k))+' = '+esc(EN_MEAN[k])+'.';
+  if(it.p) h += ' '+esc(USE.none.replace('{w}', cap(k)))+' <b>'+esc(sentence(k, it.p))+'</b>'; 
+  h += '</div>';
+  if(d){
+    h += '<div class="hw-l1"'+(rtl?' dir="rtl"':'')+'><b>'+esc(cap(k))+'</b> = '+esc(d[k][0])+' — '+esc(d[k][1])+'.';
+    if(it.p) h += ' '+esc((USE[S.lang]||USE.none).replace('{w}', cap(k)))+' <b dir="ltr">'+esc(sentence(k, it.p))+'</b>';
+    h += '</div>';
+  }
+  return h+'</div>';
+}
+/* a group picture is "we" if you are in it and "they" if you are not — a student who
+   sees themself in the group is not wrong, so we/they swap counts on picture tasks */
+function it_alt(c){ c=String(c).trim(); return c.toLowerCase()==='i'?'I':c.toLowerCase(); }
+function isRight(chosen, it){
+  var c = String(chosen||'').trim(); c = c.toLowerCase()==='i' ? 'I' : c.toLowerCase();
+  if(c===it.ans) return true;
+  if((it.mode==='choose'||it.mode==='write') && ((c==='we'&&it.ans==='they')||(c==='they'&&it.ans==='we'))) return 'alt';
+  return false;
 }
 function answer(ok, chosen){
+  var alt = (ok==='alt'); if(alt){ ok=true; chosen=it_alt(chosen); }
   Q.answered=true;
   var it=Q.items[Q.i], fb=$('fb'), ans=it.ans;
   if(ok) Q.correct++; else Q.missed.push({ans:ans, said:chosen, who:it.who||''});
@@ -380,14 +428,20 @@ function answer(ok, chosen){
     if(b.getAttribute('data-opt')===ans) b.classList.add('ok');
     else if(b.getAttribute('data-opt')===chosen && !ok) b.classList.add('no');
   });
-  var gap=$('gap'); if(gap){ gap.textContent=cap(ans); }
-  var w=$('wIn'); if(w){ w.disabled=true; w.style.borderColor = ok?'var(--ok)':'var(--no)'; }
+  var gap=$('gap'); if(gap){ gap.textContent=cap(alt?chosen:ans); }
+  var w=$('wIn'); if(w){ w.readOnly=true; w.style.borderColor = ok?'var(--ok)':'var(--no)'; }
   fb.className='fb '+(ok?'ok':'no');
-  fb.innerHTML = (ok ? '✓ Yes! ' : '✗ ') + '<b>'+esc(cap(ans))+'</b>' + (it.p ? ' '+esc(it.p.frame[1]) : it.who ? ' — '+esc(it.who) : '') +
-    (S.lang==='none' ? enMean(ans) : l1(ans));
+  if(alt){
+    fb.innerHTML = '✓ OK! <b>'+esc(sentence(chosen, it.p))+'</b> — '+
+      (chosen==='we' ? 'if you are in the group. Not you? Then ' : 'if you are not in the group. Are you in it? Then ')+
+      '<b>'+esc(sentence(ans, it.p))+'</b>' + (S.lang==='none' ? enMean(chosen)+enMean(ans) : l1(chosen)+l1(ans));
+    Array.prototype.forEach.call(document.querySelectorAll('.opt'), function(b){ if(b.getAttribute('data-opt')===chosen) b.classList.add('ok'); });
+  } else
+  fb.innerHTML = (ok ? '✓ Yes! ' : '✗ ') + '<b>'+esc(cap(ans))+'</b>' + (it.p ? ' '+esc(tail(ans, it.p)) : it.who ? ' — '+esc(it.who) : '') +
+    (S.lang==='none' ? enMean(ans) : l1(ans)) + (ok ? '' : wrongHint(chosen, it));
   $('nextRow').innerHTML='<button class="btn" data-next="1">'+(Q.i+1<Q.items.length?'Next →':'Finish')+'</button>';
-  speak(it.p ? cap(ans)+' '+it.p.frame[1] : it.who ? it.who+' … '+ans : ans);
-  var n=document.querySelector('[data-next]'); if(n) n.focus();
+  speak(it.p ? sentence(alt?chosen:ans, it.p) : it.who ? it.who+' … '+ans : ans);
+  if(!w){ var n=document.querySelector('[data-next]'); if(n) n.focus(); }
 }
 function nextQ(){
   Q.i++; Q.answered=false;
@@ -483,8 +537,8 @@ document.addEventListener('click', function(e){
   }
   if(Q){
     var it=Q.items[Q.i];
-    if(d('opt')!=null && !Q.answered) return answer(d('opt')===it.ans, d('opt'));
-    if(d('check') && !Q.answered){ var v=$('wIn').value.trim(); if(!v) return $('wIn').focus(); return answer(v.toLowerCase()===it.ans.toLowerCase(), v); }
+    if(d('opt')!=null && !Q.answered) return answer(isRight(d('opt'), it), d('opt'));
+    if(d('check') && !Q.answered){ var v=$('wIn').value.trim(); if(!v) return $('wIn').focus(); return answer(isRight(v, it), v); }
     if(d('next')) return nextQ();
   }
 });
