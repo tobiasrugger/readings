@@ -183,6 +183,17 @@
         <span id="pubMsg" class="muted"></span>
       </div>
     </div>
+    <div class="card">
+      <h3>Pre-translate this article</h3>
+      <p class="muted">Translates every paragraph, question, direction, and glossary word once, for the languages you tick, and saves them so students never wait. Run it after you publish. Leave this tab open until it says done.</p>
+      <div id="ptLangs" style="display:flex;flex-wrap:wrap;gap:8px 14px;margin:6px 0 10px;font-size:14px"></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="btn solid" id="ptGo">Pre-translate</button>
+        <span id="ptMsg" class="muted"></span>
+      </div>
+      <div style="height:8px;background:#e6e9e5;border-radius:99px;margin-top:10px;overflow:hidden"><div id="ptBar" style="height:100%;width:0;background:var(--pine)"></div></div>
+    </div>
+
     <div class="card" id="crCard" style="display:none">
       <h3>Close reading — choose what stays in English</h3>
       <p class="muted">Tap any sentence to keep it in English when a student translates the page. Tap again to release it. Two or three per level is usually plenty.</p>
@@ -357,15 +368,18 @@ function plain(s){
 /* ---------- translation via Apps Script proxy ---------- */
 var tcache={};
 function translate(word,meaning,lang,cb){
-  var key=lang+'|'+word+'|'+meaning;
+  var text=word+' \u2014 '+meaning, key=lang+'|'+text;
   if(tcache[key]){cb(tcache[key]);return;}
-  var u=PROXY+'?action=translate&idiom='+encodeURIComponent(word)+'&meaning='+encodeURIComponent(meaning)+'&lang='+encodeURIComponent(lang);
-  fetch(u).then(function(r){return r.text();}).then(function(t){
-    var o=pickTranslation(t); if(!o){cb('');return;}
-    var v=o.equiv&&o.meaning?(o.equiv+' \u2014 '+o.meaning):(o.equiv||o.meaning);
-    if(!v){cb('');return;}
-    tcache[key]=v;cb(v);
-  }).catch(function(){cb('');});
+  cacheGetMany([{lang:lang,text:text}],function(){
+    if(tcache[key]){cb(tcache[key]);return;}
+    var u=PROXY+'?action=translate&idiom='+encodeURIComponent(word)+'&meaning='+encodeURIComponent(meaning)+'&lang='+encodeURIComponent(lang);
+    fetch(u).then(function(r){return r.text();}).then(function(t){
+      var o=pickTranslation(t); if(!o){cb('');return;}
+      var v=o.equiv&&o.meaning?(o.equiv+' \u2014 '+o.meaning):(o.equiv||o.meaning);
+      if(!v){cb('');return;}
+      tcache[key]=v;cachePut(lang,text,v);cb(v);
+    }).catch(function(){cb('');});
+  });
 }
 
 /* accept only a real translation; a health check or any other JSON is not one */
@@ -380,15 +394,48 @@ function pickTranslation(t){
     return null;
   }catch(e){ return null; }
 }
+/* ---- shared translation cache (news_translations) ---- */
+function tkey(lang,text){
+  var h1=5381,h2=0,i,c;
+  for(i=0;i<text.length;i++){c=text.charCodeAt(i);h1=((h1<<5)+h1+c)|0;h2=(c+(h2<<6)+(h2<<16)-h2)|0;}
+  return lang+'|'+(h1>>>0).toString(36)+(h2>>>0).toString(36)+text.length.toString(36);
+}
+var tpending={};
+function cacheGetMany(pairs,cb){            /* pairs: [{lang,text}] -> fills tcache, then cb */
+  var keys=[],map={};
+  pairs.forEach(function(p){var k=tkey(p.lang,p.text);if(tcache[p.lang+'|'+p.text])return;map[k]=p;keys.push(k);});
+  if(!keys.length){cb();return;}
+  var q=keys.map(function(k){return '"'+k+'"';}).join(',');
+  fetch(SUPA_URL+'/rest/v1/news_translations?select=key,dst&key=in.('+encodeURIComponent(q)+')',{headers:H})
+  .then(function(r){return r.json();}).then(function(rows){
+    (rows||[]).forEach(function(r){var p=map[r.key];if(p&&r.dst)tcache[p.lang+'|'+p.text]=r.dst;});
+    cb();
+  }).catch(function(){cb();});
+}
+function cachePut(lang,text,dst){
+  fetch(SUPA_URL+'/rest/v1/news_translations?on_conflict=key',{method:'POST',
+    headers:Object.assign({},H,{'Prefer':'resolution=merge-duplicates,return=minimal'}),
+    body:JSON.stringify({key:tkey(lang,text),lang:lang,src:text,dst:dst})}).catch(function(){});
+}
+function proxyTranslate(text,lang,cb){        /* raw call; cb(null) on failure */
+  var u=PROXY+'?action=translate&idiom='+encodeURIComponent(text)+'&meaning='+encodeURIComponent(text)+'&lang='+encodeURIComponent(lang);
+  fetch(u).then(function(r){return r.text();}).then(function(t){
+    var o=pickTranslation(t); cb(o?(o.meaning||o.equiv||null):null);
+  }).catch(function(){cb(null);});
+}
 function translateText(text,lang,cb){
   var key=lang+'|'+text;
   if(tcache[key]){cb(tcache[key]);return;}
-  var u=PROXY+'?action=translate&idiom='+encodeURIComponent(text)+'&meaning='+encodeURIComponent(text)+'&lang='+encodeURIComponent(lang);
-  fetch(u).then(function(r){return r.text();}).then(function(t){
-    var o=pickTranslation(t); if(!o) return;
-    var v=o.meaning||o.equiv; if(!v) return;
-    tcache[key]=v;cb(v);
-  }).catch(function(){});
+  if(tpending[key]){tpending[key].push(cb);return;}
+  tpending[key]=[cb];
+  cacheGetMany([{lang:lang,text:text}],function(){
+    if(tcache[key]){var cbs=tpending[key];delete tpending[key];cbs.forEach(function(f){f(tcache[key]);});return;}
+    proxyTranslate(text,lang,function(v){
+      var cbs=tpending[key];delete tpending[key];
+      if(!v)return;
+      tcache[key]=v;cachePut(lang,text,v);cbs.forEach(function(f){f(v);});
+    });
+  });
 }
 /* text of a paragraph for translation: glosses stripped, close-reading parts left out */
 function forTranslation(par){
@@ -397,14 +444,16 @@ function forTranslation(par){
 /* translate every element with data-xl beneath itself */
 function dualTranslate(){
   var L=ME.lang||$('lang').value; if(!L) return;
-  [].forEach.call(document.querySelectorAll('[data-xl]'),function(el){
+  var els=[].slice.call(document.querySelectorAll('[data-xl]')).filter(function(el){return el.dataset.done!==L&&el.dataset.xl;});
+  cacheGetMany(els.map(function(el){return {lang:L,text:el.dataset.xl};}),function(){ els.forEach(fill); });
+  function fill(el){
     if(el.dataset.done===L) return;
     var text=el.dataset.xl; if(!text) return;
     var tr=el.querySelector('.xl');
     if(!tr){tr=document.createElement('div');tr.className='xl';el.appendChild(tr);}
     tr.textContent='';
     translateText(text,L,function(v){tr.textContent=v;el.dataset.done=L;});
-  });
+  }
 }
 
 /* ---------- speech ---------- */
@@ -855,6 +904,60 @@ $('list').addEventListener('click',function(e){
     }).then(function(){ARCH=null;loadList();}).catch(function(){});
   }
 });
+
+/* ---------- pre-translate ---------- */
+var PT_DEFAULT=['Spanish','Mandarin','Cantonese','Arabic','Vietnamese','Thai','Nepali'];
+(function(){
+  $('ptLangs').innerHTML=Object.keys(LANGS).map(function(k){
+    return '<label style="font-weight:600"><input type="checkbox" value="'+k+'"'+(PT_DEFAULT.indexOf(k)>=0?' checked':'')+'> '+LANGS[k]+'</label>';
+  }).join('');
+})();
+function textsOf(d){                       /* every string a student might see translated */
+  var out=[];
+  function push(t){t=String(t||'').replace(/\s+/g,' ').trim();if(t&&out.indexOf(t)<0)out.push(t);}
+  Object.keys(d.reads||{}).forEach(function(lv){(d.reads[lv]||[]).forEach(function(par){
+    push(forTranslation(par));
+    var re=/\[\[(.+?)\|(.+?)\]\]/g,m;while((m=re.exec(par))!==null)push(m[1]+' \u2014 '+m[2]);
+  });});
+  (d.qs||[]).forEach(function(q){push(plain(q));var re=/\[\[(.+?)\|(.+?)\]\]/g,m;while((m=re.exec(q))!==null)push(m[1]+' \u2014 '+m[2]);});
+  if(d.gram&&d.gram.produce)push(plain(d.gram.produce));
+  push('Sit with a partner. One of you is A, one is B. You each know different things. Ask each other questions until your chart is full. Do not show your screen.');
+  if(d.project){push(d.project.intro);d.project.fields.forEach(function(f){push(f.label);});d.project.ifs.forEach(function(f){push(f.text);});}
+  return out;
+}
+$('ptGo').onclick=function(){
+  var d=parseDoc($('doc').value);
+  if(!d.meta.SLUG){alert('Paste or load an article first.');return;}
+  var langs=[].map.call(document.querySelectorAll('#ptLangs input:checked'),function(c){return c.value;});
+  if(!langs.length){alert('Tick at least one language.');return;}
+  var texts=textsOf(d), jobs=[];
+  langs.forEach(function(L){texts.forEach(function(t){jobs.push({lang:L,text:t});});});
+  var total=jobs.length,done=0,fails=0,btn=$('ptGo');
+  btn.disabled=true;$('ptMsg').textContent='Checking what is already saved\u2026';
+  cacheGetMany(jobs,function(){
+    var todo=jobs.filter(function(j){return !tcache[j.lang+'|'+j.text];});
+    done=total-todo.length;
+    $('ptBar').style.width=Math.round(done/total*100)+'%';
+    var active=0,i=0;
+    function next(){
+      while(active<4&&i<todo.length){
+        (function(j){
+          active++;
+          proxyTranslate(j.text,j.lang,function(v){
+            if(v){tcache[j.lang+'|'+j.text]=v;cachePut(j.lang,j.text,v);}else fails++;
+            done++;active--;
+            $('ptBar').style.width=Math.round(done/total*100)+'%';
+            $('ptMsg').textContent=done+' of '+total+(fails?' \u00b7 '+fails+' failed':'');
+            if(done>=total){btn.disabled=false;$('ptMsg').textContent='Done. '+(total-fails)+' translations saved'+(fails?', '+fails+' failed (run again to retry).':'.');}
+            else next();
+          });
+        })(todo[i++]);
+      }
+      if(!todo.length){btn.disabled=false;$('ptMsg').textContent='Already done \u2014 everything was saved.';}
+    }
+    next();
+  });
+};
 
 /* ---------- close-reading marker ---------- */
 var CRSET={},CRDATA=[];

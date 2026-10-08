@@ -242,14 +242,25 @@ function pickTranslation(t){
     return null;
   }catch(e){ return null; }
 }
+function tkey(lang,text){
+  var h1=5381,h2=0,i,c;
+  for(i=0;i<text.length;i++){c=text.charCodeAt(i);h1=((h1<<5)+h1+c)|0;h2=(c+(h2<<6)+(h2<<16)-h2)|0;}
+  return lang+'|'+(h1>>>0).toString(36)+(h2>>>0).toString(36)+text.length.toString(36);
+}
 function translateText(text,lang,cb){
   var key=lang+'|'+text;
   if(tcache[key]){cb(tcache[key]);return;}
-  var u=PROXY+'?action=translate&idiom='+encodeURIComponent(text)+'&meaning='+encodeURIComponent(text)+'&lang='+encodeURIComponent(lang);
-  fetch(u).then(function(r){return r.text();}).then(function(t){
-    var o=pickTranslation(t); if(!o) return;
-    var v=o.meaning||o.equiv; if(!v) return;
-    tcache[key]=v;cb(v);
+  var k=tkey(lang,text);
+  fetch(SUPA_URL+'/rest/v1/news_translations?select=dst&key=eq.'+encodeURIComponent(k),{headers:H})
+  .then(function(r){return r.json();}).then(function(rows){
+    if(rows&&rows.length&&rows[0].dst){tcache[key]=rows[0].dst;cb(rows[0].dst);return;}
+    var u=PROXY+'?action=translate&idiom='+encodeURIComponent(text)+'&meaning='+encodeURIComponent(text)+'&lang='+encodeURIComponent(lang);
+    return fetch(u).then(function(r){return r.text();}).then(function(t){
+      var o=pickTranslation(t); if(!o)return; var v=o.meaning||o.equiv; if(!v)return;
+      tcache[key]=v;cb(v);
+      fetch(SUPA_URL+'/rest/v1/news_translations?on_conflict=key',{method:'POST',headers:Object.assign({},H,{'Prefer':'resolution=merge-duplicates,return=minimal'}),
+        body:JSON.stringify({key:k,lang:lang,src:text,dst:v})}).catch(function(){});
+    });
   }).catch(function(){});
 }
 function dualTranslate(){
