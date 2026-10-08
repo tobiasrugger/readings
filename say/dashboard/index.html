@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Describe a Classmate — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--pine:#1d4d3f;--paper:#fbfaf6;--ink:#22241f;--rule:#dcd9cf;--ok:#15803d;--mute:#5b6159}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:Nunito,system-ui,sans-serif;font-size:15px}
+  .bar{background:var(--pine);color:#fff;padding:10px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .bar h1{font-size:17px;margin:0;flex:1}
+  .bar select,.bar button{font-family:inherit;font-size:14px;padding:6px 10px;border-radius:7px;border:0}
+  main{max-width:1100px;margin:0 auto;padding:16px}
+  table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+  th,td{padding:8px 10px;border-bottom:1px solid var(--rule);text-align:left;vertical-align:top}
+  th{background:#eef3ef;font-size:13px}
+  tr.r{cursor:pointer}tr.r:hover{background:#f6f7f3}
+  .b{display:inline-block;min-width:44px;text-align:center;padding:2px 6px;border-radius:999px;font-weight:700;font-size:12px;background:#eee}
+  .b.full{background:#dcfce7;color:var(--ok)}.b.part{background:#fef3c7;color:#92400e}
+  .detail{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:16px;margin-top:14px}
+  .detail h3{margin:14px 0 6px;font-size:15px;color:var(--pine)}
+  .detail .s{margin:3px 0 3px 12px}
+  .para{background:#f6f7f3;padding:12px;border-radius:8px;line-height:1.7}
+  .gate{max-width:360px;margin:80px auto;background:#fff;padding:22px;border:1px solid var(--rule);border-radius:12px}
+  .gate input{width:100%;font-size:16px;padding:9px;border:1px solid var(--rule);border-radius:8px;font-family:inherit}
+  .gate button{margin-top:10px;width:100%;font-family:inherit;font-size:15px;font-weight:700;padding:10px;background:var(--pine);color:#fff;border:0;border-radius:8px}
+  audio{height:30px}
+</style>
+</head>
+<body>
+<div class="bar"><h1>Say the Words · Dashboard</h1><select id="per"><option value="">All periods</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select><button id="reload">Refresh</button><button id="csv">CSV</button></div>
+<main id="main"><div class="gate"><b>Teacher password</b><input id="pw" type="password"><button id="go">Open</button></div></main>
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var H={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY};
+var PW='galileo2026', ROWS=[];
+var COLS=[];
+function $(i){return document.getElementById(i);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+$('go').onclick=function(){ if($('pw').value===PW){ sessionStorage.setItem('gal_dash','1'); load(); } else alert('Wrong password'); };
+$('pw').onkeydown=function(e){ if(e.key==='Enter') $('go').click(); };
+if(sessionStorage.getItem('gal_dash')) load();
+$('reload').onclick=load; $('per').onchange=table;
+function load(){ fetch(SUPA_URL+'/rest/v1/say_work?select=*&order=set,period,name',{headers:H}).then(function(r){return r.json();}).then(function(rows){ ROWS=rows||[]; table(); }); }
+function badge(sc,k){ var s=sc&&sc[k]; if(!s||!s.total) return '<span class="b">–</span>'; var b=s.best||0; return '<span class="b '+(b>=s.total?'full':b>0?'part':'')+'">'+b+'/'+s.total+'</span>'; }
+function ivCount(a){ var n=0; for(var i=1;i<=16;i++){ if(a.iv&&a.iv['q'+i]) n++; } return n; }
+function table(){ return sayTable(); }
+function sayTable(){ var p=$('per').value, rows=ROWS.filter(function(r){return !p||String(r.period)===p;});
+  var h='<table><tr><th>Name</th><th>P</th><th>Set</th><th>Words said</th><th>Not yet (what it heard)</th><th>Device</th><th>Updated</th></tr>';
+  rows.forEach(function(r){ var a=r.answers||{}, sc=(r.scores||{}).words0||{}; var miss=Object.keys(a.w||{}).filter(function(k){return !a.w[k].ok;}).map(function(k){return k.split('|')[1]+(a.w[k].heard?' ('+a.w[k].heard+')':'');}); var dv=a.device||{};
+    h+='<tr><td><b>'+esc(r.name)+'</b><br><span style="color:var(--mute);font-size:12px">'+esc(r.email)+'</span></td><td>'+esc(r.period)+'</td><td>'+esc(r.set)+'</td><td><span class="b '+(sc.total&&sc.best>=sc.total?'full':sc.best?'part':'')+'">'+(sc.best||0)+'/'+(sc.total||'?')+'</span></td><td style="font-size:13px">'+esc(miss.join(', ')||'—')+'</td><td style="font-size:12px;color:var(--mute)">'+(dv.ua?esc((dv.ua||'').replace(/^.*\((.*?)\).*Chrome\/([\d.]+).*$/,'$1 · Chrome $2'))+'<br>voice '+esc(dv.voice||'none')+' · mic '+(dv.record?'yes':'NO')+' · stt '+(dv.recognize?'yes':'NO'):'')+'</td><td style="font-size:12px;color:var(--mute)">'+new Date(r.updated_at).toLocaleString()+'</td></tr>'; });
+  $('main').innerHTML=h+'</table><p style="color:var(--mute);font-size:13px">'+rows.length+' rows (one per student per set).</p>'; }
+function oldTable(){
+  var p=$('per').value, rows=ROWS.filter(function(r){return !p||String(r.period)===p;});
+  var h='<table><tr><th>Name</th><th>P</th>'+COLS.map(function(c){return '<th>'+c[1]+'</th>';}).join('')+'<th>Interview</th><th>Para</th><th>Updated</th></tr>';
+  rows.forEach(function(r,i){ var a=r.answers||{}, sc=r.scores||{};
+    h+='<tr class="r" data-i="'+ROWS.indexOf(r)+'"><td><b>'+esc(r.name)+'</b><br><span style="color:var(--mute);font-size:12px">'+esc(r.email)+'</span></td><td>'+esc(r.period)+'</td>'+COLS.map(function(c){return '<td>'+badge(sc,c[0])+'</td>';}).join('')+
+      '<td><span class="b '+(ivCount(a)===16?'full':ivCount(a)?'part':'')+'">'+ivCount(a)+'/16</span></td><td>'+(r.completed?'✓':(a.para&&a.para.text?'…':'–'))+'</td><td style="font-size:12px;color:var(--mute)">'+new Date(r.updated_at).toLocaleString()+'</td></tr>'; });
+  h+='</table><div id="detail"></div>';
+  $('main').innerHTML=h+'<p style="color:var(--mute);font-size:13px">'+rows.length+' students. Click a row for written work.</p>';
+  document.querySelectorAll('tr.r').forEach(function(tr){ tr.onclick=function(){ detail(ROWS[parseInt(tr.getAttribute('data-i'))]); }; });
+}
+function detail(r){ var a=r.answers||{}; var h='<div class="detail"><h2 style="margin:0">'+esc(r.name)+' · Period '+esc(r.period)+'</h2>';
+  if(a.device){ var dv=a.device; h+='<h3>Device</h3><div class="s" style="font-size:12px;color:var(--mute)">'+esc((dv.ua||'').replace(/^.*\((.*?)\).*Chrome\/([\d.]+).*$/,'$1 · Chrome $2'))+' · speech '+(dv.tts?'yes':'NO')+' · voice '+esc(dv.voice||'none')+' · record '+(dv.record?'yes':'NO')+' · speech-to-text '+(dv.recognize?'yes':'NO')+' · speak-core '+(dv.gs?'loaded':'MISSING')+'<br>voices: '+esc((dv.voices||[]).join(', ')||'none')+'</div>'; }
+  h+='<h3>Interview (partner: '+esc(a.partner||'—')+', '+esc(a.partnerG||'')+')</h3>';
+  for(var i=1;i<=16;i++){ var id='q'+i; if(a.iv&&a.iv[id]||a.ivq&&a.ivq[id]){ h+='<div class="s">'+i+'. '+(a.ivq&&a.ivq[id]?'<i>'+esc(a.ivq[id])+'</i> → ':'')+esc(a.iv&&a.iv[id]||'')+(a.ivs&&a.ivs[id]&&a.ivs[id].b?' <span style="color:var(--mute)">(said: '+esc(a.ivs[id].b)+')</span>':'')+'</div>'; } }
+  h+='<div class="s" id="aud"><i>loading recordings…</i></div>';
+  fetch(SUPA_URL+'/rest/v1/speaking_attempts?select=item_id,role,said_text,audio_path,accepted,created_at&activity=in.(describe-classmate,describe-words)&email=eq.'+encodeURIComponent(r.email)+'&order=created_at.desc&limit=60',{headers:H}).then(function(x){return x.json();}).then(function(rows){ var el=document.getElementById('aud'); if(!el) return; if(!rows||!rows.length){ el.innerHTML='<i>no recordings</i>'; return; }
+    el.innerHTML='<b>Recordings</b>'+rows.map(function(x){ return '<div class="s">'+esc(x.item_id)+' · '+esc(x.role)+' · '+esc(x.said_text||'')+(x.audio_path?' <audio controls src="'+SUPA_URL+'/storage/v1/object/public/fluency-recordings/'+esc(x.audio_path)+'"></audio>':'')+'</div>'; }).join(''); }).catch(function(){});
+  h+='<h3>1 Words — not yet said</h3><div class="s">'+esc(Object.keys(a.w||{}).filter(function(k){return !a.w[k].ok;}).map(function(k){return k.split('|')[1]+(a.w[k].heard?' (heard: '+a.w[k].heard+')':'');}).join(', ')||'—')+'</div>';
+  h+='<h3>2.3 Write sentences</h3>'; Object.keys(a.say2||{}).forEach(function(k){ h+='<div class="s">'+esc(a.say2[k])+'</div>'; });
+  h+='<h3>3.4 Because sentences</h3>'; Object.keys(a.b3||{}).forEach(function(k){ h+='<div class="s">'+esc(a.b3[k])+'</div>'; });
+  h+='<h3>4.3 Leo & Mia</h3>'; Object.keys(a.c2w||{}).filter(function(k){return !/_ok$/.test(k);}).forEach(function(k){ h+='<div class="s">'+(a.c2w[k+'_ok']?'✓ ':'• ')+esc(a.c2w[k])+'</div>'; });
+  h+='<h3>4.4 Me & my classmate</h3>'; Object.keys(a.c3w||{}).forEach(function(k){ h+='<div class="s">'+esc(a.c3w[k])+'</div>'; });
+  h+='<h3>5 Paragraph</h3>'+(a.para&&a.para.text?'<div class="para">'+esc(a.para.text)+'</div>':'<div class="s" style="color:var(--mute)">not started</div>');
+  h+='</div>'; $('detail').innerHTML=h; $('detail').scrollIntoView({behavior:'smooth'});
+}
+$('csv').onclick=function(){ var lines=['name,email,period,set,said,total,missing']; ROWS.forEach(function(r){ var a=r.answers||{}, sc=(r.scores||{}).words0||{}; var miss=Object.keys(a.w||{}).filter(function(k){return !a.w[k].ok;}).map(function(k){return k.split('|')[1];}); lines.push([r.name,r.email,r.period,r.set,sc.best||0,sc.total||'',miss.join('; ')].map(function(v){return '"'+String(v).replace(/"/g,'""')+'"';}).join(',')); }); var b=new Blob([lines.join('\n')],{type:'text/csv'}); var u=URL.createObjectURL(b); var x=document.createElement('a'); x.href=u; x.download='say_the_words.csv'; x.click(); };
+</script>
+</body>
+</html>

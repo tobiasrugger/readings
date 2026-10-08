@@ -216,6 +216,7 @@ audio{height:32px;vertical-align:middle}
     return r; }
   window.SpeechRecognition=W; window.webkitSpeechRecognition=W; })();
 </script>
+<script src="/readings/say/sets.js"></script>
 <script src="/readings/speaking/speak-core.js"></script>
 <script>
 /* ============ CONFIG ============ */
@@ -402,15 +403,14 @@ var PAGES={words:[],say:[],interview:[],because:[],compare:[],paragraph:[]};
    VOCAB is the one list to edit when a new activity adds words. Each deck: name, emoji, items.
    An item is a word/phrase, or [phrase, 'other way to say it that also counts'].
    ===================================================================== */
-var VOCAB=[
-  {k:'hair', name:'Hair', e:'💇', items:['hair','blond hair','brown hair','black hair','red hair','gray hair','short hair','medium hair','long hair','straight hair','wavy hair','curly hair']},
-  {k:'eyes', name:'Eyes', e:'👀', items:['eyes','blue eyes','brown eyes','black eyes','green eyes']},
-  {k:'body', name:'Tall, short…', e:'🧍', items:['tall','short','tall or short','young','old','young or old','athletic','artistic','friendly','shy']},
-  {k:'traits', name:'Traits', e:'🙂', items:['loud','quiet','musical','dramatic','hardworking','lazy','nice','cruel','generous','selfish','playful','serious','peaceful','aggressive','proud','humble']},
-  {k:'verbs', name:'Reasons', e:'💬', items:['because','shares','does not share','food','homework','talks','plays','draws','guitar','fights','helps','shouts']},
-  {k:'compare', name:'Same / different', e:'⚖️', items:['both','same','different','is like','but','and','first','then','next','also','finally']},
-  {k:'questions', name:'Questions', e:'❓', items:['Do you have','Are you','Do you have blue eyes?','Are you tall or short?','Are you friendly or shy?']}
-];
+var VOCAB=(window.SAY_SETS&&SAY_SETS.describe&&SAY_SETS.describe.decks)||[];
+/* Audit: open the page with ?audit=1 to list words used in activities that are not in VOCAB yet. */
+function vocabAudit(){ var used={}; function add(x){ if(x) used[String(x).replace(/,$/,'').trim()]=1; }
+  Object.keys(W).forEach(function(k){ W[k].forEach(add); }); IQ.forEach(function(q){ q.o.forEach(add); });
+  TR.forEach(function(t){ add(t.t); add(t.neg?'does not '+t.base:t.s); add(t.obj); });
+  Object.keys(DC_ITEMS).forEach(add); Object.keys(LM_ITEMS).forEach(add); LS_PAIR.items.forEach(function(x){ add(x[0]); }); TRANS.forEach(add);
+  var have={}; VOCAB.forEach(function(d){ d.items.forEach(function(i){ have[String(Array.isArray(i)?i[0]:i).toLowerCase()]=1; }); });
+  return Object.keys(used).filter(function(u){ var l=u.toLowerCase(); if(have[l]) return false; return !Object.keys(have).some(function(x){ return l.indexOf(x)>=0&&x.split(' ').length>1||x.indexOf(l)>=0&&l.length>3; }); }); }
 var W_ACCEPT=0.55, W_PRAISE=['Clear!','Nice!','Great!','Got it!','Perfect!'];
 PAGES.words[0]=function(){
   A.w=A.w||{}; A.wdeck=A.wdeck||VOCAB[0].k; A.wi=A.wi||{};
@@ -418,7 +418,7 @@ PAGES.words[0]=function(){
   var key='words0', total=VOCAB.reduce(function(n,d){return n+d.items.length;},0), okN=0; VOCAB.forEach(function(d){ d.items.forEach(function(x){ if((A.w[d.k+'|'+x]||{}).ok) okN++; }); });
   SC[key]={correct:okN,total:total,best:Math.max((SC[key]||{}).best||0,okN),attempts:(SC[key]||{}).attempts||0}; if(okN===total) A['done_'+key]=true;
   var st=A.w[deck.k+'|'+it]||{};
-  var html='<div class="card"><h2>Say the words 🗣️</h2><p class="dek">'+T('Listen. Then tap the red button and say the word. The computer checks your pronunciation.')+'</p>'+
+  var html=(/audit=1/.test(location.search)?'<div class="note"><b>Vocab audit</b> — used in activities but not in a deck: '+esc(vocabAudit().join(', ')||'nothing missing')+'</div>':'')+'<div class="card"><h2>Say the words 🗣️</h2><p class="dek">'+T('Listen. Then tap the red button and say the word. The computer checks your pronunciation.')+'</p>'+
     '<div class="row">'+VOCAB.map(function(d){ var n=d.items.filter(function(x){return (A.w[d.k+'|'+x]||{}).ok;}).length; return '<button class="chip '+(d.k===deck.k?'sel':n===d.items.length?'ok':'')+'" data-deck="'+d.k+'">'+d.e+' '+esc(d.name)+' '+n+'/'+d.items.length+'</button>'; }).join('')+'</div></div>';
   html+='<div class="card"><div class="row"><span class="qnum">'+(i+1)+' / '+items.length+'</span><div class="row" style="gap:4px">'+items.map(function(x,xi){ var s=A.w[deck.k+'|'+x]||{}; return '<span class="dot '+(s.ok?'on':s.tries?'err':'')+'" style="width:9px;height:9px;'+(xi===i?'outline:2px solid var(--p);outline-offset:1px':'')+'"></span>'; }).join('')+'</div></div>'+
     '<div class="say" style="font-size:40px;justify-content:center;margin:18px 0 6px;text-align:center"><span class="tr">'+esc(it)+'</span></div>'+
