@@ -459,6 +459,58 @@ body.easy .story p{ font-size:calc(var(--tsize) + .05rem); line-height:calc(var(
 
 /* the key now sits where the first signal appears, not before the story starts */
 .legend{ margin:2.2rem 0 1.6rem; }
+
+/* ---------- the rail stays open ----------
+   It was defaulting closed on any screen under 1100px, and a stored
+   "closed" never reopened — on a student machine it simply never appeared. */
+#railX, #railOpen{ display: none !important; }
+#rail{ display: block !important; }
+
+/* ================= rainbow words, synced with the rail ================= */
+:root{
+  --g1:#c8892a; --g2:#8b1a1a; --g3:#3d6b4a; --g4:#6e4a72;
+  --g5:#2f6b74; --g6:#a85a2a; --g7:#6b7a2a; --g8:#3a4a8a;
+  --g1t:#f7ecd8; --g2t:#f7e6e4; --g3t:#e6f0e8; --g4t:#f0e8f2;
+  --g5t:#e2f0f2; --g6t:#f8ebe0; --g7t:#eef2dd; --g8t:#e6eaf6;
+}
+.gl{ border-bottom:2px dotted var(--amber); border-radius:2px; padding:0 1px;
+  transition:background .12s, box-shadow .12s; }
+.gl.g1{ border-bottom-color:var(--g1); } .gl.g2{ border-bottom-color:var(--g2); }
+.gl.g3{ border-bottom-color:var(--g3); } .gl.g4{ border-bottom-color:var(--g4); }
+.gl.g5{ border-bottom-color:var(--g5); } .gl.g6{ border-bottom-color:var(--g6); }
+.gl.g7{ border-bottom-color:var(--g7); } .gl.g8{ border-bottom-color:var(--g8); }
+.gl.g1:hover,.gl.g1.cur{ background:var(--g1t); } .gl.g2:hover,.gl.g2.cur{ background:var(--g2t); }
+.gl.g3:hover,.gl.g3.cur{ background:var(--g3t); } .gl.g4:hover,.gl.g4.cur{ background:var(--g4t); }
+.gl.g5:hover,.gl.g5.cur{ background:var(--g5t); } .gl.g6:hover,.gl.g6.cur{ background:var(--g6t); }
+.gl.g7:hover,.gl.g7.cur{ background:var(--g7t); } .gl.g8:hover,.gl.g8.cur{ background:var(--g8t); }
+.gl.cur{ box-shadow:0 0 0 2px currentColor inset; }
+.gl.g1.cur{ box-shadow:0 0 0 2px var(--g1); } .gl.g2.cur{ box-shadow:0 0 0 2px var(--g2); }
+.gl.g3.cur{ box-shadow:0 0 0 2px var(--g3); } .gl.g4.cur{ box-shadow:0 0 0 2px var(--g4); }
+.gl.g5.cur{ box-shadow:0 0 0 2px var(--g5); } .gl.g6.cur{ box-shadow:0 0 0 2px var(--g6); }
+.gl.g7.cur{ box-shadow:0 0 0 2px var(--g7); } .gl.g8.cur{ box-shadow:0 0 0 2px var(--g8); }
+
+/* rail rows carry the same colour */
+.rw{ display:flex; gap:.5rem; align-items:flex-start; border-left:3px solid transparent;
+  padding:.4rem .4rem .4rem .45rem; border-radius:3px;
+  transition:background .12s, box-shadow .12s, border-color .12s; }
+.rw .chip{ flex:0 0 auto; width:9px; height:9px; border-radius:50%; margin-top:.42rem; }
+.rw .rwtxt{ min-width:0; }
+.rw.c1 .chip{ background:var(--g1); } .rw.c2 .chip{ background:var(--g2); }
+.rw.c3 .chip{ background:var(--g3); } .rw.c4 .chip{ background:var(--g4); }
+.rw.c5 .chip{ background:var(--g5); } .rw.c6 .chip{ background:var(--g6); }
+.rw.c7 .chip{ background:var(--g7); } .rw.c8 .chip{ background:var(--g8); }
+.rw.hot{ box-shadow:0 2px 8px rgba(0,0,0,.14); }
+.rw.c1.hot{ background:var(--g1t); border-left-color:var(--g1); }
+.rw.c2.hot{ background:var(--g2t); border-left-color:var(--g2); }
+.rw.c3.hot{ background:var(--g3t); border-left-color:var(--g3); }
+.rw.c4.hot{ background:var(--g4t); border-left-color:var(--g4); }
+.rw.c5.hot{ background:var(--g5t); border-left-color:var(--g5); }
+.rw.c6.hot{ background:var(--g6t); border-left-color:var(--g6); }
+.rw.c7.hot{ background:var(--g7t); border-left-color:var(--g7); }
+.rw.c8.hot{ background:var(--g8t); border-left-color:var(--g8); }
+.rw.c1 .k{ color:var(--g1); } .rw.c2 .k{ color:var(--g2); } .rw.c3 .k{ color:var(--g3); }
+.rw.c4 .k{ color:var(--g4); } .rw.c5 .k{ color:var(--g5); } .rw.c6 .k{ color:var(--g6); }
+.rw.c7 .k{ color:var(--g7); } .rw.c8 .k{ color:var(--g8); }
 </style>
 </head>
 <span id="canary" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden">the quick brown fox jumps over the lazy dog</span>
@@ -1826,12 +1878,8 @@ for(var i = 0; i < all.length; i++){ autogrow(all[i]); }
    SIDE RAIL — running glossary + margin notes
    ============================================================ */
 var NOTES = {};
-var railOn = true;
-try{
-  var rr = localStorage.getItem(LKEY + "_rail");
-  if(rr !== null) railOn = (rr === "1");
-  else railOn = window.innerWidth >= 1100;
-}catch(e){}
+var railOn = true;   /* the rail is always open */
+try{ localStorage.removeItem(LKEY + "_rail"); }catch(e){}
 
 function paragraphs(){ return document.querySelectorAll(".story p"); }
 
@@ -1874,10 +1922,11 @@ function paintWords(){
     var k = ws[i], g = GLOSS[k];
     if(!g) continue;
     var tr = (curLang !== "none" && g.t[curLang]) ? g.t[curLang] : "";
-    h += '<div class="rw" data-k="' + esc(k) + '"><div class="k">' + esc(k) + '</div>' +
+    h += '<div class="rw c' + colourFor(k) + '" data-k="' + esc(k) + '">' +
+         '<span class="chip"></span><div class="rwtxt"><div class="k">' + esc(k) + '</div>' +
          '<div class="d">' + esc(g.d) + '</div>' +
          (tr ? '<div class="tr' + (RTL[curLang] ? " rtl" : "") + '">' + esc(tr) + '</div>' : '') +
-         '</div>';
+         '</div></div>';
     /* words with no stored translation yet are fetched once, then cached */
     if(!tr && curLang !== "none" && window.llTranslate){
       (function(key){
@@ -1980,15 +2029,12 @@ function drawNotePrint(){
 }
 
 /* ---------- show and hide ---------- */
-function setRail(on){
-  railOn = !!on;
-  document.body.classList.toggle("rail", railOn);
-  document.body.classList.toggle("norail", !railOn);
-  try{ localStorage.setItem(LKEY + "_rail", railOn ? "1" : "0"); }catch(e){}
+function setRail(){
+  railOn = true;
+  document.body.classList.add("rail");
+  document.body.classList.remove("norail");
   lastPaint = ""; paintWords();
 }
-document.getElementById("railX").addEventListener("click", function(){ setRail(false); });
-document.getElementById("railOpen").addEventListener("click", function(){ setRail(true); });
 document.getElementById("words").addEventListener("click", function(e){
   var w = e.target.closest ? e.target.closest(".rw") : null;
   if(!w) return;
@@ -2001,7 +2047,7 @@ window.addEventListener("resize", function(){ lastPaint = ""; paintWords(); });
 tagParagraphs();
 addPens();
 loadNotes();
-setRail(railOn);
+setRail();
 drawNotes();
 paintWords();
 
@@ -2075,6 +2121,85 @@ function drawPrompts(){
 }
 window.addEventListener("scroll", drawPrompts, { passive: true });
 drawPrompts();
+
+
+/* ============================================================
+   RAINBOW WORDS — every glossed word keeps one colour, in the
+   text and in the rail, so the eye can match them at a glance.
+   ============================================================ */
+var GCOL;
+/* built on first use: the rail paints once before this block is reached */
+function colourFor(k){
+  if(!GCOL){
+    GCOL = {};
+    var i, kk;
+    for(i = 0; i < VORDER.length; i++) GCOL[VORDER[i]] = (i % 8) + 1;
+    for(kk in GLOSS){ if(!GCOL[kk]) GCOL[kk] = (Object.keys(GCOL).length % 8) + 1; }
+  }
+  return GCOL[k] || 1;
+}
+
+function colourWords(){
+  var gs = document.querySelectorAll(".gl"), i;
+  for(i = 0; i < gs.length; i++){
+    var c = colourFor(gs[i].getAttribute("data-k"));
+    gs[i].className = gs[i].className.replace(/\bg[1-8]\b/g, "").replace(/\s+/g, " ").trim();
+    gs[i].classList.add("g" + c);
+  }
+}
+
+/* question text is re-rendered when the mode changes, so recolour after it */
+if(typeof applyMode === "function"){
+  var _applyMode = applyMode;
+  applyMode = function(){ _applyMode.apply(this, arguments); colourWords(); };
+}
+
+/* ---------- hover or tap a word, its row lights up — and the reverse ---------- */
+function esc1(s){ return String(s).replace(/"/g, '\\"'); }
+function rowFor(k){ return document.querySelector('#words .rw[data-k="' + esc1(k) + '"]'); }
+function hotRow(on, k){
+  var old = document.querySelectorAll("#words .rw.hot"), i;
+  for(i = 0; i < old.length; i++) old[i].classList.remove("hot");
+  if(!on) return;
+  var r = rowFor(k);
+  if(!r) return;
+  r.classList.add("hot");
+  if(r.scrollIntoView){
+    var b = r.getBoundingClientRect();
+    if(b.top < 60 || b.bottom > window.innerHeight) r.scrollIntoView({ block: "nearest" });
+  }
+}
+function hotWord(on, k){
+  var old = document.querySelectorAll(".gl.cur"), i;
+  for(i = 0; i < old.length; i++) old[i].classList.remove("cur");
+  if(!on) return;
+  var gs = document.querySelectorAll('.gl[data-k="' + esc1(k) + '"]');
+  for(i = 0; i < gs.length; i++) gs[i].classList.add("cur");
+}
+document.addEventListener("mouseover", function(e){
+  if(!e.target.closest) return;
+  var g = e.target.closest(".gl");
+  if(g){ hotRow(true, g.getAttribute("data-k")); return; }
+  var r = e.target.closest("#words .rw");
+  if(r){ hotWord(true, r.getAttribute("data-k")); r.classList.add("hot"); }
+});
+document.addEventListener("mouseout", function(e){
+  if(!e.target.closest) return;
+  if(e.target.closest(".gl")){ hotRow(false); return; }
+  var r = e.target.closest("#words .rw");
+  if(r){ hotWord(false); r.classList.remove("hot"); }
+});
+/* phones have no hover: tapping does both */
+document.addEventListener("click", function(e){
+  if(!e.target.closest) return;
+  var g = e.target.closest(".gl");
+  if(g){ hotRow(true, g.getAttribute("data-k")); hotWord(true, g.getAttribute("data-k")); return; }
+  var r = e.target.closest("#words .rw");
+  if(r){ hotWord(true, r.getAttribute("data-k")); hotRow(true, r.getAttribute("data-k")); }
+});
+
+colourWords();
+lastPaint = ""; paintWords();
 
 </script>
 
