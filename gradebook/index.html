@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gradebook · Readings</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pine:#1F4D3D; --pine-soft:#e8f0ec; --ink:#16241f; --muted:#6b7b74;
+  --edge:#d9e2dd; --paper:#f6f8f7;
+  --ok:#0f5c34; --ok-bg:#b9e3c9; --warn:#6d4a00; --warn-bg:#f8dd9e; --bad:#8c2418; --bad-bg:#f4bcb3;
+  --gold:#8a6a00; --gold-bg:#fff1bf;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Nunito,system-ui,sans-serif;background:var(--paper);color:var(--ink)}
+header{background:var(--pine);color:#fff;padding:16px 22px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+header h1{margin:0;font-size:1.25rem}
+header a{color:#fff;opacity:.85;font-size:.8rem}
+.wrap{padding:14px 18px 60px;max-width:100%}
+.gate{max-width:360px;margin:60px auto;background:#fff;border:1px solid var(--edge);border-radius:12px;padding:22px}
+.gate input{width:100%;padding:10px;border:1px solid var(--edge);border-radius:8px;font:inherit;margin:8px 0}
+.btn{background:var(--pine);color:#fff;border:0;border-radius:8px;padding:8px 13px;font:inherit;font-weight:700;cursor:pointer;font-size:.84rem}
+.btn.sec{background:#fff;color:var(--pine);border:1px solid var(--pine)}
+.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;font-size:.84rem}
+.controls select,.controls input{padding:6px 8px;border:1px solid var(--edge);border-radius:8px;font:inherit;font-size:.84rem;background:#fff}
+.tally{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
+.tally div{background:#fff;border:1px solid var(--edge);border-radius:10px;padding:7px 11px;font-size:.74rem;min-width:100px}
+.tally b{display:block;font-size:1.15rem;color:var(--pine)}
+.gridwrap{overflow:auto;background:#fff;border:1px solid var(--edge);border-radius:12px;max-height:78vh}
+table{border-collapse:separate;border-spacing:0;font-size:.8rem;min-width:100%}
+th,td{border-bottom:1px solid var(--edge);border-right:1px solid var(--edge);padding:5px 7px;white-space:nowrap}
+thead th{position:sticky;top:0;background:var(--pine-soft);z-index:3;vertical-align:bottom;text-align:left;max-width:140px;white-space:normal;line-height:1.2;font-size:.72rem}
+thead th.act{cursor:pointer}
+thead th.act:hover{background:#d7e5dd}
+thead th small{display:block;color:var(--muted);font-weight:400}
+tbody th{position:sticky;left:0;background:#fff;z-index:2;text-align:left;font-weight:700}
+tbody th.p{left:0}
+th.corner{z-index:4;left:0}
+td.c{text-align:center;min-width:52px}
+td.c span{display:inline-block;min-width:40px;padding:2px 5px;border-radius:6px;font-weight:700}
+.g1{background:var(--ok-bg);color:var(--ok)} .g2{background:var(--warn-bg);color:var(--warn)} .g3{background:var(--bad-bg);color:var(--bad)} .g0{background:#eef2f0;color:var(--muted)}
+td.avg{font-weight:800;text-align:center;background:#fafcfb}
+tbody tr:hover td,tbody tr:hover th{background:#f3f7f5}
+select.per{border:1px solid transparent;background:transparent;font:inherit;font-size:.78rem;padding:2px}
+select.per:hover{border-color:var(--edge);background:#fff}
+.toast{position:fixed;bottom:14px;right:14px;background:var(--pine);color:#fff;padding:7px 12px;border-radius:8px;font-size:.78rem;opacity:0;transition:opacity .3s;max-width:420px}
+.toast.on{opacity:1}
+.legend{font-size:.74rem;color:var(--muted);margin:6px 0 0}
+dialog{border:1px solid var(--edge);border-radius:12px;padding:18px;max-width:560px;font-size:.86rem}
+dialog textarea{width:100%;min-height:200px;font:12px/1.4 ui-monospace,monospace;border:1px solid var(--edge);border-radius:8px;padding:8px}
+dialog h3{margin:0 0 8px}
+dialog .row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<header>
+  <h1>Gradebook — all scores, all students</h1>
+  <a href="../">← readings hub</a>
+</header>
+
+<div class="wrap">
+  <div class="gate" id="gate">
+    <b>Teacher sign-in</b>
+    <input id="pw" type="password" placeholder="Password" autocomplete="current-password">
+    <button class="btn" id="go">Open gradebook</button>
+    <div id="pwmsg" style="color:var(--bad);font-size:.8rem"></div>
+  </div>
+
+  <div id="app" style="display:none">
+    <div class="controls">
+      <label>Period <select id="period"><option value="">All</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option value="none">Unassigned</option></select></label>
+      <label>Course <select id="course"><option value="">All</option><option value="101">101</option><option value="103">103</option><option value="both">both</option><option value="english">english</option></select></label>
+      <label>Unit <select id="unit"><option value="">All</option></select></label>
+      <label>Since <select id="since"><option value="14">2 weeks</option><option value="42">6 weeks</option><option value="90" selected>Quarter</option><option value="0">All time</option></select></label>
+      <input id="q" placeholder="find student…" style="min-width:160px">
+      <label><input type="checkbox" id="hideempty" checked> hide activities nobody in view did</label>
+      <button class="btn sec" id="csv">Download CSV</button>
+      <button class="btn sec" id="reload">Reload</button>
+    </div>
+    <div class="tally" id="tally"></div>
+    <div class="gridwrap"><table id="grid"></table></div>
+    <p class="legend">Cell = best attempt as a percent (green 85+, yellow 70–84, red under 70, grey = done, no max score). Hover a cell for attempts and date. <b>Click an activity header</b> to copy that column for Synergy in roster order. Change a student's period with the dropdown in their row; it saves. Sort order inside a period = roster order if set, else last name.</p>
+  </div>
+</div>
+
+<dialog id="dlg">
+  <h3 id="dlgtitle">Copy for Synergy</h3>
+  <div id="dlgnote" style="color:var(--muted);font-size:.78rem;margin-bottom:6px"></div>
+  <textarea id="dlgtext" readonly></textarea>
+  <div class="row">
+    <button class="btn" id="copypct">Copy percents</button>
+    <button class="btn sec" id="copyraw">Copy raw scores</button>
+    <button class="btn sec" id="copynames">Copy names (to check order)</button>
+    <button class="btn sec" id="dlgclose" style="margin-left:auto">Close</button>
+  </div>
+</dialog>
+<div class="toast" id="toast"></div>
+
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var PASS='galileo2026';
+function H(x){var h={apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY,'Content-Type':'application/json'};if(x)for(var k in x)h[k]=x[k];return h;}
+function canon(e){return String(e||'').trim().toLowerCase().replace('@s.sfusd.edu','@sfusd.edu');}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function toast(t){var s=document.getElementById('toast');s.textContent=t;s.classList.add('on');setTimeout(function(){s.classList.remove('on');},2200);}
+function getAll(path){ // page through PostgREST
+  var out=[],from=0,step=1000;
+  function next(){return fetch(SUPA_URL+'/rest/v1/'+path,{headers:H({Range:from+'-'+(from+step-1),'Range-Unit':'items'})})
+    .then(function(r){return r.ok?r.json():[];}).then(function(rows){out=out.concat(rows);if(rows.length===step){from+=step;return next();}return out;});}
+  return next();
+}
+
+var students={}, cells=[], activities={}, view=[];
+
+function gate(){
+  if(sessionStorage.getItem('gb_ok')==='1'){open();return;}
+  document.getElementById('go').onclick=function(){
+    if(document.getElementById('pw').value===PASS){sessionStorage.setItem('gb_ok','1');open();}
+    else document.getElementById('pwmsg').textContent='Not it.';
+  };
+  document.getElementById('pw').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('go').click();});
+}
+function open(){document.getElementById('gate').style.display='none';document.getElementById('app').style.display='block';load();}
+
+function load(){
+  toast('Loading…');
+  Promise.all([
+    getAll('students?select=email,first_name,last_name,period,roster_order,course'),
+    getAll('gradebook_best?select=email,slug,unit,title,course,score,max_score,pct,attempts,last_at'),
+    getAll('activities?select=slug,title,unit,course,level,sort_order,url')
+  ]).then(function(r){
+    students={};
+    r[0].forEach(function(s){
+      var e=canon(s.email); var cur=students[e]||{email:e};
+      // keep the most complete profile across @s.sfusd.edu / @sfusd.edu twins
+      ['first_name','last_name','period','roster_order','course'].forEach(function(k){ if(s[k]!=null && s[k]!=='') cur[k]=s[k]; });
+      students[e]=cur;
+    });
+    cells=r[1].map(function(c){c.email=canon(c.email);return c;});
+    cells.forEach(function(c){ if(!students[c.email]) students[c.email]={email:c.email}; });
+    activities={}; r[2].forEach(function(a){activities[a.slug]=a;});
+    var units={}; cells.forEach(function(c){var u=c.unit||(activities[c.slug]&&activities[c.slug].unit)||'(untagged)';units[u]=1;});
+    var us=document.getElementById('unit'); var keep=us.value; us.innerHTML='<option value="">All</option>'+Object.keys(units).sort().map(function(u){return '<option'+(u===keep?' selected':'')+'>'+esc(u)+'</option>';}).join('');
+    render(); toast('Loaded '+Object.keys(students).length+' students, '+cells.length+' scores');
+  }).catch(function(e){toast('Load failed: '+e);});
+}
+
+function studentName(s){
+  if(s.last_name||s.first_name) return (s.last_name||'')+(s.last_name&&s.first_name?', ':'')+(s.first_name||'');
+  return s.email.split('@')[0];
+}
+function sortStudents(list){
+  return list.sort(function(a,b){
+    var pa=a.period||99,pb=b.period||99; if(pa!==pb)return pa-pb;
+    var ra=a.roster_order||9999,rb=b.roster_order||9999; if(ra!==rb)return ra-rb;
+    return studentName(a).localeCompare(studentName(b));
+  });
+}
+function grade(p){return p==null?'g0':p>=85?'g1':p>=70?'g2':'g3';}
+
+function render(){
+  var per=document.getElementById('period').value, course=document.getElementById('course').value, unit=document.getElementById('unit').value;
+  var since=+document.getElementById('since').value, q=document.getElementById('q').value.trim().toLowerCase(), hide=document.getElementById('hideempty').checked;
+  var cutoff=since?Date.now()-since*864e5:0;
+
+  var rows=sortStudents(Object.values(students).filter(function(s){
+    if(per==='none'&&s.period)return false;
+    if(per&&per!=='none'&&String(s.period)!==per)return false;
+    if(q&&studentName(s).toLowerCase().indexOf(q)<0&&s.email.indexOf(q)<0)return false;
+    return true;
+  }));
+  var rowSet={}; rows.forEach(function(s){rowSet[s.email]=1;});
+
+  var use=cells.filter(function(c){
+    var a=activities[c.slug]||{};
+    if(course&&(c.course||a.course||'both')!==course)return false;
+    if(unit&&(c.unit||a.unit||'(untagged)')!==unit)return false;
+    if(cutoff&&c.last_at&&Date.parse(c.last_at)<cutoff)return false;
+    return true;
+  });
+  var byCell={}, colSet={};
+  use.forEach(function(c){byCell[c.email+'|'+c.slug]=c; if(rowSet[c.email])colSet[c.slug]=1;});
+  var cols=Object.keys(hide?colSet:use.reduce(function(m,c){m[c.slug]=1;return m;},{}));
+  cols.sort(function(x,y){var ax=activities[x]||{},ay=activities[y]||{};var u=(ax.unit||x).localeCompare(ay.unit||y);if(u)return u;return (ax.sort_order||600)-(ay.sort_order||600)||x.localeCompare(y);});
+  view={rows:rows,cols:cols,byCell:byCell};
+
+  var h='<thead><tr><th class="corner">Student</th><th class="corner" style="left:auto">Per.</th><th>Avg</th>';
+  cols.forEach(function(s){var a=activities[s]||{};h+='<th class="act" data-slug="'+esc(s)+'" title="'+esc(s)+' — click to copy for Synergy">'+esc(a.title||s)+'<small>'+esc(a.unit||'')+'</small></th>';});
+  h+='</tr></thead><tbody>';
+  var done=0,total=0;
+  rows.forEach(function(s){
+    var sum=0,n=0;
+    var line='';
+    cols.forEach(function(slug){
+      var c=byCell[s.email+'|'+slug];
+      if(!c){line+='<td class="c"></td>';return;}
+      total++;
+      var label=c.pct!=null?c.pct+'%':'✓'; if(c.pct!=null){sum+=+c.pct;n++;} done++;
+      line+='<td class="c" title="'+esc((c.score!=null?c.score+' / '+(c.max_score||'?'):'')+' · '+c.attempts+' attempt'+(c.attempts==1?'':'s')+' · '+(c.last_at||'').slice(0,10))+'"><span class="'+grade(c.pct)+'">'+label+'</span></td>';
+    });
+    var avg=n?Math.round(sum/n):null;
+    h+='<tr><th>'+esc(studentName(s))+'<br><span style="font-weight:400;color:var(--muted);font-size:.7rem">'+esc(s.email)+'</span></th>'+
+       '<td><select class="per" data-email="'+esc(s.email)+'"><option value="">–</option>'+[1,2,3,4,5,6,7].map(function(p){return '<option'+(s.period==p?' selected':'')+'>'+p+'</option>';}).join('')+'</select></td>'+
+       '<td class="avg"><span class="'+grade(avg)+'">'+(avg!=null?avg+'%':'')+'</span></td>'+line+'</tr>';
+  });
+  h+='</tbody>';
+  document.getElementById('grid').innerHTML=h;
+  document.getElementById('tally').innerHTML='<div><b>'+rows.length+'</b>students</div><div><b>'+cols.length+'</b>activities</div><div><b>'+done+'</b>scores in view</div><div><b>'+rows.filter(function(s){return !s.period;}).length+'</b>without a period</div>';
+  document.querySelectorAll('th.act').forEach(function(th){th.onclick=function(){openCopy(th.dataset.slug);};});
+  document.querySelectorAll('select.per').forEach(function(sel){sel.onchange=function(){setPeriod(sel.dataset.email,sel.value?+sel.value:null);};});
+}
+
+function setPeriod(email,p){
+  students[email].period=p;
+  fetch(SUPA_URL+'/rest/v1/students?on_conflict=email',{method:'POST',headers:H({Prefer:'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify([{email:email,period:p,updated_at:new Date().toISOString()}])})
+   .then(function(r){toast(r.ok?'Period saved':'Save failed');}).catch(function(){toast('Save failed');});
+}
+
+/* ---- Synergy column copy ---- */
+function openCopy(slug){
+  var a=activities[slug]||{}; var rows=view.rows;
+  var pct=[],raw=[],names=[];
+  rows.forEach(function(s){
+    var c=view.byCell[s.email+'|'+slug];
+    names.push(studentName(s));
+    pct.push(c&&c.pct!=null?c.pct:'');
+    raw.push(c&&c.score!=null?c.score:'');
+  });
+  var per=document.getElementById('period').value;
+  document.getElementById('dlgtitle').textContent=(a.title||slug);
+  document.getElementById('dlgnote').textContent=(per&&per!=='none'?'Period '+per:'All periods')+' · '+rows.length+' students in roster order · blank = no attempt · max score '+(a.max_score||'(varies)');
+  var ta=document.getElementById('dlgtext');
+  ta.value=names.map(function(n,i){return n+'\t'+pct[i]+'\t'+raw[i];}).join('\n');
+  function cp(list,what){navigator.clipboard.writeText(list.join('\n')).then(function(){toast('Copied '+list.length+' '+what+'. In Synergy, click the first student\'s cell and paste.');});}
+  document.getElementById('copypct').onclick=function(){cp(pct,'percents');};
+  document.getElementById('copyraw').onclick=function(){cp(raw,'raw scores');};
+  document.getElementById('copynames').onclick=function(){cp(names,'names');};
+  var d=document.getElementById('dlg'); d.showModal();
+  document.getElementById('dlgclose').onclick=function(){d.close();};
+}
+
+/* ---- CSV of the whole view ---- */
+document.getElementById('csv').onclick=function(){
+  var cols=view.cols, rows=view.rows;
+  var head=['student','email','period','avg'].concat(cols.map(function(s){return (activities[s]&&activities[s].title)||s;}));
+  var lines=[head];
+  rows.forEach(function(s){
+    var sum=0,n=0,vals=cols.map(function(slug){var c=view.byCell[s.email+'|'+slug];if(c&&c.pct!=null){sum+=+c.pct;n++;return c.pct;}return c?'done':'';});
+    lines.push([studentName(s),s.email,s.period||'',n?Math.round(sum/n):''].concat(vals));
+  });
+  var csv=lines.map(function(r){return r.map(function(v){v=String(v==null?'':v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}).join(',');}).join('\n');
+  var b=new Blob([csv],{type:'text/csv'});var u=URL.createObjectURL(b);var a=document.createElement('a');a.href=u;a.download='gradebook-'+new Date().toISOString().slice(0,10)+'.csv';a.click();URL.revokeObjectURL(u);
+};
+
+['period','course','unit','since','hideempty'].forEach(function(id){document.getElementById(id).addEventListener('change',render);});
+document.getElementById('q').addEventListener('input',render);
+document.getElementById('reload').onclick=load;
+gate();
+</script>
+</body>
+</html>
