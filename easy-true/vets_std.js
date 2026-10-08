@@ -261,6 +261,24 @@ function checkTranslation(){
   }).catch(function(){});
 }
 
+/* the gate uses language names; a page's own picker may use codes */
+var NAME2CODE = {'Spanish':'es','Chinese (Simplified)':'zh-CN','Arabic':'ar','Vietnamese':'vi','Russian':'ru','Urdu':'ur',
+  'Tagalog':'tl','French':'fr','Korean':'ko','Hindi':'hi','Somali':'so','Nepali':'ne','Thai':'th'};
+function setPickerLang(name){
+  var sel = langEl(); if(!sel) return;
+  var want = name, has = Array.prototype.some.call(sel.options, function(o){ return o.value === name; });
+  if(!has){ want = NAME2CODE[name] || ''; }
+  if(want === '' && name) return;
+  sel.value = want;
+  if(sel.onchange) sel.onchange(); else sel.dispatchEvent(new Event('change'));
+}
+function pickerLangName(){
+  var sel = langEl(); if(!sel || !sel.value) return '';
+  if(NAME2CODE[sel.value] !== undefined) return sel.value;
+  var code = sel.value, k; for(k in NAME2CODE){ if(NAME2CODE[k] === code) return k; }
+  return '';
+}
+
 /* ---------- sign in ---------- */
 function signIn(){
   var name = document.getElementById('vstd-name').value.trim();
@@ -274,7 +292,7 @@ function signIn(){
   if(!glang){ err.textContent = 'Please choose your language.'; return; }
   err.textContent = '';
   try{ localStorage.setItem('vocab_lang', glang); }catch(e){}
-  var bar = langEl(); if(bar){ bar.value = glang; bar.dispatchEvent(new Event('change')); }
+  setPickerLang(glang);
   var canon = canonMail(raw);
   recordAlias(raw, canon);
   seedStudent(name, canon, per);
@@ -369,8 +387,8 @@ function build(){
       var g = localStorage.getItem('gal_student_email');
       if(g) document.getElementById('vstd-mail').value = g;
     }
-    var vl = localStorage.getItem('vocab_lang') || '';
-    if(vl){ document.getElementById('vstd-glang').value = vl; var b0 = langEl(); if(b0) b0.value = vl; }
+    var vl = localStorage.getItem('vocab_lang') || pickerLangName();
+    if(vl){ document.getElementById('vstd-glang').value = vl; }
   }catch(e){}
 
   fetch(SUPA_URL+'/rest/v1/students?select=name,email,period&order=name',{headers:head()})
