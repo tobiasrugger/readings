@@ -357,13 +357,12 @@ function plain(s){
 /* ---------- translation via Apps Script proxy ---------- */
 var tcache={};
 function translate(word,meaning,lang,cb){
-  var text=word+' \u2014 '+meaning;
-  var key=lang+'|'+text;
+  var key=lang+'|'+word+'|'+meaning;
   if(tcache[key]){cb(tcache[key]);return;}
-  var u=PROXY+'?text='+encodeURIComponent(text)+'&q='+encodeURIComponent(text)+
-        '&target='+encodeURIComponent(lang)+'&lang='+encodeURIComponent(lang)+'&to='+encodeURIComponent(lang);
+  var u=PROXY+'?action=translate&idiom='+encodeURIComponent(word)+'&meaning='+encodeURIComponent(meaning)+'&lang='+encodeURIComponent(lang);
   fetch(u).then(function(r){return r.text();}).then(function(t){
-    var v=pickTranslation(t);
+    var o=pickTranslation(t); if(!o){cb('');return;}
+    var v=o.equiv&&o.meaning?(o.equiv+' \u2014 '+o.meaning):(o.equiv||o.meaning);
     if(!v){cb('');return;}
     tcache[key]=v;cb(v);
   }).catch(function(){cb('');});
@@ -372,26 +371,22 @@ function translate(word,meaning,lang,cb){
 /* accept only a real translation; a health check or any other JSON is not one */
 function pickTranslation(t){
   var v=String(t||'').trim();
-  if(!v) return '';
-  if(v[0]==='{'||v[0]==='['){
-    try{
-      var j=JSON.parse(v);
-      var c=j.translation||j.translated||j.translatedText||j.result||j.output||j.text||'';
-      if(typeof c==='object'&&c) c=c.translation||c.text||'';
-      return (typeof c==='string')?c.trim():'';
-    }catch(e){ return ''; }
-  }
-  if(/Galileo backend/i.test(v)) return '';
-  return v;
+  if(!v) return null;
+  if(v[0]!=='{') return null;
+  try{
+    var j=JSON.parse(v), c=j.translation;
+    if(c&&typeof c==='object') return {equiv:String(c.equiv||'').trim(),meaning:String(c.meaning||'').trim()};
+    if(typeof c==='string'&&c.trim()) return {equiv:c.trim(),meaning:''};
+    return null;
+  }catch(e){ return null; }
 }
 function translateText(text,lang,cb){
   var key=lang+'|'+text;
   if(tcache[key]){cb(tcache[key]);return;}
-  var u=PROXY+'?text='+encodeURIComponent(text)+'&q='+encodeURIComponent(text)+
-        '&target='+encodeURIComponent(lang)+'&lang='+encodeURIComponent(lang)+'&to='+encodeURIComponent(lang);
+  var u=PROXY+'?action=translate&idiom='+encodeURIComponent(text)+'&meaning='+encodeURIComponent(text)+'&lang='+encodeURIComponent(lang);
   fetch(u).then(function(r){return r.text();}).then(function(t){
-    var v=pickTranslation(t);
-    if(!v) return;            /* nothing usable: show nothing */
+    var o=pickTranslation(t); if(!o) return;
+    var v=o.meaning||o.equiv; if(!v) return;
     tcache[key]=v;cb(v);
   }).catch(function(){});
 }
