@@ -504,7 +504,7 @@ async function load(email){
     sb('student_facts?email=eq.'+encodeURIComponent(email)+'&select=key,value'),
     sb('activities?select=*&order=sort_order.asc'),
     sb('activity_attempts?email='+both+'&select=slug,score,max_score,completed_at,detail&order=completed_at.asc'),
-    sb('student_skills?email='+both+'&select=skill,pct,n'),
+    sb('student_skills?email='+both+'&select=skill,pct,n,label,family'),
     sb('skill_resources?select=*&order=sort_order.asc'),
     sb('student_work?email='+both+'&select=*&order=sort_order.asc'),
     window.MW?MW.loadChecks(email):null,
@@ -568,7 +568,9 @@ function renderGlance(){
   box.innerHTML=html;
 }
 
-function renderAll(){renderGlance();
+function renderAll(){
+  (DATA.skills||[]).forEach(function(r){ if(r.label)SKILL_LABEL[r.skill]=r.label; });
+  renderGlance();
   if(NEW_STUDENT){
     const h=document.getElementById('hMeta');
     setTimeout(function(){
@@ -767,7 +769,8 @@ function mergeSkills(rows){
   var by={};
   rows.forEach(function(r){
     var b=by[r.skill]; var n=r.n||1;
-    if(!b){ by[r.skill]={skill:r.skill,pct:r.pct,n:r.n,_w:n,_s:r.pct*n}; return; }
+    if(!b){ by[r.skill]={skill:r.skill,pct:r.pct,n:r.n,label:r.label,family:r.family,_w:n,_s:r.pct*n}; return; }
+    if(!b.label&&r.label)b.label=r.label;
     b._w+=n; b._s+=r.pct*n; b.n=(b.n||0)+(r.n||0); b.pct=Math.round(b._s/b._w);
   });
   return Object.keys(by).map(function(k){ var b=by[k]; delete b._w; delete b._s; return b; });
@@ -891,7 +894,15 @@ function starHtml(sk){
   return '<span class="gstar" title="Gold star: a perfect round">\u2B50</span>'+
     (st.star_round>1?'<span class="tries" title="Took '+st.star_round+' rounds">'+st.star_round+'</span>':'');
 }
-function niceSkill(k){return String(k).replace(/-/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});}
+var SKILL_LABEL={};
+function niceSkill(k){
+  if(SKILL_LABEL[k])return SKILL_LABEL[k];
+  // a bare spine code (VOC.TOPIC, SV.3SG) is meaningless to a student:
+  // show it tidied rather than shouted
+  var t=String(k).replace(/[-_.]/g,' ').trim();
+  if(/^[A-Z0-9 .]+$/.test(String(k)))t=t.toLowerCase();
+  return t.replace(/\b\w/g,function(c){return c.toUpperCase();});
+}
 function nextSkills(){
   var list=(DATA.skills||[]).map(function(r){return {skill:r.skill,pct:curPct(r.skill,r)};})
     .filter(function(x){return x.pct!=null&&x.pct<DONE_AT;})
