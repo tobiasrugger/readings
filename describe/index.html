@@ -43,7 +43,7 @@ button{cursor:pointer}
 .dot{width:11px;height:11px;border-radius:50%;background:var(--line);display:inline-block}
 .dot.on{background:var(--ok)}.dot.err{background:var(--no)}
 /* section nav: five big cards */
-.tabs{max-width:980px;margin:6px auto 0;padding:0 16px;display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.tabs{max-width:980px;margin:6px auto 0;padding:0 16px;display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
 .tabs button{text-align:left;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:9px 11px;line-height:1.2;font-weight:700;font-size:16px}
 .tabs button small{display:block;font-size:12.5px;color:var(--muted);font-weight:500;margin-top:2px}
 .tabs button.sel{background:var(--p);color:var(--bg);border-color:var(--p)}
@@ -242,7 +242,7 @@ var ME={email:'',name:'',period:'',lang:'none'};
 var A={};      /* answers: everything the student wrote/chose */
 var SC={};     /* scores: key -> {correct,total,best} */
 var dirty=false;
-var SEC='say', PG={say:0,interview:0,because:0,compare:0,paragraph:0};
+var SEC='words', PG={words:0,say:0,interview:0,because:0,compare:0,paragraph:0};
 
 /* ============ CHARACTERS (SVG) ============ */
 var HC={blond:'#e8c35a',brown:'#6b3f1d',black:'#1b1b1b',red:'#c2491d',gray:'#c9c9c9'};
@@ -328,11 +328,12 @@ var HASCATS=['hair','eyes','len','style'], ISCATS=['h','age'];
 
 /* ============ SECTIONS ============ */
 var SECTIONS=[
-  {k:'say',       t:'1 Say it',     sub:'hair, eyes, is, has', pages:['Listen','Build','Write']},
-  {k:'interview', t:'2 Interview',  sub:'ask a classmate',     pages:['Questions 1–4','Questions 5–8','Write questions 9–12','Write questions 13–16']},
-  {k:'because',   t:'3 Because',    sub:'traits + reasons',    pages:['See','Match','Verbs','Write']},
-  {k:'compare',   t:'4 Compare',    sub:'same and different',  pages:['Dog & cat','Frames','Leo & Mia','Me & my classmate','Listen & sort']},
-  {k:'paragraph', t:'5 Paragraph',  sub:'put it together',     pages:['Write it']}
+  {k:'words',     t:'1 Words',      sub:'say each word',       pages:['Say the words']},
+  {k:'say',       t:'2 Say it',     sub:'hair, eyes, is, has', pages:['Listen','Build','Write']},
+  {k:'interview', t:'3 Interview',  sub:'ask a classmate',     pages:['Questions 1–4','Questions 5–8','Write questions 9–12','Write questions 13–16']},
+  {k:'because',   t:'4 Because',    sub:'traits + reasons',    pages:['See','Match','Verbs','Write']},
+  {k:'compare',   t:'5 Compare',    sub:'same and different',  pages:['Dog & cat','Frames','Leo & Mia','Me & my classmate','Listen & sort']},
+  {k:'paragraph', t:'6 Paragraph',  sub:'put it together',     pages:['Write it']}
 ];
 
 /* ============ RENDER SHELL ============ */
@@ -390,10 +391,72 @@ function speak(text,slow,btn){ if(!window.speechSynthesis) return;
   setTimeout(function(){ go(true); },60); }
 if(window.GS) GS.say=speak;
 
+
 /* =====================================================================
    SECTION 1 · SAY IT
    ===================================================================== */
-var PAGES={say:[],interview:[],because:[],compare:[],paragraph:[]};
+var PAGES={words:[],say:[],interview:[],because:[],compare:[],paragraph:[]};
+
+/* =====================================================================
+   SECTION 0 · WORDS — pronunciation flashcards.
+   VOCAB is the one list to edit when a new activity adds words. Each deck: name, emoji, items.
+   An item is a word/phrase, or [phrase, 'other way to say it that also counts'].
+   ===================================================================== */
+var VOCAB=[
+  {k:'hair', name:'Hair', e:'💇', items:['hair','blond hair','brown hair','black hair','red hair','gray hair','short hair','medium hair','long hair','straight hair','wavy hair','curly hair']},
+  {k:'eyes', name:'Eyes', e:'👀', items:['eyes','blue eyes','brown eyes','black eyes','green eyes']},
+  {k:'body', name:'Tall, short…', e:'🧍', items:['tall','short','tall or short','young','old','young or old','athletic','artistic','friendly','shy']},
+  {k:'traits', name:'Traits', e:'🙂', items:['loud','quiet','musical','dramatic','hardworking','lazy','nice','cruel','generous','selfish','playful','serious','peaceful','aggressive','proud','humble']},
+  {k:'verbs', name:'Reasons', e:'💬', items:['because','shares','does not share','food','homework','talks','plays','draws','guitar','fights','helps','shouts']},
+  {k:'compare', name:'Same / different', e:'⚖️', items:['both','same','different','is like','but','and','first','then','next','also','finally']},
+  {k:'questions', name:'Questions', e:'❓', items:['Do you have','Are you','Do you have blue eyes?','Are you tall or short?','Are you friendly or shy?']}
+];
+var W_ACCEPT=0.55, W_PRAISE=['Clear!','Nice!','Great!','Got it!','Perfect!'];
+PAGES.words[0]=function(){
+  A.w=A.w||{}; A.wdeck=A.wdeck||VOCAB[0].k; A.wi=A.wi||{};
+  var deck=VOCAB.filter(function(d){return d.k===A.wdeck;})[0]||VOCAB[0]; var items=deck.items, i=Math.min(A.wi[deck.k]||0,items.length-1), it=items[i];
+  var key='words0', total=VOCAB.reduce(function(n,d){return n+d.items.length;},0), okN=0; VOCAB.forEach(function(d){ d.items.forEach(function(x){ if((A.w[d.k+'|'+x]||{}).ok) okN++; }); });
+  SC[key]={correct:okN,total:total,best:Math.max((SC[key]||{}).best||0,okN),attempts:(SC[key]||{}).attempts||0}; if(okN===total) A['done_'+key]=true;
+  var st=A.w[deck.k+'|'+it]||{};
+  var html='<div class="card"><h2>Say the words 🗣️</h2><p class="dek">'+T('Listen. Then tap the red button and say the word. The computer checks your pronunciation.')+'</p>'+
+    '<div class="row">'+VOCAB.map(function(d){ var n=d.items.filter(function(x){return (A.w[d.k+'|'+x]||{}).ok;}).length; return '<button class="chip '+(d.k===deck.k?'sel':n===d.items.length?'ok':'')+'" data-deck="'+d.k+'">'+d.e+' '+esc(d.name)+' '+n+'/'+d.items.length+'</button>'; }).join('')+'</div></div>';
+  html+='<div class="card"><div class="row"><span class="qnum">'+(i+1)+' / '+items.length+'</span><div class="row" style="gap:4px">'+items.map(function(x,xi){ var s=A.w[deck.k+'|'+x]||{}; return '<span class="dot '+(s.ok?'on':s.tries?'err':'')+'" style="width:9px;height:9px;'+(xi===i?'outline:2px solid var(--p);outline-offset:1px':'')+'"></span>'; }).join('')+'</div></div>'+
+    '<div class="say" style="font-size:40px;justify-content:center;margin:18px 0 6px;text-align:center"><span class="tr">'+esc(it)+'</span></div>'+
+    '<div class="row" style="justify-content:center">'+ears(it)+'<button class="trans" data-tr="'+esc(it)+'">'+T('translate')+'</button></div>'+
+    '<div class="line a" data-w="1" style="margin-top:14px;border-left-color:var(--p)"><div class="slot"><button class="mic" aria-label="Record">'+MIC+'</button><div class="rule">'+(st.ok?'<span class="said" style="color:var(--ok)">'+esc(it)+'</span><span class="okp">'+esc(st.p||'Clear!')+'</span>':'<span class="hint">'+T('Tap the red button, say it, tap again.')+'</span>')+'</div></div><div class="nudge hide"></div></div>'+
+    '<div class="nav" style="position:static;margin:14px 0 0;padding:0;border:0;background:none"><button class="btn line" id="wPrev" '+(i===0?'disabled':'')+'>← '+T('Back')+'</button><button class="btn solid" id="wNext">'+(i===items.length-1?T('Next deck')+' →':T('Next word')+' →')+'</button></div></div>';
+  $('page').innerHTML=html;
+  $('page').querySelectorAll('[data-deck]').forEach(function(b){ b.onclick=function(){ A.wdeck=b.getAttribute('data-deck'); dirty=true; render(); }; });
+  function go(d){ var n=i+d; if(n>=items.length){ var di=VOCAB.indexOf(deck); if(di<VOCAB.length-1){ A.wdeck=VOCAB[di+1].k; } else { toast('You said every word!'); return; } } else A.wi[deck.k]=n; dirty=true; render(); }
+  $('wPrev').onclick=function(){ go(-1); }; $('wNext').onclick=function(){ go(1); };
+  speak(it);
+  var el=$('page').querySelector('.line'), mic=el.querySelector('.mic'), rule=el.querySelector('.rule'), nudgeEl=el.querySelector('.nudge');
+  if(!window.GS||!GS.micButton){ mic.onclick=function(){ rule.innerHTML='<span class="hint">The recording tool did not load. Reload the page.</span>'; }; return; }
+  var tries=0;
+  function nudge(x){ nudgeEl.innerHTML=x; nudgeEl.classList.remove('hide'); }
+  function tidy(s){ return (s||'').toLowerCase().replace(/[^a-z' ]/g,' ').replace(/\s+/g,' ').trim(); }
+  GS.micButton(mic,{label:'Record',maxMs:6000,
+    onStart:function(){ nudgeEl.classList.add('hide'); rule.innerHTML='<span class="listening">Listening…</span><span class="interim"></span>'; },
+    onInterim:function(t){ var s=rule.querySelector('.interim'); if(s) s.textContent=t; },
+    onDone:function(res){
+      if(res.error==='not-allowed'||res.error==='nomic'||res.error==='service-not-allowed'){ rule.innerHTML='<span class="hint">The microphone is off.</span>'; nudge('<p>Click the lock next to the web address. Set <b>Microphone</b> to <b>Allow</b>. Then try again.</p>'); return; }
+      tries++; var rec=A.w[deck.k+'|'+it]||{tries:0}; rec.tries=(rec.tries||0)+1;
+      var m=null, ok=false, heard='';
+      if(GS.canRecognize&&res.alts.length){ m=GS.bestMatch(res.alts,[it]); heard=m.heard||res.alts[0].t||''; var tgt=tidy(it);
+        ok=m.score>=W_ACCEPT || res.alts.some(function(a){ var t=tidy(a.t); return t===tgt||t.indexOf(tgt)>=0||tgt.indexOf(t)>=0&&t.length>2; }); }
+      else if(!GS.canRecognize){ ok=true; }
+      rec.heard=heard; if(ok){ rec.ok=true; rec.p=W_PRAISE[Math.floor(Math.random()*W_PRAISE.length)]; }
+      A.w[deck.k+'|'+it]=rec; dirty=true;
+      try{ GS.saveAttempt({activity:'describe-words', item_id:deck.k+'|'+it, exchange_id:(ME.email||'')+'-'+deck.k, round:1, line_no:i+1, role:'word', email:ME.email, speaker_name:ME.name, period:ME.period, device_email:ME.email, target_text:it, said_text:ok?it:null, transcript:heard||null, alternatives:(res.alts||[]).slice(0,5), match_score:m?Math.round(m.score*1000)/1000:null, attempt_no:tries, accepted:ok, practice:false, seconds:res.secs?Math.round(res.secs*10)/10:null}, res.blob); }catch(e){}
+      if(ok){ rule.innerHTML='<span class="said" style="color:var(--ok)">'+esc(it)+'</span><span class="okp">'+esc(rec.p)+'</span>'; speak(it); setTimeout(function(){ if(A.wi[deck.k]===i||A.wi[deck.k]==null) go(1); },1100); return; }
+      var h=heard?'I heard: <b>'+esc(heard)+'</b>.':'I did not hear you.';
+      rule.innerHTML='<span class="hint" style="color:var(--no)">'+h+'</span>';
+      nudge('<p class="tipline"><span>'+esc(it)+'</span>'+ears(it)+'</p><p class="small">Listen, then tap the red button and say it again.'+(tries>=3?' Or <button class="linkish" id="wSkip">skip this word</button>.':'')+'</p>');
+      var sk=$('wSkip'); if(sk) sk.onclick=function(){ go(1); };
+    }
+  });
+};
+
 
 /* 1.1 Listen: hear a phrase, choose it */
 PAGES.say[0]=function(){
