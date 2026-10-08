@@ -150,6 +150,22 @@ table.cw td.cell.cur.good{background:#c9ecd4} table.cw td.cell.cur.bad{backgroun
 .xlink a{display:inline-block;margin:.25rem .6rem .25rem 0;padding:.45rem .9rem;border:1px solid #ddd;border-radius:8px;text-decoration:none;color:#1a1a1a;font-weight:600;font-size:.9rem;}
 .xlink a:hover{border-color:#b4531f;color:#b4531f;}
 @media print{.xlink{display:none}}
+
+/* ---------- Omelas frame: same bar, same palette as the story ---------- */
+:root{--pine:#0F6E56;--pine2:#3C3489;--mint:#EEEDFE;--edge:#e5e3de;--ink:#1a1a1a;--muted:#6b6b6b;--paper:#f8f7f4;--gold:#B8860B;--rose:#8B2A2A;}
+.bar{background:#0F6E56;padding:.5rem .95rem;gap:.45rem .8rem;font-size:12px;}
+.bar h1{font-size:13px;font-weight:700;letter-spacing:.03em;}
+.bar .crumb{color:#BFE5D8;text-decoration:none;font-weight:600;white-space:nowrap;}
+.bar .crumb:hover{color:#fff;text-decoration:underline;}
+.bar .crumb .arr{margin-right:.3rem;}
+.bar select{font-size:12px;background:#0B5946;color:#fff;border:1px solid #2E8A72;border-radius:7px;padding:4px 7px;}
+.bar button,.bar .btn{font-size:12px;font-weight:600;background:transparent;color:#fff;border:1px solid #45A089;border-radius:7px;padding:4px 11px;}
+.bar button:hover{background:#0B5946;border-color:#8FD3C0;}
+.gate .card h2{color:#1a1a1a;}
+.card,.pane{border-color:#e5e3de;border-radius:12px;}
+.btn.primary,button.primary{background:#3C3489;}
+.tabs button[aria-selected="true"]{background:#3C3489;color:#fff;}
+.xlink{border-color:#B8860B;} .xlink h3{color:#7A5A05;} .xlink a:hover{border-color:#3C3489;color:#3C3489;}
 </style>
 </head>
 <body>
@@ -179,6 +195,7 @@ table.cw td.cell.cur.good{background:#c9ecd4} table.cw td.cell.cur.bad{backgroun
 </div>
 
 <div class="bar">
+  <a class="crumb" href="/readings/omelas/"><span class="arr">&larr;</span>Omelas</a>
   <h1>Omelas · 12 words to know</h1>
   <span id="dot" title="save status"></span>
   <select id="lang" title="Translation language">
@@ -1510,6 +1527,35 @@ function checkTranslation(){
 setInterval(checkTranslation, 20000);
 setTimeout(checkTranslation, 4000);
 
+
+/* ---------- handed in from the story: sign in once, keep the language ---------- */
+(function(){
+  var MAP = { zh:'zh-CN', ary:'ary', yue:'yue' };
+  function engineLang(c){ if(!c || c === 'none') return ''; return MAP[c] || c; }
+  var lang = '';
+  try{ lang = localStorage.getItem('vocab_lang') || engineLang(localStorage.getItem('gal_lang') || localStorage.getItem('omelas_v2_omelas_lang') || ''); }catch(e){}
+  if(lang && $('lang').querySelector('option[value="' + lang + '"]')){
+    $('lang').value = lang;
+    try{ localStorage.setItem('vocab_lang', lang); }catch(e){}
+    if(window.applyLeads) applyLeads();
+  }
+  var st = null;
+  try{
+    st = JSON.parse(localStorage.getItem('vocab_me') || 'null');
+    if(!(st && st.email && st.name && st.period)){
+      var o = JSON.parse(localStorage.getItem('omelas_student') || 'null');
+      if(o && o.email && o.name && o.period) st = { email: o.email, name: o.name, period: String(o.period) };
+    }
+  }catch(e){ st = null; }
+  if(st && st.email){
+    $('gname').value = st.name || '';
+    $('gmail').value = st.email;
+    $('gper').value = String(st.period || '').replace(/[^0-9]/g, '');
+    if(st.name && st.period && typeof signIn === 'function'){
+      signIn();                                   /* same path as pressing Start; stays on the gate only if something fails validation */
+    }
+  }
+})();
 </script>
 <script src="/readings/track.js"></script>
 </body>
