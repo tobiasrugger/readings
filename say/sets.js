@@ -22,5 +22,11 @@ window.SAY_SETS={
     {k:'history', name:'Hard history', e:'🌎', items:['indigenous','indigenous people','Native Americans','North America','Europe','disease','diseases','killed','weapon','weapons','genocide','angry']},
     {k:'rigoberta', name:'Rigoberta Menchú', e:'✊', items:['Rigoberta Menchú','Guatemala','equality','fair treatment','rights','protest','protested','protesters','army','wrote a book','problems','forced','Nobel Peace Prize']},
     {k:'sent', name:'Sentences', e:'💬', items:['Monday is a holiday.','There is no school.','Indigenous people lived here first.','The diseases killed millions of people.','Some people are angry.','She fights for equality.','The army tried to kill her.','She won the Nobel Peace Prize.']}
+  ] },
+  firstpeoples:{ title:'Indigenous Peoples\u2019 Day (101)', back:'/readings/indigenous101/', decks:[
+    {k:'people', name:'People', e:'🌎', items:['first peoples','indigenous people','the Ohlone','Europeans','Columbus']},
+    {k:'past', name:'Past tense', e:'⏮️', items:['lived','came','died','killed','took','They lived here first.','Columbus came in 1492.','Many people died.']},
+    {k:'feel', name:'Feelings', e:'😊', items:['happy','sad','angry','It\u2019s complicated.']},
+    {k:'today', name:'Today', e:'📅', items:['holiday','celebrate','remember','respect','We respect all people.','Indigenous Peoples\u2019 Day']}
   ] }
 };
