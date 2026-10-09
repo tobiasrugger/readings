@@ -272,6 +272,8 @@ function speak(text){
   try{
     if(!window.speechSynthesis) return;
     speechSynthesis.cancel();
+    /* a lone "I" makes some voices say "capital I"; "eye" sounds identical */
+    if(/^\s*I[.!?,]?\s*$/.test(text)) text='eye';
     var u=new SpeechSynthesisUtterance(text); u.lang='en-US'; u.rate=0.85;
     if(!voice){ var vs=speechSynthesis.getVoices(), i;
       for(i=0;i<vs.length;i++){ if(/en-US/.test(vs[i].lang) && /female|samantha|zira|aria|jenny|google us english/i.test(vs[i].name)){ voice=vs[i]; break; } }
@@ -332,9 +334,10 @@ function startFlash(){
 }
 function renderFlash(){
   var c=F.cards[F.i], p=c.p;
-  var front='<div class="emo">'+c.e+'</div><div class="cue">'+esc(p.cue)+'</div>';
-  var back='<div class="emo">'+c.e+'</div><div class="big">'+esc(cap(p.k))+'</div>'+(S.lang==='none'?enMean(p.k):l1(p.k));
-  $('stage').innerHTML='<div class="panel f-'+p.f+'"><h2>Flashcards</h2><p class="lede">Look at the picture. Say the word out loud. Then tap the card to check.</p>'+
+  /* picture only, then picture + the one word — nothing else on the card */
+  var front='<div class="emo">'+c.e+'</div>';
+  var back='<div class="emo">'+c.e+'</div><div class="big">'+esc(cap(p.k))+'</div>';
+  $('stage').innerHTML='<div class="panel f-'+p.f+'"><h2>Flashcards</h2><p class="lede">Look at the picture. Say the word. Tap the card to see it.</p>'+
     '<button class="flip'+(F.flipped?' back':'')+'" data-flip="1">'+(F.flipped?back:front)+'<span class="hint">'+(F.flipped?'':'Tap to turn over')+'</span></button>'+
     '<div class="row"><button class="btn soft" data-fprev="1">← Back</button>'+
     (F.flipped?'<button class="btn soft" data-say="'+esc(p.k)+'">🔊 Hear it</button>':'')+
