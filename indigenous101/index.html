@@ -233,8 +233,8 @@ body.nol1 .l1{display:none;}
 .gtile .tlinks{font-size:10px;padding:0 .7rem .5rem;}
 .gtile .tlinks a{color:#aaa;margin-right:8px;}
 body:not(.teacher) .gtile .tlinks{display:none;}
-.mini{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:.6rem 0 1rem;}
-.mini svg{width:100%;height:auto;border-radius:8px;border:2px solid transparent;cursor:pointer;}
+.mini{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:.6rem 0 1rem;}
+.mini svg{width:100%;height:auto;border-radius:10px;border:3px solid transparent;cursor:pointer;}
 .mini svg.pick{border-color:#7F77DD;} .mini svg.ok{border-color:#0F6E56;} .mini svg.no{border-color:#A32D2D;}
 .ordrow{display:flex;flex-wrap:wrap;gap:8px;margin:.5rem 0;}
 .ordbtn{padding:8px 12px;font-size:14px;border:1.5px solid #ddd;border-radius:10px;background:#fafaf8;cursor:pointer;text-align:left;}
@@ -247,7 +247,7 @@ body:not(.teacher) .gtile .tlinks{display:none;}
 .yn button.ok{background:#E1F5EE;border-color:#0F6E56;color:#0F6E56;} .yn button.no{background:#FAECEB;border-color:#A32D2D;color:#A32D2D;}
 .scorebox{font-size:15px;font-weight:700;color:#0F6E56;margin:.6rem 0 1rem;}
 .cards3{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-@media (max-width:640px){.mini{grid-template-columns:repeat(3,1fr);}.cards3{grid-template-columns:1fr;}}
+@media (max-width:640px){.mini{grid-template-columns:repeat(2,1fr);}.cards3{grid-template-columns:1fr;}}
 @media print{.mini svg,.panel svg{max-width:360px;}.gal .tlinks{display:none;}}
 
 /* ---------- big facts with a picture ---------- */
@@ -311,7 +311,7 @@ body:not(.teacher) .gtile .tlinks{display:none;}
     <button class="logout-btn noprint" type="button" onclick="doLogout()">Not you? Sign out</button>
   </div>
   <div class="tab-bar">
-    <button class="tab active" type="button" onclick="showTab('who',this)">1 · Who?</button>
+    <button class="tab active" type="button" onclick="showTab('whotab',this)">1 · Who?</button>
     <button class="tab" type="button" onclick="showTab('story',this)">2 · The story</button>
     <button class="tab" type="button" onclick="showTab('words-tab',this)">3 · Words</button>
     <button class="tab" type="button" onclick="showTab('check',this)">4 · Check</button>
@@ -320,7 +320,7 @@ body:not(.teacher) .gtile .tlinks{display:none;}
   </div>
 
   <!-- ── 1 WHO ── -->
-  <div id="who" class="section active">
+  <div id="whotab" class="section active">
     <p class="sec-title">Who are indigenous people?</p>
     <p class="sec-sub" data-dir="d-who" data-en="Read the big ideas. Tap the speaker to listen. Then look at the photos.">Read the big ideas. Tap 🔊 to listen. Then look at the photos.</p>
     <div class="callout">📅 <strong>Monday, October 12</strong> = no school. The holiday is called <strong>Indigenous Peoples’ Day</strong>. Why? Read this page.</div>
@@ -800,11 +800,20 @@ window.addEventListener("scroll", hideTip, { passive:true });
    ============================================================ */
 var CK = { match:{}, order:null, yn:{} };
 try{ CK = JSON.parse(localStorage.getItem(LKEY + "_ck") || "null") || CK; }catch(e){}
+
+/* wrap the story's key words so they are tappable in the games too */
+var GLOSS_FORMS = { "indigenous people":"indigenous people", "indigenous":"indigenous people", "first peoples":"first peoples", "Europeans":"Europeans", "European":"Europeans",
+  "lived":"lived", "came":"came", "died":"died", "killed":"killed", "took":"took", "diseases":"disease", "disease":"disease", "happy":"happy", "sad":"sad", "angry":"angry",
+  "respect":"respect", "remember":"remember", "holiday":"holiday", "celebrate":"celebrate" };
+var GLOSS_RE = new RegExp("\\b(" + Object.keys(GLOSS_FORMS).sort(function(a, b){ return b.length - a.length; }).join("|") + ")\\b", "gi");
+function glossify(text){
+  return esc(text).replace(GLOSS_RE, function(m){ var key = GLOSS_FORMS[m] || GLOSS_FORMS[m.toLowerCase()] || m; return '<span class="gl" tabindex="0" data-w="' + esc(key) + '">' + m + '</span>'; });
+}
 var mQueue = [], mCur = null;
 function drawMatch(keepText){
   if(!mQueue.length) mQueue = shuffle(PANELS.slice());
   if(!mCur || !keepText) mCur = mQueue[0];
-  $("mSent").textContent = S[mCur].en; var l1 = $("mL1"); l1.textContent = ""; l1.classList.toggle("rtl", !!RTL[curLang]); sentL1(mCur, function(t){ l1.textContent = t; });
+  $("mSent").innerHTML = PANEL_HTML[mCur]; var l1 = $("mL1"); l1.textContent = ""; l1.classList.toggle("rtl", !!RTL[curLang]); sentL1(mCur, function(t){ l1.textContent = t; });
   var h = ""; PANELS.forEach(function(k){ h += '<span data-k="' + k + '">' + panelSVG(k) + '</span>'; });
   $("mini").innerHTML = h; $("mFb").textContent = ""; $("mFb").className = "qfb";
   var done = Object.keys(CK.match).length; $("mFb").textContent = done ? ("Matched: " + Object.keys(CK.match).filter(function(k){ return CK.match[k]; }).length + " / 5 pictures") : "";
@@ -818,11 +827,12 @@ $("mini").addEventListener("click", function(e){
 });
 var ORD = [];
 function drawOrder(){
-  var h = ""; shuffle(PANELS.slice()).forEach(function(k){ h += '<button type="button" class="ordbtn" data-k="' + k + '">' + esc(S[k].en.split(".")[0] + ".") + '</button>'; });
+  var h = ""; shuffle(PANELS.slice()).forEach(function(k){ h += '<button type="button" class="ordbtn" data-k="' + k + '">' + glossify(S[k].en.split(".")[0] + ".") + '</button>'; });
   $("ordBtns").innerHTML = h; ORD = []; $("ordOut").textContent = "—"; $("ordFb").textContent = ""; $("ordFb").className = "qfb";
   if(CK.order === true){ $("ordFb").textContent = "Done ✓ (play again if you like)"; $("ordFb").className = "qfb ok"; }
 }
 $("ordBtns").addEventListener("click", function(e){
+  if(e.target.closest && e.target.closest(".gl")) return;
   var b = e.target.closest ? e.target.closest(".ordbtn") : null; if(!b) return;
   b.classList.add("used"); ORD.push(b.getAttribute("data-k"));
   $("ordOut").textContent = ORD.map(function(k, i){ return (i + 1) + ". " + S[k].en.split(".")[0]; }).join("   →   ");
@@ -834,7 +844,7 @@ var YN = [
   ["The indigenous people were happy when the Europeans took the land.", false], ["Indigenous people are still here today.", true], ["Monday, October 12 is a school day.", false]
 ];
 function drawYn(){
-  var h = ""; YN.forEach(function(q, i){ h += '<div class="yn" data-i="' + i + '"><span class="st">' + esc(q[0]) + '<button type="button" class="say" data-say="' + esc(q[0]) + '" style="font-size:11px;border:1px solid #ddd;border-radius:999px;background:#fff;color:#777;padding:1px 7px;margin-left:6px;cursor:pointer">🔊</button></span><button type="button" data-v="1">Yes</button><button type="button" data-v="0">No</button></div>'; });
+  var h = ""; YN.forEach(function(q, i){ h += '<div class="yn" data-i="' + i + '"><span class="st">' + glossify(q[0]) + '<button type="button" class="say" data-say="' + esc(q[0]) + '" style="font-size:11px;border:1px solid #ddd;border-radius:999px;background:#fff;color:#777;padding:1px 7px;margin-left:6px;cursor:pointer">🔊</button></span><button type="button" data-v="1">Yes</button><button type="button" data-v="0">No</button></div>'; });
   $("ynList").innerHTML = h;
   for(var i in CK.yn) paintYn(i);
 }
