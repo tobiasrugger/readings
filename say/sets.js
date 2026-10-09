@@ -16,5 +16,11 @@ window.SAY_SETS={
     {k:'pron', name:'Pronouns', e:'🧑', items:['I','you','he','she','it','we','they']},
     {k:'hard', name:'Sounds alike', e:'👂', items:['he','she','see','they','there','day','we','be']},
     {k:'sent', name:'Sentences', e:'💬', items:['I am a student.','You are a student.','He is a boy.','She is a girl.','It is a book.','We are students.','They are friends.']}
+  ] },
+  indigenous:{ title:'Indigenous Peoples\u2019 Day', back:'/readings/indigenous/', decks:[
+    {k:'holiday', name:'The holiday', e:'📅', items:['holiday','no school','celebrate','Columbus Day','Indigenous Peoples\u2019 Day','Christopher Columbus']},
+    {k:'history', name:'Hard history', e:'🌎', items:['indigenous','indigenous people','Native Americans','North America','Europe','disease','diseases','killed','weapon','weapons','genocide','angry']},
+    {k:'rigoberta', name:'Rigoberta Menchú', e:'✊', items:['Rigoberta Menchú','Guatemala','equality','fair treatment','rights','protest','protested','protesters','army','wrote a book','problems','forced','Nobel Peace Prize']},
+    {k:'sent', name:'Sentences', e:'💬', items:['Monday is a holiday.','There is no school.','Indigenous people lived here first.','The diseases killed millions of people.','Some people are angry.','She fights for equality.','The army tried to kill her.','She won the Nobel Peace Prize.']}
   ] }
 };
