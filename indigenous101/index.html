@@ -249,6 +249,15 @@ body:not(.teacher) .gtile .tlinks{display:none;}
 .cards3{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 @media (max-width:640px){.mini{grid-template-columns:repeat(3,1fr);}.cards3{grid-template-columns:1fr;}}
 @media print{.mini svg,.panel svg{max-width:360px;}.gal .tlinks{display:none;}}
+
+/* ---------- big facts with a picture ---------- */
+.bigfact.withimg{display:grid;grid-template-columns:1fr 230px;gap:16px;align-items:center;}
+.bigfact .pic{width:100%;}
+.collage{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;}
+.collage .ct{aspect-ratio:1;background:#fff;border-radius:7px;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:26px;position:relative;}
+.collage .ct img{width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;}
+.sfmap svg{width:100%;height:auto;display:block;border-radius:10px;}
+@media (max-width:640px){.bigfact.withimg{grid-template-columns:1fr;}.bigfact .pic{max-width:300px;margin:0 auto;}}
 </style>
 </head>
 <body>
@@ -316,10 +325,10 @@ body:not(.teacher) .gtile .tlinks{display:none;}
     <p class="sec-sub" data-dir="d-who" data-en="Read the big ideas. Tap the speaker to listen. Then look at the photos.">Read the big ideas. Tap 🔊 to listen. Then look at the photos.</p>
     <div class="callout">📅 <strong>Monday, October 12</strong> = no school. The holiday is called <strong>Indigenous Peoples’ Day</strong>. Why? Read this page.</div>
 
-    <div class="bigfact" data-k="T1"><p class="en"><span class="gl" tabindex="0" data-w="indigenous people">Indigenous people</span> are the <span class="gl" tabindex="0" data-w="first peoples">first people</span> in a place.<button type="button" class="speak">🔊</button></p><span class="l1"></span></div>
+    <div class="bigfact withimg" data-k="T1"><div><p class="en"><span class="gl" tabindex="0" data-w="indigenous people">Indigenous people</span> are the <span class="gl" tabindex="0" data-w="first peoples">first people</span> in a place.<button type="button" class="speak">🔊</button></p><span class="l1"></span></div><div class="pic collage" id="collage"></div></div>
     <div class="bigfact" data-k="T2"><p class="en">They are still here today.<button type="button" class="speak">🔊</button></p><span class="l1"></span></div>
     <div class="bigfact" data-k="T3"><p class="en">Many people have <span class="gl" tabindex="0" data-w="indigenous people">indigenous</span> grandparents. Maybe you!<button type="button" class="speak">🔊</button></p><span class="l1"></span></div>
-    <div class="bigfact" data-k="T5"><p class="en">In San Francisco, the first people are the <strong>Ohlone</strong>. Galileo is on Ohlone land.<button type="button" class="speak">🔊</button></p><span class="l1"></span></div>
+    <div class="bigfact withimg" data-k="T5"><div><p class="en">In San Francisco, the first people are the <strong>Ohlone</strong>. Galileo is on Ohlone land.<button type="button" class="speak">🔊</button></p><span class="l1"></span></div><div class="pic sfmap" id="sfmap"></div></div>
 
     <p class="sec-title" style="margin-top:1.4rem">Indigenous people today</p>
     <p class="sec-sub">Photos from many countries. Find your country.</p>
@@ -452,6 +461,12 @@ body:not(.teacher) .gtile .tlinks{display:none;}
   </div>
   <div id="tLogin" class="gatebox" style="margin:0 auto">
     <label for="tPass">Teacher password</label><input type="password" id="tPass"><button type="button" id="tGo">Open</button><div class="gerr" id="tErr"></div>
+  </div>
+  <div id="tPhotos" style="display:none;margin-bottom:1.5rem">
+    <div class="act-block"><p class="act-title">Photos for the gallery <span id="tPhotoCount" class="s-meta"></span></p>
+      <p class="act-q">Save each one as <code>readings/indigenous101/img/&lt;name&gt;.jpg</code>. Green = found on the site, grey = still missing. Links open a Wikimedia Commons search and a Google Images search filtered to Creative Commons.</p>
+      <div class="gal" id="tGal"></div>
+    </div>
   </div>
   <div id="tList"></div>
 </div>
@@ -663,9 +678,9 @@ function wordL1(w, cb){
 }
 function applyLang(){
   document.body.classList.toggle("nol1", !L1ON);
-  var els = document.querySelectorAll("[data-k] > .l1"), i;
+  var els = document.querySelectorAll("[data-k] .l1"), i;
   for(i = 0; i < els.length; i++){
-    (function(el){ var k = el.parentElement.getAttribute("data-k"); el.classList.toggle("rtl", !!RTL[curLang]); el.textContent = ""; sentL1(k, function(t){ el.textContent = t; }); })(els[i]);
+    (function(el){ var k = el.closest("[data-k]").getAttribute("data-k"); el.classList.toggle("rtl", !!RTL[curLang]); el.textContent = ""; sentL1(k, function(t){ el.textContent = t; }); })(els[i]);
   }
   var wt = document.querySelectorAll(".wcard .wt");
   for(i = 0; i < wt.length; i++){ (function(el){ el.classList.toggle("rtl", !!RTL[curLang]); wordL1(el.getAttribute("data-vk"), function(t){ el.textContent = t; }); })(wt[i]); }
@@ -939,7 +954,15 @@ function teacherMode(){
   document.querySelector(".tlink").style.display = "none"; $("saveNote").style.visibility = "hidden"; $("turnIn").style.display = "none"; $("printMine").style.display = "none";
   try{ if(sessionStorage.getItem("gal_teacher") === "1") openTeacher(); }catch(e){}
 }
-function openTeacher(){ $("tLogin").style.display = "none"; $("tTools").style.display = ""; try{ sessionStorage.setItem("gal_teacher", "1"); }catch(e){} loadTeacher(); }
+function teacherPhotos(){
+  var h = ""; PHOTOS.forEach(function(p){ var cq = encodeURIComponent(p.q);
+    h += '<div class="gtile" id="tp-' + p.k + '" style="border-left:4px solid #ccc"><div class="ph"><span class="ico">' + p.e + '</span><img src="img/' + p.k + '.jpg" alt="" onerror="this.remove();tPhotoTally()" onload="this.previousElementSibling.style.display=\'none\';this.closest(\'.gtile\').style.borderLeftColor=\'#0F6E56\';tPhotoTally()"></div>' +
+         '<div class="nm">' + esc(p.n) + '</div><div class="wh">' + esc(p.w) + '<br><b>img/' + p.k + '.jpg</b></div>' +
+         '<div class="tlinks" style="display:block;font-size:12px;padding-bottom:.6rem"><a target="_blank" rel="noopener" href="https://commons.wikimedia.org/w/index.php?search=' + cq + '&ns6=1">Commons</a> <a target="_blank" rel="noopener" href="https://www.google.com/search?tbm=isch&tbs=il:cl&q=' + cq + '">Google CC</a></div></div>'; });
+  $("tGal").innerHTML = h; $("tPhotos").style.display = ""; tPhotoTally();
+}
+function tPhotoTally(){ var n = 0, im = document.querySelectorAll("#tGal .gtile img"); for(var i = 0; i < im.length; i++) if(im[i].complete && im[i].naturalWidth > 0) n++; $("tPhotoCount").textContent = "· " + n + " of " + PHOTOS.length + " found"; }
+function openTeacher(){ $("tLogin").style.display = "none"; $("tTools").style.display = ""; teacherPhotos(); try{ sessionStorage.setItem("gal_teacher", "1"); }catch(e){} loadTeacher(); }
 $("tGo").addEventListener("click", function(){ if($("tPass").value === TPASS) openTeacher(); else $("tErr").textContent = "Wrong password."; });
 $("tPass").addEventListener("keydown", function(e){ if(e.key === "Enter") $("tGo").click(); });
 function loadTeacher(){
@@ -975,10 +998,40 @@ $("tCsv").addEventListener("click", function(){
   var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([out.join("\n")], { type:"text/csv" })); a.download = "indigenous101-responses.csv"; a.click();
 });
 
+
+/* ---------- collage beside the first sentence: six gallery photos (emoji until the files exist) ---------- */
+function buildCollage(){
+  var picks = ["maya","hmong","amazigh","tharu","ohlone","quechua"], h = "";
+  picks.forEach(function(k){ var p = null; PHOTOS.forEach(function(x){ if(x.k === k) p = x; }); if(!p) return;
+    h += '<div class="ct" title="' + esc(p.n) + '"><span>' + p.e + '</span><img src="img/' + p.k + '.jpg" alt="' + esc(p.n) + '" onerror="this.remove()"></div>'; });
+  $("collage").innerHTML = h;
+}
+/* ---------- San Francisco map with Ohlone land underlaid ---------- */
+function buildMap(){
+  $("sfmap").innerHTML =
+  '<svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Map of San Francisco Bay. All the land is Ohlone land. A star marks Galileo Academy.">' +
+  '<defs><pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="7" height="7" fill="#c9a86a"/><path d="M0 0 V7" stroke="#b08a4a" stroke-width="2"/></pattern></defs>' +
+  '<rect width="300" height="300" fill="#8fc1e3"/>' +
+  /* Marin (north of the Golden Gate) */ '<path d="M30 0 H165 Q160 40 150 70 Q140 88 110 92 Q80 90 60 60 Q45 35 30 0Z" fill="url(#hatch)"/>' +
+  /* East Bay */ '<path d="M300 0 V300 H205 Q215 240 200 190 Q192 150 196 110 Q205 60 220 0Z" fill="url(#hatch)"/>' +
+  /* San Francisco peninsula */ '<path d="M55 112 Q85 104 120 108 Q150 112 158 140 Q162 180 165 230 Q168 270 175 300 H50 Q50 220 55 160Z" fill="url(#hatch)"/>' +
+  /* Alcatraz, Angel Island */ '<ellipse cx="135" cy="118" rx="6" ry="4" fill="#c9a86a"/><ellipse cx="160" cy="100" rx="9" ry="6" fill="#c9a86a"/>' +
+  /* Golden Gate */ '<path d="M104 92 L112 108" stroke="#d1422c" stroke-width="4" stroke-linecap="round"/>' +
+  /* Bay Bridge */ '<path d="M158 142 L198 136" stroke="#777" stroke-width="3" stroke-linecap="round"/>' +
+  /* Galileo star — Van Ness & Bay St, north shore */ '<path d="M121 112 l3 7 h7 l-5.5 4.5 2 7 -6.5 -4.5 -6.5 4.5 2 -7 -5.5 -4.5 h7z" fill="#3C3489" stroke="#fff" stroke-width="1.5"/>' +
+  '<rect x="84" y="136" width="70" height="16" rx="4" fill="#fff" fill-opacity=".92"/><text x="119" y="148" text-anchor="middle" font-family="Segoe UI,sans-serif" font-size="10" font-weight="700" fill="#3C3489">★ Galileo</text>' +
+  '<text x="68" y="200" font-family="Georgia,serif" font-size="11" fill="#3a2a1a">San Francisco</text>' +
+  '<text x="85" y="40" font-family="Georgia,serif" font-size="11" fill="#3a2a1a">Marin</text>' +
+  '<text x="232" y="150" font-family="Georgia,serif" font-size="11" fill="#3a2a1a">Oakland</text>' +
+  '<text x="12" y="150" font-family="Georgia,serif" font-size="10" fill="#1d4e6b" font-style="italic">Pacific</text>' +
+  '<text x="180" y="200" text-anchor="middle" font-family="Georgia,serif" font-size="10" fill="#1d4e6b" font-style="italic">the Bay</text>' +
+  '<rect x="6" y="268" width="288" height="26" rx="6" fill="#fff" fill-opacity=".92"/><rect x="12" y="275" width="14" height="12" fill="url(#hatch)"/>' +
+  '<text x="32" y="285" font-family="Segoe UI,sans-serif" font-size="11" font-weight="700" fill="#3a2a1a">= Ohlone land. All of it.</text></svg>';
+}
 /* ============================================================
    START
    ============================================================ */
-buildPanels(); buildCards(); buildGallery(); buildCountries(); buildGateLang(); loadLocal(); drawMatch(false); drawOrder(); drawYn(); showScore();
+buildPanels(); buildCollage(); buildMap(); buildCards(); buildGallery(); buildCountries(); buildGateLang(); loadLocal(); drawMatch(false); drawOrder(); drawYn(); showScore();
 (function(){ var s = ckScore(); if(s.score) $("checkScore").textContent = "Score: " + s.score + " / " + s.max; })();
 var all = document.querySelectorAll("textarea"); for(var i = 0; i < all.length; i++){ if(all[i].getAttribute("data-ph")) all[i].placeholder = all[i].getAttribute("data-ph"); autogrow(all[i]); updateWc(all[i]); }
 </script>
