@@ -314,8 +314,9 @@ body:not(.teacher) .gtile .tlinks{display:none;}
     <button class="tab active" type="button" onclick="showTab('whotab',this)">1 · Who?</button>
     <button class="tab" type="button" onclick="showTab('story',this)">2 · The story</button>
     <button class="tab" type="button" onclick="showTab('words-tab',this)">3 · Words</button>
-    <button class="tab" type="button" onclick="showTab('check',this)">4 · Check</button>
-    <button class="tab" type="button" onclick="showTab('me',this)">5 · Me</button>
+    <button class="tab" type="button" onclick="showTab('sayit',this)">4 · Say it</button>
+    <button class="tab" type="button" onclick="showTab('check',this)">5 · Check</button>
+    <button class="tab" type="button" onclick="showTab('me',this)">6 · Me</button>
     <button class="tab" type="button" onclick="showTab('myfb',this)">My feedback</button>
   </div>
 
@@ -365,10 +366,18 @@ body:not(.teacher) .gtile .tlinks{display:none;}
       <div class="qopts" id="qOpts"></div><div class="qfb" id="qFb"></div>
     </div>
     <div class="wgrid" id="wgrid"></div>
-    <div class="wgo"><p><strong>Say the words.</strong> Listen, then record yourself. The computer checks your pronunciation.</p><a class="primary-btn" href="/readings/say/?set=firstpeoples">🗣️ Say the words →</a></div>
+    <div class="wgo"><p><strong>Next: say the words.</strong> Listen, then record yourself. The computer checks your pronunciation.</p><button type="button" class="primary-btn" onclick="showTab('sayit',document.querySelectorAll('.tab')[3])">🗣️ Say it →</button></div>
     <div class="wgo"><p><strong>Past tense:</strong> lived, came, died, killed, took. Practice more verbs.</p><a class="primary-btn" href="/readings/verbs/">Verbs →</a></div>
   </div>
 
+
+  <!-- ── SAY IT (the shared /say/ page, hosted here) ── -->
+  <div id="sayit" class="section">
+    <p class="sec-title">Say the words</p>
+    <p class="sec-sub" data-dir="d-say" data-en="Tap Listen. Then tap the red button and say the word. The computer checks you.">Tap Listen. Then tap the red button and say the word. The computer checks you.</p>
+    <iframe id="sayFrame" title="Say the words" src="about:blank" data-src="/readings/say/?set=firstpeoples&embed=1" allow="microphone" style="width:100%;height:900px;border:1px solid #e5e3de;border-radius:14px;background:#fff"></iframe>
+    <div class="wgo" style="margin-top:1rem"><p>Done saying the words? Check what you understood.</p><button type="button" class="primary-btn" onclick="showTab('check',document.querySelectorAll('.tab')[4])">Check →</button></div>
+  </div>
   <!-- ── 4 CHECK ── -->
   <div id="check" class="section">
     <p class="sec-title">Check: do you understand?</p>
@@ -394,7 +403,7 @@ body:not(.teacher) .gtile .tlinks{display:none;}
       <p class="act-title" data-dir="d-c" data-en="Yes or no?">Yes or no?</p>
       <div id="ynList"></div>
     </div>
-    <div class="wgo"><p>Last page: what do <strong>you</strong> think?</p><button type="button" class="primary-btn" onclick="showTab('me',document.querySelectorAll('.tab')[4])">Me →</button></div>
+    <div class="wgo"><p>Last page: what do <strong>you</strong> think?</p><button type="button" class="primary-btn" onclick="showTab('me',document.querySelectorAll('.tab')[5])">Me →</button></div>
   </div>
 
   <!-- ── 5 ME ── -->
@@ -916,14 +925,18 @@ $("printMine").addEventListener("click", function(){ var f = document.querySelec
 var TS = 1; function applyTs(){ document.body.classList.remove("ts2","ts3"); if(TS === 2) document.body.classList.add("ts2"); if(TS === 3) document.body.classList.add("ts3"); }
 $("tsz").addEventListener("click", function(e){ var b = e.target.closest ? e.target.closest("button") : null; if(!b) return; TS += (b.getAttribute("data-ts") === "up") ? 1 : -1; if(TS < 1) TS = 1; if(TS > 3) TS = 3; try{ localStorage.setItem("gal_tsize", String(TS)); }catch(err){} applyTs(); });
 try{ TS = parseInt(localStorage.getItem("gal_tsize") || "1", 10) || 1; }catch(e){} applyTs();
-function showTab(id, btn){ var secs = document.querySelectorAll(".section"), i; for(i = 0; i < secs.length; i++) secs[i].classList.remove("active"); var tabs = document.querySelectorAll(".tab"); for(i = 0; i < tabs.length; i++) tabs[i].classList.remove("active"); $(id).classList.add("active"); if(btn) btn.classList.add("active"); hideTip(); window.scrollTo(0, 0); }
+function openSay(){ var f = $("sayFrame"); if(f && f.getAttribute("src") === "about:blank") f.src = f.getAttribute("data-src"); }
+window.addEventListener("message", function(e){ if(e.data && e.data.sayHeight){ var f = $("sayFrame"); if(f) f.style.height = Math.max(500, e.data.sayHeight + 20) + "px"; } });
+function showTab(id, btn){ if(id === "sayit") openSay(); var secs = document.querySelectorAll(".section"), i; for(i = 0; i < secs.length; i++) secs[i].classList.remove("active"); var tabs = document.querySelectorAll(".tab"); for(i = 0; i < tabs.length; i++) tabs[i].classList.remove("active"); $(id).classList.add("active"); if(btn) btn.classList.add("active"); hideTip(); window.scrollTo(0, 0); }
 
 /* ============================================================
    SIGN IN (same handoff as the other readings pages)
    ============================================================ */
 function buildGateLang(){ var src = $("lang"), dst = $("gLang"); if(dst.options.length) return; var ph = document.createElement("option"); ph.value = ""; ph.textContent = "Choose…"; dst.appendChild(ph); for(var i = 0; i < src.options.length; i++){ var o = src.options[i]; if(o.value === "none") continue; var n = document.createElement("option"); n.value = o.value; n.textContent = o.textContent; dst.appendChild(n); } }
+var NAME2CODE = { Spanish:"es", Mandarin:"zh", Cantonese:"zh", Arabic:"ar", Darija:"ar", Vietnamese:"vi", Russian:"ru", Urdu:"ur", Tagalog:"tl", French:"fr", Korean:"ko", Hindi:"hi", Somali:"so", Nepali:"ne", Thai:"th" };
+function fromName(v){ return NAME2CODE[v] || v || ""; }
 function fromEngine(c){ if(!c) return ""; for(var k in ENGINE) if(ENGINE[k] === c) return k; return c; }
-function savedLang(){ var L = ""; try{ L = localStorage.getItem(LKEY + "_lang") || localStorage.getItem("gal_lang") || localStorage.getItem("gal_student_lang") || fromEngine(localStorage.getItem("vocab_lang")) || ""; }catch(e){} if(L === "none") L = ""; return $("lang").querySelector('option[value="' + L + '"]') ? L : ""; }
+function savedLang(){ var L = ""; try{ L = localStorage.getItem(LKEY + "_lang") || localStorage.getItem("gal_lang") || fromName(localStorage.getItem("gal_student_lang")) || fromEngine(localStorage.getItem("vocab_lang")) || ""; }catch(e){} if(L === "none") L = ""; return $("lang").querySelector('option[value="' + L + '"]') ? L : ""; }
 function setLang(code){ curLang = code; $("lang").value = code; try{ localStorage.setItem(LKEY + "_lang", code); localStorage.setItem("gal_lang", code); localStorage.setItem("gal_student_lang", code); localStorage.setItem("vocab_lang", ENGINE[code] || code); }catch(e){} applyLang(); }
 function finishSignIn(first, last, email, per, lang){
   var name = (first + " " + last).trim(), rawMail = email; email = omCanon(email); omAlias(rawMail, email); omSeed(name, email, per);

@@ -182,6 +182,10 @@ audio{height:32px;vertical-align:middle}
 .wrote{margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:21px;font-weight:700;background:var(--bg);border-radius:12px;padding:10px 14px}
 .wrote .sl{color:var(--p);border-bottom:2.5px solid var(--p);min-width:3em;display:inline-block;text-align:center}
 @media(max-width:520px){.nudge{margin-left:0}.say{font-size:19px}}
+
+/* embed mode: hosted inside another activity's tab (?embed=1) */
+body.embed .bar,body.embed .backlink{display:none}
+body.embed main{padding-top:4px;padding-bottom:30px}
 </style>
 </head>
 <body>
@@ -280,7 +284,7 @@ function wordsPage(VOCAB){
   var key='words0', total=VOCAB.reduce(function(n,d){return n+d.items.length;},0), okN=0; VOCAB.forEach(function(d){ d.items.forEach(function(x){ if((A.w[d.k+'|'+x]||{}).ok) okN++; }); });
   SC[key]={correct:okN,total:total,best:Math.max((SC[key]||{}).best||0,okN),attempts:(SC[key]||{}).attempts||0}; if(okN===total) A['done_'+key]=true;
   var st=A.w[deck.k+'|'+it]||{};
-  var html=(SET.back?'<p><a href="'+SET.back+'">← Back to '+esc(SET.title)+'</a></p>':'')+'<div class="card"><h2>Say the words 🗣️</h2><p class="dek">'+T('Listen. Then tap the red button and say the word. The computer checks your pronunciation.')+'</p>'+
+  var html=(SET.back?'<p class="backlink"><a href="'+SET.back+'">← Back to '+esc(SET.title)+'</a></p>':'')+'<div class="card"><h2>Say the words 🗣️</h2><p class="dek">'+T('Listen. Then tap the red button and say the word. The computer checks your pronunciation.')+'</p>'+
     '<div class="row">'+VOCAB.map(function(d){ var n=d.items.filter(function(x){return (A.w[d.k+'|'+x]||{}).ok;}).length; return '<button class="chip '+(d.k===deck.k?'sel':n===d.items.length?'ok':'')+'" data-deck="'+d.k+'">'+d.e+' '+esc(d.name)+' '+n+'/'+d.items.length+'</button>'; }).join('')+'</div></div>';
   html+='<div class="card"><div class="row"><span class="qnum">'+(i+1)+' / '+items.length+'</span><div class="row" style="gap:4px">'+items.map(function(x,xi){ var s=A.w[deck.k+'|'+x]||{}; return '<span class="dot '+(s.ok?'on':s.tries?'err':'')+'" style="width:9px;height:9px;'+(xi===i?'outline:2px solid var(--p);outline-offset:1px':'')+'"></span>'; }).join('')+'</div></div>'+
     '<div class="say" style="font-size:40px;justify-content:center;margin:18px 0 6px;text-align:center"><span class="tr">'+esc(it)+'</span></div>'+
@@ -367,10 +371,14 @@ $('siGo').onclick=function(){
   load();
 };
 
+var CODE2NAME={es:'Spanish',zh:'Mandarin','zh-CN':'Mandarin',yue:'Cantonese',ar:'Arabic',ary:'Darija',vi:'Vietnamese',ru:'Russian',ur:'Urdu',tl:'Tagalog',fr:'French',ko:'Korean',hi:'Hindi',so:'Somali',ne:'Nepali',th:'Thai'};
+function langName(v){ if(!v) return 'none'; if(CODE2NAME[v]) return CODE2NAME[v]; for(var i=0;i<LANGS.length;i++) if(LANGS[i][0]===v) return v; return 'none'; }
 (function init(){
   if(window.GS) GS.say=speak;
+  var EMBED=/[?&]embed=1/.test(location.search);
+  if(EMBED){ document.body.classList.add('embed'); setInterval(function(){ try{ parent.postMessage({sayHeight:document.documentElement.scrollHeight},'*'); }catch(e){} },400); }
   var em=localStorage.getItem('gal_student_email'), nm=localStorage.getItem('gal_student_name'), pd=localStorage.getItem('gal_student_period');
-  ME.lang=localStorage.getItem('gal_student_lang')||'none'; $('lang').value=ME.lang;
+  ME.lang=langName(localStorage.getItem('gal_student_lang')||localStorage.getItem('gal_lang')||'none'); $('lang').value=ME.lang;
   if(em&&nm&&pd){ ME.email=em; ME.name=nm; ME.period=pd; $('who').textContent=nm.split(' ')[0]+' · P'+pd; load(); }
   else { render(); showSignin(); }
 })();

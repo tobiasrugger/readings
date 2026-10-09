@@ -288,6 +288,7 @@ body.easy .act-block{border-left:3px solid #7F77DD;}
     <button class="tab" type="button" onclick="showTab('words-tab',this)">Words</button>
     <button class="tab" type="button" onclick="showTab('r1',this)" data-count="r1">1 · The holiday</button>
     <button class="tab" type="button" onclick="showTab('r2',this)" data-count="r2">2 · Rigoberta Menchú</button>
+    <button class="tab" type="button" onclick="showTab('sayit',this)">Say it</button>
     <button class="tab" type="button" onclick="showTab('myfb',this)">My feedback</button>
   </div>
 
@@ -354,7 +355,7 @@ body.easy .act-block{border-left:3px solid #7F77DD;}
 
     <div class="wgo">
       <p><strong>Say the words first.</strong> Listen, then record yourself. The computer checks your pronunciation.</p>
-      <a class="primary-btn" href="/readings/say/?set=indigenous">🗣️ Say the words →</a>
+      <button type="button" class="primary-btn" onclick="showTab('sayit',document.querySelectorAll('.tab')[4])">🗣️ Say the words →</button>
     </div>
     <div class="wgo">
       <p><strong>Practice the 12 words.</strong> Flashcards, matching, word search, fill-the-blank, and listen-and-spell. Your work saves.</p>
@@ -520,6 +521,13 @@ body.easy .act-block{border-left:3px solid #7F77DD;}
     <div class="submit-msg" id="subMsg"></div>
   </div>
 
+
+  <!-- ── SAY IT (the shared /say/ page, hosted here) ── -->
+  <div id="sayit" class="section">
+    <p class="sec-title">Say the words</p>
+    <p class="sec-sub">Tap Listen. Then tap the red button and say the word. The computer checks you.</p>
+    <iframe id="sayFrame" title="Say the words" src="about:blank" data-src="/readings/say/?set=indigenous&embed=1" allow="microphone" style="width:100%;height:900px;border:1px solid #e5e3de;border-radius:14px;background:#fff"></iframe>
+  </div>
   <!-- ── FEEDBACK ── -->
   <div id="myfb" class="section">
     <p class="sec-title">My feedback</p>
@@ -635,7 +643,9 @@ function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").rep
 /* ============================================================
    TABS + CHOICES + MODE + TEXT SIZE
    ============================================================ */
-function showTab(id, btn){
+function openSay(){ var f = $("sayFrame"); if(f && f.getAttribute("src") === "about:blank") f.src = f.getAttribute("data-src"); }
+window.addEventListener("message", function(e){ if(e.data && e.data.sayHeight){ var f = $("sayFrame"); if(f) f.style.height = Math.max(500, e.data.sayHeight + 20) + "px"; } });
+function showTab(id, btn){ if(id === "sayit") openSay();
   var secs = document.querySelectorAll(".section"), i;
   for(i = 0; i < secs.length; i++) secs[i].classList.remove("active");
   var tabs = document.querySelectorAll(".tab");
@@ -971,9 +981,11 @@ function buildGateLang(){
     var n = document.createElement("option"); n.value = o.value; n.textContent = o.textContent; dst.appendChild(n);
   }
 }
+var NAME2CODE = { Spanish:"es", Mandarin:"zh", Cantonese:"zh", Arabic:"ar", Darija:"ar", Vietnamese:"vi", Russian:"ru", Urdu:"ur", Tagalog:"tl", French:"fr", Korean:"ko", Hindi:"hi", Somali:"so", Nepali:"ne", Thai:"th" };
+function fromName(v){ return NAME2CODE[v] || v || ""; }
 function fromEngine(c){ /* vocab_lang "zh-CN" -> "zh" */ if(!c) return ""; for(var k in ENGINE) if(ENGINE[k] === c) return k; return c; }
 function savedLang(){
-  var L = ""; try{ L = localStorage.getItem(LKEY + "_lang") || localStorage.getItem("gal_lang") || localStorage.getItem("gal_student_lang") || fromEngine(localStorage.getItem("vocab_lang")) || ""; }catch(e){}
+  var L = ""; try{ L = localStorage.getItem(LKEY + "_lang") || localStorage.getItem("gal_lang") || fromName(localStorage.getItem("gal_student_lang")) || fromEngine(localStorage.getItem("vocab_lang")) || ""; }catch(e){}
   if(L === "none") L = "";
   return ($("lang").querySelector('option[value="' + L + '"]')) ? L : "";
 }
