@@ -58,7 +58,7 @@ h2{font-size:1.25rem;margin:.2em 0 .4em;color:var(--pine)}
 .wordrow span{display:flex;align-items:center;gap:6px}
 .spk{border:1.5px solid var(--line);background:#fff;border-radius:50%;width:30px;height:30px;font-size:.95rem;cursor:pointer;flex:none;line-height:1}
 .spk:active,.spk.on{background:var(--p);color:#fff;border-color:var(--p)}
-#sayPanel{display:none;margin-top:12px}#sayPanel.show{display:block}
+#sayPanel{margin-top:4px}
 #sayFrame{width:100%;border:1.5px solid var(--line);border-radius:12px;min-height:420px;background:#fff}
 textarea{width:100%;min-height:72px;font:inherit;font-size:1.05rem;padding:10px;border:2px solid var(--line);border-radius:10px;line-height:1.5;resize:vertical}
 textarea:focus{border-color:var(--moss);outline:none}
@@ -150,8 +150,6 @@ window.GAL_META={title:'Launch Plus U1 L1: People at School',unit:'Launch Plus',
   <p class="dir" data-dir="z1" data-en="A school has many people. Read what each person does. Tap the job.">A school has many people. Read what each person does. Tap the job.</p>
   <div class="card" id="zoomList"></div>
   <div id="zoomItems" translate="no"></div>
-  <button class="btn ghost" id="sayBtn" onclick="toggleSay()">🎙️ Say it — listen and record</button>
-  <div id="sayPanel"><iframe id="sayFrame" title="Say the words" allow="microphone"></iframe></div>
   <button class="btn" onclick="go(5)">Next: Write</button>
 </section>
 
@@ -159,10 +157,17 @@ window.GAL_META={title:'Launch Plus U1 L1: People at School',unit:'Launch Plus',
   <h2>5 · Write</h2>
   <p class="dir" data-dir="w1" data-en="Three steps. Each one is a little bigger. Your teacher reads this part.">Three steps. Each one is a little bigger. Your teacher reads this part.</p>
   <div id="writeItems"></div>
-  <button class="btn" onclick="go(6)">Finish</button>
+  <button class="btn" onclick="go(6)">Next: Record</button>
 </section>
 
 <section class="act" id="a6">
+  <h2>6 · Record</h2>
+  <p class="dir" data-dir="s1" data-en="Tap the speaker to listen. Tap the red button, say the word, tap again. The page writes what it hears.">Tap the speaker to <b>listen</b>. Tap the <b>red button</b>, say the word, tap again. The page writes what it hears.</p>
+  <div id="sayPanel"><iframe id="sayFrame" title="Say the words" allow="microphone"></iframe></div>
+  <button class="btn" onclick="go(7)">Finish</button>
+</section>
+
+<section class="act" id="a7">
   <h2>Done</h2>
   <div class="card" style="text-align:center">
     <div style="color:var(--muted);font-size:.9rem">Correct on the first try</div>
@@ -312,15 +317,15 @@ function checkW(i){
 }
 
 /* ===================== NAV ===================== */
-var PARTS=['Start','Read','Fix','Bigger','Zoom','Write','Done'];
-function partDone(p){if(p===0)return true;if(p===5)return !!(ST.W.w0&&ST.W.w1&&ST.W.w2);if(p===6)return false;
+var PARTS=['Start','Read','Fix','Bigger','Zoom','Write','Record','Done'];
+function partDone(p){if(p===0)return true;if(p===5)return !!(ST.W.w0&&ST.W.w1&&ST.W.w2);if(p===6)return !!ST.sayOpened;if(p===7)return false;
  var its=ITEMS.filter(function(x){return x.part===p;});return its.length&&its.every(function(x){return state(x.id).done;});}
 function drawSteps(){
  $('steps').innerHTML=PARTS.map(function(n,i){return '<button class="stepb'+(i===ST.act?' cur':'')+(i!==ST.act&&partDone(i)&&i>0?' ok':'')+'" onclick="go('+i+')">'+n+'</button>';}).join('');
 }
 function go(n){
  ST.act=n;document.querySelectorAll('section.act').forEach(function(s,i){s.classList.toggle('show',i===n);});
- if(n===1){renderRead();renderPart(1);} if(n===2)renderPart(2); if(n===3)renderPart(3); if(n===4){renderZoomList();renderPart(4);} if(n===5)renderWrite(); if(n===6)finish();
+ if(n===1){renderRead();renderPart(1);} if(n===2)renderPart(2); if(n===3)renderPart(3); if(n===4){renderZoomList();renderPart(4);} if(n===5)renderWrite(); if(n===6)openSay(); if(n===7)finish();
  drawSteps();window.scrollTo(0,0);save();if(DIR_ON)showDirections();
 }
 function firstTry(){return ITEMS.filter(function(x){return state(x.id).done&&state(x.id).first;}).length;}
@@ -429,8 +434,19 @@ if(window.speechSynthesis){pickVoice();speechSynthesis.onvoiceschanged=pickVoice
 var SAY_SET='people-at-school';
 function sayLang(){var v=lang();return v==='Chinese (Simplified)'?'Mandarin':(v||'none');}
 function shareLogin(){try{localStorage.setItem('gal_student_email',ST.email||'');localStorage.setItem('gal_student_name',ST.name||'');localStorage.setItem('gal_student_period',ST.period||'');localStorage.setItem('gal_student_lang',sayLang());}catch(e){}}
-function toggleSay(){var pn=$('sayPanel'),f=$('sayFrame');var on=!pn.classList.contains('show');pn.classList.toggle('show',on);$('sayBtn').classList.toggle('on',on);
- if(on){shareLogin();if(!f.src)f.src='/readings/say/?set='+SAY_SET+'&embed=1';setTimeout(function(){f.scrollIntoView({behavior:'smooth',block:'start'});},50);}}
+var SAY_CSS=':root,html.dark :root{--ink:#1f2421;--muted:#5c6b62;--bg:#f4f5f2;--card:#fff;--line:#dfe4dd;--p:#2d6a4f;--p-t:#e8f3ee;--p-dk:#1b4332;--pl:#2d6a4f;--pl-t:#e8f3ee;--ok:#2d6a4f;--ok-t:#e8f3ee;--a:#2d6a4f;--b:#40916c;--gold:#d4a017;--s3:#8a6a00;--s3-b:#d4a017;--s3-t:#fff1bf}'
+ +'body{font:400 15px/1.5 Nunito,system-ui,sans-serif!important;background:#f4f5f2!important}main{padding-top:0!important}'
+ +'.tabs{gap:6px!important;padding:0!important}.tabs button{font-size:.86rem!important;padding:6px 9px!important;border-radius:9px!important}.tabs button small{font-size:.72rem!important}'
+ +'.line{padding:9px 11px!important;border-radius:10px!important;border-left-width:5px!important}.said{font-size:1.05rem!important}.big{font-size:1rem!important}'
+ +'.rule{min-height:44px!important}.rule .hint{font-size:.88rem!important}.okp{font-size:.72rem!important}'
+ +'.mic{width:44px!important;height:44px!important}.mic svg{width:22px!important;height:22px!important}.line.fin .mic{width:36px!important;height:36px!important}'
+ +'.ear{font-size:.8rem!important;padding:3px 8px!important}.ear svg{width:15px!important;height:15px!important}'
+ +'.btn{font-size:.88rem!important;padding:7px 13px!important;border-radius:9px!important;box-shadow:none!important}.btn.big{font-size:.95rem!important}'
+ +'h2{font-size:1.15rem!important}h3{font-size:1rem!important}';
+function skinSay(){try{var d=$('sayFrame').contentDocument;if(!d||d.getElementById('lpSkin'))return;var st=d.createElement('style');st.id='lpSkin';st.textContent=SAY_CSS;d.head.appendChild(st);
+ var l=d.createElement('link');l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&display=swap';d.head.appendChild(l);}catch(e){}}
+function openSay(){var f=$('sayFrame');shareLogin();if(!ST.sayOpened){ST.sayOpened=true;save();}
+ if(!f.src){f.onload=skinSay;f.src='/readings/say/?set='+SAY_SET+'&embed=1';}else skinSay();}
 window.addEventListener('message',function(ev){if(ev.data&&ev.data.sayHeight){$('sayFrame').style.height=(ev.data.sayHeight+24)+'px';}});
 
 /* ===================== TAP WORDS ===================== */
