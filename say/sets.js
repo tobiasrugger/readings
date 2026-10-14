@@ -33,5 +33,15 @@ window.SAY_SETS={
     {k:'jobs', name:'Jobs', e:'🏫', items:['custodian','security guard','secretary','nurse','substitute teacher','coach','dean']},
     {k:'does', name:'What they do', e:'🛠️', items:['cleans the building','fixes small things','keeps the school safe','checks the doors','works in the office','answers the phone','keeps records','helps students who are sick or hurt','teaches a class','when the regular teacher is absent','trains a sports team','handles behavior','student discipline']},
     {k:'sent', name:'Sentences', e:'💬', items:['A custodian cleans the building and fixes small things.','A security guard keeps the school safe and checks the doors.','A secretary works in the office, answers the phone, and keeps records.','A nurse helps students who are sick or hurt.','A substitute teacher teaches a class when the regular teacher is absent.','A coach trains a sports team.','A dean handles behavior and student discipline.']}
+    ] },
+  introductions:{ title:'Introductions', back:'/readings/launch-plus/u1-l2/', decks:[
+    {k:'words', name:'Words', e:'🪪', items:['name','introduce','meet','language','hello','goodbye','thank you']},
+    {k:'phrases', name:'Phrases', e:'💬', items:['Nice to meet you.','What is your name?','My name is Ana.','Where are you from?','I am from Guatemala.','Excuse me.','You\u2019re welcome.','See you tomorrow.']},
+    {k:'sent', name:'Sentences', e:'📝', items:['I speak Spanish at home.','English is a new language for me.','The teacher says hello.','Let me introduce my friend.','We meet new friends every day.','Thank you for your help.','We say goodbye at the bus stop.']}
+    ] },
+  'people-at-school-2':{ title:'People at School · Extras', back:'/readings/launch-plus/u1-l1x/', decks:[
+    {k:'who', name:'He / She / They', e:'🧑', items:['He is a custodian.','She is a nurse.','They are nurses.','He is a coach.','She is the secretary.','They are teachers.','It is a big school.']},
+    {k:'where', name:'Where?', e:'📍', items:['She is in the Main Office.','She is in the nurse\u2019s office.','She is in the library.','He is in the gym.','She is in the cafeteria.','He is in the hallway.','She is in the Counseling Office.','He is in the classroom.']},
+    {k:'names', name:'Names', e:'🏫', items:['Ms. Brown','Ms. Shah','Dr. Bloemsma','Ms. Avar','Ms. Bettie','Galileo','San Francisco']}
   ] }
 };

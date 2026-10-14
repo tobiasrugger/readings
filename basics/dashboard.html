@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en" translate="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="google" content="notranslate">
+<title>Daily Basics · Teacher dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--pine:#1b4332;--pine2:#2d6a4f;--moss:#40916c;--sage:#95d5b2;--paper:#f4f5f2;--card:#fff;--ink:#1f2421;--muted:#5c6b62;--line:#dfe4dd;--gold:#d4a017;--rust:#b5451b;--sky:#e8f3ee}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:'Nunito',system-ui,sans-serif;background:var(--paper);color:var(--ink);font-size:15px;line-height:1.5}
+#bar{background:var(--pine);color:#fff;padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+#bar .brand{font-weight:800;font-size:1.05rem}
+#bar .brand small{display:block;font-weight:600;font-size:.78rem;opacity:.8}
+#bar select,#bar button,#bar a{font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer;background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:6px 11px;text-decoration:none}
+#bar .sp{flex:1}
+main{max-width:1100px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px}
+.stats{display:flex;gap:10px;flex-wrap:wrap}
+.stat{flex:1;min-width:120px;background:var(--sky);border-radius:10px;padding:8px 12px}
+.stat b{display:block;font-size:1.4rem;color:var(--pine2)}
+.stat span{font-size:.78rem;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-size:.74rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);cursor:pointer;white-space:nowrap}
+tr:hover td{background:#fafbf8}
+.nm{font-weight:800;white-space:nowrap}
+.nm small{display:block;font-weight:400;color:var(--muted);font-size:.72rem}
+.parts{display:flex;gap:3px}
+.pt{width:28px;height:22px;border-radius:5px;font-size:.68rem;font-weight:800;display:grid;place-items:center;border:1px solid var(--line);color:var(--muted);background:#fff}
+.pt.ok{background:var(--pine2);color:#fff;border-color:var(--pine2)}
+.pt.part{background:var(--sage);color:var(--pine);border-color:var(--sage)}
+.score{font-weight:800}
+.score.lo{color:var(--rust)}.score.mid{color:var(--gold)}.score.hi{color:var(--pine2)}
+.tag{display:inline-block;font-size:.72rem;font-weight:800;border-radius:999px;padding:1px 8px}
+.tag.in{background:var(--pine2);color:#fff}
+.tag.no{background:var(--line);color:var(--muted)}
+.wr{font-size:.86rem;white-space:pre-wrap;background:#fafbf8;border-left:4px solid var(--sage);padding:6px 10px;margin:4px 0;border-radius:0 8px 8px 0}
+.wr b{display:block;font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.expand{cursor:pointer;color:var(--pine2);font-weight:800;font-size:.8rem;border:none;background:none;font-family:inherit}
+.muted{color:var(--muted)}
+#pwwrap{position:fixed;inset:0;background:var(--paper);display:grid;place-items:center;z-index:9}
+#pwbox{background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:22px;width:min(92vw,360px)}
+#pwbox input{font-family:inherit;font-size:1rem;width:100%;padding:10px;border:2px solid var(--line);border-radius:10px;margin:10px 0}
+.btn{font-family:inherit;font-size:.92rem;font-weight:800;cursor:pointer;border-radius:9px;padding:9px 16px;border:none;background:var(--pine2);color:#fff}
+#err{color:var(--rust);font-size:.85rem;min-height:1.2em}
+.cell{display:inline-block;min-width:44px;text-align:center;border-radius:6px;padding:2px 4px;font-weight:800;font-size:.8rem}
+.cell.hi{background:#d8f0e2;color:var(--pine)}.cell.mid{background:#fff1bf;color:#6b5200}.cell.lo{background:#fbeae5;color:#8a2f10}.cell.none{color:var(--line)}
+th.day{font-size:.68rem}
+@media(max-width:700px){.hidem{display:none}}
+</style>
+</head>
+<body>
+<div id="pwwrap"><div id="pwbox"><h2 style="margin:0 0 4px">Daily Basics · Teacher</h2><div class="muted" style="font-size:.85rem">Dashboard password</div><input id="pw" type="password" onkeydown="if(event.key==='Enter')tryPw()"><button class="btn" style="width:100%" onclick="tryPw()">Open</button><div id="err"></div></div></div>
+<div id="bar">
+  <div class="brand">Daily Basics · Dashboard<small>ELD 101 · he/she/they · am/is/are · where?</small></div>
+  <select id="period" onchange="render()"><option value="">All periods</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select>
+  <select id="span" onchange="render()"><option value="10">Last 10 days</option><option value="20">Last 20 days</option><option value="40">Last 40 days</option></select>
+  <button onclick="loadAll()">↻ Refresh</button>
+  <span class="sp"></span>
+  <a href="./">Student page</a>
+  <button onclick="exportCSV()">CSV</button>
+</div>
+<main>
+  <div class="card stats" id="stats"></div>
+  <div class="card" style="padding:0;overflow-x:auto"><table id="tbl"><thead></thead><tbody></tbody></table></div>
+  <p class="muted" style="font-size:.8rem">Each cell is that day's first-try score out of 12. Green 10+, yellow 7–9, red below 7. Tap a name to see which skill they miss most.</p>
+</main>
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var PASSWORD='galileo2026';
+var ROWS=[],OPEN={};
+function $(i){return document.getElementById(i);}
+function H(){return {'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY};}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function tryPw(){if($('pw').value===PASSWORD){try{sessionStorage.setItem('dash_ok','1');}catch(e){}openApp();}else $('err').textContent='Not the right password.';}
+function openApp(){$('pwwrap').style.display='none';loadAll();}
+function loadAll(){$('stats').innerHTML='<div class="muted">Loading…</div>';
+ fetch(SUPA_URL+'/rest/v1/basics?select=email,name,period,unit,score,max_score,payload,updated_at&order=unit.desc&limit=5000',{headers:H()}).then(function(r){return r.json();}).then(function(res){ROWS=Array.isArray(res)?res:[];render();}).catch(function(e){$('stats').innerHTML='<div class="muted">Could not load: '+esc(e)+'</div>';});}
+function days(n){var out=[],d=new Date();for(var i=0;i<n;i++){out.unshift(d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2));d.setDate(d.getDate()-1);}return out;}
+function cls(sc){return sc>=10?'hi':sc>=7?'mid':'lo';}
+function skillMiss(rowsFor){var m={};rowsFor.forEach(function(r){var A=(r.payload&&r.payload.A)||{};/* ids q0..q11 don't carry tags; use payload.tags if present */var T=(r.payload&&r.payload.tags)||{};Object.keys(A).forEach(function(id){var t=T[id]||'?';m[t]=m[t]||{n:0,miss:0};m[t].n++;if(!(A[id].done&&A[id].first))m[t].miss++;});});return m;}
+function render(){
+ var pd=$('period').value,n=+$('span').value,ds=days(n);
+ var rows=ROWS.filter(function(r){return (!pd||String(r.period)===pd)&&ds.indexOf(r.unit)>=0;});
+ var by={};rows.forEach(function(r){var k=(r.email||'').toLowerCase();by[k]=by[k]||{email:r.email,name:r.name,period:r.period,d:{},rows:[]};by[k].d[r.unit]=r;by[k].rows.push(r);if(r.name)by[k].name=r.name;});
+ var stu=Object.keys(by).map(function(k){return by[k];}).sort(function(a,b){return (a.name||'').localeCompare(b.name||'');});
+ var today=ds[ds.length-1],didToday=stu.filter(function(s){return s.d[today];}).length;
+ var all=rows.filter(function(r){return r.score!=null;}),avg=all.length?Math.round(10*all.reduce(function(a,r){return a+r.score;},0)/all.length)/10:0;
+ $('stats').innerHTML='<div class="stat"><b>'+stu.length+'</b><span>students (period '+(pd||'all')+')</span></div><div class="stat"><b>'+didToday+'</b><span>did it today</span></div><div class="stat"><b>'+avg+'</b><span>average score / 12</span></div>';
+ $('tbl').querySelector('thead').innerHTML='<tr><th>Student</th><th>P</th><th>Days</th><th>Avg</th>'+ds.map(function(d){return '<th class="day">'+d.slice(5).replace('-','/')+'</th>';}).join('')+'</tr>';
+ $('tbl').querySelector('tbody').innerHTML=stu.map(function(s){var id=(s.email||'').replace(/[^a-z0-9]/gi,'_');var done=Object.keys(s.d).length,sum=0,c=0;Object.keys(s.d).forEach(function(k){if(s.d[k].score!=null){sum+=s.d[k].score;c++;}});
+  var tr='<tr><td class="nm"><button class="expand" onclick="toggle(\''+id+'\')">'+esc(s.name||s.email)+'</button><small>'+esc(s.email)+'</small></td><td>'+esc(s.period)+'</td><td>'+done+'</td><td>'+(c?Math.round(10*sum/c)/10:'—')+'</td>'+
+   ds.map(function(d){var r=s.d[d];return '<td>'+(r?'<span class="cell '+cls(r.score)+'">'+r.score+'</span>':'<span class="cell none">·</span>')+'</td>';}).join('')+'</tr>';
+  if(OPEN[id]){var m=skillMiss(s.rows),names={'PRON.SUBJ':'He / She / They / It','SENT.BE':'am / is / are','PLACE':'Where?'};tr+='<tr><td colspan="'+(4+ds.length)+'" class="muted" style="font-size:.85rem">Missed on first try — '+Object.keys(m).map(function(t){return (names[t]||t)+': '+m[t].miss+' of '+m[t].n;}).join(' · ')+'</td></tr>';}
+  return tr;}).join('')||'<tr><td colspan="'+(4+ds.length)+'" class="muted">No students yet.</td></tr>';
+}
+function toggle(id){OPEN[id]=!OPEN[id];render();}
+function exportCSV(){var pd=$('period').value,ds=days(+$('span').value);var rows=ROWS.filter(function(r){return (!pd||String(r.period)===pd)&&ds.indexOf(r.unit)>=0;});
+ var out=[['name','email','period','date','score','max']];rows.forEach(function(r){out.push([r.name,r.email,r.period,r.unit,r.score,r.max_score]);});
+ var csv=out.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+ var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);a.download='basics'+(pd?'-p'+pd:'')+'.csv';a.click();}
+(function(){var ok=false;try{ok=sessionStorage.getItem('dash_ok')==='1';}catch(e){}if(ok)openApp();else $('pw').focus();})();
+</script>
+</body>
+</html>
