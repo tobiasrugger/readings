@@ -264,13 +264,15 @@ if(window.GS) GS.say=speak;
 /* ============ TRANSLATION ============ */
 var trCache={};
 function translate(text){
-  if(ME.lang==='none'){ popup(text,'Choose your language at the top of the page.',''); return; }
+  if(ME.lang==='none'){ popup(text,IS_EMBED?'Choose your language in the sign-in box (tap Name in the green bar).':'Choose your language at the top of the page.',''); return; }
   var key=ME.lang+'|'+text; if(trCache[key]) return popup(text,trCache[key].equiv,trCache[key].meaning);
   popup(text,'…','');
   var url=PROXY+'?action=translate&idiom='+encodeURIComponent(text)+'&meaning='+encodeURIComponent('A simple English word, sentence, or instruction for beginner English learners describing people. Translate it plainly.')+'&lang='+encodeURIComponent(ME.lang);
   fetch(url).then(function(r){return r.json();}).then(function(d){ if(d&&d.ok&&d.translation){ trCache[key]=d.translation; popup(text,d.translation.equiv,d.translation.meaning); } else popup(text,'Translation is not available right now.',''); }).catch(function(){ popup(text,'Translation is not available right now.',''); });
 }
+var LASTY=0,IS_EMBED=/[?&]embed=1/.test(location.search);
 function popup(src,dst,mean){ var p=$('pop'); p.classList.remove('hidden'); var rtl=/Arabic|Darija|Urdu/.test(ME.lang);
+  if(IS_EMBED){ /* the iframe is as tall as its content, so a fixed-bottom popup lands off-screen: pin it under the tap instead */ p.style.position='absolute'; p.style.bottom='auto'; p.style.top=(LASTY+14)+'px'; }
   p.innerHTML='<button data-closepop="1" aria-label="Close">×</button><div class="src">'+esc(src)+'</div><div class="dst" dir="'+(rtl?'rtl':'ltr')+'">'+esc(dst)+'</div>'+(mean?'<div class="mean" dir="'+(rtl?'rtl':'ltr')+'">'+esc(mean)+'</div>':''); }
 function toast(msg){ var t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(function(){ t.remove(); },2200); }
 
@@ -330,7 +332,7 @@ function wordsPage(VOCAB){
   new MutationObserver(chk).observe(document.documentElement,{attributes:true,attributeFilter:['class','lang']}); setInterval(chk,3000); })();
 
 document.addEventListener('click',function(e){
-  var t=e.target.closest?e.target.closest('button,.tr'):null; if(!t) return;
+  var t=e.target.closest?e.target.closest('button,.tr'):null; if(!t) return; LASTY=(e.clientY||0)+(window.scrollY||0);
   if(t.getAttribute('data-closepop')){ $('pop').classList.add('hidden'); return; }
   if(t.hasAttribute('data-say')){ e.preventDefault(); speak(t.getAttribute('data-say'),!!t.getAttribute('data-slow'),t); return; }
   if(t.hasAttribute('data-tr')){ translate(t.getAttribute('data-tr')); return; }
@@ -378,7 +380,7 @@ function langName(v){ if(!v) return 'none'; if(CODE2NAME[v]) return CODE2NAME[v]
   var EMBED=/[?&]embed=1/.test(location.search);
   if(EMBED){ document.body.classList.add('embed'); setInterval(function(){ try{ parent.postMessage({sayHeight:document.documentElement.scrollHeight},'*'); }catch(e){} },400); }
   var em=localStorage.getItem('gal_student_email'), nm=localStorage.getItem('gal_student_name'), pd=localStorage.getItem('gal_student_period');
-  ME.lang=langName(localStorage.getItem('gal_student_lang')||localStorage.getItem('gal_lang')||'none'); $('lang').value=ME.lang;
+  var qlang=new URLSearchParams(location.search).get('lang'); ME.lang=langName(qlang||localStorage.getItem('gal_student_lang')||localStorage.getItem('gal_lang')||'none'); $('lang').value=ME.lang;
   if(em&&nm&&pd){ ME.email=em; ME.name=nm; ME.period=pd; $('who').textContent=nm.split(' ')[0]+' · P'+pd; load(); }
   else { render(); showSignin(); }
 })();

@@ -68,6 +68,15 @@ h2{font-size:1.25rem;margin:.2em 0 .4em;color:var(--pine)}
 .side .col .s{display:block;margin:2px 0}
 .side .col .s.ts{background:var(--yellow);border-radius:4px;padding:0 4px;font-weight:800}
 @media(max-width:560px){.side{grid-template-columns:1fr}}
+.fb{font-size:1.05rem;font-weight:700;border-radius:10px;padding:10px 14px;margin:8px 0}
+.fb.good{background:#d8f0e2;color:var(--pine);border-left:6px solid var(--moss)}
+.fb.bad{background:#fbeae5;color:#8a2f10;border-left:6px solid #e07a5f}
+.fb .trl{display:block;font-weight:800;margin-top:4px}
+.fb .trl:empty{display:none}
+.chip.pick{font-size:1.05rem;width:100%;text-align:left}
+.ck{font-size:1.02rem;font-weight:800;border-radius:9px;padding:7px 12px;margin:4px 0;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.ck.ok{background:#d8f0e2;color:var(--pine)}.ck.no{background:#fbeae5;color:#8a2f10}
+.ck .trl{font-weight:700;opacity:.9}.ck .trl:empty{display:none}
 .rule{background:#e8f3ee;border-left:5px solid var(--moss);border-radius:0 10px 10px 0;padding:10px 14px;margin:10px 0}
 .rule b{color:var(--pine)}
 .frames{font-size:.95rem;color:var(--pine2);background:#fafbf8;border:1px dashed var(--line);border-radius:10px;padding:8px 12px;margin:6px 0 10px}
@@ -210,7 +219,8 @@ SETS['1']={
  frames:['There are many reasons why ___.','There are many kinds of ___.','___ for many reasons.','___ in many ways.'],
  learn:[
   {e:'🐱🐶🐰',s:['There are many cute animals.','First, cats are cute because they are soft and quiet.','Next, dogs are cute because they are playful and happy.','Finally, rabbits are cute because they have long ears and small noses.']},
-  {e:'🏫🦁',s:['Galileo is a good school for many reasons.','First, the teachers help students every day.','Second, students come from many countries.','Finally, the school is near the water, and the air is fresh.']}
+  {e:'🏫🦁',s:['Galileo is a good school for many reasons.','First, the teachers help students every day.','Second, students come from many countries.','Finally, the school is near the water, and the air is fresh.'],
+   o:[{t:'Galileo is a good school for many reasons.',k:'ok'},{t:'First, the teachers help students every day.',k:'detail'},{t:'I like Galileo.',k:'feel'},{t:'Galileo has a lion.',k:'one'}]}
  ],
  choose:[
   {e:'🚌🚶🚲',body:'Some students take the bus. Other students walk. Some students ride a bike. A few students come by car.',o:['Students come to school in many ways.','The bus is yellow.','I like to walk.','Some students ride a bike.'],a:0,why:'All the details are about different ways to come to school. "The bus is yellow" is only about one thing.'},
@@ -232,7 +242,8 @@ SETS['2']={
  frames:['There are many reasons why ___.','There are many kinds of ___.','___ for many reasons.','___ in many ways.'],
  learn:[
   {e:'🍎🥕💧',s:['There are many healthy foods.','First, apples are sweet and good for you.','Second, carrots help your eyes.','Finally, water is the best drink.']},
-  {e:'🏀⚽🤝',s:['Sports are good for many reasons.','First, sports are exercise.','Second, you make friends on a team.','Finally, sports are fun.']}
+  {e:'🏀⚽🤝',s:['Sports are good for many reasons.','First, sports are exercise.','Second, you make friends on a team.','Finally, sports are fun.'],
+   o:[{t:'Sports are good for many reasons.',k:'ok'},{t:'Second, you make friends on a team.',k:'detail'},{t:'I play soccer.',k:'feel'},{t:'A basketball is orange.',k:'one'}]}
  ],
  choose:[
   {e:'🌧️🌸☀️🍂',body:'In winter, it rains a lot. In spring, there are flowers. In summer, it is warm. In fall, the leaves change.',o:['San Francisco has four seasons.','I like summer.','It rains in winter.','The leaves are red.'],a:0,why:'Winter, spring, summer, fall = four seasons. "It rains in winter" is only ONE season.'},
@@ -252,7 +263,7 @@ SETS['2']={
 };
 var DATA=SETS[SET]||SETS['1'];
 
-var ST={name:'',email:'',period:'',act:0,A:{},W:{},turnedIn:null,browserTranslated:false};
+var ST={name:'',email:'',period:'',act:0,A:{},W:{},L:{},turnedIn:null,browserTranslated:false};
 function $(i){return document.getElementById(i);}
 function clean(s){return String(s||'').trim().toLowerCase();}
 function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
@@ -284,43 +295,62 @@ function renderPart(p){
  drawSteps();
 }
 function framesHtml(){return '<b>Frames:</b> '+DATA.frames.map(function(f){return '<code>'+f+'</code>';}).join(' &nbsp;·&nbsp; ');}
+var FB={
+ ok:'Good! A topic sentence is the first sentence of a paragraph. It says the main idea of the whole paragraph.',
+ detail:'This is a detail. Details come later in the paragraph: first, second, finally. The topic sentence says what the whole paragraph is about. Choose again.',
+ feel:'This says how you feel, but it is not the big idea of these details. The topic sentence says what the whole paragraph is about. Choose again.',
+ one:'This is only one small fact. The topic sentence must be about ALL the details. Choose again.'
+};
+function trInto(id,text){var lg=lang(),el=$(id);if(!el)return;if(!lg){el.textContent='';return;}el.textContent='…';tr(text,lg,function(t){var e2=$(id);if(e2)e2.textContent=t||'';});}
 function renderLearn(){
  var lg=lang();
  $('learn').innerHTML=DATA.learn.map(function(p,i){
-  var en=p.s.map(function(x,k){return '<span class="s'+(k===0?' ts':'')+'" translate="no">'+x+'</span>';}).join('');
-  var tr=p.s.map(function(x,k){return '<span class="s'+(k===0?' ts':'')+'" id="tr_'+i+'_'+k+'" translate="no">'+(lg?'…':'')+'</span>';}).join('');
-  return '<div class="card"><div class="emo" style="float:none;margin:0 0 6px">'+p.e+'</div><div class="side"><div class="col"><h4>English</h4>'+en+'</div><div class="col"><h4>'+(lg||'Your language')+'</h4>'+(lg?tr:'<span class="s" style="color:var(--muted)">Choose your language in the green bar.</span>')+'</div></div></div>';
+  var inter=!!p.o,st=ST.L||{},got=inter&&st['l'+i]&&st['l'+i].done;
+  var en=p.s.map(function(x,k){var hide=inter&&k===0&&!got;return '<span class="s'+(k===0?' ts':'')+'" translate="no">'+(hide?'<span class="blank">&nbsp;</span>':x)+'</span>';}).join('');
+  var trh=p.s.map(function(x,k){var hide=inter&&k===0&&!got;return '<span class="s'+(k===0?' ts':'')+'" id="tr_'+i+'_'+k+'" translate="no">'+(hide?'<span class="blank">&nbsp;</span>':(lg?'…':''))+'</span>';}).join('');
+  var top='';
+  if(inter){var order=(st['l'+i]&&st['l'+i].order)||shuffle([0,1,2,3]);ST.L=ST.L||{};ST.L['l'+i]=ST.L['l'+i]||{order:order,done:false,wrongs:[]};
+   top='<div class="q">Which topic sentence is the best?</div><div class="chips">'+order.map(function(k){var o=p.o[k],cls='chip pick';if(got){cls+=(o.k==='ok'?' right':' dim');}else if(ST.L['l'+i].wrongs.indexOf(k)>=0)cls+=' wrong dim';return '<button class="'+cls+'" onclick="learnPick('+i+','+k+')" translate="no">'+o.t+'</button>';}).join('')+'</div><div id="fb_'+i+'"></div>';}
+  return '<div class="card"><div class="emo" style="float:none;margin:0 0 6px">'+p.e+'</div>'+top+'<div class="side"><div class="col"><h4>English</h4>'+en+'</div><div class="col"><h4>'+(lg||'Your language')+'</h4>'+(lg?trh:'<span class="s" style="color:var(--muted)">Choose your language in the green bar.</span>')+'</div></div></div>';
  }).join('');
  $('framesBox').innerHTML=framesHtml();$('framesBox2').innerHTML=framesHtml();
- if(lg)DATA.learn.forEach(function(p,i){p.s.forEach(function(x,k){tr(x,lg,function(t){var el=$('tr_'+i+'_'+k);if(el)el.textContent=t||'';});});});
+ if(lg)DATA.learn.forEach(function(p,i){var inter=!!p.o,got=inter&&ST.L&&ST.L['l'+i]&&ST.L['l'+i].done;p.s.forEach(function(x,k){if(inter&&k===0&&!got)return;tr(x,lg,function(t){var el=$('tr_'+i+'_'+k);if(el)el.textContent=t||'';});});});
+ DATA.learn.forEach(function(p,i){var st=ST.L&&ST.L['l'+i];if(p.o&&st&&st.done)showFb(i,'ok');});
 }
+function showFb(i,kind){var el=$('fb_'+i);if(!el)return;el.innerHTML='<div class="fb '+(kind==='ok'?'good':'bad')+'">'+(kind==='ok'?'✓ ':'✗ ')+FB[kind]+'<span class="trl" id="fbt_'+i+'"></span></div>';trInto('fbt_'+i,FB[kind]);}
+function learnPick(i,k){var p=DATA.learn[i],st=ST.L['l'+i];if(st.done)return;var o=p.o[k];
+ if(o.k==='ok'){st.done=true;save();renderLearn();}
+ else{if(st.wrongs.indexOf(k)<0)st.wrongs.push(k);save();renderLearn();showFb(i,o.k);}}
 function renderWrite(){
  $('writeItems').innerHTML=DATA.write.map(function(w,i){
   var v=ST.W['w'+i]||'';
   return '<div class="card"><div class="para"><span class="emo">'+w.e+'</span><span class="blank">&nbsp;</span> '+w.body+'</div>'+
-   '<div class="frame">Topic sentence about: <b>'+w.hint+'</b></div><textarea id="ta'+i+'" placeholder="Write the topic sentence here…" oninput="wr('+i+',this.value)">'+v.replace(/</g,'&lt;')+'</textarea><div class="check" id="ck'+i+'"></div></div>';
+   '<div class="frame">Topic sentence about: <b>'+w.hint+'</b></div><textarea id="ta'+i+'" placeholder="Write the topic sentence here…" oninput="wr('+i+',this.value)">'+v.replace(/</g,'&lt;')+'</textarea><div id="ck'+i+'"></div></div>';
  }).join('');
  for(var i=0;i<DATA.write.length;i++)checkW(i);
 }
 function wr(i,v){ST.W['w'+i]=v;checkW(i);save();}
+var CKT={cap:'Starts with a capital letter',dot:'Ends with a period',words:'Has 4 or more words',big:'Has a big-idea word: many / reasons / ways / kinds',topic:'Names the topic',copied:'This is a detail sentence. Write the big idea instead.'};
 function checkW(i){
  var v=(ST.W['w'+i]||'').trim(),el=$('ck'+i);if(!el)return;var w=DATA.write[i];
  if(!v){el.innerHTML='';return;}
  var cap=/^[A-Z]/.test(v),dot=/[.!?]$/.test(v),words=v.split(/\s+/).length>=4,big=/\b(many|reasons|ways|kinds|lots|different)\b/i.test(v),topic=w.keys.some(function(k){return v.toLowerCase().indexOf(k)>=0;});
  var copied=w.body.toLowerCase().split(/(?<=\.)\s+/).some(function(sn){return sn.length>10&&v.toLowerCase().indexOf(sn.replace(/\.$/,''))>=0;});
- el.innerHTML='<span class="'+(cap?'ok':'')+'">'+(cap?'✓':'○')+' Capital letter</span><span class="'+(dot?'ok':'')+'">'+(dot?'✓':'○')+' Period</span><span class="'+(words?'ok':'')+'">'+(words?'✓':'○')+' 4+ words</span><span class="'+(big?'ok':'')+'">'+(big?'✓':'○')+' big idea word (many / reasons / ways)</span><span class="'+(topic?'ok':'')+'">'+(topic?'✓':'○')+' names the topic ('+w.hint+')</span>'+(copied?'<span style="color:var(--rust)">✗ That is a detail sentence — write the big idea.</span>':'');
+ var rows=[['cap',cap],['dot',dot],['words',words],['big',big],['topic',topic]];
+ el.innerHTML=rows.map(function(r){return '<div class="ck '+(r[1]?'ok':'no')+'">'+(r[1]?'✓':'✗')+' '+CKT[r[0]]+(r[0]==='topic'?' ('+w.hint+')':'')+'<span class="trl" id="ckt_'+i+'_'+r[0]+'"></span></div>';}).join('')+(copied?'<div class="ck no">✗ '+CKT.copied+'<span class="trl" id="ckt_'+i+'_copied"></span></div>':'');
+ rows.forEach(function(r){trInto('ckt_'+i+'_'+r[0],CKT[r[0]]);});if(copied)trInto('ckt_'+i+'_copied',CKT.copied);
 }
 function writeOk(i){var v=(ST.W['w'+i]||'').trim();return /^[A-Z]/.test(v)&&/[.!?]$/.test(v)&&v.split(/\s+/).length>=4;}
 
 var PARTS=['Start','Learn','Choose','Write','Done'];
-function partDone(p){if(p===0)return true;if(p===1)return !!ST.learned;if(p===3)return writeOk(0)&&writeOk(1)&&writeOk(2);if(p===4)return false;
+function partDone(p){if(p===0)return true;if(p===1)return !!(ST.L&&Object.keys(ST.L).every(function(k){return ST.L[k].done;})&&Object.keys(ST.L).length);if(p===3)return writeOk(0)&&writeOk(1)&&writeOk(2);if(p===4)return false;
  var its=ITEMS.filter(function(x){return x.part===p;});return its.length&&its.every(function(x){return state(x.id).done;});}
 function drawSteps(){
  $('steps').innerHTML=PARTS.map(function(n,i){return '<button class="stepb'+(i===ST.act?' cur':'')+(i!==ST.act&&partDone(i)&&i>0?' ok':'')+'" onclick="go('+i+')">'+n+'</button>';}).join('');
 }
 function go(n){
  ST.act=n;document.querySelectorAll('section.act').forEach(function(s,i){s.classList.toggle('show',i===n);});
- if(n===1){renderLearn();ST.learned=true;} if(n===2)renderPart(2); if(n===3)renderWrite(); if(n===4)finish();
+ if(n===1)renderLearn(); if(n===2)renderPart(2); if(n===3)renderWrite(); if(n===4)finish();
  drawSteps();window.scrollTo(0,0);save();if(DIR_ON)showDirections();
 }
 function firstTry(){return ITEMS.filter(function(x){return state(x.id).done&&state(x.id).first;}).length;}
