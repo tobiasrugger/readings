@@ -190,18 +190,18 @@ var DATA={
   {e:'👨 🏀',n:'coach',g:'m',t:'u1-l1'},{e:'👩 🏀',n:'coach',g:'f',t:'u1-l1'},{e:'👩 ☎️',n:'secretary',g:'f',t:'u1-l1'},{e:'👨 📋',n:'dean',g:'m',t:'u1-l1'},
   {e:'👩 🏫',n:'principal',g:'f',t:'u1-l1'},{e:'👩 📚',n:'teacher',g:'f',t:'u1-l1'},{e:'👨 📚',n:'teacher',g:'m',t:'u1-l1'},{e:'👩 📖',n:'librarian',g:'f',t:'u1-l1'},
   {e:'👨 💬',n:'counselor',g:'m',t:'u1-l1'},{e:'👩 🍽️',n:'food service worker',g:'f',t:'u1-l1'},{e:'🧑‍🎓',n:'student',g:'m',t:'u1-l1'},{e:'👩‍🎓',n:'student',g:'f',t:'u1-l1'},
-  {e:'👨 🛡️',n:'security guard',g:'m',t:'u1-l1'},{e:'👩 👋',n:'new student',g:'f',t:'u1-l2'},{e:'👨 👋',n:'new student',g:'m',t:'u1-l2'}
+  {e:'👨 🛡️',n:'security guard',g:'m',t:'u1-l1'},{e:'👩 👋',n:'new student',g:'f',t:'u1-l2'},{e:'👨 👋',n:'new student',g:'m',t:'u1-l2'},{e:'👩 ✏️',n:'good speller',g:'f',t:'u1-l3'},{e:'👨 ✏️',n:'good speller',g:'m',t:'u1-l3'}
  ],
- things:[{e:'🏫',n:'a big school',t:'u1-l1'},{e:'🦁',n:'our mascot',t:'u1-l1'},{e:'📘',n:'a book',t:'u1-l1'},{e:'🪪',n:'my name',t:'u1-l2'},{e:'💬',n:'a new language',t:'u1-l2'}],
+ things:[{e:'🏫',n:'a big school',t:'u1-l1'},{e:'🦁',n:'our mascot',t:'u1-l1'},{e:'📘',n:'a book',t:'u1-l1'},{e:'🪪',n:'my name',t:'u1-l2'},{e:'💬',n:'a new language',t:'u1-l2'},{e:'🅰️',n:'a vowel',t:'u1-l3'},{e:'🔤',n:'the alphabet',t:'u1-l3'},{e:'🅱️',n:'a consonant',t:'u1-l3'},{e:'🔠',n:'an uppercase letter',t:'u1-l3'}],
  where:[
   {e:'👩 🩺',s:'helps a sick student',p:"nurse's office",t:'u1-l1'},{e:'👩 ☎️',s:'answers the phone',p:'Main Office',t:'u1-l1'},{e:'👩 📖',s:'gives you a book',p:'library',t:'u1-l1'},
   {e:'👨 🏀',s:'blows a whistle',p:'gym',t:'u1-l1'},{e:'👩 🍽️',s:'serves lunch',p:'cafeteria',t:'u1-l1'},{e:'👨 🧹',s:'has a broom',p:'hallway',t:'u1-l1'},
   {e:'👩 💬',s:'talks about your classes',p:'Counseling Office',t:'u1-l1'},{e:'👨 📚',s:'teaches a class',p:'classroom',t:'u1-l1'},{e:'👩 🏫',s:'leads the school',p:'Main Office',t:'u1-l1'},
-  {e:'👨 👋',s:'meets new friends',p:'cafeteria',t:'u1-l2'},{e:'👩 🪪',s:'says her name',p:'classroom',t:'u1-l2'}
+  {e:'👨 👋',s:'meets new friends',p:'cafeteria',t:'u1-l2'},{e:'👩 🪪',s:'says her name',p:'classroom',t:'u1-l2'},{e:'👩 ✏️',s:'spells her name on the board',p:'classroom',t:'u1-l3'},{e:'👨 📖',s:'looks for a word in the dictionary',p:'library',t:'u1-l3'}
  ],
  places:["nurse's office",'Main Office','library','gym','cafeteria','hallway','Counseling Office','classroom'],
  be:[
-  {s:'I ___ a student.',a:'am'},{s:'You ___ my friend.',a:'are'},{s:'We ___ in the gym.',a:'are'},{s:'I ___ from Guatemala.',a:'am'},{s:'You ___ new here.',a:'are'},{s:'We ___ students at Galileo.',a:'are'}
+  {s:'I ___ a student.',a:'am'},{s:'You ___ my friend.',a:'are'},{s:'We ___ in the gym.',a:'are'},{s:'I ___ from Guatemala.',a:'am'},{s:'You ___ new here.',a:'are'},{s:'We ___ students at Galileo.',a:'are'},{s:'The letter A ___ a vowel.',a:'is'},{s:'B and C ___ consonants.',a:'are'},{s:'My name ___ Maria.',a:'is'},{s:'You ___ a good speller.',a:'are'}
  ]
 };
 var LESSON=(new URLSearchParams(location.search).get('lesson')||'');
@@ -217,10 +217,11 @@ var ITEMS=[];
 function seed(str){var h=2166136261;for(var i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619);}return function(){h+=0x6D2B79F5;var t=Math.imul(h^h>>>15,1|h);t=t+Math.imul(t^t>>>7,61|t)^t;return ((t^t>>>14)>>>0)/4294967296;};}
 var RND=Math.random;
 function sh(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(RND()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
-function byTag(list){return LESSON?list.filter(function(x){return x.t===LESSON;}):list;}
+function byTag(list){if(!LESSON)return list;var m=list.filter(function(x){return x.t===LESSON;}),o=list.filter(function(x){return x.t!==LESSON;});return m.concat(o);}
 function buildItems(){
  ITEMS=[];RND=seed((ST.email||'anon')+'|'+TODAY+'|'+LESSON);
- var ppl=sh(byTag(DATA.people)),thg=sh(byTag(DATA.things)),whr=sh(byTag(DATA.where)),be=sh(DATA.be);
+ function pri(list){if(!LESSON)return sh(list);return sh(list.filter(function(x){return x.t===LESSON;})).concat(sh(list.filter(function(x){return x.t!==LESSON;})));}
+ var ppl=pri(DATA.people),thg=pri(DATA.things),whr=pri(DATA.where),be=sh(DATA.be);
  var qs=[];
  /* 4 × who? */
  var who=ppl.slice(0,3).map(function(p){var pl=RND()<0.35;var n=p.n;if(pl){var p2=ppl.filter(function(x){return x.n===p.n&&x!==p;})[0];return {pic:p.e+(p2?' '+p2.e:' '+p.e),q:'___ are '+plural(n)+'.',o:['He','She','They','It'],a:'They'};}

@@ -43,5 +43,10 @@ window.SAY_SETS={
     {k:'who', name:'He / She / They', e:'🧑', items:['He is a custodian.','She is a nurse.','They are nurses.','He is a coach.','She is the secretary.','They are teachers.','It is a big school.']},
     {k:'where', name:'Where?', e:'📍', items:['She is in the Main Office.','She is in the nurse\u2019s office.','She is in the library.','He is in the gym.','She is in the cafeteria.','He is in the hallway.','She is in the Counseling Office.','He is in the classroom.']},
     {k:'names', name:'Names', e:'🏫', items:['Ms. Brown','Ms. Shah','Dr. Bloemsma','Ms. Avar','Ms. Bettie','Galileo','San Francisco']}
+    ] },
+  'from-a-to-z':{ title:'From A to Z', back:'/readings/launch-plus/u1-l3/', decks:[
+    {k:'words', name:'Words', e:'🔤', items:['letter','alphabet','uppercase','lowercase','spell','vowel','consonant']},
+    {k:'spell', name:'Spell it', e:'✏️', items:['C-H-R-I-S','M-A-R-I-A','O-M-A-R','A-N-D-I','T-H-A-N']},
+    {k:'sent', name:'Sentences', e:'💬', items:['How do you spell your name?','I spell my name C-H-R-I-S.','The C is uppercase.','Could you please repeat that?','My name begins with the letter M.','The alphabet has 26 letters.']}
   ] }
 };

@@ -53,7 +53,7 @@ tr:hover td{background:#fafbf8}
 <div id="pwwrap"><div id="pwbox"><h2 style="margin:0 0 4px">Launch Plus · Teacher</h2><div class="muted" style="font-size:.85rem">Dashboard password</div><input id="pw" type="password" onkeydown="if(event.key==='Enter')tryPw()"><button class="btn" style="width:100%" onclick="tryPw()">Open</button><div id="err"></div></div></div>
 
 <div id="bar">
-  <div class="brand">Launch Plus · Dashboard<small>ELD 101 · stretch lessons</small></div>
+  <div class="brand">ELD 101 · Dashboard<small>Launch Plus · Topic Sentences (Daily Basics has its own)</small></div>
   <select id="lesson" onchange="render()"></select>
   <select id="period" onchange="render()"><option value="">All periods</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select>
   <button onclick="loadAll()">↻ Refresh</button>
@@ -75,7 +75,11 @@ var PASSWORD='galileo2026';
 var LESSONS=[
  {u:'u1-l1',n:'Lesson 1 · People at School',say:'people-at-school'},
  {u:'u1-l1x',n:'Lesson 1 · Extras',say:'people-at-school-2',parts:[['K','Capitals',1],['M','Match',2],['P','Who?',3],['Z','Where?',4]]},
- {u:'u1-l2',n:'Lesson 2 · Introductions',say:'introductions'}
+ {u:'u1-l2',n:'Lesson 2 · Introductions',say:'introductions'},
+ {u:'u1-l3',n:'Lesson 3 · From A to Z',say:'from-a-to-z'},
+ {u:'u1-l3x',n:'Lesson 3 · Extras',say:'from-a-to-z',parts:[['K','Capitals',1],['M','Next letter',2],['P','Big or small',3],['Z','ABC order',4]]},
+ {u:'ts-1',n:'Topic Sentences · Set 1',table:'topic_sentence',parts:[['C','Choose',2],['W','Write',3]]},
+ {u:'ts-2',n:'Topic Sentences · Set 2',table:'topic_sentence',parts:[['C','Choose',2],['W','Write',3]]}
 ];
 var ROWS=[],SAY={},SORT={k:'name',d:1},OPEN={};
 function $(i){return document.getElementById(i);}
@@ -87,8 +91,9 @@ function openApp(){$('pwwrap').style.display='none';$('lesson').innerHTML=LESSON
 
 function loadAll(){
  $('stats').innerHTML='<div class="muted">Loading…</div>';
- var q1=fetch(SUPA_URL+'/rest/v1/launch_plus?select=email,name,period,unit,score,max_score,turned_in,writing,payload,updated_at&order=updated_at.desc',{headers:H()}).then(function(r){return r.json();});
- var sets=LESSONS.map(function(l){return l.say;}).join(',');
+ var sel='select=email,name,period,unit,score,max_score,turned_in,writing,payload,updated_at&order=updated_at.desc';
+ var q1=Promise.all(['launch_plus','topic_sentence'].map(function(t){return fetch(SUPA_URL+'/rest/v1/'+t+'?'+sel,{headers:H()}).then(function(r){return r.ok?r.json():[];}).catch(function(){return [];});})).then(function(a){return [].concat.apply([],a);});
+ var sets=LESSONS.filter(function(l){return l.say;}).map(function(l){return l.say;}).join(',');
  var q2=fetch(SUPA_URL+'/rest/v1/say_work?select=email,set,scores,updated_at&set=in.('+sets+')',{headers:H()}).then(function(r){return r.ok?r.json():[];}).catch(function(){return [];});
  Promise.all([q1,q2]).then(function(res){ROWS=Array.isArray(res[0])?res[0]:[];SAY={};(res[1]||[]).forEach(function(s){SAY[s.set+'|'+(s.email||'').toLowerCase()]=s;});render();})
  .catch(function(e){$('stats').innerHTML='<div class="muted">Could not load: '+esc(e)+'</div>';});
@@ -103,7 +108,7 @@ function parts(r,lesson){
   var ids=Object.keys(A).filter(function(k){return k.charAt(0)===prefix;});var done=ids.filter(function(k){return A[k].done;}).length,first=ids.filter(function(k){return A[k].done&&A[k].first;}).length;p[key]={n:ids.length,done:done,first:first,label:d[1]};});
  return p;
 }
-function sayScore(r,lesson){var s=SAY[lesson.say+'|'+(r.email||'').toLowerCase()];if(!s||!s.scores||!s.scores.words0)return null;var w=s.scores.words0;return {ok:w.best||w.correct||0,total:w.total||0};}
+function sayScore(r,lesson){if(!lesson.say)return null;var s=SAY[lesson.say+'|'+(r.email||'').toLowerCase()];if(!s||!s.scores||!s.scores.words0)return null;var w=s.scores.words0;return {ok:w.best||w.correct||0,total:w.total||0};}
 function cls(p,n){return p.done>=n&&n>0?'ok':p.done>0?'part':'';}
 
 function render(){
