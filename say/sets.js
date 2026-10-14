@@ -28,5 +28,10 @@ window.SAY_SETS={
     {k:'past', name:'Past tense', e:'⏮️', items:['lived','came','died','killed','took','They lived here first.','Columbus came in 1492.','Many people died.']},
     {k:'feel', name:'Feelings', e:'😊', items:['happy','sad','angry','It\u2019s complicated.']},
     {k:'today', name:'Today', e:'📅', items:['holiday','celebrate','remember','respect','We respect all people.','Indigenous Peoples\u2019 Day']}
+    ] },
+  'people-at-school':{ title:'People at School', back:'/readings/launch-plus/u1-l1/', decks:[
+    {k:'jobs', name:'Jobs', e:'🏫', items:['custodian','security guard','secretary','nurse','substitute teacher','coach','dean']},
+    {k:'does', name:'What they do', e:'🛠️', items:['cleans the building','fixes small things','keeps the school safe','checks the doors','works in the office','answers the phone','keeps records','helps students who are sick or hurt','teaches a class','when the regular teacher is absent','trains a sports team','handles behavior','student discipline']},
+    {k:'sent', name:'Sentences', e:'💬', items:['A custodian cleans the building and fixes small things.','A security guard keeps the school safe and checks the doors.','A secretary works in the office, answers the phone, and keeps records.','A nurse helps students who are sick or hurt.','A substitute teacher teaches a class when the regular teacher is absent.','A coach trains a sports team.','A dean handles behavior and student discipline.']}
   ] }
 };
