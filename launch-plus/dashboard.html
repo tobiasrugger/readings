@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en" translate="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="google" content="notranslate">
+<title>Launch Plus · Teacher dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--pine:#1b4332;--pine2:#2d6a4f;--moss:#40916c;--sage:#95d5b2;--paper:#f4f5f2;--card:#fff;--ink:#1f2421;--muted:#5c6b62;--line:#dfe4dd;--gold:#d4a017;--rust:#b5451b;--sky:#e8f3ee}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:'Nunito',system-ui,sans-serif;background:var(--paper);color:var(--ink);font-size:15px;line-height:1.5}
+#bar{background:var(--pine);color:#fff;padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+#bar .brand{font-weight:800;font-size:1.05rem}
+#bar .brand small{display:block;font-weight:600;font-size:.78rem;opacity:.8}
+#bar select,#bar button,#bar a{font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer;background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:6px 11px;text-decoration:none}
+#bar .sp{flex:1}
+main{max-width:1100px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px}
+.stats{display:flex;gap:10px;flex-wrap:wrap}
+.stat{flex:1;min-width:120px;background:var(--sky);border-radius:10px;padding:8px 12px}
+.stat b{display:block;font-size:1.4rem;color:var(--pine2)}
+.stat span{font-size:.78rem;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-size:.74rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);cursor:pointer;white-space:nowrap}
+tr:hover td{background:#fafbf8}
+.nm{font-weight:800;white-space:nowrap}
+.nm small{display:block;font-weight:400;color:var(--muted);font-size:.72rem}
+.parts{display:flex;gap:3px}
+.pt{width:28px;height:22px;border-radius:5px;font-size:.68rem;font-weight:800;display:grid;place-items:center;border:1px solid var(--line);color:var(--muted);background:#fff}
+.pt.ok{background:var(--pine2);color:#fff;border-color:var(--pine2)}
+.pt.part{background:var(--sage);color:var(--pine);border-color:var(--sage)}
+.score{font-weight:800}
+.score.lo{color:var(--rust)}.score.mid{color:var(--gold)}.score.hi{color:var(--pine2)}
+.tag{display:inline-block;font-size:.72rem;font-weight:800;border-radius:999px;padding:1px 8px}
+.tag.in{background:var(--pine2);color:#fff}
+.tag.no{background:var(--line);color:var(--muted)}
+.wr{font-size:.86rem;white-space:pre-wrap;background:#fafbf8;border-left:4px solid var(--sage);padding:6px 10px;margin:4px 0;border-radius:0 8px 8px 0}
+.wr b{display:block;font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.expand{cursor:pointer;color:var(--pine2);font-weight:800;font-size:.8rem;border:none;background:none;font-family:inherit}
+.muted{color:var(--muted)}
+#pwwrap{position:fixed;inset:0;background:var(--paper);display:grid;place-items:center;z-index:9}
+#pwbox{background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:22px;width:min(92vw,360px)}
+#pwbox input{font-family:inherit;font-size:1rem;width:100%;padding:10px;border:2px solid var(--line);border-radius:10px;margin:10px 0}
+.btn{font-family:inherit;font-size:.92rem;font-weight:800;cursor:pointer;border-radius:9px;padding:9px 16px;border:none;background:var(--pine2);color:#fff}
+#err{color:var(--rust);font-size:.85rem;min-height:1.2em}
+@media(max-width:700px){.hidem{display:none}}
+</style>
+</head>
+<body>
+<div id="pwwrap"><div id="pwbox"><h2 style="margin:0 0 4px">Launch Plus · Teacher</h2><div class="muted" style="font-size:.85rem">Dashboard password</div><input id="pw" type="password" onkeydown="if(event.key==='Enter')tryPw()"><button class="btn" style="width:100%" onclick="tryPw()">Open</button><div id="err"></div></div></div>
+
+<div id="bar">
+  <div class="brand">Launch Plus · Dashboard<small>ELD 101 · stretch lessons</small></div>
+  <select id="lesson" onchange="render()"></select>
+  <select id="period" onchange="render()"><option value="">All periods</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select>
+  <button onclick="loadAll()">↻ Refresh</button>
+  <span class="sp"></span>
+  <a href="./">Student index</a>
+  <button onclick="exportCSV()">CSV</button>
+</div>
+<main>
+  <div class="card stats" id="stats"></div>
+  <div class="card" style="padding:0;overflow-x:auto"><table id="tbl"><thead></thead><tbody></tbody></table></div>
+  <p class="muted" style="font-size:.8rem">Score = correct on the first try, out of all tap questions (parts 1–4). Parts: R Read · F Fix · B Bigger · Z Zoom · W Write · 🎙 Record (words said clearly in the Record step). Click a column header to sort. Tap a name to read the writing.</p>
+</main>
+
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var PASSWORD='galileo2026';
+/* one line per lesson — keep in step with index.html */
+var LESSONS=[
+ {u:'u1-l1',n:'Lesson 1 · People at School',say:'people-at-school'},
+ {u:'u1-l2',n:'Lesson 2 · Introductions',say:'introductions'}
+];
+var ROWS=[],SAY={},SORT={k:'name',d:1},OPEN={};
+function $(i){return document.getElementById(i);}
+function H(){return {'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY};}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+
+function tryPw(){if($('pw').value===PASSWORD){try{sessionStorage.setItem('dash_ok','1');}catch(e){}openApp();}else $('err').textContent='Not the right password.';}
+function openApp(){$('pwwrap').style.display='none';$('lesson').innerHTML=LESSONS.map(function(l){return '<option value="'+l.u+'">'+esc(l.n)+'</option>';}).join('');loadAll();}
+
+function loadAll(){
+ $('stats').innerHTML='<div class="muted">Loading…</div>';
+ var q1=fetch(SUPA_URL+'/rest/v1/launch_plus?select=email,name,period,unit,score,max_score,turned_in,writing,payload,updated_at&order=updated_at.desc',{headers:H()}).then(function(r){return r.json();});
+ var sets=LESSONS.map(function(l){return l.say;}).join(',');
+ var q2=fetch(SUPA_URL+'/rest/v1/say_work?select=email,set,scores,updated_at&set=in.('+sets+')',{headers:H()}).then(function(r){return r.ok?r.json():[];}).catch(function(){return [];});
+ Promise.all([q1,q2]).then(function(res){ROWS=Array.isArray(res[0])?res[0]:[];SAY={};(res[1]||[]).forEach(function(s){SAY[s.set+'|'+(s.email||'').toLowerCase()]=s;});render();})
+ .catch(function(e){$('stats').innerHTML='<div class="muted">Could not load: '+esc(e)+'</div>';});
+}
+
+function parts(r){
+ var A=(r.payload&&r.payload.A)||{},W=r.writing||(r.payload&&r.payload.W)||{};
+ function part(prefix){var ids=Object.keys(A).filter(function(k){return k.charAt(0)===prefix;});var done=ids.filter(function(k){return A[k].done;}).length,first=ids.filter(function(k){return A[k].done&&A[k].first;}).length;return {n:ids.length,done:done,first:first};}
+ var p={R:part('r'),F:part('f'),B:part('b'),Z:part('z')};
+ var w=['w0','w1','w2'].filter(function(k){return (W[k]||'').trim().length>0;}).length;
+ p.W={n:3,done:w,first:w};
+ return p;
+}
+function sayScore(r,lesson){var s=SAY[lesson.say+'|'+(r.email||'').toLowerCase()];if(!s||!s.scores||!s.scores.words0)return null;var w=s.scores.words0;return {ok:w.best||w.correct||0,total:w.total||0};}
+function cls(p,n){return p.done>=n&&n>0?'ok':p.done>0?'part':'';}
+
+function render(){
+ var u=$('lesson').value,pd=$('period').value,lesson=LESSONS.filter(function(l){return l.u===u;})[0]||LESSONS[0];
+ var rows=ROWS.filter(function(r){return r.unit===u&&(!pd||String(r.period)===pd);});
+ rows.forEach(function(r){r._p=parts(r);r._say=sayScore(r,lesson);r._pct=r.max_score?Math.round(100*r.score/r.max_score):0;r._done=['R','F','B','Z','W'].filter(function(k){return r._p[k].done>=r._p[k].n&&r._p[k].n>0;}).length;});
+ var k=SORT.k,d=SORT.d;
+ rows.sort(function(a,b){var x=k==='name'?(a.name||'').toLowerCase():k==='period'?String(a.period):k==='score'?a._pct:k==='done'?a._done:k==='say'?(a._say?a._say.ok:-1):k==='in'?(a.turned_in?1:0):a.updated_at;
+  var y=k==='name'?(b.name||'').toLowerCase():k==='period'?String(b.period):k==='score'?b._pct:k==='done'?b._done:k==='say'?(b._say?b._say.ok:-1):k==='in'?(b.turned_in?1:0):b.updated_at;return (x<y?-1:x>y?1:0)*d;});
+ var n=rows.length,inN=rows.filter(function(r){return r.turned_in;}).length,fin=rows.filter(function(r){return r._done===5;}).length;
+ var avg=n?Math.round(rows.reduce(function(s,r){return s+r._pct;},0)/n):0;
+ var said=rows.filter(function(r){return r._say&&r._say.ok>0;}).length;
+ $('stats').innerHTML='<div class="stat"><b>'+n+'</b><span>students started</span></div><div class="stat"><b>'+fin+'</b><span>finished all 5 parts</span></div><div class="stat"><b>'+inN+'</b><span>turned in</span></div><div class="stat"><b>'+avg+'%</b><span>average first-try score</span></div><div class="stat"><b>'+said+'</b><span>recorded in Say it</span></div>';
+ var th=[['name','Student'],['period','P'],['done','Parts'],['score','Score'],['say','🎙 Record'],['in','Turned in'],['when','Last active']];
+ $('tbl').querySelector('thead').innerHTML='<tr>'+th.map(function(t){return '<th onclick="sortBy(\''+t[0]+'\')">'+t[1]+(SORT.k===t[0]?(SORT.d>0?' ▲':' ▼'):'')+'</th>';}).join('')+'</tr>';
+ $('tbl').querySelector('tbody').innerHTML=rows.map(function(r){
+  var p=r._p,W=r.writing||(r.payload&&r.payload.W)||{},id=(r.email||'').replace(/[^a-z0-9]/gi,'_');
+  var pct=r._pct,sc='score '+(pct<60?'lo':pct<80?'mid':'hi');
+  var sy=r._say?'<span class="'+(r._say.ok===r._say.total?'score hi':'score')+'">'+r._say.ok+' / '+r._say.total+'</span>':'<span class="muted">—</span>';
+  var tr='<tr><td class="nm"><button class="expand" onclick="toggle(\''+id+'\')">'+esc(r.name||r.email)+'</button><small>'+esc(r.email)+'</small></td><td>'+esc(r.period)+'</td>'+
+   '<td><div class="parts">'+['R','F','B','Z','W'].map(function(k){return '<span class="pt '+cls(p[k],p[k].n)+'" title="'+k+': '+p[k].done+' of '+p[k].n+' done, '+p[k].first+' right first try">'+k+'</span>';}).join('')+'</div></td>'+
+   '<td><span class="'+sc+'">'+r.score+' / '+r.max_score+'</span> <span class="muted">('+pct+'%)</span></td><td>'+sy+'</td>'+
+   '<td>'+(r.turned_in?'<span class="tag in">in</span>':'<span class="tag no">not yet</span>')+'</td><td class="muted">'+when(r.updated_at)+'</td></tr>';
+  if(OPEN[id]){tr+='<tr><td colspan="7">'+['w0','w1','w2'].map(function(k,i){return '<div class="wr"><b>Step '+(i+1)+'</b>'+(W[k]?esc(W[k]):'<span class="muted">(empty)</span>')+'</div>';}).join('')+
+   '<div class="muted" style="font-size:.78rem">Right first try — Read '+p.R.first+'/'+p.R.n+' · Fix '+p.F.first+'/'+p.F.n+' · Bigger '+p.B.first+'/'+p.B.n+' · Zoom '+p.Z.first+'/'+p.Z.n+'</div></td></tr>';}
+  return tr;}).join('')||'<tr><td colspan="7" class="muted">No students yet for this lesson'+(pd?' in period '+pd:'')+'.</td></tr>';
+}
+function sortBy(k){if(SORT.k===k)SORT.d*=-1;else{SORT.k=k;SORT.d=(k==='name'||k==='period')?1:-1;}render();}
+function toggle(id){OPEN[id]=!OPEN[id];render();}
+function when(t){if(!t)return '';var d=new Date(t),m=(Date.now()-d)/60000;if(m<60)return Math.round(m)+' min ago';if(m<1440)return Math.round(m/60)+' h ago';return d.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' '+d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});}
+function exportCSV(){
+ var u=$('lesson').value,pd=$('period').value,lesson=LESSONS.filter(function(l){return l.u===u;})[0];
+ var rows=ROWS.filter(function(r){return r.unit===u&&(!pd||String(r.period)===pd);});
+ var out=[['name','email','period','lesson','score','max','pct','read','fix','bigger','zoom','write','record_ok','record_total','turned_in','step1','step2','step3','updated']];
+ rows.forEach(function(r){var p=parts(r),s=sayScore(r,lesson),W=r.writing||{};out.push([r.name,r.email,r.period,lesson.n,r.score,r.max_score,r.max_score?Math.round(100*r.score/r.max_score):0,p.R.first+'/'+p.R.n,p.F.first+'/'+p.F.n,p.B.first+'/'+p.B.n,p.Z.first+'/'+p.Z.n,p.W.done+'/3',s?s.ok:'',s?s.total:'',r.turned_in?'yes':'no',W.w0||'',W.w1||'',W.w2||'',r.updated_at]);});
+ var csv=out.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+ var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);a.download='launch-plus-'+u+(pd?'-p'+pd:'')+'.csv';a.click();
+}
+(function(){var ok=false;try{ok=sessionStorage.getItem('dash_ok')==='1';}catch(e){}if(ok)openApp();else $('pw').focus();})();
+</script>
+</body>
+</html>
