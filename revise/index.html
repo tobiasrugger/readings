@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fix the Paragraph · ELD 101</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--pine:#1b4332;--pine2:#2d6a4f;--moss:#40916c;--sage:#95d5b2;--paper:#f4f5f2;--card:#fff;
+  --ink:#1f2421;--muted:#5c6b62;--line:#dfe4dd;--gold:#d4a017;--rust:#b5451b;--sky:#e8f3ee;--yellow:#fff1bf}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:'Nunito',system-ui,sans-serif;background:var(--paper);color:var(--ink);font-size:17px;line-height:1.6}
+#bar{position:sticky;top:0;z-index:60;background:var(--pine);color:#fff;padding:8px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;box-shadow:0 2px 10px rgba(0,0,0,.18)}
+#bar .brand{font-weight:800;font-size:1.02rem;margin-right:auto}
+#bar .brand small{display:block;font-weight:600;font-size:.7rem;opacity:.78}
+#bar button,#bar select{font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer;background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:6px 11px}
+#bar button:hover{background:rgba(255,255,255,.26)}
+#bar button.on{background:var(--gold);border-color:var(--gold);color:#3d2c00}
+#bar select option{color:#000}
+#saveDot{width:10px;height:10px;border-radius:50%;background:#7d8a83;display:inline-block;margin-right:4px;vertical-align:middle}
+#saveDot.on{background:var(--sage)} #saveDot.busy{background:var(--gold)} #saveDot.err{background:#e07a5f}
+#whoami{font-size:.78rem;opacity:.85;font-weight:700}
+main{max-width:760px;margin:0 auto;padding:18px 14px 90px}
+section.act{display:none} section.act.show{display:block}
+h1{font-size:1.6rem;line-height:1.25;margin:.2em 0 .2em}
+h2{font-size:1.25rem;margin:.2em 0 .4em;color:var(--pine)}
+.lede{color:var(--muted);margin:.3em 0 1em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:14px 0}
+.dir{margin:.45em 0}
+.dirtr{display:block;color:var(--pine2);font-weight:700;margin-top:2px}
+.dirtr:empty{display:none}
+.btn{font-family:inherit;font-size:.92rem;font-weight:800;cursor:pointer;border-radius:9px;padding:9px 16px;border:none;background:var(--pine2);color:#fff;margin:4px 6px 4px 0}
+.btn:hover{background:var(--pine)}
+.btn.ghost{background:#fff;color:var(--pine2);border:2px solid var(--pine2)}
+.btn:focus-visible,.chip:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.steps{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px}
+.stepb{border:1px solid var(--line);background:#fff;border-radius:20px;padding:4px 12px;font-family:inherit;font-weight:800;font-size:.8rem;color:var(--muted);cursor:pointer}
+.stepb.cur{background:var(--pine2);color:#fff;border-color:var(--pine2)}
+.stepb.ok{background:#d8f0e2;color:var(--pine);border-color:var(--moss)}
+.read{font-size:1.12rem;line-height:1.9}
+.read b.v{background:var(--yellow);border-radius:4px;padding:0 3px;font-weight:800}
+.q{margin:14px 0 6px;font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}
+.chip{font-family:inherit;font-size:1rem;font-weight:700;padding:7px 15px;border-radius:20px;border:2px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;text-align:left}
+.chip:hover{border-color:var(--moss)}
+.chip.right{background:#d8f0e2;border-color:var(--moss);color:var(--pine)}
+.chip.wrong{background:#fbeae5;border-color:#e07a5f;color:#8a2f10}
+.chip.dim{opacity:.5;pointer-events:none}
+.why{font-size:.95rem;color:#3c4a42;margin:6px 0 2px;line-height:1.55;padding:7px 12px;border-radius:9px;background:#f6f8f5}
+.why.good{background:#e9f6ee} .why.miss{background:#fdf0c4}
+.why:empty{display:none}
+.sent{font-size:1.18rem;margin:4px 0}
+.sent u{text-decoration:none;border-bottom:3px solid var(--rust);padding:0 2px;font-weight:800}
+.wordrow{display:grid;grid-template-columns:1fr 2fr;gap:8px 14px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
+.wordrow:last-child{border-bottom:none}
+.wordrow .w{font-weight:800;font-size:1.05rem}
+.wordrow span{display:flex;align-items:center;gap:6px}
+.spk{border:1.5px solid var(--line);background:#fff;border-radius:50%;width:30px;height:30px;font-size:.95rem;cursor:pointer;flex:none;line-height:1}
+.spk:active,.spk.on{background:var(--p);color:#fff;border-color:var(--p)}
+.capp{font-size:1.15rem;line-height:2.3}
+.capp .gp{display:inline-block;width:14px;height:1.1em;vertical-align:middle;border-radius:4px;cursor:pointer;margin:0 1px;background:#eef2ec}
+.capp .gp:hover{background:var(--yellow)}
+.capp .gp.fixed{width:auto;padding:0 4px;background:#d8f0e2;color:var(--pine);font-weight:800}
+.capp .cw.v{border-bottom:2px dashed var(--line)}
+.capp .cw.v.fixed{border-bottom-color:var(--pine)}
+.chip.pick{font-size:1.02rem}
+.capp .cw{display:inline-block;padding:0 3px;border-radius:5px;cursor:pointer;border-bottom:2px solid transparent}
+.capp .cw:hover{background:#f0f4ee}
+.capp .cw.fixed{background:#d8f0e2;color:var(--pine);font-weight:800}
+.capp .cw.oops{background:#fbeae5;animation:shake .3s}
+@keyframes shake{25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+.pic{font-size:3rem;line-height:1.1;margin:0 0 6px}
+.pic small{font-size:1.6rem;margin-left:6px}
+.wordrow .w{min-width:0}
+#sayPanel{margin-top:4px}
+#sayFrame{width:100%;border:1.5px solid var(--line);border-radius:12px;min-height:420px;background:#fff}
+textarea{width:100%;min-height:72px;font:inherit;font-size:1.05rem;padding:10px;border:2px solid var(--line);border-radius:10px;line-height:1.5;resize:vertical}
+textarea:focus{border-color:var(--moss);outline:none}
+.check{font-size:.86rem;color:var(--muted);margin:4px 0 10px}
+.check span{display:inline-block;margin-right:12px}
+.check span.ok{color:var(--pine);font-weight:800}
+.frame{color:var(--muted);font-size:.95rem;margin:0 0 4px}
+.big{font-size:2rem;font-weight:800;color:var(--pine)}
+.sumrow{padding:8px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between}
+.sumrow:last-child{border-bottom:none}
+#wtip{position:fixed;z-index:210;background:#1b4332;color:#fff;border-radius:10px;padding:9px 14px;box-shadow:0 6px 22px rgba(0,0,0,.3);display:none;max-width:280px;font-size:.95rem;line-height:1.45}
+#wtip.show{display:block}
+#wtipW{display:block;font-weight:800;font-size:.8rem;opacity:.72}
+#wtipT{font-weight:700;font-size:1.06rem}
+body.wt [translate="no"]{outline:2px dashed var(--gold);outline-offset:3px;border-radius:6px}
+body.wt [translate="no"] *{cursor:help !important}
+#canary{position:absolute;left:-9999px;top:-9999px;height:1px;overflow:hidden}
+#namewrap{position:fixed;inset:0;z-index:200;background:rgba(27,67,50,.94);display:none;align-items:center;justify-content:center;padding:20px}
+#namewrap.show{display:flex}
+#namebox{background:#fff;border-radius:16px;padding:26px;max-width:380px;width:100%}
+#namebox h2{margin:0 0 6px;color:var(--pine);text-align:center}
+#namebox p{margin:0 0 14px;font-size:.9rem;color:var(--muted);text-align:center}
+#namebox label{display:block;font-size:.8rem;font-weight:800;color:var(--moss);margin:0 0 4px}
+#namebox input,#namebox select{font-family:inherit;font-size:1.04rem;padding:10px 12px;width:100%;border:2px solid var(--line);border-radius:10px;margin-bottom:12px;background:#fff;color:var(--ink)}
+#namebox .or{text-align:center;font-size:.8rem;color:var(--muted);font-weight:700;margin:-4px 0 10px}
+#nameErr{color:var(--rust);font-size:.86rem;font-weight:700;min-height:1.1em}
+@media print{#bar,#namewrap,.btn,.steps{display:none !important} section.act{display:block !important}}
+</style>
+<script>
+window.GAL_META={title:'Fix the Paragraph',unit:'Writing',skills:['CAP.PUNC','RUNON','DETAIL','SV.3SG','PAST']};
+</script>
+</head>
+<body>
+<div id="canary" aria-hidden="true">the quick brown fox jumps over the lazy dog</div>
+<div id="bar">
+  <div class="brand">Fix the Paragraph<small id="setLbl">ELD 101 · Writing · revision</small></div>
+  <span id="whoami"></span>
+  <button onclick="askName()"><span id="saveDot"></span>Name</button>
+  <select id="lang" onchange="setLang(this.value)" aria-label="Your language">
+    <option value="">Language…</option>
+    <option value="Spanish">Español</option><option value="Chinese (Simplified)">中文</option><option value="Arabic">العربية</option>
+    <option value="Vietnamese">Tiếng Việt</option><option value="Russian">Русский</option><option value="Urdu">اردو</option>
+    <option value="Tagalog">Tagalog</option><option value="French">Français</option><option value="Korean">한국어</option>
+    <option value="Hindi">हिन्दी</option><option value="Somali">Soomaali</option><option value="Nepali">नेपाली</option><option value="Thai">ไทย</option>
+  </select>
+  <button id="dirBtn" onclick="toggleDir()">Directions</button>
+  <button id="wtBtn" onclick="toggleWT()">Tap words</button>
+  <button onclick="turnIn()">Turn in</button>
+</div>
+<main>
+<div class="steps" id="steps"></div>
+
+<section class="act" id="a0">
+  <h1 id="setTitle">Fix the Paragraph</h1>
+  <p class="lede" id="setLede"></p>
+  <div class="card">
+    <p class="dir" data-dir="d1" data-en="" id="setDir"></p>
+    <p class="dir" data-dir="d2" data-en="Three paragraphs. Tap to fix. If you tap something that is already correct, it shakes red. The first try is your score.">Three paragraphs. <b>Tap</b> to fix. If you tap something that is already correct, it shakes red. The <b>first try</b> is your score.</p>
+    <div class="rule" id="setRule"></div>
+  </div>
+  <button class="btn" onclick="go(1)">Start</button>
+</section>
+<section class="act" id="a1"><h2>Paragraph 1</h2><div id="h1"></div><button class="btn" onclick="go(2)">Next: Paragraph 2</button></section>
+<section class="act" id="a2"><h2>Paragraph 2</h2><div id="h2"></div><button class="btn" onclick="go(3)">Next: Paragraph 3</button></section>
+<section class="act" id="a3"><h2>Paragraph 3</h2><div id="h3"></div><button class="btn" onclick="go(4)">Finish</button></section>
+<section class="act" id="a4">
+  <h2>Done</h2>
+  <div class="card" style="text-align:center"><div style="color:var(--muted);font-size:.9rem">Correct on the first try</div><div class="big" id="finScore">0 / 0</div></div>
+  <div class="card" id="finList"></div>
+  <button class="btn" onclick="turnIn()">Turn in my work</button>
+  <button class="btn ghost" onclick="go(1)">Look again</button>
+  <p id="nextSet"></p>
+</section>
+</main>
+
+<div id="namewrap">
+  <div id="namebox">
+    <h2>Sign in</h2>
+    <p>Use your school email so your work shows up on your own student page.</p>
+    <label for="rosterSel">Find your name</label>
+    <select id="rosterSel" onchange="pickRoster()"><option value="">— choose your name —</option></select>
+    <div class="or">or type it in</div>
+    <label for="nameIn">Your name</label>
+    <input id="nameIn" autocomplete="name" placeholder="First and last name">
+    <label for="emailIn">School email</label>
+    <input id="emailIn" type="email" inputmode="email" autocapitalize="off" spellcheck="false" placeholder="name@s.sfusd.edu" onkeydown="if(event.key==='Enter')saveName()">
+    <label for="periodIn">Class period</label>
+    <select id="periodIn"><option value="">— choose —</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select>
+    <label for="langIn">Your language · Tu idioma · 你的语言 · لغتك</label>
+    <select id="langIn"><option value="">— choose your language —</option></select>
+    <button class="btn" style="width:100%" onclick="saveName()">Start</button>
+    <div id="nameErr"></div>
+  </div>
+</div>
+<div id="wtip"><span id="wtipW"></span><span id="wtipT"></span></div>
+
+<script>
+/* ===================== CONFIG ===================== */
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var TABLE='revise';
+var SET=(new URLSearchParams(location.search).get('set')||'1');var UNIT='rev-'+SET;
+var SLUG='revise/'+UNIT;
+var PROXY='https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
+var LAST_KEY='rev_last_'+UNIT;
+
+/* ===================== LESSON DATA (swap this block for a new lesson) ===================== */
+/* Paragraph markup: ^Word = needs a capital (name/place/language/I). Sentence starts are capital targets automatically.
+   AND (uppercase) = a bad "and" in a run-on; lowercase and is fine. {base|fixed} = verb that must change; {base} = verb that is already right. */
+var SETS={
+ '1':{title:'1 · Capitals',lede:'Names, places, languages, and the first word of a sentence.',mode:'cap',
+   dir:'Some words need a capital letter: the first word of each sentence, names of people and places, languages, and the word I. Tap each word to fix it.',
+   rule:'🔠 Capital: <b>first word</b> of a sentence · <b>names</b> · <b>places</b> · <b>languages</b> · <b>I</b>',
+   paras:[
+    {e:'🏫',t:"^Galileo is a big school in ^San ^Francisco. The principal is ^Ms. ^Brown. She works in the ^Main ^Office. ^Ms. ^Bettie is the secretary."},
+    {e:'👋',t:"My name is ^Ana. ^I am from ^Guatemala. ^I speak ^Spanish at home. My friend ^Daniel speaks ^Arabic. We learn ^English together."},
+    {e:'🐶',t:"My dog is named ^Max. On ^Saturday, we walk to ^Golden ^Gate ^Park. ^Max runs and plays. Then we go home."}
+   ]},
+ '2':{title:'2 · Capitals and periods',lede:'Where does each sentence end?',mode:'capdot',
+   dir:'The periods are missing and the capitals are missing. Tap a gray box to add a period. Tap a word to give it a capital letter.',
+   rule:'⬜ gray box = tap to add a <b>period</b> &nbsp;·&nbsp; word = tap to add a <b>capital</b>',
+   paras:[
+    {e:'🧑‍🎓',t:"^Omar is a new student. He is from ^Yemen. He speaks ^Arabic. His first class is science."},
+    {e:'🌮',t:"There are many delicious foods in ^San ^Francisco. First, the tacos are good. Second, the noodles are hot. Finally, the bread is fresh."},
+    {e:'🏀',t:"My brother is active. He plays soccer after school. On weekends, he plays basketball. He rides his bike every day."}
+   ]},
+ '3':{title:'3 · Run-on sentences',lede:'And and and and… Break the long sentence into short sentences.',mode:'runon',
+   dir:'This paragraph is one long sentence with too many ands. Tap an and that should be a period. Some ands are fine, like purple and orange.',
+   rule:'✂️ "… school <b>and</b> it is old <b>and</b> …" → "… school<b>.</b> It is old<b>.</b> …"',
+   paras:[
+    {e:'🏫',t:"Galileo is a big school AND it is more than 100 years old AND our colors are purple and orange AND our mascot is the lion."},
+    {e:'🚌',t:"Some students take the bus AND other students walk AND a few students ride a bike AND I come by car with my mother and father."},
+    {e:'👩‍🏫',t:"My teacher is kind AND she explains the words AND she helps us read and write AND we learn a lot in her class."}
+   ]},
+ '4':{title:'4 · Add details',lede:'A topic sentence needs details that match.',mode:'detail',
+   dir:'Read the topic sentence. Tap the detail that goes with it. Details must be about the same idea.',
+   rule:'🟨 topic sentence → First, … Second, … Finally, … (all about the <b>same idea</b>)',
+   paras:[
+    {e:'🐱🐶🐰',ts:'There are many cute animals.',slots:[{b:'First,',o:['cats are soft and quiet.','the bus is late.','math is hard.']},{b:'Next,',o:['dogs are playful and happy.','I have homework.','the office is big.']},{b:'Finally,',o:['rabbits have long ears.','the sky is blue.','we eat lunch at noon.']}]},
+    {e:'🏫🤝',ts:'Many people help me at Galileo.',slots:[{b:'First,',o:['Ms. Bettie helps me in the office.','the bridge is red.','my dog is black.']},{b:'Second,',o:['my teacher explains new words.','pizza is from Italy.','it rains in winter.']},{b:'Finally,',o:['my friend Omar helps me with homework.','I like music.','the gym is big.']}]},
+    {e:'🚌🚶🚲',ts:'Students come to school in many ways.',slots:[{b:'First,',o:['some students take the bus.','the school is old.','I eat lunch at 12.']},{b:'Second,',o:['other students walk.','my mother cooks rice.','the library is quiet.']},{b:'Finally,',o:['a few students ride a bike.','the lion is our mascot.','Ms. Brown is the principal.']}]}
+   ]},
+ '5':{title:'5 · He, she, it → -s',lede:'One person (he, she, it) → the verb gets -s.',mode:'verb',
+   dir:'Look at each verb with a dashed line. If the subject is he, she, it, or one person, tap the verb to add -s. If the subject is I, you, we, or they, leave it.',
+   rule:'he / she / it / Ms. Brown → walk<b>s</b>, teach<b>es</b>, go<b>es</b> &nbsp;·&nbsp; I / you / we / they → walk',
+   paras:[
+    {e:'👩‍🏫',t:"Ms. Rivera {teach|teaches} science. She {arrive|arrives} early. The students {listen} and {write}. She {help|helps} everyone."},
+    {e:'🧹',t:"The custodian {clean|cleans} the building. He {fix|fixes} small things. The teachers {thank} him. He {smile|smiles} at everyone."},
+    {e:'🏀',t:"My brother {play|plays} soccer. He {ride|rides} his bike to school. We {eat} dinner together. He {go|goes} to bed early."}
+   ]},
+ '6':{title:'6 · Past tense',lede:'Yesterday, last year, on Saturday… → past tense verbs.',mode:'verb',
+   dir:'This story happened in the past. Tap each verb with a dashed line to change it to the past tense. One verb is about now. Leave it.',
+   rule:'⏮️ yesterday / last year → walk<b>ed</b>, help<b>ed</b> &nbsp;·&nbsp; go → <b>went</b>, see → <b>saw</b>, come → <b>came</b>',
+   paras:[
+    {e:'👋',t:"Yesterday, Ana {meet|met} Daniel. The teacher {ask|asked} their names. They {practice|practiced} English. Ana {say|said} thank you."},
+    {e:'🧑‍🎓',t:"Last year, Omar {come|came} to Galileo. He {speak|spoke} no English. His teacher {help|helped} him every day. Now he {speaks} well."},
+    {e:'🐶',t:"On Saturday, we {walk|walked} to the park. Max {run|ran} fast. He {see|saw} a cat. We {go|went} home at five."}
+   ]}
+};
+var DATA=SETS[SET]||SETS['1'];
+
+var ST={name:'',email:'',period:'',act:0,A:{},W:{},turnedIn:null,browserTranslated:false};
+function $(i){return document.getElementById(i);}
+function clean(s){return String(s||'').trim().toLowerCase();}
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+
+/* ===================== ITEMS ===================== */
+/* every auto-scored item: {id, tag, q(html), options[], a(index), why} */
+var ITEMS=[],PARA=[];
+/* parse a marked-up paragraph into tokens: {w:text shown, fix:text when fixed, kind:'cap'|'gap'|'and'|'verb'|'plain', target:bool} */
+function parsePara(t,mode){
+ var toks=[],words=t.split(/\s+/),sentStart=true;
+ words.forEach(function(w,i){
+  var m=w.match(/^\{([^|}]+)(?:\|([^}]+))?\}(.*)$/);
+  if(m){toks.push({w:m[1]+m[3],fix:(m[2]||m[1])+m[3],kind:'verb',target:!!m[2]});sentStart=/[.!?]$/.test(w);return;}
+  if(mode==='runon'&&w==='AND'){toks.push({w:'and',fix:'.',kind:'and',target:true});sentStart=true;return;}
+  var name=w.charAt(0)==='^';if(name)w=w.slice(1);
+  var capTarget=(mode==='cap'||mode==='capdot')&&(name||sentStart);
+  var shown=capTarget?w.charAt(0).toLowerCase()+w.slice(1):w;
+  var end=/[.!?]$/.test(w);
+  if(mode==='capdot'){shown=shown.replace(/[.!?]$/,'');}
+  toks.push({w:shown,fix:capTarget?(w.charAt(0).toUpperCase()+w.slice(1)).replace(mode==='capdot'?/[.!?]$/:/$^/,''):shown,kind:capTarget?'cap':'plain',target:capTarget});
+  if(mode==='capdot'&&i<words.length-1){toks.push({w:'',fix:'.',kind:'gap',target:end});}
+  if(mode==='runon'&&i<words.length-1&&!end){/* after an AND the next word needs a capital — handled at render */}
+  sentStart=end;
+ });
+ if(mode==='capdot'){toks.push({w:'',fix:'.',kind:'gap',target:true});}
+ return toks;
+}
+function buildItems(){
+ ITEMS=[];PARA=[];
+ DATA.paras.forEach(function(p,pi){var pre='abc'.charAt(pi);
+  if(DATA.mode==='detail'){PARA.push({detail:true});p.slots.forEach(function(sl,si){var id=pre+si,o=(ST.A[id]&&ST.A[id].o)||shuffle(sl.o);ITEMS.push({id:id,part:pi+1,tag:'DETAIL',q:sl.b+' ___',o:o,a:o.indexOf(sl.o[0]),why:'<b>'+sl.o[0]+'</b> is about the same idea as the topic sentence.'});});return;}
+  var toks=parsePara(p.t,DATA.mode),n=0;toks.forEach(function(tk,ti){if(tk.target){tk.id=pre+n;ITEMS.push({id:tk.id,part:pi+1,tag:{cap:'CAP.PUNC',capdot:'CAP.PUNC',runon:'RUNON',verb:SET==='6'?'PAST':'SV.3SG'}[DATA.mode],tok:ti});n++;}});PARA.push({toks:toks});
+ });
+}
+function state(id){if(!ST.A[id])ST.A[id]={tries:0,first:null,done:false};return ST.A[id];}
+function renderPara(pi){
+ var host=$('h'+(pi+1)),p=DATA.paras[pi],P=PARA[pi];
+ if(DATA.mode==='detail'){
+  host.innerHTML='<div class="card"><div class="pic">'+p.e+'</div><div class="read" style="font-size:1.1rem"><b style="background:var(--yellow);padding:0 4px;border-radius:4px">'+p.ts+'</b></div>'+ITEMS.filter(function(x){return x.part===pi+1;}).map(renderItem).join('')+'</div>';return;}
+ var h='<div class="card"><div class="pic">'+p.e+'</div><div class="capp" translate="no">';
+ var capNext=false;
+ P.toks.forEach(function(tk,ti){
+  var st=tk.target?state(tk.id):null,fixed=!!(st&&st.done);
+  if(tk.kind==='gap'){h+='<span class="gp'+(fixed?' fixed':'')+'" onclick="tapTok('+pi+','+ti+')">'+(fixed?'.':'')+'</span> ';return;}
+  var shown=fixed?tk.fix:tk.w;
+  if(tk.kind==='and'){if(fixed){h=h.replace(/\s$/,'')+'<span class="cw fixed" onclick="tapTok('+pi+','+ti+')">.</span> ';capNext=true;return;}h+='<span class="cw" onclick="tapTok('+pi+','+ti+')">and</span> ';return;}
+  if(capNext){shown=shown.charAt(0).toUpperCase()+shown.slice(1);capNext=false;}
+  var nextGap=P.toks[ti+1]&&P.toks[ti+1].kind==='gap';
+  h+='<span class="cw'+(tk.kind==='verb'?' v':'')+(fixed?' fixed':'')+'" onclick="tapTok('+pi+','+ti+')">'+shown+'</span>'+(nextGap?'':' ');
+ });
+ var its=ITEMS.filter(function(x){return x.part===pi+1;}),done=its.filter(function(x){return state(x.id).done;}).length;
+ h+='</div><div class="why'+(done===its.length?' good':'')+'">'+done+' / '+its.length+' fixed'+(done===its.length?' — this paragraph is correct!':'')+'</div></div>';
+ host.innerHTML=h;
+}
+function tapTok(pi,ti){var tk=PARA[pi].toks[ti];
+ if(tk.target){var st=state(tk.id);if(st.done)return;st.tries++;st.done=true;if(st.first===null)st.first=true;}
+ else{var next=ITEMS.filter(function(x){return x.part===pi+1&&!state(x.id).done;})[0];if(next){var s2=state(next.id);s2.tries++;if(s2.first===null)s2.first=false;}
+  var el=$('h'+(pi+1)).querySelectorAll('.cw,.gp')[0];var all=$('h'+(pi+1)).querySelectorAll('.capp > span');var target=all[ti];if(target){target.classList.add('oops');setTimeout(function(){target.classList.remove('oops');},400);}save();drawSteps();return;}
+ save();renderPara(pi);drawSteps();}
+function renderItem(it){
+ var st=state(it.id);if(!st.o)st.o=it.o;
+ var h='<div class="q" style="margin-top:10px">'+it.q.replace('___','<span class="blank" style="display:inline-block;min-width:160px;border-bottom:2px solid var(--rust)">&nbsp;</span>')+'</div><div class="chips" id="c_'+it.id+'">';
+ it.o.forEach(function(o,k){var cls='chip pick';if(st.done){cls+=(k===it.a?' right':' dim');}else if(st.wrongs&&st.wrongs.indexOf(k)>=0)cls+=' wrong dim';h+='<button class="'+cls+'" onclick="pick(\''+it.id+'\','+k+')">'+o+'</button>';});
+ return h+'</div><div class="why'+(st.done?(st.first?' good':' miss'):'')+'">'+(st.done?it.why:'')+'</div>';
+}
+function pick(id,k){var it=ITEMS.filter(function(x){return x.id===id;})[0],st=state(id);if(st.done)return;st.tries++;
+ if(k===it.a){st.done=true;if(st.first===null)st.first=(st.tries===1);}else{st.wrongs=st.wrongs||[];st.wrongs.push(k);if(st.first===null)st.first=false;}
+ save();renderPara(it.part-1);drawSteps();}
+var PARTS=['Start','1','2','3','Done'];
+function partDone(p){if(p===0)return true;if(p===4)return false;
+ var its=ITEMS.filter(function(x){return x.part===p;});return its.length&&its.every(function(x){return state(x.id).done;});}
+function drawSteps(){
+ $('steps').innerHTML=PARTS.map(function(n,i){return '<button class="stepb'+(i===ST.act?' cur':'')+(i!==ST.act&&partDone(i)&&i>0?' ok':'')+'" onclick="go('+i+')">'+n+'</button>';}).join('');
+}
+function go(n){
+ ST.act=n;document.querySelectorAll('section.act').forEach(function(s,i){s.classList.toggle('show',i===n);});
+ if(n>=1&&n<=3)renderPara(n-1); if(n===4)finish();
+ drawSteps();window.scrollTo(0,0);save();if(DIR_ON)showDirections();
+}
+function firstTry(){return ITEMS.filter(function(x){return state(x.id).done&&state(x.id).first;}).length;}
+function partScore(p){var its=ITEMS.filter(function(x){return x.part===p;});return its.filter(function(x){return state(x.id).done&&state(x.id).first;}).length+' / '+its.length;}
+function finish(){
+ $('finScore').textContent=firstTry()+' / '+ITEMS.length;
+ $('finList').innerHTML=[['Paragraph 1',1],['Paragraph 2',2],['Paragraph 3',3]].map(function(r){return '<div class="sumrow"><span>'+r[0]+'</span><b>'+partScore(r[1])+'</b></div>';}).join('');
+ var nx=SETS[String(+SET+1)];$('nextSet').innerHTML=nx?'<a class="btn ghost" href="?set='+(+SET+1)+'">Next: '+nx.title+' →</a>':'<span class="muted">You finished all six sets!</span>';
+}
+function save(){dirty=true;try{var k='rev_'+UNIT+'_'+(ST.email||'anon').replace(/[^a-z0-9]+/g,'_');localStorage.setItem(k,JSON.stringify(ST));localStorage.setItem(LAST_KEY,k);}catch(e){}}
+function load(){try{var k=localStorage.getItem(LAST_KEY);if(!k)return;var d=JSON.parse(localStorage.getItem(k));if(d)ST=Object.assign(ST,d);}catch(e){}}
+var dirty=false,pushing=false,pushSeq=0;
+function dot(c){var d=$('saveDot');if(d)d.className=c;}
+function push(force){
+ if(!ST.email)return;if(!dirty&&!force)return;if(pushing)return;
+ pushing=true;dot('busy');var mySeq=++pushSeq;
+ setTimeout(function(){if(pushing&&mySeq===pushSeq){pushing=false;dirty=true;dot('err');}},15000);
+ var snap=JSON.parse(JSON.stringify(ST));dirty=false;
+ var body=[{email:ST.email,name:ST.name,period:ST.period,unit:UNIT,slug:SLUG,
+  score:firstTry(),max_score:ITEMS.length,turned_in:!!ST.turnedIn,writing:ST.W,payload:snap,updated_at:new Date().toISOString()}];
+ fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email,unit',{method:'POST',keepalive:true,
+  headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
+  body:JSON.stringify(body)}).then(function(r){pushing=false;if(r.ok){dot('on');}else{dirty=true;dot('err');}})
+ .catch(function(){pushing=false;dirty=true;dot('err');});
+}
+function turnIn(){
+ if(!ST.email){askName();return;}
+ var left=[1,2,3].filter(function(p){return !partDone(p);});
+ if(left.length&&!confirm('You still have '+left.length+' part'+(left.length===1?'':'s')+' to finish. Turn in anyway?')){go(left[0]);return;}
+ ST.turnedIn=new Date().toISOString();save();push(true);alert('Turned in. Thank you!');
+}
+
+/* ===================== SIGN IN ===================== */
+var rosterLoaded=false,ROSTER=[];
+function hdr(p){var h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};if(p)h['Prefer']=p;return h;}
+function lastEmail(){try{return localStorage.getItem('gal_student_email')||'';}catch(e){return '';}}
+function askName(){var li=$('langIn');if(li.options.length<2){Array.prototype.slice.call($('lang').options,1).forEach(function(o){li.appendChild(o.cloneNode(true));});}
+ $('nameIn').value=ST.name||'';$('emailIn').value=ST.email||lastEmail()||'';$('periodIn').value=ST.period||'';li.value=lang()||'';$('nameErr').textContent='';$('namewrap').classList.add('show');loadRoster();}
+function loadRoster(){
+ if(rosterLoaded)return;rosterLoaded=true;
+ fetch(SUPA_URL+'/rest/v1/students?select=email,first_name,last_name&order=last_name.asc',{headers:hdr()})
+ .then(function(r){return r.ok?r.json():[];})
+ .then(function(list){ROSTER=list||[];var sel=$('rosterSel');
+  if(!ROSTER.length){sel.style.display='none';var lb=document.querySelector('#namebox label');if(lb)lb.style.display='none';var or=document.querySelector('#namebox .or');if(or)or.style.display='none';return;}
+  ROSTER.forEach(function(s){var o=document.createElement('option');o.value=s.email;o.textContent=((s.first_name||'')+' '+(s.last_name||'')).trim()||s.email;sel.appendChild(o);});})
+ .catch(function(){});
+}
+function pickRoster(){var sel=$('rosterSel');if(!sel.value)return;$('emailIn').value=sel.value;$('nameIn').value=sel.options[sel.selectedIndex].textContent;$('nameErr').textContent='';}
+function localPart(e){return clean(e).split('@')[0];}
+function canonEmail(raw){var lp=localPart(raw);for(var i=0;i<ROSTER.length;i++){if(localPart(ROSTER[i].email)===lp)return clean(ROSTER[i].email);}return lp+'@s.sfusd.edu';}
+function recordAlias(a,c){if(!a||a===c)return;fetch(SUPA_URL+'/rest/v1/student_aliases?on_conflict=alias_email',{method:'POST',headers:hdr('resolution=merge-duplicates,return=minimal'),body:JSON.stringify([{alias_email:a,email:c}])}).catch(function(){});}
+function seedRoster(email,full,period){var parts=full.split(' '),first=parts.shift()||'',last=parts.join(' ')||'';
+ fetch(SUPA_URL+'/rest/v1/students?on_conflict=email',{method:'POST',headers:hdr('resolution=ignore-duplicates,return=minimal'),body:JSON.stringify([{email:email,first_name:first,last_name:last,period:period}])}).catch(function(){});}
+function saveName(){
+ var err=$('nameErr'),n=$('nameIn').value.trim().replace(/\s+/g,' '),e=clean($('emailIn').value),pd=$('periodIn').value;
+ if(n.length<3||n.indexOf(' ')<0){err.textContent='Please type your first name AND your last name.';return;}
+ if(!/^[^@\s]+@(s\.)?sfusd\.edu$/.test(e)){err.textContent='Please use your school email. It ends with @s.sfusd.edu';return;}
+ if(!pd){err.textContent='Please choose your class period.';return;}
+ var lg=$('langIn').value;if(!lg){err.textContent='Please choose your language.';return;}
+ $('lang').value=lg;setLang(lg);
+ var canon=canonEmail(e);
+ try{var mine=localStorage.getItem('rev_'+UNIT+'_'+canon.replace(/[^a-z0-9]+/g,'_'));if(mine&&canon!==ST.email){var d=JSON.parse(mine);if(d)ST=Object.assign(ST,d);}}catch(x){}
+ recordAlias(e,canon);ST.name=n;ST.email=canon;ST.period=pd;
+ $('whoami').textContent=n+' \u00b7 P'+pd;$('namewrap').classList.remove('show');
+ try{localStorage.setItem('gal_student_email',canon);}catch(x){}
+ seedRoster(canon,n,pd);save();push(true);buildItems();go(ST.act||0);
+}
+
+/* ===================== DIRECTIONS IN MY LANGUAGE ===================== */
+var DIR_ON=false,SENT={},tcache={};
+function lang(){return $('lang').value;}
+function tr(text,lg,cb){var k=text+'|'+lg;if(tcache[k]){cb(tcache[k]);return;}
+ fetch(PROXY+'?action=translate&idiom='+encodeURIComponent(text)+'&meaning=&lang='+encodeURIComponent(lg)).then(function(r){return r.json();})
+ .then(function(d){var t=d&&d.translation?(d.translation.equiv||d.translation.meaning||(typeof d.translation==='string'?d.translation:'')):'';if(t)tcache[k]=t;cb(t||'');}).catch(function(){cb('');});}
+function logReveal(k,lg){if(!ST.email)return;var sig=k+'|'+lg;if(SENT[sig])return;SENT[sig]=true;
+ fetch(SUPA_URL+'/rest/v1/instruction_reveals',{method:'POST',headers:hdr('return=minimal'),body:JSON.stringify([{email:ST.email,set_slug:SLUG,activity:k,lang:lg}])}).catch(function(){});}
+function showDirections(){var lg=lang();
+ document.querySelectorAll('[data-dir]').forEach(function(p){var out=p.querySelector('.dirtr');if(!out){out=document.createElement('span');out.className='dirtr';out.setAttribute('translate','no');p.appendChild(out);}
+  if(!DIR_ON||!lg){out.textContent='';return;}var k=p.getAttribute('data-dir');out.textContent='\u2026';tr(p.getAttribute('data-en'),lg,function(t){out.textContent=t;if(t)logReveal(k,lg);});});}
+function toggleDir(){if(!DIR_ON&&!lang()){alert('First choose your language in the green bar.');$('lang').focus();return;}DIR_ON=!DIR_ON;$('dirBtn').classList.toggle('on',DIR_ON);showDirections();}
+function setLang(v){try{localStorage.setItem('eld103_lang',v);localStorage.setItem('vocab_lang',v);}catch(e){}DIR_ON=!!v;$('dirBtn').classList.toggle('on',DIR_ON);showDirections();if(!v&&WT)toggleWT();}
+function savedLang(){try{return localStorage.getItem('eld103_lang')||localStorage.getItem('vocab_lang')||'';}catch(e){return '';}}
+
+/* ===================== TAP WORDS ===================== */
+var WT=false;
+function toggleWT(){if(!WT&&!lang()){alert('First choose your language in the green bar, then turn on Tap words.');return;}WT=!WT;document.body.classList.toggle('wt',WT);$('wtBtn').classList.toggle('on',WT);hideTip();}
+function hideTip(){$('wtip').classList.remove('show');}
+document.addEventListener('click',function(ev){if(!WT)return;var host=ev.target.closest&&(ev.target.closest('[translate="no"]')||ev.target.closest('.dir'));if(!host)return;
+ ev.preventDefault();ev.stopPropagation();var w=pickWord(ev);if(w)showWord(w,ev.clientX,ev.clientY);},true);
+function pickWord(ev){var t=ev.target,txt=(t.textContent||'').trim();if(txt&&txt.split(/\s+/).length===1)return txt.replace(/^[^\w']+|[^\w']+$/g,'');
+ var r=null;if(document.caretRangeFromPoint)r=document.caretRangeFromPoint(ev.clientX,ev.clientY);else if(document.caretPositionFromPoint){var cp=document.caretPositionFromPoint(ev.clientX,ev.clientY);if(cp){r=document.createRange();r.setStart(cp.offsetNode,cp.offset);}}
+ if(!r||!r.startContainer||r.startContainer.nodeType!==3)return '';var s=r.startContainer.textContent,i=r.startOffset,a=i,b=i;
+ while(a>0&&/[\w']/.test(s.charAt(a-1)))a--;while(b<s.length&&/[\w']/.test(s.charAt(b)))b++;return s.slice(a,b);}
+function showWord(word,x,y){var tip=$('wtip');$('wtipW').textContent=word;$('wtipT').textContent='\u2026';tip.classList.add('show');
+ var w=tip.offsetWidth||220,h=tip.offsetHeight||60;tip.style.left=Math.max(8,Math.min(x-w/2,window.innerWidth-w-8))+'px';tip.style.top=(y-h-14<8?y+18:y-h-14)+'px';
+ tr(word,lang(),function(t){$('wtipT').textContent=t||'(not found)';});}
+document.addEventListener('scroll',hideTip,true);
+
+/* ===================== BROWSER-TRANSLATION CANARY ===================== */
+var CANARY='the quick brown fox jumps over the lazy dog',SENT_T='';
+function checkCanary(){var c=$('canary'),got=c?(c.textContent||'').trim().toLowerCase():'';var cls=document.documentElement.className||'';var drift=(c&&got!==CANARY)?got:'';
+ if(!drift&&!/translated/.test(cls))return;if(!ST.browserTranslated){ST.browserTranslated=true;save();}if(!ST.email)return;
+ var sig=drift+'|'+(document.documentElement.lang||'');if(sig===SENT_T)return;SENT_T=sig;
+ fetch(SUPA_URL+'/rest/v1/page_translation?on_conflict=email,set_slug',{method:'POST',headers:hdr('resolution=merge-duplicates,return=minimal'),
+  body:JSON.stringify([{email:ST.email,set_slug:SLUG,translated:true,observed:drift,html_lang:document.documentElement.lang||'',html_class:cls,updated_at:new Date().toISOString()}])}).catch(function(){});}
+
+/* ===================== BOOT ===================== */
+function boot(){
+ $('setLbl').textContent='ELD 101 · Writing · '+DATA.title;$('setTitle').textContent='Fix the Paragraph · '+DATA.title;$('setLede').textContent=DATA.lede;var sd=$('setDir');sd.setAttribute('data-en',DATA.dir);sd.textContent=DATA.dir;$('setRule').innerHTML=DATA.rule;
+ load();buildItems();
+ $('whoami').textContent=ST.name?(ST.name+(ST.period?' \u00b7 P'+ST.period:'')):'';
+ var L=savedLang();if(L){$('lang').value=L;DIR_ON=true;$('dirBtn').classList.add('on');}
+ go(ST.act||0);dot('on');
+ if(L)showDirections();
+ if(!ST.email||!L)askName();
+ setTimeout(checkCanary,2500);setInterval(checkCanary,20000);
+ setInterval(function(){push(false);},20000);
+ document.addEventListener('visibilitychange',function(){if(document.hidden)push(false);});
+ window.addEventListener('pagehide',function(){push(false);});
+}
+document.addEventListener('DOMContentLoaded',boot);
+</script>
+<script src="/readings/track.js"></script>
+</body>
+</html>

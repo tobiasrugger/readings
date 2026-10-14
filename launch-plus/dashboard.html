@@ -53,7 +53,7 @@ tr:hover td{background:#fafbf8}
 <div id="pwwrap"><div id="pwbox"><h2 style="margin:0 0 4px">Launch Plus · Teacher</h2><div class="muted" style="font-size:.85rem">Dashboard password</div><input id="pw" type="password" onkeydown="if(event.key==='Enter')tryPw()"><button class="btn" style="width:100%" onclick="tryPw()">Open</button><div id="err"></div></div></div>
 
 <div id="bar">
-  <div class="brand">ELD 101 · Dashboard<small>Launch Plus · Topic Sentences (Daily Basics has its own)</small></div>
+  <div class="brand">ELD 101 · Dashboard<small>Launch Plus · Topic Sentences · Fix the Paragraph (Daily Basics has its own)</small></div>
   <select id="lesson" onchange="render()"></select>
   <select id="period" onchange="render()"><option value="">All periods</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select>
   <button onclick="loadAll()">↻ Refresh</button>
@@ -79,7 +79,13 @@ var LESSONS=[
  {u:'u1-l3',n:'Lesson 3 · From A to Z',say:'from-a-to-z'},
  {u:'u1-l3x',n:'Lesson 3 · Extras',say:'from-a-to-z',parts:[['K','Capitals',1],['M','Next letter',2],['P','Big or small',3],['Z','ABC order',4]]},
  {u:'ts-1',n:'Topic Sentences · Set 1',table:'topic_sentence',parts:[['C','Choose',2],['W','Write',3]]},
- {u:'ts-2',n:'Topic Sentences · Set 2',table:'topic_sentence',parts:[['C','Choose',2],['W','Write',3]]}
+ {u:'ts-2',n:'Topic Sentences · Set 2',table:'topic_sentence',parts:[['C','Choose',2],['W','Write',3]]},
+ {u:'rev-1',n:'Fix the Paragraph · 1 Capitals',table:'revise',parts:[['A','Para 1',1],['B','Para 2',2],['C','Para 3',3]]},
+ {u:'rev-2',n:'Fix the Paragraph · 2 Capitals & periods',table:'revise',parts:[['A','Para 1',1],['B','Para 2',2],['C','Para 3',3]]},
+ {u:'rev-3',n:'Fix the Paragraph · 3 Run-ons',table:'revise',parts:[['A','Para 1',1],['B','Para 2',2],['C','Para 3',3]]},
+ {u:'rev-4',n:'Fix the Paragraph · 4 Add details',table:'revise',parts:[['A','Para 1',1],['B','Para 2',2],['C','Para 3',3]]},
+ {u:'rev-5',n:'Fix the Paragraph · 5 He/she -s',table:'revise',parts:[['A','Para 1',1],['B','Para 2',2],['C','Para 3',3]]},
+ {u:'rev-6',n:'Fix the Paragraph · 6 Past tense',table:'revise',parts:[['A','Para 1',1],['B','Para 2',2],['C','Para 3',3]]}
 ];
 var ROWS=[],SAY={},SORT={k:'name',d:1},OPEN={};
 function $(i){return document.getElementById(i);}
@@ -92,7 +98,7 @@ function openApp(){$('pwwrap').style.display='none';$('lesson').innerHTML=LESSON
 function loadAll(){
  $('stats').innerHTML='<div class="muted">Loading…</div>';
  var sel='select=email,name,period,unit,score,max_score,turned_in,writing,payload,updated_at&order=updated_at.desc';
- var q1=Promise.all(['launch_plus','topic_sentence'].map(function(t){return fetch(SUPA_URL+'/rest/v1/'+t+'?'+sel,{headers:H()}).then(function(r){return r.ok?r.json():[];}).catch(function(){return [];});})).then(function(a){return [].concat.apply([],a);});
+ var q1=Promise.all(['launch_plus','topic_sentence','revise'].map(function(t){return fetch(SUPA_URL+'/rest/v1/'+t+'?'+sel,{headers:H()}).then(function(r){return r.ok?r.json():[];}).catch(function(){return [];});})).then(function(a){return [].concat.apply([],a);});
  var sets=LESSONS.filter(function(l){return l.say;}).map(function(l){return l.say;}).join(',');
  var q2=fetch(SUPA_URL+'/rest/v1/say_work?select=email,set,scores,updated_at&set=in.('+sets+')',{headers:H()}).then(function(r){return r.ok?r.json():[];}).catch(function(){return [];});
  Promise.all([q1,q2]).then(function(res){ROWS=Array.isArray(res[0])?res[0]:[];SAY={};(res[1]||[]).forEach(function(s){SAY[s.set+'|'+(s.email||'').toLowerCase()]=s;});render();})
