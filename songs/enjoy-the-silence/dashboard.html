@@ -44,7 +44,7 @@ tr.row{cursor:pointer}tr.row:hover{background:#f7f3fb}
   </div>
 </details>
 <div id="summary" style="margin:0 0 10px;font-weight:700"></div>
-<table><thead><tr><th data-k="last_name">Student</th><th data-k="period">Per</th><th data-k="lang">Lang</th><th>Answers</th><th>Words</th><th>Notes</th><th>Highlights</th><th>"Like" sorted</th><th>Match</th><th data-k="updated_at">Last save</th><th>Done</th></tr></thead><tbody id="tb"></tbody></table>
+<table><thead><tr><th data-k="last_name">Student</th><th data-k="period">Per</th><th data-k="lang">Lang</th><th>Answers</th><th>Words</th><th>Notes</th><th>Highlights</th><th>"Like" sorted</th><th>Match</th><th data-k="updated_at">Last save</th><th>Score</th><th>Done</th></tr></thead><tbody id="tb"></tbody></table>
 <div id="detail"></div>
 </main>
 <script>
@@ -140,9 +140,9 @@ function render(){
   list.sort(function(a,b){var x=a[sortK]||'',y=b[sortK]||'';return (x>y?1:x<y?-1:0)*sortD});
   var fin=0;
   list.forEach(function(r,i){var s=stats(r);if(s.fin)fin++;var tr=document.createElement('tr');tr.className='row';
-    tr.innerHTML='<td><b>'+esc(r.first_name)+' '+esc(r.last_name)+'</b><br><span class="hl">'+esc(r.email)+'</span></td><td>'+r.period+'</td><td>'+esc(r.lang||'')+'</td><td>'+s.n+'/8 <span class="hl">('+s.w+' words)</span></td><td>'+Object.keys((r.data||{}).type||{}).filter(function(k){return r.data.type[k]}).length+'</td><td>'+s.notes+'</td><td>'+s.hl+'</td><td>'+s.like+'/10</td><td>'+s.match+'/4</td><td>'+new Date(r.updated_at).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+'</td><td>'+(s.fin?'<span class="pill ok">done</span>':'<span class="pill">working</span>')+'</td>';
+    tr.innerHTML='<td><b>'+esc(r.first_name)+' '+esc(r.last_name)+'</b><br><span class="hl">'+esc(r.email)+'</span></td><td>'+r.period+'</td><td>'+esc(r.lang||'')+'</td><td>'+s.n+'/8 <span class="hl">('+s.w+' words)</span></td><td>'+Object.keys((r.data||{}).type||{}).filter(function(k){return r.data.type[k]}).length+'</td><td>'+s.notes+'</td><td>'+s.hl+'</td><td>'+s.like+'/10</td><td>'+s.match+'/4</td><td>'+new Date(r.updated_at).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+'</td><td><b>'+((r.data||{}).score!=null?(r.data.score+'/'+r.data.max):'—')+'</b></td><td>'+(s.fin?'<span class="pill ok">done</span>':'<span class="pill">working</span>')+'</td>';
     tr.addEventListener('click',function(){detail(r)}); tb.appendChild(tr);});
-  window._sumText=list.length+' students · '+fin+' finished'; showSum();
+  window._sumText=list.length?(list.length+' students · '+fin+' finished'):'0 students · nothing saved yet for this song'; showSum();
 }
 function detail(r){var d=r.data||{};var h='<div class="detail"><h2>'+esc(r.first_name)+' '+esc(r.last_name)+' · P'+r.period+' · '+esc(r.lang||'')+'</h2>';
   h+='<h3 style="margin:10px 0 4px">Answers</h3>';QUESTIONS.forEach(function(q,i){if(i===4)return;var a=(d.answers||{})[i]||'';h+='<div class="ans"><b>'+(i+1)+'. '+esc(q)+'</b>'+(a?esc(a):'<span class="empty">no answer</span>')+'</div>'});
@@ -151,6 +151,6 @@ function detail(r){var d=r.data||{};var h='<div class="detail"><h2>'+esc(r.first
   if(d.like&&d.like.misses)h+='<div class="hl">"Like" misses: '+d.like.misses+'</div>';if(d.match&&d.match.misses)h+='<div class="hl">Match misses: '+d.match.misses+'</div>';
   h+='</div>';document.getElementById('detail').innerHTML=h;document.getElementById('detail').scrollIntoView({behavior:'smooth'});}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
-document.getElementById('per').addEventListener('change',render);document.getElementById('reload').addEventListener('click',load);
+document.getElementById('per').addEventListener('change',render);document.getElementById('reload').addEventListener('click',function(){ var b=this; b.textContent='Reloading…'; b.disabled=true; window._sumText='Reloading…'; showSum(); load(); setTimeout(function(){ b.textContent='Reload'; b.disabled=false; if(!rows.length){ window._sumText='0 students · nothing saved yet for this song'; showSum(); } },900); });
 document.querySelectorAll('th[data-k]').forEach(function(th){th.addEventListener('click',function(){if(sortK===th.dataset.k)sortD=-sortD;else{sortK=th.dataset.k;sortD=1}render();})});
 </script></body></html>

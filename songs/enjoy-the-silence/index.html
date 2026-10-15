@@ -411,7 +411,7 @@ $('#gateForm').addEventListener('submit',function(ev){
   $('#who').textContent=first+' '+last+' · P'+per;
   $('#gate').style.display='none';
   if(window.track){try{track({page:'songs/'+SONG,email:me.email,name:first+' '+last,period:per});}catch(e){}}
-  Promise.all([loadWork(),loadLyrics()]).then(function(){ renderAll(); setInterval(function(){ if(dirty) saveWork(); },20000); });
+  Promise.all([loadWork(),loadLyrics()]).then(function(){ score(); renderAll(); setInterval(function(){ if(dirty) saveWork(); },20000); });
 });
 
 function setLang(l,fromGate){
@@ -439,7 +439,17 @@ function saveWork(){
     .catch(function(){flashSaved('Offline');return false;});
 }
 function flashSaved(t){ var s=$('#savedMsg'); s.textContent=t; setTimeout(function(){ if(s.textContent===t) s.textContent=''; },2500); }
-function mark(){ dirty=true; }
+function score(){
+  var like=Object.keys(work.like).filter(function(k){return k!=='misses'&&work.like[k]===true}).length;
+  var typ=Object.keys(work.type).filter(function(k){return work.type[k]===true}).length;
+  var mt=Object.keys(work.match).filter(function(k){return k!=='misses'&&work.match[k]===true}).length;
+  var ans=Object.keys(work.answers).filter(function(k){return (work.answers[k]||'').trim().split(/\s+/).length>=3}).length;
+  window.GAL_SCORE=like+typ+mt+ans; window.GAL_MAX=LIKE_ITEMS.length+WORDS.length+4+8;
+  work.score=window.GAL_SCORE; work.max=window.GAL_MAX;
+  return window.GAL_SCORE;
+}
+function mark(){ dirty=true; score(); }
+window.GAL_SCORE=0; window.GAL_MAX=LIKE_ITEMS.length+WORDS.length+4+8;
 
 /* ============================================================
    TRANSLATION (proxy) + SPEECH
