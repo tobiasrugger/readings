@@ -31,6 +31,12 @@ tr.row{cursor:pointer}tr.row:hover{background:#f7f3fb}
 <label>Period <select id="per"><option value="">All</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select></label>
 <button class="btn" id="reload">Reload</button><a class="btn" href="index.html" style="text-decoration:none;background:#1f7a4d">Student page</a></header>
 <main>
+<details class="detail" id="lyricsBox" style="margin:0 0 14px">
+  <summary style="cursor:pointer;font-weight:800;color:#5b3d8a">🎵 Song words (paste here — they drop into the student page)</summary>
+  <p class="hl" style="margin:8px 0">One line per line, exactly as the students should see it. Leave an empty line between verses. Saving replaces what students see immediately on their next load.</p>
+  <textarea id="lyricsIn" style="width:100%;min-height:260px;border:2px solid #e4dccf;border-radius:10px;padding:10px;font-family:inherit;box-sizing:border-box" spellcheck="false" placeholder="Paste the song here…"></textarea>
+  <div style="display:flex;gap:8px;align-items:center;margin-top:8px"><button class="btn" id="lyricsSave" type="button">Save words</button><button class="btn" id="lyricsLoad" type="button" style="background:#ece6f6;color:#5b3d8a">Reload saved</button><span id="lyricsMsg" class="hl"></span></div>
+</details>
 <div id="summary" style="margin:0 0 10px;font-weight:700"></div>
 <table><thead><tr><th data-k="last_name">Student</th><th data-k="period">Per</th><th data-k="lang">Lang</th><th>Answers</th><th>Words</th><th>Notes</th><th>Highlights</th><th>"Like" sorted</th><th>Match</th><th data-k="updated_at">Last save</th><th>Done</th></tr></thead><tbody id="tb"></tbody></table>
 <div id="detail"></div>
@@ -41,7 +47,26 @@ var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 var SONG='enjoy-the-silence', rows=[], sortK='last_name', sortD=1;
 var QUESTIONS=['What do you think the song is about?','Do you like the song? Why or why not?','What do you like / not like about the song?','Do you enjoy silence?','(info: two meanings of "like")','Why does the singer say words are similar to violence?','What does the singer say he wanted and needed?','Words: necessary or unnecessary? Do you agree?','"Words can only do harm" — do you agree?'];
 document.getElementById('gf').addEventListener('submit',function(e){e.preventDefault();if(document.getElementById('pw').value==='galileo2026'){document.getElementById('gate').style.display='none';load();}else document.getElementById('pwErr').textContent='Wrong password';});
-function load(){
+function H(extra){var h={apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY,'Content-Type':'application/json'};for(var k in (extra||{}))h[k]=extra[k];return h;}
+function loadLyrics(){
+  fetch(SUPA_URL+'/rest/v1/song_lyrics?select=lines,updated_at&song=eq.'+SONG,{headers:H()}).then(function(r){return r.json()}).then(function(j){
+    var m=document.getElementById('lyricsMsg');
+    if(Array.isArray(j)&&j[0]&&Array.isArray(j[0].lines)){ document.getElementById('lyricsIn').value=j[0].lines.join('\n'); var n=j[0].lines.filter(function(l){return l}).length; m.textContent=n+' lines saved · '+new Date(j[0].updated_at).toLocaleString(); }
+    else m.textContent='No words saved yet.';
+  }).catch(function(){document.getElementById('lyricsMsg').textContent='Could not load.'});
+}
+function saveLyrics(){
+  var raw=document.getElementById('lyricsIn').value.replace(/\r/g,'').split('\n').map(function(l){return l.trim()});
+  while(raw.length&&!raw[0])raw.shift(); while(raw.length&&!raw[raw.length-1])raw.pop();
+  var lines=[]; raw.forEach(function(l){ if(l===''&&lines[lines.length-1]==='')return; lines.push(l); });
+  var m=document.getElementById('lyricsMsg'); if(!lines.length){m.textContent='Nothing to save.';return;}
+  fetch(SUPA_URL+'/rest/v1/song_lyrics?on_conflict=song',{method:'POST',headers:H({Prefer:'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify({song:SONG,lines:lines,updated_at:new Date().toISOString()})})
+    .then(function(r){ m.textContent=r.ok?('Saved ✓ '+lines.filter(function(l){return l}).length+' lines — students see them on next load.'):('Not saved ('+r.status+') — is the song_lyrics table created?'); })
+    .catch(function(){m.textContent='Not saved — offline?'});
+}
+document.getElementById('lyricsSave').addEventListener('click',saveLyrics);
+document.getElementById('lyricsLoad').addEventListener('click',loadLyrics);
+function load(){ loadLyrics();
   fetch(SUPA_URL+'/rest/v1/song_work?select=*&song=eq.'+SONG+'&order=last_name',{headers:{apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY}}).then(function(r){return r.json()}).then(function(j){rows=Array.isArray(j)?j:[];render();}).catch(function(){document.getElementById('summary').textContent='Could not load.';});
 }
 function wc(s){s=(s||'').trim();return s?s.split(/\s+/).length:0}
