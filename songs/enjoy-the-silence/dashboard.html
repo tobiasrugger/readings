@@ -61,7 +61,7 @@ function saveLyrics(){
   var lines=[]; raw.forEach(function(l){ if(l===''&&lines[lines.length-1]==='')return; lines.push(l); });
   var m=document.getElementById('lyricsMsg'); if(!lines.length){m.textContent='Nothing to save.';return;}
   fetch(SUPA_URL+'/rest/v1/song_lyrics?on_conflict=song',{method:'POST',headers:H({Prefer:'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify({song:SONG,lines:lines,updated_at:new Date().toISOString()})})
-    .then(function(r){ m.textContent=r.ok?('Saved ✓ '+lines.filter(function(l){return l}).length+' lines — students see them on next load.'):('Not saved ('+r.status+') — is the song_lyrics table created?'); })
+    .then(function(r){ if(r.ok){ m.textContent='Saved ✓ '+lines.filter(function(l){return l}).length+' lines — students see them on next load.'; return; } return r.text().then(function(t){ var msg=t; try{ var j=JSON.parse(t); msg=(j.message||'')+(j.hint?' — '+j.hint:'')+(j.details?' — '+j.details:''); }catch(e){} m.textContent='Not saved ('+r.status+'): '+msg; }); })
     .catch(function(){m.textContent='Not saved — offline?'});
 }
 document.getElementById('lyricsSave').addEventListener('click',saveLyrics);
