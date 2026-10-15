@@ -50,6 +50,7 @@ section.part.on{display:block}
 .dir .en{font-weight:700}
 .dir .tr{color:var(--green);font-style:italic;font-weight:600}
 .dir .tr:empty{display:none}
+.dir.notesdir{border-left-color:var(--plum);background:#fff9e3;margin:0 0 10px}
 h2{margin:0 0 10px;font-size:1.35rem;font-weight:800;color:var(--plum)}
 .card{background:var(--white);border:1px solid var(--line);border-radius:var(--r);padding:16px}
 .btn{border:0;border-radius:10px;padding:9px 16px;font-weight:800;background:var(--plum);color:#fff}
@@ -66,14 +67,17 @@ h2{margin:0 0 10px;font-size:1.35rem;font-weight:800;color:var(--plum)}
 .tools .toggle input{width:20px;height:20px;accent-color:var(--green)}
 
 .lyrics{background:var(--white);border:1px solid var(--line);border-radius:var(--r);padding:10px 10px 10px 6px}
-.lhead{display:grid;grid-template-columns:30px 1fr 260px;gap:0 10px;font-size:.78rem;font-weight:800;color:var(--mute);padding:0 6px 8px;border-bottom:1px solid var(--line);margin-bottom:8px}
+.lhead{display:contents;font-size:.78rem;font-weight:800;color:var(--mute)}
+.lhead>span{padding:0 0 8px;border-bottom:1px solid var(--line);margin-bottom:8px}
 .lhead .legend{display:flex;gap:6px;align-items:center}
 .lhead .dot{width:12px;height:12px;border-radius:50%;display:inline-block}
-.stanza{margin:0 0 16px}
-.ln{display:grid;grid-template-columns:30px 1fr 260px;gap:0 10px;align-items:start;padding:3px 6px;border-radius:8px}
-.ln .num{text-align:right;font-size:.75rem;color:#b8b3c8;padding-top:7px;border:0;background:transparent;cursor:pointer;border-radius:6px}
+.lgrid{display:grid;grid-template-columns:30px minmax(0,max-content) minmax(200px,1fr);gap:0 10px;align-items:start}
+.lgrid .ln{display:contents}
+.gap{grid-column:1/-1;height:16px}
+.ln .num,.ln .body,.ln .note{margin:3px 0}
+.ln .num{text-align:right;font-size:.75rem;color:#b8b3c8;padding:4px 4px 0 0;align-self:start;border:0;background:transparent;cursor:pointer;border-radius:6px}
 .ln .num:hover{background:var(--plum-soft);color:var(--plum)}
-.ln .body{min-width:0}
+.ln .body{min-width:0;max-width:min(520px,60vw);padding-right:6px}
 .ln .en{font-size:1.08rem;font-weight:600;line-height:1.45;border-radius:4px;padding:2px 4px}
 .ln .en .w{cursor:pointer;border-radius:4px;padding:0 1px}
 .ln .en .w:hover{background:var(--plum-soft)}
@@ -89,8 +93,9 @@ h2{margin:0 0 10px;font-size:1.35rem;font-weight:800;color:var(--plum)}
 .empty-lyrics{padding:30px;text-align:center;color:var(--mute);font-weight:700}
 @media (max-width:760px){
   .lhead{display:none}
-  .ln{grid-template-columns:22px 1fr;gap:0 6px}
-  .ln .note{grid-column:2;margin-top:3px;min-height:30px}
+  .lgrid{grid-template-columns:22px 1fr;gap:0 6px}
+  .ln .body{max-width:none}
+  .ln .note{grid-column:2;margin-top:0;min-height:30px}
 }
 /* word popup */
 #pop{position:fixed;z-index:60;background:var(--white);border:2px solid var(--plum);border-radius:12px;padding:10px 12px;max-width:300px;box-shadow:0 10px 30px rgba(0,0,0,.2);display:none;font-size:.95rem}
@@ -225,6 +230,9 @@ h2{margin:0 0 10px;font-size:1.35rem;font-weight:800;color:var(--plum)}
     <label class="toggle"><input type="checkbox" id="biToggle" checked> <span translate="yes">Show my language under each line</span></label>
     <button class="btn ghost" id="readAll" type="button">🔊 Read the words to me</button>
     <span id="trStatus" style="font-size:.85rem;color:var(--mute)"></span>
+  </div>
+  <div class="dir notesdir" data-dir="In the notes column, write three phrases that you like (or don't like) in this song and say why.">
+    <div class="en"></div><div class="tr"></div>
   </div>
   <div class="lyrics bi" id="lyrics"></div>
 </section>
@@ -402,7 +410,7 @@ $('#gateForm').addEventListener('submit',function(ev){
 });
 
 function setLang(l,fromGate){
-  lang=l; $('#lang').value=l;
+  lang=l; $('#lang').value=l; loadShared(l);
   try{localStorage.setItem('vocab_lang',l);}catch(e){}
   translateDirections(); translateCards(); translateQuestions(); translateLyrics();
 }
@@ -430,28 +438,53 @@ function mark(){ dirty=true; }
 /* ============================================================
    TRANSLATION (proxy) + SPEECH
    ============================================================ */
-var cache={};
+var cache={};        /* promise cache for this session */
+var shared={};       /* lang -> {src: {equiv,meaning,note}} loaded from Supabase */
+var sharedLoaded={}; /* lang -> promise */
+function srcKey(text,meaning){ return meaning?text+'|'+meaning:text; }
+function loadShared(l){
+  if(sharedLoaded[l]) return sharedLoaded[l];
+  shared[l]=shared[l]||{};
+  sharedLoaded[l]=fetch(SUPA_URL+'/rest/v1/song_tr?select=src,equiv,meaning,note&slug=eq.'+SONG+'&lang=eq.'+encodeURIComponent(l),{headers:headers()})
+    .then(function(r){return r.ok?r.json():[]}).then(function(rows){ (rows||[]).forEach(function(x){ shared[l][x.src]={equiv:x.equiv,meaning:x.meaning,note:x.note}; }); })
+    .catch(function(){});
+  return sharedLoaded[l];
+}
+function saveShared(l,src,t){
+  try{ var h=headers(); h['Prefer']='resolution=merge-duplicates,return=minimal';
+    fetch(SUPA_URL+'/rest/v1/song_tr?on_conflict=slug,lang,src',{method:'POST',headers:h,body:JSON.stringify({slug:SONG,lang:l,src:src,equiv:t.equiv||'',meaning:t.meaning||'',note:t.note||''})}).catch(function(){});
+  }catch(e){}
+}
 function tr(text,meaning){
   if(!lang||!text) return Promise.resolve(null);
-  var key=lang+'|'+text+'|'+(meaning||'');
+  var l=lang, key=l+'|'+text+'|'+(meaning||''), src=srcKey(text,meaning);
   if(cache[key]) return cache[key];
-  var u=PROXY+'?action=translate&idiom='+encodeURIComponent(text)+'&meaning='+encodeURIComponent(meaning||'')+'&lang='+encodeURIComponent(lang);
-  cache[key]=fetch(u).then(function(r){return r.json()}).then(function(j){ return (j&&j.ok&&j.translation)?j.translation:null; }).catch(function(){ delete cache[key]; return null; });
+  cache[key]=loadShared(l).then(function(){
+    if(shared[l]&&shared[l][src]) return shared[l][src];
+    var u=PROXY+'?action=translate&idiom='+encodeURIComponent(text)+'&meaning='+encodeURIComponent(meaning||'')+'&lang='+encodeURIComponent(l);
+    return fetch(u).then(function(r){return r.json()}).then(function(j){
+      var t=(j&&j.ok&&j.translation)?j.translation:null;
+      if(t){ shared[l][src]=t; saveShared(l,src,t); }
+      return t;
+    }).catch(function(){ delete cache[key]; return null; });
+  });
   return cache[key];
 }
 /* small queue so forty lyric lines don't hit the proxy at once */
 var qActive=0, qWait=[];
 function queued(fn){ return new Promise(function(res){ qWait.push(function(){ qActive++; fn().then(function(v){qActive--;res(v);pump();},function(){qActive--;res(null);pump();}); }); pump(); }); }
-function pump(){ while(qActive<3&&qWait.length) qWait.shift()(); }
+function pump(){ while(qActive<4&&qWait.length) qWait.shift()(); }
 
-function speak(text){
+function speak(text,onEnd){
   if(!('speechSynthesis' in window)) return;
+  if(reading&&!onEnd) setReadBtn(false); /* any other 🔊 interrupts the read-aloud */
   var t=String(text);
   t=t.replace(/\bI\b/g,'eye'); /* spoken "I" is "eye", never "capital I" */
   speechSynthesis.cancel();
   var u=new SpeechSynthesisUtterance(t); u.lang='en-US'; u.rate=0.9;
   var vs=speechSynthesis.getVoices().filter(function(v){return /en/i.test(v.lang)});
   if(vs.length) u.voice=vs[0];
+  if(onEnd){ u.onend=onEnd; u.onerror=onEnd; }
   speechSynthesis.speak(u);
 }
 
@@ -473,10 +506,10 @@ function buildLyrics(){
   if(!LYRICS.length){ box.innerHTML='<div class="empty-lyrics">The song words are not loaded on this page yet. Ask Mr. Toby.</div>'; return; }
   var head=document.createElement('div'); head.className='lhead';
   head.innerHTML='<span></span><span class="legend"><span translate="yes">Tap a number to highlight:</span> <span class="dot" style="background:#fff1b0"></span><span class="dot" style="background:#ffd9e2"></span><span class="dot" style="background:#d7ecfa"></span></span><span translate="yes">My notes</span>';
-  box.appendChild(head);
-  var st=document.createElement('div'); st.className='stanza'; var n=0;
+  var g=document.createElement('div'); g.className='lgrid'; g.appendChild(head); box.appendChild(g);
+  var st=g, n=0;
   LYRICS.forEach(function(line,i){
-    if(line===''){ box.appendChild(st); st=document.createElement('div'); st.className='stanza'; return; }
+    if(line===''){ var sp=document.createElement('div'); sp.className='gap'; g.appendChild(sp); return; }
     n++;
     var row=document.createElement('div'); row.className='ln'; row.dataset.i=i;
     var num=document.createElement('button'); num.className='num'; num.type='button'; num.textContent=n; num.title='Highlight';
@@ -495,7 +528,6 @@ function buildLyrics(){
     row.appendChild(num); row.appendChild(body); row.appendChild(note);
     st.appendChild(row); lyricLines.push({i:i,text:line});
   });
-  box.appendChild(st);
   applyAnnos();
 }
 function grow(ta){ ta.style.height='auto'; ta.style.height=(ta.scrollHeight+2)+'px'; }
@@ -518,7 +550,14 @@ function translateLyrics(){
   });
 }
 $('#biToggle').addEventListener('change',function(){ $('#lyrics').classList.toggle('bi',this.checked); });
-$('#readAll').addEventListener('click',function(){ speak(lyricLines.map(function(l){return l.text}).join('. ')); });
+var reading=false;
+function setReadBtn(on){ reading=on; var b=$('#readAll'); b.textContent=on?'⏹ Stop reading':'🔊 Read the words to me'; b.classList.toggle('green',on); }
+$('#readAll').addEventListener('click',function(){
+  if(reading){ try{speechSynthesis.cancel();}catch(e){} setReadBtn(false); return; }
+  if(!lyricLines.length||!('speechSynthesis' in window)) return;
+  setReadBtn(true);
+  speak(lyricLines.map(function(l){return l.text}).join('. '), function(){ setReadBtn(false); });
+});
 
 /* word popup */
 var pop=$('#pop');
