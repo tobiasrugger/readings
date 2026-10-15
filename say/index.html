@@ -9,7 +9,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
-/* Standalone page for /readings/say/?set=NAME. The engine itself is say.js, shared with every page that mounts it. */
+/* Standalone page for /readings/say/?set=NAME. The engine itself is say.js, shared with every page that mounts it.
+   With no ?set= (or an unknown one) the page shows a picker of every set in sets.js. */
 :root{--ink:#1c2640;--muted:#5b6784;--bg:#eef2f8;--card:#fff;--line:#d3dbe9;--p:#7a3f8f;--p-t:#f4e9f8;--ok:#1d7f53;--ok-t:#dff3e8;--no:#b93a2e;--no-t:#fbe5e1}
 *{box-sizing:border-box}
 html,body{margin:0}
@@ -31,6 +32,18 @@ main{max-width:760px;margin:0 auto;padding:10px 16px 60px}
 .backlink a{color:var(--p);font-weight:700}
 .dek{color:var(--muted);margin:0 0 14px}
 #sayMount{--say-accent:#7a3f8f;--say-soft:#f4e9f8;--say-muted:#5b6784;--say-line:#d3dbe9;--say-ok:#1d7f53;--say-ok-soft:#dff3e8;--say-no:#b93a2e;--say-no-soft:#fbe5e1}
+/* ---- set picker (no ?set=) ---- */
+.pk-warn{background:var(--no-t);color:var(--no);border-radius:11px;padding:10px 14px;font-weight:600;margin:0 0 12px}
+.pk-search{width:100%;padding:11px 14px;border:1.5px solid var(--line);border-radius:11px;background:var(--card);margin:0 0 6px}
+.pk-h{font-size:14px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin:16px 0 8px}
+.pk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.pk-card{display:flex;flex-direction:column;gap:3px;background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:14px 16px;text-decoration:none;color:var(--ink)}
+.pk-card:hover,.pk-card:focus-visible{border-color:var(--p);background:var(--p-t)}
+.pk-e{font-size:28px;line-height:1}
+.pk-t{font-weight:800;font-size:18px;line-height:1.25;margin-top:4px}
+.pk-n{color:var(--muted);font-size:14px}
+.pk-go{color:var(--p);font-weight:700;margin-top:6px}
+.pk-none{color:var(--muted);margin:14px 0}
 .ovl{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:100;padding:16px}
 .ovl .box{background:var(--card);border-radius:20px;padding:26px;width:100%;max-width:440px;border:1px solid var(--line)}
 .ovl h3{font-size:28px;margin:0 0 4px;letter-spacing:-.4px}
@@ -83,7 +96,7 @@ function canon(e){ return e.trim().toLowerCase().split('@')[0]+'@s.sfusd.edu'; }
 function $(id){ return document.getElementById(id); }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
 function toast(msg){ var t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(function(){ t.remove(); },2200); }
-var Q=new URLSearchParams(location.search), SETNAME=Q.get('set')||'describe', SET=(window.SAY_SETS||{})[SETNAME];
+var Q=new URLSearchParams(location.search), SETNAME=Q.get('set')||'', SET=(window.SAY_SETS||{})[SETNAME];
 var EMBED=/[?&]embed=1/.test(location.search);
 var ME={email:'',name:'',period:'',lang:'none'}, CTL=null;
 
@@ -97,6 +110,33 @@ function mount(){
   if(CTL){ CTL.refresh(); return; }
   CTL=Say.mount($('sayMount'),{ set:SETNAME, student:function(){ return ME.email?ME:null; }, lang:function(){ return ME.lang; },
     onProgress:function(ok,total,done){ $('dot').className='dot on'; if(done) toast('You said every word!'); } });
+}
+
+/* ---- set picker: shown at /say/ with no ?set=, or when the set name is unknown ---- */
+function groupOf(s){ var b=s.back||''; if(/launch-plus/.test(b)) return 'Launch Plus'; return 'Stories and activities'; }
+function countWords(s){ var n=0; (s.decks||[]).forEach(function(d){ n+=(d.items||[]).length; }); return n; }
+function renderPicker(){
+  $('who').style.display='none'; $('dot').style.display='none'; $('test').style.display='none'; $('lang').style.display='none';
+  $('ttl').textContent='Say the Words'; $('back').innerHTML=''; $('dek').textContent='Pick a word list. Listen, then say the words.';
+  var sets=window.SAY_SETS||{}, keys=Object.keys(sets), groups={}, order=[];
+  keys.forEach(function(k){ var g=groupOf(sets[k]); if(!groups[g]){ groups[g]=[]; order.push(g); } groups[g].push(k); });
+  order.sort(function(a,b){ if(a==='Stories and activities') return -1; if(b==='Stories and activities') return 1; return a<b?-1:1; });
+  var html='';
+  if(SETNAME) html+='<p class="pk-warn">Set \u201c'+esc(SETNAME)+'\u201d was not found. Pick one below.</p>';
+  html+='<input class="pk-search" id="pkSearch" type="search" placeholder="Search lists…" aria-label="Search lists">';
+  order.forEach(function(g){
+    html+='<h2 class="pk-h">'+esc(g)+'</h2><div class="pk-grid">';
+    groups[g].forEach(function(k){ var s=sets[k], n=countWords(s), e=(s.decks&&s.decks[0]&&s.decks[0].e)||'🗣️';
+      html+='<a class="pk-card" href="?set='+encodeURIComponent(k)+(EMBED?'&embed=1':'')+'" data-t="'+esc((s.title+' '+k).toLowerCase())+'"><span class="pk-e">'+e+'</span><span class="pk-t">'+esc(s.title)+'</span><span class="pk-n">'+n+' words · '+(s.decks||[]).length+' decks</span><span class="pk-go">Practice →</span></a>'; });
+    html+='</div>';
+  });
+  html+='<p class="pk-none" id="pkNone" style="display:none">No lists match.</p>';
+  $('sayMount').innerHTML=html;
+  $('pkSearch').oninput=function(){ var q=this.value.trim().toLowerCase(), hs=document.querySelectorAll('.pk-h'), shown=0;
+    for(var j=0;j<hs.length;j++){ var grid=hs[j].nextElementSibling, cs=grid.querySelectorAll('.pk-card'), any=false;
+      for(var m=0;m<cs.length;m++){ var hit=!q||cs[m].getAttribute('data-t').indexOf(q)>-1; cs[m].style.display=hit?'':'none'; if(hit){ any=true; shown++; } }
+      hs[j].style.display=grid.style.display=any?'':'none'; }
+    $('pkNone').style.display=shown?'none':''; };
 }
 
 /* ---- sign-in (language lives inside the box; it hands off to the page picker) ---- */
@@ -129,7 +169,7 @@ $('test').onclick=function(){ Say.speak('Hello! Can you hear me?',false,$('test'
 
 (function init(){
   if(EMBED){ document.body.classList.add('embed'); setInterval(function(){ try{ parent.postMessage({sayHeight:document.documentElement.scrollHeight},'*'); }catch(e){} },400); }
-  if(!SET){ $('sayMount').innerHTML='<p>Set "'+esc(SETNAME)+'" was not found. Known sets: '+Object.keys(window.SAY_SETS||{}).map(function(k){ return '<a href="?set='+esc(k)+'">'+esc(k)+'</a>'; }).join(', ')+'</p>'; return; }
+  if(!SET){ renderPicker(); return; }
   var em='',nm='',pd='',lg='';
   try{ em=localStorage.getItem('gal_student_email')||''; nm=localStorage.getItem('gal_student_name')||''; pd=localStorage.getItem('gal_student_period')||''; lg=localStorage.getItem('gal_student_lang')||localStorage.getItem('vocab_lang')||''; }catch(e){}
   ME.lang=Say.langName(Q.get('lang')||lg); $('lang').value=ME.lang;
