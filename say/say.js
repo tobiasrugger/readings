@@ -57,7 +57,7 @@ function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(
 function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
 function val(x){ return typeof x === 'function' ? x() : x; }
 function tidy(s){ return (s || '').toLowerCase().replace(/[^a-z' ]/g,' ').replace(/\s+/g,' ').trim(); }
-function langName(v){ if (!v || v === 'none' || v === '') return 'none'; if (CODE2NAME[v]) return CODE2NAME[v]; for (var i = 0; i < LANGS.length; i++) if (LANGS[i].toLowerCase() === String(v).toLowerCase()) return LANGS[i]; return 'none'; }
+function langName(v){ if (!v || v === 'none' || v === '') return 'none'; if (CODE2NAME[v]) return CODE2NAME[v]; if (/^Chinese/i.test(v)) return /Traditional/i.test(v) ? 'Cantonese' : 'Mandarin'; for (var i = 0; i < LANGS.length; i++) if (LANGS[i].toLowerCase() === String(v).toLowerCase()) return LANGS[i]; return 'none'; }
 Say.langName = langName;
 
 /* ---------------- styles: one <style>, scoped to .sayjs ---------------- */
@@ -127,7 +127,11 @@ function pickVoice(){ if (!window.speechSynthesis) return; var vs = speechSynthe
   var local = en.filter(function(v){ return v.localService; }), pool = local.length ? local : en, best = null;
   pool.forEach(function(v){ if (!best && fem.test(v.name)) best = v; }); if (!best) pool.forEach(function(v){ if (!best && !male.test(v.name)) best = v; }); VOICE = best || pool[0]; }
 if (window.speechSynthesis){ pickVoice(); speechSynthesis.addEventListener('voiceschanged', pickVoice); }
-function sayable(t){ t = String(t).replace(/_+/g, ' blank '); if (/^\s*I\s*[.!?]?\s*$/.test(t)) return 'eye'; return t.replace(/\bI\b(?=\s*$)/, 'eye'); }  /* a lone "I" is read as "eye", never "capital I" */
+function spelled(t){ return /^(\w-)+\w$/.test(String(t).trim()); }   /* C-H-R-I-S: a name spelled out letter by letter */
+function sayable(t){ t = String(t).replace(/_+/g, ' blank ');
+  if (spelled(t)) return t.trim().split('-').map(function(c){ return c.toUpperCase() === 'I' ? 'eye' : c; }).join(', ');
+  if (/^\s*I\s*[.!?]?\s*$/.test(t)) return 'eye'; return t.replace(/\bI\b(?=\s*$)/, 'eye'); }  /* a lone "I" is read as "eye", never "capital I" */
+function targetsFor(t){ var out = [t]; if (spelled(t)){ out.push(t.replace(/-/g, ' ')); out.push(t.replace(/-/g, '')); } else { var m = t.match(/\b(\w-)+\w\b/); if (m){ out.push(t.replace(m[0], m[0].replace(/-/g, ' '))); out.push(t.replace(m[0], m[0].replace(/-/g, ''))); } } return out; }
 function speak(text, slow, btn){ if (!window.speechSynthesis) return;
   var S = speechSynthesis; try { S.cancel(); S.resume(); } catch(e){}
   if (!VOICE) pickVoice();
@@ -212,8 +216,8 @@ Say.mount = function(root, opts){
           if (res.error === 'not-allowed' || res.error === 'nomic' || res.error === 'service-not-allowed'){ rule.innerHTML = '<span class="sj-hint no">The microphone is off.</span>'; nudge('Click the lock next to the web address. Set <b>Microphone</b> to <b>Allow</b>. Then try again.'); return; }
           tries++; var rec = A.w[deck.k+'|'+it] || {tries:0}; rec.tries = (rec.tries || 0) + 1;
           var m = null, ok = false, heard = '', alts = res.alts || [];
-          if (GS.canRecognize && alts.length){ m = GS.bestMatch(alts, [it]); heard = m.heard || alts[0].t || ''; var tgt = tidy(it);
-            ok = m.score >= ACCEPT || alts.some(function(a){ var t = tidy(a.t); return t === tgt || t.indexOf(tgt) >= 0 || (tgt.indexOf(t) >= 0 && t.length > 2); }); }
+          if (GS.canRecognize && alts.length){ var tg = targetsFor(it); m = GS.bestMatch(alts, tg); heard = m.heard || alts[0].t || '';
+            ok = m.score >= ACCEPT || alts.some(function(a){ var t = tidy(a.t); return tg.some(function(x){ var tgt = tidy(x); return t === tgt || t.indexOf(tgt) >= 0 || (tgt.indexOf(t) >= 0 && t.length > 2); }); }); }
           else if (!GS.canRecognize){ ok = true; }
           rec.heard = heard; if (ok){ rec.ok = true; rec.p = pick(PRAISE); }
           A.w[deck.k+'|'+it] = rec; dirty = true;
