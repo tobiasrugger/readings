@@ -677,6 +677,7 @@ function wireInputs(){
     el.addEventListener('input',function(){
       ANS[el.dataset.k]=el.value; dirty=true; setDot('');
       localStorage.setItem(lsKey(),JSON.stringify(ANS));
+      galUpdate();
     });
     if(el.classList.contains('cloze')){
       el.addEventListener('blur',function(){
@@ -696,6 +697,7 @@ function restore(){
   [].forEach.call(document.querySelectorAll('img.prev'),function(img){
     var v=(ANS[img.dataset.for]||'').trim(); img.src=/^https?:\/\//.test(v)?v:''; img.style.display=v?'block':'none';
   });
+  galUpdate();
 }
 
 /* ---------- autosave ---------- */
@@ -708,7 +710,7 @@ setInterval(function(){
     method:'POST',
     headers:Object.assign({},H,{'Prefer':'resolution=merge-duplicates,return=minimal'}),
     body:JSON.stringify({email:em,name:ME.name,period:ME.period,level:LEVEL,slug:A.meta.SLUG,answers:ANS,updated_at:new Date().toISOString()})
-  }).then(function(r){setDot(r.ok?'on':'err'); if(!r.ok) dirty=true;})
+  }).then(function(r){setDot(r.ok?'on':'err'); if(!r.ok) dirty=true; else galLogIfChanged();})
    .catch(function(){setDot('err');dirty=true;});
 },2500);
 
@@ -753,7 +755,7 @@ $('gGo').onclick=function(){
   $('lang').value=lg;
   $('gate').style.display='none';
   chip();
-  fetchOverride();
+  fetchOverride(); checkRecording();
   if(A){ANS={};render();}
   dirty=true;
 };
@@ -783,7 +785,7 @@ function toast(msg){
       p=localStorage.getItem('gal_period')||localStorage.getItem('gal_student_period'),lg=localStorage.getItem('gal_lang');
   if(e&&f&&l&&p&&lg&&EMAIL_RE.test(e)){
     ME={email:e,first:f,last:l,name:f+' '+l,period:p,lang:lg};
-    $('lang').value=lg; chip(); $('gate').style.display='none'; fetchOverride();
+    $('lang').value=lg; chip(); $('gate').style.display='none'; fetchOverride(); setTimeout(checkRecording,800);
   } else {
     showSignin();
   }
@@ -800,6 +802,8 @@ $('turnIn').onclick=function(){
   dirty=true;
   ANS._turnedIn=new Date().toISOString();
   localStorage.setItem(lsKey(),JSON.stringify(ANS));
+  galUpdate(); LAST_LOGGED=window.GAL_SCORE;
+  if(window.GAL_logAttempt) window.GAL_logAttempt({via:'turn-in'});
   alert('Turned in. You can still make changes — Mr. Toby sees the newest version.');
 };
 
@@ -1038,6 +1042,60 @@ $('crApply').onclick=function(){
 };
 
 /* ---------- boot ---------- */
+/* ---------- gradebook reporting (track.js) ---------- */
+var HAS_REC=false, TRACK_LOADED=false, LAST_LOGGED=null;
+function loadTracker(){
+  if(TRACK_LOADED||!A) return; TRACK_LOADED=true;
+  window.GAL_SLUG_KEEP='news/'+A.meta.SLUG;
+  window.GAL_META={title:A.meta.TITLE||A.meta.SLUG, unit:"This Week's Reading",
+    skills:['reading-comprehension','grammar','speaking','fluency'], sort_order:500};
+  galUpdate();
+  var sc=document.createElement('script'); sc.src='/readings/track.js'; document.body.appendChild(sc);
+}
+function galParts(){
+  if(!A) return null;
+  var a=ANS||{};
+  var qTot=A.qs.length, qDone=A.qs.filter(function(_,i){return (a['q'+i]||'').trim().length>2;}).length;
+  var cTot=A.gram.practice.length, cDone=A.gram.practice.filter(function(_,i){return (a['c'+i]||'').trim();}).length, cRight=0;
+  A.gram.practice.forEach(function(p,i){ if(p.a.indexOf((a['c'+i]||'').trim().toLowerCase())>=0) cRight++; });
+  var prod=(a.produce||'').trim().length>5;
+  var gaps=0; A.talk.rows.forEach(function(row){row.forEach(function(c){if(/^[AB]:/.test(c))gaps++;});});
+  var talkTarget=Math.max(1,Math.round(gaps/2));
+  var talk=Object.keys(a).filter(function(k){return /^t\d/.test(k)&&(a[k]||'').trim();}).length;
+  var gTot=cTot+(A.gram.produce?1:0), gDone=cDone+(prod?1:0);
+  var pQ=(qTot&&qDone/qTot>=0.5)?1:0, pG=(gTot&&gDone/gTot>=0.5)?1:0, pT=(talk/talkTarget>=0.5)?1:0, pR=HAS_REC?1:0;
+  return {qDone:qDone,qTot:qTot,cRight:cRight,cTot:cTot,gDone:gDone,gTot:gTot,talk:talk,talkTarget:talkTarget,
+          pQ:pQ,pG:pG,pT:pT,pR:pR,score:pQ+pG+pT+pR};
+}
+function galUpdate(){
+  var p=galParts(); if(!p) return;
+  window.GAL_SCORE=p.score; window.GAL_MAX=4;
+  window.GAL_SKILLS={
+    'reading-comprehension':{n:p.qDone,d:p.qTot},
+    'grammar':{n:p.cRight,d:p.cTot},
+    'speaking':{n:Math.min(p.talk,p.talkTarget),d:p.talkTarget},
+    'fluency':{n:p.pR,d:1}
+  };
+  var hs=[];
+  if((ANS.produce||'').trim()) hs.push({label:'Your turn',text:ANS.produce.trim(),pin:true});
+  var lastQ=A.qs.length?ANS['q'+(A.qs.length-1)]:''; if((lastQ||'').trim()) hs.push({label:'Question '+A.qs.length,text:lastQ.trim()});
+  if((ANS.p_invent||'').trim()) hs.push({label:'Invented holiday',text:ANS.p_invent.trim(),pin:true});
+  window.GAL_HIGHLIGHTS=hs;
+  window.GAL_COMPLETION={done:p.pQ+p.pG+p.pT+p.pR,total:4};
+}
+function galLogIfChanged(){
+  if(!ANS._turnedIn||!window.GAL_logAttempt) return;
+  galUpdate();
+  if(window.GAL_SCORE===LAST_LOGGED) return;
+  LAST_LOGGED=window.GAL_SCORE; window.GAL_logAttempt({auto:true});
+}
+function checkRecording(){
+  if(!ME.email||!A) return;
+  fetch(SUPA_URL+'/rest/v1/fluency_runs?select=id&email=eq.'+encodeURIComponent(ME.email)+'&passage_slug=eq.'+encodeURIComponent('news-'+A.meta.SLUG)+'&limit=1',{headers:H})
+  .then(function(r){return r.json();}).then(function(rows){var had=HAS_REC;HAS_REC=!!(rows&&rows.length);galUpdate();if(HAS_REC&&!had)galLogIfChanged();}).catch(function(){});
+}
+document.addEventListener('visibilitychange',function(){if(!document.hidden)checkRecording();});
+
 function boot(){
   var want=new URLSearchParams(location.search).get('a');
   var url=SUPA_URL+'/rest/v1/news_articles?select=doc&published=is.true&order=week_of.desc,updated_at.desc&limit=1';
@@ -1045,7 +1103,8 @@ function boot(){
   fetch(url,{headers:H}).then(function(r){return r.json();}).then(function(rows){
     if(rows&&rows.length&&rows[0].doc){A=parseDoc(rows[0].doc);render();}
     else {A=parseDoc(SEED);render();}
-  }).catch(function(){A=parseDoc(SEED);render();});
+    loadTracker(); checkRecording();
+  }).catch(function(){A=parseDoc(SEED);render();loadTracker();});
 }
 
 /* Seed article — shows if Supabase is empty or unreachable, so the page is never blank. */
@@ -1106,6 +1165,5 @@ var SEED=[
 $('doc').value=SEED;
 boot();
 </script>
-<script src="/readings/track.js"></script>
 </body>
 </html>

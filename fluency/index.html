@@ -355,7 +355,7 @@ $('toRead').onclick=function(){
   $('readText').innerHTML=WORDS.map(function(w){return w.pre+'<span>'+esc(w.word)+'</span>'+w.post;}).join(' ');
   $('wcLabel').textContent=WORDS.length+' words';
   $('clock').textContent='0.0s';$('live').textContent='';
-  show('s2');dualTranslate();
+  show('s2');dualTranslate();loadTracker();
 };
 $('listen').onclick=function(){say(P.body,false);};
 function tokenize(body){
@@ -533,6 +533,27 @@ $('finish').onclick=function(){
 };
 $('doneProgress').onclick=function(){$('histBtn').click();};
 
+/* ---------- gradebook reporting ---------- */
+var TRACK_LOADED=false;
+function loadTracker(){
+  if(TRACK_LOADED||!P) return; TRACK_LOADED=true;
+  window.GAL_SLUG_KEEP='fluency/'+P.slug;
+  window.GAL_META={title:'Read aloud: '+(P.title||P.slug), unit:'Reading Fluency', skills:['fluency','pronunciation'], sort_order:520};
+  var sc=document.createElement('script'); sc.src='/readings/track.js'; document.body.appendChild(sc);
+}
+function galReport(){
+  var s0=stats();
+  window.GAL_SCORE=4; window.GAL_MAX=4;
+  window.GAL_SKILLS={fluency:{n:Math.round(s0.accuracy),d:100},pronunciation:{n:Math.max(0,s0.total-s0.errors),d:s0.total}};
+  var miss=[];Object.keys(MARKS).forEach(function(k){if(MARKS[k]===1)miss.push(WORDS[+k].word);});
+  window.GAL_HIGHLIGHTS=[
+    {label:(ATTEMPT==='cold'?'First read':'Re-read after practice'),
+     text:s0.wcpm+' words correct per minute \u00b7 '+s0.accuracy+'% accuracy \u00b7 '+Math.round(SECS)+'s',pin:true}
+  ].concat(miss.length?[{label:'Words to practice',text:miss.slice(0,8).join(', ')}]:[]);
+  window.GAL_COMPLETION={done:4,total:4};
+  if(window.GAL_logAttempt) window.GAL_logAttempt({attempt:ATTEMPT,wcpm:s0.wcpm,accuracy:s0.accuracy});
+}
+
 /* ---------- save ---------- */
 function note(msg,cls){var n=$('savedNote');n.innerHTML=msg;n.className='note'+(cls?' '+cls:'');}
 function errList(){
@@ -554,7 +575,7 @@ function autoSave(){
         error_words:errList(),audio_path:path,transcript:HEARD||null,auto_marked:AUTO})
     }).then(function(r){ if(!r.ok)return r.text().then(function(t){throw new Error('status '+r.status+'. '+t.slice(0,160));}); return r.json(); });
   })
-  .then(function(rows){RUNID=(rows&&rows[0]&&rows[0].id)||null;note('<b>Saved.</b> Mr. Toby has your recording.','ok');})
+  .then(function(rows){RUNID=(rows&&rows[0]&&rows[0].id)||null;note('<b>Saved.</b> Mr. Toby has your recording.','ok');galReport();})
   .catch(function(e){
     note('<b>It did not save.</b> '+esc(e.message)+' <button class="sbtn" id="retry">Try again</button>','bad');
     var rb=$('retry');if(rb)rb.onclick=autoSave;
@@ -635,6 +656,5 @@ function chart(cold,hot){
   $('chart').innerHTML=s;
 }
 </script>
-<script src="/readings/track.js"></script>
 </body>
 </html>
