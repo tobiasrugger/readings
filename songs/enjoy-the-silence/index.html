@@ -435,8 +435,17 @@ function saveWork(){
   var body={email:me.email,set_slug:SONG,name:me.first+' '+me.last,period:String(me.period),level:'ELD101',answers:work,turned_in:!!work.finished,updated_at:new Date().toISOString()};
   var h=headers(); h['Prefer']='resolution=merge-duplicates,return=minimal';
   return fetch(SUPA_URL+'/rest/v1/song_work?on_conflict=email,set_slug',{method:'POST',headers:h,body:JSON.stringify(body)})
-    .then(function(r){ if(r.ok){dirty=false;flashSaved('Saved ✓');return true;} return r.text().then(function(t){ console.warn('save failed',r.status,t); flashSaved('Not saved ('+r.status+')'); return false; }); })
+    .then(function(r){ if(r.ok){dirty=false;flashSaved('Saved ✓');logProgress();return true;} return r.text().then(function(t){ console.warn('save failed',r.status,t); flashSaved('Not saved ('+r.status+')'); return false; }); })
     .catch(function(){flashSaved('Offline');return false;});
+}
+/* gradebook: log an attempt on every save whose score changed, not only at turn-in (best attempt wins there) */
+var lastLogged=null;
+function logProgress(){
+  var sc=score(), mx=window.GAL_MAX; if(sc===lastLogged) return; lastLogged=sc;
+  try{
+    if(typeof window.GAL_logAttempt==='function'){ window.GAL_logAttempt({score:sc,max_score:mx,detail:{source:'page',progress:true}}); return; }
+    fetch(SUPA_URL+'/rest/v1/activity_attempts',{method:'POST',headers:headers(),body:JSON.stringify({email:me.email,slug:'songs/'+SONG,score:sc,max_score:mx,detail:{source:'page',progress:true,path:location.pathname},completed_at:new Date().toISOString()})}).catch(function(){});
+  }catch(e){}
 }
 function flashSaved(t){ var s=$('#savedMsg'); s.textContent=t; setTimeout(function(){ if(s.textContent===t) s.textContent=''; },2500); }
 function score(){
