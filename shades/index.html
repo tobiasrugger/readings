@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shades of Meaning — playground</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#1f1f23;--muted:#6b7280;--paper:#fffdf7;--accent:#7c3aed}
+*{box-sizing:border-box}
+body{margin:0;font-family:Nunito,system-ui,sans-serif;color:var(--ink);background:var(--paper);transition:padding-right .2s}
+header{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 18px;background:#fff;border-bottom:2px solid #eee;position:sticky;top:0;z-index:10}
+header h1{font-size:1.15rem;margin:0;flex:1}
+header label{font-weight:700;font-size:.9rem;display:flex;align-items:center;gap:6px}
+select{font:inherit;font-weight:700;border:2px solid #d4d4d8;border-radius:10px;padding:6px 10px;background:#fff}
+main{max-width:760px;margin:0 auto;padding:22px 18px 60px}
+.note{background:#fef9c3;border:1px solid #fde68a;border-radius:12px;padding:10px 14px;font-size:.9rem;margin-bottom:18px}
+.card{background:#fff;border:2px solid #eee;border-radius:16px;padding:18px 20px;margin-bottom:18px}
+.card h2{margin:0 0 10px;font-size:1rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.dir{color:var(--muted);font-size:.95rem;margin:0 0 10px}
+p.read{font-size:1.25rem;line-height:1.75;margin:0}
+textarea{width:100%;min-height:120px;font:inherit;font-size:1.15rem;line-height:1.6;border:2px solid #d4d4d8;border-radius:12px;padding:12px;resize:vertical}
+/* stand-in for the host page's dictionary tooltip (only in Dictionary mode) */
+.tip{position:absolute;z-index:50;background:#0f172a;color:#fff;border-radius:12px;padding:10px 14px;font-size:.95rem;max-width:280px;line-height:1.4;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.tip b{text-decoration:underline}.tip .none{color:#9ca3af}
+</style>
+</head>
+<body>
+<header>
+  <h1>🎨 Shades of Meaning <span style="color:var(--muted);font-weight:600;font-size:.85rem">playground</span></h1>
+  <label>Language <select id="lang"></select></label>
+  <div id="wordmode"></div>
+</header>
+<main>
+  <div class="note" translate="no">Teacher playground, no sign-in. Dotted-underlined words have shades. <b>📖 Dictionary</b> = tap a word for a simple meaning + translation (the page's normal tooltip). <b>🎨 Shades</b> = tap a word for the continuum. Open with <code>?mode=shades</code> to start in Shades. Underlines only show in Shades mode.</div>
+
+  <section class="card">
+    <h2>Read</h2>
+    <p class="dir">Tap a word you know. Find a bigger word.</p>
+    <p class="read" id="read" translate="no">My name is Ana. I am a new student at Galileo. My first day was hard, but my teacher is nice and my classmates are funny. I was scared in the morning. Now I am happy. The school is big, and the gym is cold! I like my English class. I walk to school with my cousin. He says the food at lunch is bad, but I think it is good.</p>
+  </section>
+
+  <section class="card">
+    <h2>Write</h2>
+    <p class="dir">Write two sentences about your first day. Use <b>happy</b>, <b>big</b>, or <b>nice</b>. Then tap the word and try a bigger one.</p>
+    <textarea id="write" translate="no" placeholder="My first day was happy. The school is big."></textarea>
+  </section>
+</main>
+
+<script src="shades.js"></script>
+<script>
+/* ---- language picker (the real pages hand this off from the sign-in box as vocab_lang) ---- */
+const LANGS=['Spanish','Cantonese','Mandarin','Arabic','Vietnamese','Russian','Darija','Urdu','Tagalog','French','Korean','Hindi','Somali','Thai','Nepali'];
+const sel=document.getElementById('lang');
+LANGS.forEach(l=>{const o=document.createElement('option');o.value=o.textContent=l;sel.appendChild(o);});
+window.vocab_lang=new URLSearchParams(location.search).get('lang')||'Spanish'; sel.value=window.vocab_lang;
+sel.onchange=()=>{window.vocab_lang=sel.value;};
+
+/* ---- stand-in dictionary tooltip: fires only when Shades is NOT in shades mode ---- */
+const PROXY='https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
+let tip=null;
+document.addEventListener('click',async e=>{
+  if(tip){tip.remove();tip=null;}
+  const w=e.target.closest('.sh-word'); if(!w||Shades.getMode()==='shades')return;
+  const word=w.dataset.sh, d=Shades.DATA[word], base=d.shades.find(s=>s.w===word)||d.shades[0];
+  tip=document.createElement('div');tip.className='tip';tip.setAttribute('translate','no');tip.innerHTML='<b>'+word+'</b> — '+base.m+'<br>…';
+  const r=w.getBoundingClientRect();tip.style.left=Math.min(r.left+scrollX,innerWidth-300)+'px';tip.style.top=(r.bottom+scrollY+6)+'px';document.body.appendChild(tip);
+  try{const j=await(await fetch(PROXY+'?action=translate&idiom='+encodeURIComponent(word)+'&meaning='+encodeURIComponent(base.m)+'&lang='+encodeURIComponent(window.vocab_lang))).json();
+    const t=j.translation||{};tip.innerHTML='<b>'+word+'</b> — '+base.m+'<br>'+(t.equiv?'<b>'+t.equiv+'</b>':'<b class="none">'+word+'</b>')+(t.meaning?' — '+t.meaning:'');}catch(err){tip.innerHTML='<b>'+word+'</b> — '+base.m;}
+});
+
+/* ---- mount Shades ---- */
+Shades.mount({
+  root: document.querySelector('main'),
+  toggle: document.getElementById('wordmode'),
+  target: document.getElementById('write'),
+  getLang: ()=>window.vocab_lang
+  // judge: async (sentence, oldWord, newWord) => ({verdict:'ok'|'hmm'|'no', note:'…'})  ← optional AI hook
+});
+</script>
+</body>
+</html>
