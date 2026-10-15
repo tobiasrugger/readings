@@ -279,7 +279,8 @@ var ME={email:'',first:'',last:'',name:'',period:'',lang:''};
 var LEVEL=localStorage.getItem('gal_news_level')||'';
 var LOCKED=false;
 var EMAIL_RE=/^[^@\s]+@(s\.)?sfusd\.edu$/;
-function canon(e){e=e.trim().toLowerCase();return e.replace(/@sfusd\.edu$/,'@s.sfusd.edu');}
+(function(){try{var e=localStorage.getItem('gal_student_email');if(e&&/@s\.sfusd\.edu$/i.test(e))localStorage.setItem('gal_student_email',e.toLowerCase().replace(/@s\.sfusd\.edu$/,'@sfusd.edu'));}catch(x){}})();
+function canon(e){e=e.trim().toLowerCase();return e.replace(/@s\.sfusd\.edu$/,'@sfusd.edu');}
 var dirty=false;
 
 /* ---------- tiny helpers ---------- */
@@ -688,9 +689,24 @@ function wireInputs(){
   });
 }
 function lsKey(){return 'news_'+(A&&A.meta.SLUG||'x')+'_'+(ME.email||'anon');}
+var PULLED={};
+function pullAnswers(){
+  if(!A||!ME.email) return;
+  var k=ME.email+'|'+A.meta.SLUG; if(PULLED[k]) return; PULLED[k]=1;
+  fetch(SUPA_URL+'/rest/v1/news_work?select=answers,level&email=eq.'+encodeURIComponent(ME.email)+'&slug=eq.'+encodeURIComponent(A.meta.SLUG)+'&limit=1',{headers:H})
+  .then(function(r){return r.json();}).then(function(rows){
+    if(!rows||!rows.length||!rows[0].answers) return;
+    var server=rows[0].answers, local=Object.keys(ANS).filter(function(x){return x[0]!=='_';}).length;
+    if(local) return;                      /* this device already has work; keep it */
+    ANS=server; localStorage.setItem(lsKey(),JSON.stringify(ANS));
+    if(rows[0].level&&!LOCKED){LEVEL=rows[0].level;localStorage.setItem('gal_news_level',LEVEL);applyLevel(LEVEL);}
+    render();
+  }).catch(function(){});
+}
 function restore(){
   var raw=localStorage.getItem(lsKey());
   if(raw){try{ANS=JSON.parse(raw);}catch(e){}}
+  pullAnswers();
   [].forEach.call(document.querySelectorAll('[data-k]'),function(el){
     if(ANS[el.dataset.k]!==undefined) el.value=ANS[el.dataset.k];
   });
