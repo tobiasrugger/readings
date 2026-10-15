@@ -405,11 +405,11 @@ body:not(.teacher) .gtile .tlinks{display:none;}
   </div>
 
 
-  <!-- ── SAY IT (the shared /say/ page, hosted here) ── -->
+  <!-- ── SAY IT (the shared say.js engine, mounted here) ── -->
   <div id="sayit" class="section">
     <p class="sec-title">Say the words</p>
     <p class="sec-sub" data-dir="d-say" data-en="Tap Listen. Then tap the red button and say the word. The computer checks you.">Tap Listen. Then tap the red button and say the word. The computer checks you.</p>
-    <iframe id="sayFrame" title="Say the words" src="about:blank" data-src="/readings/say/?set=firstpeoples&embed=1" allow="microphone" style="width:100%;height:900px;border:1px solid #e5e3de;border-radius:14px;background:#fff"></iframe>
+    <div id="sayMount"></div>
     <div class="wgo" style="margin-top:1rem"><p>Done saying the words? Check what you understood.</p><button type="button" class="primary-btn" onclick="showTab('check',document.querySelectorAll('.tab')[4])">Check →</button></div>
   </div>
   <!-- ── 4 CHECK ── -->
@@ -1012,8 +1012,20 @@ $("printMine").addEventListener("click", function(){ var f = document.querySelec
 var TS = 1; function applyTs(){ document.body.classList.remove("ts2","ts3"); if(TS === 2) document.body.classList.add("ts2"); if(TS === 3) document.body.classList.add("ts3"); }
 $("tsz").addEventListener("click", function(e){ var b = e.target.closest ? e.target.closest("button") : null; if(!b) return; TS += (b.getAttribute("data-ts") === "up") ? 1 : -1; if(TS < 1) TS = 1; if(TS > 3) TS = 3; try{ localStorage.setItem("gal_tsize", String(TS)); }catch(err){} applyTs(); });
 try{ TS = parseInt(localStorage.getItem("gal_tsize") || "1", 10) || 1; }catch(e){} applyTs();
-function openSay(){ var f = $("sayFrame"); if(f && f.getAttribute("src") === "about:blank") f.src = f.getAttribute("data-src"); }
-window.addEventListener("message", function(e){ if(e.data && e.data.sayHeight){ var f = $("sayFrame"); if(f) f.style.height = Math.max(500, e.data.sayHeight + 20) + "px"; } });
+/* Say it: say.js draws the words inside #sayMount with this page's colors; translations use this page's tip box. */
+var SAY_CTL = null;
+function sayTip(text, el){
+  var key = "say:" + text, h = '<span class="w">' + esc(text) + '<button type="button" class="say" data-say="' + esc(text) + '">🔊</button></span>';
+  h += (curLang === "none") ? '<div class="none">Choose a language at the top to see a translation.</div>' : '<div class="t' + (RTL[curLang] ? " rtl" : "") + '" id="tipTr">…</div>';
+  tip.setAttribute("data-w", key); tip.innerHTML = h; placeTip(el);
+  if(curLang !== "none" && window.omTranslate) omTranslate(text, curLang, function(t){ var box = $("tipTr"); if(box && tip.getAttribute("data-w") === key) box.textContent = t || "(no translation)"; });
+}
+function openSay(){
+  if(!window.Say || !$("sayMount")) return;
+  if(SAY_CTL){ SAY_CTL.refresh(); return; }
+  SAY_CTL = Say.mount($("sayMount"), { set:"firstpeoples", student:function(){ return student; }, lang:function(){ return curLang; }, translate:sayTip,
+    onProgress:function(ok, total, done){ var tb = document.querySelectorAll(".tab")[3]; if(tb && done && !tb.querySelector(".done")){ var d = document.createElement("span"); d.className = "done"; d.textContent = "✓"; tb.appendChild(d); } } });
+}
 function showTab(id, btn){ if(id === "sayit") openSay(); var secs = document.querySelectorAll(".section"), i; for(i = 0; i < secs.length; i++) secs[i].classList.remove("active"); var tabs = document.querySelectorAll(".tab"); for(i = 0; i < tabs.length; i++) tabs[i].classList.remove("active"); $(id).classList.add("active"); if(btn) btn.classList.add("active"); hideTip(); window.scrollTo(0, 0); }
 
 /* ============================================================
@@ -1226,6 +1238,8 @@ var all = document.querySelectorAll("textarea"); for(var i = 0; i < all.length; 
 <script>
 window.GAL_META = { title:'Indigenous Peoples’ Day (ELD 101)', unit:'Holidays', skills:['reading-comprehension','vocabulary','past-tense'] };
 </script>
+<script src="/readings/say/sets.js"></script>
+<script src="/readings/say/say.js"></script>
 <script src="/readings/track.js"></script>
 </body>
 </html>
