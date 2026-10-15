@@ -158,6 +158,7 @@ function payload(){
            work: state, scores: scoreSummary(), turned_in: state.turned, updated_at: new Date().toISOString() };
 }
 function save(){
+  reportScore();
   if(!me.email) return;
   $('dot').className='saving';
   try{ localStorage.setItem('vocab_'+SET.slug+'_'+me.email, JSON.stringify(state)); }catch(err){}
@@ -893,6 +894,29 @@ $('spCheck').addEventListener('click', function(){
 buildSpell();
 
 /* ---------- scores + restore ---------- */
+/* ---- report a real score to the gradebook ----
+   track.js shows a grey "done, no score" tick unless the page sets
+   window.GAL_SCORE and window.GAL_MAX. Max counts every item on the
+   page, so 100% means the whole page was done correctly, not one game. */
+function reportScore(){
+  try{
+    var s = scoreSummary();
+    var W = SET.words.length, F = (SET.fix || []).length;
+    var n = function(o){ return o ? (o.length !== undefined ? o.length : Object.keys(o).length) : 0; };
+    var games = [[s.match, W, n(state.match)], [s.wordsearch, W, n(state.ws)],
+                 [s.mc, W, n(state.mc)], [s.cloze, W, n(state.cloze)],
+                 [s.fix, F, n(state.fix)], [s.spell, W, n(state.spell)]];
+    var got = 0, max = 0, done = 0, i;
+    for(i = 0; i < games.length; i++){
+      got += games[i][0];
+      max += games[i][1];
+      done += Math.min(games[i][2], games[i][1]);
+    }
+    if(max > 0){ window.GAL_SCORE = got; window.GAL_MAX = max; }
+    window.GAL_COMPLETION = { done: done, total: max };
+  }catch(err){}
+}
+
 function scoreSummary(){
   var s={};
   s.match = Object.keys(state.match).filter(function(k){ return state.match[k]===1; }).length;
