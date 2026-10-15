@@ -35,7 +35,13 @@ tr.row{cursor:pointer}tr.row:hover{background:#f7f3fb}
   <summary style="cursor:pointer;font-weight:800;color:#5b3d8a">🎵 Song words (paste here — they drop into the student page)</summary>
   <p class="hl" style="margin:8px 0">One line per line, exactly as the students should see it. Leave an empty line between verses. Saving replaces what students see immediately on their next load.</p>
   <textarea id="lyricsIn" style="width:100%;min-height:260px;border:2px solid #e4dccf;border-radius:10px;padding:10px;font-family:inherit;box-sizing:border-box" spellcheck="false" placeholder="Paste the song here…"></textarea>
-  <div style="display:flex;gap:8px;align-items:center;margin-top:8px"><button class="btn" id="lyricsSave" type="button">Save words</button><button class="btn" id="lyricsLoad" type="button" style="background:#ece6f6;color:#5b3d8a">Reload saved</button><span id="lyricsMsg" class="hl"></span></div>
+  <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap"><button class="btn" id="lyricsSave" type="button">Save words</button><button class="btn" id="lyricsLoad" type="button" style="background:#ece6f6;color:#5b3d8a">Reload saved</button><span id="lyricsMsg" class="hl"></span></div>
+  <div style="margin-top:14px;padding-top:10px;border-top:1px solid #e4dccf">
+    <div style="font-weight:800;color:#5b3d8a">🌐 Pre-translate for students</div>
+    <p class="hl" style="margin:4px 0 8px">Translates every line, direction, question and word card once and saves them, so students load instantly. Run after saving words (and again if you change them).</p>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="btn" id="preMain" type="button">Translate: Chinese · Spanish · Arabic · Vietnamese · Thai · Nepali</button><button class="btn" id="preAll" type="button" style="background:#ece6f6;color:#5b3d8a">All 15 languages</button><span id="preMsg" class="hl"></span></div>
+    <div id="preStatus" class="hl" style="margin-top:6px"></div>
+  </div>
 </details>
 <div id="summary" style="margin:0 0 10px;font-weight:700"></div>
 <table><thead><tr><th data-k="last_name">Student</th><th data-k="period">Per</th><th data-k="lang">Lang</th><th>Answers</th><th>Words</th><th>Notes</th><th>Highlights</th><th>"Like" sorted</th><th>Match</th><th data-k="updated_at">Last save</th><th>Done</th></tr></thead><tbody id="tb"></tbody></table>
@@ -64,10 +70,60 @@ function saveLyrics(){
     .then(function(r){ if(r.ok){ m.textContent='Saved ✓ '+lines.filter(function(l){return l}).length+' lines — students see them on next load.'; return; } return r.text().then(function(t){ var msg=t; try{ var j=JSON.parse(t); msg=(j.message||'')+(j.hint?' — '+j.hint:'')+(j.details?' — '+j.details:''); }catch(e){} m.textContent='Not saved ('+r.status+'): '+msg; }); })
     .catch(function(){m.textContent='Not saved — offline?'});
 }
+/* ---- pre-translate cache (table song_tr) ---- */
+var PROXY='https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
+var LANGS_ALL=['Spanish','Cantonese','Mandarin','Arabic','Vietnamese','Russian','Darija','Urdu','Tagalog','French','Korean','Hindi','Somali','Thai','Nepali'];
+var LANGS_MAIN=['Mandarin','Cantonese','Spanish','Arabic','Vietnamese','Thai','Nepali'];
+var DIRS=[
+ "Listen to the song. Read the words in English. Turn on 'Show my language' to see each line translated. Tap any word to see what it means. Write your notes in the column on the right. Tap a line number to highlight the line.",
+ "In the notes column, write three phrases that you like (or don't like) in this song and say why.",
+ "Learn the big words first. Then match the words to their meanings, practice with the cards, and listen and type.",
+ "The song says 'words like violence'. Here, like means 'similar to'. But like can also mean 'enjoy'. Tap a sentence, then tap the box where it belongs.",
+ "Write your answers in English. Use full sentences. Your work saves by itself."];
+var QFULL=['What do you think the song is about?','Do you like the song? Why or why not?','What do you like about the song? What do you not like about the song?','The song is called "Enjoy the Silence." Do you enjoy silence? Do you enjoy when your life is quiet, when the world around you is quiet, not noisy?','The singer says "Words like violence." This has two meanings (maybe more):','Why do you think the singer says words are similar to violence?','What does the singer say he wanted and needed?','Does the singer say words are necessary or unnecessary? Do you agree? Do you think words are necessary or unnecessary? Why?','The singer says "words can only do harm." Do you agree? What does this mean?'];
+var WORDS=[['violence','actions that hurt people, like hitting or fighting'],['silence','no sound; quiet'],['crash','to hit something hard and loudly'],['painful','something that hurts'],['pierce','to go through something with a sharp point'],['vow','a serious promise'],['intense','very strong'],['trivial','small and not important'],['pleasure','a feeling of happiness or enjoyment'],['remain','to stay; to still be there'],['meaningless','with no meaning or purpose'],['forgettable','easy to forget; not special'],['unnecessary','not needed'],['harm','damage or hurt'],['broken','not kept (a promise); not working (a thing)'],['understand','to know what something means']];
+function items(){
+  var lines=document.getElementById('lyricsIn').value.replace(/\r/g,'').split('\n').map(function(l){return l.trim()}).filter(function(l){return l});
+  var it=lines.map(function(l){return [l,'']}).concat(DIRS.map(function(d){return [d,'']})).concat(QFULL.map(function(q){return [q,'']})).concat(WORDS);
+  return it;
+}
+var preRunning=false;
+function preTranslate(langs){
+  if(preRunning) return; preRunning=true;
+  var it=items(), total=it.length*langs.length, done=0, saved=0, failed=0, st=document.getElementById('preStatus'), msg=document.getElementById('preMsg');
+  if(!it.length){ msg.textContent='Paste and save the words first.'; preRunning=false; return; }
+  msg.textContent='Working… 0 / '+total;
+  var jobs=[]; langs.forEach(function(l){ it.forEach(function(x){ jobs.push({l:l,text:x[0],meaning:x[1]}); }); });
+  /* skip anything already cached */
+  var have={};
+  Promise.all(langs.map(function(l){ return fetch(SUPA_URL+'/rest/v1/song_tr?select=src&slug=eq.'+SONG+'&lang=eq.'+encodeURIComponent(l),{headers:H()}).then(function(r){return r.json()}).then(function(rows){ (rows||[]).forEach(function(r){have[l+'|'+r.src]=1}); }).catch(function(){}); }))
+  .then(function(){
+    jobs=jobs.filter(function(j){ return !have[j.l+'|'+(j.meaning?j.text+'|'+j.meaning:j.text)]; });
+    var skipped=total-jobs.length; total=jobs.length;
+    if(!total){ msg.textContent='Already done — nothing to translate.'; preRunning=false; return; }
+    msg.textContent='Working… 0 / '+total+(skipped?' ('+skipped+' already cached)':'');
+    var active=0, i=0, batch=[];
+    function flush(){ if(!batch.length) return Promise.resolve(); var b=batch; batch=[]; return fetch(SUPA_URL+'/rest/v1/song_tr?on_conflict=slug,lang,src',{method:'POST',headers:H({Prefer:'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify(b)}).then(function(r){ if(r.ok) saved+=b.length; else failed+=b.length; }).catch(function(){failed+=b.length}); }
+    function next(){
+      while(active<4&&i<jobs.length){ (function(j){ active++; i++;
+        fetch(PROXY+'?action=translate&idiom='+encodeURIComponent(j.text)+'&meaning='+encodeURIComponent(j.meaning)+'&lang='+encodeURIComponent(j.l)).then(function(r){return r.json()}).then(function(x){
+          var t=(x&&x.ok&&x.translation)?x.translation:null;
+          if(t) batch.push({slug:SONG,lang:j.l,src:(j.meaning?j.text+'|'+j.meaning:j.text),equiv:t.equiv||'',meaning:t.meaning||'',note:t.note||''}); else failed++;
+        }).catch(function(){failed++}).then(function(){ active--; done++; msg.textContent='Working… '+done+' / '+total+' · '+j.l; st.textContent=j.text.slice(0,70); var p=batch.length>=20?flush():Promise.resolve(); p.then(function(){ if(done===total){ flush().then(function(){ msg.textContent='Done ✓ saved '+saved+(failed?' · '+failed+' failed (run again to retry)':''); st.textContent=''; preRunning=false; }); } else next(); }); });
+      })(jobs[i]); }
+    }
+    next();
+  });
+}
+document.getElementById('preMain').addEventListener('click',function(){preTranslate(LANGS_MAIN)});
+document.getElementById('preAll').addEventListener('click',function(){preTranslate(LANGS_ALL)});
 document.getElementById('lyricsSave').addEventListener('click',saveLyrics);
 document.getElementById('lyricsLoad').addEventListener('click',loadLyrics);
 function load(){ loadLyrics();
-  fetch(SUPA_URL+'/rest/v1/song_work?select=*&song=eq.'+SONG+'&order=last_name',{headers:{apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY}}).then(function(r){return r.json()}).then(function(j){rows=Array.isArray(j)?j:[];render();}).catch(function(){document.getElementById('summary').textContent='Could not load.';});
+  fetch(SUPA_URL+'/rest/v1/song_work?select=*&set_slug=eq.'+SONG+'&order=name',{headers:H()}).then(function(r){ if(!r.ok) return r.text().then(function(t){throw new Error(r.status+' '+t)}); return r.json(); }).then(function(j){
+    rows=(Array.isArray(j)?j:[]).map(function(r){ var nm=(r.name||'').trim().split(/\s+/); var d=r.answers||{}; if(r.turned_in) d.finished=true; return {email:r.email,first_name:nm[0]||'',last_name:nm.slice(1).join(' '),period:r.period,lang:d.lang||'',updated_at:r.updated_at,data:d}; });
+    render();
+  }).catch(function(e){ rows=[]; render(); document.getElementById('summary').textContent='Could not load student work: '+e.message; });
 }
 function wc(s){s=(s||'').trim();return s?s.split(/\s+/).length:0}
 function stats(r){var d=r.data||{};var a=d.answers||{};var n=Object.keys(a).filter(function(k){return (a[k]||'').trim()}).length;var w=Object.keys(a).reduce(function(t,k){return t+wc(a[k])},0);var likeOk=Object.keys(d.like||{}).filter(function(k){return k!=='misses'&&d.like[k]===true}).length;var m=Object.keys(d.match||{}).filter(function(k){return k!=='misses'}).length;return {n:n,w:w,notes:Object.keys(d.notes||{}).length,hl:Object.keys(d.hl||{}).length,like:likeOk,match:m,fin:!!d.finished};}

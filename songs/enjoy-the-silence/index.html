@@ -380,8 +380,8 @@ var QUESTIONS=[
    ============================================================ */
 var $=function(s,r){return (r||document).querySelector(s)}, $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
 var me=null, lang='';
-var work={answers:{},notes:{},hl:{},like:{},match:{},type:{},finished:false,visited:{}};
-var dirty=false;
+var work={answers:{},notes:{},hl:{},like:{},match:{},type:{},finished:false,visited:{},lang:'',email_alias:''};
+var dirty=false, lastSaveErr='';
 
 function canonEmail(raw){
   var e=(raw||'').trim().toLowerCase();
@@ -423,18 +423,19 @@ $('#lang').addEventListener('change',function(){ setLang(this.value); });
 function headers(){ return {'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'}; }
 function loadWork(){
   if(!me) return Promise.resolve();
-  var u=SUPA_URL+'/rest/v1/song_work?select=data&song=eq.'+SONG+'&email=eq.'+encodeURIComponent(me.email);
+  var u=SUPA_URL+'/rest/v1/song_work?select=answers,turned_in&set_slug=eq.'+SONG+'&email=eq.'+encodeURIComponent(me.email);
   return fetch(u,{headers:headers()}).then(function(r){return r.ok?r.json():[]}).then(function(rows){
-    if(rows&&rows[0]&&rows[0].data){ var d=rows[0].data; for(var k in work){ if(d[k]!==undefined) work[k]=d[k]; } }
+    if(rows&&rows[0]&&rows[0].answers){ var d=rows[0].answers; for(var k in work){ if(d[k]!==undefined) work[k]=d[k]; } if(rows[0].turned_in) work.finished=true; }
   }).catch(function(){});
 }
 function saveWork(){
-  if(!me) return Promise.resolve();
-  var body={email:me.email,email_alias:me.alias,first_name:me.first,last_name:me.last,period:parseInt(me.period,10),lang:lang,song:SONG,data:work,updated_at:new Date().toISOString()};
+  if(!me) return Promise.resolve(false);
+  work.lang=lang; work.email_alias=me.alias;
+  var body={email:me.email,set_slug:SONG,name:me.first+' '+me.last,period:String(me.period),level:'ELD101',answers:work,turned_in:!!work.finished,updated_at:new Date().toISOString()};
   var h=headers(); h['Prefer']='resolution=merge-duplicates,return=minimal';
-  return fetch(SUPA_URL+'/rest/v1/song_work?on_conflict=email,song',{method:'POST',headers:h,body:JSON.stringify(body)})
-    .then(function(r){ if(r.ok){dirty=false;flashSaved('Saved ✓');} else flashSaved('Not saved'); })
-    .catch(function(){flashSaved('Offline');});
+  return fetch(SUPA_URL+'/rest/v1/song_work?on_conflict=email,set_slug',{method:'POST',headers:h,body:JSON.stringify(body)})
+    .then(function(r){ if(r.ok){dirty=false;flashSaved('Saved ✓');return true;} return r.text().then(function(t){ console.warn('save failed',r.status,t); flashSaved('Not saved ('+r.status+')'); return false; }); })
+    .catch(function(){flashSaved('Offline');return false;});
 }
 function flashSaved(t){ var s=$('#savedMsg'); s.textContent=t; setTimeout(function(){ if(s.textContent===t) s.textContent=''; },2500); }
 function mark(){ dirty=true; }
@@ -713,7 +714,7 @@ function buildQuestions(){
 function translateQuestions(){
   $$('.qtr').forEach(function(t){ var q=QUESTIONS[t.dataset.q]; t.textContent=''; if(lang) queued(function(){return tr(q.q)}).then(function(r){ if(r&&r.equiv) t.textContent=r.equiv; }); });
 }
-$('#finishBtn').addEventListener('click',function(){ work.finished=true; mark(); saveWork().then(function(){ $('#finishMsg').textContent='Saved. Nice work, '+(me?me.first:'')+'!'; }); });
+$('#finishBtn').addEventListener('click',function(){ work.finished=true; mark(); saveWork().then(function(ok){ var m=$('#finishMsg'); if(ok){ m.style.color='var(--green)'; m.textContent='Saved. Nice work, '+(me?me.first:'')+'!'; } else { m.style.color='var(--bad)'; m.textContent='Not saved — tell Mr. Toby. ('+lastSaveErr+')'; } }); });
 
 /* ============================================================
    NAV / RENDER / CANARY
