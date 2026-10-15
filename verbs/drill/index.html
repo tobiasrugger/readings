@@ -633,12 +633,18 @@ document.addEventListener('keydown',function(e){
 function renderSetPicker(){
   $('modes').innerHTML='';
   $('brand').textContent='Verb drills';
-  var h='<div class="panel"><h2>Choose a verb list</h2><p class="lede">Each list drills the same four ways: grid, choose, negatives, and the verb table.</p><div class="sets">';
-  CONJ.SETS.forEach(function(s){
-    h+='<button class="setcard" data-setgo="'+esc(s.id)+'"><span class="t t-'+s.tense+'">'+esc(CONJ.TENSES[s.tense].label)+'</span>'+
-       '<h3>'+esc(s.title)+'</h3><p>'+esc(s.verbs.slice(0,5).join(', '))+(s.verbs.length>5?'…':'')+' · '+s.verbs.length+' verbs</p></button>';
+  var h='<div class="panel"><h2>Choose a verb list</h2><p class="lede">Each list drills the same four ways: grid, choose, negatives, and the verb table.</p>';
+  var groups=[], by={};
+  CONJ.SETS.forEach(function(s){ var g=s.group||'Verb lists'; if(!by[g]){by[g]=[];groups.push(g);} by[g].push(s); });
+  groups.forEach(function(g){
+    h+='<h3 style="margin:18px 0 8px">'+esc(g)+'</h3><div class="sets">';
+    by[g].forEach(function(s){
+      h+='<button class="setcard" data-setgo="'+esc(s.id)+'"><span class="t t-'+s.tense+'">'+esc(CONJ.TENSES[s.tense].label)+'</span>'+
+         '<h3 style="margin:0 0 4px">'+esc(s.title)+'</h3><p>'+esc(s.verbs.slice(0,5).join(', '))+(s.verbs.length>5?'…':'')+' &middot; '+s.verbs.length+' verbs</p></button>';
+    });
+    h+='</div>';
   });
-  $('stage').innerHTML=h+'</div></div>';
+  $('stage').innerHTML=h+'</div>';
 }
 
 /* ===================== boot ===================== */
@@ -647,8 +653,13 @@ function boot(){
   $('app').classList.remove('hidden');
   $('whoLbl').textContent=S.name+', '+S.period;
   $('langSel').value=S.lang; $('levelSel').value=S.level;
-  $('setSel').innerHTML='<option value="">Choose a list…</option>'+CONJ.SETS.map(function(s){
-    return '<option value="'+esc(s.id)+'">'+esc(s.title)+' ('+CONJ.TENSES[s.tense].label.toLowerCase()+')</option>'}).join('');
+  var og={}, oo=[];
+  CONJ.SETS.forEach(function(s){ var g=s.group||'Verb lists'; if(!og[g]){og[g]=[];oo.push(g);} og[g].push(s); });
+  $('setSel').innerHTML='<option value="">Choose a list…</option>'+oo.map(function(g){
+    return '<optgroup label="'+esc(g)+'">'+og[g].map(function(s){
+      return '<option value="'+esc(s.id)+'">'+esc(s.title)+' ('+CONJ.TENSES[s.tense].label.toLowerCase()+')</option>';
+    }).join('')+'</optgroup>';
+  }).join('');
   if(S.set && CONJ.set(S.set)) render(); else renderSetPicker();
 }
 document.addEventListener('DOMContentLoaded',function(){

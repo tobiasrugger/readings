@@ -103,6 +103,7 @@ var IRR = {
   swear:['swore','sworn'], swing:['swung','swung'], tear:['tore','torn'], tell:['told','told'],
   throw:['threw','thrown'], wear:['wore','worn'], bend:['bent','bent'], lie:['lay','lain','lying'],
   cost:['cost','cost'], cut:['cut','cut','cutting'], shut:['shut','shut','shutting'],
+  hang:['hung','hung','hanging'], show:['showed','shown'], spread:['spread','spread'],
   spell:['spelled','spelled',null,['spelt']], become:['became','become','becoming']
 };
 
@@ -110,6 +111,14 @@ var cache = {};
 function verb(b){
   b = String(b||'').toLowerCase().trim();
   if(cache[b]) return cache[b];
+  var sp = b.indexOf(' ');
+  if(sp>0){                                   /* phrasal verb: hang out, wake up */
+    var head = verb(b.slice(0,sp)), tail = b.slice(sp);
+    return (cache[b] = {
+      b:b, s:head.s+tail, ing:head.ing+tail, past:head.past+tail, pp:head.pp+tail,
+      irregular:head.irregular, alts:head.alts.map(function(a){ return a+tail; })
+    });
+  }
   var ir = IRR[b];
   var rec = {
     b:b,
@@ -291,27 +300,61 @@ function shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floo
    readings/verbs/drill/?set=<id>
    ========================================================================= */
 var SETS = [
-  {id:'core',  title:'Everyday verbs',      tense:'present', level:'Newcomer',
+  /* ---- Language Launch Unit 1, in Launch Plus order ---- */
+  {id:'u1l1', title:'L1 People at School', tense:'present', level:'Newcomer', group:'Unit 1',
+   verbs:['read','write','listen','speak','learn','teach','help','work','give','fix','clean','make'],
+   blurb:'Book pages 6-15 and 64-77. The coach teaches. The custodian fixes things.'},
+
+  {id:'u1l2', title:'L2 Meet and Greet', tense:'present', level:'Newcomer', group:'Unit 1',
+   verbs:['meet','introduce','ask','say','answer','greet','thank','show','wave','shake'],
+   blurb:'Book pages 16-29. She says hello. He introduces his friend.'},
+
+  {id:'u1l3', title:'L3 From A to Z', tense:'present', level:'Newcomer', group:'Unit 1',
+   verbs:['spell','write','read','say','start','begin','use','put'],
+   blurb:'Book pages 30-37. He spells his name. A sentence starts with an uppercase letter.'},
+
+  {id:'u1l4', title:'L4 From 0 to 100', tense:'present', level:'Newcomer', group:'Unit 1',
+   verbs:['see','count','say','write','need','use','add','have'],
+   blurb:'Book pages 38-47. I see fifteen students. She has two teachers.'},
+
+  {id:'u1l5', title:'L5 About Me', tense:'present', level:'Newcomer', group:'Unit 1',
+   verbs:['be','speak','go','live','have','like','study'],
+   blurb:'Book pages 48-63. The pronoun lesson: I am, she is, they are.'},
+
+  {id:'u1l8', title:'L8 Class Acts', tense:'present', level:'Beginner', group:'Unit 1',
+   verbs:['find','hang out','learn','play','practice','solve','study','understand'],
+   blurb:"Book pages 90-105. The book's own present-tense verb lesson, all eight verbs."},
+
+  {id:'u1prog', title:'Unit 1 right now', tense:'prog', level:'Beginner', group:'Unit 1',
+   verbs:['read','write','listen','speak','study','play','practice','hang out','work','learn'],
+   blurb:'The same school verbs with am, is, are + -ing.'},
+
+  {id:'u1past', title:'Unit 1 yesterday', tense:'past', level:'Beginner', group:'Unit 1',
+   verbs:['say','meet','write','read','speak','teach','find','understand','go','have','learn','be'],
+   blurb:'The Unit 1 verbs in the past. Most of them are irregular.'},
+
+  /* ---- general verb lists ---- */
+  {id:'core',  title:'Everyday verbs',      tense:'present', level:'Newcomer', group:'Verb lists',
    verbs:['play','talk','write','watch','study','go','have','be'],
    blurb:'I play, he plays, she watches.'},
 
-  {id:'coreprog', title:'Right now',        tense:'prog',    level:'Newcomer',
+  {id:'coreprog', title:'Right now',        tense:'prog',    level:'Newcomer', group:'Verb lists',
    verbs:['play','write','run','eat','study','watch','go','read'],
    blurb:'I am playing, he is running.'},
 
-  {id:'pasta', title:'Past A: everyday verbs', tense:'past', level:'Beginner',
+  {id:'pasta', title:'Past A: everyday verbs', tense:'past', level:'Beginner', group:'Verb lists',
    verbs:['talk','help','learn','play','study','write','read','need','like','think','see','sleep','run','eat','do','feel','try','cry','say'],
    blurb:'The first past tense list.'},
 
-  {id:'pastb', title:'Past B: next 20',     tense:'past',    level:'Intermediate',
+  {id:'pastb', title:'Past B: next 20',     tense:'past',    level:'Intermediate', group:'Verb lists',
    verbs:['fall','dream','fight','hit','spend','teach','understand','ride','win','lose','know','believe','find','let','come','forget','drink','wake','speak','buy'],
    blurb:'Mostly irregular.'},
 
-  {id:'pastc', title:'Past C: harder verbs', tense:'past',   level:'Advanced',
+  {id:'pastc', title:'Past C: harder verbs', tense:'past',   level:'Advanced', group:'Verb lists',
    verbs:['shoot','stand','sting','strive','weep','build','hold','hurt','kneel','plead','ring','seek','sell','feed','dig','deal','flee','catch','creep'],
    blurb:'Advanced irregular verbs.'},
 
-  {id:'pastd', title:'Past D: the hard ones', tense:'past',  level:'Advanced',
+  {id:'pastd', title:'Past D: the hard ones', tense:'past',  level:'Advanced', group:'Verb lists',
    verbs:['sting','grind','swear','tear','wear','bite','slide','shake','freeze','sink','swing','bend','steal','hide','lend'],
    blurb:'Vowel-change verbs.'}
 ];
