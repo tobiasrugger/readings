@@ -62,6 +62,15 @@ h2{font-size:1.25rem;margin:.2em 0 .4em;color:var(--pine)}
 .para .ts{background:var(--yellow);border-radius:4px;padding:0 4px;font-weight:800}
 .para .blank{display:inline-block;min-width:200px;border-bottom:2px solid var(--rust);margin-right:4px}
 .emo{font-size:2.2rem;line-height:1;margin-right:8px;float:left}
+.para.nat{color:var(--pine2);margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)}
+.para .slot{display:inline-block;min-width:200px;border-bottom:2px solid var(--rust);padding:0 4px;border-radius:4px;font-weight:800}
+.para .slot.good{background:#d8f0e2;color:var(--pine);border-bottom-color:var(--moss)}
+.para .slot.bad{background:#fbeae5;color:#8a2f10;border-bottom-color:#e07a5f}
+.chip.pick.good{background:var(--pine2);color:#fff;border-color:var(--pine2)}
+.chip.pick.bad{background:#fbeae5;color:#8a2f10;border-color:#e07a5f}
+.chip.pick.nat{color:var(--pine2)}
+.chip.pick.nat.good{color:#fff}
+.chips.nat{margin-top:6px}
 .side{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .side .col{padding:10px 12px;border-radius:10px;background:#fafbf8;border:1px solid var(--line)}
 .side .col h4{margin:0 0 6px;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
@@ -149,7 +158,7 @@ window.GAL_META={title:'Topic Sentences',unit:'Writing',skills:['WRITE.TOPIC','W
 
 <section class="act" id="a1">
   <h2>1 · Learn</h2>
-  <p class="dir" data-dir="l1" data-en="Read two paragraphs. The yellow sentence is the topic sentence. Your language is on the right.">Read two paragraphs. The <b>yellow</b> sentence is the topic sentence. Your language is on the right.</p>
+  <p class="dir" data-dir="l1" data-en="Read two paragraphs. The first sentence is the topic sentence. Your language is below. In the second paragraph, YOU choose the topic sentence.">Read two paragraphs. The <b>first sentence</b> is the topic sentence. Your language is below. In the second paragraph, <b>you</b> choose the topic sentence.</p>
   <div id="learn"></div>
   <div class="card frames" id="framesBox"></div>
   <button class="btn" onclick="go(2)">Next: Choose</button>
@@ -303,24 +312,33 @@ var FB={
 };
 function trInto(id,text){var lg=lang(),el=$(id);if(!el)return;if(!lg){el.textContent='';return;}el.textContent='…';tr(text,lg,function(t){var e2=$(id);if(e2)e2.textContent=t||'';});}
 function renderLearn(){
- var lg=lang();
+ var lg=lang();ST.L=ST.L||{};
  $('learn').innerHTML=DATA.learn.map(function(p,i){
-  var inter=!!p.o,st=ST.L||{},got=inter&&st['l'+i]&&st['l'+i].done;
-  var en=p.s.map(function(x,k){var hide=inter&&k===0&&!got;return '<span class="s'+(k===0?' ts':'')+'" translate="no">'+(hide?'<span class="blank">&nbsp;</span>':x)+'</span>';}).join('');
-  var trh=p.s.map(function(x,k){var hide=inter&&k===0&&!got;return '<span class="s'+(k===0?' ts':'')+'" id="tr_'+i+'_'+k+'" translate="no">'+(hide?'<span class="blank">&nbsp;</span>':(lg?'…':''))+'</span>';}).join('');
-  var top='';
-  if(inter){var order=(st['l'+i]&&st['l'+i].order)||shuffle([0,1,2,3]);ST.L=ST.L||{};ST.L['l'+i]=ST.L['l'+i]||{order:order,done:false,wrongs:[]};
-   top='<div class="q">Which topic sentence is the best?</div><div class="chips">'+order.map(function(k){var o=p.o[k],cls='chip pick';if(got){cls+=(o.k==='ok'?' right':' dim');}else if(ST.L['l'+i].wrongs.indexOf(k)>=0)cls+=' wrong dim';return '<button class="'+cls+'" onclick="learnPick('+i+','+k+')" translate="no">'+o.t+'</button>';}).join('')+'</div><div id="fb_'+i+'"></div>';}
-  return '<div class="card"><div class="emo" style="float:none;margin:0 0 6px">'+p.e+'</div>'+top+'<div class="side"><div class="col"><h4>English</h4>'+en+'</div><div class="col"><h4>'+(lg||'Your language')+'</h4>'+(lg?trh:'<span class="s" style="color:var(--muted)">Choose your language in the green bar.</span>')+'</div></div></div>';
+  var inter=!!p.o,st=ST.L['l'+i];
+  if(inter&&!st){st=ST.L['l'+i]={order:shuffle([0,1,2,3]),done:false,picked:null,wrongs:[]};}
+  var picked=inter&&st.picked!==null?p.o[st.picked]:null;
+  function slotEn(){if(!inter)return '<span class="ts" translate="no">'+p.s[0]+'</span>';if(!picked)return '<span class="slot" id="slot_'+i+'">&nbsp;</span>';return '<span class="slot '+(st.done?'good':'bad')+'" id="slot_'+i+'" translate="no">'+picked.t+'</span>';}
+  function slotNat(){if(!inter)return '<span class="ts" id="tr_'+i+'_0" translate="no">…</span>';if(!picked)return '<span class="slot" id="nslot_'+i+'">&nbsp;</span>';return '<span class="slot '+(st.done?'good':'bad')+'" id="nslot_'+i+'" translate="no">…</span>';}
+  var en='<div class="para" translate="no"><span class="emo">'+p.e+'</span>'+slotEn()+' '+p.s.slice(1).join(' ')+'</div>';
+  var nat=lg?'<div class="para nat" translate="no">'+slotNat()+' '+p.s.slice(1).map(function(x,k){return '<span id="tr_'+i+'_'+(k+1)+'">…</span>';}).join(' ')+'</div>':'';
+  var opts='';
+  if(inter){
+   var row=function(nat){return '<div class="chips'+(nat?' nat':'')+'">'+st.order.map(function(k){var o=p.o[k],cls='chip pick'+(nat?' nat':'');if(st.picked===k)cls+=(st.done?' good':' bad');else if(st.done)cls+=' dim';return '<button class="'+cls+'" id="'+(nat?'nop':'eop')+'_'+i+'_'+k+'" onclick="learnPick('+i+','+k+')" translate="no">'+(nat?'…':o.t)+'</button>';}).join('')+'</div>';};
+   opts='<div class="q" style="margin-top:12px">Which topic sentence is the best?</div>'+row(false)+(lg?row(true):'')+'<div id="fb_'+i+'"></div>';
+  }
+  return '<div class="card">'+en+nat+opts+'</div>';
  }).join('');
  $('framesBox').innerHTML=framesHtml();$('framesBox2').innerHTML=framesHtml();
- if(lg)DATA.learn.forEach(function(p,i){var inter=!!p.o,got=inter&&ST.L&&ST.L['l'+i]&&ST.L['l'+i].done;p.s.forEach(function(x,k){if(inter&&k===0&&!got)return;tr(x,lg,function(t){var el=$('tr_'+i+'_'+k);if(el)el.textContent=t||'';});});});
- DATA.learn.forEach(function(p,i){var st=ST.L&&ST.L['l'+i];if(p.o&&st&&st.done)showFb(i,'ok');});
+ if(lg)DATA.learn.forEach(function(p,i){
+  p.s.forEach(function(x,k){if(p.o&&k===0)return;tr(x,lg,function(t){var el=$('tr_'+i+'_'+k);if(el)el.textContent=t||'';});});
+  if(p.o){p.o.forEach(function(o,k){tr(o.t,lg,function(t){var el=$('nop_'+i+'_'+k);if(el)el.textContent=t||o.t;var st=ST.L['l'+i];if(st&&st.picked===k){var sl=$('nslot_'+i);if(sl)sl.textContent=t||o.t;}});});}
+ });
+ DATA.learn.forEach(function(p,i){var st=ST.L['l'+i];if(p.o&&st&&st.picked!==null)showFb(i,st.done?'ok':p.o[st.picked].k);});
 }
 function showFb(i,kind){var el=$('fb_'+i);if(!el)return;el.innerHTML='<div class="fb '+(kind==='ok'?'good':'bad')+'">'+(kind==='ok'?'✓ ':'✗ ')+FB[kind]+'<span class="trl" id="fbt_'+i+'"></span></div>';trInto('fbt_'+i,FB[kind]);}
-function learnPick(i,k){var p=DATA.learn[i],st=ST.L['l'+i];if(st.done)return;var o=p.o[k];
- if(o.k==='ok'){st.done=true;save();renderLearn();}
- else{if(st.wrongs.indexOf(k)<0)st.wrongs.push(k);save();renderLearn();showFb(i,o.k);}}
+function learnPick(i,k){var p=DATA.learn[i],st=ST.L['l'+i];if(st.done)return;var o=p.o[k];st.picked=k;
+ if(o.k==='ok'){st.done=true;}else if(st.wrongs.indexOf(k)<0)st.wrongs.push(k);
+ save();renderLearn();}
 function renderWrite(){
  $('writeItems').innerHTML=DATA.write.map(function(w,i){
   var v=ST.W['w'+i]||'';
