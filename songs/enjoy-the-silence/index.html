@@ -67,16 +67,17 @@ h2{margin:0 0 10px;font-size:1.35rem;font-weight:800;color:var(--plum)}
 
 .lyrics{background:var(--white);border:1px solid var(--line);border-radius:var(--r);padding:10px 10px 10px 6px}
 .lhead{display:contents}
-.lhead>span{padding:0 0 8px;border-bottom:1px solid var(--line);margin-bottom:4px;align-self:stretch}
-.lhead .title{display:block;font-size:1.6rem;font-weight:800;color:#e8891d;line-height:1.1}
-.lhead .legend{display:flex;gap:6px;align-items:center;font-size:.78rem;font-weight:800;color:var(--mute);margin-top:6px}
+.lhead .title{display:block;font-size:1.5rem;font-weight:800;line-height:1.1;padding:6px 12px;border-radius:10px;margin-bottom:8px}
+.lhead .title.lyr{color:var(--plum);background:var(--plum-soft)}
+.lhead .title.nts{color:#1f7a4d;background:var(--green-soft);text-align:center}
+.lhead .legend{display:flex;gap:6px;align-items:center;font-size:.8rem;font-weight:800;color:var(--mute);background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-bottom:10px;align-self:start}
 .lhead .dot{width:12px;height:12px;border-radius:50%;display:inline-block}
-.lgrid .dir{grid-column:1/-1;margin:6px 0 10px}
-.dir.notesdir{border-left-color:var(--plum);background:#fff9e3}
+.lgrid .dir{margin:0 0 10px;align-self:start}
+.dir.notesdir{border-left-color:#1f7a4d;background:#f3faf5}
 .lgrid{display:grid;grid-template-columns:30px minmax(0,max-content) minmax(200px,1fr);gap:0 10px;align-items:start}
 .lgrid .ln{display:contents}
 .gap{grid-column:1/-1;height:16px}
-.ln .num,.ln .body,.ln .note{margin:3px 0}
+.ln .num,.ln .body,.ln .ncol{margin:3px 0}
 .ln .num{text-align:right;font-size:.75rem;color:#b8b3c8;padding:4px 4px 0 0;align-self:start;border:0;background:transparent;cursor:pointer;border-radius:6px}
 .ln .num:hover{background:var(--plum-soft);color:var(--plum)}
 .ln .body{min-width:0;max-width:min(520px,60vw);padding-right:6px}
@@ -94,12 +95,14 @@ h2{margin:0 0 10px;font-size:1.35rem;font-weight:800;color:var(--plum)}
 .ln.hl-blue .en{background:#d7ecfa}
 .empty-lyrics{padding:30px;text-align:center;color:var(--mute);font-weight:700}
 @media (max-width:760px){
-  .lhead>span:nth-child(1){display:none}
-  .lhead>span{grid-column:1/-1;border:0;padding:0}
-  .lhead .title{font-size:1.25rem}
+  .lhead>span:nth-child(1),.lhead>span:nth-child(4){display:none}
+  .lhead>span,.lhead .legend{grid-column:1/-1}
+  .lgrid .dir{grid-column:1/-1}
+  .lhead .title{font-size:1.2rem}
   .lgrid{grid-template-columns:22px 1fr;gap:0 6px}
   .ln .body{max-width:none}
-  .ln .note{grid-column:2;margin-top:0;min-height:30px}
+  .ln .ncol{grid-column:2;margin-top:0}
+  .ln .note{min-height:30px}
 }
 /* word popup */
 #pop{position:fixed;z-index:60;background:var(--white);border:2px solid var(--plum);border-radius:12px;padding:10px 12px;max-width:300px;box-shadow:0 10px 30px rgba(0,0,0,.2);display:none;font-size:.95rem}
@@ -506,7 +509,8 @@ function buildLyrics(){
   var box=$('#lyrics'); box.innerHTML=''; lyricLines=[];
   if(!LYRICS.length){ box.innerHTML='<div class="empty-lyrics">The song words are not loaded on this page yet. Ask Mr. Toby.</div>'; return; }
   var head=document.createElement('div'); head.className='lhead';
-  head.innerHTML='<span></span><span><span class="title" translate="yes">Lyrics (Words of the song)</span><span class="legend"><span translate="yes">Tap a number to highlight:</span> <span class="dot" style="background:#fff1b0"></span><span class="dot" style="background:#ffd9e2"></span><span class="dot" style="background:#d7ecfa"></span></span></span><span><span class="title" translate="yes">My Notes</span></span>';
+  head.innerHTML='<span></span><span><span class="title lyr" translate="yes">Lyrics (Words of the song)</span></span><span><span class="title nts" translate="yes">My Notes</span></span>'
+   +'<span></span><span class="legend"><span translate="yes">Tap a number to highlight:</span> <span class="dot" style="background:#fff1b0"></span><span class="dot" style="background:#ffd9e2"></span><span class="dot" style="background:#d7ecfa"></span></span>';
   var g=document.createElement('div'); g.className='lgrid'; g.appendChild(head);
   var d=document.createElement('div'); d.className='dir notesdir'; d.dataset.dir="In the notes column, write three phrases that you like (or don't like) in this song and say why."; d.innerHTML='<div class="en"></div><div class="tr"></div>'; g.appendChild(d);
   box.appendChild(g);
@@ -529,7 +533,8 @@ function buildLyrics(){
     var note=document.createElement('textarea'); note.className='note'; note.rows=1; note.placeholder='…'; note.setAttribute('translate','no');
     note.addEventListener('input',function(){ var v=note.value; if(v.trim()) work.notes[i]=v; else delete work.notes[i]; note.classList.toggle('has',!!v.trim()); grow(note); mark(); });
     note.addEventListener('blur',function(){ if(dirty) saveWork(); });
-    row.appendChild(num); row.appendChild(body); row.appendChild(note);
+    var nw=document.createElement('div'); nw.className='ncol'; nw.appendChild(note);
+    row.appendChild(num); row.appendChild(body); row.appendChild(nw);
     st.appendChild(row); lyricLines.push({i:i,text:line});
   });
   applyAnnos();
