@@ -81,7 +81,7 @@ dialog .row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
     </div>
     <div class="tally" id="tally"></div>
     <div class="gridwrap"><table id="grid"></table></div>
-    <p class="legend">Cell = best attempt as a percent (green 85+, yellow 70–84, red under 70, grey = done, no score). A dotted outline means a completion score: parts done over parts on the page, for activities with no quiz number. Hover a cell for attempts and date. <b>Click an activity header</b> to copy that column for Synergy in roster order. Change a student's period with the dropdown in their row; it saves. Sort order inside a period = roster order if set, else last name.</p>
+    <p class="legend">Cell = best attempt as a mark out of 4 (4 = 90%+, 3 = 75–89, 2 = 60–74, 1 = anything started, 0 = nothing right; ✓ = done but the activity reports no number). Press <b>Show percents</b> to switch back. A dotted outline means a completion score: parts done over parts on the page, for activities with no quiz number. Hover a cell for attempts and date. <b>Click an activity header</b> to copy that column for Synergy in roster order. Change a student's period with the dropdown in their row; it saves. Sort order inside a period = roster order if set, else last name.</p>
   </div>
 </div>
 
@@ -90,6 +90,8 @@ dialog .row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
   <div id="dlgnote" style="color:var(--muted);font-size:.78rem;margin-bottom:6px"></div>
   <textarea id="dlgtext" readonly></textarea>
   <div class="row">
+    <button class="btn" id="toggle04">Show percents</button>
+    <button class="btn" id="copy04">Copy 0–4</button>
     <button class="btn" id="copypct">Copy percents</button>
     <button class="btn sec" id="copyraw">Copy raw scores</button>
     <button class="btn sec" id="copynames">Copy names (to check order)</button>
@@ -161,6 +163,30 @@ function sortStudents(list){
 }
 function grade(p){return p==null?'g0':p>=85?'g1':p>=70?'g2':'g3';}
 
+/* ---- 0-4 scale ----------------------------------------------------
+   Edit BANDS to retune. Each pair is [lowest percent, mark].
+   A percent of 0 scores 0; no score at all stays a tick.           */
+var BANDS=[[90,4],[75,3],[60,2],[1,1]];
+var SHOW04 = true;                       // default view; the toolbar toggles it
+function band(p){
+  if(p==null) return null;
+  for(var i=0;i<BANDS.length;i++) if(p>=BANDS[i][0]) return BANDS[i][1];
+  return 0;
+}
+function bandClass(b){ return b==null?'g0': b>=3?'g1': b==2?'g2': b==1?'g3':'g0'; }
+
+document.addEventListener('DOMContentLoaded', function(){
+  var t=document.getElementById('toggle04');
+  if(!t) return;
+  t.onclick=function(){
+    SHOW04=!SHOW04;
+    t.textContent = SHOW04 ? 'Show percents' : 'Show 0\u20134';
+    if(typeof render==='function') render();
+    else if(typeof draw==='function') draw();
+    else if(typeof paint==='function') paint();
+  };
+});
+
 function render(){
   var per=document.getElementById('period').value, course=document.getElementById('course').value, unit=document.getElementById('unit').value;
   var since=+document.getElementById('since').value, q=document.getElementById('q').value.trim().toLowerCase(), hide=document.getElementById('hideempty').checked;
@@ -198,8 +224,11 @@ function render(){
       var c=byCell[s.email+'|'+slug];
       if(!c){line+='<td class="c"></td>';return;}
       total++;
-      var label=c.pct!=null?c.pct+'%':'✓'; if(c.pct!=null){sum+=+c.pct;n++;} done++;
-      line+='<td class="c" title="'+esc((c.score!=null?c.score+' / '+(c.max_score||'?'):'')+(c.completion?' · completion (parts done / parts on the page)':'')+' · '+c.attempts+' attempt'+(c.attempts==1?'':'s')+' · '+(c.last_at||'').slice(0,10))+'"><span class="'+grade(c.pct)+(c.completion?' cmp':'')+'">'+label+'</span></td>';
+      var b=band(c.pct);
+      var label=c.pct!=null?(SHOW04?String(b):c.pct+'%'):'✓';
+      var pcttip=(c.pct!=null?c.pct+'% · mark '+b+' · ':'');
+      if(c.pct!=null){sum+=+c.pct;n++;} done++;
+      line+='<td class="c" title="'+esc(pcttip+(c.score!=null?c.score+' / '+(c.max_score||'?'):'')+(c.completion?' · completion (parts done / parts on the page)':'')+' · '+c.attempts+' attempt'+(c.attempts==1?'':'s')+' · '+(c.last_at||'').slice(0,10))+'"><span class="'+(SHOW04?bandClass(b):grade(c.pct))+(c.completion?' cmp':'')+'">'+label+'</span></td>';
     });
     var avg=n?Math.round(sum/n):null;
     h+='<tr><th>'+esc(studentName(s))+'<br><span style="font-weight:400;color:var(--muted);font-size:.7rem">'+esc(s.email)+'</span></th>'+
@@ -236,6 +265,10 @@ function openCopy(slug){
   ta.value=names.map(function(n,i){return n+'\t'+pct[i]+'\t'+raw[i];}).join('\n');
   function cp(list,what){navigator.clipboard.writeText(list.join('\n')).then(function(){toast('Copied '+list.length+' '+what+'. In Synergy, click the first student\'s cell and paste.');});}
   document.getElementById('copypct').onclick=function(){cp(pct,'percents');};
+  document.getElementById('copy04').onclick=function(){
+    cp(pct.map(function(p){ return p===''?'':band(+p); }),'0-4 marks');
+  };
+
   document.getElementById('copyraw').onclick=function(){cp(raw,'raw scores');};
   document.getElementById('copynames').onclick=function(){cp(names,'names');};
   var d=document.getElementById('dlg'); d.showModal();
