@@ -49,7 +49,7 @@ var QUESTIONS=['What do you think the song is about?','Do you like the song? Why
 document.getElementById('gf').addEventListener('submit',function(e){e.preventDefault();if(document.getElementById('pw').value==='galileo2026'){document.getElementById('gate').style.display='none';load();}else document.getElementById('pwErr').textContent='Wrong password';});
 function H(extra){var h={apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY,'Content-Type':'application/json'};for(var k in (extra||{}))h[k]=extra[k];return h;}
 function loadLyrics(){
-  fetch(SUPA_URL+'/rest/v1/song_lyrics?select=lines,updated_at&song=eq.'+SONG,{headers:H()}).then(function(r){return r.json()}).then(function(j){
+  fetch(SUPA_URL+'/rest/v1/song_lyrics?select=lines,updated_at&slug=eq.'+SONG,{headers:H()}).then(function(r){return r.json()}).then(function(j){
     var m=document.getElementById('lyricsMsg');
     if(Array.isArray(j)&&j[0]&&Array.isArray(j[0].lines)){ document.getElementById('lyricsIn').value=j[0].lines.join('\n'); var n=j[0].lines.filter(function(l){return l}).length; m.textContent=n+' lines saved · '+new Date(j[0].updated_at).toLocaleString(); }
     else m.textContent='No words saved yet.';
@@ -60,7 +60,7 @@ function saveLyrics(){
   while(raw.length&&!raw[0])raw.shift(); while(raw.length&&!raw[raw.length-1])raw.pop();
   var lines=[]; raw.forEach(function(l){ if(l===''&&lines[lines.length-1]==='')return; lines.push(l); });
   var m=document.getElementById('lyricsMsg'); if(!lines.length){m.textContent='Nothing to save.';return;}
-  fetch(SUPA_URL+'/rest/v1/song_lyrics?on_conflict=song',{method:'POST',headers:H({Prefer:'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify({song:SONG,lines:lines,updated_at:new Date().toISOString()})})
+  fetch(SUPA_URL+'/rest/v1/song_lyrics?on_conflict=slug',{method:'POST',headers:H({Prefer:'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify({slug:SONG,song:SONG,lines:lines,updated_at:new Date().toISOString()})})
     .then(function(r){ if(r.ok){ m.textContent='Saved ✓ '+lines.filter(function(l){return l}).length+' lines — students see them on next load.'; return; } return r.text().then(function(t){ var msg=t; try{ var j=JSON.parse(t); msg=(j.message||'')+(j.hint?' — '+j.hint:'')+(j.details?' — '+j.details:''); }catch(e){} m.textContent='Not saved ('+r.status+'): '+msg; }); })
     .catch(function(){m.textContent='Not saved — offline?'});
 }
