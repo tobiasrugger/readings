@@ -97,13 +97,14 @@ body.wt [translate="no"] *{cursor:help !important}
 @media print{#bar,#namewrap,.btn,.steps{display:none !important} section.act{display:block !important}}
 </style>
 <script>
-window.GAL_META={title:'Daily Basics',unit:'Basics',skills:['PRON.SUBJ','SENT.BE','PLACE','VOC.CTX']};
+window.GAL_META={title:'Daily Basics',unit:'Basics',skills:['PRON.SUBJ','SENT.BE','PLACE','VOC.CTX','SENT.FRAG','CONJ.BBS']};
 </script>
+<script src="/readings/wit/items.js"></script>
 </head>
 <body>
 <div id="canary" aria-hidden="true">the quick brown fox jumps over the lazy dog</div>
 <div id="bar">
-  <div class="brand">Daily Basics<small>ELD 101 · 5 minutes · he / she / they · am / is / are · where?</small></div>
+  <div class="brand">Daily Basics<small>ELD 101 · 5 minutes · he / she / they · am / is / are · where? · sentences</small></div>
   <span id="whoami"></span>
   <button onclick="askName()"><span id="saveDot"></span>Name</button>
   <select id="lang" onchange="setLang(this.value)" aria-label="Your language">
@@ -223,18 +224,23 @@ function buildItems(){
  function pri(list){if(!LESSON)return sh(list);return sh(list.filter(function(x){return x.t===LESSON;})).concat(sh(list.filter(function(x){return x.t!==LESSON;})));}
  var ppl=pri(DATA.people),thg=pri(DATA.things),whr=pri(DATA.where),be=sh(DATA.be);
  var qs=[];
- /* 4 × who? */
- var who=ppl.slice(0,3).map(function(p){var pl=RND()<0.35;var n=p.n;if(pl){var p2=ppl.filter(function(x){return x.n===p.n&&x!==p;})[0];return {pic:p.e+(p2?' '+p2.e:' '+p.e),q:'___ are '+plural(n)+'.',o:['He','She','They','It'],a:'They'};}
+ /* 3 × who? */
+ var who=ppl.slice(0,2).map(function(p){var pl=RND()<0.35;var n=p.n;if(pl){var p2=ppl.filter(function(x){return x.n===p.n&&x!==p;})[0];return {pic:p.e+(p2?' '+p2.e:' '+p.e),q:'___ are '+plural(n)+'.',o:['He','She','They','It'],a:'They'};}
    return {pic:p.e,q:'___ is '+art(n)+' '+n+'.',o:['He','She','They','It'],a:p.g==='f'?'She':'He'};});
  if(thg[0])who.push({pic:thg[0].e,q:'___ is '+thg[0].n+'.',o:['He','She','They','It'],a:'It'});
- /* 4 × am/is/are */
- var bes=ppl.slice(3,5).map(function(p){var pl=RND()<0.4;return pl?{pic:p.e+' '+p.e,q:'They ___ '+plural(p.n)+'.',o:['am','is','are'],a:'are'}:{pic:p.e,q:(p.g==='f'?'She':'He')+' ___ '+art(p.n)+' '+p.n+'.',o:['am','is','are'],a:'is'};});
- bes=bes.concat(be.slice(0,2).map(function(b){return {pic:'🗣️',q:b.s,o:['am','is','are'],a:b.a};}));
- /* 4 × where? */
- var whs=whr.slice(0,4).map(function(w){var pron=/👩/.test(w.e)?'She':'He';var o=sh([w.p].concat(sh(DATA.places.filter(function(x){return x!==w.p;})).slice(0,3)));return {pic:w.e,q:pron+' '+w.s+'. '+pron+' is in the ___.',o:o,a:w.p};});
- qs=sh(who.map(function(x){x.k='PRON.SUBJ';return x;})).concat(sh(bes.map(function(x){x.k='SENT.BE';return x;}))).concat(sh(whs.map(function(x){x.k='PLACE';return x;})));
+ /* 3 × am/is/are */
+ var bes=ppl.slice(2,4).map(function(p){var pl=RND()<0.4;return pl?{pic:p.e+' '+p.e,q:'They ___ '+plural(p.n)+'.',o:['am','is','are'],a:'are'}:{pic:p.e,q:(p.g==='f'?'She':'He')+' ___ '+art(p.n)+' '+p.n+'.',o:['am','is','are'],a:'is'};});
+ bes=bes.concat(be.slice(0,1).map(function(b){return {pic:'🗣️',q:b.s,o:['am','is','are'],a:b.a};}));
+ /* 3 × where? */
+ var whs=whr.slice(0,3).map(function(w){var pron=/👩/.test(w.e)?'She':'He';var o=sh([w.p].concat(sh(DATA.places.filter(function(x){return x!==w.p;})).slice(0,3)));return {pic:w.e,q:pron+' '+w.s+'. '+pron+' is in the ___.',o:o,a:w.p};});
+ /* 3 × sentences — from the Sentence Work pool (readings/wit/items.js): sentence or fragment?, because / but / so */
+ var sents=[];
+ if(window.WIT){var fr=pri(WIT.fragment.filter(function(x){return x.lvl==='101';})),bb=pri(WIT.bbs_choose.filter(function(x){return x.lvl==='101';}));
+  sents=fr.slice(0,2).map(function(f){return {pic:'✏️',q:'\u201c'+f.s+'\u201d is a ___.',o:['sentence','fragment'],a:f.k==='S'?'sentence':'fragment',k:'SENT.FRAG',why:(f.k==='S'?'A sentence: ':'A fragment. Fixed: ')+'<b>'+f.fix+'</b>'};})
+   .concat(bb.slice(0,1).map(function(b){return {pic:'🔗',q:b.s,o:['because','but','so'],a:b.a,k:'CONJ.BBS'};}));}
+ qs=sh(who.map(function(x){x.k='PRON.SUBJ';return x;})).concat(sh(bes.map(function(x){x.k='SENT.BE';return x;}))).concat(sh(whs.map(function(x){x.k='PLACE';return x;}))).concat(sents);
  qs=sh(qs);
- qs.forEach(function(x,i){ITEMS.push({id:'q'+i,part:1,tag:x.k,pic:x.pic,q:x.q,o:x.o,a:x.o.indexOf(x.a),why:x.q.replace('___','<b>'+x.a+'</b>')});});
+ qs.forEach(function(x,i){ITEMS.push({id:'q'+i,part:1,tag:x.k,pic:x.pic,q:x.q,o:x.o,a:x.o.indexOf(x.a),why:x.why||x.q.replace('___','<b>'+x.a+'</b>')});});
  ST.tags={};ITEMS.forEach(function(it){ST.tags[it.id]=it.tag;});
 }
 function art(n){return /^[aeiou]/i.test(n)?'an':'a';}
@@ -274,7 +280,7 @@ function partScore(p){var its=ITEMS.filter(function(x){return x.part===p;});retu
 function tagScore(t){var its=ITEMS.filter(function(x){return x.tag===t;});return its.filter(function(x){return state(x.id).done&&state(x.id).first;}).length+' / '+its.length;}
 function finish(){
  $('finScore').textContent=firstTry()+' / '+ITEMS.length;if(ITEMS.every(function(x){return state(x.id).done;})){markDay();if(!ST.turnedIn){ST.turnedIn=new Date().toISOString();}save();push(true);}
- $('finList').innerHTML=[['He / She / They / It','PRON.SUBJ'],['am / is / are','SENT.BE'],['Where?','PLACE']].map(function(r){return '<div class="sumrow"><span>'+r[0]+'</span><b>'+tagScore(r[1])+'</b></div>';}).join('')+'<div class="sumrow"><span>🔥 Days in a row</span><b>'+streak()+'</b></div>';
+ $('finList').innerHTML=[['He / She / They / It','PRON.SUBJ'],['am / is / are','SENT.BE'],['Where?','PLACE'],['Sentence or fragment?','SENT.FRAG'],['because / but / so','CONJ.BBS']].map(function(r){return '<div class="sumrow"><span>'+r[0]+'</span><b>'+tagScore(r[1])+'</b></div>';}).join('')+'<div class="sumrow"><span>🔥 Days in a row</span><b>'+streak()+'</b></div>';
 }
 function save(){dirty=true;try{var k='basics_'+UNIT+'_'+(ST.email||'anon').replace(/[^a-z0-9]+/g,'_');localStorage.setItem(k,JSON.stringify(ST));localStorage.setItem(LAST_KEY,k);}catch(e){}}
 function load(){try{var k=localStorage.getItem(LAST_KEY);if(!k)return;var d=JSON.parse(localStorage.getItem(k));if(d)ST=Object.assign(ST,d);}catch(e){}}

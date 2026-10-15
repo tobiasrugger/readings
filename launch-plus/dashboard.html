@@ -85,7 +85,9 @@ var LESSONS=[
  {u:'rev-3',n:'Fix the Paragraph · 3 Run-ons',table:'revise',parts:[['A','Para 1',1],['B','Para 2',2],['C','Para 3',3]]},
  {u:'rev-4',n:'Fix the Paragraph · 4 Add details',table:'revise',parts:[['A','Para 1',1],['B','Para 2',2],['C','Para 3',3]]},
  {u:'rev-5',n:'Fix the Paragraph · 5 He/she -s',table:'revise',parts:[['A','Para 1',1],['B','Para 2',2],['C','Para 3',3]]},
- {u:'rev-6',n:'Fix the Paragraph · 6 Past tense',table:'revise',parts:[['A','Para 1',1],['B','Para 2',2],['C','Para 3',3]]}
+ {u:'rev-6',n:'Fix the Paragraph · 6 Past tense',table:'revise',parts:[['A','Para 1',1],['B','Para 2',2],['C','Para 3',3]]},
+ {u:'wit-101',n:'Sentence Work · ELD 101',table:'wit',parts:[['S','Sort',1],['C','Scramble',2],['F','Sentence or fragment?',3],['B','Because, but, so',5],['W','Write',4]]},
+ {u:'wit-103',n:'Sentence Work · ELD 103',table:'wit',parts:[['S','Sort',1],['C','Scramble',2],['F','Sentence or fragment?',3],['B','Because, but, so',5],['W','Write',4]]}
 ];
 var ROWS=[],SAY={},SORT={k:'name',d:1},OPEN={};
 function $(i){return document.getElementById(i);}
@@ -98,7 +100,7 @@ function openApp(){$('pwwrap').style.display='none';$('lesson').innerHTML=LESSON
 function loadAll(){
  $('stats').innerHTML='<div class="muted">Loading…</div>';
  var sel='select=email,name,period,unit,score,max_score,turned_in,writing,payload,updated_at&order=updated_at.desc';
- var q1=Promise.all(['launch_plus','topic_sentence','revise'].map(function(t){return fetch(SUPA_URL+'/rest/v1/'+t+'?'+sel,{headers:H()}).then(function(r){return r.ok?r.json():[];}).catch(function(){return [];});})).then(function(a){return [].concat.apply([],a);});
+ var q1=Promise.all(['launch_plus','topic_sentence','revise','wit'].map(function(t){return fetch(SUPA_URL+'/rest/v1/'+t+'?'+sel,{headers:H()}).then(function(r){return r.ok?r.json():[];}).catch(function(){return [];});})).then(function(a){return [].concat.apply([],a);});
  var sets=LESSONS.filter(function(l){return l.say;}).map(function(l){return l.say;}).join(',');
  var q2=fetch(SUPA_URL+'/rest/v1/say_work?select=email,set,scores,updated_at&set=in.('+sets+')',{headers:H()}).then(function(r){return r.ok?r.json():[];}).catch(function(){return [];});
  Promise.all([q1,q2]).then(function(res){ROWS=Array.isArray(res[0])?res[0]:[];SAY={};(res[1]||[]).forEach(function(s){SAY[s.set+'|'+(s.email||'').toLowerCase()]=s;});render();})
@@ -138,7 +140,7 @@ function render(){
    '<td><div class="parts">'+r._keys.map(function(k){return '<span class="pt '+cls(p[k],p[k].n)+'" title="'+p[k].label+': '+p[k].done+' of '+p[k].n+' done, '+p[k].first+' right first try">'+k+'</span>';}).join('')+'</div></td>'+
    '<td><span class="'+sc+'">'+r.score+' / '+r.max_score+'</span> <span class="muted">('+pct+'%)</span></td><td>'+sy+'</td>'+
    '<td>'+(r.turned_in?'<span class="tag in">in</span>':'<span class="tag no">not yet</span>')+'</td><td class="muted">'+when(r.updated_at)+'</td></tr>';
-  if(OPEN[id]){tr+='<tr><td colspan="7">'+['w0','w1','w2'].map(function(k,i){return '<div class="wr"><b>Step '+(i+1)+'</b>'+(W[k]?esc(W[k]):'<span class="muted">(empty)</span>')+'</div>';}).join('')+
+  if(OPEN[id]){tr+='<tr><td colspan="7">'+['w0','w1','w2'].map(function(k,i){var lbl=/^wit-/.test(u)?['Sentence types','Because, but, so','Pop + revision'][i]:'Step '+(i+1);return '<div class="wr"><b>'+lbl+'</b>'+(W[k]?esc(W[k]):'<span class="muted">(empty)</span>')+'</div>';}).join('')+
    '<div class="muted" style="font-size:.78rem">Right first try — '+r._keys.filter(function(k){return k!=='W';}).map(function(k){return p[k].label+' '+p[k].first+'/'+p[k].n;}).join(' · ')+'</div></td></tr>';}
   return tr;}).join('')||'<tr><td colspan="7" class="muted">No students yet for this lesson'+(pd?' in period '+pd:'')+'.</td></tr>';
 }
