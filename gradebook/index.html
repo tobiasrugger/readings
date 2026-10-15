@@ -39,7 +39,8 @@ tbody th.p{left:0}
 th.corner{z-index:4;left:0}
 td.c{text-align:center;min-width:52px}
 td.c span{display:inline-block;min-width:40px;padding:2px 5px;border-radius:6px;font-weight:700}
-.g1{background:var(--ok-bg);color:var(--ok)} .g2{background:var(--warn-bg);color:var(--warn)} .g3{background:var(--bad-bg);color:var(--bad)} .g0{background:#eef2f0;color:var(--muted)}
+.g1{background:var(--ok-bg);color:var(--ok)}
+td.c span.cmp{outline:2px dotted #8a6a00;outline-offset:-2px} .g2{background:var(--warn-bg);color:var(--warn)} .g3{background:var(--bad-bg);color:var(--bad)} .g0{background:#eef2f0;color:var(--muted)}
 td.avg{font-weight:800;text-align:center;background:#fafcfb}
 tbody tr:hover td,tbody tr:hover th{background:#f3f7f5}
 select.per{border:1px solid transparent;background:transparent;font:inherit;font-size:.78rem;padding:2px}
@@ -80,7 +81,7 @@ dialog .row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
     </div>
     <div class="tally" id="tally"></div>
     <div class="gridwrap"><table id="grid"></table></div>
-    <p class="legend">Cell = best attempt as a percent (green 85+, yellow 70–84, red under 70, grey = done, no max score). Hover a cell for attempts and date. <b>Click an activity header</b> to copy that column for Synergy in roster order. Change a student's period with the dropdown in their row; it saves. Sort order inside a period = roster order if set, else last name.</p>
+    <p class="legend">Cell = best attempt as a percent (green 85+, yellow 70–84, red under 70, grey = done, no score). A dotted outline means a completion score: parts done over parts on the page, for activities with no quiz number. Hover a cell for attempts and date. <b>Click an activity header</b> to copy that column for Synergy in roster order. Change a student's period with the dropdown in their row; it saves. Sort order inside a period = roster order if set, else last name.</p>
   </div>
 </div>
 
@@ -128,7 +129,7 @@ function load(){
   toast('Loading…');
   Promise.all([
     getAll('students?select=email,first_name,last_name,period,roster_order,course'),
-    getAll('gradebook_best?select=email,slug,unit,title,course,score,max_score,pct,attempts,last_at'),
+    getAll('gradebook_best?select=email,slug,unit,title,course,score,max_score,pct,attempts,last_at,completion'),
     getAll('activities?select=slug,title,unit,course,level,sort_order,url')
   ]).then(function(r){
     students={};
@@ -198,7 +199,7 @@ function render(){
       if(!c){line+='<td class="c"></td>';return;}
       total++;
       var label=c.pct!=null?c.pct+'%':'✓'; if(c.pct!=null){sum+=+c.pct;n++;} done++;
-      line+='<td class="c" title="'+esc((c.score!=null?c.score+' / '+(c.max_score||'?'):'')+' · '+c.attempts+' attempt'+(c.attempts==1?'':'s')+' · '+(c.last_at||'').slice(0,10))+'"><span class="'+grade(c.pct)+'">'+label+'</span></td>';
+      line+='<td class="c" title="'+esc((c.score!=null?c.score+' / '+(c.max_score||'?'):'')+(c.completion?' · completion (parts done / parts on the page)':'')+' · '+c.attempts+' attempt'+(c.attempts==1?'':'s')+' · '+(c.last_at||'').slice(0,10))+'"><span class="'+grade(c.pct)+(c.completion?' cmp':'')+'">'+label+'</span></td>';
     });
     var avg=n?Math.round(sum/n):null;
     h+='<tr><th>'+esc(studentName(s))+'<br><span style="font-weight:400;color:var(--muted);font-size:.7rem">'+esc(s.email)+'</span></th>'+

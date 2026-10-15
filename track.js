@@ -91,11 +91,54 @@
     if (typeof window.GAL_SCORE === 'number' && typeof window.GAL_MAX === 'number') {
       return { score: window.GAL_SCORE, max: window.GAL_MAX, parts: 1, source: 'page' };
     }
-    if (!got.length) return null;
+    if (got.length) {
+      var r = 0, t = 0;
+      for (var j = 0; j < got.length; j++) { r += got[j][0]; t += got[j][1]; }
+      return { score: r, max: t, parts: got.length, source: 'dom' };
+    }
 
-    var r = 0, t = 0;
-    for (var j = 0; j < got.length; j++) { r += got[j][0]; t += got[j][1]; }
-    return { score: r, max: t, parts: got.length, source: 'dom' };
+    // no number on the page: fall back to completion (what was done / what could be done)
+    var c = readCompletion();
+    if (c) return { score: c.done, max: c.total, parts: c.total, source: 'completion' };
+    return null;
+  }
+
+  /* ---------- completion: how much of the page did the student actually do? ----------
+     A page can declare its own: window.GAL_COMPLETION = { done: 7, total: 10 }.
+     Otherwise we count answerable things outside the sign-in box:
+       text inputs / textareas / selects with something in them,
+       radio or checkbox groups with at least one checked, contenteditable areas with text.
+     Needs at least 3 answerable things, or it's not a meaningful measure. */
+  function readCompletion() {
+    var g = window.GAL_COMPLETION;
+    if (g && g.total > 0) return { done: Math.min(+g.done || 0, +g.total), total: +g.total };
+
+    var SKIP = '#namewrap,#namebox,#gate,.gate,[id*="login" i],[id*="signin" i],[class*="login" i],[class*="signin" i],#bar,header';
+    function skipped(el) { return !!(el.closest && el.closest(SKIP)); }
+    var total = 0, done = 0, groups = {};
+
+    var fields = document.querySelectorAll('input,textarea,select,[contenteditable="true"],[contenteditable=""]');
+    for (var i = 0; i < fields.length; i++) {
+      var el = fields[i];
+      if (skipped(el)) continue;
+      var tag = el.tagName, type = (el.type || '').toLowerCase();
+      if (tag === 'INPUT' && /^(hidden|submit|button|reset|image|file|password|email|search)$/.test(type)) continue;
+      if (el.getAttribute('autocomplete') === 'name' || /name|email|period/i.test(el.id || '')) continue;
+      if (tag === 'INPUT' && (type === 'radio' || type === 'checkbox')) {
+        var key = el.name || (el.closest('fieldset,.q,.card,.item') ? 'g' + i : 'c' + i);
+        if (type === 'checkbox' && !el.name) key = 'c' + i;
+        if (!groups[key]) { groups[key] = { any: false }; total++; }
+        if (el.checked) groups[key].any = true;
+        continue;
+      }
+      total++;
+      var v = (el.isContentEditable ? el.textContent : el.value) || '';
+      if (String(v).trim().length) done++;
+    }
+    for (var k in groups) if (groups[k].any) done++;
+
+    if (total < 3) return null;
+    return { done: done, total: total };
   }
 
 
