@@ -435,12 +435,18 @@
     sayWord(w);
     if (state.lang) {
       $('popTr').textContent = '…';
-      var ctx = sentence ? 'the English word "' + w + '" as it is used in this sentence: ' + sentence : '';
-      translate(w, state.lang, function (v) {
+      var lg = state.lang;
+      function show(v) {
         var out = $('popTr'); if (!out) return;
         if (v) out.innerHTML = '<b class="eq">' + esc(v) + '</b>';
         else out.innerHTML = '<b class="eq none">' + esc(w) + '</b>';
-      }, ctx, 'equiv');
+      }
+      /* 1st try: the word with its sentence (so "boy" -> "chico", not "Boy!").
+         If that comes back empty, ask the way Launch Plus does: the word alone. */
+      translate(w, lg, function (v) {
+        if (v) { show(v); return; }
+        translate(w, lg, show, '', 'line');
+      }, sentence || '', 'equiv');
     } else {
       $('popTr').textContent = 'Choose your language at the top to see a translation.';
     }
