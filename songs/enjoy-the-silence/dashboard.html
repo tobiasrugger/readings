@@ -57,7 +57,7 @@ function H(extra){var h={apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY,'Conte
 function loadLyrics(){
   fetch(SUPA_URL+'/rest/v1/song_lyrics?select=lines,updated_at&slug=eq.'+SONG,{headers:H()}).then(function(r){return r.json()}).then(function(j){
     var m=document.getElementById('lyricsMsg');
-    if(Array.isArray(j)&&j[0]&&Array.isArray(j[0].lines)){ document.getElementById('lyricsIn').value=j[0].lines.join('\n'); var n=j[0].lines.filter(function(l){return l}).length; m.textContent=n+' lines saved · '+new Date(j[0].updated_at).toLocaleString(); }
+    if(Array.isArray(j)&&j[0]&&Array.isArray(j[0].lines)){ document.getElementById('lyricsIn').value=j[0].lines.join('\n'); var n=j[0].lines.filter(function(l){return l}).length; m.textContent=n+' lines saved · '+new Date(j[0].updated_at).toLocaleString();  if(!window._warmed){window._warmed=true;autoWarm();} }
     else m.textContent='No words saved yet.';
   }).catch(function(){document.getElementById('lyricsMsg').textContent='Could not load.'});
 }
@@ -67,7 +67,7 @@ function saveLyrics(){
   var lines=[]; raw.forEach(function(l){ if(l===''&&lines[lines.length-1]==='')return; lines.push(l); });
   var m=document.getElementById('lyricsMsg'); if(!lines.length){m.textContent='Nothing to save.';return;}
   fetch(SUPA_URL+'/rest/v1/song_lyrics?on_conflict=slug',{method:'POST',headers:H({Prefer:'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify({slug:SONG,song:SONG,lines:lines,updated_at:new Date().toISOString()})})
-    .then(function(r){ if(r.ok){ m.textContent='Saved ✓ '+lines.filter(function(l){return l}).length+' lines — students see them on next load.'; return; } return r.text().then(function(t){ var msg=t; try{ var j=JSON.parse(t); msg=(j.message||'')+(j.hint?' — '+j.hint:'')+(j.details?' — '+j.details:''); }catch(e){} m.textContent='Not saved ('+r.status+'): '+msg; }); })
+    .then(function(r){ if(r.ok){ m.textContent='Saved ✓ '+lines.filter(function(l){return l}).length+' lines — students see them on next load. Translating now…'; document.getElementById('lyricsBox').open=true; setTimeout(function(){preTranslate(LANGS_MAIN)},300); return; } return r.text().then(function(t){ var msg=t; try{ var j=JSON.parse(t); msg=(j.message||'')+(j.hint?' — '+j.hint:'')+(j.details?' — '+j.details:''); }catch(e){} m.textContent='Not saved ('+r.status+'): '+msg; }); })
     .catch(function(){m.textContent='Not saved — offline?'});
 }
 /* ---- pre-translate cache (table song_tr) ---- */
@@ -109,11 +109,17 @@ function preTranslate(langs){
         fetch(PROXY+'?action=translate&idiom='+encodeURIComponent(j.text)+'&meaning='+encodeURIComponent(j.meaning)+'&lang='+encodeURIComponent(j.l)).then(function(r){return r.json()}).then(function(x){
           var t=(x&&x.ok&&x.translation)?x.translation:null;
           if(t) batch.push({slug:SONG,lang:j.l,src:(j.meaning?j.text+'|'+j.meaning:j.text),equiv:t.equiv||'',meaning:t.meaning||'',note:t.note||''}); else failed++;
-        }).catch(function(){failed++}).then(function(){ active--; done++; msg.textContent='Working… '+done+' / '+total+' · '+j.l; st.textContent=j.text.slice(0,70); var p=batch.length>=20?flush():Promise.resolve(); p.then(function(){ if(done===total){ flush().then(function(){ msg.textContent='Done ✓ saved '+saved+(failed?' · '+failed+' failed (run again to retry)':''); st.textContent=''; preRunning=false; }); } else next(); }); });
+        }).catch(function(){failed++}).then(function(){ active--; done++; msg.textContent='Working… '+done+' / '+total+' · '+j.l; document.getElementById('summary').dataset.tr='🌐 translating '+done+'/'+total; showSum(); st.textContent=j.text.slice(0,70); var p=batch.length>=20?flush():Promise.resolve(); p.then(function(){ if(done===total){ flush().then(function(){ msg.textContent='Done ✓ saved '+saved+(failed?' · '+failed+' failed (run again to retry)':''); st.textContent=''; preRunning=false; delete document.getElementById('summary').dataset.tr; showSum(); }); } else next(); }); });
       })(jobs[i]); }
     }
     next();
   });
+}
+function autoWarm(){
+  fetch(SUPA_URL+'/rest/v1/song_tr?select=id&slug=eq.'+SONG+'&limit=1',{headers:H()}).then(function(r){return r.ok?r.json():null}).then(function(j){
+    if(j===null) return; /* table missing — leave it to the explicit button so the error shows */
+    if(!j.length && document.getElementById('lyricsIn').value.trim()){ document.getElementById('lyricsBox').open=true; document.getElementById('preMsg').textContent='No translations cached yet — starting automatically…'; setTimeout(function(){preTranslate(LANGS_MAIN)},300); }
+  }).catch(function(){});
 }
 document.getElementById('preMain').addEventListener('click',function(){preTranslate(LANGS_MAIN)});
 document.getElementById('preAll').addEventListener('click',function(){preTranslate(LANGS_ALL)});
@@ -125,6 +131,7 @@ function load(){ loadLyrics();
     render();
   }).catch(function(e){ rows=[]; render(); document.getElementById('summary').textContent='Could not load student work: '+e.message; });
 }
+function showSum(){ var e=document.getElementById('summary'); e.textContent=(window._sumText||'')+(e.dataset.tr?'   '+e.dataset.tr:''); }
 function wc(s){s=(s||'').trim();return s?s.split(/\s+/).length:0}
 function stats(r){var d=r.data||{};var a=d.answers||{};var n=Object.keys(a).filter(function(k){return (a[k]||'').trim()}).length;var w=Object.keys(a).reduce(function(t,k){return t+wc(a[k])},0);var likeOk=Object.keys(d.like||{}).filter(function(k){return k!=='misses'&&d.like[k]===true}).length;var m=Object.keys(d.match||{}).filter(function(k){return k!=='misses'}).length;return {n:n,w:w,notes:Object.keys(d.notes||{}).length,hl:Object.keys(d.hl||{}).length,like:likeOk,match:m,fin:!!d.finished};}
 function render(){
@@ -135,7 +142,7 @@ function render(){
   list.forEach(function(r,i){var s=stats(r);if(s.fin)fin++;var tr=document.createElement('tr');tr.className='row';
     tr.innerHTML='<td><b>'+esc(r.first_name)+' '+esc(r.last_name)+'</b><br><span class="hl">'+esc(r.email)+'</span></td><td>'+r.period+'</td><td>'+esc(r.lang||'')+'</td><td>'+s.n+'/8 <span class="hl">('+s.w+' words)</span></td><td>'+Object.keys((r.data||{}).type||{}).filter(function(k){return r.data.type[k]}).length+'</td><td>'+s.notes+'</td><td>'+s.hl+'</td><td>'+s.like+'/10</td><td>'+s.match+'/4</td><td>'+new Date(r.updated_at).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+'</td><td>'+(s.fin?'<span class="pill ok">done</span>':'<span class="pill">working</span>')+'</td>';
     tr.addEventListener('click',function(){detail(r)}); tb.appendChild(tr);});
-  document.getElementById('summary').textContent=list.length+' students · '+fin+' finished';
+  window._sumText=list.length+' students · '+fin+' finished'; showSum();
 }
 function detail(r){var d=r.data||{};var h='<div class="detail"><h2>'+esc(r.first_name)+' '+esc(r.last_name)+' · P'+r.period+' · '+esc(r.lang||'')+'</h2>';
   h+='<h3 style="margin:10px 0 4px">Answers</h3>';QUESTIONS.forEach(function(q,i){if(i===4)return;var a=(d.answers||{})[i]||'';h+='<div class="ans"><b>'+(i+1)+'. '+esc(q)+'</b>'+(a?esc(a):'<span class="empty">no answer</span>')+'</div>'});
