@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Writing Ladder · Teacher</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--plum:#3b2a5a;--plum2:#5b4580;--violet:#7c5cbf;--lilac:#d9ccf2;--paper:#f6f4fa;--ink:#241e30;--muted:#665c78;--line:#e1dcea;--gold:#d4a017;--moss:#2d8a5e;--rust:#b5451b}
+*{box-sizing:border-box}body{margin:0;font-family:'Nunito',system-ui,sans-serif;background:var(--paper);color:var(--ink);font-size:15px}
+#bar{background:var(--plum);color:#fff;padding:10px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+#bar b{font-size:1.05rem;margin-right:auto}#bar select,#bar input,#bar button{font-family:inherit;font-size:.85rem;padding:6px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.4);background:rgba(255,255,255,.14);color:#fff}
+#bar option{color:#000}#bar a{color:#fff;font-weight:800;font-size:.85rem}
+main{padding:12px 14px 60px;max-width:1400px;margin:0 auto}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:10px 0}
+table{border-collapse:collapse;width:100%;background:#fff;border-radius:12px;overflow:hidden;font-size:.86rem}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{background:var(--lilac);color:var(--plum);font-size:.75rem;text-transform:uppercase;letter-spacing:.04em;position:sticky;top:0}
+td.r{text-align:center;cursor:pointer;min-width:58px;border-left:1px solid #f1eef7}
+td.r.done{background:#e3f6ea;color:#0f5a32;font-weight:800}
+td.r.part{background:#fff6d6}
+td.r.optional{color:#999;background:#f3f3f3;border:1px dashed #ccc}
+td.r.excused{color:#aaa;text-decoration:line-through;background:#f3f3f3}
+td.r.required-forced{outline:2px solid var(--violet);outline-offset:-2px}
+td .n10{display:block;font-size:.68rem;color:var(--muted);font-weight:600}
+.tot{font-weight:800;color:var(--plum)}
+.nm{cursor:pointer;color:var(--plum);font-weight:800;text-decoration:underline dotted}
+.nudge{display:inline-block;background:#fff1bf;border:1px solid var(--gold);border-radius:8px;padding:2px 8px;font-size:.78rem;margin:2px 4px 2px 0;cursor:pointer}
+select.start{font-family:inherit;font-size:.85rem;padding:3px 6px;border-radius:6px;border:1px solid var(--line)}
+.legend span{display:inline-block;margin:0 10px 6px 0;font-size:.8rem;color:var(--muted)}
+.legend i{display:inline-block;width:14px;height:14px;vertical-align:middle;margin-right:4px;border-radius:3px;border:1px solid #ccc}
+#drafts{display:none}#drafts.show{display:block}
+.side{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.box{background:#faf8fd;border:1px solid var(--line);border-radius:10px;padding:10px;white-space:pre-wrap;font-size:.95rem;min-height:60px}
+.box h4{margin:0 0 6px;color:var(--plum2);font-size:.78rem;text-transform:uppercase}
+.gate{position:fixed;inset:0;background:var(--plum);display:flex;align-items:center;justify-content:center}
+.gate div{background:#fff;padding:24px;border-radius:14px;width:300px}.gate input{width:100%;font-size:1rem;padding:8px;margin:8px 0}
+.gate button{font-family:inherit;font-weight:800;background:var(--violet);color:#fff;border:0;border-radius:8px;padding:10px 14px;width:100%}
+@media(max-width:700px){.side{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="gate" id="gate"><div><b>Writing Ladder · Teacher</b><input id="pw" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')unlock()"><button onclick="unlock()">Open</button></div></div>
+<div id="bar">
+  <b>Writing Ladder · Teacher</b>
+  <select id="textSel" onchange="draw()"></select>
+  <select id="perSel" onchange="draw()"><option value="">All periods</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select>
+  <input id="q" placeholder="Find a name" oninput="draw()">
+  <button onclick="loadAll()">Refresh</button>
+  <a href="./">Student hub</a>
+</div>
+<main>
+<div class="card legend">
+  <span><i style="background:#e3f6ea"></i>rung finished</span><span><i style="background:#fff6d6"></i>started</span><span><i style="background:#f3f3f3;border-style:dashed"></i>optional (below placement)</span><span><i style="background:#f3f3f3"></i>excused by you</span><span><i style="outline:2px solid var(--violet)"></i>required by you</span>
+  <div style="color:var(--muted);font-size:.82rem;margin-top:4px">Tap a rung cell to cycle: default → excused → required → default. Change <b>Start</b> to set a student's placement for every text. Scores are out of 10 per required rung; the student's page updates on their next save.</div>
+</div>
+<div id="nudges" class="card" style="display:none"></div>
+<div class="card" style="padding:0;overflow:auto"><table id="tbl"></table></div>
+<div class="card" id="drafts"></div>
+</main>
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+/* One line per text — mirror of readings/write/index.html */
+var LADDERS=[{slug:'landlady',title:'The Landlady'}];
+var RUNGS=['','Words','Sentences','Order','Paraphrase','Paragraph','Revise','Essay','Intros'],NEVER_OPT=[5,6,7];
+var ROWS=[],PROF={},EXC={},STUD={};
+function $(id){return document.getElementById(id);}
+function hdr(p){var h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};if(p)h['Prefer']=p;return h;}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function unlock(){if($('pw').value==='galileo2026'){$('gate').style.display='none';boot();}else alert('No.');}
+function boot(){$('textSel').innerHTML=LADDERS.map(function(l){return '<option value="write/'+l.slug+'">'+l.title+'</option>';}).join('');loadAll();}
+function get(path){return fetch(SUPA_URL+'/rest/v1/'+path,{headers:hdr()}).then(function(r){return r.ok?r.json():[];}).catch(function(){return [];});}
+function loadAll(){
+ Promise.all([get('write_work?select=email,name,period,slug,score,max_score,turned_in,answers,updated_at&order=updated_at.desc'),get('student_profiles?select=email,ladder_start'),get('excusals?select=email,slug,rung,status'),get('students?select=email,first_name,last_name,period')])
+ .then(function(r){ROWS=r[0]||[];PROF={};(r[1]||[]).forEach(function(p){PROF[p.email]=p.ladder_start;});EXC={};(r[2]||[]).forEach(function(e){EXC[e.email+'|'+e.slug+'|'+e.rung]=e.status;});STUD={};(r[3]||[]).forEach(function(s){STUD[s.email]=s;});draw();});}
+function status(email,slug,r){var e=EXC[email+'|'+slug+'|'+r];if(e)return e;var st=PROF[email]||1;return (r<st&&NEVER_OPT.indexOf(r)<0)?'optional':'required';}
+function draw(){
+ var slug=$('textSel').value,per=$('perSel').value,q=($('q').value||'').toLowerCase();
+ var rows=ROWS.filter(function(x){return x.slug===slug&&(!per||String(x.period)===per)&&(!q||(x.name||'').toLowerCase().indexOf(q)>-1);});
+ rows.sort(function(a,b){return (a.name||'').split(' ').pop().localeCompare((b.name||'').split(' ').pop());});
+ var h='<tr><th>Student</th><th>P</th><th>Start</th>';for(var r=1;r<=8;r++)h+='<th style="text-align:center">'+r+' '+RUNGS[r]+'</th>';h+='<th>Total</th><th>Turned in</th><th>Updated</th></tr>';
+ rows.forEach(function(x){var A=x.answers||{},R=A.R||{};var tot=0,max=0;
+  h+='<tr><td class="nm" onclick="showDrafts(\''+esc(x.email)+'\')">'+esc(x.name||x.email)+'</td><td>'+esc(x.period||'')+'</td><td><select class="start" onchange="setStart(\''+esc(x.email)+'\',this.value)">'+[1,2,3,4,5,6,7,8].map(function(n){return '<option'+((PROF[x.email]||1)===n?' selected':'')+'>'+n+'</option>';}).join('')+'</select></td>';
+  for(var r=1;r<=8;r++){var s=status(x.email,slug,r),d=R[r]||{p:0,m:0,n10:0,done:false};var cls='r '+s+(EXC[x.email+'|'+slug+'|'+r]==='required'?' required-forced':'')+(s==='required'?(d.done?' done':d.p?' part':''):'');
+   if(s==='required'){tot+=d.n10||0;max+=10;}
+   h+='<td class="'+cls+'" title="tap to excuse / require" onclick="cycle(\''+esc(x.email)+'\',\''+slug+'\','+r+')">'+(d.m?d.p+'/'+d.m:'—')+(s==='required'&&d.m?'<span class="n10">'+(d.n10||0)+' / 10</span>':'<span class="n10">'+s+'</span>')+'</td>';}
+  h+='<td class="tot">'+tot+' / '+(max||0)+'</td><td>'+(x.turned_in?'✅':'')+'</td><td>'+(x.updated_at||'').slice(0,16).replace('T',' ')+'</td></tr>';});
+ $('tbl').innerHTML=h||'';
+ if(!rows.length)$('tbl').innerHTML='<tr><td style="padding:20px;color:var(--muted)">No work yet for this text.</td></tr>';
+ nudges();}
+function nudges(){ /* a student who scored 9+/10 on a rung in two different texts can probably start above it */
+ var by={};ROWS.forEach(function(x){var R=(x.answers||{}).R||{};Object.keys(R).forEach(function(r){r=+r;if(R[r].n10>=9&&R[r].done){by[x.email]=by[x.email]||{};by[x.email][r]=(by[x.email][r]||0)+1;}});});
+ var out=[];Object.keys(by).forEach(function(em){var st=PROF[em]||1,best=st;for(var r=st;r<=4;r++){if((by[em][r]||0)>=2)best=r+1;else break;}
+  if(best>st){var nm=(STUD[em]?((STUD[em].first_name||'')+' '+(STUD[em].last_name||'')).trim():em);out.push('<span class="nudge" onclick="setStart(\''+esc(em)+'\','+best+')">'+esc(nm)+': raise start to '+best+'? ✓</span>');}});
+ $('nudges').style.display=out.length?'block':'none';$('nudges').innerHTML='<b>Suggested placements</b> (9+/10 on a rung in two texts) · tap to accept<br>'+out.join('');}
+function setStart(email,n){n=+n;PROF[email]=n;
+ fetch(SUPA_URL+'/rest/v1/student_profiles?on_conflict=email',{method:'POST',headers:hdr('resolution=merge-duplicates,return=minimal'),body:JSON.stringify([{email:email,ladder_start:n}])}).then(function(r){if(!r.ok)alert('Could not save placement.');draw();});}
+function cycle(email,slug,r){var k=email+'|'+slug+'|'+r,cur=EXC[k],next=!cur?'excused':cur==='excused'?'required':null;
+ if(next){EXC[k]=next;fetch(SUPA_URL+'/rest/v1/excusals?on_conflict=email,slug,rung',{method:'POST',headers:hdr('resolution=merge-duplicates,return=minimal'),body:JSON.stringify([{email:email,slug:slug,rung:r,status:next,updated_at:new Date().toISOString()}])}).then(draw);}
+ else{delete EXC[k];fetch(SUPA_URL+'/rest/v1/excusals?email=eq.'+encodeURIComponent(email)+'&slug=eq.'+encodeURIComponent(slug)+'&rung=eq.'+r,{method:'DELETE',headers:hdr()}).then(draw);}
+ draw();}
+function showDrafts(email){var slug=$('textSel').value,x=ROWS.filter(function(r){return r.email===email&&r.slug===slug;})[0];if(!x)return;var W=(x.answers||{}).W||{};
+ function box(t,k){return '<div class="box"><h4>'+t+'</h4>'+esc(W[k]||'(empty)')+'</div>';}
+ var paras='';for(var i=0;i<8;i++){if(W['pp'+i])paras+='<div class="box"><h4>Paraphrase '+(i+1)+'</h4>'+esc(W['pp'+i])+'</div>';}
+ var outline='';['hook','bg','thesis','c1','e1','c2','e2','c3','e3','restate','sowhat'].forEach(function(k){if(W['es_'+k])outline+='<b>'+k+':</b> '+esc(W['es_'+k])+'<br>';});
+ $('drafts').className='card show';$('drafts').innerHTML='<h3 style="margin:0 0 8px;color:var(--plum)">'+esc(x.name||email)+' · '+esc(slug)+'</h3>'+
+  '<div class="side">'+box('Paragraph (rung 5)','para')+box('Revised paragraph (rung 6)','para2')+'</div>'+
+  '<div class="side" style="margin-top:12px"><div class="box"><h4>Essay outline</h4>'+(outline||'(empty)')+'</div>'+box('Essay draft (rung 7)','essay')+'</div>'+
+  '<div class="side" style="margin-top:12px">'+box('Rewritten conclusion (rung 8)','conc')+'<div>'+paras+'</div></div>';
+ $('drafts').scrollIntoView({behavior:'smooth'});}
+</script>
+</body>
+</html>

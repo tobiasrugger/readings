@@ -34,6 +34,11 @@ window.SAY_SETS={
     {k:'does', name:'What they do', e:'🛠️', items:['cleans the building','fixes small things','keeps the school safe','checks the doors','works in the office','answers the phone','keeps records','helps students who are sick or hurt','teaches a class','when the regular teacher is absent','trains a sports team','handles behavior','student discipline']},
     {k:'sent', name:'Sentences', e:'💬', items:['A custodian cleans the building and fixes small things.','A security guard keeps the school safe and checks the doors.','A secretary works in the office, answers the phone, and keeps records.','A nurse helps students who are sick or hurt.','A substitute teacher teaches a class when the regular teacher is absent.','A coach trains a sports team.','A dean handles behavior and student discipline.']}
     ] },
+  landlady:{ title:'The Landlady (Writing Ladder)', back:'/readings/write/landlady/', decks:[
+    {k:'words', name:'Words', e:'🏠', items:['lodgings','splendid','peculiar','dithering','compelling','identical','neglect','congenial','generous','preserved','threshold','earnestly']},
+    {k:'names', name:'Names & places', e:'🗺️', items:['Billy Weaver','Bath','the landlady','the guest book','bed and breakfast','the parrot','the dachshund']},
+    {k:'sent', name:'Sentences', e:'💬', items:['Billy was looking for a cheap place to stay.','The landlady seemed kind but a little strange.','Both names in the book sounded familiar.','The animals in the room never moved.','He crossed the threshold, and the door closed behind him.']}
+  ] },
   introductions:{ title:'Introductions', back:'/readings/launch-plus/u1-l2/', decks:[
     {k:'words', name:'Words', e:'🪪', items:['name','introduce','meet','language','hello','goodbye','thank you']},
     {k:'phrases', name:'Phrases', e:'💬', items:['Nice to meet you.','What is your name?','My name is Ana.','Where are you from?','I am from Guatemala.','Excuse me.','You\u2019re welcome.','See you tomorrow.']},

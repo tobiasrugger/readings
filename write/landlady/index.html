@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Writing Ladder · The Landlady</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--plum:#3b2a5a;--plum2:#5b4580;--violet:#7c5cbf;--lilac:#d9ccf2;--paper:#f6f4fa;--card:#fff;
+  --ink:#241e30;--muted:#665c78;--line:#e1dcea;--gold:#d4a017;--rust:#b5451b;--moss:#2d8a5e;--sky:#eee9f8;--yellow:#fff1bf;--green:#1f8f4e}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:'Nunito',system-ui,sans-serif;background:var(--paper);color:var(--ink);font-size:17px;line-height:1.6}
+#canary{position:absolute;left:-9999px;top:-9999px;font-size:1px;opacity:0}
+#bar{position:sticky;top:0;z-index:60;background:var(--plum);color:#fff;padding:8px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;box-shadow:0 2px 10px rgba(0,0,0,.18)}
+#bar .brand{font-weight:800;font-size:1.02rem;margin-right:auto}
+#bar .brand small{display:block;font-weight:600;font-size:.7rem;opacity:.78}
+#bar button,#bar select{font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer;background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:6px 10px}
+#bar select option{color:#000}
+#bar button.on{background:var(--gold);color:#1f1a09;border-color:var(--gold)}
+#bar a.back{background:var(--green);color:#fff;font-weight:800;text-decoration:none;border-radius:8px;padding:7px 12px;font-size:.86rem}
+#whoami{font-size:.82rem;opacity:.9;font-weight:700}
+#saveDot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#aaa;margin-right:6px;vertical-align:middle}
+#saveDot.on{background:#7ee2a8}#saveDot.busy{background:var(--gold)}#saveDot.err{background:#ff6b6b}
+main{max-width:860px;margin:0 auto;padding:14px 14px 90px}
+.steps{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 14px}
+.stepb{font-family:inherit;font-size:.78rem;font-weight:800;border:2px solid var(--line);background:#fff;color:var(--muted);border-radius:999px;padding:5px 11px;cursor:pointer;position:relative}
+.stepb.cur{border-color:var(--violet);color:var(--plum);background:var(--sky)}
+.stepb.ok{border-color:var(--moss);color:var(--moss)}
+.stepb.opt{border-style:dashed}
+.stepb.exc{opacity:.45;text-decoration:line-through}
+.stepb.lock{opacity:.5;cursor:not-allowed}
+.stepb small{display:block;font-size:.6rem;font-weight:700;opacity:.8;line-height:1}
+section.act{display:none}section.act.show{display:block;animation:fade .25s}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+h1{font-size:1.7rem;margin:.2rem 0 .3rem;color:var(--plum)}h2{font-size:1.3rem;margin:.4rem 0 .6rem;color:var(--plum)}
+h3{font-size:1.02rem;margin:1.1rem 0 .4rem;color:var(--plum2)}
+.lede{color:var(--muted);margin:0 0 10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:10px 0;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.dir{background:var(--sky);border-left:4px solid var(--violet);padding:8px 12px;border-radius:0 10px 10px 0;margin:8px 0;font-size:.97rem}
+.dir .dirtr{display:block;color:var(--plum2);font-weight:600;margin-top:4px}
+.btn{font-family:inherit;font-weight:800;font-size:1rem;background:var(--violet);color:#fff;border:0;border-radius:12px;padding:12px 20px;cursor:pointer;margin:10px 6px 0 0;box-shadow:0 2px 0 var(--plum2)}
+.btn:active{transform:translateY(1px)}.btn.ghost{background:#fff;color:var(--plum);border:2px solid var(--lilac);box-shadow:none}
+.btn.small{font-size:.85rem;padding:7px 12px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.item{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:10px 0}
+.item .q{font-weight:700;margin-bottom:8px}
+.item .q .v,.read .v{background:var(--yellow);padding:0 3px;border-radius:4px}
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+.opt{font-family:inherit;font-size:.98rem;background:#fff;border:2px solid var(--line);border-radius:12px;padding:8px 14px;cursor:pointer;text-align:left}
+.opt:hover{border-color:var(--violet)}
+.opt.right{background:#e3f6ea;border-color:var(--moss);color:#0f5a32;font-weight:800}
+.opt.wrong{background:#fde7e3;border-color:var(--rust);color:#7a2d14;text-decoration:line-through}
+.opt.pick{border-color:var(--violet);background:var(--sky)}
+.why{margin-top:8px;font-size:.9rem;color:var(--muted);display:none}.item.done .why{display:block}
+.tag{display:inline-block;font-size:.68rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--plum2);background:var(--lilac);border-radius:6px;padding:1px 7px;margin-left:6px;vertical-align:middle}
+.big{font-size:2.2rem;font-weight:800;color:var(--plum)}
+.sumrow{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line)}
+.sumrow:last-child{border:0}.sumrow.opt{color:var(--muted)}
+.spk{background:none;border:0;cursor:pointer;font-size:1.05rem;padding:0 4px;vertical-align:middle}.spk.on{filter:drop-shadow(0 0 4px var(--gold))}
+/* words */
+.wgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
+.wcard{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;cursor:pointer;min-height:96px;position:relative}
+.wcard .e{font-size:1.9rem;line-height:1}
+.wcard .w{font-weight:800;color:var(--plum);font-size:1.05rem}
+.wcard .m,.wcard .s,.wcard .t{display:none;font-size:.9rem;margin-top:4px}
+.wcard .t{color:var(--moss);font-weight:700}.wcard .s{color:var(--muted);font-style:italic;border-top:1px dashed var(--line);padding-top:4px}
+.wcard.open .m,.wcard.open .s,.wcard.open .t{display:block}
+.wcard::after{content:"tap";position:absolute;right:10px;top:10px;font-size:.62rem;color:var(--muted);font-weight:800}
+.wcard.open::after{content:"hide"}
+/* match */
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mc{font-family:inherit;font-size:.95rem;background:#fff;border:2px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer;text-align:left;min-height:48px}
+.mc.sel{border-color:var(--violet);background:var(--sky)}
+.mc.ok{border-color:var(--moss);background:#e3f6ea;color:#0f5a32;pointer-events:none}
+.mc.bad{border-color:var(--rust);background:#fde7e3}
+/* order */
+.slots{counter-reset:s;display:flex;flex-direction:column;gap:8px}
+.slot{counter-increment:s;display:flex;gap:10px;align-items:center;min-height:52px;border:2px dashed var(--lilac);border-radius:12px;padding:6px 10px;background:#fff}
+.slot::before{content:counter(s);font-weight:800;color:#fff;background:var(--violet);border-radius:50%;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.slot.full{border-style:solid;border-color:var(--violet)}
+.slot.ok{border-color:var(--moss);background:#e3f6ea}.slot.bad{border-color:var(--rust);background:#fde7e3}
+.slot .txt{flex:1}
+.slot button.x{background:none;border:0;cursor:pointer;color:var(--rust);font-weight:800;font-size:1.1rem}
+.bank{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.chip{font-family:inherit;font-size:.95rem;background:var(--yellow);border:2px solid #e8d48a;border-radius:12px;padding:8px 12px;cursor:pointer;text-align:left}
+.chip.sel{border-color:var(--violet);background:var(--sky)}
+.chip.used{display:none}
+/* tokens */
+.tok{display:inline-block;padding:2px 5px;margin:2px 1px;border-radius:6px;cursor:pointer;border:2px solid transparent}
+.tok.sel{background:var(--yellow);border-color:var(--gold)}
+.tok.ok{background:#e3f6ea;border-color:var(--moss)}.tok.bad{background:#fde7e3;border-color:var(--rust)}.tok.miss{border-color:var(--rust);border-style:dashed}
+.sent{display:block;padding:8px 10px;margin:6px 0;border:2px solid var(--line);border-radius:12px;cursor:pointer;background:#fff}
+.sent.sel{background:#fde7e3;border-color:var(--rust);text-decoration:line-through}
+.sent.ok{background:#e3f6ea;border-color:var(--moss)}.sent.bad{border-color:var(--rust);border-style:dashed}
+/* write */
+textarea,input.wi{width:100%;font-family:inherit;font-size:1rem;line-height:1.55;border:2px solid var(--line);border-radius:12px;padding:10px 12px;resize:vertical;background:#fff;color:var(--ink)}
+textarea:focus,input.wi:focus{outline:0;border-color:var(--violet)}
+textarea.lg{min-height:170px}textarea.xl{min-height:320px}
+.gray{color:var(--muted);font-size:.9rem;margin:4px 0 6px}
+.check{list-style:none;padding:0;margin:8px 0 0}
+.check li{padding:4px 0 4px 28px;position:relative;font-size:.92rem;color:var(--muted)}
+.check li::before{content:"";position:absolute;left:4px;top:9px;width:14px;height:14px;border:2px solid var(--line);border-radius:50%}
+.check li.ok{color:#0f5a32;font-weight:700}.check li.ok::before{border-color:var(--moss);background:var(--moss)}
+.meter{height:10px;border-radius:6px;background:var(--line);overflow:hidden;margin:6px 0}
+.meter i{display:block;height:100%;background:var(--moss);transition:width .3s}
+.meter.hot i{background:var(--rust)}
+.orig{background:var(--sky);border-radius:10px;padding:8px 12px;font-weight:700}
+.para{white-space:pre-wrap;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;font-size:1rem}
+.pill{display:inline-block;font-size:.72rem;font-weight:800;border-radius:999px;padding:2px 9px;background:var(--lilac);color:var(--plum)}
+.pill.opt{background:#eee;color:#555}.pill.exc{background:#eee;color:#888;text-decoration:line-through}
+.sub{font-size:.8rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-top:14px}
+#sayPanel .card{padding:8px}
+/* sign-in */
+#namewrap{position:fixed;inset:0;background:rgba(36,30,48,.72);display:none;align-items:center;justify-content:center;z-index:100;padding:12px;overflow:auto}
+#namewrap.show{display:flex}
+#namebox{background:#fff;border-radius:18px;padding:22px;max-width:420px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+#namebox h2{margin-top:0}#namebox p{color:var(--muted);font-size:.9rem;margin:0 0 10px}
+#namebox label{display:block;font-weight:800;font-size:.82rem;margin:10px 0 4px;color:var(--plum)}
+#namebox input,#namebox select{width:100%;font-family:inherit;font-size:1rem;padding:10px;border:2px solid var(--line);border-radius:10px;background:#fff}
+#namebox .or{text-align:center;color:var(--muted);font-size:.8rem;margin:8px 0 0}
+#nameErr{color:var(--rust);font-weight:700;font-size:.9rem;min-height:1.2em;margin-top:8px}
+#wtip{position:fixed;z-index:120;background:var(--plum);color:#fff;padding:8px 12px;border-radius:10px;font-size:.95rem;display:none;max-width:280px;box-shadow:0 6px 18px rgba(0,0,0,.3)}
+#wtip.show{display:block}#wtipW{display:block;font-weight:800;color:var(--yellow);font-size:.8rem}
+body.wt [translate="no"]{cursor:help}
+@media(max-width:560px){.mgrid{grid-template-columns:1fr}body{font-size:16px}}
+</style>
+<script>
+window.GAL_META={title:'Writing Ladder: The Landlady',unit:'Writing Ladder (ELD 103)',
+  skills:['VOC.CTX','SENT.TYPE','SENT.FRAG','CONJ.BBS','ORDER','PARAPHRASE','WRITE.TS','WRITE.PARA','REVISE','CAP.PUNC','SV.3SG','PAST','WRITE.ESSAY','WRITE.INTRO','WRITE.CONC']};
+</script>
+</head>
+<body>
+<div id="canary" aria-hidden="true">the quick brown fox jumps over the lazy dog</div>
+<div id="bar">
+  <div class="brand">Writing Ladder · The Landlady<small>ELD 103 · after reading</small></div>
+  <a class="back" href="/readings/landlady/">Back to The Landlady story</a>
+  <span id="whoami"></span>
+  <button onclick="askName()"><span id="saveDot"></span>Name</button>
+  <select id="lang" onchange="setLang(this.value)" aria-label="Your language">
+    <option value="">Language…</option>
+    <option value="Spanish">Español</option><option value="Cantonese">粵語</option><option value="Mandarin">中文</option><option value="Arabic">العربية</option>
+    <option value="Vietnamese">Tiếng Việt</option><option value="Russian">Русский</option><option value="Darija">الدارجة</option><option value="Urdu">اردو</option>
+    <option value="Tagalog">Tagalog</option><option value="French">Français</option><option value="Korean">한국어</option>
+    <option value="Hindi">हिन्दी</option><option value="Somali">Soomaali</option><option value="Thai">ไทย</option><option value="Nepali">नेपाली</option>
+  </select>
+  <button id="dirBtn" onclick="toggleDir()">Directions</button>
+  <button id="wtBtn" onclick="toggleWT()">Tap words</button>
+  <button onclick="turnIn()">Turn in</button>
+</div>
+<main>
+<div class="steps" id="steps"></div>
+
+<section class="act" id="a0">
+  <h1>The Landlady · Writing Ladder</h1>
+  <p class="lede">You read the story. Now climb: words → sentences → paragraph → essay.</p>
+  <div class="card">
+    <p class="dir" data-dir="d1" data-en="Eight rungs. Each rung is a little harder. Finish one rung to open the next.">Eight rungs. Each rung is a little harder. Finish one rung to open the next.</p>
+    <p class="dir" data-dir="d2" data-en="Tap an answer. If you are wrong you can try again, but the first try is your score.">Tap an answer. If you are wrong you can try again, but the <b>first try</b> is your score.</p>
+    <p class="dir" data-dir="d3" data-en="Rungs marked Optional are review. You may skip them. They do not change your grade.">Rungs marked <b>Optional</b> are review. You may skip them. They do not change your grade.</p>
+    <p class="dir" data-dir="d4" data-en="Keep this page in English. Use Tap words to see one word in your language.">Keep this page in English. Use <b>Tap words</b> to see one word in your language.</p>
+  </div>
+  <div class="card" id="planCard"></div>
+  <button class="btn" onclick="goNext()">Start</button>
+</section>
+
+<section class="act" id="a1"><h2>1 · Words <span id="pill1"></span></h2>
+  <p class="dir" data-dir="w1" data-en="Tap each card to see the meaning and a new sentence. Then match the words, and choose the word that fits each sentence.">Tap each card to see the meaning and a new sentence. Then <b>match</b> the words, and <b>choose</b> the word that fits each sentence.</p>
+  <div class="wgrid" id="wcards" translate="no"></div>
+  <h3>Match the word to its meaning</h3><div id="wmatch" translate="no"></div>
+  <h3>Which word fits?</h3><div id="wfill" translate="no"></div>
+  <h3>Say it</h3><div id="sayPanel"><div id="sayMount"></div></div>
+  <button class="btn" onclick="goNext()">Next rung</button>
+</section>
+
+<section class="act" id="a2"><h2>2 · Sentences <span id="pill2"></span></h2>
+  <p class="dir" data-dir="s1" data-en="Four short games about sentences from the story: what kind of sentence, sentence or fragment, because / but / so, and unscramble.">Four short games about sentences from the story: <b>what kind</b> of sentence, <b>sentence or fragment</b>, <b>because / but / so</b>, and <b>unscramble</b>.</p>
+  <div id="sItems" translate="no"></div>
+  <button class="btn" onclick="goNext()">Next rung</button>
+</section>
+
+<section class="act" id="a3"><h2>3 · Order <span id="pill3"></span></h2>
+  <p class="dir" data-dir="o1" data-en="Tap a sentence, then tap the numbered box where it belongs. The second paragraph has one extra sentence that is not from the story. Leave it out.">Tap a sentence, then tap the numbered box where it belongs. The second paragraph has <b>one extra sentence</b> that is not from the story. Leave it out.</p>
+  <div id="oItems" translate="no"></div>
+  <button class="btn" onclick="goNext()">Next rung</button>
+</section>
+
+<section class="act" id="a4"><h2>4 · Paraphrase <span id="pill4"></span></h2>
+  <p class="dir" data-dir="p1" data-en="Say it in your own words. Three steps for each sentence: swap two words, choose the new structure, then write your own version. The meter shows if your version is too close to the original.">Say it in your own words. Three steps for each sentence: <b>swap</b> two words, <b>choose</b> the new structure, then <b>write</b> your own version. The meter shows if your version is too close to the original.</p>
+  <div id="pItems"></div>
+  <button class="btn" onclick="goNext()">Next rung</button>
+</section>
+
+<section class="act" id="a5"><h2>5 · Paragraph <span id="pill5"></span></h2>
+  <p class="dir" data-dir="g1" data-en="First choose the best topic sentence. Then write your own paragraph. The checklist fills in as you write.">First choose the best <b>topic sentence</b>. Then write your own paragraph. The checklist fills in as you write.</p>
+  <div id="gItems" translate="no"></div>
+  <div class="card" id="gWrite"></div>
+  <button class="btn" onclick="goNext()">Next rung</button>
+</section>
+
+<section class="act" id="a6"><h2>6 · Revise <span id="pill6"></span></h2>
+  <p class="dir" data-dir="v1" data-en="Good writers fix their writing. Fix these paragraphs first: capitals, run-on sentences, add a detail, cut extra sentences, verbs. Then revise your own paragraph.">Good writers fix their writing. Fix these paragraphs first: <b>capitals</b>, <b>run-on sentences</b>, <b>add a detail</b>, <b>cut extra sentences</b>, <b>verbs</b>. Then revise <b>your own</b> paragraph.</p>
+  <div id="vItems" translate="no"></div>
+  <div class="card" id="vWrite"></div>
+  <button class="btn" onclick="goNext()">Next rung</button>
+</section>
+
+<section class="act" id="a7"><h2>7 · Essay <span id="pill7"></span></h2>
+  <p class="dir" data-dir="e1" data-en="Build an outline first: hook, background, thesis, three claims with evidence, and a conclusion. Then build your draft and revise it.">Build an <b>outline</b> first: hook, background, thesis, three claims with evidence, and a conclusion. Then build your draft and revise it.</p>
+  <div id="eItems" translate="no"></div>
+  <div class="card" id="eWrite"></div>
+  <button class="btn" onclick="goNext()">Next rung</button>
+</section>
+
+<section class="act" id="a8"><h2>8 · Intros &amp; Conclusions <span id="pill8"></span></h2>
+  <p class="dir" data-dir="i1" data-en="Short drills: pick the best hook, sort thesis statements from topic sentences, put an introduction in order, and rewrite a weak conclusion.">Short drills: pick the best <b>hook</b>, sort <b>thesis</b> statements from <b>topic sentences</b>, put an introduction in <b>order</b>, and rewrite a weak <b>conclusion</b>.</p>
+  <div id="iItems" translate="no"></div>
+  <div class="card" id="iWrite"></div>
+  <button class="btn" onclick="goNext()">Finish</button>
+</section>
+
+<section class="act" id="a9"><h2>Done</h2>
+  <div class="card" style="text-align:center"><div style="color:var(--muted);font-size:.9rem">Your score on the required rungs</div><div class="big" id="finScore">0 / 0</div></div>
+  <div class="card" id="finList"></div>
+  <button class="btn" onclick="turnIn()">Turn in my work</button>
+  <button class="btn ghost" onclick="go(1)">Look again</button>
+</section>
+</main>
+
+<div id="namewrap"><div id="namebox">
+  <h2>Sign in</h2>
+  <p>Use your school email so your work shows up on your own student page.</p>
+  <label for="rosterSel">Find your name</label>
+  <select id="rosterSel" onchange="pickRoster()"><option value="">— choose your name —</option></select>
+  <div class="or">or type it in</div>
+  <label for="nameIn">Your name</label>
+  <input id="nameIn" autocomplete="name" placeholder="First and last name">
+  <label for="emailIn">School email</label>
+  <input id="emailIn" type="email" inputmode="email" autocapitalize="off" spellcheck="false" placeholder="name@s.sfusd.edu" onkeydown="if(event.key==='Enter')saveName()">
+  <label for="periodIn">Class period</label>
+  <select id="periodIn"><option value="">— choose —</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select>
+  <label for="langIn">Your language · Tu idioma · 你的语言 · لغتك</label>
+  <select id="langIn"><option value="">— choose your language —</option></select>
+  <button class="btn" style="width:100%" onclick="saveName()">Start</button>
+  <div id="nameErr"></div>
+</div></div>
+<div id="wtip"><span id="wtipW"></span><span id="wtipT"></span></div>
+
+<script src="/readings/wit/items.js"></script>
+<script src="/readings/say/sets.js"></script>
+<script src="/readings/say/say.js"></script>
+<script>
+/* ===================== CONFIG ===================== */
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var TABLE='write_work';
+var TEXT='landlady';                       // change per text
+var SLUG='write/'+TEXT;
+var PROXY='https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
+var NEVER_OPT=[5,6,7];                      // Paragraph, Revise, Essay can never be placed out of
+
+/* ===================== TEXT DATA (swap this block for a new text) ===================== */
+var DATA={
+ title:'The Landlady', say:'landlady', witTag:'landlady',
+ names:['Billy','Weaver','Bath','landlady','parrot','dachshund','Greenslade'],
+ words:[
+  {w:'lodgings',e:'🏠',m:'a place to stay for a short time',s:'We need lodgings for two nights in the city.'},
+  {w:'splendid',e:'✨',m:'very good; beautiful',s:'The room was splendid, with a big soft bed.'},
+  {w:'peculiar',e:'🤨',m:'strange; odd',s:'It is peculiar that the shop is open at midnight.'},
+  {w:'dithering',e:'🤷',m:'not able to decide',s:'Stop dithering and choose a sandwich.'},
+  {w:'compelling',e:'🧲',m:'so strong that you cannot say no',s:'The smell of fresh bread was compelling, so he went inside.'},
+  {w:'identical',e:'👯',m:'exactly the same',s:'The twins wear identical jackets.'},
+  {w:'neglect',e:'🥀',m:'when nobody takes care of something',s:'Years of neglect left the garden full of weeds.'},
+  {w:'congenial',e:'😊',m:'pleasant and friendly',s:'Our congenial host made tea for everyone.'},
+  {w:'generous',e:'🎁',m:'giving more than is needed',s:'The generous price included breakfast.'},
+  {w:'preserved',e:'🫙',m:'kept from changing or dying',s:'The museum preserved the old letters in glass boxes.'},
+  {w:'threshold',e:'🚪',m:'the floor of a doorway; where you enter',s:'He stopped on the threshold and looked inside.'},
+  {w:'earnestly',e:'🙏',m:'in a serious, sincere way',s:'She earnestly promised to call her mother every week.'}
+ ],
+ wt:{"lodgings":{"es":"alojamiento","zh":"住处","ar":"مسكن","vi":"chỗ trọ","th":"ที่พัก","ne":"बासस्थान"},"splendid":{"es":"espléndido","zh":"极好的","ar":"رائع","vi":"tuyệt vời","th":"ยอดเยี่ยม","ne":"उत्कृष्ट"},"peculiar":{"es":"extraño","zh":"奇怪的","ar":"غريب","vi":"kỳ lạ","th":"แปลกประหลาด","ne":"अनौठो"},"dithering":{"es":"titubeando","zh":"犹豫不决","ar":"متردد","vi":"do dự","th":"ลังเล","ne":"दोमन हुनु"},"compelling":{"es":"obligando","zh":"迫使","ar":"يُجبر","vi":"buộc, lôi cuốn","th":"บังคับให้","ne":"बाध्य पार्ने"},"identical":{"es":"idénticos","zh":"一模一样的","ar":"متطابق","vi":"giống hệt nhau","th":"เหมือนกันทุกอย่าง","ne":"एकै नासको"},"neglect":{"es":"abandono, descuido","zh":"疏于照料","ar":"إهمال","vi":"sự bỏ bê","th":"การปล่อยปละละเลย","ne":"बेवास्ता"},"congenial":{"es":"agradable","zh":"惬意的","ar":"لطيف","vi":"dễ chịu","th":"น่าอภิรมย์","ne":"रमाइलो"},"generous":{"es":"generosa","zh":"慷慨的","ar":"كريمة","vi":"hào phóng","th":"ใจกว้าง","ne":"उदार"},"preserved":{"es":"conservado","zh":"制成标本保存","ar":"محنّط","vi":"được ướp giữ","th":"ถูกรักษาสภาพไว้","ne":"संरक्षित"},"threshold":{"es":"umbral","zh":"门槛","ar":"عتبة الباب","vi":"ngưỡng cửa","th":"ธรณีประตู","ne":"सँघार"},"earnestly":{"es":"con seriedad","zh":"认真地","ar":"بجدية","vi":"một cách nghiêm túc","th":"อย่างจริงจัง","ne":"गम्भीरतापूर्वक"}},
+ fill:[
+  {s:'The old house showed signs of ___: broken windows and a dead garden.',a:'neglect'},
+  {s:'Billy could not choose between the pub and the house. He stood ___ on the sidewalk.',a:'dithering'},
+  {s:'The sign said BED AND BREAKFAST, and the words were ___. He had to ring the bell.',a:'compelling'},
+  {s:'Her smile was warm and ___.',a:'congenial'},
+  {s:'The stuffed animals looked ___ to living ones.',a:'identical'},
+  {s:'The landlady asked a very ___ price: only a few coins a night.',a:'generous'},
+  {s:'The parrot had been ___ so well that it looked alive.',a:'preserved'},
+  {s:'He crossed the ___, and the door closed behind him.',a:'threshold'}
+ ],
+ order:[
+  {title:'How Billy finds the house',sents:[
+   'Billy Weaver, a young man of seventeen, arrives in Bath on a cold night.',
+   'He is looking for a cheap place to stay.',
+   'On his way to a pub, he notices a sign in a window: BED AND BREAKFAST.',
+   'Something about the sign makes him stop and ring the bell.',
+   'The door opens almost at once, and a smiling landlady invites him in.',
+   'She offers him a room for a very low price, and Billy agrees.']},
+  {title:'Inside the house',sents:[
+   'Inside, Billy signs the guest book.',
+   'He notices only two other names, and both seem familiar.',
+   'The landlady brings him tea and sits beside him on the sofa.',
+   'Billy tries to remember where he has heard the names before.',
+   'He realizes that the parrot and the dog are not alive but stuffed.',
+   'The landlady says the two young men are still upstairs, and that Billy is her only new guest in years.'],
+   extra:'Billy calls his mother to tell her about the room.'}
+ ],
+ para:[
+  {o:'Billy was searching for an inexpensive room because he had very little money.',
+   sw:[{w:'searching',o:['looking','running','sleeping'],a:0},{w:'inexpensive',o:['cheap','large','strange'],a:0}],
+   st:{o:['Because he had very little money, Billy was looking for a cheap room.','Billy had a cheap room because he was looking for money.','Billy was searching, so the money was inexpensive.'],a:0},
+   keys:['money','room','cheap|inexpensive|looking|low']},
+  {o:'The sign in the window seemed to pull him toward the door, and he could not walk away.',
+   sw:[{w:'pull',o:['draw','push','throw'],a:0},{w:'walk away',o:['leave','run','stay'],a:0}],
+   st:{o:['He could not leave, because the sign in the window seemed to draw him to the door.','The door pulled the sign, so he walked away.','He walked away because the window had a sign.'],a:0},
+   keys:['sign','door','leave|away|stay']},
+  {o:'The landlady appeared kind and welcoming, but her eyes looked a little too eager.',
+   sw:[{w:'kind',o:['friendly','angry','tired'],a:0},{w:'eager',o:['excited','sleepy','sad'],a:0}],
+   st:{o:['Although the landlady seemed friendly and welcoming, there was something too excited in her eyes.','The landlady\u2019s eyes were kind, but she was not welcoming.','Her eyes were welcoming, so she was eager.'],a:0},
+   keys:['landlady','eyes','friendly|kind|nice|welcom']},
+  {o:'Billy noticed that the animals in the room never moved, and finally he understood why.',
+   sw:[{w:'noticed',o:['saw','hoped','forgot'],a:0},{w:'finally',o:['at last','never','quickly'],a:0}],
+   st:{o:['When Billy saw that the animals never moved, at last he understood the reason.','The animals finally noticed that Billy never moved.','Billy moved the animals, so he understood.'],a:0},
+   keys:['animal|parrot|dog','move|still','understood|understand|reason|realiz|know|knew']},
+  {o:'The two names in the guest book were familiar, yet Billy could not remember where he had seen them.',
+   sw:[{w:'familiar',o:['known to him','new','forgotten'],a:0},{w:'remember',o:['recall','read','write'],a:0}],
+   st:{o:['Billy knew the two names in the guest book, but he could not recall where he had seen them.','Billy remembered the names, so the book was familiar.','The names could not remember Billy.'],a:0},
+   keys:['name','book','remember|recall|forgot|where']}
+ ],
+ ts:[
+  {q:'Which is the best topic sentence for a paragraph about the warning signs Billy ignores?',
+   o:['Billy ignores several warning signs that something is wrong in the house.','Bath is a city in England.','The dog was sleeping by the fire.','I think Billy is seventeen and has a new job.'],a:0,
+   why:'A topic sentence names the main idea of the whole paragraph. The others are details or off topic.'},
+  {q:'Which is the best topic sentence for a paragraph about why the landlady seems kind at first?',
+   o:['The landlady has a parrot and a dog.','At first, the landlady seems like a kind and gentle woman.','Tea with almonds tastes bitter.','Billy signs the guest book.'],a:1,
+   why:'It tells the reader the one idea the paragraph will prove: she seems kind at first.'}
+ ],
+ paraPrompt:'Should Billy have left the house? Write one paragraph. Give at least two reasons from the story.',
+ paraFrame:'Billy should / should not have left the house because \u2026 First, \u2026 Also, \u2026 That is why \u2026',
+ revise:{
+  caps:{text:'billy weaver arrived in bath on a tuesday evening. he was seventeen years old. mr. greenslade had told him to find a room near the pub.',need:['billy','weaver','bath','tuesday','he','mr.','greenslade']},
+  runon:{q:'This is a run-on sentence. Which fix is best?',o:[
+    'Billy rang the bell, and the door opened. The landlady smiled and asked him to come in. He did.',
+    'Billy rang the bell and the door opened, and the landlady smiled and she asked him to come in and he did.',
+    'Billy rang the bell. And the door. Opened and the landlady smiled.'],a:0,
+    bad:'Billy rang the bell and the door opened and the landlady smiled and she asked him to come in and he did.',
+    why:'Break a long \u201cand \u2026 and \u2026 and\u201d chain into two or three sentences. Each one needs a subject and a verb.'},
+  detail:{q:'\u201cThe room was nice.\u201d Which detail makes this stronger?',o:[
+    'The room was warm, with a soft bed, a small fire, and a hot-water bottle under the sheets.',
+    'The room was nice and good.','The room was a room with things in it.'],a:0,why:'Specific details (soft bed, small fire, hot-water bottle) let the reader see the room.'},
+  cut:{sents:[
+    'The landlady charged Billy a very low price.',
+    'She said the price was only a few coins a night, with breakfast included.',
+    'Billy liked eggs for breakfast at home.',
+    'Billy was surprised, because other places cost much more.',
+    'The price was really very low and cheap.',
+    'He decided to stay.'],cut:[2,4],
+    why:'Sentence 3 is off topic (eggs at home). Sentence 5 repeats sentence 1 in different words.'},
+  s3:[{s:'The landlady ___ alone in the big house.',o:['live','lives'],a:1},{s:'Billy ___ the guest book.',o:['sign','signs'],a:1},
+      {s:'The animals never ___.',o:['move','moves'],a:0},{s:'She ___ tea with a strange smell.',o:['make','makes'],a:1}],
+  past:[{s:'Last night Billy ___ in Bath.',o:['arrive','arrived'],a:1},{s:'He ___ the bell.',o:['ring','rang'],a:1},
+      {s:'The landlady ___ him a cup of tea.',o:['give','gave'],a:1},{s:'The dog ___ by the fire the whole time.',o:['sleep','slept'],a:1}],
+  combine:{q:'\u201cBilly was tired. Billy wanted a cheap room.\u201d Which combined sentence is correct?',o:[
+    'Billy was tired, Billy wanted a cheap room.','Billy was tired and wanted a cheap room.','Billy was tired he wanted a cheap room.'],a:1,
+    why:'Join two short sentences with \u201cand\u201d (or because, so, but). A comma alone is not enough.'}
+ },
+ essay:{
+  prompt:'Who is more responsible for what happens to Billy: Billy himself, or the landlady? Write a five-paragraph essay.',
+  thesis:{q:'Which is the strongest thesis for this essay?',o:[
+    'The Landlady is a story by Roald Dahl about a boy who finds a room.',
+    'Although the landlady is the one who harms her guests, Billy shares responsibility because he ignores every warning sign.',
+    'In this essay I will talk about Billy and the landlady.'],a:1,
+    why:'A thesis takes a position and gives a reason. It is not a summary and not an announcement.'},
+  boxes:[
+   {k:'hook',t:'Hook',h:'One sentence that makes the reader curious. A question, a surprising idea, or a picture in words.'},
+   {k:'bg',t:'Background',h:'Two sentences: who is Billy, where is he, what happens in one line.'},
+   {k:'thesis',t:'Thesis',h:'Your answer to the question, plus a reason. One sentence.'},
+   {k:'c1',t:'Claim 1',h:'First reason. Start with a topic sentence.'},{k:'e1',t:'Evidence 1',h:'What happens in the story that proves it? Two or three sentences.'},
+   {k:'c2',t:'Claim 2',h:'Second reason.'},{k:'e2',t:'Evidence 2',h:'Proof from the story.'},
+   {k:'c3',t:'Claim 3',h:'Third reason, or the other side and why it is weaker.'},{k:'e3',t:'Evidence 3',h:'Proof from the story.'},
+   {k:'restate',t:'Restate',h:'Say your thesis again in new words.'},{k:'sowhat',t:'So what?',h:'Why does this matter? What should a reader learn or remember?'}
+  ]
+ },
+ intro:{
+  hooks:[
+   {q:'Which hook makes a reader want to keep reading?',o:['Imagine a stranger offering you a warm room for almost nothing. Would you ask why?','This essay is about The Landlady.','Billy is a boy.'],a:0,why:'A good hook asks, surprises, or paints a picture. It never announces \u201cthis essay is about.\u201d'},
+   {q:'Which hook is strongest?',o:['There are many characters in the story.','A smiling face can hide a terrible secret.','I will now write my introduction.'],a:1,why:'It is short, surprising, and connects to the big idea of the story.'}
+  ],
+  sort:[
+   {s:'Dahl builds suspense through small details that Billy refuses to question.',k:'thesis'},
+   {s:'First, the price of the room is suspiciously low.',k:'topic'},
+   {s:'Billy\u2019s politeness, not bad luck, leads him into danger.',k:'thesis'},
+   {s:'Another warning sign is the guest book with only two names.',k:'topic'},
+   {s:'The landlady\u2019s kindness is a mask, and the story shows how easily a mask can fool us.',k:'thesis'},
+   {s:'Finally, the stuffed animals prove that something is wrong.',k:'topic'}
+  ],
+  order:['Imagine a stranger offering you a warm room for almost nothing. Would you ask why?',
+         'In Roald Dahl\u2019s story, a young man named Billy looks for a room in Bath and meets a landlady who seems too kind.',
+         'Although the landlady is dangerous, Billy\u2019s own choices lead him into her house.'],
+  flat:'In conclusion, Billy went to the house and the landlady was strange. The end.'
+ }
+};
+</script>
+
+<script>
+/* ===================== STATE ===================== */
+var $=function(id){return document.getElementById(id);};
+var RUNGS=['Start','Words','Sentences','Order','Paraphrase','Paragraph','Revise','Essay','Intros','Done'];
+var ST={email:'',name:'',period:'',act:0,I:{},W:{},start:1,exc:{},turnedIn:null,sayOpened:false};
+var ITEMS=[];          // every auto-scored item {id,rung,tag,max}
+function state(id){if(!ST.I[id])ST.I[id]={done:false,first:false,ans:null,pts:0};return ST.I[id];}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t;}return a;}
+function seeded(n,salt){var h=0,s=(ST.email||'x')+salt;for(var i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;var a=[];for(var k=0;k<n;k++)a.push(k);for(var m=n-1;m>0;m--){h=(h*1103515245+12345)>>>0;var j=h%(m+1),t=a[m];a[m]=a[j];a[j]=t;}return a;}
+function reg(id,rung,tag,max){if(!ITEMS.some(function(x){return x.id===id;}))ITEMS.push({id:id,rung:rung,tag:tag,max:max||1});}
+
+/* ===================== GENERIC WIDGETS ===================== */
+/* choice: tap one option; first try scores. opts rendered in a seeded order so the answer is not always first */
+function choice(id,rung,tag,q,opts,a,why,extraHtml){
+ reg(id,rung,tag,1);var st=state(id),ord=seeded(opts.length,id);
+ var h='<div class="item'+(st.done?' done':'')+'" id="it_'+id+'">'+(extraHtml||'')+'<div class="q">'+q+'<span class="tag">'+tag+'</span></div><div class="opts">';
+ ord.forEach(function(k){var cls='opt';if(st.done){if(k===a)cls+=' right';else if(st.ans!=null&&st.ans.indexOf(k)>-1)cls+=' wrong';}
+  h+='<button class="'+cls+'" onclick="pick(\''+id+'\','+k+','+a+')">'+opts[k]+'</button>';});
+ h+='</div><div class="why">'+(why||'')+'</div></div>';return h;}
+function pick(id,k,a){var st=state(id);if(st.done)return;st.ans=st.ans||[];
+ var box=$('it_'+id),btns=box.querySelectorAll('.opt');
+ if(k===a){st.done=true;st.first=st.ans.length===0;st.pts=st.first?1:0;box.classList.add('done');btns.forEach(function(b){b.disabled=true;});}
+ if(st.ans.indexOf(k)<0)st.ans.push(k);
+ btns.forEach(function(b){var m=b.getAttribute('onclick').match(/,(\d+),/);var kk=+m[1];if(kk===k)b.classList.add(k===a?'right':'wrong');});
+ save();}
+/* match: tap left, tap right. pairs [[left,right],...]; wrong taps cost first-try */
+function match(id,rung,tag,pairs){reg(id,rung,tag,pairs.length);var st=state(id);st.ans=st.ans||{ok:[],wrong:0};
+ var L=seeded(pairs.length,id+'L'),R=seeded(pairs.length,id+'R');
+ var h='<div class="item" id="it_'+id+'"><div class="mgrid"><div>';
+ L.forEach(function(k){h+='<button class="mc l'+(st.ans.ok.indexOf(k)>-1?' ok':'')+'" data-k="'+k+'" onclick="mtap(\''+id+'\',this)">'+esc(pairs[k][0])+'</button>';});
+ h+='</div><div>';R.forEach(function(k){h+='<button class="mc r'+(st.ans.ok.indexOf(k)>-1?' ok':'')+'" data-k="'+k+'" onclick="mtap(\''+id+'\',this)">'+esc(pairs[k][1])+'</button>';});
+ h+='</div></div><div class="gray" id="mm_'+id+'">'+mscore(id)+'</div></div>';return h;}
+function mscore(id){var st=state(id),it=ITEMS.filter(function(x){return x.id===id;})[0];return st.ans.ok.length+' / '+it.max+' matched'+(st.ans.wrong?' · '+st.ans.wrong+' slips':'');}
+function mtap(id,btn){var box=$('it_'+id),st=state(id);if(btn.classList.contains('ok'))return;
+ var side=btn.classList.contains('l')?'l':'r',other=box.querySelector('.mc.sel');
+ if(other&&other.classList.contains(side)){other.classList.remove('sel');}
+ if(!other||other.classList.contains(side)){btn.classList.add('sel');return;}
+ var k1=+btn.getAttribute('data-k'),k2=+other.getAttribute('data-k');other.classList.remove('sel');
+ if(k1===k2){btn.classList.add('ok');other.classList.add('ok');st.ans.ok.push(k1);}
+ else{btn.classList.add('bad');other.classList.add('bad');st.ans.wrong++;setTimeout(function(){btn.classList.remove('bad');other.classList.remove('bad');},600);}
+ var it=ITEMS.filter(function(x){return x.id===id;})[0];
+ if(st.ans.ok.length===it.max){st.done=true;st.pts=Math.max(0,it.max-st.ans.wrong);st.first=st.ans.wrong===0;}
+ $('mm_'+id).textContent=mscore(id);save();}
+/* order: tap chip then slot. sents in correct order; extra = distractor */
+function order(id,rung,tag,title,sents,extra){reg(id,rung,tag,sents.length);var st=state(id);st.ans=st.ans||{slots:[],checked:false};
+ var all=sents.slice();if(extra)all.push(extra);var ord=seeded(all.length,id);
+ var h='<div class="item" id="it_'+id+'"><div class="q">'+esc(title)+'<span class="tag">'+tag+'</span></div><div class="bank" id="bk_'+id+'">';
+ ord.forEach(function(k){h+='<button class="chip'+(st.ans.slots.indexOf(k)>-1?' used':'')+'" data-k="'+k+'" onclick="ochip(\''+id+'\',this)">'+esc(all[k])+'</button>';});
+ h+='</div><div class="slots">';
+ for(var i=0;i<sents.length;i++){var k=st.ans.slots[i];var cls='slot'+(k!=null?' full':'');if(st.ans.checked&&k!=null)cls+=(k===i?' ok':' bad');
+  h+='<div class="'+cls+'" data-i="'+i+'" onclick="oslot(\''+id+'\','+i+')"><span class="txt">'+(k!=null?esc(all[k]):'')+'</span>'+(k!=null&&!st.done?'<button class="x" onclick="event.stopPropagation();oclear(\''+id+'\','+i+')">✕</button>':'')+'</div>';}
+ h+='</div><button class="btn small" id="ock_'+id+'" onclick="ocheck(\''+id+'\')"'+(st.done?' disabled':'')+'>Check</button> <span class="gray" id="om_'+id+'">'+(st.done?st.pts+' / '+sents.length+' in the right place':'')+'</span></div>';return h;}
+var OSEL={};
+function ochip(id,btn){var box=$('it_'+id);box.querySelectorAll('.chip.sel').forEach(function(c){c.classList.remove('sel');});btn.classList.add('sel');OSEL[id]=+btn.getAttribute('data-k');}
+function oslot(id,i){var st=state(id);if(st.done)return;if(OSEL[id]==null)return;var k=OSEL[id];
+ var prev=st.ans.slots.indexOf(k);if(prev>-1)st.ans.slots[prev]=null;
+ st.ans.slots[i]=k;OSEL[id]=null;rerender(id);save();}
+function oclear(id,i){var st=state(id);if(st.done)return;st.ans.slots[i]=null;rerender(id);save();}
+function ocheck(id){var st=state(id),it=ITEMS.filter(function(x){return x.id===id;})[0];var filled=0,ok=0;
+ for(var i=0;i<it.max;i++){if(st.ans.slots[i]!=null){filled++;if(st.ans.slots[i]===i)ok++;}}
+ if(filled<it.max){alert('Fill every numbered box first.');return;}
+ st.ans.checked=true;if(!st.ans.tries)st.ans.tries=0;st.ans.tries++;
+ if(st.ans.tries===1){st.pts=ok;st.first=ok===it.max;}
+ if(ok===it.max||st.ans.tries>=2){st.done=true;}
+ rerender(id);save();}
+/* tap tokens needing a capital */
+function caps(id,rung,tag,text,need){var toks=text.split(/\s+/);reg(id,rung,tag,need.length);var st=state(id);st.ans=st.ans||{sel:[]};
+ var h='<div class="item" id="it_'+id+'"><div class="q">Tap every word that needs a capital letter.<span class="tag">'+tag+'</span></div><div style="font-size:1.05rem;line-height:2">';
+ toks.forEach(function(t,i){var cls='tok'+(st.ans.sel.indexOf(i)>-1?' sel':'');var needs=need.indexOf(t.replace(/[,.]$/,'').toLowerCase())>-1||need.indexOf(t.toLowerCase())>-1;
+  if(st.done){cls='tok'+(st.ans.sel.indexOf(i)>-1?(needs?' ok':' bad'):(needs?' miss':''));}
+  h+='<span class="'+cls+'" data-i="'+i+'" data-n="'+(needs?1:0)+'" onclick="ctap(\''+id+'\',this)">'+esc(t)+'</span> ';});
+ h+='</div><button class="btn small" onclick="ccheck(\''+id+'\')"'+(st.done?' disabled':'')+'>Check</button> <span class="gray">'+(st.done?st.pts+' / '+need.length:'')+'</span></div>';return h;}
+function ctap(id,el){var st=state(id);if(st.done)return;var i=+el.getAttribute('data-i'),p=st.ans.sel.indexOf(i);if(p>-1)st.ans.sel.splice(p,1);else st.ans.sel.push(i);el.classList.toggle('sel');}
+function ccheck(id){var st=state(id),box=$('it_'+id),ok=0,bad=0;box.querySelectorAll('.tok').forEach(function(t){var n=t.getAttribute('data-n')==='1',s=t.classList.contains('sel');if(s&&n)ok++;if(s&&!n)bad++;});
+ var it=ITEMS.filter(function(x){return x.id===id;})[0];st.done=true;st.pts=Math.max(0,ok-bad);st.first=st.pts===it.max;rerender(id);save();}
+/* tap sentences to cut */
+function cut(id,rung,tag,sents,cutIdx,why){reg(id,rung,tag,cutIdx.length);var st=state(id);st.ans=st.ans||{sel:[]};
+ var h='<div class="item" id="it_'+id+'"><div class="q">Two sentences do not belong: one repeats, one is off topic. Tap them to cut them.<span class="tag">'+tag+'</span></div>';
+ sents.forEach(function(s,i){var cls='sent'+(st.ans.sel.indexOf(i)>-1?' sel':'');if(st.done){var should=cutIdx.indexOf(i)>-1,did=st.ans.sel.indexOf(i)>-1;cls='sent'+(did&&should?' ok':did?' sel':should?' bad':'');}
+  h+='<span class="'+cls+'" data-i="'+i+'" onclick="cuttap(\''+id+'\',this)">'+esc(s)+'</span>';});
+ h+='<button class="btn small" onclick="cutcheck(\''+id+'\')"'+(st.done?' disabled':'')+'>Check</button> <span class="gray">'+(st.done?st.pts+' / '+cutIdx.length:'')+'</span>'+(st.done?'<div class="gray">'+why+'</div>':'')+'</div>';return h;}
+function cuttap(id,el){var st=state(id);if(st.done)return;var i=+el.getAttribute('data-i'),p=st.ans.sel.indexOf(i);if(p>-1)st.ans.sel.splice(p,1);else st.ans.sel.push(i);el.classList.toggle('sel');}
+function cutcheck(id){var st=state(id),it=ITEMS.filter(function(x){return x.id===id;})[0];var need=DATA.revise.cut.cut,ok=0,bad=0;st.ans.sel.forEach(function(i){if(need.indexOf(i)>-1)ok++;else bad++;});
+ st.done=true;st.pts=Math.max(0,ok-bad);st.first=st.pts===it.max;rerender(id);save();}
+/* sort into two boxes: tap card, tap box */
+function sort2(id,rung,tag,items,boxes){reg(id,rung,tag,items.length);var st=state(id);st.ans=st.ans||{put:{},tries:0};
+ var ord=seeded(items.length,id);
+ var h='<div class="item" id="it_'+id+'"><div class="q">Tap a sentence, then tap the box it belongs in.<span class="tag">'+tag+'</span></div><div class="bank">';
+ ord.forEach(function(k){if(st.ans.put[k]!=null)return;h+='<button class="chip" data-k="'+k+'" onclick="s2chip(\''+id+'\',this)">'+esc(items[k].s)+'</button>';});
+ h+='</div><div class="mgrid">';
+ boxes.forEach(function(b){h+='<div class="slot full" style="flex-direction:column;align-items:stretch;min-height:80px" onclick="s2box(\''+id+'\',\''+b.k+'\')"><b>'+b.t+'</b>';
+  Object.keys(st.ans.put).forEach(function(k){if(st.ans.put[k]!==b.k)return;var cls='sent';if(st.done)cls+=items[k].k===b.k?' ok':' bad';h+='<span class="'+cls+'" style="cursor:default">'+esc(items[k].s)+'</span>';});h+='</div>';});
+ h+='</div><button class="btn small" onclick="s2check(\''+id+'\')"'+(st.done?' disabled':'')+'>Check</button> <span class="gray">'+(st.done?st.pts+' / '+items.length:'')+'</span></div>';return h;}
+function s2chip(id,btn){$('it_'+id).querySelectorAll('.chip.sel').forEach(function(c){c.classList.remove('sel');});btn.classList.add('sel');OSEL[id]=+btn.getAttribute('data-k');}
+function s2box(id,k){var st=state(id);if(st.done||OSEL[id]==null)return;st.ans.put[OSEL[id]]=k;OSEL[id]=null;rerender(id);save();}
+function s2check(id){var st=state(id),it=ITEMS.filter(function(x){return x.id===id;})[0],items=DATA.intro.sort;
+ if(Object.keys(st.ans.put).length<items.length){alert('Put every sentence in a box first.');return;}
+ var ok=0;Object.keys(st.ans.put).forEach(function(k){if(items[k].k===st.ans.put[k])ok++;});
+ st.done=true;st.pts=ok;st.first=ok===items.length;rerender(id);save();}
+function rerender(id){var r=ITEMS.filter(function(x){return x.id===id;})[0];if(r)renderRung(r.rung);}
+
+/* ===================== WRITING CHECKS ===================== */
+var STOP='the a an and or but so of to in on at for with was were is are be been had has have he she it they him her his its their this that these those not very into from by as than then there here when where who which what could would should can will did do does if because about just only also too'.split(' ');
+function words(t){return String(t||'').toLowerCase().replace(/[^a-z'\s]/g,' ').split(/\s+/).filter(Boolean);}
+function content(t){var N=DATA.names.map(function(x){return x.toLowerCase();});return words(t).filter(function(w){return w.length>2&&STOP.indexOf(w)<0&&N.indexOf(w)<0;});}
+function sentences(t){return String(t||'').replace(/\s+/g,' ').split(/(?<=[.!?])\s+/).map(function(s){return s.trim();}).filter(Boolean);}
+function overlap(mine,orig){var o=content(orig),m=content(mine);if(!m.length)return 0;var hit=0;m.forEach(function(w){if(o.indexOf(w)>-1)hit++;});return hit/m.length;}
+function usesStory(t,n){var ws=words(t),hits=0,pool=DATA.words.map(function(x){return x.w;}).concat(DATA.names.map(function(x){return x.toLowerCase();}));pool.forEach(function(p){if(ws.indexOf(p.toLowerCase())>-1)hits++;});return hits>=n;}
+function capsOk(t){var ss=sentences(t);return ss.length>0&&ss.every(function(s){return /^[A-Z"\u201c]/.test(s);});}
+function endOk(t){return /[.!?]["\u201d]?\s*$/.test(String(t||'').trim());}
+function noChain(t){return sentences(t).every(function(s){return (s.match(/\band\b/g)||[]).length<=2;});}
+function wc(t){return words(t).length;}
+/* a write box: ST.W[k] = text; checks = [{t:label, f:fn(text)->bool}] ; each passed check = 1 pt; registered as an item */
+function wbox(k,rung,tag,label,hint,checks,opts){opts=opts||{};var id='w_'+k;reg(id,rung,tag,checks.length);var txt=ST.W[k]||'';
+ var h='<div class="item" id="it_'+id+'"><div class="q">'+label+'<span class="tag">'+tag+'</span></div>'+(hint?'<div class="gray">'+hint+'</div>':'')+
+  (opts.orig?'<div class="orig" translate="no">'+esc(opts.orig)+'</div>':'')+
+  '<textarea class="'+(opts.cls||'')+'" id="ta_'+k+'" oninput="wchange(\''+k+'\')" placeholder="'+esc(opts.ph||'')+'" translate="no">'+esc(txt)+'</textarea>'+
+  (opts.meter?'<div class="gray">Too close to the original? <span id="mt_'+k+'"></span></div><div class="meter" id="mb_'+k+'"><i></i></div>':'')+
+  '<ul class="check" id="ck_'+k+'"></ul></div>';
+ setTimeout(function(){wscore(k,checks,opts);},0);WCHECK[k]={checks:checks,opts:opts};return h;}
+var WCHECK={};
+function wchange(k){ST.W[k]=$('ta_'+k).value;var c=WCHECK[k];wscore(k,c.checks,c.opts);save();}
+function wscore(k,checks,opts){var t=ST.W[k]||'',id='w_'+k,st=state(id),n=0,ul=$('ck_'+k);if(!ul)return;
+ ul.innerHTML=checks.map(function(c){var ok=false;try{ok=!!c.f(t);}catch(e){}if(ok)n++;return '<li class="'+(ok?'ok':'')+'">'+c.t+'</li>';}).join('');
+ if(opts.meter){var ov=overlap(t,opts.orig),mb=$('mb_'+k);mb.querySelector('i').style.width=Math.round(ov*100)+'%';mb.classList.toggle('hot',ov>0.6);$('mt_'+k).textContent=t.trim()?(ov>0.6?'Yes. Change more words.':'No. Good.'):'';}
+ st.pts=n;st.done=n===checks.length;st.first=st.done;}
+
+/* ===================== RUNG RENDERERS ===================== */
+function renderRung(r){if(r===1)rWords();if(r===2)rSent();if(r===3)rOrder();if(r===4)rPara();if(r===5)rParagraph();if(r===6)rRevise();if(r===7)rEssay();if(r===8)rIntro();pills();}
+function rWords(){
+ $('wcards').innerHTML=DATA.words.map(function(w){return '<div class="wcard" onclick="this.classList.toggle(\'open\')"><div class="e">'+w.e+'</div><div class="w">'+w.w+' '+spk(w.w)+'</div><div class="m">'+esc(w.m)+'</div><div class="t">'+esc(wtr(w.w))+'</div><div class="s">'+esc(w.s)+'</div></div>';}).join('');
+ var pairs=DATA.words.map(function(w){return [w.w,w.m];});var ord=seeded(12,'wm');
+ $('wmatch').innerHTML=match('wm1',1,'VOC.CTX',[0,1,2,3].map(function(i){return pairs[ord[i]];}))+match('wm2',1,'VOC.CTX',[4,5,6,7].map(function(i){return pairs[ord[i]];}))+match('wm3',1,'VOC.CTX',[8,9,10,11].map(function(i){return pairs[ord[i]];}));
+ var pool=DATA.words.map(function(w){return w.w;});
+ $('wfill').innerHTML=DATA.fill.map(function(f,i){var o=seeded(pool.length,'wf'+i).filter(function(k){return pool[k]!==f.a;}).slice(0,3).map(function(k){return pool[k];});o.push(f.a);
+  var a=o.indexOf(f.a);return choice('wf'+i,1,'VOC.CTX',esc(f.s),o,a,'<b>'+f.a+'</b>: '+esc(DATA.words.filter(function(w){return w.w===f.a;})[0].m));}).join('');
+ if(ST.email)openSay();}
+function witPool(key){var W=window.WIT||{};return (W[key]||[]).filter(function(x){return x.t===DATA.witTag;});}
+function rSent(){var h='';
+ var kinds={statement:'Statement',question:'Question',command:'Command',exclamation:'Exclamation'},K=Object.keys(kinds);
+ h+='<div class="sub">What kind of sentence?</div>';witPool('sort').forEach(function(x,i){h+=choice('ss'+i,2,'SENT.TYPE',esc(x.s),K.map(function(k){return kinds[k];}),K.indexOf(x.k),'');});
+ h+='<div class="sub">Sentence or fragment?</div>';witPool('fragment').forEach(function(x,i){
+  h+=choice('sf'+i,2,'SENT.FRAG','&ldquo;'+esc(x.s)+'&rdquo; &mdash; sentence or fragment?',['Complete sentence','Fragment'],x.k==='S'?0:1,'Fixed: '+esc(x.fix));
+  if(x.k==='F'){var o=[x.fix].concat(x.wrong||[]);h+=choice('sfx'+i,2,'SENT.FRAG','Which one fixes the fragment?',o.map(esc),0,'A sentence needs a subject and a verb.');}});
+ h+='<div class="sub">because / but / so</div>';witPool('bbs_choose').forEach(function(x,i){h+=choice('sb'+i,2,'CONJ.BBS',esc(x.s),['because','but','so'],['because','but','so'].indexOf(x.a),'');});
+ h+='<div class="sub">Unscramble</div>';witPool('scramble').forEach(function(x,i){var toks=x.s.replace(/[.?!]$/,'').split(' ');h+=order('sc'+i,2,'ORDER','Put the words in order: '+toks.length+' words',toks);});
+ $('sItems').innerHTML=h||'<div class="card">Sentence items did not load. Tell Mr. Toby.</div>';}
+function rOrder(){$('oItems').innerHTML=DATA.order.map(function(p,i){return order('or'+i,3,'ORDER',p.title,p.sents,p.extra);}).join('');}
+function rPara(){var h='';DATA.para.forEach(function(p,i){
+ h+='<div class="card"><div class="orig" translate="no">'+esc(p.o)+' '+spk(p.o)+'</div>';
+ p.sw.forEach(function(s,j){h+=choice('pw'+i+'_'+j,4,'PARAPHRASE','Another word for <b>'+esc(s.w)+'</b>:',s.o.map(esc),s.a,'');});
+ h+=choice('ps'+i,4,'PARAPHRASE','Which sentence says the same thing in a new structure?',p.st.o.map(esc),p.st.a,'Keep the meaning. Change the order and the words.');
+ h+=wbox('pp'+i,4,'PARAPHRASE','Now write it in your own words.','',[
+  {t:'At least 6 words',f:function(t){return wc(t)>=6;}},
+  {t:'Most of the words are your own (not copied from the original)',f:function(t){return wc(t)>=6&&overlap(t,p.o)<=0.6;}},
+  {t:'Keeps the meaning (uses the key ideas)',f:function(t){var n=0;p.keys.forEach(function(k){if(new RegExp('\\b('+k+')').test(t.toLowerCase()))n++;});return n>=2;}},
+  {t:'Starts with a capital, ends with a period',f:function(t){return capsOk(t)&&endOk(t);}}],{orig:p.o,meter:true,ph:'Billy...'});
+ h+='</div>';});$('pItems').innerHTML=h;}
+function rParagraph(){$('gItems').innerHTML=DATA.ts.map(function(t,i){return choice('ts'+i,5,'WRITE.TS',esc(t.q),t.o.map(esc),t.a,esc(t.why));}).join('');
+ $('gWrite').innerHTML=wbox('para',5,'WRITE.PARA',esc(DATA.paraPrompt),'<span translate="no">'+esc(DATA.paraFrame)+'</span>',[
+  {t:'A topic sentence that answers the question (first sentence, 8+ words)',f:function(t){var s=sentences(t)[0]||'';return wc(s)>=8&&/should|left|stay|leave|house/i.test(s);}},
+  {t:'At least 4 sentences',f:function(t){return sentences(t).length>=4;}},
+  {t:'At least 60 words',f:function(t){return wc(t)>=60;}},
+  {t:'Two reasons: uses First / Also / Second / Another',f:function(t){return (t.match(/\b(first|also|second|another|next)\b/gi)||[]).length>=2;}},
+  {t:'Uses at least 2 story words or names',f:function(t){return usesStory(t,2);}},
+  {t:'Every sentence starts with a capital; no sentence has and-and-and',f:function(t){return capsOk(t)&&noChain(t)&&endOk(t);}}],{cls:'lg',ph:'Billy should...'});}
+function rRevise(){var R=DATA.revise,h='';
+ h+='<div class="sub">Capitals</div>'+caps('vc',6,'CAP.PUNC',R.caps.text,R.caps.need);
+ h+='<div class="sub">Run-on sentence</div>'+choice('vr',6,'REVISE',esc(R.runon.q),R.runon.o.map(esc),R.runon.a,esc(R.runon.why),'<div class="orig" translate="no">'+esc(R.runon.bad)+'</div>');
+ h+='<div class="sub">Add a detail</div>'+choice('vd',6,'REVISE',esc(R.detail.q),R.detail.o.map(esc),R.detail.a,esc(R.detail.why));
+ h+='<div class="sub">Cut what does not belong</div>'+cut('vx',6,'REVISE',R.cut.sents,R.cut.cut,esc(R.cut.why));
+ h+='<div class="sub">He / she verbs (-s)</div>';R.s3.forEach(function(x,i){h+=choice('v3'+i,6,'SV.3SG',esc(x.s),x.o,x.a,'');});
+ h+='<div class="sub">Past tense</div>';R.past.forEach(function(x,i){h+=choice('vp'+i,6,'PAST',esc(x.s),x.o,x.a,'');});
+ h+='<div class="sub">Combine</div>'+choice('vk',6,'REVISE',esc(R.combine.q),R.combine.o.map(esc),R.combine.a,esc(R.combine.why));
+ $('vItems').innerHTML=h;
+ var orig=ST.W.para||'';if(!ST.W.para2&&orig)ST.W.para2=orig;
+ $('vWrite').innerHTML='<div class="sub">Now your own paragraph</div><div class="gray">Your paragraph from rung 5 is below. Make it better: add one real detail, cut anything repeated, fix every capital and period.</div>'+
+  wbox('para2',6,'REVISE','Revise your paragraph.','',[
+   {t:'You changed something',f:function(t){return t.trim()&&t.trim()!==orig.trim();}},
+   {t:'Added a detail (at least 12 more words) or cut extra words (at least 8 fewer)',f:function(t){var d=wc(t)-wc(orig);return d>=12||d<=-8;}},
+   {t:'No sentence with and-and-and',f:function(t){return t.trim()&&noChain(t);}},
+   {t:'Every sentence starts with a capital and ends with a period',f:function(t){return t.trim()&&capsOk(t)&&endOk(t);}}],{cls:'lg',ph:orig?'':'Write your paragraph in rung 5 first.'});}
+function rEssay(){var E=DATA.essay,h='<div class="card"><div class="orig">'+esc(E.prompt)+'</div></div>';
+ h+=choice('et',7,'WRITE.ESSAY',esc(E.thesis.q),E.thesis.o.map(esc),E.thesis.a,esc(E.thesis.why));
+ h+='<div class="sub">Outline</div>';
+ E.boxes.forEach(function(b){h+=wbox('es_'+b.k,7,'WRITE.ESSAY',b.t,esc(b.h),[{t:'Written ('+(b.k==='bg'||/^e/.test(b.k)?'2+ sentences':'1+ sentence')+')',f:function(t){return (b.k==='bg'||/^e/.test(b.k))?sentences(t).length>=2:wc(t)>=6;}}],{ph:''});});
+ $('eItems').innerHTML=h;
+ $('eWrite').innerHTML='<div class="sub">Your draft</div><div class="gray">Tap <b>Build my draft</b> to put your outline together as five paragraphs. Then read it out loud and revise.</div><button class="btn small" onclick="buildDraft()">Build my draft</button>'+
+  wbox('essay',7,'WRITE.ESSAY','Five-paragraph essay','',[
+   {t:'Five paragraphs (leave a blank line between paragraphs)',f:function(t){return t.split(/\n\s*\n/).filter(function(p){return p.trim();}).length>=5;}},
+   {t:'At least 180 words',f:function(t){return wc(t)>=180;}},
+   {t:'Your thesis idea appears in the first paragraph',f:function(t){var p=t.split(/\n\s*\n/)[0]||'',th=content(ST.W.es_thesis||'');if(th.length<3)return false;var n=0;th.forEach(function(w){if(content(p).indexOf(w)>-1)n++;});return n>=Math.min(3,th.length);}},
+   {t:'Uses at least 4 story words or names',f:function(t){return usesStory(t,4);}},
+   {t:'Capitals and periods in every sentence; no and-and-and',f:function(t){return t.trim()&&capsOk(t)&&noChain(t);}}],{cls:'xl'});}
+function buildDraft(){var W=ST.W,g=function(k){return (W['es_'+k]||'').trim();};
+ var d=[ [g('hook'),g('bg'),g('thesis')].filter(Boolean).join(' '),[g('c1'),g('e1')].filter(Boolean).join(' '),[g('c2'),g('e2')].filter(Boolean).join(' '),[g('c3'),g('e3')].filter(Boolean).join(' '),[g('restate'),g('sowhat')].filter(Boolean).join(' ')].join('\n\n');
+ if(W.essay&&W.essay.trim()&&!confirm('Replace your current draft with a new one built from the outline?'))return;
+ W.essay=d;$('ta_essay').value=d;wchange('essay');}
+function rIntro(){var I=DATA.intro,h='';
+ h+='<div class="sub">Hooks</div>';I.hooks.forEach(function(x,i){h+=choice('ih'+i,8,'WRITE.INTRO',esc(x.q),x.o.map(esc),x.a,esc(x.why));});
+ h+='<div class="sub">Thesis or topic sentence?</div>'+sort2('is',8,'WRITE.INTRO',I.sort,[{k:'thesis',t:'Thesis (whole essay)'},{k:'topic',t:'Topic sentence (one paragraph)'}]);
+ h+='<div class="sub">Put the introduction in order</div>'+order('io',8,'WRITE.INTRO','Hook → background → thesis',I.order);
+ $('iItems').innerHTML=h;
+ $('iWrite').innerHTML='<div class="sub">Rewrite a weak conclusion</div>'+wbox('conc',8,'WRITE.CONC','This conclusion is flat. Write a better one.','Restate the big idea in new words, then say why it matters.',[
+  {t:'At least 3 sentences',f:function(t){return sentences(t).length>=3;}},
+  {t:'Does not say &ldquo;The end&rdquo; or &ldquo;In conclusion&rdquo;',f:function(t){return t.trim()&&!/the end|in conclusion/i.test(t);}},
+  {t:'Names Billy and the landlady',f:function(t){return /billy/i.test(t)&&/landlady/i.test(t);}},
+  {t:'Says why it matters (should, we, readers, lesson, shows, teaches, remind)',f:function(t){return /\b(should|we|us|readers?|lesson|shows|teaches|remind)/i.test(t);}}],{orig:I.flat,cls:'lg'});}
+
+/* ===================== PLACEMENT, SCORES, NAV ===================== */
+function status(r){if(ST.exc[r]==='excused')return 'excused';if(ST.exc[r]==='required')return 'required';return (r<ST.start&&NEVER_OPT.indexOf(r)<0)?'optional':'required';}
+function rungItems(r){return ITEMS.filter(function(x){return x.rung===r;});}
+function rungPts(r){var p=0,m=0;rungItems(r).forEach(function(x){m+=x.max;p+=state(x.id).pts||0;});return {p:p,m:m,n10:m?Math.round(10*p/m):0};}
+function rungDone(r){var its=rungItems(r);return its.length>0&&its.every(function(x){return state(x.id).done;});}
+function required(){var a=[];for(var r=1;r<=8;r++)if(status(r)==='required')a.push(r);return a;}
+function publishScore(){var s=0,m=0,sk={};required().forEach(function(r){var x=rungPts(r);s+=x.n10;m+=10;rungItems(r).forEach(function(it){var st=state(it.id);if(!sk[it.tag])sk[it.tag]={n:0,d:0};sk[it.tag].d+=it.max;sk[it.tag].n+=st.pts||0;});});
+ window.GAL_SCORE=s;window.GAL_MAX=m||80;window.GAL_SKILLS=sk;return {s:s,m:m||80};}
+function unlocked(r){if(r<=1)return true;if(status(r)!=='required')return true;for(var k=r-1;k>=1;k--){if(status(k)==='required')return rungDone(k);}return true;}
+function pills(){for(var r=1;r<=8;r++){var el=$('pill'+r);if(!el)continue;var s=status(r),x=rungPts(r);el.innerHTML=(s==='optional'?'<span class="pill opt">Optional</span> ':s==='excused'?'<span class="pill exc">Excused</span> ':'')+'<span class="pill">'+x.p+' / '+x.m+'</span>';}}
+function drawSteps(){var h='';RUNGS.forEach(function(n,i){if(i===0||i===9){h+='<button class="stepb'+(i===ST.act?' cur':'')+'" onclick="go('+i+')">'+n+'</button>';return;}
+ var s=status(i),cls='stepb'+(i===ST.act?' cur':'')+(rungDone(i)&&i!==ST.act?' ok':'')+(s==='optional'?' opt':'')+(s==='excused'?' exc':'')+(!unlocked(i)?' lock':'');
+ h+='<button class="'+cls+'" onclick="go('+i+')">'+i+' '+n+(s!=='required'?'<small>'+s+'</small>':'')+'</button>';});$('steps').innerHTML=h;}
+function go(n){if(n>0&&n<9&&!unlocked(n)){alert('Finish the rung before this one first.');return;}
+ ST.act=n;document.querySelectorAll('section.act').forEach(function(s,i){s.classList.toggle('show',i===n);});
+ if(n>=1&&n<=8)renderRung(n);if(n===9)finish();if(n===0)planCard();
+ drawSteps();window.scrollTo(0,0);save();if(DIR_ON)showDirections();}
+function goNext(){var n=ST.act+1;while(n<9&&status(n)==='excused')n++;go(n);}
+function planCard(){var req=required();$('planCard').innerHTML='<b>Your ladder:</b> '+[1,2,3,4,5,6,7,8].map(function(r){var s=status(r);return '<span class="pill'+(s==='optional'?' opt':s==='excused'?' exc':'')+'">'+r+' '+RUNGS[r]+'</span>';}).join(' ')+'<div class="gray">Required rungs count for your grade: '+req.length+' of 8.</div>';}
+function finish(){var sc=publishScore();$('finScore').textContent=sc.s+' / '+sc.m;
+ $('finList').innerHTML=[1,2,3,4,5,6,7,8].map(function(r){var s=status(r),x=rungPts(r);return '<div class="sumrow'+(s!=='required'?' opt':'')+'"><span>'+r+' · '+RUNGS[r]+(s!=='required'?' ('+s+')':'')+'</span><b>'+(s==='required'?x.n10+' / 10':x.p?x.p+' / '+x.m+' (not graded)':'—')+'</b></div>';}).join('')+
+  '<div class="gray" style="margin-top:8px">Writing rungs are also read by your teacher.</div>';}
+
+/* ===================== SAVE (Supabase only; no student work in the browser) ===================== */
+function dot(c){var d=$('saveDot');d.className='';if(c)d.classList.add(c);}
+var saveT,dirty=false,pushing=false,pushSeq=0,lastLogged=-1;
+function save(){dirty=true;publishScore();pills();drawSteps();clearTimeout(saveT);saveT=setTimeout(function(){dot(dirty?'busy':'on');},300);}
+function clean(s){return String(s||'').trim().toLowerCase();}
+function hdr(p){var h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};if(p)h['Prefer']=p;return h;}
+function push(force){
+ if(!ST.email)return;if(!dirty&&!force)return;if(pushing)return;
+ pushing=true;dot('busy');var mySeq=++pushSeq;
+ setTimeout(function(){if(pushing&&mySeq===pushSeq){pushing=false;dirty=true;dot('err');}},15000);
+ var sc=publishScore(),snap=JSON.parse(JSON.stringify(ST));dirty=false;
+ snap.R={};for(var r=1;r<=8;r++){var x=rungPts(r);snap.R[r]={p:x.p,m:x.m,n10:x.n10,status:status(r),done:rungDone(r)};}
+ var body=[{email:ST.email,name:ST.name,period:ST.period,slug:SLUG,text_slug:TEXT,ladder_start:ST.start,
+  score:sc.s,max_score:sc.m,turned_in:!!ST.turnedIn,answers:snap,updated_at:new Date().toISOString()}];
+ fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email,slug',{method:'POST',keepalive:true,headers:hdr('resolution=merge-duplicates,return=minimal'),body:JSON.stringify(body)})
+ .then(function(r){pushing=false;if(r.ok){dot(dirty?'busy':'on');if(sc.s!==lastLogged&&window.GAL_logAttempt){lastLogged=sc.s;window.GAL_logAttempt({partial:!ST.turnedIn,table:TABLE});}}else{dirty=true;dot('err');}})
+ .catch(function(){pushing=false;dirty=true;dot('err');});
+}
+function loadWork(email,cb){
+ var p1=fetch(SUPA_URL+'/rest/v1/'+TABLE+'?select=answers&email=eq.'+encodeURIComponent(email)+'&slug=eq.'+encodeURIComponent(SLUG),{headers:hdr()}).then(function(r){return r.ok?r.json():[];}).catch(function(){return [];});
+ var p2=fetch(SUPA_URL+'/rest/v1/student_profiles?select=ladder_start&email=eq.'+encodeURIComponent(email),{headers:hdr()}).then(function(r){return r.ok?r.json():[];}).catch(function(){return [];});
+ var p3=fetch(SUPA_URL+'/rest/v1/excusals?select=rung,status&email=eq.'+encodeURIComponent(email)+'&slug=eq.'+encodeURIComponent(SLUG),{headers:hdr()}).then(function(r){return r.ok?r.json():[];}).catch(function(){return [];});
+ Promise.all([p1,p2,p3]).then(function(res){
+  var row=res[0]&&res[0][0],prof=res[1]&&res[1][0],exc=res[2]||[];
+  if(row&&row.answers){var a=row.answers;ST.I=a.I||{};ST.W=a.W||{};ST.act=a.act||0;ST.turnedIn=a.turnedIn||null;ST.sayOpened=!!a.sayOpened;}
+  ST.start=(prof&&prof.ladder_start)?+prof.ladder_start:1;
+  ST.exc={};exc.forEach(function(e){ST.exc[e.rung]=e.status;});
+  cb();});}
+function turnIn(){
+ if(!ST.email){askName();return;}
+ var left=required().filter(function(r){return !rungDone(r);});
+ if(left.length&&!confirm('You still have '+left.length+' rung'+(left.length===1?'':'s')+' to finish. Turn in anyway?')){go(left[0]);return;}
+ ST.turnedIn=new Date().toISOString();publishScore();dirty=true;pushing=false;push(true);
+ setTimeout(function(){if($('saveDot').classList.contains('err'))alert('Could not reach the server. Try Turn in again when you have a connection.');else alert('Turned in. Thank you, '+ST.name.split(' ')[0]+'.');},1400);}
+
+/* ===================== SIGN IN ===================== */
+var rosterLoaded=false,ROSTER=[];
+function lastEmail(){try{return localStorage.getItem('gal_student_email')||'';}catch(e){return '';}}
+function askName(){var li=$('langIn');if(li.options.length<2){Array.prototype.slice.call($('lang').options,1).forEach(function(o){li.appendChild(o.cloneNode(true));});}
+ $('nameIn').value=ST.name||'';$('emailIn').value=ST.email||lastEmail()||'';$('periodIn').value=ST.period||'';li.value=lang()||'';$('nameErr').textContent='';$('namewrap').classList.add('show');loadRoster();}
+function loadRoster(){if(rosterLoaded)return;rosterLoaded=true;
+ fetch(SUPA_URL+'/rest/v1/students?select=email,first_name,last_name&order=last_name.asc',{headers:hdr()}).then(function(r){return r.ok?r.json():[];})
+ .then(function(list){ROSTER=list||[];var sel=$('rosterSel');
+  if(!ROSTER.length){sel.style.display='none';var lb=document.querySelector('#namebox label');if(lb)lb.style.display='none';var or=document.querySelector('#namebox .or');if(or)or.style.display='none';return;}
+  ROSTER.forEach(function(s){var o=document.createElement('option');o.value=s.email;o.textContent=((s.first_name||'')+' '+(s.last_name||'')).trim()||s.email;sel.appendChild(o);});}).catch(function(){});}
+function pickRoster(){var sel=$('rosterSel');if(!sel.value)return;$('emailIn').value=sel.value;$('nameIn').value=sel.options[sel.selectedIndex].textContent;$('nameErr').textContent='';}
+function localPart(e){return clean(e).split('@')[0];}
+function canonEmail(raw){var lp=localPart(raw);for(var i=0;i<ROSTER.length;i++){if(localPart(ROSTER[i].email)===lp)return clean(ROSTER[i].email);}return lp+'@s.sfusd.edu';}
+function recordAlias(a,c){if(!a||a===c)return;fetch(SUPA_URL+'/rest/v1/student_aliases?on_conflict=alias_email',{method:'POST',headers:hdr('resolution=merge-duplicates,return=minimal'),body:JSON.stringify([{alias_email:a,email:c}])}).catch(function(){});}
+function seedRoster(email,full,period){var parts=full.split(' '),first=parts.shift()||'',last=parts.join(' ')||'';
+ fetch(SUPA_URL+'/rest/v1/students?on_conflict=email',{method:'POST',headers:hdr('resolution=ignore-duplicates,return=minimal'),body:JSON.stringify([{email:email,first_name:first,last_name:last,period:period}])}).catch(function(){});}
+function shareLogin(){try{localStorage.setItem('gal_student_email',ST.email||'');localStorage.setItem('gal_student_name',ST.name||'');localStorage.setItem('gal_student_period',ST.period||'');}catch(e){}}
+function saveName(){
+ var err=$('nameErr'),n=$('nameIn').value.trim().replace(/\s+/g,' '),e=clean($('emailIn').value),pd=$('periodIn').value;
+ if(n.length<3||n.indexOf(' ')<0){err.textContent='Please type your first name AND your last name.';return;}
+ if(!/^[^@\s]+@(s\.)?sfusd\.edu$/.test(e)){err.textContent='Please use your school email. It ends with @s.sfusd.edu';return;}
+ if(!pd){err.textContent='Please choose your class period.';return;}
+ var lg=$('langIn').value;if(!lg){err.textContent='Please choose your language.';return;}
+ $('lang').value=lg;setLang(lg);
+ var canon=canonEmail(e);recordAlias(e,canon);ST.name=n;ST.email=canon;ST.period=pd;
+ $('whoami').textContent=n+' \u00b7 P'+pd;$('namewrap').classList.remove('show');shareLogin();seedRoster(canon,n,pd);
+ loadWork(canon,function(){go(ST.act||0);save();push(true);});}
+
+/* ===================== DIRECTIONS IN MY LANGUAGE ===================== */
+var DIR_ON=false,SENT={},tcache={},L2={Spanish:'es',Mandarin:'zh',Cantonese:'zh',Arabic:'ar',Vietnamese:'vi',Thai:'th',Nepali:'ne'};
+function lang(){return $('lang').value;}
+function wtr(w){var c=L2[lang()],t=DATA.wt[w];return (c&&t&&t[c])||'';}
+function tr(text,lg,cb){var k=text+'|'+lg;if(tcache[k]){cb(tcache[k]);return;}
+ var e=wtr(text.toLowerCase());if(e){cb(e);return;}
+ fetch(PROXY+'?action=translate&idiom='+encodeURIComponent(text)+'&meaning=&lang='+encodeURIComponent(lg)).then(function(r){return r.json();})
+ .then(function(d){var t=d&&d.translation?(d.translation.equiv||d.translation.meaning||(typeof d.translation==='string'?d.translation:'')):'';if(t)tcache[k]=t;cb(t||'');}).catch(function(){cb('');});}
+function logReveal(k,lg){if(!ST.email)return;var sig=k+'|'+lg;if(SENT[sig])return;SENT[sig]=true;
+ fetch(SUPA_URL+'/rest/v1/instruction_reveals',{method:'POST',headers:hdr('return=minimal'),body:JSON.stringify([{email:ST.email,set_slug:SLUG,activity:k,lang:lg}])}).catch(function(){});}
+function showDirections(){var lg=lang();
+ document.querySelectorAll('[data-dir]').forEach(function(p){var out=p.querySelector('.dirtr');if(!out){out=document.createElement('span');out.className='dirtr';out.setAttribute('translate','no');p.appendChild(out);}
+  if(!DIR_ON||!lg){out.textContent='';return;}var k=p.getAttribute('data-dir');out.textContent='\u2026';tr(p.getAttribute('data-en'),lg,function(t){out.textContent=t;if(t)logReveal(k,lg);});});}
+function toggleDir(){if(!DIR_ON&&!lang()){alert('First choose your language in the purple bar.');$('lang').focus();return;}DIR_ON=!DIR_ON;$('dirBtn').classList.toggle('on',DIR_ON);showDirections();}
+function setLang(v){try{localStorage.setItem('eld103_lang',v);localStorage.setItem('vocab_lang',v);}catch(e){}DIR_ON=!!v;$('dirBtn').classList.toggle('on',DIR_ON);showDirections();if(!v&&WT)toggleWT();if(ST.act===1)rWords();}
+function savedLang(){try{return localStorage.getItem('vocab_lang')||localStorage.getItem('eld103_lang')||'';}catch(e){return '';}}
+
+/* ===================== LISTEN + SAY ===================== */
+function spk(t){return '<button class="spk" type="button" onclick="speak(\''+String(t).replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\',this)" aria-label="Listen">\ud83d\udd0a</button>';}
+var VOICE=null;
+function pickVoice(){try{var vs=speechSynthesis.getVoices().filter(function(v){return /^en[-_]/i.test(v.lang);});VOICE=vs.filter(function(v){return /US/i.test(v.lang);})[0]||vs[0]||null;}catch(e){}}
+function speak(t,btn){if(!window.speechSynthesis)return;speechSynthesis.cancel();if(!VOICE)pickVoice();
+ var say=String(t).replace(/_{2,}/g,' blank ').replace(/\bI\b/g,'eye');var u=new SpeechSynthesisUtterance(say);if(VOICE)u.voice=VOICE;u.rate=.9;
+ if(btn){btn.classList.add('on');u.onend=u.onerror=function(){btn.classList.remove('on');};}speechSynthesis.speak(u);}
+if(window.speechSynthesis){pickVoice();speechSynthesis.onvoiceschanged=pickVoice;}
+function sayLang(){var v=lang();return v||'none';}
+var SAY_CTL=null;
+function sayTranslate(w,el){if(!lang()){alert('First choose your language in the purple bar.');$('lang').focus();return;}var r=el.getBoundingClientRect();showWord(w,r.left+r.width/2,r.top);}
+function openSay(){shareLogin();if(!ST.sayOpened){ST.sayOpened=true;}
+ if(!window.Say||!$('sayMount'))return;if(SAY_CTL){SAY_CTL.refresh&&SAY_CTL.refresh();return;}
+ SAY_CTL=Say.mount($('sayMount'),{set:DATA.say,student:function(){return ST.email?{email:ST.email,name:ST.name,period:ST.period}:null;},lang:sayLang,translate:sayTranslate});}
+
+/* ===================== TAP WORDS ===================== */
+var WT=false;
+function toggleWT(){if(!WT&&!lang()){alert('First choose your language in the purple bar, then turn on Tap words.');return;}WT=!WT;document.body.classList.toggle('wt',WT);$('wtBtn').classList.toggle('on',WT);hideTip();}
+function hideTip(){$('wtip').classList.remove('show');}
+document.addEventListener('click',function(ev){if(!WT)return;if(ev.target.closest&&ev.target.closest('#sayMount'))return;if(ev.target.closest&&ev.target.closest('textarea,input,select'))return;
+ var host=ev.target.closest&&(ev.target.closest('[translate="no"]')||ev.target.closest('.dir'));if(!host)return;
+ ev.preventDefault();ev.stopPropagation();var w=pickWord(ev);if(w)showWord(w,ev.clientX,ev.clientY);},true);
+function pickWord(ev){var t=ev.target,txt=(t.textContent||'').trim();if(txt&&txt.split(/\s+/).length===1)return txt.replace(/^[^\w']+|[^\w']+$/g,'');
+ var r=null;if(document.caretRangeFromPoint)r=document.caretRangeFromPoint(ev.clientX,ev.clientY);else if(document.caretPositionFromPoint){var cp=document.caretPositionFromPoint(ev.clientX,ev.clientY);if(cp){r=document.createRange();r.setStart(cp.offsetNode,cp.offset);}}
+ if(!r||!r.startContainer||r.startContainer.nodeType!==3)return '';var s=r.startContainer.textContent,i=r.startOffset,a=i,b=i;
+ while(a>0&&/[\w']/.test(s.charAt(a-1)))a--;while(b<s.length&&/[\w']/.test(s.charAt(b)))b++;return s.slice(a,b);}
+function showWord(word,x,y){var tip=$('wtip');$('wtipW').textContent=word;$('wtipT').textContent='\u2026';tip.classList.add('show');
+ var w=tip.offsetWidth||220,h=tip.offsetHeight||60;tip.style.left=Math.max(8,Math.min(x-w/2,window.innerWidth-w-8))+'px';tip.style.top=(y-h-14<8?y+18:y-h-14)+'px';
+ tr(word,lang(),function(t){$('wtipT').textContent=t||'(not found)';});}
+document.addEventListener('scroll',hideTip,true);
+
+/* ===================== BROWSER-TRANSLATION CANARY ===================== */
+var CANARY='the quick brown fox jumps over the lazy dog',SENT_T='';
+function checkCanary(){var c=$('canary'),got=c?(c.textContent||'').trim().toLowerCase():'';var cls=document.documentElement.className||'';var drift=(c&&got!==CANARY)?got:'';
+ if(!drift&&!/translated/.test(cls))return;if(!ST.email)return;var sig=drift+'|'+(document.documentElement.lang||'');if(sig===SENT_T)return;SENT_T=sig;
+ fetch(SUPA_URL+'/rest/v1/page_translation?on_conflict=email,set_slug',{method:'POST',headers:hdr('resolution=merge-duplicates,return=minimal'),
+  body:JSON.stringify([{email:ST.email,set_slug:SLUG,translated:true,observed:drift,html_lang:document.documentElement.lang||'',html_class:cls,updated_at:new Date().toISOString()}])}).catch(function(){});}
+
+/* ===================== BOOT ===================== */
+function boot(){
+ for(var r=1;r<=8;r++)renderRung(r);   // register every item so scores and locks are known
+ var L=savedLang();if(L){$('lang').value=L;DIR_ON=true;$('dirBtn').classList.add('on');}
+ go(0);dot('on');if(L)showDirections();
+ askName();
+ setTimeout(checkCanary,2500);setInterval(checkCanary,20000);
+ setInterval(function(){push(false);},20000);
+ document.addEventListener('visibilitychange',function(){if(document.hidden)push(false);});
+ window.addEventListener('pagehide',function(){push(false);});
+}
+document.addEventListener('DOMContentLoaded',boot);
+</script>
+<script src="/readings/track.js"></script>
+</body>
+</html>

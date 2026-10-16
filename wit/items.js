@@ -34,7 +34,15 @@ sort: [
  {lvl:'103',t:'gen',s:'Chief Powhatan wanted peace with the settlers.',k:'statement'},
  {lvl:'103',t:'gen',s:'Was the war necessary?',k:'question'},
  {lvl:'103',t:'gen',s:'Compare the two leaders.',k:'command'},
- {lvl:'103',t:'gen',s:'I can\u2019t believe he said that!',k:'exclamation'}
+ {lvl:'103',t:'gen',s:'I can\u2019t believe he said that!',k:'exclamation'},
+ {lvl:'103',t:'landlady',s:'Billy Weaver arrived in Bath on a cold evening.',k:'statement'},
+ {lvl:'103',t:'landlady',s:'Why did the landlady charge so little?',k:'question'},
+ {lvl:'103',t:'landlady',s:'Look at the names in the guest book.',k:'command'},
+ {lvl:'103',t:'landlady',s:'What a strange smell that tea has!',k:'exclamation'},
+ {lvl:'103',t:'landlady',s:'The parrot in the window never moved.',k:'statement'},
+ {lvl:'103',t:'landlady',s:'Who were the other two guests?',k:'question'},
+ {lvl:'103',t:'landlady',s:'Ring the bell and wait.',k:'command'},
+ {lvl:'103',t:'landlady',s:'I can\u2019t believe he signed the book!',k:'exclamation'}
 ],
 
 /* 2 · SENTENCE SCRAMBLE — tap the words in order, then the end mark. */
@@ -57,7 +65,11 @@ scramble: [
  {lvl:'103',t:'gen',s:'Why is high school not voluntary?'},
  {lvl:'103',t:'gen',s:'The Party changes the news every day.'},
  {lvl:'103',t:'gen',s:'Miantonomo wanted war because he feared the colonists.'},
- {lvl:'103',t:'gen',s:'Does Winston have any real friends?'}
+ {lvl:'103',t:'gen',s:'Does Winston have any real friends?'},
+ {lvl:'103',t:'landlady',s:'Billy was looking for a cheap place to stay.'},
+ {lvl:'103',t:'landlady',s:'The landlady seemed kind but a little strange.'},
+ {lvl:'103',t:'landlady',s:'Both names in the book sounded familiar.'},
+ {lvl:'103',t:'landlady',s:'The tea tasted of bitter almonds.'}
 ],
 
 /* 3 · SENTENCE OR FRAGMENT? — tap S or F. If F, tap the repair that makes it a sentence. */
@@ -84,7 +96,13 @@ fragment: [
  {lvl:'103',t:'gen',s:'Miantonomo, the Narragansett leader',k:'F',fix:'Miantonomo, the Narragansett leader, wanted war.',wrong:['Miantonomo, the Narragansett leader.','The Narragansett leader, Miantonomo.']},
  {lvl:'103',t:'gen',s:'Winston hates Big Brother',k:'S',fix:'Winston hates Big Brother.'},
  {lvl:'103',t:'gen',s:'although the settlers wanted land',k:'F',fix:'Although the settlers wanted land, Powhatan wanted peace.',wrong:['Although the settlers wanted land.','Although wanting land the settlers.']},
- {lvl:'103',t:'gen',s:'his co-workers love Big Brother',k:'S',fix:'His co-workers love Big Brother.'}
+ {lvl:'103',t:'gen',s:'his co-workers love Big Brother',k:'S',fix:'His co-workers love Big Brother.'},
+ {lvl:'103',t:'landlady',s:'because the room was cheap',k:'F',fix:'Billy chose the house because the room was cheap.',wrong:['Because the room was cheap.','Because the room was cheap and warm.']},
+ {lvl:'103',t:'landlady',s:'the landlady smiled at him',k:'S',fix:'The landlady smiled at him.'},
+ {lvl:'103',t:'landlady',s:'a parrot in the window',k:'F',fix:'A parrot sat in the window.',wrong:['A parrot in the window.','A green parrot in the window.']},
+ {lvl:'103',t:'landlady',s:'the names sounded familiar',k:'S',fix:'The names sounded familiar.'},
+ {lvl:'103',t:'landlady',s:'waiting on the threshold',k:'F',fix:'Billy was waiting on the threshold.',wrong:['Waiting on the threshold.','Waiting on the threshold for a minute.']},
+ {lvl:'103',t:'landlady',s:'the dog did not move',k:'S',fix:'The dog did not move.'}
 ],
 
 /* 4 · SENTENCE TYPES — one picture; write a statement, a question, a command, an exclamation. */
@@ -129,7 +147,13 @@ bbs_choose: [
  {lvl:'103',t:'gen',s:'Chief Powhatan wanted peace, ___ he offered the settlers food.',a:'so'},
  {lvl:'103',t:'gen',s:'Winston writes in his diary ___ he wants to remember the truth.',a:'because'},
  {lvl:'103',t:'gen',s:'Winston writes in his diary, ___ it is a crime.',a:'but'},
- {lvl:'103',t:'gen',s:'Winston writes in his diary, ___ he hides it from the telescreen.',a:'so'}
+ {lvl:'103',t:'gen',s:'Winston writes in his diary, ___ he hides it from the telescreen.',a:'so'},
+ {lvl:'103',t:'landlady',s:'Billy rang the bell ___ the sign seemed to pull him toward the door.',a:'because'},
+ {lvl:'103',t:'landlady',s:'The price was low, ___ Billy decided to stay.',a:'so'},
+ {lvl:'103',t:'landlady',s:'The landlady was friendly, ___ something about her felt strange.',a:'but'},
+ {lvl:'103',t:'landlady',s:'The parrot looked alive ___ it had been carefully preserved.',a:'because'},
+ {lvl:'103',t:'landlady',s:'Billy remembered the names, ___ he could not say where he had seen them.',a:'but'},
+ {lvl:'103',t:'landlady',s:'Billy was tired, ___ he went straight up to the warm room.',a:'so'}
 ],
 bbs_write: [
  {lvl:'101',t:'u1-l1',stem:'I came to school today'},
@@ -139,7 +163,9 @@ bbs_write: [
  {lvl:'103',t:'gen',stem:'High school is not voluntary'},
  {lvl:'103',t:'gen',stem:'Miantonomo wanted war'},
  {lvl:'103',t:'gen',stem:'Chief Powhatan wanted peace'},
- {lvl:'103',t:'gen',stem:'Winston writes in his diary'}
+ {lvl:'103',t:'gen',stem:'Winston writes in his diary'},
+ {lvl:'103',t:'landlady',stem:'Billy decided to stay at the bed and breakfast'},
+ {lvl:'103',t:'landlady',stem:'The landlady seemed kind'}
 ],
 /* The deck's own glossary for the three conjunctions (shown under the activity; other languages use tap-to-translate). */
 bbs_gloss: {
@@ -158,7 +184,10 @@ expand: [
  {lvl:'103',t:'gen',k:'Winston works.',qs:['where?','what?','why?'],model:'Winston works at the Ministry of Truth, changing old news because the Party demands it.'},
  {lvl:'103',t:'gen',k:'The chief spoke.',qs:['who?','when?','how?'],model:'The chief spoke to the colonists at dawn, calmly but firmly.'},
  {lvl:'103',t:'gen',k:'The students protested.',qs:['why?','where?','when?'],model:'The students protested outside the capitol last spring because the law was unfair.'},
- {lvl:'103',t:'gen',k:'She hid the letter.',qs:['where?','why?','how?'],model:'She hid the letter under the floorboard, quickly and quietly, because the guards were coming.'}
+ {lvl:'103',t:'gen',k:'She hid the letter.',qs:['where?','why?','how?'],model:'She hid the letter under the floorboard, quickly and quietly, because the guards were coming.'},
+ {lvl:'103',t:'landlady',k:'Billy walked.',qs:['where?','when?','how?'],model:'Billy walked briskly down the dark street at nine o\u2019clock, looking for a place to stay.'},
+ {lvl:'103',t:'landlady',k:'The landlady poured tea.',qs:['for whom?','when?','why?'],model:'The landlady poured tea for Billy after he signed the book, because she wanted him to stay.'},
+ {lvl:'103',t:'landlady',k:'The dog slept.',qs:['where?','how?'],model:'The dog slept by the fire, perfectly still, like a toy.'}
 ],
 
 /* 7 · PARALLEL REVISION — same meaning, better writing. */
