@@ -639,6 +639,42 @@ input.fr:focus{ outline:none; background:#fdf7e8; }
   .reveal,.sumbox,.chbox,.donebox{ break-inside:avoid; border-color:#999; background:#fff !important; }
   input.fr{ border-bottom:1px solid #666; }
 }
+
+/* ============ highlighting, the Enjoy the Silence way ============ */
+.hlnum{ position:absolute; left:-2.1rem; top:.15rem; width:1.5rem; height:1.5rem;
+  border:1px solid var(--border); border-radius:4px; background:var(--card);
+  color:var(--fog); font-family:'Courier Prime',monospace; font-size:.66rem;
+  line-height:1.4rem; text-align:center; cursor:pointer; user-select:none; }
+.hlnum:hover{ border-color:var(--amber); color:var(--amber-text); }
+.story p.hl-y{ background:#fff1b0; }
+.story p.hl-p{ background:#ffd9e2; }
+.story p.hl-b{ background:#bfe0f5; }
+.story p[class*="hl-"]{ border-radius:4px; padding:.25rem .5rem; margin-left:-.5rem; }
+.hlnum.on{ border-color:var(--ink); color:var(--ink); font-weight:700; }
+.hllegend{ display:flex; align-items:center; gap:.4rem; flex-wrap:wrap;
+  font-family:'Courier Prime',monospace; font-size:.68rem; color:var(--fog); margin:.6rem 0 1rem; }
+.hllegend .dot{ display:inline-block; width:14px; height:14px; border-radius:3px;
+  border:1px solid var(--border); }
+@media (max-width:1099px){ .hlnum{ position:static; display:inline-block; margin-right:.35rem; } }
+@media print{
+  .hlnum{ display:none !important; }
+  .story p[class*="hl-"]{ -webkit-print-color-adjust:exact; print-color-adjust:exact;
+    border-left:4px solid #888; padding-left:.4rem; }
+}
+
+/* ============ notes into a paragraph ============ */
+.model{ background:var(--card); border:1px solid var(--border); border-radius:6px;
+  padding:1.1rem 1.2rem 1.2rem; margin:1.6rem 0; }
+.model h4{ font-family:'Playfair Display',serif; font-size:1.15rem; margin:0 0 .5rem; }
+.model .step{ font-family:'Courier Prime',monospace; font-size:.64rem; letter-spacing:.15em;
+  text-transform:uppercase; color:var(--amber-text); margin:.9rem 0 .3rem; }
+.model .ex{ font-family:'Lora',Georgia,serif; font-size:.9rem; line-height:1.65;
+  background:var(--warm-bg); border-left:3px solid var(--amber); border-radius:3px;
+  padding:.6rem .8rem; margin:.2rem 0; }
+.model .ex.hl{ background:#fff1b0; border-left-color:#c8a227; }
+.model .ex.para{ background:#fff; border-left-color:#3d6b4a; }
+.model p{ font-family:'Lora',Georgia,serif; font-size:.92rem; line-height:1.7; margin:.4rem 0; }
+.model .arrow{ text-align:center; color:var(--fog); font-size:1.1rem; margin:.1rem 0; }
 </style>
 </head>
 <span id="canary" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden">the quick brown fox jumps over the lazy dog</span>
@@ -1623,6 +1659,29 @@ input.fr:focus{ outline:none; background:#fdf7e8; }
   <div class="wc">0 words</div>
 </div>
 
+
+<div class="model">
+  <h4>From notes to a paragraph</h4>
+  <p>This is how a reader turns what they noticed into writing. Watch how it works, then do the same with your own highlights.</p>
+
+  <div class="step">Step 1 &middot; highlight what matters</div>
+  <div class="ex hl">“There were no other hats or coats in the hall. There were no umbrellas, no walking-sticks — nothing.”</div>
+  <div class="ex hl">“The tea tasted faintly of bitter almonds, and he didn’t much care for it.”</div>
+
+  <div class="arrow">↓</div>
+
+  <div class="step">Step 2 &middot; write a short note in your own words</div>
+  <div class="ex">no coats → nobody else is staying. she lied about other guests?</div>
+  <div class="ex">almond taste → poison. he notices but drinks it anyway</div>
+
+  <div class="arrow">↓</div>
+
+  <div class="step">Step 3 &middot; join the notes into a paragraph</div>
+  <div class="ex para">Dahl gives Billy every warning he needs. The hall holds no coats, no umbrellas and no walking-sticks, which quietly tells him that nobody else is staying in the house. Later the tea tastes of bitter almonds — the taste of poison — and Billy notices it and drinks anyway. The clues are never hidden. Billy simply decides not to see them.</div>
+
+  <p><b>Notice three things.</b> The paragraph begins with an idea, not a quote. Each note becomes a sentence. And the last sentence says what it all means — that is the part that makes it writing, not a list.</p>
+</div>
+
 <div class="sumbox">
   <h4>Write a summary of the story</h4>
   <p class="sum-lead" translate="yes" data-en="A summary tells what happened, in order, in your own words. It leaves out small details. Choose how much help you want — all three get full marks." data-dir="sumlead">A summary tells what happened, in order, in your own words. It leaves out the small details. Choose how much help you want — all three are worth the same.</p>
@@ -2208,6 +2267,7 @@ function collectPayload(){
   out.meta.mode = curMode;
   out.meta.lang = curLang;
   out.notes = NOTES;
+  out.highlights = (typeof HL !== "undefined") ? HL : {};
   out.vocab_check = (typeof VQ !== "undefined") ? VQ : null;
   return out;
 }
@@ -2306,6 +2366,9 @@ function pullRow(){
       }
       if(data[0].payload.notes && !Object.keys(NOTES).length){
         NOTES = data[0].payload.notes; saveNotes(); drawNotes();
+      }
+      if(data[0].payload.highlights && !Object.keys(HL).length){
+        HL = data[0].payload.highlights; saveHL(); applyHL();
       }
       saveLocal();
       restoreChoices();
@@ -2889,6 +2952,63 @@ showScore();
   try{ saved = localStorage.getItem(KEY); }catch(e){}
   show(saved || "2");
   rollUp();
+})();
+
+
+/* ---------- highlighting: tap a paragraph number to cycle the colour ---------- */
+var HL = {};
+var HLS = ["y", "p", "b"];
+try{ HL = JSON.parse(localStorage.getItem(LKEY + "_hl") || "{}") || {}; }catch(e){ HL = {}; }
+
+function saveHL(){
+  try{ localStorage.setItem(LKEY + "_hl", JSON.stringify(HL)); }catch(e){}
+}
+function applyHL(){
+  var ps = document.querySelectorAll(".story p[data-p]"), i;
+  for(i = 0; i < ps.length; i++){
+    var id = ps[i].getAttribute("data-p");
+    ps[i].classList.remove("hl-y", "hl-p", "hl-b");
+    if(HL[id]) ps[i].classList.add("hl-" + HL[id]);
+    var n = ps[i].querySelector(".hlnum");
+    if(n) n.className = "hlnum" + (HL[id] ? " on" : "");
+  }
+}
+function addNums(){
+  var ps = document.querySelectorAll(".story p[data-p]"), i;
+  for(i = 0; i < ps.length; i++){
+    if(ps[i].querySelector(".hlnum")) continue;
+    var id = ps[i].getAttribute("data-p");
+    var n = document.createElement("span");
+    n.className = "hlnum";
+    n.textContent = id;
+    n.title = "Tap to highlight this paragraph";
+    (function(key){
+      n.addEventListener("click", function(ev){
+        ev.stopPropagation();
+        var cur = HL[key] || "";
+        var nx = HLS[(HLS.indexOf(cur) + 1) % (HLS.length + 1)];
+        if(nx) HL[key] = nx; else delete HL[key];
+        saveHL(); applyHL(); queueSave();
+      });
+    })(id);
+    ps[i].insertBefore(n, ps[i].firstChild);
+  }
+}
+addNums();
+applyHL();
+
+/* a short key, right above the story */
+(function(){
+  var first = document.querySelector(".part-header");
+  if(!first) return;
+  var l = document.createElement("div");
+  l.className = "hllegend";
+  l.innerHTML = '<span translate="yes">Tap a paragraph number to highlight it:</span>' +
+    '<span class="dot" style="background:#fff1b0"></span>' +
+    '<span class="dot" style="background:#ffd9e2"></span>' +
+    '<span class="dot" style="background:#bfe0f5"></span>' +
+    '<span>tap again to clear</span>';
+  first.parentNode.insertBefore(l, first);
 })();
 
 </script>
