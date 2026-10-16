@@ -160,6 +160,31 @@
              '<path d="M-24,10 q12,-26 24,-4 q12,-26 24,-4" fill="none" stroke="#1f8a7e" stroke-width="4"/>' +
              '<circle cx="14" cy="-22" r="9" fill="#F8981F"/></g>';
     }
+    if (name === 'backpack') {
+      /* Jun's orange backpack, carried at the side by one strap */
+      return '<g transform="translate(118,-200)"><path d="M-10,-62 Q-40,-170 -84,-128" fill="none" stroke="#c9742a" stroke-width="12" stroke-linecap="round"/>' +
+             '<rect x="-44" y="-70" width="88" height="130" rx="22" fill="#F8981F"/><rect x="-44" y="-70" width="88" height="46" rx="22" fill="#e07f12"/>' +
+             '<rect x="-30" y="0" width="60" height="42" rx="12" fill="#ffb648" stroke="#c9742a" stroke-width="3"/>' +
+             '<rect x="-14" y="-30" width="28" height="10" rx="5" fill="#2b2233"/>' +
+             '<path d="M0,42 L0,60" stroke="#2b2233" stroke-width="4"/></g>';
+    }
+    if (name === 'pencil') {
+      return '<g transform="translate(96,-44) rotate(-58)"><rect x="-56" y="-8" width="100" height="16" rx="3" fill="#f2c230"/>' +
+             '<path d="M44,-8 L66,0 L44,8 Z" fill="#e8c9a0"/><path d="M58,-3 L66,0 L58,3 Z" fill="#2b2233"/>' +
+             '<rect x="-56" y="-8" width="14" height="16" fill="#e98aa5"/><rect x="-42" y="-8" width="6" height="16" fill="#9aa3ad"/></g>';
+    }
+    if (name === 'notebook') {
+      return '<g transform="translate(74,-214) rotate(8)"><rect x="-30" y="-40" width="60" height="78" rx="4" fill="#2f6fbd"/>' +
+             '<rect x="-22" y="-32" width="46" height="62" rx="3" fill="#fffdf8"/>' +
+             '<path d="M-14,-18 L16,-18 M-14,-6 L16,-6 M-14,6 L12,6 M-14,18 L14,18" stroke="#9aa3ad" stroke-width="3"/>' +
+             '<path d="M-30,-30 L-36,-30 M-30,-16 L-36,-16 M-30,-2 L-36,-2 M-30,12 L-36,12 M-30,26 L-36,26" stroke="#8b8f98" stroke-width="4" stroke-linecap="round"/></g>';
+    }
+    if (name === 'calculator') {
+      var cs = '<g transform="translate(-70,-250) rotate(-8)"><rect x="-30" y="-48" width="60" height="96" rx="8" fill="#5b6b7c"/>' +
+               '<rect x="-22" y="-40" width="44" height="24" rx="3" fill="#dfe9d3"/>';
+      for (var r = 0; r < 3; r++) for (var k = 0; k < 3; k++) cs += '<rect x="' + (-22 + k * 16) + '" y="' + (-8 + r * 16) + '" width="12" height="11" rx="3" fill="' + (k === 2 ? '#F8981F' : '#fffdf8') + '"/>';
+      return cs + '</g>';
+    }
     if (name === 'paper') {
       return '<g transform="translate(74,-214) rotate(10)"><rect x="-24" y="-32" width="48" height="62" rx="3" fill="#fffdf8" stroke="#c9c2b3" stroke-width="2"/>' +
              '<path d="M-14,-18 L14,-18 M-14,-6 L14,-6 M-14,6 L10,6 M-14,18 L12,18" stroke="#9aa3ad" stroke-width="3"/></g>';
@@ -167,7 +192,7 @@
     return '';
   }
 
-  /* opts: {expr, pose:'idle'|'wave'|'point'|'spin'|'think', hold:'ball'|'sketchbook', talk:bool} */
+  /* opts: {expr, pose:'idle'|'wave'|'point'|'spin'|'think'|'read'|'write', hold:'ball'|'sketchbook'|'paper'|'backpack'|'pencil'|'notebook'|'calculator', talk:bool} */
   R.drawChar = function (id, opts) {
     var c = R.CAST[id]; if (!c) return '';
     opts = opts || {};
@@ -353,6 +378,106 @@
     s += '<text x="670" y="290" text-anchor="middle" font-family="Nunito,Arial,sans-serif" font-size="46" fill="#864D9E">♪ ♫ ♪</text>';
     s += '<rect x="0" y="628" width="1600" height="16" fill="#b7c9c1"/>';
     s += floor('#caa77a');
+    /* a keyboard piano on a stand, under the Music poster */
+    s += '<rect x="540" y="700" width="10" height="110" fill="#2b2233"/><rect x="790" y="700" width="10" height="110" fill="#2b2233"/>';
+    s += '<rect x="520" y="660" width="300" height="46" rx="6" fill="#2b2233"/><rect x="530" y="668" width="280" height="30" fill="#fffdf8"/>';
+    for (var kk = 0; kk < 20; kk++) {
+      s += '<path d="M' + (544 + kk * 14) + ',668 L' + (544 + kk * 14) + ',698" stroke="#c9c2b3" stroke-width="1.5"/>';
+      if (kk % 7 !== 2 && kk % 7 !== 6) s += '<rect x="' + (539 + kk * 14) + '" y="668" width="9" height="18" fill="#2b2233"/>';
+    }
+    return s;
+  };
+  /* ---------- Episode 2 places ---------- */
+  function shelf(x, y, w, rows) {
+    var bc = ['#864D9E', '#F8981F', '#2f6fbd', '#1f8a7e', '#d9567f', '#c9412e', '#5b6b7c'], s = '';
+    s += '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + (rows * 150 + 20) + '" fill="#9c7650"/>';
+    for (var r = 0; r < rows; r++) {
+      s += '<rect x="' + (x + 10) + '" y="' + (y + 145 + r * 150) + '" width="' + (w - 20) + '" height="12" fill="#7d5c3c"/>';
+      for (var k = 0; k < Math.floor((w - 30) / 44); k++) {
+        var bh = 90 + ((k * 37 + r * 11 + x) % 30);
+        s += '<rect x="' + (x + 24 + k * 44) + '" y="' + (y + 145 + r * 150 - bh) + '" width="36" height="' + bh + '" rx="3" fill="' + bc[(k + r * 2 + x / 10) % bc.length | 0] + '"/>';
+      }
+    }
+    return s;
+  }
+  function sign(x, y, w, word, col) {
+    return '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="72" rx="10" fill="' + (col || '#864D9E') + '"/>' +
+           '<text x="' + (x + w / 2) + '" y="' + (y + 50) + '" text-anchor="middle" font-family="Nunito,Arial,sans-serif" font-weight="900" font-size="42" fill="#fff">' + word + '</text>';
+  }
+  R.BG.library = function () {
+    var s = '<rect width="1600" height="900" fill="#f1e9d8"/>';
+    s += '<rect x="0" y="0" width="1600" height="60" fill="#e4d9c3"/>';
+    s += shelf(60, 170, 420, 3) + shelf(1120, 170, 420, 3);
+    s += sign(620, 90, 360, 'Library');
+    s += '<rect x="560" y="200" width="480" height="240" rx="8" fill="#fffdf8" stroke="#e0d7c8" stroke-width="3"/>';
+    s += '<text x="800" y="290" text-anchor="middle" font-family="Nunito,Arial,sans-serif" font-weight="900" font-size="40" fill="#1f8a7e">Quiet, please</text>';
+    s += '<text x="800" y="360" text-anchor="middle" font-family="Nunito,Arial,sans-serif" font-size="60" fill="#864D9E">📚 🤫</text>';
+    s += '<rect x="0" y="628" width="1600" height="16" fill="#d9ccb0"/>';
+    s += floor('#b9c7d6');
+    /* reading table with two books */
+    s += '<rect x="560" y="720" width="12" height="100" fill="#7d5c3c"/><rect x="1028" y="720" width="12" height="100" fill="#7d5c3c"/>';
+    s += '<rect x="520" y="700" width="560" height="26" rx="6" fill="#c89a62"/>';
+    s += '<rect x="620" y="682" width="90" height="20" rx="3" fill="#2f6fbd"/><rect x="880" y="682" width="90" height="20" rx="3" fill="#c9412e"/>';
+    return s;
+  };
+  R.BG.gym = function () {
+    var s = '<rect width="1600" height="900" fill="#e8ddd0"/>';
+    s += '<rect x="0" y="0" width="1600" height="60" fill="#d8ccbc"/>';
+    for (var i = 0; i < 4; i++) s += '<rect x="' + (120 + i * 400) + '" y="14" width="200" height="14" rx="7" fill="#fffbe8"/>';
+    s += '<rect x="120" y="150" width="520" height="100" rx="12" fill="#864D9E"/>';
+    s += '<text x="380" y="216" text-anchor="middle" font-family="Nunito,Arial,sans-serif" font-weight="900" font-size="52" fill="#F8981F">GO LIONS!</text>';
+    s += sign(700, 90, 260, 'Gym', '#1f8a7e');
+    /* basketball hoop */
+    s += '<rect x="1300" y="150" width="200" height="140" rx="6" fill="#fffdf8" stroke="#2b2233" stroke-width="6"/><rect x="1350" y="200" width="100" height="70" fill="none" stroke="#c9412e" stroke-width="6"/>';
+    s += '<ellipse cx="1400" cy="290" rx="52" ry="12" fill="none" stroke="#F8981F" stroke-width="8"/>';
+    s += '<path d="M1352,296 L1366,360 M1376,298 L1384,362 M1400,300 L1400,364 M1424,298 L1416,362 M1448,296 L1434,360 M1356,330 L1444,330 M1368,350 L1432,350" stroke="#fff" stroke-width="3"/>';
+    s += '<rect x="1394" y="290" width="12" height="340" fill="#8b8f98"/>';
+    s += '<rect x="0" y="628" width="1600" height="16" fill="#cbbfae"/>';
+    s += floor('#d6a564');
+    s += '<path d="M0,760 L1600,760" stroke="#864D9E" stroke-width="8"/><circle cx="800" cy="760" r="90" fill="none" stroke="#864D9E" stroke-width="8"/>';
+    return s;
+  };
+  R.BG.cafeteria = function () {
+    var s = '<rect width="1600" height="900" fill="#fbead6"/>';
+    s += '<rect x="0" y="0" width="1600" height="60" fill="#f1dcc2"/>';
+    s += sign(600, 90, 400, 'Cafeteria', '#c9412e');
+    /* serving counter with a menu board */
+    s += '<rect x="80" y="180" width="440" height="260" rx="10" fill="#2b2233"/>';
+    s += '<text x="300" y="250" text-anchor="middle" font-family="Nunito,Arial,sans-serif" font-weight="900" font-size="40" fill="#fffdf8">Lunch</text>';
+    s += '<text x="300" y="310" text-anchor="middle" font-family="Nunito,Arial,sans-serif" font-weight="700" font-size="30" fill="#F8981F">🍕 🍎 🥛</text>';
+    s += '<text x="300" y="370" text-anchor="middle" font-family="Nunito,Arial,sans-serif" font-weight="700" font-size="30" fill="#8fd3c6">🌮 🍌 🥤</text>';
+    s += '<rect x="60" y="470" width="480" height="160" rx="8" fill="#9aa3ad"/><rect x="60" y="470" width="480" height="30" fill="#c0c7cf"/>';
+    s += '<rect x="110" y="438" width="70" height="36" rx="6" fill="#F8981F"/><rect x="200" y="438" width="70" height="36" rx="6" fill="#2f6fbd"/><rect x="290" y="438" width="70" height="36" rx="6" fill="#1f8a7e"/>';
+    /* windows */
+    s += '<rect x="640" y="180" width="380" height="260" rx="6" fill="#cfe7f2" stroke="#fbfaf7" stroke-width="12"/><rect x="1100" y="180" width="380" height="260" rx="6" fill="#cfe7f2" stroke="#fbfaf7" stroke-width="12"/>';
+    s += '<rect x="0" y="628" width="1600" height="16" fill="#e8cdb0"/>';
+    s += floor('#e2d4c0');
+    /* long lunch tables with benches */
+    for (var t = 0; t < 2; t++) {
+      var x = 620 + t * 480;
+      s += '<rect x="' + (x + 30) + '" y="730" width="12" height="90" fill="#8b8f98"/><rect x="' + (x + 378) + '" y="730" width="12" height="90" fill="#8b8f98"/>';
+      s += '<rect x="' + x + '" y="704" width="420" height="28" rx="8" fill="#c9412e"/>';
+      s += '<rect x="' + (x + 20) + '" y="776" width="380" height="18" rx="6" fill="#8b8f98"/>';
+      s += '<rect x="' + (x + 120) + '" y="688" width="70" height="18" rx="4" fill="#F8981F"/><rect x="' + (x + 240) + '" y="688" width="70" height="18" rx="4" fill="#2f6fbd"/>';
+    }
+    return s;
+  };
+
+  /* ---------- things lying around a scene (scene.items / line.items) ---------- */
+  R.item = function (kind, x) {
+    var y = R.GROUND;
+    if (kind === 'backpack') {
+      return '<g transform="translate(' + x + ',' + y + ')"><ellipse cx="0" cy="2" rx="70" ry="12" fill="#000" opacity=".13"/>' +
+             '<path d="M-30,-130 Q-60,-190 -96,-120" fill="none" stroke="#c9742a" stroke-width="12" stroke-linecap="round"/>' +
+             '<rect x="-60" y="-150" width="120" height="150" rx="26" fill="#F8981F"/><rect x="-60" y="-150" width="120" height="54" rx="26" fill="#e07f12"/>' +
+             '<rect x="-40" y="-70" width="80" height="50" rx="14" fill="#ffb648" stroke="#c9742a" stroke-width="3"/>' +
+             '<rect x="-16" y="-106" width="32" height="12" rx="6" fill="#2b2233"/><path d="M0,-20 L0,0" stroke="#2b2233" stroke-width="4"/></g>';
+    }
+    return '';
+  };
+  R.itemsSVG = function (list) {
+    var s = '';
+    (list || []).forEach(function (it) { s += R.item(it.kind, it.x); });
     return s;
   };
 
@@ -360,7 +485,7 @@
   R.sceneSVG = function (scene, extraCls) {
     var bgFn = R.BG[scene.bg] || R.BG.classroom;
     var s = '<svg class="' + (extraCls || '') + '" viewBox="0 0 1600 900" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="' + (scene.alt || 'scene') + '">';
-    s += '<g class="bg">' + bgFn(scene.board) + '</g><g class="chars">';
+    s += '<g class="bg">' + bgFn(scene.board) + '</g><g class="items">' + R.itemsSVG(scene.items) + '</g><g class="chars">';
     var list = scene.chars || [];
     for (var i = 0; i < list.length; i++) {
       var p = list[i];

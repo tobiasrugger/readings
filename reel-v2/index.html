@@ -40,11 +40,6 @@
   .tscroll{overflow-x:auto;max-height:70vh;margin-top:10px}
   .pill{display:inline-block;border-radius:999px;padding:1px 9px;font-weight:800;font-size:13px}
   .yes{background:#e3f4e8;color:#2d7a47}.no{background:#f3eff6;color:var(--soft)}
-  select.tsel{border:2px solid var(--line);border-radius:8px;padding:3px 6px;font-weight:800;background:#fff}
-  select.tsel.A{background:#fff3e2;border-color:var(--orange)}select.tsel.B{background:#f1e8f6;border-color:var(--purple)}select.tsel.C{background:#e3f4e8;border-color:#2d7a47}
-  .ask{font-size:18px}
-  td.tier{white-space:nowrap}
-  .tnote{margin:10px 0 0;color:var(--soft);font-size:14px}
 </style>
 </head>
 <body>
@@ -79,12 +74,8 @@
         <select class="txt" id="tPer" style="max-width:160px"><option value="">All periods</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select>
         <button class="btn alt" id="tRefresh">Refresh</button>
         <button class="btn alt" id="tCsv">Download CSV</button>
-        <label style="margin-left:auto;font-weight:800;font-size:14px">Set all shown to
-          <select class="txt tsel" id="tAll" style="width:auto;display:inline-block"><option value="">…</option><option value="">Ask teacher</option><option value="A">A</option><option value="B">B</option><option value="C">C</option></select>
-        </label>
         <span id="tCount"></span>
       </div>
-      <p class="tnote">Tier: A words and voice · B synonyms and details · C paragraph. “Ask teacher” means no tier is set and the student sees all three cards. 🙋 = the student tapped “Ready for the next one?”.</p>
       <div class="tscroll"><table id="tTable"></table></div>
     </div>
   </section>
@@ -105,9 +96,14 @@
     { id: 'ep01', num: 1, title: 'The New Student', topic: 'Describing and comparing people',
       thumb: { bg: 'classroom', board: ['ELD 101', 'Talk to every classmate!'],
                chars: [ { id: 'mateo', x: 250, expr: 'happy' }, { id: 'linh', x: 520, expr: 'happy' }, { id: 'paolo', x: 780, expr: 'happy' },
-                        { id: 'amira', x: 1060, face: -1, expr: 'happy' }, { id: 'jun', x: 1340, face: -1, expr: 'smile' } ] } }
+                        { id: 'amira', x: 1060, face: -1, expr: 'happy' }, { id: 'jun', x: 1340, face: -1, expr: 'smile' } ] } },
+    { id: 'ep02', num: 2, title: 'The Backpack', topic: 'School supplies and places at school; has / have, plural -s, in the + place',
+      thumb: { bg: 'corner', items: [ { kind: 'backpack', x: 900 } ],
+               chars: [ { id: 'mateo', x: 120, expr: 'happy', hold: 'ball' }, { id: 'amira', x: 310, expr: 'happy', hold: 'sketchbook' },
+                        { id: 'linh', x: 500, expr: 'happy', hold: 'paper' }, { id: 'jun', x: 700, expr: 'happy', pose: 'point' },
+                        { id: 'paolo', x: 1260, face: -1, expr: 'happy' } ] } }
   ];
-  var NEXT = { num: 2, teaser: 'Where is Jun’s backpack?' };
+  var NEXT = { num: 3, teaser: 'What class do we have now?' };
 
   var h = '';
   EPISODES.forEach(function (e) {
@@ -167,66 +163,31 @@
     var w = r.work || {}, sc = r.scores || {}, ans = w.answers || {}, preds = [];
     Object.keys(ans).forEach(function (k) { if (ans[k].kind === 'predict') preds.push(k + ':' + (ans[k].pick != null ? 'ABC'.charAt(ans[k].pick) : '?')); });
     var yt = (w.yt && (w.yt[r.level] || w.yt.A)) || [];
-    var A = sc.tierA, B = sc.tierB, C = sc.tierC, t = w.tiers || {};
-    var a = A ? ('order ' + A.order + '/5' + (A.order_first != null && A.order_first !== A.order ? ' (first ' + A.order_first + ')' : '') + ' · topic ' + (A.topic ? '✓' : '✗') + (A.read ? ' · read ' + A.read.ok + '/' + A.read.total : '')) : '';
-    var b = (B != null) ? (B + '/4 changed') : '';
-    var c = C ? (C.words + ' words · ' + C.ideas + '/5 ideas · checked ' + C.checked + (C.revised ? ' · revised' : '')) : '';
     return { checks: (sc.checks_first_try || 0) + ' / ' + (sc.checks_total || 0), preds: preds.join(' '),
              s1: yt[0] || '', s2: yt[1] || '', s3: yt[2] || '', mins: Math.round((w.secs || 0) / 60),
-             done: !!w.done, reached: w.maxPos || 0, tier: r.tier || '', ask: !!t.askNext, open: t.open || '',
-             a: a, b: b, c: c, para: (t.C && t.C.text) || '', total: (sc.checks_first_try || 0) + (A ? A.order + A.topic : 0) + (B || 0) + (C ? C.pts : 0) };
-  }
-  function tierSel(r) {
-    var v = r.tier || '';
-    return '<select class="tsel ' + esc(v) + '" data-email="' + esc(r.email) + '"><option value=""' + (!v ? ' selected' : '') + '>Ask teacher</option>' +
-           ['A', 'B', 'C'].map(function (k) { return '<option' + (v === k ? ' selected' : '') + '>' + k + '</option>'; }).join('') + '</select>';
-  }
-  function setTier(email, v, done) {
-    fetch(SUPA_URL + '/rest/v1/reel_views?email=eq.' + encodeURIComponent(email) + '&episode=eq.' + encodeURIComponent($('tEp').value), {
-      method: 'PATCH', headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-      body: JSON.stringify({ tier: v || null })
-    }).then(function (r) {
-      if (!r.ok) throw r.status;
-      ROWS.forEach(function (x) { if (x.email === email) x.tier = v || null; });
-      done && done(true);
-    }).catch(function (s) { $('tCount').textContent = 'Could not save the tier (' + s + '). Run the SQL that adds the tier column.'; done && done(false); });
+             done: !!w.done, reached: w.maxPos || 0 };
   }
   function draw() {
     var per = $('tPer').value, list = ROWS.filter(function (r) { return !per || String(r.period) === per; });
-    var h = '<tr><th>Per</th><th>Name</th><th>Level</th><th>Finished</th><th>Checks (1st try)</th><th>Sentence 1</th><th>Sentence 2</th><th>Sentence 3</th><th>Tier</th><th>A</th><th>B</th><th>C</th><th>Turned in</th><th>Min</th></tr>';
+    var h = '<tr><th>Per</th><th>Name</th><th>Level</th><th>Finished</th><th>Checks (1st try)</th><th>Sentence 1</th><th>Sentence 2</th><th>Sentence 3</th><th>Turned in</th><th>Min</th></tr>';
     list.forEach(function (r) {
       var s = summarize(r);
       h += '<tr><td>' + esc(r.period) + '</td><td>' + esc(r.student_name) + '</td><td>' + esc(r.level) + '</td>' +
            '<td><span class="pill ' + (s.done ? 'yes' : 'no') + '">' + (s.done ? 'yes' : 'not yet') + '</span></td>' +
            '<td>' + s.checks + '</td><td>' + esc(s.s1) + '</td><td>' + esc(s.s2) + '</td><td>' + esc(s.s3) + '</td>' +
-           '<td class="tier">' + tierSel(r) + (s.ask ? ' <span class="ask" title="Ready for the next one?">🙋</span>' : '') + (!s.tier && s.open ? ' <span class="pill no">doing ' + esc(s.open) + '</span>' : '') + '</td>' +
-           '<td>' + esc(s.a) + '</td><td>' + esc(s.b) + '</td><td' + (s.para ? ' title="' + esc(s.para) + '"' : '') + '>' + esc(s.c) + '</td>' +
            '<td><span class="pill ' + (r.turned_in ? 'yes' : 'no') + '">' + (r.turned_in ? 'yes' : 'no') + '</span></td><td>' + s.mins + '</td></tr>';
     });
     $('tTable').innerHTML = h;
     $('tCount').textContent = list.length + ' students';
-    $('tTable').querySelectorAll('.tsel').forEach(function (sel) {
-      sel.addEventListener('change', function () {
-        var v = sel.value; sel.className = 'tsel ' + v;
-        setTier(sel.getAttribute('data-email'), v);
-      });
-    });
   }
-  $('tAll').addEventListener('change', function () {
-    var v = $('tAll').value, per = $('tPer').value, idx = $('tAll').selectedIndex;
-    if (idx === 0) return;
-    var list = ROWS.filter(function (r) { return !per || String(r.period) === per; }), i = 0;
-    function step() { if (i >= list.length) { $('tAll').selectedIndex = 0; draw(); return; } setTier(list[i++].email, v, step); }
-    step();
-  });
   $('tPer').addEventListener('change', draw);
   $('tEp').addEventListener('change', fetchRows);
   $('tRefresh').addEventListener('click', fetchRows);
   $('tCsv').addEventListener('click', function () {
-    var rows = [['period', 'name', 'email', 'episode', 'level', 'finished', 'checks_first_try', 'predictions', 'sentence_1', 'sentence_2', 'sentence_3', 'tier', 'asks_next', 'tier_a', 'tier_b', 'tier_c', 'paragraph', 'points', 'turned_in', 'minutes', 'updated_at']];
+    var rows = [['period', 'name', 'email', 'episode', 'level', 'finished', 'checks_first_try', 'predictions', 'sentence_1', 'sentence_2', 'sentence_3', 'turned_in', 'minutes', 'updated_at']];
     ROWS.forEach(function (r) {
       var s = summarize(r);
-      rows.push([r.period, r.student_name, r.email, r.episode, r.level, s.done, s.checks, s.preds, s.s1, s.s2, s.s3, s.tier, s.ask, s.a, s.b, s.c, s.para, s.total, r.turned_in, s.mins, r.updated_at]);
+      rows.push([r.period, r.student_name, r.email, r.episode, r.level, s.done, s.checks, s.preds, s.s1, s.s2, s.s3, r.turned_in, s.mins, r.updated_at]);
     });
     var csv = rows.map(function (row) { return row.map(function (v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; }).join(','); }).join('\n');
     var a = document.createElement('a');
