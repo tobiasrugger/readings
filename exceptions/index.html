@@ -511,6 +511,11 @@ function showSummary(){
 
 /* ---------------- save ---------------- */
 var registered=false;
+/* gradebook: the page's score = best of every part finished so far (read by track.js) */
+function publishScore(){
+  var sc=0, mx=0; SCORED.forEach(function(k){ var r=S.scores[UNIT+'-'+k]; if(r && r.total){ sc+=r.best||0; mx+=r.total; } });
+  if(mx){ window.GAL_SCORE=sc; window.GAL_MAX=mx; }
+}
 function upsert(row){
   setDot('saving');
   return rawFetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email,activity',{method:'POST',headers:headers({'Prefer':'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify(row)})
@@ -520,7 +525,7 @@ function upsert(row){
 function saveResult(ak, correct, total, missed){
   var key=UNIT+'-'+ak, prev=S.scores[key]||{best:0,attempts:0};
   var rec={best:Math.max(prev.best||0,correct), total:total, correct:correct, attempts:(prev.attempts||0)+1};
-  S.scores[key]=rec; renderNav();
+  S.scores[key]=rec; renderNav(); publishScore();
   var when=new Date().toISOString();
   upsert({email:S.email, name:S.name, period:S.period, activity:key, unit:UNIT, correct:correct, total:total, best:rec.best, attempts:rec.attempts, turned_in:true,
     detail:{lang:S.lang, missed:missed.slice(0,20)}, updated_at:when});
@@ -546,7 +551,7 @@ setInterval(autosave, 20000);
 function loadScores(){
   return fetch(SUPA_URL+'/rest/v1/'+TABLE+'?email=eq.'+encodeURIComponent(S.email)+'&activity=like.'+encodeURIComponent(UNIT+'-%')+'&turned_in=eq.true&select=activity,best,total,correct,attempts',{headers:headers()})
     .then(function(r){ return r.ok?r.json():[]; })
-    .then(function(rows){ (rows||[]).forEach(function(r){ S.scores[r.activity]={best:r.best,total:r.total,correct:r.correct,attempts:r.attempts}; }); })
+    .then(function(rows){ (rows||[]).forEach(function(r){ S.scores[r.activity]={best:r.best,total:r.total,correct:r.correct,attempts:r.attempts}; }); publishScore(); })
     .catch(function(){});
 }
 
