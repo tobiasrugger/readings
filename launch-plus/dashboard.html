@@ -64,7 +64,7 @@ tr:hover td{background:#fafbf8}
 <main>
   <div class="card stats" id="stats"></div>
   <div class="card" style="padding:0;overflow-x:auto"><table id="tbl"><thead></thead><tbody></tbody></table></div>
-  <p class="muted" style="font-size:.8rem">Score = correct on the first try, out of all tap questions (parts 1–4). Parts: Read · Fix · Bigger · Zoom · Write (Extras: Capitals · Match · Who? · Where?) · 🎙 Record (words said clearly in the Record step). Click a column header to sort. Tap a name to read the writing.</p>
+  <p class="muted" style="font-size:.8rem">Score = correct on the first try, out of all tap questions (parts 1–4). Parts: Read · Fix · Bigger · Zoom · Write (Extras: Capitals · Match · Who? · Where?) · 🎙 Record (words said clearly in the Record step) · 🎨 Shades (bigger words a student swapped in from the Shades panel; 🎨 after the number = they last left the page in Shades mode). Click a column header to sort. Tap a name to read the writing.</p>
 </main>
 
 <script>
@@ -122,15 +122,15 @@ function cls(p,n){return p.done>=n&&n>0?'ok':p.done>0?'part':'';}
 function render(){
  var u=$('lesson').value,pd=$('period').value,lesson=LESSONS.filter(function(l){return l.u===u;})[0]||LESSONS[0];
  var rows=ROWS.filter(function(r){return r.unit===u&&(!pd||String(r.period)===pd);});
- rows.forEach(function(r){r._p=parts(r,lesson);r._say=sayScore(r,lesson);r._pct=r.max_score?Math.round(100*r.score/r.max_score):0;r._keys=Object.keys(r._p);r._done=r._keys.filter(function(k){return r._p[k].done>=r._p[k].n&&r._p[k].n>0;}).length;});
+ rows.forEach(function(r){r._p=parts(r,lesson);r._say=sayScore(r,lesson);r._sh=(r.payload&&r.payload.shades)||[];r._wm=(r.payload&&r.payload.wordMode)||'';r._pct=r.max_score?Math.round(100*r.score/r.max_score):0;r._keys=Object.keys(r._p);r._done=r._keys.filter(function(k){return r._p[k].done>=r._p[k].n&&r._p[k].n>0;}).length;});
  var k=SORT.k,d=SORT.d;
- rows.sort(function(a,b){var x=k==='name'?(a.name||'').toLowerCase():k==='period'?String(a.period):k==='score'?a._pct:k==='done'?a._done:k==='say'?(a._say?a._say.ok:-1):k==='in'?(a.turned_in?1:0):a.updated_at;
-  var y=k==='name'?(b.name||'').toLowerCase():k==='period'?String(b.period):k==='score'?b._pct:k==='done'?b._done:k==='say'?(b._say?b._say.ok:-1):k==='in'?(b.turned_in?1:0):b.updated_at;return (x<y?-1:x>y?1:0)*d;});
+ rows.sort(function(a,b){var x=k==='name'?(a.name||'').toLowerCase():k==='period'?String(a.period):k==='score'?a._pct:k==='done'?a._done:k==='say'?(a._say?a._say.ok:-1):k==='sh'?a._sh.length:k==='in'?(a.turned_in?1:0):a.updated_at;
+  var y=k==='name'?(b.name||'').toLowerCase():k==='period'?String(b.period):k==='score'?b._pct:k==='done'?b._done:k==='say'?(b._say?b._say.ok:-1):k==='sh'?b._sh.length:k==='in'?(b.turned_in?1:0):b.updated_at;return (x<y?-1:x>y?1:0)*d;});
  var n=rows.length,inN=rows.filter(function(r){return r.turned_in;}).length,fin=rows.filter(function(r){return r._done===r._keys.length;}).length;
  var avg=n?Math.round(rows.reduce(function(s,r){return s+r._pct;},0)/n):0;
- var said=rows.filter(function(r){return r._say&&r._say.ok>0;}).length;
- $('stats').innerHTML='<div class="stat"><b>'+n+'</b><span>students started</span></div><div class="stat"><b>'+fin+'</b><span>finished all parts</span></div><div class="stat"><b>'+inN+'</b><span>turned in</span></div><div class="stat"><b>'+avg+'%</b><span>average first-try score</span></div><div class="stat"><b>'+said+'</b><span>recorded in Say it</span></div>';
- var th=[['name','Student'],['period','P'],['done','Parts'],['score','Score'],['say','🎙 Record'],['in','Turned in'],['when','Last active']];
+ var said=rows.filter(function(r){return r._say&&r._say.ok>0;}).length,shn=rows.filter(function(r){return r._sh.length>0;}).length;
+ $('stats').innerHTML='<div class="stat"><b>'+n+'</b><span>students started</span></div><div class="stat"><b>'+fin+'</b><span>finished all parts</span></div><div class="stat"><b>'+inN+'</b><span>turned in</span></div><div class="stat"><b>'+avg+'%</b><span>average first-try score</span></div><div class="stat"><b>'+said+'</b><span>recorded in Say it</span></div><div class="stat"><b>'+shn+'</b><span>tried a bigger word</span></div>';
+ var th=[['name','Student'],['period','P'],['done','Parts'],['score','Score'],['say','🎙 Record'],['sh','🎨 Shades'],['in','Turned in'],['when','Last active']];
  $('tbl').querySelector('thead').innerHTML='<tr>'+th.map(function(t){return '<th onclick="sortBy(\''+t[0]+'\')">'+t[1]+(SORT.k===t[0]?(SORT.d>0?' ▲':' ▼'):'')+'</th>';}).join('')+'</tr>';
  $('tbl').querySelector('tbody').innerHTML=rows.map(function(r){
   var p=r._p,W=r.writing||(r.payload&&r.payload.W)||{},id=(r.email||'').replace(/[^a-z0-9]/gi,'_');
@@ -139,10 +139,12 @@ function render(){
   var tr='<tr><td class="nm"><button class="expand" onclick="toggle(\''+id+'\')">'+esc(r.name||r.email)+'</button><small>'+esc(r.email)+'</small></td><td>'+esc(r.period)+'</td>'+
    '<td><div class="parts">'+r._keys.map(function(k){return '<span class="pt '+cls(p[k],p[k].n)+'" title="'+p[k].label+': '+p[k].done+' of '+p[k].n+' done, '+p[k].first+' right first try">'+k+'</span>';}).join('')+'</div></td>'+
    '<td><span class="'+sc+'">'+r.score+' / '+r.max_score+'</span> <span class="muted">('+pct+'%)</span></td><td>'+sy+'</td>'+
+   '<td>'+(r._sh.length?'<span class="score hi" title="'+esc(r._sh.map(function(x){return x.base+' \u2192 '+x.word;}).join(', '))+'">'+r._sh.length+'</span>':'<span class="muted">\u2014</span>')+(r._wm==='shades'?' <span class="muted" title="last used Shades mode">\ud83c\udfa8</span>':'')+'</td>'+
    '<td>'+(r.turned_in?'<span class="tag in">in</span>':'<span class="tag no">not yet</span>')+'</td><td class="muted">'+when(r.updated_at)+'</td></tr>';
-  if(OPEN[id]){tr+='<tr><td colspan="7">'+['w0','w1','w2'].map(function(k,i){var lbl=/^wit-/.test(u)?['Sentence types','Because, but, so','Pop + revision'][i]:'Step '+(i+1);return '<div class="wr"><b>'+lbl+'</b>'+(W[k]?esc(W[k]):'<span class="muted">(empty)</span>')+'</div>';}).join('')+
+  if(OPEN[id]){tr+='<tr><td colspan="8">'+['w0','w1','w2'].map(function(k,i){var lbl=/^wit-/.test(u)?['Sentence types','Because, but, so','Pop + revision'][i]:'Step '+(i+1);return '<div class="wr"><b>'+lbl+'</b>'+(W[k]?esc(W[k]):'<span class="muted">(empty)</span>')+'</div>';}).join('')+
+   (r._sh.length?'<div class="wr"><b>Bigger words tried</b>'+r._sh.map(function(x){return '<div>'+esc(x.base)+' \u2192 <b>'+esc(x.word)+'</b> <span class="muted">'+esc(x.sentence||'')+'</span></div>';}).join('')+'</div>':'')+
    '<div class="muted" style="font-size:.78rem">Right first try — '+r._keys.filter(function(k){return k!=='W';}).map(function(k){return p[k].label+' '+p[k].first+'/'+p[k].n;}).join(' · ')+'</div></td></tr>';}
-  return tr;}).join('')||'<tr><td colspan="7" class="muted">No students yet for this lesson'+(pd?' in period '+pd:'')+'.</td></tr>';
+  return tr;}).join('')||'<tr><td colspan="8" class="muted">No students yet for this lesson'+(pd?' in period '+pd:'')+'.</td></tr>';
 }
 function sortBy(k){if(SORT.k===k)SORT.d*=-1;else{SORT.k=k;SORT.d=(k==='name'||k==='period')?1:-1;}render();}
 function toggle(id){OPEN[id]=!OPEN[id];render();}

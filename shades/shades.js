@@ -19,6 +19,11 @@
        judge:     async (sentence, oldWord, newWord) => {verdict, note}  (optional AI)
        mode:      'dictionary' | 'shades'  (default: ?mode= then 'dictionary')
        onMode:    (mode) => {}  called on every change
+       onUse:     ({base, word, reg, i, sentence, at}) => {}  after "Use it"
+       compact:   true → smaller toggle for a crowded header bar
+     Shades.watch(textarea|NodeList)  adds "✨ Bigger word?" chips under a
+       writing box whenever it contains a basic word — in BOTH modes; tapping
+       a chip switches to Shades and opens that word (the dictionary-mode nudge).
      })
      Shades.setMode('shades'); Shades.getMode(); Shades.open('happy');
      Shades.close(); Shades.mark(el)  // re-scan new content
@@ -276,6 +281,11 @@
   .sh-foot .v{font-weight:800}
   .sh-foot .v.ok{color:#15803d}.sh-foot .v.hmm{color:#b45309}.sh-foot .v.no{color:#b91c1c}
   .sh-foot .undo{margin-left:8px;font-weight:800;color:#6b21a8;cursor:pointer;background:none;border:0;font:inherit;text-decoration:underline}
+  .sh-nudge{display:none;flex-wrap:wrap;align-items:center;gap:6px;margin:6px 0 2px;font-family:Nunito,system-ui,sans-serif;font-size:.85rem;color:#6b21a8;font-weight:700}
+  .sh-nudge.show{display:flex}
+  .sh-chip{border:2px solid #c4b5fd;background:#f5f3ff;color:#4c1d95;border-radius:999px;padding:3px 10px;font:inherit;font-weight:800;cursor:pointer}
+  .sh-chip:hover{background:#ede9fe}
+  .sh-toggle.compact{padding:2px}.sh-toggle.compact button{padding:4px 10px;font-size:.8rem}
   .sh-flash{animation:shflash 1.2s ease}
   @keyframes shflash{0%{background:#bbf7d0}100%{background:transparent}}
   `;
@@ -336,7 +346,7 @@
   }
   function renderToggle(el) {
     el.innerHTML = '';
-    const box = document.createElement('div'); box.className = 'sh-toggle';
+    const box = document.createElement('div'); box.className = 'sh-toggle' + (S.opts.compact ? ' compact' : '');
     [['dictionary', '📖 Dictionary', 'dict'], ['shades', '🎨 Shades', '']].forEach(([m, label, cls]) => {
       const b = document.createElement('button'); b.type = 'button'; b.dataset.m = m; b.className = cls; b.textContent = label;
       b.setAttribute('translate', 'no'); b.onclick = () => setMode(m); box.appendChild(b);
@@ -435,7 +445,7 @@
     // sentence containing the word, for the judge
     const sent = (after.slice(0, m.index).split(/[.!?]\s+/).pop() || '') + after.slice(m.index).split(/(?<=[.!?])\s+/)[0];
     fitCheck(sent.trim(), base, sh);
-    try { global.track && typeof global.track.log === 'function' && global.track.log('shades_use', { base, word: sh.w }); } catch (e) {}
+    try { S.opts.onUse && S.opts.onUse({ base, word: sh.w, reg: sh.reg, i: sh.i, sentence: sent.trim(), at: new Date().toISOString() }); } catch (e) {}
   }
   function localJudge(sentence, base, sh) {
     const notes = [];
@@ -457,6 +467,30 @@
     }
   }
 
+  /* ---------- WATCH a writing box: nudge chips under it ---------- */
+  function watch(els) {
+    (els && els.length !== undefined ? Array.from(els) : [els]).forEach(el => {
+      if (!el || el.dataset.shWatched) return; el.dataset.shWatched = '1';
+      const nudge = document.createElement('div'); nudge.className = 'sh-nudge'; nudge.setAttribute('translate', 'no');
+      el.insertAdjacentElement('afterend', nudge);
+      const refresh = () => {
+        const txt = ('value' in el && el.tagName !== 'DIV') ? el.value : el.textContent;
+        const found = []; WORD_RE.lastIndex = 0; let m;
+        while ((m = WORD_RE.exec(txt))) { const b = m[1].toLowerCase(); if (found.indexOf(b) < 0) found.push(b); }
+        if (!found.length) { nudge.classList.remove('show'); nudge.innerHTML = ''; return; }
+        nudge.innerHTML = '<span>\u2728 Bigger word?</span>' + found.slice(0, 4).map(b => '<button type="button" class="sh-chip" data-b="' + b + '">' + b + ' \u2192</button>').join('');
+        nudge.classList.add('show');
+      };
+      nudge.addEventListener('click', ev => {
+        const c = ev.target.closest('.sh-chip'); if (!c) return;
+        S.target = el; if (S.mode !== 'shades') setMode('shades'); open(c.dataset.b);
+      });
+      el.addEventListener('focus', () => { S.target = el; });
+      let t; el.addEventListener('input', () => { clearTimeout(t); t = setTimeout(refresh, 250); });
+      refresh();
+    });
+  }
+
   /* ---------- EVENTS ------------------------------------------- */
   function onClick(ev) {
     if (S.mode !== 'shades') return;
@@ -470,12 +504,12 @@
     S.opts = opts || {}; S.root = S.opts.root || document.body; S.target = S.opts.target || null;
     if (S.opts.proxy) S.proxy = S.opts.proxy;
     if (!document.getElementById('sh-css')) { const st = document.createElement('style'); st.id = 'sh-css'; st.textContent = CSS; document.head.appendChild(st); }
-    mark(S.root);
+    if (S.root) mark(S.root);
     if (S.opts.toggle) renderToggle(S.opts.toggle);
     document.addEventListener('click', onClick, true);
     document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
     setMode(S.opts.mode || qs('mode') || 'dictionary');
   }
 
-  global.Shades = { mount, mark, open, close, setMode, getMode: () => S.mode, DATA, setTarget: (el) => { S.target = el; }, words: BASES };
+  global.Shades = { mount, mark, watch, open, close, setMode, getMode: () => S.mode, DATA, setTarget: (el) => { S.target = el; }, words: BASES };
 })(window);

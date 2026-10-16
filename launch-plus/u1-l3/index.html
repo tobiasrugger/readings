@@ -87,6 +87,11 @@ body.wt #sayMount,body.wt #sayMount *{outline:none;cursor:auto !important} body.
 #namebox .or{text-align:center;font-size:.8rem;color:var(--muted);font-weight:700;margin:-4px 0 10px}
 #nameErr{color:var(--rust);font-size:.86rem;font-weight:700;min-height:1.1em}
 @media print{#bar,#namewrap,.btn,.steps{display:none !important} section.act{display:block !important}}
+#wordmode{display:inline-flex;vertical-align:middle;margin-left:4px}
+#bar #wordmode .sh-toggle{border-color:rgba(255,255,255,.55);background:rgba(255,255,255,.14)}
+#bar #wordmode .sh-toggle button{background:transparent;border:0;border-radius:999px;color:#fff;padding:4px 10px;font-size:.8rem}
+#bar #wordmode .sh-toggle button.on.dict{background:#fff;color:#0f3d2e}
+#bar #wordmode .sh-toggle button.on{background:#7c3aed;color:#fff}
 </style>
 <script>
 window.GAL_META={title:'Launch Plus U1 L3: From A to Z',unit:'Launch Plus',
@@ -107,7 +112,7 @@ window.GAL_META={title:'Launch Plus U1 L3: From A to Z',unit:'Launch Plus',
     <option value="Hindi">हिन्दी</option><option value="Somali">Soomaali</option><option value="Nepali">नेपाली</option><option value="Thai">ไทย</option>
   </select>
   <button id="dirBtn" onclick="toggleDir()">Directions</button>
-  <button id="wtBtn" onclick="toggleWT()">Tap words</button>
+  <button id="wtBtn" onclick="toggleWT()">Tap words</button><span id="wordmode" translate="no"></span>
   <button onclick="turnIn()">Turn in</button>
 </div>
 <main>
@@ -302,7 +307,7 @@ function renderPart(p){
  $(host).innerHTML=ITEMS.filter(function(x){return x.part===p;}).map(renderItem).join('');
  drawSteps();
 }
-function renderRead(){$('readText').innerHTML=DATA.read;}
+function renderRead(){$('readText').innerHTML=DATA.read;if(window.Shades)Shades.mark($('readText'));}
 function renderZoomList(){
  $('zoomList').innerHTML='<div style="font-size:.86rem;color:var(--muted);margin-bottom:4px">'+(DATA.zoomHead||'New words')+'</div>'+DATA.zoom.map(function(z){return '<div class="wordrow"><span class="w" translate="no">'+spk(z.job)+z.job+'</span><span translate="no">'+spk(z.does)+z.does+'</span></div>';}).join('');
 }
@@ -313,6 +318,7 @@ function renderWrite(){
    '<textarea id="ta'+i+'" placeholder="'+w.placeholder+'" oninput="wr('+i+',this.value)">'+v.replace(/</g,'&lt;')+'</textarea><div class="check" id="ck'+i+'"></div></div>';
  }).join('');
  for(var i=0;i<DATA.write.length;i++)checkW(i);
+ if(window.Shades){Shades.mark($('writeItems'));Shades.watch(document.querySelectorAll('#writeItems textarea'));}
 }
 function wr(i,v){ST.W['w'+i]=v;checkW(i);save();}
 function checkW(i){
@@ -452,7 +458,7 @@ function openSay(){shareLogin();if(!ST.sayOpened){ST.sayOpened=true;save();}
 var WT=false;
 function toggleWT(){if(!WT&&!lang()){alert('First choose your language in the green bar, then turn on Tap words.');return;}WT=!WT;document.body.classList.toggle('wt',WT);$('wtBtn').classList.toggle('on',WT);hideTip();}
 function hideTip(){$('wtip').classList.remove('show');}
-document.addEventListener('click',function(ev){if(!WT)return;if(ev.target.closest&&ev.target.closest('#sayMount'))return;var host=ev.target.closest&&(ev.target.closest('[translate="no"]')||ev.target.closest('.dir'));if(!host)return;
+document.addEventListener('click',function(ev){if(!WT)return;if(window.Shades&&Shades.getMode()==='shades'&&ev.target.closest&&ev.target.closest('.sh-word'))return;if(ev.target.closest&&ev.target.closest('#sayMount'))return;var host=ev.target.closest&&(ev.target.closest('[translate="no"]')||ev.target.closest('.dir'));if(!host)return;
  ev.preventDefault();ev.stopPropagation();var w=pickWord(ev);if(w)showWord(w,ev.clientX,ev.clientY);},true);
 function pickWord(ev){var t=ev.target,txt=(t.textContent||'').trim();if(txt&&txt.split(/\s+/).length===1)return txt.replace(/^[^\w']+|[^\w']+$/g,'');
  var r=null;if(document.caretRangeFromPoint)r=document.caretRangeFromPoint(ev.clientX,ev.clientY);else if(document.caretPositionFromPoint){var cp=document.caretPositionFromPoint(ev.clientX,ev.clientY);if(cp){r=document.createRange();r.setStart(cp.offsetNode,cp.offset);}}
@@ -475,6 +481,7 @@ function checkCanary(){var c=$('canary'),got=c?(c.textContent||'').trim().toLowe
 function boot(){
  if(DATA.zoomDir){var zd=document.querySelector('[data-dir="z1"]');zd.setAttribute('data-en',DATA.zoomDir);zd.innerHTML=DATA.zoomDir;}
  load();buildItems();
+ if(window.Shades){Shades.mount({root:null,toggle:$('wordmode'),compact:true,getLang:function(){var v=lang();return v==='Chinese (Simplified)'?'Mandarin':(v||'Spanish');},mode:new URLSearchParams(location.search).get('mode')||ST.wordMode||'dictionary',onMode:function(m){if(ST.wordMode!==m){ST.wordMode=m;save();}},onUse:function(u){(ST.shades=ST.shades||[]).push(u);window.GAL_HIGHLIGHTS=[{label:'Bigger word',text:u.base+' \u2192 '+u.word+': '+u.sentence}];save();}});}
  $('whoami').textContent=ST.name?(ST.name+(ST.period?' \u00b7 P'+ST.period:'')):'';
  var L=savedLang();if(L){$('lang').value=L;DIR_ON=true;$('dirBtn').classList.add('on');}
  go(ST.act||0);dot('on');
@@ -489,6 +496,7 @@ document.addEventListener('DOMContentLoaded',boot);
 </script>
 <script src="/readings/say/sets.js"></script>
 <script src="/readings/say/say.js"></script>
+<script src="/readings/shades/shades.js"></script>
 <script src="/readings/track.js"></script>
 </body>
 </html>
