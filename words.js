@@ -99,7 +99,7 @@ MW.translate = function(word, lang){
   try { var c = localStorage.getItem(key); if (c){ tmem[key] = c; return Promise.resolve(c); } } catch(e){}
   var e = encodeURIComponent, L = e(lang);
   var wordCall = function(){ return askProxy('text=' + e(text) + '&q=' + e(text) + '&target=' + L + '&lang=' + L + '&to=' + L, ['equiv','meaning']); };
-  var sentCall = function(){ return askProxy('action=translate&idiom=' + e(text) + '&meaning=&lang=' + L, ['meaning','equiv']); };
+  var sentCall = function(){ return askProxy('action=translate&mode=' + (String(text||'').trim().split(/\s+/).length<=3?'word':'sentence') + '&idiom=' + e(text) + '&meaning=&lang=' + L, ['meaning','equiv']); };
   var sentence = text.trim().split(/\s+/).length > 3;
   var first = sentence ? sentCall : wordCall, second = sentence ? wordCall : sentCall;
   function good(v){ return v && v.toLowerCase() !== text.toLowerCase() && v.indexOf('[object') < 0; }

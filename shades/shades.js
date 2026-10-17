@@ -409,7 +409,7 @@
     out.textContent = '…';
     let html;
     try {
-      const u = S.proxy + '?action=translate&idiom=' + encodeURIComponent(sh.w) + '&meaning=' + encodeURIComponent(sh.m) + '&lang=' + encodeURIComponent(L);
+      const u = S.proxy + '?action=translate&mode=' + (String(sh.w||'').trim().split(/\s+/).length<=3?'word':((sh.m)?'':'sentence')) + '&idiom=' + encodeURIComponent(sh.w) + '&meaning=' + encodeURIComponent(sh.m) + '&lang=' + encodeURIComponent(L);
       const r = await fetch(u); const j = await r.json(); const t = (j && j.ok && j.translation) || {};
       html = t.equiv ? esc(t.equiv) + (t.meaning ? ' <span style="font-weight:600;text-decoration:none;color:#374151">— ' + esc(t.meaning) + '</span>' : '')
                      : '<span class="none">' + esc(sh.w) + '</span>' + (t.meaning ? ' <span style="font-weight:600;text-decoration:none;color:#374151">— ' + esc(t.meaning) + '</span>' : '');

@@ -373,7 +373,7 @@ function translate(word,meaning,lang,cb){
   if(tcache[key]){cb(tcache[key]);return;}
   cacheGetMany([{lang:lang,text:text}],function(){
     if(tcache[key]){cb(tcache[key]);return;}
-    var u=PROXY+'?action=translate&idiom='+encodeURIComponent(word)+'&meaning='+encodeURIComponent(meaning)+'&lang='+encodeURIComponent(lang);
+    var u=PROXY+'?action=translate&mode='+(String(word||'').trim().split(/\s+/).length<=3?'word':((meaning)?'':'sentence'))+'&idiom='+encodeURIComponent(word)+'&meaning='+encodeURIComponent(meaning)+'&lang='+encodeURIComponent(lang);
     fetch(u).then(function(r){return r.text();}).then(function(t){
       var o=pickTranslation(t); if(!o){cb('');return;}
       var v=o.equiv&&o.meaning?(o.equiv+' \u2014 '+o.meaning):(o.equiv||o.meaning);
@@ -419,7 +419,7 @@ function cachePut(lang,text,dst){
     body:JSON.stringify({key:tkey(lang,text),lang:lang,src:text,dst:dst})}).catch(function(){});
 }
 function proxyTranslate(text,lang,cb){        /* raw call; cb(null) on failure */
-  var u=PROXY+'?action=translate&idiom='+encodeURIComponent(text)+'&meaning='+encodeURIComponent(text)+'&lang='+encodeURIComponent(lang);
+  var u=PROXY+'?action=translate&mode='+(String(text||'').trim().split(/\s+/).length<=3?'word':((text)?'':'sentence'))+'&idiom='+encodeURIComponent(text)+'&meaning='+encodeURIComponent(text)+'&lang='+encodeURIComponent(lang);
   fetch(u).then(function(r){return r.text();}).then(function(t){
     var o=pickTranslation(t); cb(o?(o.meaning||o.equiv||null):null);
   }).catch(function(){cb(null);});

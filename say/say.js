@@ -154,7 +154,7 @@ function ensureCore(){ if (window.GS && window.GS.micButton) return Promise.reso
 /* ---------------- translate (built-in popup; host may override) ---------------- */
 var trCache = {};
 function fetchTr(text, lang){ var key = lang + '|' + text; if (trCache[key]) return Promise.resolve(trCache[key]);
-  var url = PROXY + '?action=translate&idiom=' + encodeURIComponent(text) + '&meaning=' + encodeURIComponent('A simple English word, sentence, or instruction for beginner English learners. Translate it plainly.') + '&lang=' + encodeURIComponent(lang);
+  var url = PROXY + '?action=translate&mode=' + (String(text||'').trim().split(/\s+/).length<=3?'word':'sentence') + '&idiom=' + encodeURIComponent(text) + '&meaning=' + encodeURIComponent('A simple English word, sentence, or instruction for beginner English learners. Translate it plainly.') + '&lang=' + encodeURIComponent(lang);
   return fetch(url).then(function(r){ return r.json(); }).then(function(d){ if (d && d.ok && d.translation){ trCache[key] = d.translation; return d.translation; } return null; }).catch(function(){ return null; }); }
 
 /* ---------------- mount ---------------- */

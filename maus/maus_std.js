@@ -75,7 +75,7 @@ var tc={};
 function tr(text,lang){var k=text+'|'+lang;
   if(!lang)return Promise.resolve(null);
   if(tc[k])return Promise.resolve(tc[k]);
-  return fetch(PROXY+'?action=translate&idiom='+encodeURIComponent(text)+'&meaning=&lang='+encodeURIComponent(lang))
+  return fetch(PROXY+'?action=translate&mode='+(String(text||'').trim().split(/\s+/).length<=3?'word':'sentence')+'&idiom='+encodeURIComponent(text)+'&meaning=&lang='+encodeURIComponent(lang))
     .then(function(r){return r.json();}).then(function(d){
       if(!d||!d.ok||!d.translation)return null;tc[k]=d.translation;return d.translation;
     }).catch(function(){return null;});}

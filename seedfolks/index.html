@@ -543,6 +543,7 @@ function translate(text, code, cb){
   var key = code + '::' + text;
   if(cache[key]){ cb(cache[key]); return; }
   var tries = [
+    PROXY + '?action=translate&mode=' + (String(text||'').trim().split(/\s+/).length<=3?'word':'sentence') + '&idiom=' + encodeURIComponent(text) + '&meaning=&lang=' + encodeURIComponent(code),
     PROXY + '?text=' + encodeURIComponent(text) + '&target=' + encodeURIComponent(code),
     PROXY + '?q=' + encodeURIComponent(text) + '&target=' + encodeURIComponent(code),
     PROXY + '?text=' + encodeURIComponent(text) + '&lang=' + encodeURIComponent(code)
@@ -554,7 +555,7 @@ function translate(text, code, cb){
       .then(function(r){ return r.text(); })
       .then(function(t){
         var out = t;
-        try { var j = JSON.parse(t); out = j.translation || j.text || j.result || j.output || (typeof j === 'string' ? j : ''); } catch(err){}
+        try { var j = JSON.parse(t), tr = j.translation; out = (tr && typeof tr === 'object') ? (tr.equiv || tr.meaning || '') : (tr || j.text || j.result || j.output || (typeof j === 'string' ? j : '')); } catch(err){}
         out = (out || '').trim();
         if(out && out.toLowerCase() !== text.toLowerCase() && out.indexOf('<') !== 0){ cache[key] = out; cb(out); }
         else attempt();
@@ -786,7 +787,7 @@ window.buildKeys = buildKeys;
     var lang=(!code||code==='none')?'':(C2N[code]||code);
     var key=text+'|'+lang;
     if(tcache[key]) return Promise.resolve(tcache[key]);
-    var url=PROXY+'?action=translate&idiom='+encodeURIComponent(text)+'&meaning=&lang='+encodeURIComponent(lang);
+    var url=PROXY+'?action=translate&mode='+(String(text||'').trim().split(/\s+/).length<=3?'word':'sentence')+'&idiom='+encodeURIComponent(text)+'&meaning=&lang='+encodeURIComponent(lang);
     return fetch(url).then(function(r){return r.json();}).then(function(d){
       if(!d||!d.ok||!d.translation) return null;
       tcache[key]=d.translation; return d.translation;

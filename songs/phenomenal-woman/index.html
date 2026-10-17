@@ -564,7 +564,7 @@ function tapWord(el, word){
   var key = word + '|' + lang;
   if (trCache[key]) { showTip(el, trCache[key]); return; }
   showTip(el, '...');
-  var url = PROXY + '?text=' + encodeURIComponent(word) + '&target=' + encodeURIComponent(lang);
+  var url = PROXY + '?action=translate&mode=' + (String(word||'').trim().split(/\s+/).length<=3?'word':'sentence') + '&idiom=' + encodeURIComponent(word) + '&meaning=&lang=' + encodeURIComponent(lang);
   fetch(url).then(function(r){ return r.json(); }).then(function(j){
     var t = j.translation || j.text || j.result || '';
     if (t && typeof t === 'object') t = t.equiv || t.meaning || '';
@@ -1004,7 +1004,7 @@ window.addEventListener('beforeunload', function(){ if (S.dirty) save(); });
   function tr(text, lang){
     var key=text+'|'+lang;
     if(tcache[key]) return Promise.resolve(tcache[key]);
-    var url=PROXY+'?action=translate&idiom='+encodeURIComponent(text)+'&meaning=&lang='+encodeURIComponent(lang);
+    var url=PROXY+'?action=translate&mode='+(String(text||'').trim().split(/\s+/).length<=3?'word':'sentence')+'&idiom='+encodeURIComponent(text)+'&meaning=&lang='+encodeURIComponent(lang);
     return fetch(url).then(function(r){return r.json();}).then(function(d){
       if(!d||!d.ok||!d.translation) return null;
       tcache[key]=d.translation; return d.translation;

@@ -43,7 +43,7 @@ function translate(text){
   var L = lang(); if (!L) return Promise.resolve('');
   var key = 'vt|' + L + '|' + text; if (tmem[key]) return Promise.resolve(tmem[key]);
   try { var c = localStorage.getItem(key); if (c){ tmem[key] = c; return Promise.resolve(c); } } catch(e){}
-  return fetch(PROXY + '?action=translate&idiom=' + encodeURIComponent(text) + '&meaning=&lang=' + encodeURIComponent(L))
+  return fetch(PROXY + '?action=translate&mode=' + (String(text||'').trim().split(/\s+/).length<=3?'word':'sentence') + '&idiom=' + encodeURIComponent(text) + '&meaning=&lang=' + encodeURIComponent(L))
     .then(function(r){ return r.json(); })
     .then(function(d){ var v = (d && d.ok && d.translation) ? String(d.translation).trim() : '';
       if (/backend is running/i.test(v) || v.toLowerCase() === text.toLowerCase()) v = '';

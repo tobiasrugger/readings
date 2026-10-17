@@ -596,13 +596,15 @@ function showPop(g){
 function translate(word, def, lang){
   var ck = lang+'::'+word;
   if(TC[ck]){ setT(TC[ck]); return; }
-  var q = TPROXY + '?text=' + encodeURIComponent(word + ' — ' + def) + '&lang=' + encodeURIComponent(lang) +
-          '&target=' + encodeURIComponent(lang);
+  var q = TPROXY + '?action=translate&mode=' + (String(word||'').trim().split(/\s+/).length<=3?'word':'sentence') + '&idiom=' + encodeURIComponent(word) +
+          '&meaning=' + encodeURIComponent(def || '') + '&lang=' + encodeURIComponent(lang);
   fetch(q).then(function(r){ return r.text(); }).then(function(t){
     var out = t;
     try {
       var j = JSON.parse(t);
-      out = j.translation || j.translated || j.text || j.result || j.output || t;
+      var tr = j.translation;
+      if (tr && typeof tr === 'object') out = (tr.equiv || '') + (tr.meaning ? ' — ' + tr.meaning : '');
+      else out = tr || j.translated || j.text || j.result || j.output || '(translation not available)';
     } catch(e){}
     TC[ck] = out;
     try { localStorage.setItem('mlk_tcache', JSON.stringify(TC)); } catch(e){}
@@ -811,7 +813,7 @@ boot();
     var lang=(!code||code==='none')?'':(C2N[code]||code);
     var key=text+'|'+lang;
     if(tcache[key]) return Promise.resolve(tcache[key]);
-    var url=PROXY+'?action=translate&idiom='+encodeURIComponent(text)+'&meaning=&lang='+encodeURIComponent(lang);
+    var url=PROXY+'?action=translate&mode='+(String(text||'').trim().split(/\s+/).length<=3?'word':'sentence')+'&idiom='+encodeURIComponent(text)+'&meaning=&lang='+encodeURIComponent(lang);
     return fetch(url).then(function(r){return r.json();}).then(function(d){
       if(!d||!d.ok||!d.translation) return null;
       tcache[key]=d.translation; return d.translation;

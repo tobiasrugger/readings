@@ -236,7 +236,7 @@ GS.translate = function(text, lang){
   if (tmem[key]) return Promise.resolve(tmem[key]);
   try { var c = localStorage.getItem(key); if (c){ tmem[key] = c; return Promise.resolve(c); } } catch(e){}
   var e = encodeURIComponent, L = e(lang);
-  var sentCall = function(){ return askProxy('action=translate&idiom=' + e(text) + '&meaning=&lang=' + L); };
+  var sentCall = function(){ return askProxy('action=translate&mode=' + (String(text||'').trim().split(/\s+/).length<=3?'word':'sentence') + '&idiom=' + e(text) + '&meaning=&lang=' + L); };
   var wordCall = function(){ return askProxy('text=' + e(text) + '&q=' + e(text) + '&target=' + L + '&lang=' + L + '&to=' + L); };
   var isSentence = text.trim().split(/\s+/).length > 3;
   var first = isSentence ? sentCall : wordCall, second = isSentence ? wordCall : sentCall;

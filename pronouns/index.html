@@ -520,7 +520,7 @@ function translate(text){
   var key=S.lang+'|'+text;
   if(trCache[key]) return popup(text, trCache[key].equiv, trCache[key].meaning);
   popup(text,'…','');
-  var url=PROXY+'?action=translate&idiom='+encodeURIComponent(text)+'&meaning='+encodeURIComponent('A very simple English sentence for a beginner. Translate it plainly.')+'&lang='+encodeURIComponent(S.lang);
+  var url=PROXY+'?action=translate&mode='+(String(text||'').trim().split(/\s+/).length<=3?'word':'sentence')+'&idiom='+encodeURIComponent(text)+'&meaning='+encodeURIComponent('A very simple English sentence for a beginner. Translate it plainly.')+'&lang='+encodeURIComponent(S.lang);
   rawFetch(url).then(function(r){ return r.json(); }).then(function(d){
     if(d&&d.ok&&d.translation){ trCache[key]=d.translation; popup(text,d.translation.equiv,d.translation.meaning); }
     else popup(text,'Translation is not available right now.','');
@@ -594,7 +594,7 @@ document.addEventListener('click', function(e){
   try{ DIR_ON = localStorage.getItem('pron_dir')!=='0'; }catch(e){}
   function tr(text, lang){
     var key=lang+'|'+text; if(dcache[key]) return Promise.resolve(dcache[key]);
-    var url=PROXY+'?action=translate&idiom='+encodeURIComponent(text)+'&meaning='+encodeURIComponent('Directions for a beginner English student. Translate plainly and simply.')+'&lang='+encodeURIComponent(lang);
+    var url=PROXY+'?action=translate&mode='+(String(text||'').trim().split(/\s+/).length<=3?'word':'sentence')+'&idiom='+encodeURIComponent(text)+'&meaning='+encodeURIComponent('Directions for a beginner English student. Translate plainly and simply.')+'&lang='+encodeURIComponent(lang);
     return rawFetch(url).then(function(r){return r.json();}).then(function(d){
       if(!d||!d.ok||!d.translation) return null;
       var t=d.translation.equiv||d.translation.meaning||''; if(t) dcache[key]=t; return t||null;

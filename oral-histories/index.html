@@ -1330,11 +1330,12 @@ $$('.gl').forEach(function(el){
     var ck = lang + '::' + word;
     if(tcache[ck]){ showTip(el, word, tcache[ck]); return; }
     showTip(el, word, 'translating\u2026');
-    fetch(PROXY + '?text=' + encodeURIComponent(word) + '&lang=' + encodeURIComponent(lang))
+    fetch(PROXY + '?action=translate&mode=' + (String(word||'').trim().split(/\s+/).length<=3?'word':'sentence') + '&idiom=' + encodeURIComponent(word) + '&meaning=&lang=' + encodeURIComponent(lang))
       .then(function(r){ return r.text(); })
       .then(function(t){
         var out = t;
-        try { var j = JSON.parse(t); out = j.translation || j.text || j.result || t; } catch(err){}
+        try { var j = JSON.parse(t), tr = j.translation; out = (tr && typeof tr === 'object') ? (tr.equiv || tr.meaning || '') : (tr || j.text || j.result || ''); } catch(err){}
+        if (!out || String(out).charAt(0) === '{' || String(out).charAt(0) === '<') out = 'Translation is not available right now.';
         tcache[ck] = out; showTip(el, word, out);
       })
       .catch(function(){ showTip(el, word, 'Translation is not available right now.'); });
@@ -1640,7 +1641,7 @@ $('#gSkip').addEventListener('click', function(){ startApp(); });
     var lang=(!code||code==='none')?'':(C2N[code]||code);
     var key=text+'|'+lang;
     if(tcache[key]) return Promise.resolve(tcache[key]);
-    var url=PROXY+'?action=translate&idiom='+encodeURIComponent(text)+'&meaning=&lang='+encodeURIComponent(lang);
+    var url=PROXY+'?action=translate&mode='+(String(text||'').trim().split(/\s+/).length<=3?'word':'sentence')+'&idiom='+encodeURIComponent(text)+'&meaning=&lang='+encodeURIComponent(lang);
     return fetch(url).then(function(r){return r.json();}).then(function(d){
       if(!d||!d.ok||!d.translation) return null;
       tcache[key]=d.translation; return d.translation;

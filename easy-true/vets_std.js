@@ -108,7 +108,7 @@ function tr(text, lang){
   var key = text + '|' + lang;
   if(!lang) return Promise.resolve(null);
   if(tcache[key]) return Promise.resolve(tcache[key]);
-  return fetch(PROXY + '?action=translate&idiom=' + encodeURIComponent(text) +
+  return fetch(PROXY + '?action=translate&mode=' + (String(text||'').trim().split(/\s+/).length<=3?'word':'sentence') + '&idiom=' + encodeURIComponent(text) +
                '&meaning=&lang=' + encodeURIComponent(lang))
     .then(function(r){ return r.json(); })
     .then(function(d){
