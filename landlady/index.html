@@ -831,6 +831,54 @@ input.fr:focus{ outline:none; background:#fdf7e8; }
 @media print{ .vid{ display:none; } .pform{ display:block; } }
 
 .vocab-card .vcpic{ display:block; width:100%; height:auto; border-radius:6px; margin:0 0 .55rem; }
+
+/* the override is for the student who really did finish, not an exit sign */
+.lockskip{ display:block; margin-left:auto; text-align:right; font-size:.64rem !important;
+  color:#9a9080 !important; opacity:0; pointer-events:none; transition:opacity .3s; }
+.lockbar.nearly .lockskip{ opacity:1; pointer-events:auto; }
+.lockskip:hover{ color:var(--amber-text) !important; }
+
+/* ================= chapter menu ================= */
+.chapters{ display:grid; grid-template-columns:auto 1fr auto; gap:0; background:var(--card);
+  border:1px solid var(--border); border-radius:8px; margin:0 0 1.4rem; overflow:hidden; }
+.cgrp{ padding:.65rem .85rem .75rem; border-right:1px solid var(--border); min-width:0; }
+.cgrp:last-child{ border-right:none; }
+.cgrp.after{ background:var(--warm-bg); }
+.cgl{ font-family:'Courier Prime',monospace; font-size:.62rem; letter-spacing:.17em; text-transform:uppercase;
+  color:var(--amber-text); margin:0 0 .45rem; white-space:nowrap; }
+.cgb{ display:flex; flex-wrap:wrap; gap:.4rem; }
+.cbtn{ position:relative; font-family:'Lora',Georgia,serif; font-size:.88rem; font-weight:600;
+  padding:.5rem .85rem; border:1px solid var(--border); border-radius:7px;
+  background:var(--card); color:var(--ink); cursor:pointer; white-space:nowrap; }
+.cbtn:hover{ border-color:var(--amber); }
+.cbtn.on{ background:var(--ink); color:var(--cream); border-color:var(--ink); }
+.cbtn .ccnt{ font-family:'Courier Prime',monospace; font-size:.62rem; margin-left:.4rem; color:var(--fog); }
+.cbtn.on .ccnt{ color:#c9bda8; }
+.cbtn.full{ border-color:#3d6b4a; background:#e6f0e8; }
+.cbtn.full.on{ background:#2f5b3c; border-color:#2f5b3c; color:#fff; }
+.cbtn.full .ccnt::after{ content:" \2713"; }
+.cbtn.locked{ opacity:.45; cursor:not-allowed; background:var(--warm-bg); }
+.cbtn.locked::before{ content:"\1F512 "; font-size:.75em; }
+.cbtn.next{ box-shadow:0 0 0 2px var(--amber); animation:cnext 1.8s ease-in-out infinite; }
+@keyframes cnext{ 0%,100%{ box-shadow:0 0 0 2px var(--amber); } 50%{ box-shadow:0 0 0 5px rgba(200,137,42,.25); } }
+.cglock{ font-family:'Courier Prime',monospace; font-size:.6rem; letter-spacing:.06em; text-transform:none;
+  color:var(--fog); margin-left:.3rem; }
+#cgafter .lockbar{ margin:0; padding:.4rem .5rem; border:none; background:transparent; min-width:200px; }
+#cgafter .lockmsg{ font-size:.8rem; } #cgafter .lockcnt{ font-size:.66rem; }
+#cgafter .actbar{ margin:0; padding:0; border:none; background:transparent; }
+#cgafter .actbar .actrow{ outline:none; }
+#cgafter .actbar .actbtn[data-act="story"]{ display:none; }
+#cgafter .actarrow{ display:none; }
+#cgafter .newflag{ display:none; }
+.chunk{ display:none; } .chunk.on{ display:block; }
+.chunkfoot{ display:flex; justify-content:flex-end; align-items:center; gap:.8rem; margin:1.8rem 0 .6rem;
+  padding-top:1rem; border-top:1px dashed var(--border); }
+.chunkfoot .cf-note{ font-family:'Courier Prime',monospace; font-size:.7rem; color:var(--fog); }
+.cfnext{ font-family:'Lora',Georgia,serif; font-weight:600; font-size:.95rem; padding:.6rem 1.1rem;
+  border-radius:7px; border:1px solid var(--ink); background:var(--ink); color:var(--cream); cursor:pointer; }
+.cfnext:disabled{ opacity:.4; cursor:not-allowed; }
+@media (max-width:900px){ .chapters{ grid-template-columns:1fr; } .cgrp{ border-right:none; border-bottom:1px solid var(--border); } }
+@media print{ .chapters,.chunkfoot{ display:none !important; } .chunk{ display:block !important; } }
 </style>
 </head>
 <span id="canary" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden">the quick brown fox jumps over the lazy dog</span>
@@ -907,6 +955,30 @@ input.fr:focus{ outline:none; background:#fdf7e8; }
     
 
 
+
+<nav class="chapters" id="chapters" aria-label="Sections">
+  <div class="cgrp" data-grp="before">
+    <div class="cgl">Before you read</div>
+    <div class="cgb">
+      <button type="button" class="cbtn on" data-ch="intro">Intro &amp; prediction</button>
+      <button type="button" class="cbtn" data-ch="words">Word practice<span class="ccnt"></span></button>
+    </div>
+  </div>
+  <div class="cgrp" data-grp="read">
+    <div class="cgl">Read the story</div>
+    <div class="cgb">
+      <button type="button" class="cbtn" data-ch="p1">Part 1<span class="ccnt"></span></button>
+      <button type="button" class="cbtn" data-ch="p2">Part 2<span class="ccnt"></span></button>
+      <button type="button" class="cbtn" data-ch="p3">Part 3<span class="ccnt"></span></button>
+      <button type="button" class="cbtn" data-ch="p4">Part 4<span class="ccnt"></span></button>
+    </div>
+  </div>
+  <div class="cgrp after" data-grp="after">
+    <div class="cgl">After you read <span class="cglock" id="cglock"></span></div>
+    <div class="cgb" id="cgafter"></div>
+  </div>
+</nav>
+
 <div class="lockbar" id="lockbar">
   <div class="lockrow">
     <div class="lockmsg">
@@ -934,6 +1006,7 @@ input.fr:focus{ outline:none; background:#fdf7e8; }
 </div>
 
 <div id="storywrap">
+<div class="chunk" id="ch-intro">
 <div class="part-header"><span>Before you read</span></div>
 <div class="prereading">
 <figure class="openfig">
@@ -1255,6 +1328,9 @@ input.fr:focus{ outline:none; background:#fdf7e8; }
 </div>
 
 
+
+</div>
+<div class="chunk" id="ch-words">
 <div class="part-header"><span>Words</span></div>
 <div id="words-tab">
 <p class="wsub" translate="yes" data-en="Twelve words the story leans on. Read these first and the dotted words in the story will be easier." data-dir="wordsintro">Twelve words the story leans on. Read these first and the dotted words in the story will be easier.</p>
@@ -1300,6 +1376,9 @@ input.fr:focus{ outline:none; background:#fdf7e8; }
 </div>
 </div>
 
+
+</div>
+<div class="chunk" id="ch-p1">
 <div class="part-header"><span>Part One</span></div>
     <div class="story" translate="no">
 
@@ -1455,7 +1534,10 @@ input.fr:focus{ outline:none; background:#fdf7e8; }
 
     </div>
 
-    <div class="part-header"><span>Part Two</span></div>
+    
+</div>
+<div class="chunk" id="ch-p2">
+<div class="part-header"><span>Part Two</span></div>
     <div class="story" translate="no">
 <figure class="artfig">
 <svg viewBox="0 0 680 300" role="img" aria-label="An open front door at night. A smiling older woman stands in the warm hallway with one hand held out in welcome. The coat pegs behind her are empty. A young man with a suitcase waits on the step." preserveAspectRatio="xMidYMid meet"><rect width="680" height="300" fill="#2f2b38"/><rect x="0" y="0" width="680" height="16" fill="#1f1d27"/><rect x="0" y="0" width="680" height="300" fill="#2b2734" opacity=".0"/><rect x="196" y="18" width="284" height="282" fill="#3a3543"/><rect x="188" y="10" width="300" height="12" fill="#4a4250"/><rect x="250" y="30" width="204" height="270" fill="#e9b25f"/><rect x="250" y="30" width="204" height="46" fill="#d99d4a"/><path d="M250 244 h204 v56 h-204z" fill="#c08f3d"/><path d="M250 244 H454" stroke="#a87c33" stroke-width="3"/><path d="M286 244 L268 300 M330 244 L322 300 M374 244 L378 300 M418 244 L432 300" stroke="#b3833a" stroke-width="2"/><path d="M250 232 H454" stroke="#d3a049" stroke-width="7"/><rect x="268" y="92" width="80" height="9" rx="2" fill="#9a7440"/><rect x="268" y="92" width="80" height="3" fill="#b08a4e"/><rect x="280" y="101" width="5" height="9" fill="#7d5c31"/><circle cx="282" cy="112" r="4.5" fill="#7d5c31"/><rect x="306" y="101" width="5" height="9" fill="#7d5c31"/><circle cx="308" cy="112" r="4.5" fill="#7d5c31"/><rect x="332" y="101" width="5" height="9" fill="#7d5c31"/><circle cx="334" cy="112" r="4.5" fill="#7d5c31"/><path d="M196 24 L250 38 V300 L196 300z" fill="#2a2431"/><path d="M208 62 h30 v64 h-30z M208 142 h30 v64 h-30z" fill="none" stroke="#3f3749" stroke-width="2.5"/><circle cx="243" cy="170" r="4" fill="#b9a06a"/><g transform="translate(352,278) scale(1.12)"><path d="M-17 0 q-3 -9 6 -9 h9 q3 1 3 6 v3z" fill="#2f2a28"/><path d="M17 0 q3 -9 -6 -9 h-9 q-3 1 -3 6 v3z" fill="#2f2a28"/><path d="M-19 -56 h38 q9 28 12 47 q-31 8 -62 0 q3 -19 12 -47z" fill="#6e5a72"/><path d="M6 -56 h13 q9 28 12 47 q-9 2 -18 3 q4 -26 -7 -50z" fill="#58465c"/><path d="M-21 -104 q21 -9 42 0 q4 26 3 50 q-24 7 -48 0 q-1 -24 3 -50z" fill="#6e5a72"/><path d="M7 -107 q9 2 14 3 q4 26 3 50 q-7 2 -14 3 q4 -27 -3 -56z" fill="#58465c"/><path d="M-11 -106 h22 l4 11 h-30z" fill="#efe9e0"/><path d="M-2 -95 v46" stroke="#4e3d52" stroke-width="2"/><circle cx="-2" cy="-84" r="2" fill="#d9cdb6"/><circle cx="-2" cy="-70" r="2" fill="#d9cdb6"/><path d="M-20 -98 q-14 16 -13 38" stroke="#6e5a72" stroke-width="12" fill="none" stroke-linecap="round"/><circle cx="-33" cy="-58" r="6" fill="#e0b498"/><path d="M20 -98 q20 4 34 -6" stroke="#58465c" stroke-width="12" fill="none" stroke-linecap="round"/><circle cx="57" cy="-106" r="6.5" fill="#e0b498"/><rect x="-6" y="-121" width="12" height="14" fill="#c1907a"/><path d="M-14 -136 q0 -18 14 -18 q14 0 14 18 q0 16 -14 18 q-14 -2 -14 -18z" fill="#e0b498"/><path d="M3 -153 q11 4 11 18 q0 14 -9 17 q6 -15 2 -35z" fill="#c1907a"/><circle cx="-15" cy="-137" r="3" fill="#c1907a"/><circle cx="15" cy="-137" r="3" fill="#c1907a"/><path d="M-15 -139 q1 -22 15 -22 q14 0 15 22 q-8 -10 -15 -10 q-7 0 -15 10z" fill="#bcb6ad"/><circle cx="0" cy="-163" r="8" fill="#9c968d"/><path d="M-15 -142 q-4 6 -2 12 q-4 -4 -3 -13z" fill="#9c968d"/><circle cx="-6" cy="-138" r="2" fill="#4a6f8a"/><circle cx="6" cy="-138" r="2" fill="#4a6f8a"/><path d="M-10 -144 q4 -3 8 -1 M2 -145 q4 -2 8 1" stroke="#9c968d" stroke-width="1.4" fill="none" stroke-linecap="round"/><path d="M-7 -129 q7 7 14 0" stroke="#a8604f" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="-13" cy="-132" r="3.6" fill="#d99a8e" opacity=".5"/><circle cx="13" cy="-132" r="3.6" fill="#d99a8e" opacity=".5"/></g><path d="M250 268 L454 268 L610 300 L150 300z" fill="#e9b25f" opacity=".26"><animate attributeName="opacity" values=".21;.30;.21" dur="5s" repeatCount="indefinite"/></path><rect x="0" y="288" width="196" height="12" fill="#3a3543"/><rect x="480" y="288" width="200" height="12" fill="#3a3543"/><g transform="translate(572,296) scale(1.06)"><path d="M-24 0 q-4 -72 24 -72 q28 0 24 72z" fill="#2b3a4c"/><path d="M0 -72 q28 0 24 72 h-13 q4 -58 -11 -72z" fill="#22303f"/><path d="M-24 -68 q-14 20 -13 46 l11 2 q0 -24 10 -36z" fill="#22303f"/><path d="M-27 -70 q-5 34 -3 70 h-6 q-4 -40 3 -70z" fill="#d99d4a" opacity=".55"/><circle cx="0" cy="-84" r="11" fill="#3a2a1e"/><path d="M9 -88 q6 2 4 8 q-3 4 -6 1z" fill="#c1907a"/><ellipse cx="0" cy="-93" rx="21" ry="5" fill="#5e4429"/><path d="M-13 -96 q0 -17 13 -17 q13 0 13 17z" fill="#7a5a3a"/><path d="M-13 -97 h26 v4 h-26z" fill="#5e4429"/><path d="M-6 -110 q6 4 12 0" stroke="#5e4429" stroke-width="2" fill="none"/><rect x="-44" y="-24" width="32" height="24" rx="2" fill="#6b4f33"/><rect x="-44" y="-15" width="32" height="3" fill="#5e4429"/><path d="M-34 -24 q6 -8 12 0" stroke="#5e4429" stroke-width="2.5" fill="none"/></g></svg>
@@ -1581,7 +1663,10 @@ input.fr:focus{ outline:none; background:#fdf7e8; }
 
     </div>
 
-    <div class="part-header"><span>Part Three</span></div>
+    
+</div>
+<div class="chunk" id="ch-p3">
+<div class="part-header"><span>Part Three</span></div>
     <div class="story" translate="no">
 
 <p>Now, the fact that his landlady appeared to be slightly off her rocker didn't worry Billy in the least. After all, <span class="atm wrong-signal">she was not only harmless – there was no question about that – but she was also quite obviously a kind and <span class="gl" tabindex="0" data-k="generous">generous</span> soul. He guessed that she had probably lost a son in the war, or something like that, and had never got over it.<span class="atm-label" tabindex="0" role="button" data-tip="wrong signal — Billy is &quot;explaining away&quot; the strange things he&#x27;s noticed. He invents a safe story about her without any evidence.">✦</span></span></p>
@@ -1689,7 +1774,10 @@ input.fr:focus{ outline:none; background:#fdf7e8; }
 
     </div>
 
-    <div class="part-header"><span>Part Four</span></div>
+    
+</div>
+<div class="chunk" id="ch-p4">
+<div class="part-header"><span>Part Four</span></div>
     <div class="story" translate="no">
 <figure class="artfig">
 <svg viewBox="0 0 680 300" role="img" aria-label="A silver tray on a low table with a teapot and two cups, steam rising. A stuffed dachshund stands on a wooden base nearby and a parrot sits motionless in its cage." preserveAspectRatio="xMidYMid meet"><rect width="680" height="300" fill="#322620"/><defs><radialGradient id="teafire"><stop offset="0" stop-color="#e8843a" stop-opacity=".26"/><stop offset=".55" stop-color="#e8843a" stop-opacity="0.1"/><stop offset="1" stop-color="#e8843a" stop-opacity="0"/></radialGradient></defs><circle cx="46" cy="216" r="150" fill="url(#teafire)"><animate attributeName="opacity" values=".75;1;.75" dur="2.6s" repeatCount="indefinite"/></circle><rect x="0" y="252" width="680" height="48" fill="#3f3128"/><path d="M0 252 H680" stroke="#241c16" stroke-width="3"/><rect x="104" y="196" width="386" height="15" rx="3" fill="#4a3526"/><rect x="104" y="211" width="386" height="5" fill="#33241a"/><path d="M128 216 l-8 52 h13 l6 -52z M462 216 l8 52 h-13 l-6 -52z" fill="#33241a"/><path d="M150 196 q0 -14 16 -14 h262 q16 0 16 14z" fill="#b9c1c6"/><path d="M150 196 h294 v7 q0 5 -8 5 h-278 q-8 0 -8 -5z" fill="#8a9298"/><path d="M166 186 h258" stroke="#dfe5e8" stroke-width="2.5" opacity=".8"/><path d="M214 182 q-26 0 -26 -26 q0 -26 30 -26 q30 0 30 26 q0 26 -26 26z" fill="#b9c1c6"/><path d="M232 130 q30 2 28 26 q-2 24 -26 26 q16 -26 -2 -52z" fill="#8a9298"/><path d="M188 146 q-18 4 -18 16 q0 10 12 14 l2 -9 q-6 -3 -6 -7 q0 -6 12 -8z" fill="#b9c1c6"/><path d="M248 142 q22 -6 26 6 q4 12 -12 18 l-4 -9 q8 -3 7 -7 q-1 -5 -13 -2z" fill="#8a9298"/><ellipse cx="218" cy="130" rx="20" ry="6" fill="#dfe5e8"/><circle cx="218" cy="122" r="5" fill="#8a9298"/><ellipse cx="330" cy="182" rx="26" ry="6" fill="#8a9298"/><path d="M330 162 q-17 0 -17 10 q0 10 17 10 q17 0 17 -10 q0 -10 -17 -10z" fill="#f0ece3"/><ellipse cx="330" cy="163" rx="17" ry="5" fill="#e6dccb"/><path d="M347 168 q11 3 0 9" stroke="#d8d2c6" stroke-width="2.5" fill="none"/><ellipse cx="400" cy="182" rx="26" ry="6" fill="#8a9298"/><path d="M400 162 q-17 0 -17 10 q0 10 17 10 q17 0 17 -10 q0 -10 -17 -10z" fill="#f0ece3"/><ellipse cx="400" cy="163" rx="17" ry="5" fill="#e6dccb"/><path d="M417 168 q11 3 0 9" stroke="#d8d2c6" stroke-width="2.5" fill="none"/><path d="M218 116 q-9 -13 0 -26 q9 -13 0 -26" stroke="#f0e6d2" stroke-width="2.6" fill="none" stroke-linecap="round" opacity=".45"><animateTransform attributeName="transform" type="translate" values="0 18;0 -16" dur="3.4s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;.5;0" dur="3.4s" repeatCount="indefinite"/></path><path d="M330 116 q-9 -13 0 -26 q9 -13 0 -26" stroke="#f0e6d2" stroke-width="2.6" fill="none" stroke-linecap="round" opacity=".45"><animateTransform attributeName="transform" type="translate" values="0 18;0 -16" dur="4.1s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;.5;0" dur="4.1s" repeatCount="indefinite"/></path><path d="M400 116 q-9 -13 0 -26 q9 -13 0 -26" stroke="#f0e6d2" stroke-width="2.6" fill="none" stroke-linecap="round" opacity=".45"><animateTransform attributeName="transform" type="translate" values="0 18;0 -16" dur="3.7s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;.5;0" dur="3.7s" repeatCount="indefinite"/></path><g transform="translate(556,268)"><rect x="-48" y="-6" width="96" height="10" rx="2" fill="#5a4632"/><rect x="-48" y="-6" width="96" height="3" fill="#755c42"/><path d="M-34 -6 v-20 h8 v20z M-14 -6 v-20 h8 v20z M12 -6 v-20 h8 v20z M30 -6 v-20 h8 v20z" fill="#5e3a25"/><path d="M-40 -26 q-4 -20 22 -22 q34 -4 50 2 q9 5 5 20 q-5 12 -21 12 h-38 q-17 0 -18 -12z" fill="#7a4e33"/><path d="M24 -52 q4 -18 23 -16 q12 2 14 12 l12 4 q6 4 0 9 l-14 4 q-7 8 -21 5 q-16 -4 -14 -18z" fill="#7a4e33"/><path d="M50 -42 l23 -2 q-4 7 -14 8 q-7 0 -9 -6z" fill="#d6b08a"/><path d="M30 -64 q-11 -2 -11 15 q8 2 13 -7z" fill="#5e3a25"/><path d="M-40 -34 q-16 -6 -20 -22" stroke="#7a4e33" stroke-width="7" fill="none" stroke-linecap="round"/><circle cx="56" cy="-56" r="3.6" fill="#f2efe6"/><circle cx="56.4" cy="-56" r="2.3" fill="#1b1411"/><circle cx="57.2" cy="-57" r="1" fill="#fff"/></g><g transform="translate(604,96)"><path d="M-42 0 q42 -46 84 0 v78 h-84z" fill="none" stroke="#6b5f4e" stroke-width="3"/><path d="M-30 -14 v92 M-14 -22 v100 M2 -25 v103 M18 -22 v100 M34 -14 v92" stroke="#6b5f4e" stroke-width="1.6"/><rect x="-46" y="76" width="92" height="7" rx="2" fill="#6b5f4e"/><path d="M-44 -6 q44 -48 88 0" stroke="#8a7d68" stroke-width="2" fill="none"/><rect x="-24" y="54" width="48" height="4" fill="#8a7358"/><path d="M-6 54 q-14 -12 -6 -28 q8 -16 20 -4 q10 10 4 24 q-6 10 -18 8z" fill="#b3261e"/><path d="M6 26 q12 -8 14 6 q2 12 -8 18 q-8 -10 -6 -24z" fill="#8f1c16"/><path d="M2 20 q12 -9 15 3 q-8 6 -15 -3z" fill="#e0b64a"/><circle cx="7" cy="22" r="1.7" fill="#1b1411"/><path d="M-6 54 v6 M6 54 v6" stroke="#8a7358" stroke-width="2"/></g></svg>
@@ -1824,6 +1912,8 @@ input.fr:focus{ outline:none; background:#fdf7e8; }
 </div>
 
 
+
+</div>
 </div>
 
 <section class="act" id="act-ending">
@@ -3522,7 +3612,13 @@ applyHL();
 
 /* a short key, right above the story */
 (function(){
-  var first = document.querySelector(".part-header");
+  /* the key belongs where the numbers start, not at the top of the page */
+  var heads = document.querySelectorAll(".part-header"), first = null, i;
+  for(i = 0; i < heads.length; i++){
+    var sp = heads[i].querySelector("span");
+    if(sp && /Part One/.test(sp.textContent)){ first = heads[i]; break; }
+  }
+  if(!first) first = document.querySelector(".part-header");
   if(!first) return;
   var l = document.createElement("div");
   l.className = "hllegend";
@@ -3640,6 +3736,8 @@ applyHL();
     document.getElementById("lockfill").style.width =
       (total ? Math.round(100 * done / total) : 0) + "%";
     if(done >= need){ openUp(true); return; }
+    /* the skip link only appears once they are genuinely well into it */
+    lock.classList.toggle("nearly", total > 0 && done >= Math.ceil(total * 0.5));
     lock.classList.remove("hidden");
     bar.classList.add("hidden");
   }
@@ -3686,6 +3784,147 @@ applyHL();
   }
   sec.addEventListener("click", function(e){ if(e.target.closest && e.target.closest(".ch")) setTimeout(update, 0); });
   setTimeout(update, 50);
+})();
+
+
+/* ============================================================
+   CHAPTERS — one chunk of the page at a time, parts gated in order.
+   Teacher override: add ?open=p3 (or ?open=all) to the URL once on a
+   student's machine; it is remembered there.
+   ============================================================ */
+(function(){
+  var nav = document.getElementById("chapters"); if(!nav) return;
+  var ORDER = ["intro","words","p1","p2","p3","p4"];
+  var KEY = LKEY + "_chunk", OPENKEY = LKEY + "_open";
+  var THRESH = 0.85;
+
+  /* the After group reuses the existing lock bar and activity menu */
+  var slot = document.getElementById("cgafter");
+  var lockbar = document.getElementById("lockbar"), actbar = document.getElementById("actbar");
+  if(lockbar) slot.appendChild(lockbar);
+  if(actbar) slot.appendChild(actbar);
+
+  var forced = null;
+  try{
+    var q = (location.search.match(/[?&]open=([a-z0-9]+)/i) || [])[1];
+    if(q){ localStorage.setItem(OPENKEY, q.toLowerCase()); }
+    forced = localStorage.getItem(OPENKEY);
+  }catch(e){}
+
+  function count(id){
+    var c = document.getElementById("ch-" + id); if(!c) return [0, 0];
+    var t = c.querySelectorAll("textarea[data-id]"), d = 0, n = 0, i;
+    for(i = 0; i < t.length; i++){ n++; if((t[i].value || "").trim()) d++; }
+    return [d, n];
+  }
+  function done(id){ var c = count(id); return c[1] === 0 || c[0] >= Math.ceil(c[1] * THRESH); }
+  function unlocked(id){
+    if(forced === "all") return true;
+    if(forced && ORDER.indexOf(id) <= ORDER.indexOf(forced)) return true;
+    var i = ORDER.indexOf(id);
+    if(i <= 2) return true;                           /* intro, words, Part 1 always open */
+    return done(ORDER[i - 1]);                        /* each part opens when the one before is done */
+  }
+  function paint(){
+    var btns = nav.querySelectorAll(".cbtn"), i, firstLocked = null;
+    for(i = 0; i < btns.length; i++){
+      var id = btns[i].getAttribute("data-ch"), c = count(id), cnt = btns[i].querySelector(".ccnt");
+      if(cnt) cnt.textContent = c[1] ? (c[0] + "/" + c[1]) : "";
+      var full = c[1] > 0 && c[0] === c[1];
+      btns[i].classList.toggle("full", full);
+      var ok = unlocked(id);
+      btns[i].classList.toggle("locked", !ok);
+      btns[i].disabled = !ok;
+      btns[i].classList.remove("next");
+      if(!ok && !firstLocked) firstLocked = btns[i];
+    }
+    /* nudge toward the next thing to do */
+    var cur = nav.querySelector(".cbtn.on"), curId = cur ? cur.getAttribute("data-ch") : null;
+    if(curId && done(curId)){
+      var ni = ORDER.indexOf(curId) + 1;
+      if(ni < ORDER.length){
+        var nb = nav.querySelector('.cbtn[data-ch="' + ORDER[ni] + '"]');
+        if(nb && !nb.disabled && !nb.classList.contains("full")) nb.classList.add("next");
+      }
+    }
+    var lk = document.getElementById("cglock");
+    if(lk){
+      var all = count("p1")[1] + count("p2")[1] + count("p3")[1] + count("p4")[1];
+      var dn = count("p1")[0] + count("p2")[0] + count("p3")[0] + count("p4")[0];
+      var open = actbar && !actbar.classList.contains("hidden");
+      lk.textContent = open ? "" : "(opens when the story is finished \u00b7 " + dn + "/" + all + ")";
+    }
+    footers();
+  }
+  function footers(){
+    var i;
+    for(i = 0; i < ORDER.length; i++){
+      var c = document.getElementById("ch-" + ORDER[i]); if(!c) continue;
+      var f = c.querySelector(".chunkfoot");
+      if(!f){
+        f = document.createElement("div"); f.className = "chunkfoot";
+        f.innerHTML = '<span class="cf-note"></span><button type="button" class="cfnext"></button>';
+        c.appendChild(f);
+        (function(idx){
+          f.querySelector(".cfnext").addEventListener("click", function(){
+            var nx = ORDER[idx + 1];
+            if(nx){ show(nx); } else if(actbar && !actbar.classList.contains("hidden")){
+              var b = actbar.querySelector('.actbtn[data-act="ending"]'); if(b) b.click();
+            }
+          });
+        })(i);
+      }
+      var cc = count(ORDER[i]), nx = ORDER[i + 1], btn = f.querySelector(".cfnext"), note = f.querySelector(".cf-note");
+      var isDone = done(ORDER[i]);
+      if(nx){
+        var nb2 = nav.querySelector('.cbtn[data-ch="' + nx + '"]');
+        var label = (nb2 && nb2.childNodes[0]) ? nb2.childNodes[0].textContent.trim() : nx;
+        btn.textContent = "Done \u2014 go to " + label + " \u2192";
+        btn.disabled = !isDone;
+        note.textContent = isDone ? "" : (cc[1] ? "Answer " + Math.max(0, Math.ceil(cc[1] * THRESH) - cc[0]) + " more to continue" : "");
+      } else {
+        var open = actbar && !actbar.classList.contains("hidden");
+        btn.textContent = open ? "Done \u2014 start the activities \u2192" : "Finish the story to open the activities";
+        btn.disabled = !open;
+        note.textContent = "";
+      }
+    }
+  }
+  function show(id){
+    if(!unlocked(id)) return;
+    var btns = nav.querySelectorAll(".cbtn"), chunks = document.querySelectorAll(".chunk"), i;
+    for(i = 0; i < btns.length; i++) btns[i].classList.toggle("on", btns[i].getAttribute("data-ch") === id);
+    for(i = 0; i < chunks.length; i++) chunks[i].classList.toggle("on", chunks[i].id === "ch-" + id);
+    var story = document.getElementById("storywrap"); if(story) story.style.display = "";
+    var acts = document.querySelectorAll("section.act"); for(i = 0; i < acts.length; i++) acts[i].classList.remove("on");
+    var ab = actbar ? actbar.querySelectorAll(".actbtn") : []; for(i = 0; i < ab.length; i++) ab[i].classList.remove("on");
+    try{ localStorage.setItem(KEY, id); }catch(e){}
+    window.scrollTo(0, 0);
+    paint();
+  }
+  nav.addEventListener("click", function(e){
+    var b = e.target.closest ? e.target.closest(".cbtn") : null;
+    if(b && !b.disabled) show(b.getAttribute("data-ch"));
+  });
+  /* when an activity opens, the chapter buttons all go dim */
+  if(actbar) actbar.addEventListener("click", function(e){
+    var b = e.target.closest ? e.target.closest(".actbtn") : null;
+    if(!b) return;
+    var btns = nav.querySelectorAll(".cbtn"), i;
+    for(i = 0; i < btns.length; i++) btns[i].classList.remove("on");
+  });
+  document.addEventListener("input", function(e){
+    if(e.target && e.target.hasAttribute && e.target.hasAttribute("data-id")) paint();
+  });
+
+  var saved = null; try{ saved = localStorage.getItem(KEY); }catch(e){}
+  var startAct = null; try{ startAct = localStorage.getItem(LKEY + "_act"); }catch(e){}
+  if(startAct && startAct !== "story" && actbar && !actbar.classList.contains("hidden")){
+    paint();                                           /* they were mid-activity: leave them there */
+  } else {
+    show(saved && unlocked(saved) ? saved : "intro");
+  }
+  window.showChunk = show;
 })();
 
 </script>
