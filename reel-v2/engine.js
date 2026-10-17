@@ -416,7 +416,10 @@
   function translate(text, lang, cb, context, want) {
     var key = lang + '|' + text + '|' + (context || '') + '|' + (want || '');
     if (tcache[key]) { cb(tcache[key]); return; }
-    var u = PROXY + '?action=translate&idiom=' + encodeURIComponent(text) + '&meaning=' + encodeURIComponent(context || '') +
+    /* mode=word -> plain one-to-one dictionary translation; mode=sentence -> plain translation.
+       (Without a mode, the proxy treats everything as an idiom: "boy" became "Boy!".) */
+    var u = PROXY + '?action=translate&mode=' + (want === 'equiv' ? 'word' : 'sentence') +
+            '&idiom=' + encodeURIComponent(text) + '&meaning=' + encodeURIComponent(context || '') +
             '&lang=' + encodeURIComponent(lang);
     fetch(u).then(function (r) { return r.text(); }).then(function (t) {
       var d = null, v = '';
@@ -430,12 +433,14 @@
     }).catch(function () { cb(''); });
   }
   /* One word, four tries, in order:
-       1. the word with its sentence as context (so "boy" -> "chico", not "Boy!")
+       1. the word with its DEFINITION from EP.gloss (falls back to the sentence if a word has none)
        2. the word alone
        3. try 1 again after a short pause (the proxy hiccups under a whole class tapping at once)
+     The proxy contract is idiom=WORD&meaning=DEFINITION: a definition is what stops "boy" coming back as "Boy!".
        4. the whole sentence, so the student still gets meaning instead of a grey word
      cb(value, isSentence) */
   function translateWord(w, sentence, lg, cb) {
+    var def = (EP.gloss && EP.gloss[w]) || sentence || '';
     translate(w, lg, function (v1) {
       if (v1) { cb(v1, false); return; }
       translate(w, lg, function (v2) {
@@ -445,10 +450,10 @@
             if (v3) { cb(v3, false); return; }
             if (!sentence) { cb('', false); return; }
             translate(sentence, lg, function (v4) { cb(v4, true); }, '', 'line');
-          }, sentence || '', 'equiv');
+          }, def, 'equiv');
         }, 700);
       }, '', 'line');
-    }, sentence || '', 'equiv');
+    }, def, 'equiv');
   }
   var pop = null;
   function closePop() { if (pop) { pop.remove(); pop = null; } }
