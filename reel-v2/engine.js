@@ -519,6 +519,14 @@
     h += '<p class="speakit" translate="yes" data-en="' + esc(yt.speak) + '">🗣️ ' + esc(yt.speak) + '</p>';
     h += '<div class="row"><button class="btn" id="turnIn" translate="yes">' + (state.turned ? 'Turned in. Turn in again' : 'Turn in') + '</button>' +
          '<button class="btn alt" id="rewatch" translate="yes">Watch again</button><span id="ytMsg"></span></div>';
+    /* what's next: a real activity when the episode has one (EP.next), otherwise back to Google Classroom */
+    var nx = EP.next, gc = 'Done here? Go to Google Classroom for your next activity, or ask your teacher what to do next.';
+    h += '<div class="nextbox"><h3 translate="yes" data-en="What\u2019s next">What\u2019s next</h3>';
+    if (nx && nx.url) {
+      if (nx.why) h += '<p translate="yes" data-en="' + esc(nx.why) + '">' + esc(nx.why) + '</p>';
+      h += '<a class="btn next" href="' + esc(nx.url) + '" translate="yes" data-en="' + esc(nx.title) + '">' + esc(nx.title) + ' \u2192</a>';
+    }
+    h += '<p class="gc" translate="yes" data-en="' + gc + '">' + gc + '</p></div>';
     $('ytBox').innerHTML = h;
     $('yt').style.display = 'block';
     showDirections($('ytBox'));
