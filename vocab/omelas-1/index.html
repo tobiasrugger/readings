@@ -1049,6 +1049,7 @@ function buildCloze(){
     });
     bank.appendChild(b);
   });
+  if(typeof czReady==='function') czReady();
 }
 $('czBank').addEventListener('click', function(){
   var b=$('clozeBank');
@@ -1056,13 +1057,57 @@ $('czBank').addEventListener('click', function(){
   b.style.display = hidden ? 'flex' : 'none';
   $('czBank').textContent = hidden ? 'Hide word bank' : 'Show word bank';
 });
+/* Check: never gives every answer away.
+   empty -> "Not done yet" | right -> "Yes!" | wrong 1st time -> "Try again" + hint
+   wrong again with a CHANGED word -> the answer for that blank only.
+   "Check all & show answers" (the old behavior) unlocks once half the blanks are filled. */
+function czQs(){ return Array.prototype.filter.call($('clozeBox').children, function(q){ return q.dataset && q.dataset.a; }); }
+function czFilled(){ return czQs().filter(function(q){ return (state.cloze[q.dataset.a]||'').trim(); }).length; }
+function czReady(){
+  var all=$('czAll'); if(!all) return;
+  var qs=czQs(), ok = qs.length && czFilled() >= Math.ceil(qs.length/2);
+  all.disabled = !ok; all.style.opacity = ok ? '' : '.45'; all.style.cursor = ok ? '' : 'not-allowed';
+  all.title = ok ? '' : 'Fill in at least half of the blanks first';
+}
+(function(){
+  if(!$('czAll')){
+    var b=document.createElement('button'); b.className='btn alt'; b.id='czAll'; b.textContent='Check all & show answers';
+    $('czCheck').parentNode.insertBefore(b, $('czCheck').nextSibling);
+  }
+  $('clozeBox').addEventListener('input', czReady);
+  $('clozeBank').addEventListener('click', function(){ setTimeout(czReady, 0); });
+  czReady();
+})();
+function czHint(a){
+  var w=a.trim(), n=w.replace(/[^A-Za-z]/g,'').length;
+  return 'Try again. Hint: it starts with \u201c'+w.charAt(0).toLowerCase()+'\u201d and has '+n+' letter'+(n===1?'':'s')+'.';
+}
 $('czCheck').addEventListener('click', function(){
-  var ok=0, tot=0;
-  Array.prototype.forEach.call($('clozeBox').children, function(q){
+  if(!state.czTries) state.czTries = {};
+  var ok=0, tot=0, todo=0;
+  czQs().forEach(function(q){
     var a=q.dataset.a; tot++;
     var got=(state.cloze[a]||'').trim().toLowerCase();
     var fb=q.querySelector('.fb'); q.classList.remove('good','bad');
-    if(got===a.toLowerCase()){ q.classList.add('good'); fb.className='fb good'; fb.textContent='Yes.'; ok++; }
+    var rec=state.czTries[a] || (state.czTries[a]={n:0,last:''});
+    if(!got){ q.classList.add('bad'); fb.className='fb bad'; fb.textContent='\u2717 Not done yet.'; todo++; return; }
+    if(got===a.toLowerCase()){ q.classList.add('good'); fb.className='fb good'; fb.textContent='\u2713 Yes!'; ok++; return; }
+    if(got!==rec.last){ rec.n++; rec.last=got; }
+    q.classList.add('bad'); fb.className='fb bad';
+    fb.textContent = rec.n>=2 ? 'The answer is '+a+'.' : czHint(a);
+  });
+  $('czScore').textContent = ok+' of '+tot+' right' + (todo ? ' \u00b7 '+todo+' not done yet' : '');
+  this.textContent='Check again';
+  touch();
+});
+$('czAll').addEventListener('click', function(){
+  if(this.disabled) return;
+  var ok=0, tot=0;
+  czQs().forEach(function(q){
+    var a=q.dataset.a; tot++;
+    var got=(state.cloze[a]||'').trim().toLowerCase();
+    var fb=q.querySelector('.fb'); q.classList.remove('good','bad');
+    if(got===a.toLowerCase()){ q.classList.add('good'); fb.className='fb good'; fb.textContent='\u2713 Yes!'; ok++; }
     else { q.classList.add('bad'); fb.className='fb bad'; fb.textContent='The answer is '+a+'.'; }
   });
   $('czScore').textContent = ok+' of '+tot+' right';
