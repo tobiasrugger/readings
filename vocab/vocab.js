@@ -226,7 +226,7 @@ function translate(text, lang){
     ur:'Urdu',tl:'Tagalog',fr:'French',ko:'Korean',hi:'Hindi',so:'Somali',
     ne:'Nepali',th:'Thai',pt:'Portuguese',ja:'Japanese'};
   var name = C2N[lang] || lang;
-  var u = PROXY+'?action=translate&idiom='+encodeURIComponent(text)+
+  var u = PROXY+'?action=translate&mode='+(String(text||'').trim().split(/\s+/).length<=3?'word':'sentence')+'&idiom='+encodeURIComponent(text)+
           '&meaning=&lang='+encodeURIComponent(name);
   fetch(u).then(function(r){ return r.json(); }).then(function(d){
     var v = '';
