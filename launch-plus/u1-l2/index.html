@@ -81,11 +81,14 @@ body.wt [translate="no"] *{cursor:help !important}
 #namebox .or{text-align:center;font-size:.8rem;color:var(--muted);font-weight:700;margin:-4px 0 10px}
 #nameErr{color:var(--rust);font-size:.86rem;font-weight:700;min-height:1.1em}
 @media print{#bar,#namewrap,.btn,.steps{display:none !important} section.act{display:block !important}}
-#wordmode{display:inline-flex;vertical-align:middle;margin-left:4px}
-#bar #wordmode .sh-toggle{border-color:rgba(255,255,255,.55);background:rgba(255,255,255,.14)}
-#bar #wordmode .sh-toggle button{background:transparent;border:0;border-radius:999px;color:#fff;padding:4px 10px;font-size:.8rem}
-#bar #wordmode .sh-toggle button.on.dict{background:#fff;color:#0f3d2e}
-#bar #wordmode .sh-toggle button.on{background:#7c3aed;color:#fff}
+
+/* ---- cast quips + Leo the lion ---- */
+.quip{display:inline-block;border-left:4px solid var(--qc,#5b6b7c);padding:2px 10px;border-radius:0 8px 8px 0;background:#fff}
+.quip b{color:var(--qc,#5b6b7c);margin-right:4px}
+#leo{display:inline-block;width:20px;height:20px;border:0;background:none;padding:0;cursor:pointer;opacity:.38;vertical-align:middle;margin-left:6px}
+#leo svg{width:100%;height:100%;display:block}
+#fw{position:fixed;inset:0;pointer-events:none;z-index:300}
+#toast{position:fixed;left:50%;top:14px;transform:translateX(-50%);background:var(--pine);color:#fff;border-radius:12px;padding:10px 18px;font-weight:800;font-size:1.05rem;z-index:310;box-shadow:0 10px 30px rgba(0,0,0,.3)}
 </style>
 <script>
 window.GAL_META={title:'Launch Plus U1 L2: Introductions',unit:'Launch Plus',
@@ -106,7 +109,7 @@ window.GAL_META={title:'Launch Plus U1 L2: Introductions',unit:'Launch Plus',
     <option value="Hindi">हिन्दी</option><option value="Somali">Soomaali</option><option value="Nepali">नेपाली</option><option value="Thai">ไทย</option>
   </select>
   <button id="dirBtn" onclick="toggleDir()">Directions</button>
-  <button id="wtBtn" onclick="toggleWT()">Tap words</button><span id="wordmode" translate="no"></span>
+  <button id="wtBtn" onclick="toggleWT()">Tap words</button>
   <button onclick="turnIn()">Turn in</button>
 </div>
 <main>
@@ -139,7 +142,7 @@ window.GAL_META={title:'Launch Plus U1 L2: Introductions',unit:'Launch Plus',
 </section>
 
 <section class="act" id="a3">
-  <h2>3 · Bigger words</h2>
+  <h2>3 · Bigger words <button id="leo" type="button"></button></h2>
   <p class="dir" data-dir="b1" data-en="Strong readers know more than one word for the same idea. Match the book word to a bigger word, or build a new word from it.">Strong readers know more than one word for the same idea. Match the book word to a bigger word, or build a new word from it.</p>
   <div id="bigItems" translate="no"></div>
   <button class="btn" onclick="go(4)">Next: Zoom in</button>
@@ -271,7 +274,7 @@ function renderItem(it){
  it.o.forEach(function(o,k){
   var cls='chip';if(st.done){cls+=(k===it.a?' right':' dim');}else if(st.wrongs&&st.wrongs.indexOf(k)>=0)cls+=' wrong dim';
   h+='<button class="'+cls+'" onclick="pick(\''+it.id+'\','+k+')">'+o+'</button>';});
- h+='</div><div class="why '+(st.done?(st.first?'good':'miss'):'')+'" id="w_'+it.id+'">'+(st.done?it.why:(st.tries?'Not yet. Try again.':''))+'</div></div>';
+ h+='</div><div class="why '+(st.done?(st.first?'good':'miss'):'')+'" id="w_'+it.id+'">'+(st.done?it.why:(st.tries?quip(it.id,st.tries):''))+'</div></div>';
  return h;
 }
 function pick(id,k){
@@ -287,7 +290,7 @@ function renderPart(p){
  $(host).innerHTML=ITEMS.filter(function(x){return x.part===p;}).map(renderItem).join('');
  drawSteps();
 }
-function renderRead(){$('readText').innerHTML=DATA.read;if(window.Shades)Shades.mark($('readText'));}
+function renderRead(){$('readText').innerHTML=DATA.read;}
 function renderZoomList(){
  $('zoomList').innerHTML='<div style="font-size:.86rem;color:var(--muted);margin-bottom:4px">New words</div>'+DATA.zoom.map(function(z){return '<div class="wordrow"><span class="w" translate="no">'+z.job+'</span><span translate="no">'+z.does+'</span></div>';}).join('');
 }
@@ -298,7 +301,6 @@ function renderWrite(){
    '<textarea id="ta'+i+'" placeholder="'+w.placeholder+'" oninput="wr('+i+',this.value)">'+v.replace(/</g,'&lt;')+'</textarea><div class="check" id="ck'+i+'"></div></div>';
  }).join('');
  for(var i=0;i<DATA.write.length;i++)checkW(i);
- if(window.Shades){Shades.mark($('writeItems'));Shades.watch(document.querySelectorAll('#writeItems textarea'));}
 }
 function wr(i,v){ST.W['w'+i]=v;checkW(i);save();}
 function checkW(i){
@@ -398,7 +400,7 @@ function saveName(){
  try{var mine=localStorage.getItem('lp_'+UNIT+'_'+canon.replace(/[^a-z0-9]+/g,'_'));if(mine&&canon!==ST.email){var d=JSON.parse(mine);if(d)ST=Object.assign(ST,d);}}catch(x){}
  recordAlias(e,canon);ST.name=n;ST.email=canon;ST.period=pd;
  $('whoami').textContent=n+' \u00b7 P'+pd;$('namewrap').classList.remove('show');
- try{localStorage.setItem('gal_student_email',canon);}catch(x){}
+ try{localStorage.setItem('gal_student_email',canon);localStorage.setItem('gal_student_name',n);localStorage.setItem('gal_student_period',pd);}catch(x){}
  seedRoster(canon,n,pd);save();push(true);buildItems();go(ST.act||1);
 }
 
@@ -406,7 +408,7 @@ function saveName(){
 var DIR_ON=false,SENT={},tcache={};
 function lang(){return $('lang').value;}
 function tr(text,lg,cb){var k=text+'|'+lg;if(tcache[k]){cb(tcache[k]);return;}
- fetch(PROXY+'?action=translate&mode='+(String(text||'').trim().split(/\s+/).length<=3?'word':'sentence')+'&idiom='+encodeURIComponent(text)+'&meaning=&lang='+encodeURIComponent(lg)).then(function(r){return r.json();})
+ fetch(PROXY+'?action=translate&idiom='+encodeURIComponent(text)+'&meaning=&lang='+encodeURIComponent(lg)).then(function(r){return r.json();})
  .then(function(d){var t=d&&d.translation?(d.translation.equiv||d.translation.meaning||(typeof d.translation==='string'?d.translation:'')):'';if(t)tcache[k]=t;cb(t||'');}).catch(function(){cb('');});}
 function logReveal(k,lg){if(!ST.email)return;var sig=k+'|'+lg;if(SENT[sig])return;SENT[sig]=true;
  fetch(SUPA_URL+'/rest/v1/instruction_reveals',{method:'POST',headers:hdr('return=minimal'),body:JSON.stringify([{email:ST.email,set_slug:SLUG,activity:k,lang:lg}])}).catch(function(){});}
@@ -421,7 +423,7 @@ function savedLang(){try{return localStorage.getItem('eld103_lang')||localStorag
 var WT=false;
 function toggleWT(){if(!WT&&!lang()){alert('First choose your language in the green bar, then turn on Tap words.');return;}WT=!WT;document.body.classList.toggle('wt',WT);$('wtBtn').classList.toggle('on',WT);hideTip();}
 function hideTip(){$('wtip').classList.remove('show');}
-document.addEventListener('click',function(ev){if(!WT)return;if(window.Shades&&Shades.getMode()==='shades'&&ev.target.closest&&ev.target.closest('.sh-word'))return;var host=ev.target.closest&&(ev.target.closest('[translate="no"]')||ev.target.closest('.dir'));if(!host)return;
+document.addEventListener('click',function(ev){if(!WT)return;var host=ev.target.closest&&(ev.target.closest('[translate="no"]')||ev.target.closest('.dir'));if(!host)return;
  ev.preventDefault();ev.stopPropagation();var w=pickWord(ev);if(w)showWord(w,ev.clientX,ev.clientY);},true);
 function pickWord(ev){var t=ev.target,txt=(t.textContent||'').trim();if(txt&&txt.split(/\s+/).length===1)return txt.replace(/^[^\w']+|[^\w']+$/g,'');
  var r=null;if(document.caretRangeFromPoint)r=document.caretRangeFromPoint(ev.clientX,ev.clientY);else if(document.caretPositionFromPoint){var cp=document.caretPositionFromPoint(ev.clientX,ev.clientY);if(cp){r=document.createRange();r.setStart(cp.offsetNode,cp.offset);}}
@@ -440,10 +442,35 @@ function checkCanary(){var c=$('canary'),got=c?(c.textContent||'').trim().toLowe
  fetch(SUPA_URL+'/rest/v1/page_translation?on_conflict=email,set_slug',{method:'POST',headers:hdr('resolution=merge-duplicates,return=minimal'),
   body:JSON.stringify([{email:ST.email,set_slug:SLUG,translated:true,observed:drift,html_lang:document.documentElement.lang||'',html_class:cls,updated_at:new Date().toISOString()}])}).catch(function(){});}
 
+
+/* ===================== CAST QUIPS (wrong answers get a classmate, not a form letter) ===================== */
+var QUIPS={
+ mateo:{c:'#2f6fbd',n:'Mateo',q:["Hmm. I said that too. In August.","Not that one. Try again \u2014 I believe in you.","Nope. But nice try, friend."]},
+ amira:{c:'#1f8a7e',n:'Amira',q:["Close! Look at the underlined part again.","Not yet. Read it one more time, slowly.","Hmm\u2026 almost. Which word changes?"]},
+ paolo:{c:'#864D9E',n:'Paolo',q:["Dramatic pause\u2026 no. Try again!","Plot twist: that\u2019s not it.","So close! One more."]},
+ jun:{c:'#5b6b7c',n:'Jun',q:["*adjusts glasses* Not that one.","Hmm. Think about he, she, it.","Not yet. Read the sentence again."]},
+ linh:{c:'#d9567f',n:'Linh',q:["I\u2019m not sure either. Let\u2019s try again.","Oh! Not that one. Try another.","Hmm. Which one sounds right?"]}
+};
+function quip(id,tries){var ks=Object.keys(QUIPS),h=0;for(var i=0;i<id.length;i++)h=(h*31+id.charCodeAt(i))&1023;var k=ks[(h+tries)%ks.length],c=QUIPS[k];return '<span class="quip" style="--qc:'+c.c+'"><b>'+c.n+':</b>'+c.q[(h+tries)%c.q.length]+'</span>';}
+
+/* ===================== LEO THE LION (tap him) ===================== */
+var LEO_SVG='<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="34" r="22" fill="#e07a1f"/><circle cx="32" cy="34" r="14" fill="#f6c27a"/><circle cx="27" cy="31" r="2" fill="#1c2640"/><circle cx="37" cy="31" r="2" fill="#1c2640"/><path d="M28 38q4 4 8 0" fill="none" stroke="#1c2640" stroke-width="2"/><circle cx="32" cy="35" r="1.8" fill="#1c2640"/></svg>';
+function toast(msg){var t=document.createElement('div');t.id='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(function(){if(t.parentNode)t.parentNode.removeChild(t);},2400);}
+function fireworks(){
+ var c=document.getElementById('fw');if(!c){c=document.createElement('canvas');c.id='fw';document.body.appendChild(c);}
+ c.width=innerWidth;c.height=innerHeight;c.style.display='block';var ctx=c.getContext('2d');if(!ctx){c.style.display='none';return;}
+ var parts=[],cols=['#e07a1f','#864D9E','#2d6a4f','#f6c27a','#2f6fbd','#ffffff'],t0=Date.now();
+ for(var b=0;b<4;b++){var cx=c.width*(0.2+0.6*Math.random()),cy=c.height*(0.2+0.4*Math.random());for(var i=0;i<60;i++){var a=Math.random()*6.283,v=2+Math.random()*5;parts.push({x:cx,y:cy,vx:Math.cos(a)*v,vy:Math.sin(a)*v,c:cols[i%cols.length],l:60+Math.random()*40});}}
+ (function tick(){ctx.clearRect(0,0,c.width,c.height);var alive=0;parts.forEach(function(p){if(p.l<=0)return;alive++;p.x+=p.vx;p.y+=p.vy;p.vy+=0.08;p.vx*=0.99;p.l--;ctx.globalAlpha=Math.min(1,p.l/30);ctx.fillStyle=p.c;ctx.fillRect(p.x,p.y,4,4);});
+  if(alive&&Date.now()-t0<4000)requestAnimationFrame(tick);else c.style.display='none';})();
+}
+function foundLeo(){fireworks();toast(ST.egg?'Leo again! \ud83e\udd81':'You found Leo the lion! \ud83e\udd81');if(!ST.egg){ST.egg=new Date().toISOString();save();}}
+function plantLeo(){var b=document.getElementById('leo');if(b&&!b.innerHTML){b.innerHTML=LEO_SVG;b.setAttribute('aria-label','a tiny lion');b.addEventListener('click',function(e){e.preventDefault();foundLeo();});}}
+document.addEventListener('DOMContentLoaded',plantLeo);
+
 /* ===================== BOOT ===================== */
 function boot(){
  load();buildItems();
- if(window.Shades){Shades.mount({root:null,toggle:$('wordmode'),compact:true,getLang:function(){var v=lang();return v==='Chinese (Simplified)'?'Mandarin':(v||'Spanish');},mode:new URLSearchParams(location.search).get('mode')||ST.wordMode||'dictionary',onMode:function(m){if(ST.wordMode!==m){ST.wordMode=m;save();}},onUse:function(u){(ST.shades=ST.shades||[]).push(u);window.GAL_HIGHLIGHTS=[{label:'Bigger word',text:u.base+' \u2192 '+u.word+': '+u.sentence}];save();}});}
  $('whoami').textContent=ST.name?(ST.name+(ST.period?' \u00b7 P'+ST.period:'')):'';
  var L=savedLang();if(L){$('lang').value=L;DIR_ON=true;$('dirBtn').classList.add('on');}
  go(ST.act||0);dot('on');
@@ -456,7 +483,6 @@ function boot(){
 }
 document.addEventListener('DOMContentLoaded',boot);
 </script>
-<script src="/readings/shades/shades.js"></script>
 <script src="/readings/track.js"></script>
 </body>
 </html>
