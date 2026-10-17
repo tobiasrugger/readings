@@ -13,8 +13,12 @@
    4. Plain browser dropdowns inside a sign-in box copy the look of that
       box's own text fields (rounded corners, padding, font).
 
+   5. Every "Hear it" button shows the speaker icon: 🔊 Hear it. So do
+      "Listen" buttons that play sound (never an answer choice that just
+      says "listen" — that is a vocabulary word in Unit 1).
+
    Pages that already have a language dropdown in their sign-in box are
-   left alone (only fixes 3 and 4 apply). Safe to load twice.
+   left alone (only fixes 3, 4 and 5 apply). Safe to load twice.
    ===================================================================== */
 (function () {
   if (window.__GAL_STD__) return;
@@ -236,8 +240,29 @@
     setTimeout(function () { handOff(code, box); }, 3000);
   }
 
+  /* ---------- 5. 🔊 on every Hear it button ---------- */
+  var HEAR = /^(hear it|hear|hear it again|hear again)$/i,
+      LISTEN = /^(listen|listen again)$/i,
+      SOUNDY = /spk|speak|say|audio|listen|play|voice|tts|sound/i;
+  function speakerIcons() {
+    var bs = document.querySelectorAll('button, [role=button], a.btn, .spk');
+    for (var i = 0; i < bs.length; i++) {
+      var b = bs[i];
+      if (b.__galSpk) continue;
+      var t = (b.textContent || '').trim();
+      if (!t || t.indexOf('🔊') >= 0 || t.indexOf('🔈') >= 0 || t.indexOf('🔉') >= 0) { continue; }
+      var hint = (b.className || '') + ' ' + (b.id || '') + ' ' + (b.title || '') + ' ' +
+                 (b.getAttribute('aria-label') || '') + ' ' + (b.getAttribute('onclick') || '');
+      if (HEAR.test(t) || (LISTEN.test(t) && SOUNDY.test(hint))) {
+        b.__galSpk = true;
+        b.insertBefore(document.createTextNode('🔊 '), b.firstChild);
+      }
+    }
+  }
+
   function scan() {
     addCSS();
+    speakerIcons();
     var ems = document.querySelectorAll('input[type=email], input[id*=mail i], input[name*=mail i]');
     for (var i = 0; i < ems.length; i++) fixBox(ems[i]);
   }

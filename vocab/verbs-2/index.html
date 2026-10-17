@@ -460,7 +460,7 @@ function speak(txt, slow){
 /* ---------- translate popup ---------- */
 var pop = null;
 function closePop(){ if(pop){ pop.remove(); pop=null; } }
-document.addEventListener('click', function(e){ if(pop && !pop.contains(e.target) && !e.target.classList.contains('tword')) closePop(); });
+document.addEventListener('click', function(e){ if(pop && !pop.contains(e.target) && !e.target.classList.contains('tword') && !(e.target.closest && e.target.closest('.tapline'))) closePop(); });
 function openPop(el, word, def){
   closePop();
   pop = document.createElement('div');
@@ -516,12 +516,14 @@ function buildCards(box, hideWord){
   box.innerHTML='';
   SET.words.forEach(function(w){
     var d=document.createElement('div'); d.className='fc';
+    /* tap the word line or the definition line -> translation; picture, Hear it, anywhere else -> spoken */
     d.innerHTML = pic(w)
-      + '<div class="w'+(hideWord?' hide':'')+'"><span class="tword" style="cursor:help;border-bottom:2px dotted var(--edge)">'+esc(w.w)+'</span></div>'
-      + '<div class="d'+(hideWord?' hide':'')+'">'+esc(w.def)+'</div>'
-      + '<button class="spk">Hear it</button>';
+      + '<div class="w tapline'+(hideWord?' hide':'')+'" style="cursor:pointer"><span class="tword" style="border-bottom:2px dotted var(--edge)">'+esc(w.w)+'</span></div>'
+      + '<div class="d tapline'+(hideWord?' hide':'')+'" style="cursor:pointer"><span style="border-bottom:2px dotted var(--edge)">'+esc(w.def)+'</span></div>'
+      + '<button class="spk">🔊 Hear it</button>';
     d.addEventListener('click', function(ev){
-      if(ev.target.classList.contains('tword')){ openPop(ev.target, w.w, w.def); return; }
+      var line = ev.target.closest('.tapline');
+      if(line && !line.classList.contains('hide')){ openPop(line, w.w, w.def); return; }
       if(hideWord){
         var wv=d.querySelector('.w'), dv=d.querySelector('.d');
         wv.classList.toggle('hide'); dv.classList.toggle('hide');
