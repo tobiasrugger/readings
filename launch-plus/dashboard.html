@@ -17,6 +17,7 @@ body{font-family:'Nunito',system-ui,sans-serif;background:var(--paper);color:var
 #bar select,#bar button,#bar a{font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer;background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:6px 11px;text-decoration:none}
 #bar .sp{flex:1}
 main{max-width:1100px;margin:0 auto;padding:16px}
+#feat label{font-size:.88rem;font-weight:700;display:inline-flex;align-items:center;gap:4px}#feat .fb{font:inherit;font-weight:800;font-size:.82rem;border:1.5px solid var(--line);background:#fff;border-radius:8px;padding:5px 10px;cursor:pointer}#feat select{font:inherit;font-size:.85rem;border-radius:8px;border:1.5px solid var(--line);padding:3px 6px}
 .card{background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px}
 .stats{display:flex;gap:10px;flex-wrap:wrap}
 .stat{flex:1;min-width:120px;background:var(--sky);border-radius:10px;padding:8px 12px}
@@ -62,6 +63,19 @@ tr:hover td{background:#fafbf8}
   <button onclick="exportCSV()">CSV</button>
 </div>
 <main>
+  <div class="card" id="feat" style="display:none">
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+      <b>⚙️ Features</b><span id="featScope" class="muted" style="font-size:.85rem"></span>
+      <label><input type="checkbox" id="f_shades"> 🎨 Shades panel</label>
+      <label><input type="checkbox" id="f_nudge"> ✨ "Bigger word?" chips</label>
+      <label><input type="checkbox" id="f_tapwords"> Tap words</label>
+      <label>Start in <select id="f_mode"><option value="dictionary">📖 Dictionary</option><option value="shades">🎨 Shades</option></select></label>
+      <label title="Save for every Launch Plus lesson instead of only this one"><input type="checkbox" id="f_all" onchange="renderFlags()"> all Launch Plus lessons</label>
+      <button class="fb" onclick="saveFlags()">Save</button><button class="fb" onclick="clearFlags()">Clear (inherit)</button>
+      <span id="featMsg" class="muted" style="font-size:.85rem"></span>
+    </div>
+    <div class="muted" id="featInfo" style="font-size:.78rem;margin-top:6px"></div>
+  </div>
   <div class="card stats" id="stats"></div>
   <div class="card" style="padding:0;overflow-x:auto"><table id="tbl"><thead></thead><tbody></tbody></table></div>
   <p class="muted" style="font-size:.8rem">Score = correct on the first try, out of all tap questions (parts 1–4). Parts: Read · Fix · Bigger · Zoom · Write (Extras: Capitals · Match · Who? · Where?) · 🎙 Record (words said clearly in the Record step) · 🎨 Shades (bigger words a student swapped in from the Shades panel; 🎨 after the number = they last left the page in Shades mode). Click a column header to sort. Tap a name to read the writing.</p>
@@ -103,7 +117,8 @@ function loadAll(){
  var q1=Promise.all(['launch_plus','topic_sentence','revise','wit'].map(function(t){return fetch(SUPA_URL+'/rest/v1/'+t+'?'+sel,{headers:H()}).then(function(r){return r.ok?r.json():[];}).catch(function(){return [];});})).then(function(a){return [].concat.apply([],a);});
  var sets=LESSONS.filter(function(l){return l.say;}).map(function(l){return l.say;}).join(',');
  var q2=fetch(SUPA_URL+'/rest/v1/say_work?select=email,set,scores,updated_at&set=in.('+sets+')',{headers:H()}).then(function(r){return r.ok?r.json():[];}).catch(function(){return [];});
- Promise.all([q1,q2]).then(function(res){ROWS=Array.isArray(res[0])?res[0]:[];SAY={};(res[1]||[]).forEach(function(s){SAY[s.set+'|'+(s.email||'').toLowerCase()]=s;});render();})
+ var q3=fetch(SUPA_URL+'/rest/v1/page_flags?select=slug,period,flags',{headers:H()}).then(function(r){return r.ok?r.json():[];}).catch(function(){return [];});
+ Promise.all([q1,q2,q3]).then(function(res){FLAG_ROWS=Array.isArray(res[2])?res[2]:[];ROWS=Array.isArray(res[0])?res[0]:[];SAY={};(res[1]||[]).forEach(function(s){SAY[s.set+'|'+(s.email||'').toLowerCase()]=s;});render();})
  .catch(function(e){$('stats').innerHTML='<div class="muted">Could not load: '+esc(e)+'</div>';});
 }
 
@@ -119,7 +134,37 @@ function parts(r,lesson){
 function sayScore(r,lesson){if(!lesson.say)return null;var s=SAY[lesson.say+'|'+(r.email||'').toLowerCase()];if(!s||!s.scores||!s.scores.words0)return null;var w=s.scores.words0;return {ok:w.best||w.correct||0,total:w.total||0};}
 function cls(p,n){return p.done>=n&&n>0?'ok':p.done>0?'part':'';}
 
+/* ---------- teacher feature flags (page_flags: slug, period, flags) ---------- */
+var FLAG_ROWS=[],FLAG_DEFAULTS={shades:true,nudge:true,tapwords:true,mode:'dictionary'};
+function flagSlug(){return $('f_all').checked?'launch-plus/*':'launch-plus/'+$('lesson').value;}
+function flagPeriod(){return $('period').value||'*';}
+function flagRow(slug,pd){return FLAG_ROWS.filter(function(r){return r.slug===slug&&String(r.period)===String(pd);})[0];}
+function effectiveFlags(u,pd){var f=Object.assign({},FLAG_DEFAULTS),slug='launch-plus/'+u;[['launch-plus/*','*'],[slug,'*'],['launch-plus/*',pd],[slug,pd]].forEach(function(k){var r=flagRow(k[0],k[1]);if(r)Object.assign(f,r.flags||{});});return f;}
+function renderFlags(){
+ var u=$('lesson').value,lesson=LESSONS.filter(function(l){return l.u===u;})[0];var isLP=lesson&&!lesson.table&&!/x$/.test(u);
+ $('feat').style.display=isLP?'':'none';if(!isLP)return;
+ var pd=flagPeriod(),own=flagRow(flagSlug(),pd),eff=effectiveFlags(u,pd==='*'?'':pd);
+ var show=own?Object.assign({},FLAG_DEFAULTS,own.flags):eff;
+ $('f_shades').checked=!!show.shades;$('f_nudge').checked=!!show.nudge;$('f_tapwords').checked=!!show.tapwords;$('f_mode').value=show.mode||'dictionary';
+ $('featScope').textContent=(lesson.n)+' · '+(pd==='*'?'all periods':'period '+pd)+(own?' (saved)':' (inherited)');
+ var who=[];[1,2,3,4,5,6,7].forEach(function(p){var e=effectiveFlags(u,String(p));who.push('P'+p+': '+(e.shades?'🎨'+(e.nudge?'✨':'')+(e.mode==='shades'?' start Shades':''):'no Shades')+(e.tapwords?'':' · no Tap words'));});
+ $('featInfo').textContent='What students see on this lesson — '+who.join(' · ')+'. Rows for a period win over "all periods"; this lesson wins over "all Launch Plus lessons". Students can still switch modes themselves.';
+}
+function saveFlags(){
+ var body=[{slug:flagSlug(),period:flagPeriod(),flags:{shades:$('f_shades').checked,nudge:$('f_nudge').checked,tapwords:$('f_tapwords').checked,mode:$('f_mode').value},updated_at:new Date().toISOString()}];
+ $('featMsg').textContent='Saving…';
+ fetch(SUPA_URL+'/rest/v1/page_flags?on_conflict=slug,period',{method:'POST',headers:Object.assign(H(),{'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=representation'}),body:JSON.stringify(body)})
+ .then(function(r){return r.ok?r.json():Promise.reject(r.status);}).then(function(rows){FLAG_ROWS=FLAG_ROWS.filter(function(r){return !(r.slug===body[0].slug&&String(r.period)===body[0].period);}).concat(rows);$('featMsg').textContent='Saved. Students see it on their next page load.';renderFlags();})
+ .catch(function(e){$('featMsg').textContent='Could not save ('+e+'). Is the page_flags table there?';});
+}
+function clearFlags(){
+ var slug=flagSlug(),pd=flagPeriod();$('featMsg').textContent='Clearing…';
+ fetch(SUPA_URL+'/rest/v1/page_flags?slug=eq.'+encodeURIComponent(slug)+'&period=eq.'+encodeURIComponent(pd),{method:'DELETE',headers:H()})
+ .then(function(r){if(!r.ok)return Promise.reject(r.status);FLAG_ROWS=FLAG_ROWS.filter(function(r){return !(r.slug===slug&&String(r.period)===pd);});$('featMsg').textContent='Cleared — this scope inherits again.';renderFlags();})
+ .catch(function(e){$('featMsg').textContent='Could not clear ('+e+').';});
+}
 function render(){
+ renderFlags();
  var u=$('lesson').value,pd=$('period').value,lesson=LESSONS.filter(function(l){return l.u===u;})[0]||LESSONS[0];
  var rows=ROWS.filter(function(r){return r.unit===u&&(!pd||String(r.period)===pd);});
  rows.forEach(function(r){r._p=parts(r,lesson);r._say=sayScore(r,lesson);r._sh=(r.payload&&r.payload.shades)||[];r._wm=(r.payload&&r.payload.wordMode)||'';r._pct=r.max_score?Math.round(100*r.score/r.max_score):0;r._keys=Object.keys(r._p);r._done=r._keys.filter(function(k){return r._p[k].done>=r._p[k].n&&r._p[k].n>0;}).length;});

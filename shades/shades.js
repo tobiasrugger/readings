@@ -26,6 +26,9 @@
        a chip switches to Shades and opens that word (the dictionary-mode nudge).
      })
      Shades.setMode('shades'); Shades.getMode(); Shades.open('happy');
+     Shades.setEnabled(false)  → hides the toggle, forces dictionary mode, hides chips
+     Shades.setNudge(false)    → hides only the "Bigger word?" chips
+     onMode(mode, source) — source is 'user' when the student tapped the toggle
      Shades.close(); Shades.mark(el)  // re-scan new content
 
    Marked words get class "sh-word" + data-sh="base". In shades mode Shades
@@ -293,7 +296,7 @@
   /* ---------- STATE -------------------------------------------- */
   const S = {
     mode: 'dictionary', root: null, target: null, panel: null, toggleEl: null,
-    cur: null, sel: null, lastReplace: null, opts: {},
+    cur: null, sel: null, lastReplace: null, opts: {}, enabled: true, nudge: true,
     proxy: 'https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec',
     trCache: {}
   };
@@ -337,19 +340,20 @@
   }
 
   /* ---------- MODE --------------------------------------------- */
-  function setMode(m) {
+  function setMode(m, source) {
+    if (!S.enabled) m = 'dictionary';
     S.mode = m === 'shades' ? 'shades' : 'dictionary';
     document.body.classList.toggle('sh-mode-shades', S.mode === 'shades');
     if (S.mode !== 'shades') close();
     if (S.toggleEl) S.toggleEl.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.m === S.mode));
-    try { S.opts.onMode && S.opts.onMode(S.mode); } catch (e) {}
+    try { S.opts.onMode && S.opts.onMode(S.mode, source || 'page'); } catch (e) {}
   }
   function renderToggle(el) {
     el.innerHTML = '';
     const box = document.createElement('div'); box.className = 'sh-toggle' + (S.opts.compact ? ' compact' : '');
     [['dictionary', '📖 Dictionary', 'dict'], ['shades', '🎨 Shades', '']].forEach(([m, label, cls]) => {
       const b = document.createElement('button'); b.type = 'button'; b.dataset.m = m; b.className = cls; b.textContent = label;
-      b.setAttribute('translate', 'no'); b.onclick = () => setMode(m); box.appendChild(b);
+      b.setAttribute('translate', 'no'); b.onclick = () => setMode(m, 'user'); box.appendChild(b);
     });
     el.appendChild(box); S.toggleEl = box;
   }
@@ -409,7 +413,7 @@
     out.textContent = '…';
     let html;
     try {
-      const u = S.proxy + '?action=translate&mode=' + (String(sh.w||'').trim().split(/\s+/).length<=3?'word':((sh.m)?'':'sentence')) + '&idiom=' + encodeURIComponent(sh.w) + '&meaning=' + encodeURIComponent(sh.m) + '&lang=' + encodeURIComponent(L);
+      const u = S.proxy + '?action=translate&idiom=' + encodeURIComponent(sh.w) + '&meaning=' + encodeURIComponent(sh.m) + '&lang=' + encodeURIComponent(L);
       const r = await fetch(u); const j = await r.json(); const t = (j && j.ok && j.translation) || {};
       html = t.equiv ? esc(t.equiv) + (t.meaning ? ' <span style="font-weight:600;text-decoration:none;color:#374151">— ' + esc(t.meaning) + '</span>' : '')
                      : '<span class="none">' + esc(sh.w) + '</span>' + (t.meaning ? ' <span style="font-weight:600;text-decoration:none;color:#374151">— ' + esc(t.meaning) + '</span>' : '');
@@ -477,7 +481,7 @@
         const txt = ('value' in el && el.tagName !== 'DIV') ? el.value : el.textContent;
         const found = []; WORD_RE.lastIndex = 0; let m;
         while ((m = WORD_RE.exec(txt))) { const b = m[1].toLowerCase(); if (found.indexOf(b) < 0) found.push(b); }
-        if (!found.length) { nudge.classList.remove('show'); nudge.innerHTML = ''; return; }
+        if (!found.length || !S.nudge || !S.enabled) { nudge.classList.remove('show'); nudge.innerHTML = ''; return; }
         nudge.innerHTML = '<span>\u2728 Bigger word?</span>' + found.slice(0, 4).map(b => '<button type="button" class="sh-chip" data-b="' + b + '">' + b + ' \u2192</button>').join('');
         nudge.classList.add('show');
       };
@@ -487,9 +491,19 @@
       });
       el.addEventListener('focus', () => { S.target = el; });
       let t; el.addEventListener('input', () => { clearTimeout(t); t = setTimeout(refresh, 250); });
-      refresh();
+      el._shRefresh = refresh; refresh();
     });
   }
+
+  /* ---------- TEACHER FLAGS: turn the whole thing, or just the chips, off ---------- */
+  function refreshNudges() { document.querySelectorAll('[data-sh-watched]').forEach(el => { try { el._shRefresh && el._shRefresh(); } catch (e) {} }); }
+  function setEnabled(on) {
+    S.enabled = !!on;
+    if (S.toggleEl) S.toggleEl.style.display = S.enabled ? '' : 'none';
+    if (!S.enabled) { close(); if (S.mode !== 'dictionary') setMode('dictionary', 'flag'); }
+    refreshNudges();
+  }
+  function setNudge(on) { S.nudge = !!on; refreshNudges(); }
 
   /* ---------- EVENTS ------------------------------------------- */
   function onClick(ev) {
@@ -511,5 +525,5 @@
     setMode(S.opts.mode || qs('mode') || 'dictionary');
   }
 
-  global.Shades = { mount, mark, watch, open, close, setMode, getMode: () => S.mode, DATA, setTarget: (el) => { S.target = el; }, words: BASES };
+  global.Shades = { mount, mark, watch, open, close, setMode, setEnabled, setNudge, getMode: () => S.mode, isEnabled: () => S.enabled, DATA, setTarget: (el) => { S.target = el; }, words: BASES };
 })(window);
