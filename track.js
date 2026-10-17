@@ -16,6 +16,14 @@
   if (window.__GAL_TRACK__) return;
   window.__GAL_TRACK__ = true;
 
+  /* the student page standard (language in every sign-in box, readable dropdowns) */
+  try {
+    var stdFrom = document.currentScript && document.currentScript.src;
+    var std = document.createElement('script');
+    std.src = stdFrom ? stdFrom.replace(/track\.js(\?.*)?$/, 'std.js') : '/readings/std.js';
+    (document.head || document.documentElement).appendChild(std);
+  } catch (e) {}
+
   var SUPA_URL = 'https://lhmwtfyceilgndpygivj.supabase.co';
   var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
   function H(extra) {
