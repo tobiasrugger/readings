@@ -91,6 +91,12 @@ input.cell.no{border-color:var(--no);background:var(--no-t);color:var(--no)}
 .chip.used{opacity:.35}
 
 /* ---------- choose ---------- */
+.scene{float:right;width:190px;margin:0 0 10px 18px;background:var(--bg);border:1.5px solid var(--line);border-radius:14px;padding:6px}
+.scene svg{display:block;width:100%;height:auto}
+@media (max-width:560px){.scene{float:none;width:168px;margin:0 auto 10px}}
+.vpic{width:62px;height:46px;vertical-align:middle}
+.vpic svg{width:62px;height:46px}
+td .vpic{margin-right:6px}
 .sentence{font-size:32px;line-height:1.35;font-weight:500;margin:10px 0}
 .blank{display:inline-block;min-width:3.6em;border-bottom:3px solid var(--ink);text-align:center;color:var(--muted)}
 .base{font-size:20px;color:var(--muted);font-weight:400}
@@ -179,6 +185,7 @@ footer{text-align:center;color:var(--muted);font-size:14px;margin-top:26px}
 </div>
 
 <script src="../conjugation.js"></script>
+<script src="../verbpics.js"></script>
 <script>
 /* ===================== config ===================== */
 var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
@@ -301,7 +308,10 @@ function drawGrid(){
       h+='<tr>';
       r.cells.forEach(function(c,ci){
         var k=ri+'.'+ci;
-        if(c.fixed) h+='<td class="sub">'+esc(c.answer)+'</td>';
+        if(c.fixed){
+          var gp=(window.VERBPIC?VERBPIC.get(c.answer):'');
+          h+='<td class="sub">'+(gp?'<span class="vpic" aria-hidden="true">'+gp+'</span>':'')+esc(c.answer)+'</td>';
+        }
         else if(G.blank[k]) h+='<td>'+cellInput(k,'',ci===2)+fixSlot(k)+'</td>';
         else h+='<td'+(r.irregular?' class="irr"':'')+'><span class="f">'+esc(c.answer)+'</span></td>';
       });
@@ -367,6 +377,8 @@ function drawChoose(){
   var h='<div class="panel"><h2>Choose</h2><p class="lede">Tap the right form of the verb.</p>';
   h+='<div class="qhead"><span>'+(Q.i+1)+' of '+Q.items.length+'</span><span class="dots">'+
      Q.items.map(function(_,k){return '<i class="'+(Q.marks[k]===true?'ok':Q.marks[k]===false?'no':k===Q.i?'cur':'')+'"></i>'}).join('')+'</span></div>';
+  var pic=(window.VERBPIC?VERBPIC.get(it.base):'');
+  if(pic) h+='<div class="scene" aria-hidden="true">'+pic+'</div>';
   h+='<div class="sentence" translate="no">'+esc(it.subject)+' <span class="blank">?</span> <span class="base">('+esc(it.base)+(it.neg?', not':'')+')</span></div>';
   h+='<div class="opts">'+it.options.map(function(o){return '<button class="opt" data-opt="'+esc(o)+'">'+esc(o)+'</button>'}).join('')+'</div>';
   h+='<div id="fbox"></div></div>';
@@ -467,7 +479,8 @@ function renderTable(){
     '<p class="lede">Write the verb form. Tap Translate to see the verb in your language. Then write one sentence with it.</p>'+
     '<div class="gridwrap"><table class="vt"><tr><th>Verb</th><th>'+esc(tgt.label)+'</th><th>Translate</th><th>Sentence</th></tr>';
   verbs.forEach(function(b,i){
-    h+='<tr><td class="v" translate="no">'+esc(b)+'</td>'+
+    var vp=(window.VERBPIC?VERBPIC.get(b):'');
+    h+='<tr><td class="v" translate="no">'+(vp?'<span class="vpic" aria-hidden="true">'+vp+'</span>':'')+esc(b)+'</td>'+
        '<td>'+cellInput('t'+i,'')+'<span class="fix" data-fix="t'+i+'"></span></td>'+
        '<td><button class="tool" data-trv="'+esc(b)+'" data-i="'+i+'">🌐</button> <span class="trcell" id="tr'+i+'"></span></td>'+
        '<td><input class="sent" data-sent="'+i+'" placeholder="Write a sentence with '+esc(b)+'" autocomplete="off"></td></tr>';
