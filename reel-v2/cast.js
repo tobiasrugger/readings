@@ -193,6 +193,199 @@
   }
 
   /* opts: {expr, pose:'idle'|'wave'|'point'|'spin'|'think'|'read'|'write', hold:'ball'|'sketchbook'|'paper'|'backpack'|'pencil'|'notebook'|'calculator', talk:bool} */
+
+  /* =================== SEASONS & HOLIDAYS (T-36) ===================
+     The cast dresses for the time of year with no change to any episode.
+     R.season() picks by today's date; override with ?season=NAME on any reel page
+     (halloween, autumn, winter, lunar, valentine, spring, summer, none) or window.REEL_SEASON.
+     Outfits are overlays: seasonBack() goes under the body (capes), seasonFront() on top
+     (hats, scarves, pins). Backgrounds get matching set dressing from seasonDressing().
+     Amira keeps her hijab in every season; hats sit over it. Nothing scary beyond a cat and a cape. */
+  var LUNAR = { 2026: '02-17', 2027: '02-06', 2028: '01-26', 2029: '02-13', 2030: '02-03', 2031: '01-23' };
+  function mmdd(d) { return (d.getMonth() + 1 < 10 ? '0' : '') + (d.getMonth() + 1) + '-' + (d.getDate() < 10 ? '0' : '') + d.getDate(); }
+  R.seasonFor = function (d) {
+    var md = mmdd(d), y = d.getFullYear();
+    if (md >= '10-20' && md <= '10-31') return 'halloween';
+    if (md >= '11-01' && md <= '11-30') return 'autumn';
+    if (md >= '12-01' || md <= '01-10') return 'winter';
+    var ln = LUNAR[y];
+    if (ln) {
+      var t = new Date(y, +ln.slice(0, 2) - 1, +ln.slice(3));
+      var diff = (d - t) / 864e5;
+      if (diff >= -9 && diff <= 6) return 'lunar';
+    }
+    if (md >= '02-10' && md <= '02-14') return 'valentine';
+    if (md >= '03-15' && md <= '04-30') return 'spring';
+    if (md >= '05-15' && md <= '06-30') return 'summer';
+    return 'none';
+  };
+  var SEASONS = ['halloween', 'autumn', 'winter', 'lunar', 'valentine', 'spring', 'summer', 'none'];
+  R.season = function () {
+    var q = null;
+    try { q = new URLSearchParams(location.search).get('season'); } catch (e) { q = null; }
+    var v = q || window.REEL_SEASON;
+    if (v && SEASONS.indexOf(v) >= 0) return v;
+    return R.seasonFor(new Date());
+  };
+  R.SEASON_NAMES = { halloween: 'Halloween', autumn: 'Autumn', winter: 'Winter holidays', lunar: 'Lunar New Year',
+                     valentine: 'Valentine’s Day', spring: 'Spring', summer: 'Summer', none: '' };
+
+  /* per-character palette for knitwear so no two scarves match */
+  var KNIT = { linh: '#d9567f', mateo: '#2f6fbd', amira: '#F8981F', jun: '#1f8a7e', paolo: '#864D9E' };
+  var KNIT2 = { linh: '#f2c230', mateo: '#fffdf8', amira: '#864D9E', jun: '#f2c230', paolo: '#F8981F' };
+
+  function headTopY(c) { return c.hair === 'hijab' ? -548 : -512; }
+  function scarf(col, col2) {
+    return '<g><rect x="-66" y="-372" width="132" height="36" rx="16" fill="' + col + '"/>' +
+           '<path d="M-50,-354 L-30,-354 M-10,-354 L10,-354 M30,-354 L50,-354" stroke="' + col2 + '" stroke-width="6" stroke-linecap="round"/>' +
+           '<g transform="translate(34,-346) rotate(8)"><rect x="-18" y="0" width="36" height="92" rx="12" fill="' + col + '"/>' +
+           '<path d="M-10,70 L-10,86 M0,74 L0,90 M10,70 L10,86" stroke="' + col2 + '" stroke-width="5" stroke-linecap="round"/>' +
+           '<path d="M-12,30 L12,30 M-12,48 L12,48" stroke="' + col2 + '" stroke-width="5" stroke-linecap="round"/></g></g>';
+  }
+  function beanie(c, col, col2) {
+    var t = headTopY(c);
+    return '<g><path d="M-74,' + (t + 34) + ' Q0,' + (t - 88) + ' 74,' + (t + 34) + ' Z" fill="' + col + '"/>' +
+           '<path d="M-40,' + (t + 20) + ' Q-20,' + (t - 50) + ' 0,' + (t - 60) + ' M40,' + (t + 20) + ' Q20,' + (t - 50) + ' 0,' + (t - 60) + '" fill="none" stroke="' + col2 + '" stroke-width="5" opacity=".7"/>' +
+           '<rect x="-76" y="' + (t + 10) + '" width="152" height="34" rx="12" fill="' + col2 + '"/>' +
+           '<path d="M-60,' + (t + 18) + ' L-60,' + (t + 36) + ' M-40,' + (t + 18) + ' L-40,' + (t + 36) + ' M-20,' + (t + 18) + ' L-20,' + (t + 36) + ' M0,' + (t + 18) + ' L0,' + (t + 36) + ' M20,' + (t + 18) + ' L20,' + (t + 36) + ' M40,' + (t + 18) + ' L40,' + (t + 36) + ' M60,' + (t + 18) + ' L60,' + (t + 36) + '" stroke="' + col + '" stroke-width="4" opacity=".5"/>' +
+           '<circle cx="0" cy="' + (t - 78) + '" r="20" fill="#fffdf8"/><circle cx="-6" cy="' + (t - 84) + '" r="7" fill="#eee9dc"/></g>';
+  }
+  function flowerAt(x, y, col, r) {
+    r = r || 11;
+    var f = '<g transform="translate(' + x + ',' + y + ')">';
+    for (var k = 0; k < 5; k++) f += '<circle cx="' + (Math.cos(k * 1.257) * r).toFixed(1) + '" cy="' + (Math.sin(k * 1.257) * r).toFixed(1) + '" r="' + (r * .62).toFixed(1) + '" fill="' + col + '"/>';
+    return f + '<circle r="' + (r * .5).toFixed(1) + '" fill="#f2c230"/></g>';
+  }
+  function heart(x, y, sz, col) {
+    return '<path transform="translate(' + x + ',' + y + ') scale(' + sz + ')" d="M0,8 C-10,-2 -14,-10 -7,-14 C-3,-16 0,-13 0,-10 C0,-13 3,-16 7,-14 C14,-10 10,-2 0,8 Z" fill="' + col + '"/>';
+  }
+  function seasonBack(c, id) {
+    var se = R.season();
+    if (se === 'halloween' && id === 'jun') {   /* vampire cape */
+      return '<path d="M-72,-352 C-120,-260 -140,-120 -150,-40 L150,-40 C140,-120 120,-260 72,-352 Z" fill="#3b1d3a"/>' +
+             '<path d="M-60,-340 C-96,-260 -110,-140 -116,-56 L116,-56 C110,-140 96,-260 60,-340 Z" fill="#c9412e" opacity=".85"/>';
+    }
+    if (se === 'halloween' && id === 'paolo') {  /* Paolo the Great: royal cape */
+      return '<path d="M-70,-352 C-110,-250 -126,-120 -134,-40 L134,-40 C126,-120 110,-250 70,-352 Z" fill="#864D9E"/>' +
+             '<path d="M-56,-340 C-90,-250 -102,-140 -108,-56 L108,-56 C102,-140 90,-250 56,-340 Z" fill="#a66dc0" opacity=".9"/>';
+    }
+    return '';
+  }
+  function seasonFront(c, id, pose) {
+    var se = R.season(), t = headTopY(c), s = '';
+    if (se === 'none') return '';
+    if (se === 'halloween') {
+      if (id === 'linh') {           /* witch hat */
+        s += '<ellipse cx="0" cy="' + (t + 14) + '" rx="100" ry="20" fill="#3b1d3a"/>' +
+             '<path d="M-58,' + (t + 10) + ' C-30,' + (t - 60) + ' -10,' + (t - 120) + ' 12,' + (t - 168) + ' C20,' + (t - 110) + ' 40,' + (t - 50) + ' 58,' + (t + 10) + ' Z" fill="#4a2a52"/>' +
+             '<path d="M-54,' + (t + 4) + ' C-40,' + (t - 10) + ' 40,' + (t - 10) + ' 54,' + (t + 4) + ' L50,' + (t - 14) + ' C36,' + (t - 26) + ' -36,' + (t - 26) + ' -50,' + (t - 14) + ' Z" fill="#F8981F"/>' +
+             '<path d="M0,' + (t - 92) + ' l5,10 l11,1 l-8,7 l3,11 l-11,-6 l-11,6 l3,-11 l-8,-7 l11,-1 Z" fill="#f2c230"/>';
+      } else if (id === 'amira') {   /* black cat on her shoulder + pumpkin pin */
+        s += '<g transform="translate(-82,-350)"><ellipse cx="0" cy="0" rx="26" ry="18" fill="#2b2233"/><circle cx="-22" cy="-14" r="15" fill="#2b2233"/>' +
+             '<path d="M-34,-24 L-32,-40 L-22,-28 Z M-10,-24 L-8,-40 L-18,-28 Z" fill="#2b2233"/>' +
+             '<path d="M24,-4 Q46,-8 40,-30" fill="none" stroke="#2b2233" stroke-width="7" stroke-linecap="round"/>' +
+             '<ellipse cx="-27" cy="-14" rx="3" ry="4" fill="#F8981F"/><ellipse cx="-17" cy="-14" rx="3" ry="4" fill="#F8981F"/></g>' +
+             '<g transform="translate(46,-300)"><circle r="12" fill="#F8981F"/><path d="M-4,-4 L-1,-1 L-7,-1 Z M4,-4 L7,-1 L1,-1 Z M-6,4 Q0,9 6,4 L4,2 Q0,5 -4,2 Z" fill="#2b2233"/><rect x="-2" y="-16" width="4" height="6" fill="#1f8a7e"/></g>';
+      } else if (id === 'mateo') {   /* pirate bandana + eye patch */
+        s += '<path d="M-68,' + (t + 46) + ' Q0,' + (t - 44) + ' 68,' + (t + 46) + ' Q0,' + (t + 70) + ' -68,' + (t + 46) + ' Z" fill="#c9412e"/>';
+        for (var i = 0; i < 7; i++) s += '<circle cx="' + (-48 + i * 16) + '" cy="' + (t + 22 - Math.abs(3 - i) * 7) + '" r="4" fill="#fffdf8"/>';
+        s += '<path d="M-66,' + (t + 46) + ' L-98,' + (t + 70) + ' L-70,' + (t + 66) + ' L-94,' + (t + 96) + ' Z" fill="#c9412e"/>' +
+             '<path d="M-60,-470 L58,-440" stroke="#2b2233" stroke-width="5"/><ellipse cx="22" cy="-452" rx="19" ry="17" fill="#2b2233"/>';
+      } else if (id === 'jun') {     /* cape collar (cape itself is behind) */
+        s += '<path d="M-36,-372 L-116,-312 L-24,-340 Z M36,-372 L116,-312 L24,-340 Z" fill="#3b1d3a"/>' +
+             '<path d="M-28,-366 L-96,-318 L-22,-344 Z M28,-366 L96,-318 L22,-344 Z" fill="#c9412e" opacity=".85"/>';
+      } else if (id === 'paolo') {   /* crown */
+        s += '<path d="M-54,' + (t + 40) + ' L-54,' + (t - 10) + ' L-30,' + (t + 16) + ' L0,' + (t - 30) + ' L30,' + (t + 16) + ' L54,' + (t - 10) + ' L54,' + (t + 40) + ' Z" fill="#f2c230" stroke="#c9742a" stroke-width="3"/>' +
+             '<circle cx="-54" cy="' + (t - 12) + '" r="6" fill="#c9412e"/><circle cx="0" cy="' + (t - 32) + '" r="7" fill="#2f6fbd"/><circle cx="54" cy="' + (t - 12) + '" r="6" fill="#c9412e"/>' +
+             '<rect x="-54" y="' + (t + 26) + '" width="108" height="12" fill="#c9742a" opacity=".5"/>';
+      }
+    } else if (se === 'autumn') {
+      var AC = { linh: '#c9742a', mateo: '#864D9E', amira: '#1f8a7e', jun: '#c9412e', paolo: '#f2c230' };
+      s += scarf(AC[id] || '#c9742a', KNIT2[id] || '#fffdf8');
+      if (id === 'paolo') s += '<path transform="translate(-60,-330) rotate(-30)" d="M0,-18 C8,-14 14,-6 12,4 C8,2 6,8 0,14 C-6,8 -8,2 -12,4 C-14,-6 -8,-14 0,-18 Z" fill="#c9412e"/>';
+      if (id === 'linh') s += '<path transform="translate(50,-500) rotate(20)" d="M0,-14 C7,-10 11,-4 9,3 C6,2 5,6 0,11 C-5,6 -6,2 -9,3 C-11,-4 -7,-10 0,-14 Z" fill="#F8981F"/>';
+    } else if (se === 'winter') {
+      s += scarf(KNIT[id], KNIT2[id]);
+      if (id === 'jun') {            /* earmuffs, so the glasses stay clear */
+        s += '<path d="M-64,-466 Q0,-560 64,-466" fill="none" stroke="#1f8a7e" stroke-width="8"/>' +
+             '<circle cx="-66" cy="-452" r="22" fill="#8fd3c6"/><circle cx="66" cy="-452" r="22" fill="#8fd3c6"/>' +
+             '<circle cx="-66" cy="-452" r="12" fill="#1f8a7e" opacity=".4"/><circle cx="66" cy="-452" r="12" fill="#1f8a7e" opacity=".4"/>';
+      } else {
+        s += beanie(c, KNIT[id], KNIT2[id]);
+      }
+    } else if (se === 'lunar') {     /* red and gold for everyone */
+      s += scarf('#c9412e', '#f2c230');
+      s += '<g transform="translate(-44,-296)"><rect x="-13" y="-18" width="26" height="36" rx="3" fill="#c9412e" stroke="#f2c230" stroke-width="2"/><circle r="6" fill="#f2c230"/></g>';
+      if (id === 'linh' || id === 'amira') s += '<path transform="translate(' + (id === 'linh' ? -58 : 0) + ',' + (t + 10) + ')" d="M-18,0 C-30,-12 -30,12 -18,0 L0,0 L18,0 C30,-12 30,12 18,0 Z" fill="#c9412e"/><circle cx="' + (id === 'linh' ? -58 : 0) + '" cy="' + (t + 10) + '" r="5" fill="#f2c230"/>';
+    } else if (se === 'valentine') {
+      s += heart(40, -300, 2.2, '#d9567f') + heart(40, -300, 1.1, '#fff0f5');
+      if (id === 'amira') s += heart(-50, -520, 1.6, '#d9567f');
+    } else if (se === 'spring') {
+      var FC = { linh: '#d9567f', mateo: '#f2c230', amira: '#fffdf8', jun: '#2f6fbd', paolo: '#F8981F' };
+      if (id === 'linh' || id === 'amira' || id === 'paolo') {
+        s += '<path d="M-64,' + (t + 40) + ' Q0,' + (t - 2) + ' 64,' + (t + 40) + '" fill="none" stroke="#1f8a7e" stroke-width="5"/>';
+        [-56, -28, 0, 28, 56].forEach(function (x, k) { s += flowerAt(x, t + 40 - (28 - Math.abs(x) / 2), k % 2 ? '#fffdf8' : FC[id], 10); });
+      } else {
+        s += flowerAt(44, -300, FC[id], 12) + '<path d="M44,-288 L44,-264" stroke="#1f8a7e" stroke-width="4"/>';
+      }
+    } else if (se === 'summer') {
+      if (id === 'linh') {           /* straw sun hat */
+        s += '<ellipse cx="0" cy="' + (t + 22) + '" rx="124" ry="24" fill="#e8c98a"/>' +
+             '<path d="M-70,' + (t + 22) + ' Q0,' + (t - 70) + ' 70,' + (t + 22) + ' Z" fill="#f2d9a6"/>' +
+             '<rect x="-72" y="' + (t + 4) + '" width="144" height="18" fill="#d9567f"/>';
+      } else if (id === 'mateo') {   /* backwards cap */
+        s += '<path d="M-70,' + (t + 40) + ' Q0,' + (t - 50) + ' 70,' + (t + 40) + ' Z" fill="#2f6fbd"/>' +
+             '<path d="M-70,' + (t + 34) + ' L-130,' + (t + 46) + ' L-70,' + (t + 52) + ' Z" fill="#2f6fbd"/>' +
+             '<circle cx="0" cy="' + (t - 46) + '" r="6" fill="#fffdf8"/>';
+      } else if (id === 'amira') {   /* sunglasses */
+        s += '<g fill="#2b2233"><rect x="-44" y="-466" width="40" height="26" rx="10"/><rect x="4" y="-466" width="40" height="26" rx="10"/><rect x="-6" y="-458" width="12" height="4"/></g>' +
+             '<rect x="-38" y="-462" width="12" height="4" rx="2" fill="#fff" opacity=".6"/>';
+      } else if (id === 'jun') {     /* sun visor */
+        s += '<rect x="-66" y="' + (t + 28) + '" width="132" height="22" rx="10" fill="#1f8a7e"/>' +
+             '<path d="M-60,' + (t + 40) + ' L-62,' + (t + 46) + ' Q0,' + (t + 96) + ' 62,' + (t + 46) + ' L60,' + (t + 40) + ' Z" fill="#8fd3c6"/>';
+      } else if (id === 'paolo') {   /* flower lei */
+        var cols = ['#d9567f', '#f2c230', '#F8981F', '#fffdf8'];
+        for (var k2 = 0; k2 < 11; k2++) {
+          var a = Math.PI * (0.1 + 0.8 * k2 / 10), lx = Math.cos(a) * 74, ly = -356 + Math.sin(a) * 60;
+          s += flowerAt(lx.toFixed(1), ly.toFixed(1), cols[k2 % 4], 9);
+        }
+      }
+    }
+    return s;
+  }
+  /* set dressing along the top of every background */
+  R.seasonDressing = function () {
+    var se = R.season(), s = '', i;
+    if (se === 'none' || se === 'valentine') {
+      if (se === 'valentine') { for (i = 0; i < 9; i++) s += heart(120 + i * 170, 90 + (i % 2) * 30, 2.4, i % 3 ? '#d9567f' : '#c9412e'); }
+      return s;
+    }
+    s += '<path d="M0,40 Q400,110 800,40 T1600,40" fill="none" stroke="#5b6b7c" stroke-width="3"/>';
+    for (i = 0; i < 10; i++) {
+      var x = 80 + i * 160, y = 40 + 35 * Math.abs(Math.sin(Math.PI * x / 800));
+      if (se === 'halloween') {
+        if (i % 2) s += '<g transform="translate(' + x + ',' + (y + 30) + ')"><circle r="22" fill="#F8981F"/><rect x="-3" y="-30" width="6" height="10" fill="#1f8a7e"/><path d="M-9,-6 L-4,0 L-14,0 Z M9,-6 L14,0 L4,0 Z M-10,8 Q0,16 10,8 L7,5 Q0,10 -7,5 Z" fill="#2b2233"/></g>';
+        else s += '<path transform="translate(' + x + ',' + (y + 26) + ')" d="M0,0 C-8,-10 -22,-12 -34,-2 C-28,-14 -18,-18 -10,-14 L-6,-20 L0,-14 L6,-20 L10,-14 C18,-18 28,-14 34,-2 C22,-12 8,-10 0,0 Z" fill="#2b2233"><animateTransform attributeName="transform" type="translate" values="' + x + ' ' + (y + 26) + ';' + (x + 6) + ' ' + (y + 18) + ';' + x + ' ' + (y + 26) + '" dur="2.4s" repeatCount="indefinite"/></path>';
+      } else if (se === 'autumn') {
+        var lc = ['#c9412e', '#F8981F', '#f2c230', '#c9742a'][i % 4];
+        s += '<path transform="translate(' + x + ',' + (y + 10) + ') rotate(' + (i * 37 % 60 - 30) + ')" d="M0,0 C10,6 18,16 14,30 C8,27 6,34 0,42 C-6,34 -8,27 -14,30 C-18,16 -10,6 0,0 Z" fill="' + lc + '"/>';
+      } else if (se === 'winter') {
+        var bc = ['#c9412e', '#f2c230', '#1f8a7e', '#2f6fbd', '#d9567f'][i % 5];
+        s += '<path d="M' + x + ',' + y + ' L' + x + ',' + (y + 14) + '" stroke="#5b6b7c" stroke-width="3"/><circle cx="' + x + '" cy="' + (y + 32) + '" r="18" fill="' + bc + '"/><circle cx="' + (x - 6) + '" cy="' + (y + 26) + '" r="5" fill="#fff" opacity=".6"/>';
+      } else if (se === 'lunar') {
+        s += '<g transform="translate(' + x + ',' + y + ')"><path d="M0,0 L0,16" stroke="#f2c230" stroke-width="3"/><rect x="-20" y="16" width="40" height="8" rx="3" fill="#f2c230"/>' +
+             '<ellipse cx="0" cy="48" rx="26" ry="30" fill="#c9412e"/><path d="M-12,24 L-12,72 M0,20 L0,76 M12,24 L12,72" stroke="#a52e22" stroke-width="2"/>' +
+             '<rect x="-20" y="72" width="40" height="8" rx="3" fill="#f2c230"/><path d="M-8,80 L-8,104 M0,80 L0,108 M8,80 L8,104" stroke="#f2c230" stroke-width="3"/></g>';
+      } else if (se === 'spring') {
+        s += flowerAt(x, y + 18, ['#d9567f', '#fffdf8', '#F8981F', '#8fd3c6'][i % 4], 14) + '<path d="M' + x + ',' + y + ' L' + x + ',' + (y + 8) + '" stroke="#1f8a7e" stroke-width="3"/>';
+      } else if (se === 'summer') {
+        var pc = ['#F8981F', '#2f6fbd', '#f2c230', '#1f8a7e', '#d9567f'][i % 5];
+        s += '<path d="M' + (x - 22) + ',' + y + ' L' + (x + 22) + ',' + y + ' L' + x + ',' + (y + 46) + ' Z" fill="' + pc + '"/>';
+      }
+    }
+    return s;
+  };
+
   R.drawChar = function (id, opts) {
     var c = R.CAST[id]; if (!c) return '';
     opts = opts || {};
@@ -201,6 +394,7 @@
     var s = '';
     /* shadow */
     s += '<ellipse cx="0" cy="4" rx="82" ry="14" fill="#000" opacity=".13"/>';
+    s += seasonBack(c, id);
     /* legs + shoes */
     s += '<rect x="-38" y="-192" width="32" height="186" rx="14" fill="' + c.pants + '"/>';
     s += '<rect x="6" y="-192" width="32" height="186" rx="14" fill="' + c.pants + '"/>';
@@ -261,6 +455,7 @@
     }
     s += prop(c);
     if (opts.hold && !(board && opts.hold === 'paper')) s += heldProp(opts.hold);
+    s += seasonFront(c, id, pose);
     var cls = 'ch ch-' + id + (pose === 'spin' ? ' spin' : '') + (opts.talk ? ' talking' : '');
     return '<g class="' + cls + '"><g class="bob">' + s + '</g></g>';
   };
@@ -480,6 +675,12 @@
     (list || []).forEach(function (it) { s += R.item(it.kind, it.x); });
     return s;
   };
+
+  /* every background gets the season's set dressing on top */
+  Object.keys(R.BG).forEach(function (k) {
+    var fn = R.BG[k];
+    R.BG[k] = function (board) { return fn(board) + '<g class="season">' + R.seasonDressing() + '</g>'; };
+  });
 
   /* a full static scene (used by storyboard thumbnails and the cast page) */
   R.sceneSVG = function (scene, extraCls) {
