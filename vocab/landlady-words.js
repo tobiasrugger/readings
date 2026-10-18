@@ -252,3 +252,78 @@ var LL_WORDS = [
    The Listen-and-spell tab already covers production spelling,
    which is the stronger test anyway.
    ------------------------------------------------------------ */
+
+/* ============================================================
+   LL_BRIDGE — for students whose language shares no roots with
+   Latin. A cognate would be a lie here, so this is the real
+   thing instead: how THEIR language builds the same idea.
+   Chinese builds from characters; Arabic from a three-letter
+   root. Both are word-building systems the student already
+   owns — the point is "you already do this".
+     [term, what its pieces literally say]
+   ============================================================ */
+var LL_BRIDGE = {
+
+"porter": {
+  zh:[["搬运工 bānyùngōng","搬 carry + 运 transport + 工 worker — the carry-worker, exactly like carry + -er"],
+      ["门房 ménfáng","门 door + 房 room — the other Latin root, porta, is a door too"]],
+  ar:[["حمّال ḥammāl","root ح م ل = to carry. The faʿʿāl shape means 'the one who does it for a living' — it IS the -er"],
+      ["حَمْل ḥaml","same three letters: the load itself"]] },
+
+"compulsion": {
+  zh:[["强迫 qiǎngpò","强 strong + 迫 to force — force applied from outside, the com- of compulsion"],
+      ["冲动 chōngdòng","冲 rush + 动 move — this is im-pulse, piece for piece"]],
+  ar:[["اندفاع indifāʿ","root د ف ع = to push. Latin -puls- also means push. Same idea, different alphabet"],
+      ["إجبار ijbār","root ج ب ر = to force someone"]] },
+
+"peculiar": {
+  zh:[["特有 tèyǒu","特 special + 有 have — 'his own', which is where peculiar started: your own private thing"],
+      ["奇怪 qíguài","奇 strange + 怪 odd — where the word ended up"]],
+  ar:[["خاص khāṣṣ","root خ ص ص = belonging to one person only — the old meaning of peculiar"],
+      ["غريب gharīb","root غ ر ب = west, foreign. Foreign → strange, the same slide English made"]] },
+
+"neglect": {
+  zh:[["忽视 hūshì","忽 overlook + 视 to look — to not-look, and neg-lect means not-pick-up"],
+      ["疏忽 shūhū","疏 distant + 忽 overlook"]],
+  ar:[["إهمال ihmāl","root ه م ل. From these three letters: أهمل he neglected, مُهمَل neglected, إهمال neglect — one root, a whole family, just like English"]] },
+
+"preserved": {
+  zh:[["保存 bǎocún","保 protect + 存 keep in being — pre- (before) + serve (keep)"],
+      ["标本 biāoběn","标 mark + 本 specimen — the stuffed dog in the story is a 标本"]],
+  ar:[["محفوظ maḥfūẓ","root ح ف ظ = to guard, to keep. ma- at the front makes it 'the thing that has been kept'"]] },
+
+"briskly": {
+  zh:[["轻快地 qīngkuài de","轻 light + 快 fast, then 地 — and 地 is your -ly: it turns the describing word into a how-word"]],
+  ar:[["بسرعة bi-surʿa","بـ with + سرعة speed. Arabic says 'with speed' where English says 'quickly' — same job, different build"],
+      ["نشيط nashīṭ","root ن ش ط = lively, energetic"]] },
+
+"lodgings": {
+  zh:[["住处 zhùchù","住 to live + 处 place — the place where you live, which is all the word means"],
+      ["寄宿 jìsù","寄 to lodge with + 宿 to stay the night"]],
+  ar:[["مَسكن maskan","root س ك ن = to dwell. ma- at the front makes a PLACE: dwell → dwelling-place. Arabic builds place-words this way every time"],
+      ["ساكن sākin","same root: the person living there"]] },
+
+"dachshund": {
+  zh:[["腊肠犬 làchángquǎn","腊肠 sausage + 犬 dog. English borrowed German; Chinese just described it"]],
+  ar:[["كلب الغرير kalb al-ghurayr","dog of the badger — and that is exactly what Dachs-hund means in German. Same name, translated"]] },
+
+"head office": {
+  zh:[["总部 zǒngbù","总 chief, overall + 部 department — the head department"],
+      ["总公司 zǒnggōngsī","总 chief + 公司 company"]],
+  ar:[["المقر الرئيسي al-maqarr ar-raʾīsī","رئيسي main — from رأس raʾs, which means HEAD. Arabic uses the head the same way English does"]] },
+
+"big shots": {
+  zh:[["大人物 dàrénwù","大 big + 人物 person of note — big people, same joke"],
+      ["大佬 dàlǎo","大 big + 佬 fellow — the street version, like 'big shot'"]],
+  ar:[["كبار الشخصيات kibār ash-shakhṣiyyāt","كبير big → كبار the big ones. Arabic also makes importance out of size"]] },
+
+"swanky": {
+  zh:[["豪华 háohuá","豪 grand + 华 splendid — money you can see"],
+      ["阔气 kuòqi","阔 wide + 气 air — showing off, which is what swank first meant"]],
+  ar:[["فاخر fākhir","root ف خ ر = to boast. Luxury and showing off live in the same three letters"]] },
+
+"nest": {
+  zh:[["窝 wō","one character does what English needs two for: a bird's 窝, an animal's 窝, and 安乐窝 a cozy little home. The landlady's trap is in that one word"]],
+  ar:[["عُشّ ʿushsh","a bird's nest — warm, safe"],
+      ["وكر wakr","the den where a dangerous animal waits. Arabic keeps these two apart; English hides both inside 'nest'"]] }
+};

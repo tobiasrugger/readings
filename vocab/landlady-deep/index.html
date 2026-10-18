@@ -59,6 +59,12 @@ p.lead .ltr[dir="rtl"]{direction:rtl;text-align:right}
 .cog{font-size:.95rem;margin:3px 0}
 .cog b{font-family:'Nunito',sans-serif;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--pine2)}
 .cog.mine{background:var(--mint);border:2px solid var(--pine2);border-radius:9px;padding:8px 11px}
+.bridge{border:2px solid var(--pine);border-radius:10px;background:#eef6f2;padding:10px 13px;margin:4px 0 10px}
+.brow{margin:0 0 8px;display:block}
+.brow:last-child{margin-bottom:0}
+.bterm{display:block;font-family:'Nunito',sans-serif;font-weight:800;font-size:1.08rem;color:#0F6E56}
+.bterm[dir="rtl"]{direction:rtl;text-align:right;font-size:1.2rem}
+.bgloss{display:block;font-size:.9rem;color:var(--ink)}
 .note{background:var(--soft);border:2px solid var(--gold);border-radius:10px;padding:10px 13px;font-size:.93rem;margin-top:10px}
 
 .q{background:#fff;border:2px solid var(--edge);border-radius:12px;padding:13px 15px;margin-bottom:13px;box-shadow:0 2px 6px rgba(42,35,24,.12)}
@@ -219,6 +225,8 @@ var LANGS=[['Spanish','es'],['Cantonese','yue'],['Mandarin','zh'],['Arabic','ar'
 var RTL={ar:1,ary:1,ur:1};
 /* which cognate key in the data matches the chosen language */
 var COGKEY={es:'es',fr:'fr',ru:'ru',vi:'vi',ar:'ar',ary:'ar',zh:'zh',yue:'zh'};
+/* LL_BRIDGE: how the student's own language builds the same idea (no shared root) */
+var BRIDGEKEY={zh:'zh',yue:'zh',ar:'ar',ary:'ar'};
 /* nest's verb sentence is also correct English — accept either */
 var SLOT_OK={nest:[0,1]};
 
@@ -378,13 +386,18 @@ function drawMap(){
       h+='</div>';
     } }
   }
-  var ck=COGKEY[langCode()];
+  var ck=COGKEY[langCode()], bk=BRIDGEKEY[langCode()], br=(window.LL_BRIDGE&&LL_BRIDGE[w.w]&&bk)?LL_BRIDGE[w.w][bk]:null;
+  if(br&&br.length){
+    h+='<h3 style="margin-top:12px">You already build words this way</h3><div class="bridge">';
+    for(var b=0;b<br.length;b++) h+='<p class="brow"><span class="bterm"'+(RTL[langCode()]?' dir="rtl"':'')+'>'+esc(br[b][0])+'</span><span class="bgloss">'+esc(br[b][1])+'</span></p>';
+    h+='</div>';
+  }
   if(w.cognate){
     h+='<h3 style="margin-top:12px">Same root in another language</h3>';
     if(ck&&w.cognate[ck]) h+='<p class="cog mine"><b>'+esc(me.lang)+'</b><br>'+esc(w.cognate[ck].join(' · '))+'</p>';
     var lk, LNAME={es:'Spanish',fr:'French',ru:'Russian',vi:'Vietnamese',ar:'Arabic',zh:'Chinese'};
     for(lk in w.cognate){ if(lk!==ck) h+='<p class="cog"><b>'+esc(LNAME[lk]||lk)+'</b> '+esc(w.cognate[lk].join(' · '))+'</p>'; }
-    if(!ck||!w.cognate[ck]) h+='<p class="cog" style="color:#6b6152"><i>No close relative in '+esc(me.lang)+' — this one you learn from its pieces.</i></p>';
+    if((!ck||!w.cognate[ck])&&!(br&&br.length)) h+='<p class="cog" style="color:#6b6152"><i>No close relative in '+esc(me.lang)+' — this one you learn from its pieces.</i></p>';
   }
   if(w.note) h+='<div class="note">'+esc(w.note)+'</div>';
   h+='</div>';
