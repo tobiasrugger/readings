@@ -1018,19 +1018,50 @@ function buildMC(){
     box.appendChild(q);
   });
 }
+/* Choose: unanswered -> "Not done yet" | right -> "Yes!" | wrong -> "Try again"
+   a DIFFERENT wrong pick after that -> the answer for that question only.
+   "Check all & show answers" (the old behavior) unlocks once half are answered. */
+function galHalf(n,tot){ return tot>0 && n >= Math.ceil(tot/2); }
+function galLock(b, ok, what){ if(!b) return; b.disabled=!ok; b.style.opacity=ok?'':'.45'; b.style.cursor=ok?'':'not-allowed'; b.title=ok?'':'Finish at least half of the '+what+' first'; }
+function galAllBtn(afterId, id){ if($(id)) return $(id); var b=document.createElement('button'); b.className='btn alt'; b.id=id; b.textContent='Check all & show answers'; var a=$(afterId); a.parentNode.insertBefore(b, a.nextSibling); return b; }
+function mcQs(){ return Array.prototype.filter.call($('mcBox').children, function(q){ return q.dataset && q.dataset.a; }); }
+function mcReady(){ var qs=mcQs(), n=qs.filter(function(q){ return state.mc[q.dataset.a]; }).length; galLock($('mcAll'), galHalf(n, qs.length), 'questions'); }
+galAllBtn('mcCheck','mcAll');
+['click','change'].forEach(function(ev){ $('mcBox').addEventListener(ev, function(){ setTimeout(mcReady,0); }); });
 $('mcCheck').addEventListener('click', function(){
-  var ok=0, tot=0;
-  Array.prototype.forEach.call($('mcBox').children, function(q){
+  if(!state.mcTries) state.mcTries = {};
+  var ok=0, tot=0, todo=0;
+  mcQs().forEach(function(q){
     tot++;
     var a=q.dataset.a, got=state.mc[a];
     q.classList.remove('good','bad');
     var fb=q.querySelector('.fb');
-    if(got===a){ q.classList.add('good'); fb.className='fb good'; fb.textContent='Yes.'; ok++; }
-    else { q.classList.add('bad'); fb.className='fb bad'; fb.textContent = got ? 'The answer is ' + a + '.' : 'Choose one.'; }
+    var rec=state.mcTries[a] || (state.mcTries[a]={n:0,last:''});
+    if(!got){ q.classList.add('bad'); fb.className='fb bad'; fb.textContent='\u2717 Not done yet.'; todo++; return; }
+    if(got===a){ q.classList.add('good'); fb.className='fb good'; fb.textContent='\u2713 Yes!'; ok++; return; }
+    if(got!==rec.last){ rec.n++; rec.last=got; }
+    q.classList.add('bad'); fb.className='fb bad';
+    fb.textContent = rec.n>=2 ? 'The answer is '+a+'.' : 'Try again.';
+  });
+  $('mcScore').textContent = ok+' of '+tot+' right' + (todo ? ' \u00b7 '+todo+' not done yet' : '');
+  this.textContent='Check again';
+  touch();
+});
+$('mcAll').addEventListener('click', function(){
+  if(this.disabled) return;
+  var ok=0, tot=0;
+  mcQs().forEach(function(q){
+    tot++;
+    var a=q.dataset.a, got=state.mc[a];
+    q.classList.remove('good','bad');
+    var fb=q.querySelector('.fb');
+    if(got===a){ q.classList.add('good'); fb.className='fb good'; fb.textContent='\u2713 Yes!'; ok++; }
+    else { q.classList.add('bad'); fb.className='fb bad'; fb.textContent = got ? 'The answer is ' + a + '.' : 'The answer is ' + a + '.'; }
   });
   $('mcScore').textContent = ok+' of '+tot+' right';
   touch();
 });
+(function(){ var orig=buildMC; buildMC=function(){ var r=orig.apply(this, arguments); mcReady(); return r; }; })();
 buildMC();
 
 /* ---------- cloze ---------- */
@@ -1141,17 +1172,43 @@ function buildFix(){
   });
 }
 function norm(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ').trim(); }
+/* Fix it: empty -> "Not done yet" | right -> "Yes!" | wrong -> "Try again" + the page's hint (no answer)
+   wrong again with a CHANGED sentence -> the corrected sentence for that one only.
+   "Check all & show answers" (the old behavior) unlocks once half are written. */
+function fxQs(){ return Array.prototype.filter.call($('fixBox').children, function(q){ return q.dataset && q.dataset.i != null; }); }
+function fxReady(){ var qs=fxQs(), n=qs.filter(function(q){ return (state.fix[q.dataset.i]||'').trim(); }).length; galLock($('fxAll'), galHalf(n, qs.length), 'sentences'); }
+galAllBtn('fxCheck','fxAll');
+$('fixBox').addEventListener('input', fxReady);
 $('fxCheck').addEventListener('click', function(){
+  if(!state.fxTries) state.fxTries = {};
+  var ok=0, todo=0;
+  fxQs().forEach(function(q){
+    var i=q.dataset.i, f=SET.fix[i], got=norm(state.fix[i]);
+    var fb=q.querySelector('.fb'); q.classList.remove('good','bad');
+    var rec=state.fxTries[i] || (state.fxTries[i]={n:0,last:''});
+    if(!got){ q.classList.add('bad'); fb.className='fb bad'; fb.textContent='\u2717 Not done yet.'; todo++; return; }
+    if(got===norm(f.good)){ q.classList.add('good'); fb.className='fb good'; fb.textContent='\u2713 Yes!'; ok++; return; }
+    if(got!==rec.last){ rec.n++; rec.last=got; }
+    q.classList.add('bad'); fb.className='fb bad';
+    fb.textContent = rec.n>=2 ? (f.hint ? f.hint + ' \u2192 ' : 'The answer is: ') + f.good : 'Try again.' + (f.hint ? ' Hint: ' + f.hint : '');
+  });
+  $('fxScore').textContent = ok+' of '+SET.fix.length+' right' + (todo ? ' \u00b7 '+todo+' not done yet' : '');
+  this.textContent='Check again';
+  touch();
+});
+$('fxAll').addEventListener('click', function(){
+  if(this.disabled) return;
   var ok=0;
-  Array.prototype.forEach.call($('fixBox').children, function(q){
+  fxQs().forEach(function(q){
     var i=q.dataset.i, f=SET.fix[i];
     var fb=q.querySelector('.fb'); q.classList.remove('good','bad');
-    if(norm(state.fix[i])===norm(f.good)){ q.classList.add('good'); fb.className='fb good'; fb.textContent='Yes.'; ok++; }
-    else { q.classList.add('bad'); fb.className='fb bad'; fb.textContent = f.hint + ' → ' + f.good; }
+    if(norm(state.fix[i])===norm(f.good)){ q.classList.add('good'); fb.className='fb good'; fb.textContent='\u2713 Yes!'; ok++; }
+    else { q.classList.add('bad'); fb.className='fb bad'; fb.textContent = f.hint + ' \u2192 ' + f.good; }
   });
   $('fxScore').textContent = ok+' of '+SET.fix.length+' right';
   touch();
 });
+(function(){ var orig=buildFix; buildFix=function(){ var r=orig.apply(this, arguments); fxReady(); return r; }; })();
 buildFix();
 
 /* ---------- listen and spell ---------- */
