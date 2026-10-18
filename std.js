@@ -209,15 +209,24 @@
     var lab = box.querySelector('label[for="' + el.id + '"]');
     if (lab) hay += ' ' + (lab.textContent || '').toLowerCase();
     if (el.type === 'email' || /mail/.test(hay)) return 'email';
-    if (/period|class/.test(hay)) return 'period';
-    if (/name/.test(hay)) return 'name';
+    if (/period|\bper\b|gper|class/.test(hay)) return 'period';
+    /* a dropdown labelled "find your name" is a roster, not the name box */
+    if (/name/.test(hay)) return el.tagName === 'SELECT' ? '' : 'name';
     return '';
+  }
+  /* display:none on the field or any wrapper up to the box */
+  function hiddenByStyle(el, box) {
+    for (var n = el; n && n !== box.parentElement; n = n.parentElement) {
+      if (n.style && /none/i.test(n.style.display || '')) return true;
+    }
+    return false;
   }
   function fillFrom(box, s) {
     var els = box.querySelectorAll('input, select'), left = 0, filled = {};
     for (var i = 0; i < els.length; i++) {
       var el = els[i];
       if (el.id === 'galStdLang' || el.type === 'password' || el.type === 'hidden') continue;
+      if (hiddenByStyle(el, box)) continue;        /* a field the page is not showing yet */
       var kind = fieldKind(el, box);
       if (kind && !el.value) {
         var v = s[kind];
@@ -233,8 +242,9 @@
           try { el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); } catch (e) {}
         }
       }
-      if (kind) filled[kind] = !!el.value;
-      if (!el.value && el.tagName !== 'BUTTON') left++;
+      if (kind) { filled[kind] = !!el.value; if (!el.value) left++; }
+      /* anything else in the box (a roster list, a level, a class picker) is
+         the page's own business — an empty one must not hold a student up */
     }
     return { left: left, have: filled };
   }
@@ -279,6 +289,15 @@
   function resume(box, btn) {
     var s = sess();
     if (!s) { watchSignIn(box, btn); return; }
+    watchSignIn(box, btn);
+    tryResume(box, btn, s);
+    /* a language picker added after us (the mirror block, or a page engine)
+       should still count — look again a couple of times */
+    setTimeout(function () { tryResume(box, btn, s); }, 1200);
+    setTimeout(function () { tryResume(box, btn, s); }, 2600);
+  }
+  function tryResume(box, btn, s) {
+    if (box.getAttribute('data-gal-walked')) return;
     /* a language picker in the box starts on the last language they chose */
     var prev = stored();
     if (prev) {
@@ -296,8 +315,8 @@
     }
     var r = fillFrom(box, s);
     whoLine(box, s, null, btn);
-    watchSignIn(box, btn);
-    /* nothing left to type and a language already chosen? walk straight in */
+    /* name, email and period known, and a language chosen? walk straight in.
+       Other fields in the box are left as the page set them. */
     var lang = box.querySelector('#galStdLang');
     var langOK = !lang || !!lang.value;
     if (r.left === 0 && r.have.email && langOK && !box.getAttribute('data-gal-walked')) {
