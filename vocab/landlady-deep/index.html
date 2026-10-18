@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Landlady · Inside the words</title>
+<meta name="build" content="landlady-deep 2026-10-17">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&family=Lora:ital,wght@0,400;0,600;1,400&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pine:#0F6E56; --pine2:#3C3489; --mint:#EEEDFE; --edge:#2a2318;
+  --ink:#241d12; --muted:#6b6152; --paper:#faf7f1; --gold:#c8892a; --rose:#8b1a1a;
+  --soft:#f7ecd8; --line:#dfd6c4;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:'Lora',Georgia,serif;line-height:1.55}
+.bar{position:sticky;top:0;z-index:50;background:#0F6E56;color:#fff;padding:calc(.5rem + env(safe-area-inset-top,0px)) .95rem .5rem;
+  display:flex;gap:.45rem .8rem;align-items:center;flex-wrap:wrap}
+.bar h1{font-family:'Courier Prime',monospace;font-size:.82rem;letter-spacing:.1em;text-transform:uppercase;margin:0;flex:1;min-width:140px;font-weight:700}
+.bar select,.bar button{font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;background:#0B5946;color:#fff;border:1px solid #2E8A72;border-radius:7px;padding:4px 9px;cursor:pointer}
+#dot{width:10px;height:10px;border-radius:50%;background:#8fbfa8;display:inline-block}
+#dot.saving{background:var(--gold)} #dot.err{background:#e06b5a}
+.wrap{max-width:900px;margin:0 auto;padding:16px 14px 90px}
+
+nav.tabs{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 16px;align-items:center}
+nav.tabs button{font-family:'Nunito',sans-serif;font-weight:800;font-size:.82rem;border:2px solid var(--line);background:#fff;color:var(--muted);border-radius:9px;padding:8px 12px;cursor:pointer}
+nav.tabs button[aria-selected="true"]{background:var(--pine2);color:#fff;border-color:var(--pine2)}
+nav.tabs a.backbtn{display:inline-flex;align-items:center;gap:6px;font-family:'Nunito',sans-serif;font-weight:800;font-size:.9rem;
+  background:#17915a;color:#fff;border:1px solid #17915a;border-radius:9px;padding:9px 15px;text-decoration:none;box-shadow:0 1px 3px rgba(0,0,0,.18)}
+nav.tabs a.backbtn:hover{background:#0f7a4a}
+
+section.pane{display:none} section.pane.on{display:block}
+h2.pt{font-family:'Courier Prime',monospace;font-size:1.15rem;letter-spacing:.08em;text-transform:uppercase;margin:0 0 4px;color:var(--pine2)}
+p.lead{margin:0 0 14px;color:var(--muted);font-size:.95rem}
+p.lead .ltr{display:block;margin-top:3px;color:var(--pine);font-weight:600}
+p.lead .ltr[dir="rtl"]{direction:rtl;text-align:right}
+
+.box{background:#fff;border:2px solid var(--edge);border-radius:12px;padding:14px 16px;margin:0 0 16px;box-shadow:0 2px 6px rgba(42,35,24,.14)}
+.box > h3{font-family:'Nunito',sans-serif;font-size:.74rem;letter-spacing:.13em;text-transform:uppercase;color:var(--pine2);margin:0 0 10px;font-weight:800}
+.pic{float:right;width:190px;max-width:42%;margin:0 0 10px 14px;border:2px solid var(--edge);border-radius:10px;display:block}
+.pic.full{float:none;width:100%;max-width:340px;margin:0 auto 12px}
+.clearfix::after{content:"";display:block;clear:both}
+
+.rail{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:9px;margin-bottom:16px}
+.rail button{font-family:'Nunito',sans-serif;font-weight:800;font-size:.84rem;background:#fff;border:2px solid var(--line);border-radius:11px;padding:6px 6px 8px;cursor:pointer;color:var(--ink)}
+.rail button svg{width:100%;height:auto;border-radius:7px;display:block;margin-bottom:5px}
+.rail button[aria-pressed="true"]{border-color:var(--pine2);background:var(--mint);box-shadow:0 2px 6px rgba(60,52,137,.22)}
+
+.tiles{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 12px}
+.tile{font-family:'Courier Prime',monospace;font-weight:700;font-size:1.02rem;background:var(--soft);border:2px solid var(--gold);border-radius:9px;padding:7px 12px}
+.tile.r{background:#e7f1ec;border-color:var(--pine)}
+.tile.s{background:#efeafc;border-color:var(--pine2)}
+.pmean{font-size:.9rem;margin:0 0 4px}
+.pmean b{font-family:'Courier Prime',monospace}
+.fam{display:flex;flex-wrap:wrap;gap:6px;margin:3px 0 10px}
+.fam span{font-family:'Nunito',sans-serif;font-weight:700;font-size:.85rem;background:#fff;border:1px solid var(--line);border-radius:7px;padding:3px 9px}
+.cog{font-size:.95rem;margin:3px 0}
+.cog b{font-family:'Nunito',sans-serif;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--pine2)}
+.cog.mine{background:var(--mint);border:2px solid var(--pine2);border-radius:9px;padding:8px 11px}
+.note{background:var(--soft);border:2px solid var(--gold);border-radius:10px;padding:10px 13px;font-size:.93rem;margin-top:10px}
+
+.q{background:#fff;border:2px solid var(--edge);border-radius:12px;padding:13px 15px;margin-bottom:13px;box-shadow:0 2px 6px rgba(42,35,24,.12)}
+.q .stem{font-weight:600;margin:0 0 9px}
+.q .stem b{font-family:'Courier Prime',monospace;font-size:1.05rem}
+.q .qpic{float:right;width:120px;max-width:34%;margin:0 0 8px 12px;border:2px solid var(--edge);border-radius:9px}
+.opts{display:grid;gap:7px;clear:both}
+.opts button{font-family:'Lora',Georgia,serif;font-size:.97rem;text-align:left;border:2px solid var(--line);background:#fff;border-radius:9px;padding:9px 12px;cursor:pointer;color:var(--ink)}
+.opts button:hover{background:var(--mint)}
+.opts button.pick{border-color:var(--pine2);background:var(--mint)}
+.opts button.good{border-color:#1d7a4e;background:#eaf7ef}
+.opts button.bad{border-color:#b0452f;background:#fbeeea;text-decoration:line-through}
+.fb{font-family:'Nunito',sans-serif;font-size:.86rem;font-weight:700;margin-top:9px}
+.fb.good{color:#1d7a4e} .fb.bad{color:#b0452f}
+
+.build{display:flex;flex-wrap:wrap;gap:7px;margin:8px 0}
+.build button{font-family:'Courier Prime',monospace;font-weight:700;font-size:1rem;border:2px solid var(--line);background:#fff;border-radius:9px;padding:7px 13px;cursor:pointer}
+.build button.used{opacity:.32;pointer-events:none}
+.slots{font-family:'Courier Prime',monospace;font-size:1.25rem;font-weight:700;background:var(--soft);border:2px dashed var(--gold);border-radius:10px;padding:11px 13px;min-height:52px;margin:6px 0}
+.slots .sl{display:inline-block;min-width:54px;border-bottom:2px solid var(--muted);margin-right:7px;text-align:center}
+.slots .sl.f{border-bottom-color:var(--pine2)}
+
+.cols{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+.col{border:2px solid var(--edge);border-radius:11px;background:#fff;padding:9px;min-height:110px}
+.col h4{font-family:'Nunito',sans-serif;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;margin:0 0 7px;color:var(--pine2);text-align:center}
+.col.aim{background:var(--mint)}
+.chipbank{display:flex;flex-wrap:wrap;gap:7px;margin:8px 0}
+.chip{font-family:'Nunito',sans-serif;font-weight:800;font-size:.88rem;border:2px solid var(--line);background:#fff;border-radius:8px;padding:6px 11px;cursor:pointer}
+.chip.sel{border-color:var(--pine2);background:var(--mint)}
+.chip.good{border-color:#1d7a4e;background:#eaf7ef}
+.chip.bad{border-color:#b0452f;background:#fbeeea}
+.chip.small{font-size:.8rem;padding:4px 8px;display:block;width:100%;text-align:left;margin-bottom:5px}
+
+ol.ladder{list-style:none;counter-reset:s;margin:8px 0 0;padding:0}
+ol.ladder li{counter-increment:s;display:flex;align-items:center;gap:9px;border:2px dashed var(--line);border-radius:10px;padding:8px 11px;margin-bottom:7px;background:#fff;cursor:pointer;min-height:48px}
+ol.ladder li::before{content:counter(s);font-family:'Courier Prime',monospace;font-weight:700;color:var(--pine2);width:20px;text-align:center}
+ol.ladder li.f{border-style:solid;border-color:var(--pine2);background:var(--mint)}
+ol.ladder li.good{border-color:#1d7a4e;background:#eaf7ef} ol.ladder li.bad{border-color:#b0452f;background:#fbeeea}
+ol.ladder li .lw{font-family:'Nunito',sans-serif;font-weight:800}
+ol.ladder li .ld{font-size:.84rem;color:var(--muted);margin-left:6px}
+.arrowlab{display:flex;justify-content:space-between;font-family:'Nunito',sans-serif;font-size:.74rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+
+.btn{font-family:'Nunito',sans-serif;font-weight:800;font-size:.92rem;background:var(--pine2);color:#fff;border:0;border-radius:10px;padding:10px 18px;cursor:pointer}
+.btn.alt{background:#fff;color:var(--pine2);border:2px solid var(--line)}
+.row{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:14px}
+.score{font-family:'Nunito',sans-serif;font-weight:800;color:var(--pine2)}
+.prog{font-family:'Nunito',sans-serif;font-size:.8rem;font-weight:800;color:var(--muted)}
+
+.gate{position:fixed;inset:0;background:rgba(36,29,18,.94);z-index:99;display:flex;align-items:center;justify-content:center;padding:18px;overflow:auto}
+.gate .card{background:#fff;border-radius:16px;padding:22px;max-width:390px;width:100%}
+.gate h2{margin:0 0 4px;font-size:1.3rem}
+.gate p{margin:0 0 14px;color:var(--muted);font-size:.9rem}
+.gate label{display:block;font-family:'Nunito',sans-serif;font-weight:800;font-size:.78rem;margin:10px 0 4px}
+.gate input,.gate select{font-family:inherit;font-size:1rem;width:100%;border:2px solid var(--line);border-radius:9px;padding:8px 10px;background:#fff;color:var(--ink)}
+.gate .err{color:#b0452f;font-weight:700;font-size:.85rem;min-height:1.1em;margin-top:8px}
+
+.pop{position:fixed;z-index:120;background:#2a2318;color:#fff;border-radius:11px;padding:11px 13px;max-width:270px;box-shadow:0 8px 24px rgba(0,0,0,.3);font-size:.92rem}
+.pop b{display:block;font-size:1rem;margin-bottom:3px}
+.pop .tr{margin-top:6px;min-height:1.2em}
+.pop .tr u{font-weight:800}
+.vk{border-bottom:2px dotted var(--gold);cursor:pointer}
+#lion{position:fixed;right:10px;bottom:8px;width:34px;opacity:.5;cursor:pointer;z-index:40}
+#lion:hover{opacity:1}
+@media(max-width:620px){ .cols{grid-template-columns:1fr} .pic{width:140px} }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <a class="crumb" href="/readings/landlady/" style="color:#BFE5D8;text-decoration:none;font-family:'Courier Prime',monospace;font-size:.72rem;letter-spacing:.08em">&larr; THE LANDLADY</a>
+  <h1>Inside the words</h1>
+  <span id="who" style="font-family:'Nunito',sans-serif;font-size:12px"></span>
+  <select id="lang" title="Language"></select>
+  <button id="turnin">Turn in</button>
+  <span id="dot" title="saving"></span>
+</div>
+
+<div class="wrap">
+  <nav class="tabs" id="tabs">
+    <a class="backbtn" href="/readings/landlady/">&larr; Back to The Landlady story</a>
+    <button data-p="map" aria-selected="true">Word map</button>
+    <button data-p="build">Build it</button>
+    <button data-p="family">Word family</button>
+    <button data-p="real">Real English?</button>
+    <button data-p="shades">Weak &rarr; strong</button>
+    <button data-p="slot">Right slot</button>
+  </nav>
+
+  <section class="pane on" id="p-map">
+    <h2 class="pt">Word map</h2>
+    <p class="lead" data-d="Tap a word. Look inside it: the pieces it is built from, its family, and the same root in your language.">Tap a word. Look inside it: the pieces it is built from, its family, and the same root in your language.</p>
+    <div class="rail" id="rail"></div>
+    <div id="mapout"></div>
+  </section>
+
+  <section class="pane" id="p-build">
+    <h2 class="pt">Build it</h2>
+    <p class="lead" data-d="Read the meaning of each piece. Tap the pieces in the right order to build the word.">Read the meaning of each piece. Tap the pieces in the right order to build the word.</p>
+    <div id="buildout"></div>
+    <div class="row"><button class="btn" id="bChk">Check</button><span class="score" id="bScore"></span></div>
+  </section>
+
+  <section class="pane" id="p-family">
+    <h2 class="pt">Word family</h2>
+    <p class="lead" data-d="One root, many words. Tap a word, then tap the box it belongs in: noun, verb, or adjective.">One root, many words. Tap a word, then tap the box it belongs in: noun, verb, or adjective.</p>
+    <div id="famout"></div>
+    <div class="row"><button class="btn" id="fChk">Check</button><button class="btn alt" id="fNext">Next word &rarr;</button><span class="score" id="fScore"></span></div>
+  </section>
+
+  <section class="pane" id="p-real">
+    <h2 class="pt">Real English?</h2>
+    <p class="lead" data-d="Three of these sentences are not English. Tap the one a writer would really write.">Three of these sentences are not English. Tap the one a writer would really write.</p>
+    <div id="realout"></div>
+    <div class="row"><span class="score" id="rScore"></span></div>
+  </section>
+
+  <section class="pane" id="p-shades">
+    <h2 class="pt">Weak &rarr; strong</h2>
+    <p class="lead" data-d="These words are close, but not the same. Tap a word, then tap a step: weakest at the top, strongest at the bottom.">These words are close, but not the same. Tap a word, then tap a step: weakest at the top, strongest at the bottom.</p>
+    <div id="shout"></div>
+    <div class="row"><button class="btn" id="sChk">Check</button><button class="btn alt" id="sNext">Next word &rarr;</button><span class="score" id="sScore"></span></div>
+  </section>
+
+  <section class="pane" id="p-slot">
+    <h2 class="pt">Right slot</h2>
+    <p class="lead" data-d="The same word in three places. Only one sentence puts it in a slot where it can live. Tap that one.">The same word in three places. Only one sentence puts it in a slot where it can live. Tap that one.</p>
+    <div id="slotout"></div>
+    <div class="row"><span class="score" id="slScore"></span></div>
+  </section>
+</div>
+
+<svg id="lion" viewBox="0 0 40 40" title="?"><circle cx="20" cy="21" r="12" fill="#c8892a"/><circle cx="20" cy="21" r="8" fill="#e8b45e"/><circle cx="17" cy="19" r="1.4" fill="#2a2318"/><circle cx="23" cy="19" r="1.4" fill="#2a2318"/><path d="M17 25 q3 3 6 0" stroke="#2a2318" stroke-width="1.4" fill="none"/><g fill="#c8892a"><circle cx="20" cy="7" r="3"/><circle cx="31" cy="12" r="3"/><circle cx="35" cy="22" r="3"/><circle cx="31" cy="31" r="3"/><circle cx="20" cy="35" r="3"/><circle cx="9" cy="31" r="3"/><circle cx="5" cy="22" r="3"/><circle cx="9" cy="12" r="3"/></g></svg>
+
+<div class="gate" id="gate"><div class="card">
+  <h2>Inside the words</h2>
+  <p>The Landlady &middot; twelve words, taken apart</p>
+  <label for="gf">First name</label><input id="gf" autocomplete="given-name">
+  <label for="gl">Last name</label><input id="gl" autocomplete="family-name">
+  <label for="ge">School email</label><input id="ge" type="email" placeholder="name@s.sfusd.edu" autocomplete="email">
+  <label for="gp">Period</label><select id="gp"><option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select>
+  <label for="gg">Language</label><select id="gg"></select>
+  <div class="err" id="gerr"></div>
+  <div class="row"><button class="btn" id="gbtn">Start</button></div>
+</div></div>
+
+<script src="/readings/vocab/landlady-words.js"></script>
+<script src="/readings/vocab/landlady-art.js"></script>
+<script>
+/* ===== Inside the words — the deep engine over LL_WORDS ===================== */
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var TABLE='vocab_work', SLUG='landlady-deep';
+var PROXY='https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
+
+var LANGS=[['Spanish','es'],['Cantonese','yue'],['Mandarin','zh'],['Arabic','ar'],['Vietnamese','vi'],['Russian','ru'],
+  ['Darija','ary'],['Urdu','ur'],['Tagalog','tl'],['French','fr'],['Korean','ko'],['Hindi','hi'],['Somali','so'],
+  ['Thai','th'],['Nepali','ne']];
+var RTL={ar:1,ary:1,ur:1};
+/* which cognate key in the data matches the chosen language */
+var COGKEY={es:'es',fr:'fr',ru:'ru',vi:'vi',ar:'ar',ary:'ar',zh:'zh',yue:'zh'};
+/* nest's verb sentence is also correct English — accept either */
+var SLOT_OK={nest:[0,1]};
+
+var $=function(id){return document.getElementById(id);};
+var me={name:'',email:'',period:'',lang:'Spanish'};
+var work={build:{},family:{},real:{},shades:{},slot:{},turned:false};
+var W=(typeof LL_WORDS!=='undefined')?LL_WORDS:[];
+
+/* ---------- small helpers ---------- */
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function langCode(){for(var i=0;i<LANGS.length;i++){if(LANGS[i][0]===me.lang)return LANGS[i][1];}return 'es';}
+/* stable per-student shuffle: same order on reload, never a fixed answer slot */
+function seedOf(s){var h=2166136261,i;for(i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)>>>0;}return h||1;}
+function shuffled(arr,key){
+  var a=arr.slice(), s=seedOf(key+'|'+(me.email||'x')), i, j, t;
+  for(i=a.length-1;i>0;i--){
+    s^=s<<13; s>>>=0; s^=s>>>17; s^=s<<5; s>>>=0;   /* xorshift32 */
+    j=s%(i+1); t=a[i];a[i]=a[j];a[j]=t;
+  }
+  return a;
+}
+function art(w,cls){ return (window.LL_ART&&LL_ART[w])?llArt(w,cls):''; }
+
+/* ---------- gate ---------- */
+function fillLangs(sel,cur){var h='',i;for(i=0;i<LANGS.length;i++){h+='<option'+(LANGS[i][0]===cur?' selected':'')+'>'+LANGS[i][0]+'</option>';}sel.innerHTML=h;}
+function canonEmail(v){
+  v=String(v||'').trim().toLowerCase();
+  if(v.indexOf('@')<0 && v) v=v+'@s.sfusd.edu';
+  return v;
+}
+function validEmail(v){ return /@(s\.)?sfusd\.edu$/.test(v); }
+function startGate(){
+  fillLangs($('gg'),'Spanish'); fillLangs($('lang'),'Spanish');
+  var saved=null;
+  try{ saved=JSON.parse(sessionStorage.getItem('ll_deep_me')||'null'); }catch(e){}
+  if(saved&&saved.email){ $('gf').value=saved.first||''; $('gl').value=saved.last||''; $('ge').value=saved.email; $('gp').value=saved.period||''; $('gg').value=saved.lang||'Spanish'; }
+  $('gbtn').onclick=function(){
+    var f=$('gf').value.trim(), l=$('gl').value.trim(), e=canonEmail($('ge').value), p=$('gp').value;
+    if(!f||!l){ $('gerr').textContent='Please write your first and last name.'; return; }
+    if(!validEmail(e)){ $('gerr').textContent='Please use your school email (@s.sfusd.edu).'; return; }
+    if(!p){ $('gerr').textContent='Please choose your period.'; return; }
+    me.name=f+' '+l; me.email=e; me.period=p; me.lang=$('gg').value;
+    try{ sessionStorage.setItem('ll_deep_me',JSON.stringify({first:f,last:l,email:e,period:p,lang:me.lang})); }catch(err){}
+    try{ localStorage.setItem('vocab_lang',me.lang); }catch(err){}
+    $('lang').value=me.lang;
+    $('who').textContent=f;
+    $('gate').style.display='none';
+    load().then(boot);
+  };
+}
+
+/* ---------- supabase ---------- */
+function head(extra){
+  var h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};
+  if(extra) h.Prefer=extra; return h;
+}
+function load(){
+  return fetch(SUPA_URL+'/rest/v1/'+TABLE+'?email=eq.'+encodeURIComponent(me.email)+'&set_slug=eq.'+SLUG+'&select=work',
+    {headers:head()}).then(function(r){return r.json();}).then(function(j){
+      if(j&&j[0]&&j[0].work){ var k; for(k in j[0].work){ if(work.hasOwnProperty(k)) work[k]=j[0].work[k]; } }
+    }).catch(function(){});
+}
+var saveT=null;
+function save(now){
+  if(saveT){clearTimeout(saveT);saveT=null;}
+  if(!now){ saveT=setTimeout(function(){save(true);},900); return; }
+  $('dot').className='saving';
+  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email,set_slug',{
+    method:'POST', headers:head('resolution=merge-duplicates,return=minimal'),
+    body:JSON.stringify([{email:me.email,set_slug:SLUG,student_name:me.name,period:me.period,
+      work:work,turned_in:!!work.turned,updated_at:new Date().toISOString()}])
+  }).then(function(r){ $('dot').className=r.ok?'':'err'; }).catch(function(){ $('dot').className='err'; });
+}
+setInterval(function(){ if(me.email) save(true); },20000);
+
+/* ---------- tap to translate ---------- */
+var pop=null;
+function closePop(){ if(pop){pop.remove();pop=null;} }
+document.addEventListener('click',function(e){ if(pop&&!pop.contains(e.target)&&!e.target.classList.contains('vk')) closePop(); });
+function translate(word,def,x,y){
+  closePop();
+  pop=document.createElement('div'); pop.className='pop';
+  pop.innerHTML='<b>'+esc(word)+'</b><div class="tr">…</div>';
+  document.body.appendChild(pop);
+  pop.style.left=Math.max(8,Math.min(x,window.innerWidth-280))+'px';
+  pop.style.top=Math.max(8,y+14)+'px';
+  fetch(PROXY+'?action=translate&idiom='+encodeURIComponent(word)+'&meaning='+encodeURIComponent(def||'')+'&lang='+encodeURIComponent(me.lang))
+    .then(function(r){return r.json();}).then(function(j){
+      var t=(j&&j.translation)||{}, eq=t.equiv?('<u>'+esc(t.equiv)+'</u>'):('<u style="color:#cfc8b4">'+esc(word)+'</u>');
+      var html='<b>'+esc(word)+'</b><div class="tr">'+eq+(t.meaning?'<br>'+esc(t.meaning):'')+(t.note?'<br><i>'+esc(t.note)+'</i>':'')+'</div>';
+      if(pop){ pop.innerHTML=html; if(RTL[langCode()]) pop.dir='rtl'; }
+    }).catch(function(){ if(pop) pop.querySelector('.tr').textContent='(no connection)'; });
+}
+function vk(word,def){ return '<span class="vk" data-vk="'+esc(word)+'" data-def="'+esc(def||'')+'">'+esc(word)+'</span>'; }
+document.addEventListener('click',function(e){
+  var t=e.target.closest?e.target.closest('.vk'):null;
+  if(t){ e.stopPropagation(); translate(t.getAttribute('data-vk'),t.getAttribute('data-def'),e.clientX,e.clientY); }
+});
+
+/* ---------- directions, translated by default ---------- */
+function translateDirections(){
+  var ds=document.querySelectorAll('p.lead[data-d]'), i;
+  for(i=0;i<ds.length;i++){ (function(el){
+    var txt=el.getAttribute('data-d');
+    fetch(PROXY+'?action=translate&idiom='+encodeURIComponent(txt)+'&meaning=&lang='+encodeURIComponent(me.lang))
+      .then(function(r){return r.json();}).then(function(j){
+        var t=(j&&j.translation)||{}, s=t.equiv||t.meaning||'';
+        if(s){ var sp=document.createElement('span'); sp.className='ltr'; sp.textContent=s;
+          if(RTL[langCode()]) sp.dir='rtl'; el.appendChild(sp); }
+      }).catch(function(){});
+  })(ds[i]); }
+}
+$('lang').onchange=function(){
+  me.lang=this.value;
+  try{ localStorage.setItem('vocab_lang',me.lang); }catch(e){}
+  var old=document.querySelectorAll('p.lead .ltr'),i; for(i=0;i<old.length;i++) old[i].remove();
+  translateDirections(); drawMap();
+};
+
+/* ---------- tabs ---------- */
+var tabs=$('tabs').querySelectorAll('button');
+for(var ti=0;ti<tabs.length;ti++){ tabs[ti].onclick=function(){
+  var p=this.getAttribute('data-p'), i;
+  for(i=0;i<tabs.length;i++) tabs[i].setAttribute('aria-selected',tabs[i]===this?'true':'false');
+  var panes=document.querySelectorAll('section.pane');
+  for(i=0;i<panes.length;i++) panes[i].className='pane'+(panes[i].id==='p-'+p?' on':'');
+  window.scrollTo(0,0);
+}; }
+
+/* ========================= 1. WORD MAP ==================================== */
+var cur=0;
+function drawRail(){
+  var h='',i;
+  for(i=0;i<W.length;i++){
+    h+='<button data-i="'+i+'" aria-pressed="'+(i===cur)+'">'+art(W[i].w,'')+esc(W[i].w)+'</button>';
+  }
+  $('rail').innerHTML=h;
+  var bs=$('rail').querySelectorAll('button'),j;
+  for(j=0;j<bs.length;j++) bs[j].onclick=function(){ cur=+this.getAttribute('data-i'); drawRail(); drawMap(); };
+}
+function drawMap(){
+  var w=W[cur]; if(!w) return;
+  var h='<div class="box clearfix"><h3>'+esc(w.w)+'</h3>'+art(w.w,'pic')+
+        '<p style="margin:0 0 10px"><b style="font-family:\'Courier Prime\',monospace;font-size:1.15rem">'+esc(w.w)+'</b> — '+esc(w.def)+'</p>';
+  if(w.parts&&w.parts.length){
+    h+='<h3 style="margin-top:12px">Pieces</h3><div class="tiles">';
+    for(var i=0;i<w.parts.length;i++){ var c=i===0?'':(i===w.parts.length-1?'s':'r'); h+='<span class="tile '+c+'">'+esc(w.parts[i][0])+'</span>'; }
+    h+='</div>';
+    for(var k=0;k<w.parts.length;k++) h+='<p class="pmean"><b>'+esc(w.parts[k][0])+'</b> — '+esc(w.parts[k][1])+'</p>';
+  }
+  if(w.family){
+    h+='<h3 style="margin-top:12px">Family</h3>';
+    var names={nouns:'Nouns',verbs:'Verbs',adjs:'Adjectives',advs:'Adverbs'}, key;
+    for(key in names){ if(w.family[key]&&w.family[key].length){
+      h+='<p class="pmean" style="margin-bottom:2px"><b>'+names[key]+'</b></p><div class="fam">';
+      for(var f=0;f<w.family[key].length;f++) h+='<span>'+vk(w.family[key][f],'')+'</span>';
+      h+='</div>';
+    } }
+  }
+  var ck=COGKEY[langCode()];
+  if(w.cognate){
+    h+='<h3 style="margin-top:12px">Same root in another language</h3>';
+    if(ck&&w.cognate[ck]) h+='<p class="cog mine"><b>'+esc(me.lang)+'</b><br>'+esc(w.cognate[ck].join(' · '))+'</p>';
+    var lk, LNAME={es:'Spanish',fr:'French',ru:'Russian',vi:'Vietnamese',ar:'Arabic',zh:'Chinese'};
+    for(lk in w.cognate){ if(lk!==ck) h+='<p class="cog"><b>'+esc(LNAME[lk]||lk)+'</b> '+esc(w.cognate[lk].join(' · '))+'</p>'; }
+    if(!ck||!w.cognate[ck]) h+='<p class="cog" style="color:#6b6152"><i>No close relative in '+esc(me.lang)+' — this one you learn from its pieces.</i></p>';
+  }
+  if(w.note) h+='<div class="note">'+esc(w.note)+'</div>';
+  h+='</div>';
+  $('mapout').innerHTML=h;
+}
+
+/* ========================= 2. BUILD IT ==================================== */
+var BW=[]; /* words that have parts */
+function drawBuild(){
+  BW=[]; for(var i=0;i<W.length;i++) if(W[i].parts&&W[i].parts.length>1) BW.push(W[i]);
+  var h='',n;
+  for(n=0;n<BW.length;n++){
+    var w=BW[n], saved=work.build[w.w]||[];
+    h+='<div class="q clearfix" data-w="'+esc(w.w)+'">'+art(w.w,'qpic')+'<div class="stem">';
+    for(var p=0;p<w.parts.length;p++) h+='<span style="display:block">'+esc(w.parts[p][1])+'</span>';
+    h+='</div><div class="slots" data-slots="'+w.parts.length+'"></div><div class="build"></div><div class="fb"></div></div>';
+  }
+  $('buildout').innerHTML=h;
+  var qs=$('buildout').querySelectorAll('.q'),q;
+  for(q=0;q<qs.length;q++) renderBuild(qs[q]);
+  $('bChk').onclick=checkBuild;
+  paintScore();
+}
+function renderBuild(q){
+  var w=wordOf(q.getAttribute('data-w')), got=work.build[w.w]||[];
+  var sl=q.querySelector('.slots'), bank=q.querySelector('.build'), i, h='';
+  for(i=0;i<w.parts.length;i++) h+='<span class="sl'+(got[i]?' f':'')+'">'+(got[i]?esc(got[i]):'&nbsp;')+'</span>';
+  sl.innerHTML=h;
+  var pieces=shuffled(w.parts.map(function(p){return p[0];}),'build-'+w.w), b='';
+  for(i=0;i<pieces.length;i++) b+='<button data-x="'+esc(pieces[i])+'"'+(got.indexOf(pieces[i])>=0?' class="used"':'')+'>'+esc(pieces[i])+'</button>';
+  bank.innerHTML=b;
+  var bs=bank.querySelectorAll('button');
+  for(i=0;i<bs.length;i++) bs[i].onclick=function(){
+    var g=(work.build[w.w]||[]).slice();
+    if(g.length<w.parts.length){ g.push(this.getAttribute('data-x')); work.build[w.w]=g; save(); renderBuild(q); }
+  };
+  sl.onclick=function(){ work.build[w.w]=[]; save(); q.querySelector('.fb').textContent=''; renderBuild(q); };
+}
+function wordOf(name){ for(var i=0;i<W.length;i++) if(W[i].w===name) return W[i]; return null; }
+function checkBuild(){
+  var qs=$('buildout').querySelectorAll('.q'), got=0, done=0, i;
+  for(i=0;i<qs.length;i++){
+    var w=wordOf(qs[i].getAttribute('data-w')), g=work.build[w.w]||[], fb=qs[i].querySelector('.fb');
+    if(g.length<w.parts.length){ fb.className='fb'; fb.textContent=''; continue; }
+    done++;
+    var ok=true; for(var p=0;p<w.parts.length;p++) if(g[p]!==w.parts[p][0]) ok=false;
+    fb.className='fb '+(ok?'good':'bad');
+    fb.textContent=ok?('Yes — '+w.parts.map(function(x){return x[0];}).join(' + ')+' = '+w.w):'Not in that order. Tap the line to clear it and try again.';
+    if(ok) got++;
+  }
+  paintScore();
+  return [got,qs.length];
+}
+
+/* ========================= 3. WORD FAMILY ================================= */
+var fIdx=0, fSel=null;
+function famWords(){ var a=[],i; for(i=0;i<W.length;i++){ var f=W[i].family||{}, n=0, k;
+  for(k in f) if(f[k]&&f[k].length) n+=f[k].length; if(n>=4) a.push(W[i]); } return a; }
+function drawFamily(){
+  var list=famWords(); if(!list.length){ $('famout').innerHTML='<div class="box">No families here.</div>'; return; }
+  if(fIdx>=list.length) fIdx=0;
+  var w=list[fIdx], items=[], k, KEYS={nouns:'noun',verbs:'verb',adjs:'adjective'};
+  for(k in KEYS){ if(w.family[k]) for(var i=0;i<w.family[k].length;i++) items.push([w.family[k][i],KEYS[k]]); }
+  var seen={}, uniq=[];
+  for(i=0;i<items.length;i++){ if(!seen[items[i][0]]){ seen[items[i][0]]=1; uniq.push(items[i]); } }
+  uniq=shuffled(uniq,'fam-'+w.w);
+  var placed=work.family[w.w]||{};
+  var h='<div class="box clearfix"><h3>The family of '+esc(w.w)+'</h3>'+art(w.w,'pic')+
+        '<p style="margin:0 0 6px">'+esc(w.def)+'</p><div class="chipbank" id="fbank">';
+  for(i=0;i<uniq.length;i++) if(!placed[uniq[i][0]]) h+='<button class="chip" data-w="'+esc(uniq[i][0])+'">'+esc(uniq[i][0])+'</button>';
+  h+='</div><div class="cols">';
+  var cols=['noun','verb','adjective'], c;
+  for(c=0;c<3;c++){
+    h+='<div class="col" data-c="'+cols[c]+'"><h4>'+cols[c]+'s</h4>';
+    for(i=0;i<uniq.length;i++) if(placed[uniq[i][0]]===cols[c]) h+='<button class="chip small" data-back="'+esc(uniq[i][0])+'">'+esc(uniq[i][0])+'</button>';
+    h+='</div>';
+  }
+  h+='</div><div class="fb" id="ffb"></div></div>';
+  $('famout').innerHTML=h;
+  var chips=$('famout').querySelectorAll('#fbank .chip');
+  for(i=0;i<chips.length;i++) chips[i].onclick=function(){
+    var all=$('famout').querySelectorAll('#fbank .chip'),j;
+    for(j=0;j<all.length;j++) all[j].className='chip';
+    this.className='chip sel'; fSel=this.getAttribute('data-w');
+  };
+  var cl=$('famout').querySelectorAll('.col');
+  for(i=0;i<cl.length;i++) cl[i].onclick=function(){
+    if(!fSel) return;
+    var w2=list[fIdx]; work.family[w2.w]=work.family[w2.w]||{};
+    work.family[w2.w][fSel]=this.getAttribute('data-c'); fSel=null; save(); drawFamily();
+  };
+  var backs=$('famout').querySelectorAll('[data-back]');
+  for(i=0;i<backs.length;i++) backs[i].onclick=function(e){
+    e.stopPropagation(); var w2=list[fIdx];
+    if(work.family[w2.w]) delete work.family[w2.w][this.getAttribute('data-back')];
+    save(); drawFamily();
+  };
+  $('fChk').onclick=function(){
+    var w2=list[fIdx], placed2=work.family[w2.w]||{}, right=0, total=0, key;
+    var truth={};
+    for(key in KEYS){ if(w2.family[key]) for(var q=0;q<w2.family[key].length;q++) truth[w2.family[key][q]]=KEYS[key]; }
+    var cs=$('famout').querySelectorAll('[data-back]');
+    for(var z=0;z<cs.length;z++){
+      var nm=cs[z].getAttribute('data-back'), ok=(truth[nm]===placed2[nm]);
+      cs[z].className='chip small '+(ok?'good':'bad'); if(ok) right++;
+    }
+    for(key in truth) total++;
+    if(!cs.length){ $('ffb').className='fb'; $('ffb').textContent='Put the words in the boxes first — tap a word, then tap a box.'; paintScore(); return; }
+    $('ffb').className='fb '+(right===total?'good':'bad');
+    $('ffb').textContent=right+' of '+total+' in the right box'+(right===total?' — the whole family.':'. Tap a wrong one to send it back.');
+    paintScore();
+  };
+  $('fNext').onclick=function(){ fIdx=(fIdx+1)%list.length; fSel=null; drawFamily(); };
+}
+
+/* ========================= 4. REAL ENGLISH? =============================== */
+function drawReal(){
+  var h='',i;
+  for(i=0;i<W.length;i++){
+    var w=W[i], opts=[], j;
+    for(j=0;j<w.context.length;j++) opts.push([w.context[j], j===w.correct]);
+    opts=shuffled(opts,'real-'+w.w);
+    h+='<div class="q clearfix" data-w="'+esc(w.w)+'">'+art(w.w,'qpic')+
+       '<div class="stem"><b>'+esc(w.w)+'</b> — '+esc(w.def)+'</div><div class="opts">';
+    for(j=0;j<opts.length;j++) h+='<button data-ok="'+(opts[j][1]?1:0)+'" data-t="'+esc(opts[j][0])+'">'+esc(opts[j][0])+'</button>';
+    h+='</div><div class="fb"></div></div>';
+  }
+  $('realout').innerHTML=h;
+  var qs=$('realout').querySelectorAll('.q'),q;
+  for(q=0;q<qs.length;q++){ (function(box){
+    var w=box.getAttribute('data-w'), bs=box.querySelectorAll('.opts button'),k;
+    for(k=0;k<bs.length;k++) bs[k].onclick=function(){
+      work.real[w]=this.getAttribute('data-t'); save(); paintReal(box); paintScore();
+    };
+    paintReal(box);
+  })(qs[q]); }
+}
+function paintReal(box){
+  var w=box.getAttribute('data-w'), chose=work.real[w], bs=box.querySelectorAll('.opts button'),k;
+  var fb=box.querySelector('.fb'); if(!chose){ fb.textContent=''; fb.className='fb'; return; }
+  var good=false;
+  for(k=0;k<bs.length;k++){
+    var t=bs[k].getAttribute('data-t'), ok=bs[k].getAttribute('data-ok')==='1';
+    bs[k].className=''; if(t===chose){ bs[k].className=ok?'good':'bad'; if(ok) good=true; }
+    else if(ok&&!good&&t===chose){ }
+  }
+  fb.className='fb '+(good?'good':'bad');
+  fb.textContent=good?'That is the English one.':'Not that one — that sentence puts the word in a slot it cannot fill. Try again.';
+}
+
+/* ========================= 5. SHADES ====================================== */
+var sIdx=0, sSel=null;
+function shadeWords(){ var a=[],i; for(i=0;i<W.length;i++) if(W[i].shades&&W[i].shades.length>=3) a.push(W[i]); return a; }
+function drawShades(){
+  var list=shadeWords(); if(!list.length) return;
+  if(sIdx>=list.length) sIdx=0;
+  var w=list[sIdx], n=w.shades.length, placed=work.shades[w.w]||[], i;
+  var pool=shuffled(w.shades.map(function(s,ix){return ix;}),'sh-'+w.w);
+  var h='<div class="box clearfix"><h3>'+esc(w.w)+' — and its neighbours</h3>'+art(w.w,'pic')+
+        '<p style="margin:0 0 8px">'+esc(w.def)+'</p><div class="chipbank" id="sbank">';
+  for(i=0;i<pool.length;i++) if(placed.indexOf(pool[i])<0)
+    h+='<button class="chip" data-ix="'+pool[i]+'">'+esc(w.shades[pool[i]][0])+'</button>';
+  h+='</div><div class="arrowlab"><span>weakest</span><span>strongest</span></div><ol class="ladder" id="slad">';
+  for(i=0;i<n;i++){
+    var ix=(placed[i]===undefined)?null:placed[i];
+    h+='<li data-slot="'+i+'"'+(ix!==null?' class="f"':'')+'>'+(ix!==null?'<span class="lw">'+esc(w.shades[ix][0])+'</span><span class="ld">'+esc(w.shades[ix][1])+'</span>':'<span class="ld">tap a word, then tap here</span>')+'</li>';
+  }
+  h+='</ol><div class="fb" id="sfb"></div></div>';
+  $('shout').innerHTML=h;
+  var cs=$('shout').querySelectorAll('#sbank .chip');
+  for(i=0;i<cs.length;i++) cs[i].onclick=function(){
+    var all=$('shout').querySelectorAll('#sbank .chip'),j;
+    for(j=0;j<all.length;j++) all[j].className='chip';
+    this.className='chip sel'; sSel=+this.getAttribute('data-ix');
+  };
+  var ls=$('shout').querySelectorAll('#slad li');
+  for(i=0;i<ls.length;i++) ls[i].onclick=function(){
+    var slot=+this.getAttribute('data-slot'), arr=(work.shades[w.w]||[]).slice();
+    if(sSel===null||sSel===undefined){ arr[slot]=undefined; work.shades[w.w]=arr; save(); drawShades(); return; }
+    var k; for(k=0;k<arr.length;k++) if(arr[k]===sSel) arr[k]=undefined;
+    arr[slot]=sSel; work.shades[w.w]=arr; sSel=null; save(); drawShades();
+  };
+  $('sChk').onclick=function(){
+    var arr=work.shades[w.w]||[], right=0, j, ls2=$('shout').querySelectorAll('#slad li');
+    for(j=0;j<n;j++){
+      if(arr[j]===undefined){ ls2[j].className=''; continue; }
+      var ok=(arr[j]===j); ls2[j].className=ok?'good':'bad'; if(ok) right++;
+    }
+    $('sfb').className='fb '+(right===n?'good':'bad');
+    $('sfb').textContent=right===n?('Yes — '+w.shades.map(function(s){return s[0];}).join(' → ')):(right+' of '+n+' on the right step. Tap a word to move it.');
+    paintScore();
+  };
+  $('sNext').onclick=function(){ sIdx=(sIdx+1)%list.length; sSel=null; drawShades(); };
+}
+
+/* ========================= 6. RIGHT SLOT ================================== */
+function drawSlot(){
+  var h='',i;
+  for(i=0;i<W.length;i++){
+    var w=W[i]; if(!w.form||w.form.length<2) continue;
+    var ok=SLOT_OK[w.w]||[0], opts=[], j;
+    for(j=0;j<w.form.length;j++) opts.push([w.form[j], ok.indexOf(j)>=0]);
+    opts=shuffled(opts,'slot-'+w.w);
+    h+='<div class="q clearfix" data-w="'+esc(w.w)+'">'+art(w.w,'qpic')+
+       '<div class="stem"><b>'+esc(w.w)+'</b></div><div class="opts">';
+    for(j=0;j<opts.length;j++) h+='<button data-ok="'+(opts[j][1]?1:0)+'" data-t="'+esc(opts[j][0])+'">'+esc(opts[j][0])+'</button>';
+    h+='</div><div class="fb"></div></div>';
+  }
+  $('slotout').innerHTML=h;
+  var qs=$('slotout').querySelectorAll('.q'),q;
+  for(q=0;q<qs.length;q++){ (function(box){
+    var w=box.getAttribute('data-w'), bs=box.querySelectorAll('.opts button'),k;
+    for(k=0;k<bs.length;k++) bs[k].onclick=function(){
+      work.slot[w]=this.getAttribute('data-t'); save(); paintSlot(box); paintScore();
+    };
+    paintSlot(box);
+  })(qs[q]); }
+}
+function paintSlot(box){
+  var w=box.getAttribute('data-w'), chose=work.slot[w], bs=box.querySelectorAll('.opts button'),k,good=false;
+  var fb=box.querySelector('.fb'); if(!chose){ fb.textContent=''; fb.className='fb'; return; }
+  for(k=0;k<bs.length;k++){
+    bs[k].className='';
+    if(bs[k].getAttribute('data-t')===chose){
+      good=bs[k].getAttribute('data-ok')==='1'; bs[k].className=good?'good':'bad';
+    }
+  }
+  fb.className='fb '+(good?'good':'bad');
+  fb.textContent=good?'Right slot.':'That slot belongs to a different kind of word. Try another.';
+}
+
+/* ========================= score ========================================== */
+function paintScore(){
+  var got=0,max=0,i;
+  /* build */
+  var bq=$('buildout').querySelectorAll('.q');
+  for(i=0;i<bq.length;i++){
+    var w=wordOf(bq[i].getAttribute('data-w')), g=work.build[w.w]||[], ok=g.length===w.parts.length;
+    if(ok) for(var p=0;p<w.parts.length;p++) if(g[p]!==w.parts[p][0]) ok=false;
+    max++; if(ok) got++;
+  }
+  $('bScore').textContent=countTxt($('buildout'),work.build,function(w){
+    var g=work.build[w]||[], ww=wordOf(w); if(g.length!==ww.parts.length) return false;
+    for(var p=0;p<ww.parts.length;p++) if(g[p]!==ww.parts[p][0]) return false; return true; });
+  /* family */
+  var fl=famWords(), fGot=0, fMax=0;
+  for(i=0;i<fl.length;i++){
+    var fw=fl[i], truth={}, key, KEYS={nouns:'noun',verbs:'verb',adjs:'adjective'};
+    for(key in KEYS){ if(fw.family[key]) for(var z=0;z<fw.family[key].length;z++) truth[fw.family[key][z]]=KEYS[key]; }
+    var pl=work.family[fw.w]||{}, nm;
+    for(nm in truth){ fMax++; if(pl[nm]===truth[nm]) fGot++; }
+  }
+  got+=fGot; max+=fMax; $('fScore').textContent=fGot+' / '+fMax;
+  /* real */
+  var rGot=0,rMax=0;
+  for(i=0;i<W.length;i++){ rMax++; if(work.real[W[i].w]===W[i].context[W[i].correct]) rGot++; }
+  got+=rGot; max+=rMax; $('rScore').textContent=rGot+' / '+rMax;
+  /* shades */
+  var sl=shadeWords(), sGot=0,sMax=0;
+  for(i=0;i<sl.length;i++){ var sw=sl[i], arr=work.shades[sw.w]||[];
+    for(var j=0;j<sw.shades.length;j++){ sMax++; if(arr[j]===j) sGot++; } }
+  got+=sGot; max+=sMax; $('sScore').textContent=sGot+' / '+sMax;
+  /* slot */
+  var slGot=0, slMax=0;
+  for(i=0;i<W.length;i++){ var w3=W[i]; if(!w3.form||w3.form.length<2) continue;
+    slMax++; var okix=SLOT_OK[w3.w]||[0], chose=work.slot[w3.w], hit=false, q;
+    for(q=0;q<okix.length;q++) if(chose===w3.form[okix[q]]) hit=true;
+    if(hit) slGot++; }
+  got+=slGot; max+=slMax; $('slScore').textContent=slGot+' / '+slMax;
+
+  window.GAL_SCORE=got; window.GAL_MAX=max;
+}
+function countTxt(root,store,test){
+  var qs=root.querySelectorAll('.q'), g=0,i;
+  for(i=0;i<qs.length;i++) if(test(qs[i].getAttribute('data-w'))) g++;
+  return g+' / '+qs.length;
+}
+
+/* ========================= boot =========================================== */
+$('turnin').onclick=function(){
+  work.turned=true; save(true);
+  this.textContent='Turned in ✓'; this.disabled=true;
+};
+$('lion').onclick=function(){
+  var f=document.createElement('div');
+  f.style.cssText='position:fixed;inset:0;pointer-events:none;z-index:200;font-size:2.4rem;text-align:center;padding-top:28vh';
+  f.textContent='✨🦁✨';
+  document.body.appendChild(f); setTimeout(function(){f.remove();},1200);
+};
+function boot(){
+  drawRail(); drawMap(); drawBuild(); drawFamily(); drawReal(); drawShades(); drawSlot();
+  translateDirections(); paintScore();
+  if(work.turned){ $('turnin').textContent='Turned in ✓'; $('turnin').disabled=true; }
+}
+startGate();
+</script>
+<script src="/readings/track.js"></script>
+</body>
+</html>
