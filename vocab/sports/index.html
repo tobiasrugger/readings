@@ -1191,7 +1191,7 @@ function buildSpell(){
     } else {
       body = '<input class="txt sp" data-a="'+esc(w.w)+'" placeholder="write the word">';
     }
-    q.innerHTML = '<div class="row" style="margin:0 0 9px"><button class="spk" data-w="'+esc(w.w)+'">Play</button>'
+    q.innerHTML = '<div class="row" style="margin:0 0 9px"><button class="spk" data-w="'+esc(w.w)+'">🔊 Play</button>'
                 + '</div>' + body + '<div class="fb"></div>';
     q.addEventListener('change', function(ev){ if(ev.target.type==='radio'){ state.spell[w.w]=ev.target.value; touch(); } });
     box.appendChild(q);
@@ -1220,19 +1220,27 @@ Array.prototype.forEach.call(document.querySelectorAll('.lvl button[data-sl]'), 
     state.spellLevel = +b.dataset.sl; state.spell={}; touch(); buildSpell();
   });
 });
+/* Listen and spell: never shows the word.
+   empty -> "Not done yet" | right -> "Yes!" | wrong -> "Listen again. You wrote …"
+   a SECOND, different wrong try -> also a hint (first letter + length), still not the word. */
 $('spCheck').addEventListener('click', function(){
-  var ok=0, tot=0;
+  if(!state.spTries) state.spTries = {};
+  var ok=0, tot=0, todo=0;
   Array.prototype.forEach.call($('spBox').querySelectorAll('.q'), function(q){
     var a=q.dataset.a; tot++;
     var got=(state.spell[a]||'').trim().toLowerCase();
     var fb=q.querySelector('.fb'); q.classList.remove('good','bad');
-    if(got===a.toLowerCase()){ q.classList.add('good'); fb.className='fb good'; fb.textContent='Yes.'; ok++; }
-    else {
-      q.classList.add('bad'); fb.className='fb bad';
-      fb.textContent = got ? 'Listen again. You wrote "'+got+'".' : 'Listen again.';
-    }
+    var rec=state.spTries[a] || (state.spTries[a]={n:0,last:''});
+    if(!got){ q.classList.add('bad'); fb.className='fb bad'; fb.textContent='\u2717 Not done yet. Tap \ud83d\udd0a Play and listen.'; todo++; return; }
+    if(got===a.toLowerCase()){ q.classList.add('good'); fb.className='fb good'; fb.textContent='\u2713 Yes!'; ok++; return; }
+    if(got!==rec.last){ rec.n++; rec.last=got; }
+    q.classList.add('bad'); fb.className='fb bad';
+    var n=a.replace(/[^A-Za-z]/g,'').length;
+    fb.textContent = 'Listen again. You '+(state.spellLevel===1?'chose':'wrote')+' "'+got+'".' +
+      (rec.n>=2 ? ' Hint: it starts with \u201c'+a.charAt(0).toLowerCase()+'\u201d and has '+n+' letter'+(n===1?'':'s')+'.' : '');
   });
-  $('spScore').textContent = ok+' of '+tot+' right';
+  $('spScore').textContent = ok+' of '+tot+' right' + (todo ? ' \u00b7 '+todo+' not done yet' : '');
+  this.textContent='Check again';
   touch();
 });
 buildSpell();
