@@ -348,8 +348,126 @@ var LL_ART = {
 +'<g transform="translate(110 100)"><ellipse cx="0" cy="0" rx="9" ry="7" fill="#e3b58f"/><g stroke="#c99a76" stroke-width="1.6" fill="none"><path d="M-6 -4 q-4 -4 -1 -6 M-2 -6 q-2 -5 2 -5 M3 -6 q0 -5 4 -4 M7 -4 q3 -4 5 -1"/></g></g>'
 +'<g transform="translate(190 100)"><ellipse cx="0" cy="0" rx="9" ry="7" fill="#e3b58f"/><g stroke="#c99a76" stroke-width="1.6" fill="none"><path d="M6 -4 q4 -4 1 -6 M2 -6 q2 -5 -2 -5 M-3 -6 q0 -5 -4 -4 M-7 -4 q-3 -4 -5 -1"/></g></g></g>'
 +'<g stroke="#b4531f" stroke-width="7" stroke-linecap="round" opacity=".92"><path d="M114 30 L186 126"/><path d="M186 30 L114 126"/></g>'
++'</svg>',
+/* ---- dreadfully: the same room, felt at two different strengths ---- */
+"dreadfully": '<svg viewBox="0 0 200 160" role="img" aria-label="On the left a person sits rigid on a bed at night, knees up, eyes wide, sweating, hands clamped on the blanket. On the right the same person sleeps peacefully, crossed out in red.">'
++'<rect width="200" height="160" rx="10" fill="#1d2129"/><rect x="0" y="0" width="98" height="160" fill="#191d24"/><path d="M99 10 v140" stroke="#39414e" stroke-width="2" stroke-dasharray="5 4"/>'
++'<g><rect x="0" y="112" width="98" height="48" fill="#2a3039"/><rect x="6" y="100" width="86" height="22" rx="4" fill="#4a5260"/><rect x="6" y="94" width="86" height="10" rx="4" fill="#5d6675"/>'
++'<rect x="8" y="46" width="8" height="52" fill="#3a3f4a"/><rect x="82" y="46" width="8" height="52" fill="#3a3f4a"/>'
++'<path d="M20 110 q28 -16 56 0 l0 14 h-56z" fill="#7d8899"/>'
++'<g transform="translate(48 74)"><ellipse cx="0" cy="0" rx="15" ry="17" fill="#e3b58f"/>'
++'<path d="M-15 -6 q15 -20 30 -2 q2 -14 -15 -15 q-17 2 -15 17z" fill="#2f2620"/>'
++'<path d="M-10 -8 l8 5 M10 -8 l-8 5" stroke="#241d18" stroke-width="2.4" stroke-linecap="round"/>'
++'<ellipse cx="-6" cy="2" rx="4.6" ry="5.4" fill="#f4f1e8"/><circle cx="-6" cy="3" r="2.4" fill="#241d18"/>'
++'<ellipse cx="6" cy="2" rx="4.6" ry="5.4" fill="#f4f1e8"/><circle cx="6" cy="3" r="2.4" fill="#241d18"/>'
++'<ellipse cx="0" cy="12" rx="5" ry="6" fill="#5c1d16"/>'
++'<path d="M-16 -10 q-3 -5 1 -8 M16 -10 q3 -5 -1 -8" stroke="#9fd0dd" stroke-width="1.6" fill="none" opacity=".85"/>'
++'<ellipse cx="-13" cy="-12" rx="2" ry="3" fill="#9fd0dd" opacity=".9"><animate attributeName="cy" values="-12;6" dur="2.4s" repeatCount="indefinite"/><animate attributeName="opacity" values=".9;0" dur="2.4s" repeatCount="indefinite"/></ellipse></g>'
++'<path d="M26 92 q10 -8 18 0 l-2 10 h-16z" fill="#8c97a8"/><path d="M54 92 q10 -8 18 0 l-2 10 h-16z" fill="#8c97a8"/>'
++'<g stroke="#b4531f" stroke-width="2" fill="none" opacity=".9"><path d="M86 58 q8 -4 10 2"><animate attributeName="opacity" values=".3;1;.3" dur="1.1s" repeatCount="indefinite"/></path>'
++'<path d="M88 70 q10 -4 12 3"><animate attributeName="opacity" values=".2;.8;.2" dur="1.1s" begin=".3s" repeatCount="indefinite"/></path></g></g>'
++'<g><rect x="102" y="112" width="98" height="48" fill="#262c35"/><rect x="108" y="100" width="86" height="22" rx="4" fill="#4a5260"/><rect x="108" y="94" width="86" height="10" rx="4" fill="#5d6675"/>'
++'<rect x="110" y="46" width="8" height="52" fill="#3a3f4a"/><rect x="184" y="46" width="8" height="52" fill="#3a3f4a"/>'
++'<path d="M112 96 q38 -12 76 0 l0 26 h-76z" fill="#7d8899"/>'
++'<g transform="translate(140 90)"><ellipse cx="0" cy="0" rx="14" ry="12" fill="#e3b58f" transform="rotate(-16)"/>'
++'<path d="M-14 -4 q14 -16 28 -2 q2 -12 -14 -13 q-16 2 -14 15z" fill="#2f2620" transform="rotate(-16)"/>'
++'<path d="M-7 1 q3 -3 6 0 M3 0 q3 -3 6 0" stroke="#241d18" stroke-width="1.8" fill="none"/>'
++'<path d="M-3 8 q4 3 7 0" stroke="#7a3a2a" stroke-width="1.8" fill="none" stroke-linecap="round"/></g>'
++'<g stroke="#9fb6c4" stroke-width="2" fill="none" opacity=".7"><path d="M160 72 q6 -6 0 -12 q6 -6 0 -12"><animate attributeName="opacity" values=".2;.7;.2" dur="3.4s" repeatCount="indefinite"/></path></g></g>'
++'<g stroke="#b4531f" stroke-width="7" stroke-linecap="round" opacity=".92"><path d="M114 34 L186 126"/><path d="M186 34 L114 126"/></g>'
++'</svg>',
+
+/* ---- hearken: a raised hand and a cupped ear say stop and listen ---- */
+"hearken": '<svg viewBox="0 0 200 160" role="img" aria-label="A person holds one palm up to stop you and cups the other hand behind the ear, leaning in to listen hard. Faint sound lines come from the side.">'
++'<rect width="200" height="160" rx="10" fill="#efe7d5"/>'
++'<rect x="0" y="118" width="200" height="42" fill="#d8ccb0"/><path d="M0 118 h200" stroke="#bda98a" stroke-width="2"/>'
++'<g fill="#e0d5bb"><rect x="14" y="16" width="40" height="92" rx="3"/><rect x="146" y="22" width="36" height="86" rx="3"/></g>'
++'<g stroke="#c9bb9c" stroke-width="1.4"><path d="M24 28h20M24 40h20M24 52h14M156 34h18M156 46h18"/></g>'
++'<g transform="translate(104 78)">'
++'<path d="M-30 56 q30 -14 60 0z" fill="#4e5a66"/>'
++'<path d="M-28 4 q28 -16 56 0 l6 54 h-68z" fill="#5d6b57"/>'
++'<path d="M0 4 v54" stroke="#4a5745" stroke-width="2"/>'
++'<g fill="#c8892a"><circle cx="0" cy="18" r="2.4"/><circle cx="0" cy="32" r="2.4"/><circle cx="0" cy="46" r="2.4"/></g>'
++'<ellipse cx="0" cy="-22" rx="22" ry="25" fill="#e3b58f"/>'
++'<path d="M-22 -30 q22 -28 44 -4 q4 -20 -22 -22 q-26 4 -22 26z" fill="#4a3a2a"/>'
++'<path d="M-15 -30 q7 -5 13 -1" stroke="#33291f" stroke-width="2.6" fill="none" stroke-linecap="round"/>'
++'<path d="M4 -31 q7 -4 13 1" stroke="#33291f" stroke-width="2.6" fill="none" stroke-linecap="round"/>'
++'<ellipse cx="-8" cy="-22" rx="5" ry="6" fill="#f4f1e8"/><circle cx="-8" cy="-21" r="2.8" fill="#241d18"/>'
++'<ellipse cx="8" cy="-22" rx="5" ry="6" fill="#f4f1e8"/><circle cx="8" cy="-21" r="2.8" fill="#241d18"/>'
++'<path d="M-6 -8 q6 4 12 -1" stroke="#7a3a2a" stroke-width="2.2" fill="none" stroke-linecap="round"/>'
++'<path d="M20 -26 q12 -6 16 6 q3 14 -8 20 q-9 4 -12 -4" fill="#dba883"/>'
++'<path d="M24 -20 q8 -2 9 7 q1 8 -6 10" stroke="#b98b68" stroke-width="2" fill="none"/>'
++'<path d="M-28 8 q-20 -4 -26 -22" stroke="#5d6b57" stroke-width="13" fill="none" stroke-linecap="round"/>'
++'<g transform="translate(-58 -20)"><ellipse cx="0" cy="0" rx="11" ry="13" fill="#e3b58f"/>'
++'<g stroke="#c99a76" stroke-width="2.4" fill="none" stroke-linecap="round"><path d="M-6 -8 v-9M-1 -10 v-10M4 -10 v-9M8 -7 v-7"/></g>'
++'<path d="M-9 4 q9 5 18 -1" stroke="#c99a76" stroke-width="2" fill="none"/></g></g>'
++'<g stroke="#b4531f" fill="none" stroke-linecap="round" opacity=".8">'
++'<path d="M176 60 q-10 18 0 36" stroke-width="2.6"><animate attributeName="opacity" values=".3;.95;.3" dur="2s" repeatCount="indefinite"/></path>'
++'<path d="M186 50 q-14 24 0 52" stroke-width="2.2" opacity=".6"><animate attributeName="opacity" values=".2;.7;.2" dur="2s" begin=".35s" repeatCount="indefinite"/></path></g>'
++'</svg>',
+
+/* ---- haunted: an idea that will not leave him; and the same room, clear ---- */
+"haunted": '<svg viewBox="0 0 200 160" role="img" aria-label="On the left a person sits at a table with a pale shape circling close around the head, following him. On the right the same person sits with clear air around him, crossed out in red.">'
++'<rect width="200" height="160" rx="10" fill="#e9e2d2"/><rect x="0" y="0" width="98" height="160" fill="#ded5c2"/><path d="M99 10 v140" stroke="#c0b49a" stroke-width="2" stroke-dasharray="5 4"/>'
++'<g><rect x="0" y="112" width="98" height="48" fill="#8a7352"/><rect x="0" y="108" width="98" height="8" fill="#a98d64"/>'
++'<rect x="10" y="118" width="26" height="4" rx="2" fill="#6f5b40"/>'
++'<g transform="translate(44 80)">'
++'<path d="M-24 10 q24 -14 48 0 l6 28 h-60z" fill="#6b5a7a"/>'
++'<ellipse cx="0" cy="-12" rx="18" ry="20" fill="#e3b58f"/>'
++'<path d="M-18 -18 q18 -22 36 -4 q4 -16 -18 -18 q-22 4 -18 22z" fill="#3a2d20"/>'
++'<path d="M-11 -18 q6 -4 11 -1 M2 -19 q6 -3 11 1" stroke="#2a2420" stroke-width="2.2" fill="none" stroke-linecap="round"/>'
++'<ellipse cx="-6" cy="-11" rx="4.4" ry="5" fill="#f4f1e8"/><circle cx="-6" cy="-10" r="2.4" fill="#241d18"/>'
++'<ellipse cx="7" cy="-11" rx="4.4" ry="5" fill="#f4f1e8"/><circle cx="7" cy="-10" r="2.4" fill="#241d18"/>'
++'<path d="M-5 0 q5 2 10 -1" stroke="#7a3a2a" stroke-width="2" fill="none" stroke-linecap="round"/>'
++'<path d="M-24 16 q-14 6 -16 22" stroke="#6b5a7a" stroke-width="10" fill="none" stroke-linecap="round"/></g>'
++'<g opacity=".85"><path d="M12 36 q24 -22 52 -6 q22 14 10 34 q-10 16 -28 6" stroke="#9fb6c4" stroke-width="3" fill="none" stroke-dasharray="6 7" stroke-linecap="round"><animate attributeName="stroke-dashoffset" values="26;0" dur="2.6s" repeatCount="indefinite"/></path>'
++'<g transform="translate(70 30)"><path d="M0 -10 q14 0 14 14 q0 12 -8 16 q-3 -5 -6 -1 q-3 4 -6 1 q-8 -4 -8 -16 q0 -14 14 -14z" fill="#dfe8ee" opacity=".92"/>'
++'<ellipse cx="-4" cy="2" rx="2" ry="3" fill="#3a4450"/><ellipse cx="4" cy="2" rx="2" ry="3" fill="#3a4450"/>'
++'<path d="M-3 10 q3 3 6 0" stroke="#3a4450" stroke-width="1.4" fill="none"/>'
++'<animateTransform attributeName="transform" type="translate" values="70 30; 24 48; 56 74; 70 30" dur="6s" repeatCount="indefinite"/></g></g></g>'
++'<g><rect x="102" y="112" width="98" height="48" fill="#8a7352"/><rect x="102" y="108" width="98" height="8" fill="#a98d64"/>'
++'<g transform="translate(150 80)">'
++'<path d="M-24 10 q24 -14 48 0 l6 28 h-60z" fill="#6b5a7a"/>'
++'<ellipse cx="0" cy="-12" rx="18" ry="20" fill="#e3b58f"/>'
++'<path d="M-18 -18 q18 -22 36 -4 q4 -16 -18 -18 q-22 4 -18 22z" fill="#3a2d20"/>'
++'<circle cx="-6" cy="-11" r="2.4" fill="#241d18"/><circle cx="7" cy="-11" r="2.4" fill="#241d18"/>'
++'<path d="M-5 -1 q6 5 11 0" stroke="#7a3a2a" stroke-width="2.2" fill="none" stroke-linecap="round"/>'
++'<path d="M-24 16 q-14 6 -16 22" stroke="#6b5a7a" stroke-width="10" fill="none" stroke-linecap="round"/>'
++'<path d="M24 16 q14 6 16 22" stroke="#6b5a7a" stroke-width="10" fill="none" stroke-linecap="round"/></g></g>'
++'<g stroke="#b4531f" stroke-width="7" stroke-linecap="round" opacity=".92"><path d="M114 34 L186 126"/><path d="M186 34 L114 126"/></g>'
++'</svg>',
+
+/* ---- foresight: the planned route laid out in advance beside the blind step ---- */
+"foresight": '<svg viewBox="0 0 200 160" role="img" aria-label="On the left a person studies a drawn plan with a dotted route, a lamp and a checked list. On the right the same person walks blindfolded toward an open hole in the floor, crossed out in red.">'
++'<rect width="200" height="160" rx="10" fill="#efe7d5"/><rect x="0" y="0" width="98" height="160" fill="#e7ddc4"/><path d="M99 10 v140" stroke="#cbbfa4" stroke-width="2" stroke-dasharray="5 4"/>'
++'<g><rect x="0" y="120" width="98" height="40" fill="#cdbf9f"/>'
++'<rect x="8" y="34" width="82" height="78" rx="4" fill="#f6f1e2" stroke="#8a7a62" stroke-width="2.4" transform="rotate(-3 49 73)"/>'
++'<g transform="rotate(-3 49 73)"><path d="M18 92 q10 -34 32 -32 q24 2 26 -26" stroke="#2d8a5e" stroke-width="2.4" fill="none" stroke-dasharray="5 5"/>'
++'<circle cx="18" cy="92" r="4" fill="#2d8a5e"/><path d="M76 34 l-5 6 M76 34 l5 6" stroke="#2d8a5e" stroke-width="2.4" fill="none"/>'
++'<g stroke="#b5a68c" stroke-width="1.4"><path d="M16 44h30M16 52h20"/></g>'
++'<g><path d="M58 50 l4 5 l9 -11" stroke="#2d8a5e" stroke-width="2.4" fill="none" stroke-linecap="round"/><path d="M58 64 l4 5 l9 -11" stroke="#2d8a5e" stroke-width="2.4" fill="none" stroke-linecap="round"/></g>'
++'<rect x="14" y="68" width="26" height="18" rx="2" fill="#d9cdb6" stroke="#8a7a62" stroke-width="1.4"/><path d="M18 76h18" stroke="#8a7a62" stroke-width="1.4"/></g>'
++'<g transform="translate(76 108)"><path d="M-10 -22 h20 l5 22 h-30z" fill="#33291f"/><rect x="-7" y="-16" width="14" height="12" fill="#ffdf9b"><animate attributeName="opacity" values=".8;1;.8" dur="2.6s" repeatCount="indefinite"/></rect>'
++'<path d="M-10 -22 q10 -8 20 0" stroke="#5a4632" stroke-width="2.4" fill="none"/><ellipse cx="0" cy="4" rx="22" ry="5" fill="#ffdf9b" opacity=".25"/></g>'
++'<g transform="translate(26 104)"><ellipse cx="0" cy="0" rx="11" ry="9" fill="#e3b58f"/>'
++'<g stroke="#c99a76" stroke-width="2" fill="none"><path d="M-6 -5 q-3 -7 2 -8M0 -7 q0 -8 5 -7M6 -6 q3 -7 7 -4"/></g></g></g>'
++'<g><rect x="102" y="120" width="98" height="40" fill="#c4b492"/>'
++'<path d="M150 120 h40 v40 h-40z" fill="#241d18"/><path d="M150 120 q20 -8 40 0" stroke="#6b5436" stroke-width="3" fill="none"/>'
++'<g transform="translate(130 92)">'
++'<path d="M-12 18 q12 -8 24 0 l5 34 h-34z" fill="#6b7a8c"/>'
++'<path d="M-12 24 q-16 8 -16 22" stroke="#6b7a8c" stroke-width="9" fill="none" stroke-linecap="round"/>'
++'<path d="M12 24 q18 6 22 20" stroke="#6b7a8c" stroke-width="9" fill="none" stroke-linecap="round"/>'
++'<ellipse cx="0" cy="0" rx="15" ry="17" fill="#e3b58f"/>'
++'<path d="M-15 -6 q15 -20 30 -2 q2 -14 -15 -15 q-17 2 -15 17z" fill="#3a2d20"/>'
++'<rect x="-16" y="-4" width="32" height="9" rx="3" fill="#4a4a52"/>'
++'<path d="M-5 12 q5 -4 10 0" stroke="#7a3a2a" stroke-width="2" fill="none" stroke-linecap="round"/>'
++'<g transform="translate(34 44)"><ellipse cx="0" cy="0" rx="9" ry="7" fill="#e3b58f"/></g></g>'
++'<g stroke="#b4531f" stroke-width="2.4" fill="none"><path d="M152 104 q6 -8 12 -2"><animate attributeName="opacity" values=".3;1;.3" dur="1.2s" repeatCount="indefinite"/></path></g></g>'
++'<g stroke="#b4531f" stroke-width="7" stroke-linecap="round" opacity=".92"><path d="M114 34 L186 126"/><path d="M186 34 L114 126"/></g>'
 +'</svg>'
 };
+
+function mkpic(svg){ var d = document.createElement("div"); d.className = "vcpicwrap"; d.innerHTML = svg.replace('<svg ', '<svg class="vcpic" '); return d; }
 
 /* return the picture with an extra class, or "" if there is none */
 function llArt(word, cls){
@@ -357,9 +475,18 @@ function llArt(word, cls){
   return cls ? s.replace('<svg ', '<svg class="' + cls + '" ') : s;
 }
 
-/* auto-wire: swap emoji for pictures on the Words screen */
+/* auto-wire: swap emoji for pictures on the Words screen, and draw the
+   pre-reading vocabulary cards (which carry the word in .vocab-word) */
 (function(){
   function apply(){
+    var vs = document.querySelectorAll(".vocab-card"), k, vw, vp;
+    for(k = 0; k < vs.length; k++){
+      if(vs[k].querySelector("svg")) continue;
+      vw = vs[k].querySelector(".vocab-word");
+      if(!vw) continue;
+      vp = LL_ART[vw.textContent.trim().toLowerCase()];
+      if(vp) vs[k].insertBefore(mkpic(vp), vs[k].firstChild);
+    }
     var cs = document.querySelectorAll("#words-tab .wcard[data-w]"), i, w, e;
     for(i = 0; i < cs.length; i++){
       w = cs[i].getAttribute("data-w"); e = cs[i].querySelector(".we");
