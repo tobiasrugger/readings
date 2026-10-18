@@ -187,5 +187,90 @@ PL.init({
 })();
 </script>
 <script src="/readings/track.js"></script>
+<script>
+/* ── Choose the language at sign-in ───────────────────────────────
+   The page already has a language picker, but it sits past the gate,
+   so students reach the activity with nothing chosen and the first
+   word they tap says "choose your language". This mirrors that picker
+   into the sign-in screen and keeps the two in step. Remembers the
+   choice across pages via gal_lang. */
+(function(){
+  var GATE = /gate|login|log-in|sign-?in|signin|overlay|welcome|start-?screen/i;
+  function realPicker(){
+    var sels = document.querySelectorAll('select');
+    for (var i = 0; i < sels.length; i++){
+      var s = sels[i];
+      var id = (s.id || '') + ' ' + (s.className || '') + ' ' + (s.getAttribute('aria-label') || '');
+      if (/lang/i.test(id) && s.options.length > 2 && s.id !== 'gate-lang') return s;
+    }
+    return null;
+  }
+  function gateBox(real){
+    var nodes = document.querySelectorAll('[id],[class]');
+    for (var i = 0; i < nodes.length; i++){
+      var n = nodes[i];
+      var ident = (n.id || '') + ' ' + (typeof n.className === 'string' ? n.className : '');
+      if (!GATE.test(ident)) continue;
+      if (real && n.contains(real)) continue;            /* that is the bar, not the gate */
+      if (n.querySelector('input, select, button')) return n;
+    }
+    return null;
+  }
+  function build(){
+    var real = realPicker();
+    if (!real) return;
+    var box = gateBox(real);
+    if (!box || box.querySelector('#gate-lang')) return;
+
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'margin:10px 0;text-align:left';
+    var lab = document.createElement('label');
+    lab.setAttribute('for', 'gate-lang');
+    lab.textContent = 'Your language';
+    lab.style.cssText = 'display:block;font-weight:700;font-size:13px;margin-bottom:4px';
+    var sel = document.createElement('select');
+    sel.id = 'gate-lang';
+    sel.style.cssText = 'width:100%;font:inherit;padding:9px 10px;border:1px solid #c9c2b2;border-radius:9px';
+    sel.innerHTML = real.innerHTML;
+
+    var saved = '';
+    try { saved = localStorage.getItem('gal_lang') || ''; } catch(e){}
+    if (saved) {
+      sel.value = saved;
+      if (sel.value === saved) { real.value = saved; fire(real); }
+    }
+
+    sel.addEventListener('change', function(){
+      real.value = sel.value;
+      try { localStorage.setItem('gal_lang', sel.value); } catch(e){}
+      fire(real);
+    });
+    real.addEventListener('change', function(){
+      if (sel.value !== real.value) sel.value = real.value;
+      try { localStorage.setItem('gal_lang', real.value); } catch(e){}
+    });
+
+    wrap.appendChild(lab); wrap.appendChild(sel);
+    var btn = box.querySelector('button');
+    if (btn && btn.parentNode) btn.parentNode.insertBefore(wrap, btn);
+    else box.appendChild(wrap);
+  }
+  function fire(el){
+    try { el.dispatchEvent(new Event('change', { bubbles: true })); } catch(e){
+      var ev = document.createEvent('HTMLEvents'); ev.initEvent('change', true, false); el.dispatchEvent(ev);
+    }
+    if (typeof el.onchange === 'function') { try { el.onchange(); } catch(e){} }
+  }
+  /* some pages fill their picker from an external script, so keep trying
+     for a few seconds until there is something worth cloning */
+  var tries = 0;
+  function attempt(){
+    build();
+    if (!document.getElementById('gate-lang') && ++tries < 10) setTimeout(attempt, 600);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', attempt);
+  else attempt();
+})();
+</script>
 </body>
 </html>
