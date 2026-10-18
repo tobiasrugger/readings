@@ -11,3 +11,5 @@ forward from one phase to the next with nothing to migrate.
   2026-10-16 10:24 · commit `33777d2b` · 56 questions · 203 KB
 - **phase-4-before-word-practice-move.html** — The page as it stood before Oct 18: Word practice before the story, practice quizzes in the side rail, answers shown on a miss
   2026-10-18 · saved before the T-45 change (Word practice after Part 1, inline practice, try-again on every question, Part 1 orgz) · same guide_key
+- **phase-5-before-highlight-practice.html** — Word practice after Part 1, inline practice, formative stops, Part 1 orgz, green Read-the-story button (T-51)
+  2026-10-18 · saved before T-54 adds the highlight practice question (data-qid hl1, marked NEW) · same guide_key

@@ -1110,6 +1110,28 @@ body.pqshim #rail::after{ animation:pqshim 1.6s ease-in-out 2; }
 .readgo-btn:hover{ background:#2f5a0c; }
 @media print{ .readgo, .wpcard, .wback, .pq-inline, .mcfb{ display:none !important; } }
 </style>
+
+<style>
+/* ===== Oct 18 (T-54): signals where they start, readable highlighting, highlight practice ===== */
+.readkey .rk-row{ font-family:'Courier Prime',monospace; font-size:.85rem; color:var(--ink); margin:0 0 .4rem; }
+.readkey .hllegend{ font-size:.92rem; color:var(--ink); font-weight:700; gap:.5rem; margin:.3rem 0 .4rem; }
+.readkey .hllegend .dot{ width:22px; height:22px; border:2px solid #4a3a28; border-radius:5px; }
+.story p.hl-y{ background:#ffec80; } .story p.hl-p{ background:#ffc6d8; } .story p.hl-b{ background:#b3defc; }
+.legend.sigbox{ display:grid; grid-template-columns:1fr 1fr; gap:.7rem 1rem; border:2px solid #4a3a28; border-radius:10px;
+  background:var(--card); padding:.8rem 1rem; margin:1.6rem 0; box-shadow:0 3px 0 #c9bca3, 0 6px 14px rgba(42,35,24,.12);
+  font-size:.86rem; color:var(--ink); }
+.legend.sigbox .sig-headrow{ grid-column:1 / -1; }
+.legend.sigbox .sig-head{ margin:0; font-family:'Courier Prime',monospace; font-size:.7rem; letter-spacing:.14em; text-transform:uppercase; color:var(--blood); }
+.legend.sigbox .legend-item{ display:flex; align-items:center; gap:.6rem; }
+.legend.sigbox .sig-pic svg{ width:84px; height:68px; display:block; border-radius:6px; border:2px solid #4a3a28; }
+@media (max-width:560px){ .legend.sigbox{ grid-template-columns:1fr; } }
+.qbox.hlprac{ background:#fffbe6; }
+.qbox.hlprac .hlp-how{ font-size:.85rem; color:var(--fog); margin:.2rem 0 .3rem; }
+.qbox.hlprac .hlp-fb{ font-weight:700; margin-top:.3rem; }
+.qbox.hlprac .hlp-fb.no{ color:#a32d2d; } .qbox.hlprac .hlp-fb.ok{ color:#27500a; }
+.qbox.hlprac.done{ border-color:#3b6d11; }
+@media print{ .qbox.hlprac .hlp-how, .qbox.hlprac .hlp-fb{ display:none; } }
+</style>
 </head>
 <span id="canary" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden">the quick brown fox jumps over the lazy dog</span>
 <body>
@@ -1731,6 +1753,16 @@ body.pqshim #rail::after{ animation:pqshim 1.6s ease-in-out 2; }
 
 <p>"Excuse me," he said, "but is there a fairly cheap hotel not too far away from here?"</p>
 <p>"Try The Bell and Dragon," the <span class="gl" tabindex="0" data-k="porter">porter</span> answered, pointing down the road. "They might take you in. It's about a quarter of a mile along on the other side."</p>
+<div class="qbox hlprac" data-qid="hl1" data-new="phase5"
+     data-hard="Highlight practice: find the paragraph where Billy asks a question. Tap its number and make it yellow." data-easy="Highlight practice: which paragraph has Billy&rsquo;s question? Tap its number. Make it yellow."
+     data-ph-hard="" data-ph-easy="">
+  <span class="tag predict">NEW &middot; TRY IT</span>
+  <div class="qtext"></div>
+  <div class="hlp-how" translate="yes">Tap a paragraph number once: yellow. Tap again: pink, then blue, then off.</div>
+  <div class="hlp-fb" translate="yes"></div>
+  <textarea data-id="hl1" class="mcval" tabindex="-1" aria-hidden="true"></textarea>
+  <div class="ansprint" translate="no"></div>
+</div>
 <div class="qbox mcbox infer" data-qid="s1"
      data-hard="The porter answers Billy’s question with a name: “Try The Bell and Dragon.” What is The Bell and Dragon?" data-easy="The porter says “Try The Bell and Dragon.” What is The Bell and Dragon?"
      data-ph-hard="" data-ph-easy="">
@@ -3484,6 +3516,7 @@ function pullRow(){
       if(pl.vocab_mini && !Object.keys(PRACT).length){ PRACT = pl.vocab_mini; savePract(); if(window.markPractAll) markPractAll(); }
       saveLocal();
       restoreChoices();
+      if(window.__hl1check) __hl1check(false);
     })
     .catch(function(){});
 }
@@ -4156,9 +4189,9 @@ applyHL();
   var l = document.createElement("div");
   l.className = "hllegend";
   l.innerHTML = '<span translate="yes">Tap a paragraph number to highlight it:</span>' +
-    '<span class="dot" style="background:#fff1b0"></span>' +
-    '<span class="dot" style="background:#ffd9e2"></span>' +
-    '<span class="dot" style="background:#bfe0f5"></span>' +
+    '<span class="dot" style="background:#ffe14d"></span>' +
+    '<span class="dot" style="background:#ff9cbc"></span>' +
+    '<span class="dot" style="background:#7cc6f7"></span>' +
     '<span>tap again to clear</span>';
   first.parentNode.insertBefore(l, first);
 })();
@@ -4436,6 +4469,7 @@ applyHL();
     try{ localStorage.setItem(KEY, id); }catch(e){}
     window.scrollTo(0, 0);
     paint();
+    if(window.__chunkChanged) window.__chunkChanged(id);
   }
   nav.addEventListener("click", function(e){
     var b = e.target.closest ? e.target.closest(".cbtn") : null;
@@ -4674,7 +4708,24 @@ function savePract(){ try{ localStorage.setItem(LKEY + "_pract", JSON.stringify(
   var key = document.createElement("div"); key.className = "readkey";
   key.innerHTML = '<p class="rk-head" translate="yes">How to read this story</p>';
   head.parentNode.insertBefore(key, head.nextSibling);
-  var leg = p1.querySelector(".legend"); if(leg) key.appendChild(leg);
+  var leg = p1.querySelector(".legend");
+  if(leg){
+    var dot = leg.querySelector(".leg-vocab"), it = dot ? dot.closest(".legend-item") : null;
+    if(it){ var row = document.createElement("div"); row.className = "rk-row"; row.appendChild(it); key.appendChild(row); }
+    /* the two signals get their own box, right before the first signal in the story */
+    leg.classList.add("sigbox");
+    var hd = document.createElement("p"); hd.className = "sig-head"; hd.setAttribute("translate", "yes");
+    hd.textContent = "From here on, watch for two kinds of signals";
+    var pics = document.querySelectorAll(".lookbox .vocab-card svg");
+    var items = leg.querySelectorAll(".legend-item"), k;
+    for(k = 0; k < items.length; k++){
+      var src = pics[/wrong/.test(items[k].innerHTML) ? 1 : 0];
+      if(src){ var c = src.cloneNode(true); c.removeAttribute("class"); c.setAttribute("aria-hidden", "true"); c.removeAttribute("role");
+        var f = document.createElement("span"); f.className = "sig-pic"; f.appendChild(c); items[k].insertBefore(f, items[k].firstChild); }
+    }
+    var hdWrap = document.createElement("div"); hdWrap.className = "sig-headrow"; hdWrap.appendChild(hd);
+    leg.insertBefore(hdWrap, leg.firstChild);
+  }
   var hl = document.querySelector(".hllegend"); if(hl) key.appendChild(hl);
 })();
 
@@ -4740,6 +4791,63 @@ function savePract(){ try{ localStorage.setItem(LKEY + "_pract", JSON.stringify(
     window.scrollTo(0, 0);
   });
   intro.appendChild(box);
+})();
+
+
+/* ---- highlight practice (hl1): Billy's question is paragraph 2; it must be yellow ---- */
+(function(){
+  var box = document.querySelector('[data-qid="hl1"]'); if(!box) return;
+  var ta = box.querySelector("textarea"), fb = box.querySelector(".hlp-fb"), TARGET = "2";
+  var MISS = LKEY + "_hl1miss", missed = false;
+  try{ missed = localStorage.getItem(MISS) === "1"; }catch(e){}
+  function check(fromTap){
+    var mine = Object.keys(HL || {});
+    if(HL[TARGET] === "y"){
+      box.classList.add("done");
+      fb.className = "hlp-fb ok";
+      fb.textContent = missed ? "\u2713 Fixed. Paragraph 2 is yellow. That is how you highlight." : "\u2713 Yes. Paragraph 2 is yellow. That is how you highlight.";
+      if(ta.value !== "paragraph 2 yellow"){ ta.value = "paragraph 2 yellow"; if(fromTap){ saveLocal(); queueSave(); } }
+      return;
+    }
+    box.classList.remove("done");
+    if(!fromTap){ fb.textContent = ""; return; }
+    fb.className = "hlp-fb no";
+    if(HL[TARGET]) fb.textContent = "Right paragraph! Now tap its number again until it is yellow.";
+    else if(mine.length){
+      missed = true; try{ localStorage.setItem(MISS, "1"); }catch(e){}
+      fb.textContent = "Not that one. Try again. Look for the question mark ( ? ).";
+    }
+    else fb.textContent = "";
+  }
+  document.addEventListener("click", function(e){
+    if(e.target.classList && e.target.classList.contains("hlnum")) setTimeout(function(){ check(true); }, 0);
+  }, true);   /* capture: the number's own handler stops the click from bubbling */
+  setTimeout(function(){ check(false); }, 0);
+  window.__hl1check = check;
+})();
+
+/* ---- Back works: each screen is a history step; coming back from the vocab pages lands on the story ---- */
+(function(){
+  var KEYLP = LKEY + "_lastpart", popping = false;
+  window.__chunkChanged = function(id){
+    if(/^p[1-4]$/.test(id)){ try{ localStorage.setItem(KEYLP, id); }catch(e){} }
+    if(popping) return;
+    if((location.hash || "").replace("#", "") === id) return;
+    try{ history.pushState({ ch: id }, "", "#" + id); }catch(e){}
+  };
+  window.addEventListener("popstate", function(){
+    var h = (location.hash || "").replace("#", "") || "intro";
+    popping = true; if(window.showChunk) showChunk(h); popping = false;
+  });
+  setTimeout(function(){
+    var h = (location.hash || "").replace("#", "");
+    if(!h && /\/readings\/vocab\//.test(document.referrer || "")){
+      var lp = null; try{ lp = localStorage.getItem(KEYLP); }catch(e){}
+      popping = true; if(window.showChunk) showChunk(lp || "p1"); popping = false;
+    }
+    var on = document.querySelector(".chunk.on");
+    if(on && !location.hash){ try{ history.replaceState({ ch: on.id.replace("ch-", "") }, "", "#" + on.id.replace("ch-", "")); }catch(e){} }
+  }, 30);
 })();
 
 /* answer positions: shuffle now (per student once signed in, see signedIn) */
