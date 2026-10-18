@@ -83,6 +83,16 @@
   function store(code) { try { localStorage.setItem('vocab_lang', code); } catch (e) {} }
 
   /* ---------- 3. options always readable ---------- */
+  /* ---------- 6. hide the "Find your name" roster on every sign-in box ----------
+     Oct 18 2026, Toby: students saw it first, assumed they had to use it, and some
+     names appear twice. Typing name + email is the path we want. This is a HIDE,
+     not a delete: the roster markup (#grosterwrap / select#groster) stays in every
+     page, so set HIDE_ROSTER to false here to bring it back everywhere at once.
+     The !important beats pages (vocab.js, the reel engine) that show it with
+     style.display = '' once the roster loads. */
+  var HIDE_ROSTER = true;
+  var ROSTER_CSS = HIDE_ROSTER ? '#grosterwrap{display:none !important}' : '';
+
   var WHO_CSS = '.gal-std-who{font-size:14px;font-weight:700;margin:8px 0;line-height:1.5}' +
     '.gal-std-notme{font:inherit;font-size:13px;font-weight:700;background:none;border:0;padding:0;' +
     'text-decoration:underline;cursor:pointer;color:inherit;opacity:.85}';
@@ -93,7 +103,7 @@
     st.textContent =
       'select option,select optgroup{color:#2b2233 !important;background-color:#fff !important}' +
       '.gal-std-lang-msg{color:#c0392b;font-weight:800;font-size:.9em;margin:4px 0 0;min-height:1.2em}' +
-      WHO_CSS;
+      WHO_CSS + ROSTER_CSS;
     (document.head || document.documentElement).appendChild(st);
   }
 
