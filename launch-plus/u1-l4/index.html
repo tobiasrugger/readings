@@ -210,6 +210,18 @@ body.wt #sayMount,body.wt #sayMount *{outline:none;cursor:auto !important} body.
 .tray{background:#8a5a2b;border-radius:14px;padding:16px 14px 10px;border:4px solid #5e3d1b;box-shadow:inset 0 0 0 6px #a07a3a}
 .trayin{background:#e9e4d4;border:3px solid #b8b09a;border-radius:12px;padding:12px;display:grid;grid-template-columns:repeat(5,1fr);gap:8px 4px;justify-items:center;font-size:2.3rem;line-height:1.1;box-shadow:inset 0 4px 0 #cfc7b0}
 .traylbl{color:#f4e6cf;font-size:.78rem;font-weight:800;text-align:right;margin-top:6px;letter-spacing:.04em}
+#bar .home{color:#fff;text-decoration:none;font-weight:800;font-size:.82rem;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:6px 11px}
+#bar .home:hover{background:rgba(255,255,255,.26)}
+#whobar{font-size:.86rem;color:var(--muted);margin:-4px 0 10px}
+#whobar:empty{display:none}
+#whobar b{color:var(--pine)}
+.notme{font-family:inherit;font-size:.86rem;font-weight:800;color:#fff;background:var(--pine2);border:0;border-radius:8px;padding:4px 10px;cursor:pointer}
+.hidewrong{display:inline-flex;align-items:center;gap:8px;font-size:.88rem;font-weight:700;color:var(--muted);background:#fff;border:2px solid #8aa094;border-radius:10px;padding:7px 12px;margin:0 0 10px;cursor:pointer}
+.hidewrong input{width:18px;height:18px}
+.wb .tok .was{color:#b3261e;text-decoration:line-through;text-decoration-thickness:3px;font-weight:700}
+.wb .tok .now{color:#1b6b3a;background:#d8f0e2;border-radius:6px;padding:0 6px}
+body.wt .spk,body.wt .numchip,body.wt .gtab,body.wt .btn,body.wt #bar button{cursor:pointer !important}
+body.wt [translate="no"] .spk{outline:none}
 @media (max-width:560px){.anchor{width:46%;margin-left:10px}.trayin{font-size:1.8rem;gap:6px 2px}.numchip b{font-size:1.1rem}}
 </style>
 <script>
@@ -220,6 +232,7 @@ window.GAL_META={title:'Launch Plus U1 L4: 0 to 100',unit:'Launch Plus',
 <body>
 <div id="canary" aria-hidden="true">the quick brown fox jumps over the lazy dog</div>
 <div id="bar">
+  <a class="home" href="/readings/launch-plus/" title="All practice">&#8592; Practice</a>
   <div class="brand">Launch Plus · 0 to 100<small>ELD 101 · Unit 1, Lesson 4 · stretch</small></div>
   <span id="whoami"></span>
   <button onclick="askName()"><span id="saveDot"></span>Name</button>
@@ -236,6 +249,7 @@ window.GAL_META={title:'Launch Plus U1 L4: 0 to 100',unit:'Launch Plus',
 </div>
 <main>
 <div class="steps" id="steps"></div>
+<div id="whobar"></div>
 
 <section class="act" id="a0">
   <h1>0 to 100</h1>
@@ -464,12 +478,16 @@ function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(M
 var ITEMS=[];
 function buildItems(){
  ITEMS=[];
- DATA.readQs.forEach(function(x,i){ITEMS.push({id:'r'+i,part:1,tag:x.tag,q:x.q,o:x.o,a:x.a,why:x.why});});
- DATA.fix.forEach(function(x,i){ITEMS.push({id:'f'+i,part:2,tag:x.tag,q:'<div class="sent">'+x.s+'</div>',o:x.o,a:x.a,why:x.why});});
- DATA.big.forEach(function(x,i){ITEMS.push({id:'b'+i,part:3,tag:x.tag,q:x.q,o:x.o,a:x.a,why:x.why});});
+ /* the right answer never sits in the same place twice: every item's choices are shuffled, and the order is remembered */
+ function mix(id,o,a){var ord=(ST.A[id]&&ST.A[id].order)||shuffle(o.map(function(_,k){return k;}));
+  if(!ST.A[id])ST.A[id]={tries:0,first:null,done:false,order:ord};else ST.A[id].order=ord;
+  return {o:ord.map(function(k){return o[k];}),a:ord.indexOf(a)};}
+ DATA.readQs.forEach(function(x,i){var m=mix('r'+i,x.o,x.a);ITEMS.push({id:'r'+i,part:1,tag:x.tag,q:x.q,o:m.o,a:m.a,why:x.why});});
+ DATA.fix.forEach(function(x,i){var m=mix('f'+i,x.o,x.a);ITEMS.push({id:'f'+i,part:2,tag:x.tag,q:'<div class="sent">'+x.s+'</div>',o:m.o,a:m.a,why:x.why,fixed:x.o[x.a]});});
+ DATA.big.forEach(function(x,i){var m=mix('b'+i,x.o,x.a);ITEMS.push({id:'b'+i,part:3,tag:x.tag,q:x.q,o:m.o,a:m.a,why:x.why});});
  DATA.count.forEach(function(c,i){
   var id='z'+i,opts,ans,why=c.why||'';
-  if(typeof c.n==='number'){opts=[String(c.n)].concat(numOpts(c.n).map(String));ans=0;why+=' '+tensOnes(c.n);}
+  if(typeof c.n==='number'){opts=[numWord(c.n)].concat(wordDistractors(c.n));ans=0;why='<b>'+numWord(c.n)+'</b> ('+c.n+'). '+why+' '+tensOnes(c.n);}
   else{opts=c.o.slice();ans=c.a;}
   var order=ST.A[id]&&ST.A[id].order||shuffle(opts.map(function(_,k){return k;}));
   var q=c.q+(c.say?' '+spk(c.say):'');
@@ -503,12 +521,15 @@ function fixTokens(src){ /* split "a <u>wrong</u> b" into tokens; the <u> chunk 
  while((m=re.exec(src))){ if(m[1]!=null)out.push({t:m[1],bad:true}); else out.push({t:m[2],bad:false}); }
  return out;
 }
+function toggleHideWrong(v){ST.hideWrong=!!v;save();renderPart(2);}
 function renderFixItem(it){
  var st=state(it.id),x=DATA.fix[parseInt(it.id.slice(1),10)],toks=fixTokens(x.s),found=!!st.found||st.done;
  var h='<div class="card wb" id="c_'+it.id+'"><div class="wbhead">Fix the sentence \u00b7 '+(found?'now tap the right word':'tap the wrong word')+'</div><div class="board">';
  toks.forEach(function(tk,i){
-  var cls='tok';if(tk.bad&&st.done)cls+=' fixed';else if(tk.bad&&found)cls+=' bad';else if(st.noTok===i)cls+=' no';
-  h+='<button class="'+cls+'" onclick="pickTok(\''+it.id+'\','+i+')"'+(found?' disabled':'')+'>'+(tk.bad&&st.done?it.o[it.a]:tk.t)+'</button> ';
+  var cls='tok';if(tk.bad&&found&&!st.done)cls+=' bad';else if(st.noTok===i)cls+=' no';
+  var label=tk.t;
+  if(tk.bad&&st.done)label=(ST.hideWrong?'':'<s class="was">'+tk.t+'</s> ')+'<b class="now">'+(it.fixed||it.o[it.a])+'</b>';
+  h+='<button class="'+cls+'" onclick="pickTok(\''+it.id+'\','+i+')"'+(found?' disabled':'')+'>'+label+'</button> ';
  });
  h+='<span class="pen">\u270f\ufe0f</span></div>';
  if(found){
@@ -546,7 +567,7 @@ function renderLadder(items){
 function renderPart(p){
  var host={1:'readQs',2:'fixItems',3:'bigItems',4:'zoomItems'}[p];if(!host)return;
  var items=ITEMS.filter(function(x){return x.part===p;});
- if(p===2)$(host).innerHTML=items.map(renderFixItem).join('');
+ if(p===2)$(host).innerHTML='<label class="hidewrong"><input type="checkbox" onchange="toggleHideWrong(this.checked)"'+(ST.hideWrong?' checked':'')+'> Hide the wrong word after I fix it</label>'+items.map(renderFixItem).join('');
  else if(p===3)$(host).innerHTML=renderLadder(items);
  else if(p===4)$(host).innerHTML=renderCount(items);
  else $(host).innerHTML=items.map(renderItem).join('');
@@ -589,7 +610,9 @@ function reelPlay(){
  var sg=DATA.story[REELI],words=segWords(sg),text=plain(sg.text),spans=function(){return $('capLine').querySelectorAll('.w');};
  if(!window.speechSynthesis){return;}
  REEL_PLAYING=true;renderReel();speechSynthesis.cancel();if(!VOICE)pickVoice();
- var u=new SpeechSynthesisUtterance(text),cast=window.REEL&&REEL.CAST&&REEL.CAST[sg.who];u.lang='en-US';if(VOICE)u.voice=VOICE;u.rate=0.85;if(cast){u.pitch=cast.pitch||1;}
+ var u=new SpeechSynthesisUtterance(text),cast=window.REEL&&REEL.CAST&&REEL.CAST[sg.who];u.lang='en-US';
+ if(sg.who==='narrator'){u.voice=NVOICE||VOICE;u.pitch=1.08;u.rate=0.92;}
+ else{if(VOICE)u.voice=VOICE;u.rate=0.85;if(cast){u.pitch=cast.pitch||1;}}
  var got=false,done=false,est=null,myI=REELI;
  function hl(i){var ss=spans();for(var k=0;k<ss.length;k++)ss[k].classList.toggle('cur',k===i);}
  function finish(){if(done)return;done=true;clearInterval(est);hl(-1);REEL_PLAYING=false;
@@ -654,15 +677,16 @@ var STUDENTS=[
  {g:'b',hair:'black',gl:true,skin:'#efcfae',shirt:'#864D9E'},{g:'g',hair:'black',long:true,skin:'#f2cba6',shirt:'#1f8a7e'},{g:'b',hair:'blond',skin:'#f6d6b8',shirt:'#b5451b'},{g:'b',hair:'red',skin:'#f6d6b8',shirt:'#5b6b7c'},
  {g:'g',hair:'hijab',gl:true,skin:'#b97a50',shirt:'#6a4c93',hj:'#c0392b'},{g:'b',hair:'black',skin:'#8d5a3a',shirt:'#e07a1f'},{g:'g',hair:'blond',long:true,skin:'#f2cba6',shirt:'#2a9d8f'},{g:'b',hair:'brown',skin:'#c68a5e',shirt:'#c0392b'}
 ];
+function shadeHex(h,a){var n=parseInt(h.slice(1),16),r=(n>>16)&255,g=(n>>8)&255,b=n&255;function f(c){return Math.max(0,Math.min(255,Math.round(c+a)));}return '#'+((1<<24)+(f(r)<<16)+(f(g)<<8)+f(b)).toString(16).slice(1);}
 var HAIRC={black:'#1c1512',brown:'#5a3a22',blond:'#e2b74a',red:'#c4502a'};
 function studentSVG(s,x,y){
  var h='<g transform="translate('+x+','+y+')">';
  /* chair back */
  h+='<rect x="34" y="52" width="52" height="40" rx="6" fill="#8a5a2b"/>';
- /* body */
- h+='<path d="M28 118 q0-32 32-34 q32 2 32 34 z" fill="'+s.shirt+'"/><path d="M48 86 h24 v10 h-24z" fill="'+s.shirt+'" opacity=".7"/>';
- /* neck + head */
- h+='<rect x="54" y="66" width="12" height="14" fill="'+s.skin+'"/>';
+ /* body (drawn over the neck so no pale block shows under the chin) */
+ h+='<path d="M28 118 q0-36 32-38 q32 2 32 38 z" fill="'+s.shirt+'"/><path d="M50 80 q10 9 20 0 l4 6 q-14 10-28 0z" fill="'+shadeHex(s.shirt,-22)+'"/>';
+ /* neck tucked behind the shirt, then the head */
+ h+='<rect x="55" y="62" width="10" height="12" fill="'+shadeHex(s.skin,-18)+'"/>';
  if(s.hair==='hijab'){h+='<path d="M60 18 c-30 0-38 26-36 52 c0 14 6 22 14 26 h44 c8-4 14-12 14-26 c2-26-6-52-36-52z" fill="'+s.hj+'"/><ellipse cx="60" cy="52" rx="19" ry="23" fill="'+s.skin+'"/>';}
  else{
   var hc=HAIRC[s.hair];
@@ -763,7 +787,18 @@ function numChip(n){var tricky=[13,30,14,40,15,50,16,60,17,70,18,80,19,90].index
 function buildNum(){var t=+$('tensSel').value,o=+$('onesSel').value,n=t+o;$('built').innerHTML='<b>'+n+'</b> '+numWord(n)+' '+spk(numWord(n));}
 
 /* --- counting rooms: tabs, one scene, its questions --- */
-function numOpts(n){var c=n>=2?[n-1,n+1,n+2]:[n+1,n+2,n+3];return c;}
+var ORD=['zeroth','first','second','third','fourth','fifth','sixth','seventh','eighth','ninth','tenth','eleventh','twelfth','thirteenth','fourteenth','fifteenth','sixteenth','seventeenth','eighteenth','nineteenth','twentieth'];
+var MISSPELL={12:'twelf',13:'thirtheen',15:'fiveteen',18:'eightteen',40:'fourty',50:'fivety',90:'nintey'};
+/* three wrong number WORDS: the false twin (thirteen/thirty), an ordinal (third), a near number, a misspelling */
+function wordDistractors(n){
+ var out=[],push=function(w){if(w&&w!==numWord(n)&&out.indexOf(w)<0)out.push(w);};
+ if(n>=13&&n<=19)push(numWord((n-10)*10));
+ if(n>=20&&n%10===0&&n/10>=3)push(numWord(n/10+10));
+ if(n<=20)push(ORD[n]);
+ push(MISSPELL[n]);
+ push(numWord(n+1));push(numWord(n>1?n-1:n+2));push(numWord(n+2));
+ return shuffle(out).slice(0,3);
+}
 function countGroup(k){var g=(DATA.groups||[]).filter(function(x){return x.k===k;})[0];return g||DATA.groups[0];}
 function renderCount(items){
  var cur=ST.zg||DATA.groups[0].k;
@@ -877,7 +912,8 @@ var rosterLoaded=false,ROSTER=[];
 function hdr(p){var h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};if(p)h['Prefer']=p;return h;}
 function lastEmail(){try{return localStorage.getItem('gal_student_email')||'';}catch(e){return '';}}
 function askName(){var li=$('langIn');if(li.options.length<2){Array.prototype.slice.call($('lang').options,1).forEach(function(o){li.appendChild(o.cloneNode(true));});}
- $('nameIn').value=ST.name||'';$('emailIn').value=ST.email||lastEmail()||'';$('periodIn').value=ST.period||'';li.value=lang()||'';$('nameErr').textContent='';$('namewrap').classList.add('show');loadRoster();}
+ function last(k){try{return localStorage.getItem(k)||'';}catch(e){return '';}}
+ $('nameIn').value=ST.name||last('gal_student_name');$('emailIn').value=ST.email||lastEmail()||'';$('periodIn').value=ST.period||last('gal_student_period');li.value=lang()||savedLang()||'';$('nameErr').textContent='';$('namewrap').classList.add('show');loadRoster();}
 function loadRoster(){
  if(rosterLoaded)return;rosterLoaded=true;
  fetch(SUPA_URL+'/rest/v1/students?select=email,first_name,last_name&order=last_name.asc',{headers:hdr()})
@@ -903,7 +939,7 @@ function saveName(){
  var canon=canonEmail(e);
  try{var mine=localStorage.getItem('lp_'+UNIT+'_'+canon.replace(/[^a-z0-9]+/g,'_'));if(mine&&canon!==ST.email){var d=JSON.parse(mine);if(d)ST=Object.assign(ST,d);}}catch(x){}
  recordAlias(e,canon);ST.name=n;ST.email=canon;ST.period=pd;
- $('whoami').textContent=n+' \u00b7 P'+pd;$('namewrap').classList.remove('show');
+ $('whoami').textContent=n+' \u00b7 P'+pd;$('namewrap').classList.remove('show');showWhoBar();
  shareLogin();
  applyFlags();seedRoster(canon,n,pd);save();push(true);buildItems();go(ST.act||0);
 }
@@ -911,31 +947,85 @@ function saveName(){
 /* ===================== DIRECTIONS IN MY LANGUAGE ===================== */
 var DIR_ON=false,SENT={},tcache={};
 function lang(){return $('lang').value;}
-function tr(text,lg,cb){var k=text+'|'+lg;if(tcache[k]){cb(tcache[k]);return;}
- fetch(PROXY+'?action=translate&idiom='+encodeURIComponent(text)+'&meaning=&lang='+encodeURIComponent(lg)).then(function(r){return r.json();})
- .then(function(d){var t=d&&d.translation?(d.translation.equiv||d.translation.meaning||(typeof d.translation==='string'?d.translation:'')):'';if(t)tcache[k]=t;cb(t||'');}).catch(function(){cb('');});}
+/* ---- translation cache: rows live in song_tr, slug "dir" for directions (shared by every page)
+   and "tap:<page>" for words tapped in this lesson, so the second student never waits ---- */
+var TR_SLUG='tap:'+SLUG,TRLOADED={};
+function trKey(slug,src,lg){return slug+'|'+src+'|'+lg;}
+function trLoad(lg,cb){
+ if(!lg||TRLOADED[lg]){cb&&cb();return;}
+ TRLOADED[lg]=true;
+ fetch(SUPA_URL+'/rest/v1/song_tr?select=slug,src,equiv,meaning&lang=eq.'+encodeURIComponent(lg)+'&or=(slug.eq.dir,slug.eq.'+encodeURIComponent(TR_SLUG)+')',{headers:hdr()})
+ .then(function(r){return r.ok?r.json():[];})
+ .then(function(rows){(rows||[]).forEach(function(r){var v=r.equiv||r.meaning||'';if(v)tcache[trKey(r.slug,r.src,lg)]=v;});cb&&cb();})
+ .catch(function(){cb&&cb();});
+}
+function trSave(slug,src,lg,val){if(!val)return;
+ fetch(SUPA_URL+'/rest/v1/song_tr?on_conflict=slug,lang,src',{method:'POST',headers:hdr('resolution=merge-duplicates,return=minimal'),
+  body:JSON.stringify([{slug:slug,lang:lg,src:src,equiv:val,meaning:'',note:'',updated_at:new Date().toISOString()}])}).catch(function(){});}
+function trFetch(slug,src,ctx,lg,cb){
+ var k=trKey(slug,src,lg);
+ if(tcache[k]){cb(tcache[k]);return;}
+ if(!TRLOADED[lg]){trLoad(lg,function(){trFetch(slug,src,ctx,lg,cb);});return;}
+ fetch(PROXY+'?action=translate&idiom='+encodeURIComponent(src)+'&meaning='+encodeURIComponent(ctx||'')+'&lang='+encodeURIComponent(lg)).then(function(r){return r.json();})
+ .then(function(d){var t=d&&d.translation?(d.translation.equiv||d.translation.meaning||(typeof d.translation==='string'?d.translation:'')):'';
+  if(t){tcache[k]=t;trSave(slug,src,lg,t);}cb(t||'');})
+ .catch(function(){cb('');});}
+function tr(text,lg,cb){trFetch('dir',text,'',lg,cb);}
+function trWord(word,sent,lg,cb){trFetch(TR_SLUG,word,sent,lg,cb);}
+/* warm-up: as soon as a language is chosen, pull the cache and quietly translate whatever is missing */
+var WARMED={};
+function warmUp(){
+ var lg=lang();if(!lg||WARMED[lg])return;WARMED[lg]=true;
+ trLoad(lg,function(){
+  var src=[];
+  document.querySelectorAll('[data-dir]').forEach(function(p){var s=p.getAttribute('data-en');if(s)src.push(['dir',s,'']);});
+  (DATA.words||[]).forEach(function(w){src.push([TR_SLUG,w,'']);});
+  var todo=src.filter(function(x){return !tcache[trKey(x[0],x[1],lg)];});
+  (function next(){var x=todo.shift();if(!x)return;trFetch(x[0],x[1],x[2],lg,function(){setTimeout(next,250);});})();
+ });
+}
 function logReveal(k,lg){if(!ST.email)return;var sig=k+'|'+lg;if(SENT[sig])return;SENT[sig]=true;
  fetch(SUPA_URL+'/rest/v1/instruction_reveals',{method:'POST',headers:hdr('return=minimal'),body:JSON.stringify([{email:ST.email,set_slug:SLUG,activity:k,lang:lg}])}).catch(function(){});}
 function showDirections(){var lg=lang();
  document.querySelectorAll('[data-dir]').forEach(function(p){var out=p.querySelector('.dirtr');if(!out){out=document.createElement('span');out.className='dirtr';out.setAttribute('translate','no');p.appendChild(out);}
   if(!DIR_ON||!lg){out.textContent='';return;}var k=p.getAttribute('data-dir');out.textContent='\u2026';tr(p.getAttribute('data-en'),lg,function(t){out.textContent=t;if(t)logReveal(k,lg);});});}
 function toggleDir(){if(!DIR_ON&&!lang()){alert('First choose your language in the green bar.');$('lang').focus();return;}DIR_ON=!DIR_ON;$('dirBtn').classList.toggle('on',DIR_ON);showDirections();}
-function setLang(v){try{localStorage.setItem('eld103_lang',v);localStorage.setItem('vocab_lang',v);}catch(e){}DIR_ON=!!v;$('dirBtn').classList.toggle('on',DIR_ON);showDirections();if(!v&&WT)toggleWT();}
+function setLang(v){try{localStorage.setItem('eld103_lang',v);localStorage.setItem('vocab_lang',v);}catch(e){}DIR_ON=!!v;warmUp();$('dirBtn').classList.toggle('on',DIR_ON);showDirections();if(!v&&WT)toggleWT();}
 function savedLang(){try{return localStorage.getItem('eld103_lang')||localStorage.getItem('vocab_lang')||'';}catch(e){return '';}}
 
 /* ===================== LISTEN + SAY IT ===================== */
 function spk(t){return '<button class="spk" type="button" onclick="speak(\''+t.replace(/'/g,"\\'")+'\',this)" aria-label="Listen">\ud83d\udd0a</button>';}
 var VOICE=null;
-function pickVoice(){try{var vs=speechSynthesis.getVoices().filter(function(v){return /^en[-_]/i.test(v.lang);});VOICE=vs.filter(function(v){return /US/i.test(v.lang);})[0]||vs[0]||null;}catch(e){}}
+var NVOICE=null;
+function pickVoice(){try{var vs=speechSynthesis.getVoices().filter(function(v){return /^en[-_]/i.test(v.lang);});
+ VOICE=vs.filter(function(v){return /US/i.test(v.lang);})[0]||vs[0]||null;
+ /* the narrator is a different, warmer voice than the one that reads single words */
+ var fem=vs.filter(function(v){return /female|samantha|zira|aria|jenny|google us english|victoria|karen|moira/i.test(v.name);});
+ NVOICE=fem[0]||vs.filter(function(v){return v!==VOICE;})[0]||VOICE;}catch(e){}}
 function speak(t,btn){if(!window.speechSynthesis)return;speechSynthesis.cancel();if(!VOICE)pickVoice();var u=new SpeechSynthesisUtterance(t);u.lang='en-US';if(VOICE)u.voice=VOICE;u.rate=.85;
  if(btn){btn.classList.add('on');u.onend=u.onerror=function(){btn.classList.remove('on');};}speechSynthesis.speak(u);}
 if(window.speechSynthesis){pickVoice();speechSynthesis.onvoiceschanged=pickVoice;}
 var SAY_SET=DATA.say||'people-at-school';
 function sayLang(){var v=lang();return v==='Chinese (Simplified)'?'Mandarin':(v||'none');}
-function shareLogin(){try{localStorage.setItem('gal_student_email',ST.email||'');localStorage.setItem('gal_student_name',ST.name||'');localStorage.setItem('gal_student_period',ST.period||'');localStorage.setItem('gal_student_lang',sayLang());}catch(e){}}
+function shareLogin(){try{localStorage.setItem('gal_student_email',ST.email||'');localStorage.setItem('gal_student_name',ST.name||'');localStorage.setItem('gal_student_period',ST.period||'');localStorage.setItem('gal_student_lang',sayLang());localStorage.setItem('gal_student_at',String(Date.now()));}catch(e){}}
+/* signed in on another activity in the last 12 hours? walk straight in */
+function resumeLogin(){
+ try{
+  var at=+(localStorage.getItem('gal_student_at')||0),e=localStorage.getItem('gal_student_email')||'';
+  if(!e||!at||Date.now()-at>12*3600*1000)return false;
+  if(!ST.email){ST.email=e;ST.name=localStorage.getItem('gal_student_name')||'';ST.period=localStorage.getItem('gal_student_period')||'';}
+  return !!ST.email;
+ }catch(x){return false;}
+}
+function showWhoBar(){
+ var el=$('whobar');if(!el)return;
+ if(!ST.email){el.innerHTML='';return;}
+ var first=(ST.name||'').split(' ')[0]||'you';
+ el.innerHTML='Signed in as <b>'+ST.name+'</b>'+(ST.period?' \u00b7 Period '+ST.period:'')+' \u2014 <button type="button" class="notme" onclick="askName()">Not '+first+'? Tap here</button>';
+}
 /* say.js draws the words inside #sayMount with this lesson's colors; the translate button uses the lesson's tap-word tip. */
 var SAY_CTL=null;
-function sayTranslate(w,el){if(!lang()){alert('First choose your language in the green bar.');$('lang').focus();return;}var r=el.getBoundingClientRect();showWord(w,r.left+r.width/2,r.top);}
+function sayTranslate(w,el){if(!lang()){alert('First choose your language in the green bar.');$('lang').focus();return;}var r=el.getBoundingClientRect();showWord(w,r.left+r.width/2,r.top,'');}
 function openSay(){shareLogin();if(!ST.sayOpened){ST.sayOpened=true;save();}
  if(!window.Say||!$('sayMount'))return;if(SAY_CTL){SAY_CTL.refresh();return;}
  SAY_CTL=Say.mount($('sayMount'),{set:SAY_SET,student:function(){return ST.email?{email:ST.email,name:ST.name,period:ST.period}:null;},lang:sayLang,translate:sayTranslate});}
@@ -944,15 +1034,35 @@ function openSay(){shareLogin();if(!ST.sayOpened){ST.sayOpened=true;save();}
 var WT=false;
 function toggleWT(){if(!WT&&!lang()){alert('First choose your language in the green bar, then turn on Tap words.');return;}WT=!WT;document.body.classList.toggle('wt',WT);$('wtBtn').classList.toggle('on',WT);hideTip();}
 function hideTip(){$('wtip').classList.remove('show');}
-document.addEventListener('click',function(ev){if(!WT)return;if(window.Shades&&Shades.getMode()==='shades'&&ev.target.closest&&ev.target.closest('.sh-word'))return;if(ev.target.closest&&ev.target.closest('#sayMount'))return;var host=ev.target.closest&&(ev.target.closest('[translate="no"]')||ev.target.closest('.dir'));if(!host)return;
- ev.preventDefault();ev.stopPropagation();var w=pickWord(ev);if(w)showWord(w,ev.clientX,ev.clientY);},true);
+document.addEventListener('click',function(ev){if(!WT)return;if(window.Shades&&Shades.getMode()==='shades'&&ev.target.closest&&ev.target.closest('.sh-word'))return;if(ev.target.closest&&ev.target.closest('#sayMount'))return;
+ /* buttons keep doing their own job (the speaker, the chips, the tabs) */
+ if(ev.target.closest&&ev.target.closest('.spk,.numchip,.gtab,.stepb,#bar button,#bar select,.btn'))return;
+ if(ev.target.closest&&ev.target.closest('#wtip')){hideTip();return;}
+ var host=ev.target.closest&&(ev.target.closest('[translate="no"]')||ev.target.closest('.dir'));
+ if(!host){hideTip();return;}
+ ev.preventDefault();ev.stopPropagation();var w=pickWord(ev);
+ if(!w){hideTip();return;}
+ /* tap the same word again to close it */
+ if($('wtip').classList.contains('show')&&$('wtipW').textContent===w){hideTip();return;}
+ showWord(w,ev.clientX,ev.clientY,sentenceAround(ev.target,w));},true);
+/* the sentence the word sits in, so "board" comes back as the one in a classroom */
+function sentenceAround(el,w){
+ try{
+  /* climb until there is enough text around the word to be a real sentence */
+  var host=el,txt='';
+  for(var i=0;i<6&&host;i++){txt=(host.textContent||'').replace(/\s+/g,' ').trim();if(txt.length>=24)break;host=host.parentElement;}
+  if(!txt||txt.length<8)return '';
+  if(txt.length>400)txt=txt.slice(0,400);
+  var parts=txt.split(/(?<=[.!?])\s+/),hit=parts.filter(function(s){return s.toLowerCase().indexOf(w.toLowerCase())>=0;})[0];
+  return (hit||txt).slice(0,240);}catch(e){return '';}
+}
 function pickWord(ev){var t=ev.target,txt=(t.textContent||'').trim();if(txt&&txt.split(/\s+/).length===1)return txt.replace(/^[^\w']+|[^\w']+$/g,'');
  var r=null;if(document.caretRangeFromPoint)r=document.caretRangeFromPoint(ev.clientX,ev.clientY);else if(document.caretPositionFromPoint){var cp=document.caretPositionFromPoint(ev.clientX,ev.clientY);if(cp){r=document.createRange();r.setStart(cp.offsetNode,cp.offset);}}
  if(!r||!r.startContainer||r.startContainer.nodeType!==3)return '';var s=r.startContainer.textContent,i=r.startOffset,a=i,b=i;
  while(a>0&&/[\w']/.test(s.charAt(a-1)))a--;while(b<s.length&&/[\w']/.test(s.charAt(b)))b++;return s.slice(a,b);}
-function showWord(word,x,y){var tip=$('wtip');$('wtipW').textContent=word;$('wtipT').textContent='\u2026';tip.classList.add('show');
+function showWord(word,x,y,sent){var tip=$('wtip');$('wtipW').textContent=word;$('wtipT').textContent='\u2026';tip.classList.add('show');
  var w=tip.offsetWidth||220,h=tip.offsetHeight||60;tip.style.left=Math.max(8,Math.min(x-w/2,window.innerWidth-w-8))+'px';tip.style.top=(y-h-14<8?y+18:y-h-14)+'px';
- tr(word,lang(),function(t){$('wtipT').textContent=t||'(not found)';});}
+ trWord(word,sent||'',lang(),function(t){$('wtipT').textContent=t||'(not found)';});}
 document.addEventListener('scroll',hideTip,true);
 
 /* ===================== BROWSER-TRANSLATION CANARY ===================== */
@@ -1009,9 +1119,12 @@ function boot(){
  fetchFlags();
  $('whoami').textContent=ST.name?(ST.name+(ST.period?' \u00b7 P'+ST.period:'')):'';
  var L=savedLang();if(L){$('lang').value=L;DIR_ON=true;$('dirBtn').classList.add('on');}
+ var resumed=resumeLogin();
+ $('whoami').textContent=ST.name?(ST.name+(ST.period?' \u00b7 P'+ST.period:'')):'';
+ showWhoBar();
  go(ST.act||0);dot('on');
- if(L)showDirections();
- if(!ST.email||!L)askName();
+ if(L){showDirections();warmUp();}
+ if(!ST.email||!L)askName();else if(resumed)push(false);
  setTimeout(checkCanary,2500);setInterval(checkCanary,20000);
  setInterval(function(){push(false);},20000);
  document.addEventListener('visibilitychange',function(){if(document.hidden)push(false);});
