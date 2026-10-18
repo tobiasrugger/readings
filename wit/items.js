@@ -42,7 +42,15 @@ sort: [
  {lvl:'103',t:'landlady',s:'The parrot in the window never moved.',k:'statement'},
  {lvl:'103',t:'landlady',s:'Who were the other two guests?',k:'question'},
  {lvl:'103',t:'landlady',s:'Ring the bell and wait.',k:'command'},
- {lvl:'103',t:'landlady',s:'I can\u2019t believe he signed the book!',k:'exclamation'}
+ {lvl:'103',t:'landlady',s:'I can\u2019t believe he signed the book!',k:'exclamation'},
+ {lvl:'103',t:'telltale',s:'The narrator heard the old man\u2019s heart beating.',k:'statement'},
+ {lvl:'103',t:'telltale',s:'Why did the narrator hate the eye?',k:'question'},
+ {lvl:'103',t:'telltale',s:'Open the lantern slowly.',k:'command'},
+ {lvl:'103',t:'telltale',s:'What a horrible sound that is!',k:'exclamation'},
+ {lvl:'103',t:'telltale',s:'The police sat and chatted about ordinary things.',k:'statement'},
+ {lvl:'103',t:'telltale',s:'Who heard the shriek in the night?',k:'question'},
+ {lvl:'103',t:'telltale',s:'Tear up the planks.',k:'command'},
+ {lvl:'103',t:'telltale',s:'I cannot bear those smiles any longer!',k:'exclamation'}
 ],
 
 /* 2 · SENTENCE SCRAMBLE — tap the words in order, then the end mark. */
@@ -69,7 +77,11 @@ scramble: [
  {lvl:'103',t:'landlady',s:'Billy was looking for a cheap place to stay.'},
  {lvl:'103',t:'landlady',s:'The landlady seemed kind but a little strange.'},
  {lvl:'103',t:'landlady',s:'Both names in the book sounded familiar.'},
- {lvl:'103',t:'landlady',s:'The tea tasted of bitter almonds.'}
+ {lvl:'103',t:'landlady',s:'The tea tasted of bitter almonds.'},
+ {lvl:'103',t:'telltale',s:'The narrator opened the door very slowly.'},
+ {lvl:'103',t:'telltale',s:'Only one thin ray fell on the eye.'},
+ {lvl:'103',t:'telltale',s:'Three officers knocked at four o\u2019clock.'},
+ {lvl:'103',t:'telltale',s:'His own heart gave him away.'}
 ],
 
 /* 3 · SENTENCE OR FRAGMENT? — tap S or F. If F, tap the repair that makes it a sentence. */
@@ -102,7 +114,13 @@ fragment: [
  {lvl:'103',t:'landlady',s:'a parrot in the window',k:'F',fix:'A parrot sat in the window.',wrong:['A parrot in the window.','A green parrot in the window.']},
  {lvl:'103',t:'landlady',s:'the names sounded familiar',k:'S',fix:'The names sounded familiar.'},
  {lvl:'103',t:'landlady',s:'waiting on the threshold',k:'F',fix:'Billy was waiting on the threshold.',wrong:['Waiting on the threshold.','Waiting on the threshold for a minute.']},
- {lvl:'103',t:'landlady',s:'the dog did not move',k:'S',fix:'The dog did not move.'}
+ {lvl:'103',t:'landlady',s:'the dog did not move',k:'S',fix:'The dog did not move.'},
+ {lvl:'103',t:'telltale',s:'because of his pale blue eye',k:'F',fix:'The narrator hated the old man because of his pale blue eye.',wrong:['Because of his pale blue eye.','Because of his pale, cloudy blue eye.']},
+ {lvl:'103',t:'telltale',s:'the officers sat down',k:'S',fix:'The officers sat down.'},
+ {lvl:'103',t:'telltale',s:'a lantern in the dark',k:'F',fix:'A lantern shone in the dark.',wrong:['A lantern in the dark.','A small lantern in the dark room.']},
+ {lvl:'103',t:'telltale',s:'the heart kept beating',k:'S',fix:'The heart kept beating.'},
+ {lvl:'103',t:'telltale',s:'under the floorboards',k:'F',fix:'The body lay under the floorboards.',wrong:['Under the floorboards.','Deep under the old floorboards.']},
+ {lvl:'103',t:'telltale',s:'nobody else heard the sound',k:'S',fix:'Nobody else heard the sound.'}
 ],
 
 /* 4 · SENTENCE TYPES — one picture; write a statement, a question, a command, an exclamation. */
@@ -153,7 +171,13 @@ bbs_choose: [
  {lvl:'103',t:'landlady',s:'The landlady was friendly, ___ something about her felt strange.',a:'but'},
  {lvl:'103',t:'landlady',s:'The parrot looked alive ___ it had been carefully preserved.',a:'because'},
  {lvl:'103',t:'landlady',s:'Billy remembered the names, ___ he could not say where he had seen them.',a:'but'},
- {lvl:'103',t:'landlady',s:'Billy was tired, ___ he went straight up to the warm room.',a:'so'}
+ {lvl:'103',t:'landlady',s:'Billy was tired, ___ he went straight up to the warm room.',a:'so'},
+ {lvl:'103',t:'telltale',s:'The narrator wanted to kill the old man ___ the eye frightened him.',a:'because'},
+ {lvl:'103',t:'telltale',s:'The eye was closed for seven nights, ___ the narrator did nothing.',a:'so'},
+ {lvl:'103',t:'telltale',s:'The narrator said he was calm, ___ his voice sounded wild.',a:'but'},
+ {lvl:'103',t:'telltale',s:'The police came ___ a neighbour heard a shriek.',a:'because'},
+ {lvl:'103',t:'telltale',s:'The officers heard nothing, ___ the narrator heard the heart.',a:'but'},
+ {lvl:'103',t:'telltale',s:'The sound grew louder and louder, ___ the narrator confessed.',a:'so'}
 ],
 bbs_write: [
  {lvl:'101',t:'u1-l1',stem:'I came to school today'},
@@ -165,7 +189,9 @@ bbs_write: [
  {lvl:'103',t:'gen',stem:'Chief Powhatan wanted peace'},
  {lvl:'103',t:'gen',stem:'Winston writes in his diary'},
  {lvl:'103',t:'landlady',stem:'Billy decided to stay at the bed and breakfast'},
- {lvl:'103',t:'landlady',stem:'The landlady seemed kind'}
+ {lvl:'103',t:'landlady',stem:'The landlady seemed kind'},
+ {lvl:'103',t:'telltale',stem:'The narrator hid the body carefully'},
+ {lvl:'103',t:'telltale',stem:'The officers were satisfied'}
 ],
 /* The deck's own glossary for the three conjunctions (shown under the activity; other languages use tap-to-translate). */
 bbs_gloss: {
@@ -187,7 +213,10 @@ expand: [
  {lvl:'103',t:'gen',k:'She hid the letter.',qs:['where?','why?','how?'],model:'She hid the letter under the floorboard, quickly and quietly, because the guards were coming.'},
  {lvl:'103',t:'landlady',k:'Billy walked.',qs:['where?','when?','how?'],model:'Billy walked briskly down the dark street at nine o\u2019clock, looking for a place to stay.'},
  {lvl:'103',t:'landlady',k:'The landlady poured tea.',qs:['for whom?','when?','why?'],model:'The landlady poured tea for Billy after he signed the book, because she wanted him to stay.'},
- {lvl:'103',t:'landlady',k:'The dog slept.',qs:['where?','how?'],model:'The dog slept by the fire, perfectly still, like a toy.'}
+ {lvl:'103',t:'landlady',k:'The dog slept.',qs:['where?','how?'],model:'The dog slept by the fire, perfectly still, like a toy.'},
+ {lvl:'103',t:'telltale',k:'The eye opened.',qs:['when?','how wide?','what did the narrator feel?'],model:'On the eighth night the eye opened wide, and the narrator grew furious as he stared at it.'},
+ {lvl:'103',t:'telltale',k:'The police knocked.',qs:['when?','why?','how many?'],model:'At four o\u2019clock three police officers knocked, because a neighbour had reported a shriek.'},
+ {lvl:'103',t:'telltale',k:'The narrator confessed.',qs:['why?','how?'],model:'Unable to bear the pounding any longer, the narrator confessed with a scream and told the officers to tear up the planks.'}
 ],
 
 /* 7 · PARALLEL REVISION — same meaning, better writing. */

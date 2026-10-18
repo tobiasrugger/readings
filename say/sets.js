@@ -39,6 +39,11 @@ window.SAY_SETS={
     {k:'names', name:'Names & places', e:'🗺️', items:['Billy Weaver','Bath','the landlady','the guest book','bed and breakfast','the parrot','the dachshund']},
     {k:'sent', name:'Sentences', e:'💬', items:['Billy was looking for a cheap place to stay.','The landlady seemed kind but a little strange.','Both names in the book sounded familiar.','The animals in the room never moved.','He crossed the threshold, and the door closed behind him.']}
   ] },
+  telltale:{ title:'The Tell-Tale Heart (Writing Ladder)', back:'/readings/write/telltale/', decks:[
+    {k:'words', name:'Words', e:'👁️', items:['acute','vexed','vulture','cunningly','profound','stifled','crevice','hideous','audacity','derision','hypocritical','dissemble']},
+    {k:'names', name:'People & things', e:'🔦', items:['the narrator','the old man','the Evil Eye','the lantern','the officers','the planks','the heart']},
+    {k:'sent', name:'Sentences', e:'💬', items:['The narrator opened the door very slowly.','Only one thin ray fell on the eye.','Three officers knocked at four o\u2019clock.','The sound grew louder and louder.','His own heart gave him away.']}
+  ] },
   introductions:{ title:'Introductions', back:'/readings/launch-plus/u1-l2/', decks:[
     {k:'words', name:'Words', e:'🪪', items:['name','introduce','meet','language','hello','goodbye','thank you']},
     {k:'phrases', name:'Phrases', e:'💬', items:['Nice to meet you.','What is your name?','My name is Ana.','Where are you from?','I am from Guatemala.','Excuse me.','You\u2019re welcome.','See you tomorrow.']},
@@ -53,13 +58,5 @@ window.SAY_SETS={
     {k:'words', name:'Words', e:'🔤', items:['letter','alphabet','uppercase','lowercase','spell','vowel','consonant']},
     {k:'spell', name:'Spell it', e:'✏️', items:['C-H-R-I-S','M-A-R-I-A','O-M-A-R','A-N-D-I','T-H-A-N']},
     {k:'sent', name:'Sentences', e:'💬', items:['How do you spell your name?','I spell my name C-H-R-I-S.','The C is uppercase.','Could you please repeat that?','My name begins with the letter M.','The alphabet has 26 letters.']}
-  ] }
-  ,
-  'zero-to-one-hundred':{ title:'0 to 100', back:'/readings/launch-plus/u1-l4/', decks:[
-    {k:'small', name:'0 to 20', e:'🔢', items:['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen','twenty']},
-    {k:'tens', name:'The tens', e:'🔟', items:['twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety','one hundred']},
-    {k:'pairs', name:'Tricky pairs', e:'👂', items:['thirteen','thirty','fourteen','forty','fifteen','fifty','sixteen','sixty','seventeen','seventy','eighteen','eighty','nineteen','ninety']},
-    {k:'hyphen', name:'With a hyphen', e:'➖', items:['twenty-five','thirty-two','forty-four','fifty-one','sixty-seven','seventy-three','eighty-eight','ninety-nine']},
-    {k:'sent', name:'Sentences', e:'💬', items:['How many students do you see?','I see fifteen students.','How many desks do you see?','There are twenty-five desks.','Eighty-eight is the largest number.','Seventy is the smallest number.','Thirty-two has a hyphen.','I am fifteen years old.']}
   ] }
 };
