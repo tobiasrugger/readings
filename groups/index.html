@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Group Grades · Readings</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pine:#1F4D3D; --pine-soft:#e8f0ec; --ink:#16241f; --muted:#6b7b74;
+  --edge:#c3cdc7; --paper:#f6f8f7;
+  --s0:#b23a2c; --s1:#c97b2c; --s2:#b5820c; --s3:#4f8a52; --s4:#1F7A4D;
+  padding-top:env(safe-area-inset-top,0px);
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Nunito,system-ui,sans-serif;background:var(--paper);color:var(--ink);-webkit-text-size-adjust:100%}
+header{background:var(--pine);color:#fff;padding:12px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;position:sticky;top:0;z-index:20}
+header h1{margin:0;font-size:1.05rem;margin-right:auto}
+header a{color:#fff;opacity:.85;font-size:.78rem}
+select,button,input{font:inherit}
+.wrap{max-width:900px;margin:0 auto;padding:14px 14px 70px}
+.gate{max-width:360px;margin:60px auto;background:#fff;border:2px solid var(--edge);border-radius:12px;padding:22px}
+.gate input{width:100%;padding:10px;border:2px solid var(--edge);border-radius:8px;margin:8px 0}
+.btn{background:var(--pine);color:#fff;border:0;border-radius:9px;padding:9px 15px;font-weight:800;cursor:pointer}
+.btn.sec{background:#fff;color:var(--pine);border:2px solid var(--pine)}
+.btn.sm{padding:5px 10px;font-size:.8rem}
+.tabs{display:flex;gap:8px;margin:0 0 12px;flex-wrap:wrap}
+.tabs button{background:#fff;border:2px solid var(--edge);border-radius:9px;padding:7px 14px;font-weight:800;cursor:pointer;color:var(--muted)}
+.tabs button.on{background:var(--pine);border-color:var(--pine);color:#fff}
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;font-size:.86rem}
+.bar select,.bar input{padding:7px 9px;border:2px solid var(--edge);border-radius:8px;background:#fff}
+.bar input.topic{min-width:190px}
+/* grading view */
+.tbl{background:#fff;border:3px solid var(--ink);border-radius:14px;padding:14px;margin:0 0 14px;box-shadow:0 2px 0 rgba(0,0,0,.12)}
+.tbl h2{margin:0 0 2px;font-size:1.15rem;display:flex;align-items:center;gap:8px}
+.tbl h2 .done{font-size:.75rem;font-weight:800;border-radius:20px;padding:2px 10px;background:var(--pine-soft);color:var(--pine)}
+.who{color:var(--muted);font-size:.86rem;margin:0 0 10px;line-height:1.5}
+.who b{color:var(--ink)}
+.scores{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.scores button{border:3px solid var(--edge);background:#fff;border-radius:12px;padding:14px 0;font-size:1.5rem;font-weight:900;cursor:pointer;color:var(--muted)}
+.scores button:active{transform:translateY(1px)}
+.scores button.on{color:#fff}
+.scores button.on[data-v="0"]{background:var(--s0);border-color:var(--s0)}
+.scores button.on[data-v="1"]{background:var(--s1);border-color:var(--s1)}
+.scores button.on[data-v="2"]{background:var(--s2);border-color:var(--s2)}
+.scores button.on[data-v="3"]{background:var(--s3);border-color:var(--s3)}
+.scores button.on[data-v="4"]{background:var(--s4);border-color:var(--s4)}
+.ask{margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:.82rem;color:var(--muted)}
+.ask select,.ask input{padding:6px 8px;border:2px solid var(--edge);border-radius:8px;background:#fff;font-size:.82rem}
+.ask input{flex:1;min-width:140px}
+/* seating view */
+.seat{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.seatbox{background:#fff;border:3px solid var(--ink);border-radius:14px;padding:12px;min-height:120px}
+.seatbox.over{background:var(--pine-soft)}
+.seatbox h3{margin:0 0 8px;font-size:1rem;display:flex;align-items:center;gap:6px}
+.seatbox h3 input{border:1px solid var(--edge);border-radius:6px;padding:2px 6px;font-size:.8rem;width:88px}
+.chip{display:block;background:var(--pine-soft);border:2px solid var(--edge);border-radius:8px;padding:6px 9px;margin:0 0 6px;font-size:.88rem;cursor:grab;display:flex;justify-content:space-between;gap:6px;align-items:center}
+.chip button{border:0;background:none;color:var(--muted);cursor:pointer;font-weight:900}
+.unseated{background:#fff;border:3px dashed var(--edge);border-radius:14px;padding:12px;margin-bottom:14px}
+.note{font-size:.8rem;color:var(--muted)}
+.toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--pine);color:#fff;padding:9px 16px;border-radius:9px;font-size:.84rem;opacity:0;transition:opacity .25s;z-index:50}
+.toast.on{opacity:1}
+.hist{width:100%;border-collapse:collapse;font-size:.84rem;background:#fff}
+.hist th,.hist td{border:1px solid var(--edge);padding:6px 8px;text-align:left}
+.hist thead th{background:var(--pine-soft)}
+@media(max-width:480px){ .scores button{padding:18px 0;font-size:1.7rem} }
+</style>
+</head>
+<body>
+<header>
+  <h1>Group Grades</h1>
+  <a href="../">readings hub</a>
+  <a href="../gradebook/">gradebook</a>
+</header>
+
+<div class="wrap">
+  <div class="gate" id="gate">
+    <b>Teacher sign-in</b>
+    <input id="pw" type="password" placeholder="Password" autocomplete="current-password">
+    <button class="btn" id="go" style="width:100%">Open</button>
+    <div id="pwmsg" style="color:var(--s0);font-size:.8rem"></div>
+  </div>
+
+  <div id="app" style="display:none">
+    <div class="bar">
+      <label>Period <select id="period"></select></label>
+      <span id="tabsHost" class="tabs" style="margin:0"></span>
+    </div>
+
+    <!-- GRADE -->
+    <div id="viewGrade">
+      <div class="bar">
+        <label>Day <input type="date" id="day"></label>
+        <label>What they studied <input class="topic" id="topic" placeholder="e.g. Lesson 3 vocab" list="topics"></label>
+        <datalist id="topics"></datalist>
+        <button class="btn sec sm" id="reload">Reload</button>
+      </div>
+      <p class="note" id="gradeLead"></p>
+      <div id="tables"></div>
+    </div>
+
+    <!-- SEATING -->
+    <div id="viewSeat" style="display:none">
+      <div class="bar">
+        <button class="btn sm" id="addTable">+ Add a table</button>
+        <button class="btn sec sm" id="autoSeat">Seat everyone 4 per table</button>
+        <span class="note">Drag a name to move it. On a phone, tap a name then tap a table.</span>
+      </div>
+      <div class="unseated" id="unseated"></div>
+      <div class="seat" id="seats"></div>
+    </div>
+
+    <!-- HISTORY -->
+    <div id="viewHist" style="display:none">
+      <p class="note">Every group grade saved for this period. Each one lands in all its members' gradebook rows.</p>
+      <table class="hist" id="histTable"></table>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var PASS='galileo2026';
+function H(x){var h={apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY,'Content-Type':'application/json'};if(x)for(var k in x)h[k]=x[k];return h;}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function toast(t){var e=document.getElementById('toast');e.textContent=t;e.classList.add('on');setTimeout(function(){e.classList.remove('on');},1800);}
+function today(){var d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);}
+
+var STUDENTS=[], GROUPS=[], MEMBERS=[], GRADES=[], VIEW='grade', PICKED=null;
+function per(){return document.getElementById('period').value;}
+function name(s){return ((s.last_name||'')+(s.last_name&&s.first_name?', ':'')+(s.first_name||''))||s.email;}
+function roster(){return STUDENTS.filter(function(s){return String(s.period)===per();})
+  .sort(function(a,b){return (a.roster_order||9999)-(b.roster_order||9999)||name(a).localeCompare(name(b));});}
+function tablesOf(){return GROUPS.filter(function(g){return String(g.period)===per();})
+  .sort(function(a,b){return a.table_no-b.table_no;});}
+function membersOf(t){return MEMBERS.filter(function(m){return String(m.period)===per()&&m.table_no===t;});}
+function tableOfEmail(e){var m=MEMBERS.filter(function(m){return String(m.period)===per()&&m.email===e;})[0];return m?m.table_no:null;}
+
+/* ---------- load ---------- */
+function load(){
+  Promise.all([
+    fetch(SUPA_URL+'/rest/v1/students?select=email,first_name,last_name,period,roster_order&period=not.is.null',{headers:H()}).then(function(r){return r.ok?r.json():[];}),
+    fetch(SUPA_URL+'/rest/v1/student_groups?select=period,table_no,label',{headers:H()}).then(function(r){return r.ok?r.json():[];}),
+    fetch(SUPA_URL+'/rest/v1/group_members?select=period,table_no,email,seat',{headers:H()}).then(function(r){return r.ok?r.json():[];}),
+    fetch(SUPA_URL+'/rest/v1/group_grades?select=id,period,table_no,day,score,topic,topic_key,note,asked_email&order=day.desc',{headers:H()}).then(function(r){return r.ok?r.json():[];})
+  ]).then(function(r){
+    STUDENTS=r[0];GROUPS=r[1];MEMBERS=r[2];GRADES=r[3];
+    var sel=document.getElementById('period');
+    if(!sel.options.length){
+      var ps={};STUDENTS.forEach(function(s){ps[String(s.period)]=1;});
+      Object.keys(ps).sort().forEach(function(p){var o=document.createElement('option');o.value=p;o.textContent='Period '+p;sel.appendChild(o);});
+    }
+    var dl=document.getElementById('topics'),seen={};dl.innerHTML='';
+    GRADES.forEach(function(g){if(g.topic&&!seen[g.topic]){seen[g.topic]=1;dl.innerHTML+='<option value="'+esc(g.topic)+'">';}});
+    render();
+  }).catch(function(e){toast('Load failed');});
+}
+
+/* ---------- grading ---------- */
+function gradeFor(t){
+  var d=document.getElementById('day').value, tk=(document.getElementById('topic').value||'').trim();
+  return GRADES.filter(function(g){return String(g.period)===per()&&g.table_no===t&&g.day===d&&(g.topic_key||'')===tk;})[0]||null;
+}
+function renderGrade(){
+  var host=document.getElementById('tables'), ts=tablesOf();
+  if(!ts.length){host.innerHTML='<p class="note">No tables yet for this period. Open <b>Seating</b> and add one.</p>';document.getElementById('gradeLead').textContent='';return;}
+  var done=ts.filter(function(g){return gradeFor(g.table_no);}).length;
+  document.getElementById('gradeLead').textContent=done+' of '+ts.length+' tables graded for this day.';
+  host.innerHTML=ts.map(function(g){
+    var mem=membersOf(g.table_no), cur=gradeFor(g.table_no);
+    var who=mem.length?mem.map(function(m){var s=STUDENTS.filter(function(x){return x.email===m.email;})[0];return '<b>'+esc(s?name(s):m.email)+'</b>';}).join(' &middot; '):'<i>nobody seated here yet</i>';
+    return '<div class="tbl"><h2>Table '+g.table_no+(g.label?' &mdash; '+esc(g.label):'')+
+      (cur?'<span class="done">saved '+cur.score+'/4</span>':'')+'</h2>'+
+      '<p class="who">'+who+'</p>'+
+      '<div class="scores">'+[0,1,2,3,4].map(function(v){
+        return '<button data-v="'+v+'" data-t="'+g.table_no+'" class="'+(cur&&cur.score===v?'on':'')+'">'+v+'</button>';}).join('')+'</div>'+
+      '<div class="ask"><span>Asked</span><select onchange="setAsked('+g.table_no+',this.value)"><option value="">&mdash;</option>'+
+        mem.map(function(m){var s=STUDENTS.filter(function(x){return x.email===m.email;})[0];
+          return '<option value="'+esc(m.email)+'"'+(cur&&cur.asked_email===m.email?' selected':'')+'>'+esc(s?name(s):m.email)+'</option>';}).join('')+
+      '</select><input placeholder="note (optional)" value="'+esc(cur&&cur.note||'')+'" onchange="setNote('+g.table_no+',this.value)"></div>'+
+      '</div>';
+  }).join('');
+}
+function saveGrade(t,patch){
+  var d=document.getElementById('day').value, tp=(document.getElementById('topic').value||'').trim();
+  var cur=gradeFor(t)||{period:per(),table_no:t,day:d,topic:tp||null,topic_key:tp,score:0};
+  var row={period:per(),table_no:t,day:d,topic:tp||null,topic_key:tp,
+           score:patch.score!=null?patch.score:cur.score,
+           note:patch.note!=null?patch.note:(cur.note||null),
+           asked_email:patch.asked_email!=null?(patch.asked_email||null):(cur.asked_email||null),
+           updated_at:new Date().toISOString()};
+  fetch(SUPA_URL+'/rest/v1/group_grades?on_conflict=period,table_no,day,topic_key',
+    {method:'POST',headers:H({Prefer:'resolution=merge-duplicates,return=representation'}),body:JSON.stringify([row])})
+  .then(function(r){return r.ok?r.json():Promise.reject();})
+  .then(function(js){
+    GRADES=GRADES.filter(function(g){return !(String(g.period)===per()&&g.table_no===t&&g.day===d&&(g.topic_key||'')===tp);});
+    GRADES.push(js[0]||row); renderGrade();
+    if(patch.score!=null)toast('Table '+t+': '+patch.score+'/4 to '+membersOf(t).length+' students');
+  }).catch(function(){toast('Save failed');});
+}
+function setScore(t,v){saveGrade(t,{score:v});}
+/* Score taps are handled on pointerdown from a parent that never gets replaced.
+   A tap right after typing in the topic box used to be swallowed: the blur
+   re-rendered the tables under the finger, so the click landed on a dead node. */
+document.getElementById('tables').addEventListener('pointerdown',function(ev){
+  var b=ev.target.closest&&ev.target.closest('.scores button[data-t]');
+  if(!b)return;
+  ev.preventDefault();
+  var t=+b.dataset.t, v=+b.dataset.v;
+  var tp=document.getElementById('topic');
+  if(document.activeElement===tp)tp.blur();           // commit the typed topic first
+  setTimeout(function(){setScore(t,v);},0);
+});
+function setNote(t,v){saveGrade(t,{note:v});}
+function setAsked(t,v){saveGrade(t,{asked_email:v});}
+
+/* ---------- seating ---------- */
+function renderSeat(){
+  var ts=tablesOf(), seated={};
+  MEMBERS.forEach(function(m){if(String(m.period)===per())seated[m.email]=1;});
+  var un=roster().filter(function(s){return !seated[s.email];});
+  document.getElementById('unseated').innerHTML='<h3 style="margin:0 0 8px;font-size:1rem">Not at a table ('+un.length+')</h3>'+
+    (un.length?un.map(function(s){return chip(s,null);}).join(''):'<span class="note">Everyone is seated.</span>');
+  document.getElementById('seats').innerHTML=ts.map(function(g){
+    var mem=membersOf(g.table_no);
+    return '<div class="seatbox" data-t="'+g.table_no+'" ondragover="event.preventDefault();this.classList.add(\'over\')" ondragleave="this.classList.remove(\'over\')" ondrop="dropOn(event,'+g.table_no+')" onclick="tapTable('+g.table_no+')">'+
+      '<h3>Table '+g.table_no+' <input value="'+esc(g.label||'')+'" placeholder="label" onclick="event.stopPropagation()" onchange="setLabel('+g.table_no+',this.value)">'+
+      '<button class="btn sec sm" style="margin-left:auto" onclick="event.stopPropagation();delTable('+g.table_no+')">remove</button></h3>'+
+      (mem.length?mem.map(function(m){var s=STUDENTS.filter(function(x){return x.email===m.email;})[0]||{email:m.email};return chip(s,g.table_no);}).join('')
+                 :'<span class="note">Drop names here.</span>')+'</div>';
+  }).join('');
+}
+function chip(s,t){
+  return '<span class="chip'+(PICKED===s.email?' over':'')+'" draggable="true" ondragstart="event.dataTransfer.setData(\'text\',\''+esc(s.email)+'\')" onclick="event.stopPropagation();tapName(\''+esc(s.email)+'\')">'+
+    esc(name(s))+(t?'<button onclick="event.stopPropagation();unseat(\''+esc(s.email)+'\')">&times;</button>':'')+'</span>';
+}
+function tapName(e){PICKED=(PICKED===e?null:e);renderSeat();toast(PICKED?'Now tap a table':'');}
+function tapTable(t){if(PICKED){seat(PICKED,t);PICKED=null;}}
+function dropOn(ev,t){ev.preventDefault();var e=ev.dataTransfer.getData('text');if(e)seat(e,t);}
+function seat(email,t){
+  MEMBERS=MEMBERS.filter(function(m){return !(String(m.period)===per()&&m.email===email);});
+  MEMBERS.push({period:per(),table_no:t,email:email});
+  fetch(SUPA_URL+'/rest/v1/group_members?on_conflict=period,email',{method:'POST',headers:H({Prefer:'resolution=merge-duplicates,return=minimal'}),
+    body:JSON.stringify([{period:per(),table_no:t,email:email}])}).catch(function(){toast('Save failed');});
+  renderSeat();
+}
+function unseat(email){
+  MEMBERS=MEMBERS.filter(function(m){return !(String(m.period)===per()&&m.email===email);});
+  fetch(SUPA_URL+'/rest/v1/group_members?period=eq.'+encodeURIComponent(per())+'&email=eq.'+encodeURIComponent(email),
+    {method:'DELETE',headers:H()}).catch(function(){});
+  renderSeat();
+}
+function addTable(){
+  var ts=tablesOf(), n=ts.length?Math.max.apply(null,ts.map(function(g){return g.table_no;}))+1:1;
+  GROUPS.push({period:per(),table_no:n,label:null});
+  fetch(SUPA_URL+'/rest/v1/student_groups?on_conflict=period,table_no',{method:'POST',headers:H({Prefer:'resolution=merge-duplicates,return=minimal'}),
+    body:JSON.stringify([{period:per(),table_no:n}])}).catch(function(){toast('Save failed');});
+  renderSeat();
+}
+function delTable(t){
+  if(!confirm('Remove table '+t+'? Students there become unseated. Grades already saved stay.'))return;
+  GROUPS=GROUPS.filter(function(g){return !(String(g.period)===per()&&g.table_no===t);});
+  MEMBERS=MEMBERS.filter(function(m){return !(String(m.period)===per()&&m.table_no===t);});
+  fetch(SUPA_URL+'/rest/v1/student_groups?period=eq.'+encodeURIComponent(per())+'&table_no=eq.'+t,{method:'DELETE',headers:H()}).catch(function(){});
+  renderSeat();
+}
+function setLabel(t,v){
+  GROUPS.forEach(function(g){if(String(g.period)===per()&&g.table_no===t)g.label=v;});
+  fetch(SUPA_URL+'/rest/v1/student_groups?on_conflict=period,table_no',{method:'POST',headers:H({Prefer:'resolution=merge-duplicates,return=minimal'}),
+    body:JSON.stringify([{period:per(),table_no:t,label:v||null}])}).catch(function(){});
+}
+function autoSeat(){
+  var list=roster(); if(!list.length){toast('No students in this period');return;}
+  var n=Math.ceil(list.length/4);
+  if(!confirm('Seat all '+list.length+' students in roster order, 4 per table ('+n+' tables)? This replaces the current seating.'))return;
+  var rows=[],gs=[];
+  for(var i=1;i<=n;i++)gs.push({period:per(),table_no:i});
+  list.forEach(function(s,i){rows.push({period:per(),table_no:Math.floor(i/4)+1,email:s.email,seat:(i%4)+1});});
+  fetch(SUPA_URL+'/rest/v1/student_groups?on_conflict=period,table_no',{method:'POST',headers:H({Prefer:'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify(gs)})
+  .then(function(){return fetch(SUPA_URL+'/rest/v1/group_members?on_conflict=period,email',{method:'POST',headers:H({Prefer:'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify(rows)});})
+  .then(function(){GROUPS=GROUPS.filter(function(g){return String(g.period)!==per();}).concat(gs);
+    MEMBERS=MEMBERS.filter(function(m){return String(m.period)!==per();}).concat(rows);
+    renderSeat();toast('Seated '+list.length+' students at '+n+' tables');})
+  .catch(function(){toast('Save failed');});
+}
+
+/* ---------- history ---------- */
+function renderHist(){
+  var g=GRADES.filter(function(x){return String(x.period)===per();});
+  if(!g.length){document.getElementById('histTable').innerHTML='<tbody><tr><td class="note">No group grades yet for this period.</td></tr></tbody>';return;}
+  document.getElementById('histTable').innerHTML='<thead><tr><th>Day</th><th>Table</th><th>What they studied</th><th>Score</th><th>Students</th><th>Note</th></tr></thead><tbody>'+
+    g.map(function(x){return '<tr><td>'+esc(x.day)+'</td><td>'+x.table_no+'</td><td>'+esc(x.topic||'—')+'</td><td><b>'+x.score+'/4</b></td><td>'+membersOf(x.table_no).length+'</td><td>'+esc(x.note||'')+'</td></tr>';}).join('')+'</tbody>';
+}
+
+/* ---------- nav ---------- */
+function render(){
+  document.getElementById('tabsHost').innerHTML=[['grade','Grade'],['seat','Seating'],['hist','History']]
+    .map(function(t){return '<button class="'+(VIEW===t[0]?'on':'')+'" onclick="go(\''+t[0]+'\')">'+t[1]+'</button>';}).join('');
+  document.getElementById('viewGrade').style.display=VIEW==='grade'?'':'none';
+  document.getElementById('viewSeat').style.display=VIEW==='seat'?'':'none';
+  document.getElementById('viewHist').style.display=VIEW==='hist'?'':'none';
+  if(VIEW==='grade')renderGrade(); if(VIEW==='seat')renderSeat(); if(VIEW==='hist')renderHist();
+}
+function go(v){VIEW=v;PICKED=null;render();}
+['period','day','topic'].forEach(function(id){document.getElementById(id).addEventListener('change',render);});
+document.getElementById('addTable').onclick=addTable;
+document.getElementById('autoSeat').onclick=autoSeat;
+document.getElementById('reload').onclick=load;
+
+function open_(){document.getElementById('gate').style.display='none';document.getElementById('app').style.display='block';
+  document.getElementById('day').value=today();load();}
+if(sessionStorage.getItem('gr_ok')==='1')open_();
+document.getElementById('go').onclick=function(){
+  if(document.getElementById('pw').value===PASS){sessionStorage.setItem('gr_ok','1');open_();}
+  else document.getElementById('pwmsg').textContent='Not it.';};
+document.getElementById('pw').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('go').click();});
+</script>
+</body>
+</html>
