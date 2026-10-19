@@ -99,6 +99,7 @@ dialog .row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
   <div class="row">
     <button class="btn" id="syncopyscores">Copy the numbers</button>
     <button class="btn sec" id="syncopyboth">Copy name + number</button>
+    <button class="btn sec" id="syndl">Download as CSV</button>
     <button class="btn sec" id="syncopynames">Copy names only</button>
     <button class="btn sec" id="synclose" style="margin-left:auto">Close</button>
   </div>
@@ -341,16 +342,39 @@ function synLists(){
   });
   return {names:names,nums:nums};
 }
+/* Full report: one row per student, one column per activity, every cell a number.
+   Tab-separated, so it pastes straight into Sheets, Excel or a Synergy import. */
+function synGrid(){
+  var head=['Student','Email','Period'].concat(view.cols.map(function(sl){
+    var a=activities[sl]||{}; return (a.title||sl).replace(/[\t\n]/g,' ');
+  }));
+  var rows=view.rows.map(function(s){
+    var cells=view.cols.map(function(sl){ return synOut(synPct(view.byCell[s.email+'|'+sl])); });
+    return [studentName(s), s.email, s.period||''].concat(cells);
+  });
+  return [head].concat(rows);
+}
+function isGrid(){return document.getElementById('synwhat').value==='__grid';}
 function fillSyn(){
-  var L=synLists();
-  document.getElementById('syntext').value=L.names.map(function(n,i){return n+'\t'+L.nums[i];}).join('\n');
+  var ta=document.getElementById('syntext');
+  if(isGrid()){
+    ta.value=synGrid().map(function(r){return r.join('\t');}).join('\n');
+  } else {
+    var L=synLists();
+    ta.value=L.names.map(function(n,i){return n+'\t'+L.nums[i];}).join('\n');
+  }
   var per=document.getElementById('period').value;
   document.getElementById('synnote').textContent=
-    (per&&per!=='none'?'Period '+per:'All periods')+' \u00b7 '+view.rows.length+' students in roster order';
+    (per&&per!=='none'?'Period '+per:'All periods')+' \u00b7 '+view.rows.length+' students in roster order'+
+    (isGrid()?' \u00b7 '+view.cols.length+' activities':'');
+  document.getElementById('syncopyscores').textContent=isGrid()?'Copy the whole report':'Copy the numbers';
+  document.getElementById('syncopyboth').style.display=isGrid()?'none':'';
+  document.getElementById('syndl').style.display=isGrid()?'':'none';
 }
 function openSyn(){
   var sel=document.getElementById('synwhat'), keep=sel.value;
-  sel.innerHTML='<option value="__avg">Overall average of everything in view</option>'+
+  sel.innerHTML='<option value="__grid">Full report \u2014 every activity, every student</option>'+
+    '<option value="__avg">Overall average of everything in view</option>'+
     view.cols.map(function(sl){var a=activities[sl]||{};return '<option value="'+esc(sl)+'">'+esc(a.title||sl)+'</option>';}).join('');
   if(keep)sel.value=keep;
   fillSyn();
@@ -364,7 +388,21 @@ function synCopy(list,what){
 document.getElementById('syn').onclick=openSyn;
 document.getElementById('synclose').onclick=function(){document.getElementById('syndlg').close();};
 ['synwhat','synscale','synmiss','syndone'].forEach(function(id){document.getElementById(id).addEventListener('change',fillSyn);});
-document.getElementById('syncopyscores').onclick=function(){synCopy(synLists().nums,'numbers');};
+document.getElementById('syncopyscores').onclick=function(){
+  if(isGrid()){
+    var g=synGrid();
+    navigator.clipboard.writeText(g.map(function(r){return r.join('\t');}).join('\n')).then(function(){
+      toast('Copied '+(g.length-1)+' students \u00d7 '+view.cols.length+' activities. Paste into Sheets or Excel.');
+    });
+  } else synCopy(synLists().nums,'numbers');
+};
+document.getElementById('syndl').onclick=function(){
+  var g=synGrid();
+  var csv=g.map(function(r){return r.map(function(v){v=String(v==null?'':v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}).join(',');}).join('\n');
+  var per=document.getElementById('period').value;
+  var b=new Blob([csv],{type:'text/csv'}); var u=URL.createObjectURL(b); var a=document.createElement('a');
+  a.href=u; a.download='scores-'+(per&&per!=='none'?'p'+per+'-':'')+new Date().toISOString().slice(0,10)+'.csv'; a.click(); URL.revokeObjectURL(u);
+};
 document.getElementById('syncopynames').onclick=function(){synCopy(synLists().names,'names');};
 document.getElementById('syncopyboth').onclick=function(){var L=synLists();synCopy(L.names.map(function(n,i){return n+'\t'+L.nums[i];}),'rows');};
 
