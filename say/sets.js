@@ -44,6 +44,11 @@ window.SAY_SETS={
     {k:'names', name:'People & things', e:'🔦', items:['the narrator','the old man','the Evil Eye','the lantern','the officers','the planks','the heart']},
     {k:'sent', name:'Sentences', e:'💬', items:['The narrator opened the door very slowly.','Only one thin ray fell on the eye.','Three officers knocked at four o\u2019clock.','The sound grew louder and louder.','His own heart gave him away.']}
   ] },
+  monkeyspaw:{ title:'The Monkey\u2019s Paw (Writing Ladder)', back:'/readings/write/monkeyspaw/', decks:[
+    {k:'words', name:'Words', e:'\ud83e\uddff', items:['fakir','talisman','credulity','grimace','condoling','amiably','apathy','resigned','compensation','oppressive','frantically','furtively']},
+    {k:'names', name:'People & things', e:'\ud83c\udfe0', items:['Mr. White','Mrs. White','Herbert','Sergeant-Major Morris','the monkey\u2019s paw','Maw and Meggins','Laburnum Villa']},
+    {k:'sent', name:'Sentences', e:'\ud83d\udcac', items:['The soldier threw the paw on the fire.','Mr. White wished for two hundred pounds.','The paw twisted in his hand like a snake.','A stranger came to the gate the next morning.','When the door opened, the road was empty.']}
+  ] },
   introductions:{ title:'Introductions', back:'/readings/launch-plus/u1-l2/', decks:[
     {k:'words', name:'Words', e:'🪪', items:['name','introduce','meet','language','hello','goodbye','thank you']},
     {k:'phrases', name:'Phrases', e:'💬', items:['Nice to meet you.','What is your name?','My name is Ana.','Where are you from?','I am from Guatemala.','Excuse me.','You\u2019re welcome.','See you tomorrow.']},
@@ -65,13 +70,5 @@ window.SAY_SETS={
     {k:'pairs', name:'Tricky pairs', e:'👂', items:['thirteen','thirty','fourteen','forty','fifteen','fifty','sixteen','sixty','seventeen','seventy','eighteen','eighty','nineteen','ninety']},
     {k:'hyphen', name:'With a hyphen', e:'➖', items:['twenty-five','thirty-two','forty-four','fifty-one','sixty-seven','seventy-three','eighty-eight','ninety-nine']},
     {k:'sent', name:'Sentences', e:'💬', items:['How many students do you see?','I see fifteen students.','How many desks do you see?','There are twenty-five desks.','Eighty-eight is the largest number.','Seventy is the smallest number.','Thirty-two has a hyphen.','I am fifteen years old.']}
-  ] }
-  ,
-  'introductions':{ title:'Introductions', back:'/readings/launch-plus/u1-l2/', decks:[
-    {k:'hello', name:'Hello', e:'\ud83d\udc4b', items:['Good morning','Good afternoon','Good evening',"What's up?",'How are you?','Nice to meet you']},
-    {k:'bye', name:'Goodbye', e:'\ud83d\udc4b', items:['Goodbye','See you later','See you tomorrow','Have a good weekend','Take care']},
-    {k:'polite', name:'Polite words', e:'\ud83d\ude4f', items:['Please','Thank you',"You're welcome",'I appreciate it','Excuse me','I am sorry']},
-    {k:'me', name:'About me', e:'\ud83e\uddd1', items:['My name is','I am from','I speak','I am in period','This is my friend']},
-    {k:'sent', name:'Sentences', e:'\ud83d\udcac', items:['Good morning. My name is Linh.','Nice to meet you too.','How do you spell your name?','This is my friend Mateo.','See you later. Have a good weekend.']}
   ] }
 };

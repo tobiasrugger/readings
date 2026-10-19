@@ -50,7 +50,15 @@ sort: [
  {lvl:'103',t:'telltale',s:'The police sat and chatted about ordinary things.',k:'statement'},
  {lvl:'103',t:'telltale',s:'Who heard the shriek in the night?',k:'question'},
  {lvl:'103',t:'telltale',s:'Tear up the planks.',k:'command'},
- {lvl:'103',t:'telltale',s:'I cannot bear those smiles any longer!',k:'exclamation'}
+ {lvl:'103',t:'telltale',s:'I cannot bear those smiles any longer!',k:'exclamation'},
+ {lvl:'103',t:'monkeyspaw',s:'The soldier put the paw back in his pocket.',k:'statement'},
+ {lvl:'103',t:'monkeyspaw',s:'Why did the fakir put a spell on it?',k:'question'},
+ {lvl:'103',t:'monkeyspaw',s:'Throw it on the fire again.',k:'command'},
+ {lvl:'103',t:'monkeyspaw',s:'What a terrible way to get the money!',k:'exclamation'},
+ {lvl:'103',t:'monkeyspaw',s:'Herbert worked at Maw and Meggins.',k:'statement'},
+ {lvl:'103',t:'monkeyspaw',s:'Who was knocking at the door?',k:'question'},
+ {lvl:'103',t:'monkeyspaw',s:'Hold it up and wish aloud.',k:'command'},
+ {lvl:'103',t:'monkeyspaw',s:'I can\u2019t believe he kept it!',k:'exclamation'}
 ],
 
 /* 2 · SENTENCE SCRAMBLE — tap the words in order, then the end mark. */
@@ -81,7 +89,11 @@ scramble: [
  {lvl:'103',t:'telltale',s:'The narrator opened the door very slowly.'},
  {lvl:'103',t:'telltale',s:'Only one thin ray fell on the eye.'},
  {lvl:'103',t:'telltale',s:'Three officers knocked at four o\u2019clock.'},
- {lvl:'103',t:'telltale',s:'His own heart gave him away.'}
+ {lvl:'103',t:'telltale',s:'His own heart gave him away.'},
+ {lvl:'103',t:'monkeyspaw',s:'The old soldier warned them three times.'},
+ {lvl:'103',t:'monkeyspaw',s:'The paw moved in his hand.'},
+ {lvl:'103',t:'monkeyspaw',s:'A stranger waited outside the gate.'},
+ {lvl:'103',t:'monkeyspaw',s:'The road outside was quiet and empty.'}
 ],
 
 /* 3 · SENTENCE OR FRAGMENT? — tap S or F. If F, tap the repair that makes it a sentence. */
@@ -120,7 +132,13 @@ fragment: [
  {lvl:'103',t:'telltale',s:'a lantern in the dark',k:'F',fix:'A lantern shone in the dark.',wrong:['A lantern in the dark.','A small lantern in the dark room.']},
  {lvl:'103',t:'telltale',s:'the heart kept beating',k:'S',fix:'The heart kept beating.'},
  {lvl:'103',t:'telltale',s:'under the floorboards',k:'F',fix:'The body lay under the floorboards.',wrong:['Under the floorboards.','Deep under the old floorboards.']},
- {lvl:'103',t:'telltale',s:'nobody else heard the sound',k:'S',fix:'Nobody else heard the sound.'}
+ {lvl:'103',t:'telltale',s:'nobody else heard the sound',k:'S',fix:'Nobody else heard the sound.'},
+ {lvl:'103',t:'monkeyspaw',s:'because the fakir put a spell on it',k:'F',fix:'The paw grants wishes because the fakir put a spell on it.',wrong:['Because the fakir put a spell on it.','Because an old fakir put a spell on it.']},
+ {lvl:'103',t:'monkeyspaw',s:'the family laughed at the story',k:'S',fix:'The family laughed at the story.'},
+ {lvl:'103',t:'monkeyspaw',s:'a small dried paw on the shelf',k:'F',fix:'A small dried paw lay on the shelf.',wrong:['A small dried paw on the shelf.','A small, dark, dried paw on the shelf.']},
+ {lvl:'103',t:'monkeyspaw',s:'the knocking grew louder',k:'S',fix:'The knocking grew louder.'},
+ {lvl:'103',t:'monkeyspaw',s:'after the funeral',k:'F',fix:'The house was silent after the funeral.',wrong:['After the funeral.','After the long, cold funeral.']},
+ {lvl:'103',t:'monkeyspaw',s:'the road was empty',k:'S',fix:'The road was empty.'}
 ],
 
 /* 4 · SENTENCE TYPES — one picture; write a statement, a question, a command, an exclamation. */
@@ -177,7 +195,13 @@ bbs_choose: [
  {lvl:'103',t:'telltale',s:'The narrator said he was calm, ___ his voice sounded wild.',a:'but'},
  {lvl:'103',t:'telltale',s:'The police came ___ a neighbour heard a shriek.',a:'because'},
  {lvl:'103',t:'telltale',s:'The officers heard nothing, ___ the narrator heard the heart.',a:'but'},
- {lvl:'103',t:'telltale',s:'The sound grew louder and louder, ___ the narrator confessed.',a:'so'}
+ {lvl:'103',t:'telltale',s:'The sound grew louder and louder, ___ the narrator confessed.',a:'so'},
+ {lvl:'103',t:'monkeyspaw',s:'Mr. White kept the paw ___ he wanted to try it.',a:'because'},
+ {lvl:'103',t:'monkeyspaw',s:'The soldier warned them, ___ they wished anyway.',a:'but'},
+ {lvl:'103',t:'monkeyspaw',s:'Herbert died at the factory, ___ the company paid two hundred pounds.',a:'so'},
+ {lvl:'103',t:'monkeyspaw',s:'The mother wanted the second wish ___ she missed her son.',a:'because'},
+ {lvl:'103',t:'monkeyspaw',s:'The father was afraid, ___ he made the wish for her.',a:'but'},
+ {lvl:'103',t:'monkeyspaw',s:'The knocking grew louder, ___ he used the last wish.',a:'so'}
 ],
 bbs_write: [
  {lvl:'101',t:'u1-l1',stem:'I came to school today'},
@@ -191,7 +215,9 @@ bbs_write: [
  {lvl:'103',t:'landlady',stem:'Billy decided to stay at the bed and breakfast'},
  {lvl:'103',t:'landlady',stem:'The landlady seemed kind'},
  {lvl:'103',t:'telltale',stem:'The narrator hid the body carefully'},
- {lvl:'103',t:'telltale',stem:'The officers were satisfied'}
+ {lvl:'103',t:'telltale',stem:'The officers were satisfied'},
+ {lvl:'103',t:'monkeyspaw',stem:'The soldier threw the paw on the fire'},
+ {lvl:'103',t:'monkeyspaw',stem:'The family laughed at the story'}
 ],
 /* The deck's own glossary for the three conjunctions (shown under the activity; other languages use tap-to-translate). */
 bbs_gloss: {
@@ -216,7 +242,10 @@ expand: [
  {lvl:'103',t:'landlady',k:'The dog slept.',qs:['where?','how?'],model:'The dog slept by the fire, perfectly still, like a toy.'},
  {lvl:'103',t:'telltale',k:'The eye opened.',qs:['when?','how wide?','what did the narrator feel?'],model:'On the eighth night the eye opened wide, and the narrator grew furious as he stared at it.'},
  {lvl:'103',t:'telltale',k:'The police knocked.',qs:['when?','why?','how many?'],model:'At four o\u2019clock three police officers knocked, because a neighbour had reported a shriek.'},
- {lvl:'103',t:'telltale',k:'The narrator confessed.',qs:['why?','how?'],model:'Unable to bear the pounding any longer, the narrator confessed with a scream and told the officers to tear up the planks.'}
+ {lvl:'103',t:'telltale',k:'The narrator confessed.',qs:['why?','how?'],model:'Unable to bear the pounding any longer, the narrator confessed with a scream and told the officers to tear up the planks.'},
+ {lvl:'103',t:'monkeyspaw',k:'The paw moved.',qs:['when?','how?','who felt it?'],model:'As Mr. White made his wish, the paw twisted in his hand like a snake, and only he felt it.'},
+ {lvl:'103',t:'monkeyspaw',k:'A man arrived.',qs:['when?','from where?','why?'],model:'The next morning a man from Maw and Meggins arrived at the gate to tell them about the accident.'},
+ {lvl:'103',t:'monkeyspaw',k:'He made the wish.',qs:['which wish?','why?','how did he feel?'],model:'With the knocking shaking the door, he frantically made his third wish, hardly able to breathe.'}
 ],
 
 /* 7 · PARALLEL REVISION — same meaning, better writing. */
