@@ -66,4 +66,12 @@ window.SAY_SETS={
     {k:'hyphen', name:'With a hyphen', e:'➖', items:['twenty-five','thirty-two','forty-four','fifty-one','sixty-seven','seventy-three','eighty-eight','ninety-nine']},
     {k:'sent', name:'Sentences', e:'💬', items:['How many students do you see?','I see fifteen students.','How many desks do you see?','There are twenty-five desks.','Eighty-eight is the largest number.','Seventy is the smallest number.','Thirty-two has a hyphen.','I am fifteen years old.']}
   ] }
+  ,
+  'introductions':{ title:'Introductions', back:'/readings/launch-plus/u1-l2/', decks:[
+    {k:'hello', name:'Hello', e:'\ud83d\udc4b', items:['Good morning','Good afternoon','Good evening',"What's up?",'How are you?','Nice to meet you']},
+    {k:'bye', name:'Goodbye', e:'\ud83d\udc4b', items:['Goodbye','See you later','See you tomorrow','Have a good weekend','Take care']},
+    {k:'polite', name:'Polite words', e:'\ud83d\ude4f', items:['Please','Thank you',"You're welcome",'I appreciate it','Excuse me','I am sorry']},
+    {k:'me', name:'About me', e:'\ud83e\uddd1', items:['My name is','I am from','I speak','I am in period','This is my friend']},
+    {k:'sent', name:'Sentences', e:'\ud83d\udcac', items:['Good morning. My name is Linh.','Nice to meet you too.','How do you spell your name?','This is my friend Mateo.','See you later. Have a good weekend.']}
+  ] }
 };
