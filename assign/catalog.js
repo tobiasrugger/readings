@@ -37,6 +37,13 @@ window.CATALOG=[
 "g": "Novels and long texts"
 },
 {
+"p": "/readings/brothers-in-arms/",
+"t": "Brothers in Arms",
+"d": "Read-aloud novel in 8 chapters for newcomers and SIFE: listen, tap to translate, check, play, fix, write, say it. Easier and Harder.",
+"m": "Newcomer · SIFE · 8 chapters · 2 levels",
+"g": "Novels and long texts"
+},
+{
 "p": "/readings/manzanar/",
 "t": "Farewell to Manzanar",
 "d": "Anticipation guide, two chapter guides, film in six segments, grammar, assessment, 20-day plan.",

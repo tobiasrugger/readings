@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brothers in Arms</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#17222b; --muted:#56636e; --bg:#e6eaee; --card:#fff; --line:#17222b;
+  --orange:#e2672a; --orange-soft:#fde6d6; --teal:#14706c; --teal-soft:#d6eeec;
+  --ok:#1d8448; --ok-soft:#dcf3e4; --gold:#ffd75e; --plate:#1f4f8f; --plate-ink:#fff;
+  --shadow:4px 4px 0 rgba(23,34,43,.18);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:'Nunito',system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:18px;line-height:1.55}
+button{font-family:inherit;font-size:inherit;color:inherit;cursor:pointer}
+select,input,textarea{font-family:inherit;font-size:17px;color:var(--ink)}
+select{background:#fff;border:2px solid var(--line);border-radius:10px;padding:8px 10px}
+select option{color:#17222b;background:#fff}
+.hide{display:none!important}
+
+/* ---------- top bar ---------- */
+.top{position:sticky;top:0;z-index:30;background:#17222b;color:#fff;padding:8px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-bottom:3px solid var(--orange)}
+.top h1{font-size:21px;margin:0 8px 0 0;font-weight:900;letter-spacing:.2px}
+.top .sp{flex:1}
+.top select{padding:6px 8px;font-size:15px;border-color:#fff}
+.lvl{display:flex;border:2px solid #fff;border-radius:999px;overflow:hidden}
+.lvl button{background:transparent;border:0;color:#fff;padding:5px 14px;font-weight:800;font-size:15px}
+.lvl button.on{background:#fff;color:#17222b}
+.who{font-size:14px;opacity:.85}
+.saved{font-size:13px;color:#ffd75e;min-width:60px}
+
+/* ---------- chapter street (house-number plates) ---------- */
+.street{max-width:1100px;margin:14px auto 0;padding:0 12px}
+.plates{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+.plate{position:relative;border:3px solid #0e2f57;background:var(--plate);color:#fff;border-radius:9px;min-width:74px;padding:6px 8px 5px;text-align:center;box-shadow:var(--shadow);font-weight:900;line-height:1.1}
+.plate::before{content:"";position:absolute;inset:3px;border:1.5px solid rgba(255,255,255,.75);border-radius:6px;pointer-events:none}
+.plate .n{font-size:26px;display:block}
+.plate .c{font-size:12px;font-weight:800;opacity:.95;display:block}
+.plate.done{background:var(--ok);border-color:#0f5a2e}
+.plate.cur{transform:translateY(-4px);outline:3px solid var(--orange);outline-offset:2px}
+.plate.next{animation:pulse 1.6s ease-in-out infinite}
+.plate.after{background:#6b3d8f;border-color:#3f2058;min-width:110px}
+.plate .lk{position:absolute;top:-10px;right:-8px;font-size:15px}
+@keyframes pulse{0%,100%{box-shadow:var(--shadow)}50%{box-shadow:0 0 0 6px rgba(226,103,42,.45)}}
+.bar{height:12px;border:2px solid var(--line);border-radius:999px;background:#fff;margin:10px 0 0;overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--teal),var(--ok));width:0;transition:width .4s}
+.barlbl{font-size:13px;color:var(--muted);margin-top:3px}
+
+/* ---------- step chips ---------- */
+.wrap{max-width:1100px;margin:12px auto 60px;padding:0 12px}
+.steps{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 12px}
+.step{border:2px solid var(--line);background:#fff;border-radius:12px;padding:7px 12px;font-weight:800;font-size:16px;box-shadow:2px 2px 0 rgba(23,34,43,.15)}
+.step.on{background:var(--ink);color:#fff}
+.step.ok{background:var(--ok-soft);border-color:var(--ok)}
+.step.ok.on{background:var(--ok);color:#fff}
+.step .cnt{font-size:12px;font-weight:700;opacity:.8;margin-left:4px}
+
+/* ---------- boxes ---------- */
+.box{background:var(--card);border:2px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:16px 18px;margin:0 0 16px;display:flow-root}
+.box h2{margin:0 0 6px;font-size:23px;font-weight:900}
+.box h3{margin:0 0 6px;font-size:19px;font-weight:900}
+.dir{margin:0 0 10px;font-size:16px;color:var(--muted);font-weight:700}
+.dir .en{display:block}
+.dir .tr{display:block;color:var(--teal);font-weight:800}
+.dir .tr:empty{display:none}
+.pic-r{float:right;width:min(38%,230px);margin:0 0 10px 16px;border:2px solid var(--line);border-radius:12px;background:#fff;overflow:hidden;cursor:pointer}
+.pic-r svg{display:block;width:100%;height:auto}
+.scene{position:relative;border:2px solid var(--line);border-radius:14px;overflow:hidden;background:#cfd8df;margin:0 0 12px}
+.scene img{display:block;width:100%;height:auto;max-height:520px;object-fit:contain;background:#fff}
+.scene svg{display:block;width:100%;height:auto}
+.scene .two{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--line)}
+.scene img{cursor:zoom-in}
+.scene.cover svg{filter:blur(1.5px) grayscale(.4);opacity:.6}
+.covertxt{position:absolute;left:0;right:0;top:42%;text-align:center;font-weight:900;font-size:22px;z-index:2;padding:0 10px}
+.qpic{border:2px solid var(--line);border-radius:12px;overflow:hidden;margin:0 0 8px;display:grid;grid-auto-flow:column;gap:2px;background:var(--line)}
+.qpic img{display:block;width:100%;max-height:340px;object-fit:contain;background:#fff;cursor:zoom-in}
+.lb{position:fixed;inset:0;z-index:120;background:rgba(10,16,22,.88);display:flex;align-items:center;justify-content:center;padding:14px}
+.lb img{max-width:100%;max-height:100%;border:3px solid #fff;border-radius:8px;background:#fff}
+.lbx{position:absolute;top:10px;right:14px;border:2px solid #fff;background:#17222b;color:#fff;border-radius:50%;width:42px;height:42px;font-size:24px}
+.lion{position:absolute;width:20px;height:20px;padding:0;border:0;background:transparent;opacity:.75;z-index:3}
+.lion svg{width:100%;height:100%}
+
+/* ---------- reading ---------- */
+.readctl{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 12px}
+.btn{border:2px solid var(--line);background:#fff;border-radius:12px;padding:8px 14px;font-weight:800;box-shadow:2px 2px 0 rgba(23,34,43,.15)}
+.btn.big{font-size:19px;padding:10px 18px}
+.btn.go{background:var(--ok);color:#fff;border-color:#0f5a2e}
+.btn.or{background:var(--orange);color:#fff;border-color:#a8461a}
+.btn.on{background:var(--ink);color:#fff}
+.btn:disabled{opacity:.45;cursor:default}
+.para{position:relative;border:2px solid var(--line);border-radius:12px;padding:12px 14px 12px 52px;margin:0 0 12px;background:#fff;display:flow-root;font-size:21px;line-height:1.75}
+.para .pn{position:absolute;left:10px;top:12px;width:30px;height:30px;border-radius:50%;background:var(--ink);color:#fff;font-weight:900;font-size:15px;display:flex;align-items:center;justify-content:center;border:0}
+.para .pl{display:block;margin-top:6px;font-size:14px}
+.para.flash{animation:flash 1.4s}
+@keyframes flash{0%,100%{background:#fff}30%{background:#fff3c4}}
+.w{border-radius:4px;cursor:pointer;padding:0 1px}
+.w:hover{background:#eef2f5}
+.w.kw{border-bottom:3px dotted var(--orange);font-weight:800}
+.w.now{background:var(--gold)!important}
+.sent-u{text-decoration:underline;text-decoration-color:var(--orange);text-decoration-thickness:3px}
+.para .pr{float:right;width:min(32%,180px);margin:0 0 6px 14px;border:2px solid var(--line);border-radius:10px;overflow:hidden;background:#fff;cursor:pointer}
+.para .pr svg{display:block;width:100%;height:auto}
+
+/* ---------- word cards ---------- */
+.words{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.wcard{border:2px solid var(--line);border-radius:12px;background:#fff;overflow:hidden;box-shadow:2px 2px 0 rgba(23,34,43,.15)}
+.wcard .wpic{display:block;width:100%;border:0;padding:0;background:#fff;border-bottom:2px solid var(--line)}
+.wcard .wpic svg{display:block;width:100%;height:auto}
+.wcard .wb{padding:8px 10px}
+.wcard .ww{font-size:21px;font-weight:900;display:block;cursor:pointer}
+.wcard .wm{display:block;font-size:15px;color:var(--muted);cursor:pointer}
+.wcard .wt{display:block;font-size:17px;margin-top:2px;min-height:1.2em}
+.eq{font-weight:900;text-decoration:underline}
+.eq.none{color:#8a96a0}
+
+/* ---------- questions ---------- */
+.q{border:2px solid var(--line);border-radius:12px;padding:12px 14px;margin:0 0 14px;background:#fff;display:flow-root}
+.q .qt{font-weight:800;font-size:19px;margin:0 0 8px}
+.q.done{border-color:var(--ok);background:#f6fcf8}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
+.opt{text-align:left;border:2px solid var(--line);border-radius:10px;background:#fff;padding:9px 12px;font-weight:700;transition:opacity .4s}
+.opt.fade{opacity:.3;cursor:default;text-decoration:line-through;text-decoration-color:#9aa5ae}
+.opt.right{background:var(--ok-soft);border-color:var(--ok)}
+.opt.right::after{content:" ✓";color:var(--ok);font-weight:900}
+.opt.pick{outline:3px solid var(--orange)}
+.quip{display:flex;gap:10px;align-items:center;margin:10px 0 0;padding:8px 10px;border:2px dashed var(--teal);border-radius:10px;background:var(--teal-soft);font-weight:700}
+.quip .av{width:46px;height:46px;flex:0 0 46px;border-radius:50%;overflow:hidden;border:2px solid var(--line);background:#fff}
+.quip .av svg{width:100%;height:100%}
+.quip .hint{display:block;font-weight:600;color:#0d4f4c}
+.look{margin:8px 0 0;padding:8px 12px;border-left:5px solid var(--orange);background:#fff8f2;font-size:18px}
+.tag{display:inline-block;font-size:12px;font-weight:900;border:2px solid var(--line);border-radius:6px;padding:0 6px;margin-right:6px;background:#fff7d1}
+.chk{color:var(--ok);font-weight:900}
+.pred-note{font-size:15px;color:var(--muted);margin-top:6px}
+
+/* ---------- games ---------- */
+.tt{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tt .col{display:flex;flex-direction:column;gap:8px}
+.chip{border:2px solid var(--line);border-radius:10px;background:#fff;padding:9px 12px;font-weight:800;text-align:left;transition:opacity .4s}
+.chip.sel{outline:3px solid var(--orange);background:var(--orange-soft)}
+.chip.ok{background:var(--ok-soft);border-color:var(--ok)}
+.chip.used{opacity:.35}
+.chip.wob{animation:wob .45s}
+@keyframes wob{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px) rotate(-2deg)}75%{transform:translateX(6px) rotate(2deg)}}
+.slots{display:flex;flex-direction:column;gap:8px}
+.slot{display:flex;gap:10px;align-items:center;border:2px dashed var(--line);border-radius:10px;padding:8px 10px;min-height:48px;background:#fbfcfd}
+.slot .num{width:30px;height:30px;border-radius:50%;background:var(--plate);color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center;flex:0 0 30px}
+.slot.ok{border-style:solid;border-color:var(--ok);background:var(--ok-soft)}
+.slot.target{outline:3px solid var(--orange)}
+.pool{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.thumbs{display:flex;gap:10px;margin-top:6px}
+.thumbs button{font-size:18px}
+.faces{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.face{border:2px solid var(--line);border-radius:12px;background:#fff;padding:4px;font-weight:800;font-size:14px;transition:opacity .4s}
+.face svg{display:block;width:100%;height:auto}
+.face.fade{opacity:.3}
+.face.right{background:var(--ok-soft);border-color:var(--ok)}
+.cloze{font-size:21px;line-height:2.2}
+.blank{display:inline-block;min-width:110px;border:0;border-bottom:3px solid var(--orange);background:#fff7ef;border-radius:6px 6px 0 0;padding:0 8px;font-weight:900;text-align:center}
+.blank.target{outline:3px solid var(--orange)}
+.blank.ok{border-bottom-color:var(--ok);background:var(--ok-soft)}
+.doors{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.door{border:3px solid var(--line);border-radius:12px 12px 4px 4px;background:#8a5a3b;color:#fff;padding:0;overflow:hidden;font-weight:800;text-align:center;transition:opacity .4s}
+.door svg{display:block;width:100%;height:auto;max-height:150px}
+.door span{display:block;padding:8px;background:#5c3b26;font-size:17px}
+.door.fade{opacity:.3}
+.door.right{outline:4px solid var(--ok)}
+
+/* ---------- fix it board ---------- */
+.board{background:#f4f7f5;border:3px solid #6d7b72;border-radius:12px;padding:14px;font-size:24px;line-height:2.1;box-shadow:inset 0 0 0 6px #e3e9e5}
+.tok{display:inline-block;border:0;background:transparent;font-size:24px;font-weight:700;padding:0 4px;border-radius:6px}
+.tok:hover{background:#e3ebe6}
+.tok.pick{outline:3px solid var(--orange);background:var(--orange-soft)}
+.tok.fixd{background:var(--ok-soft);color:var(--ok);font-weight:900}
+.tok.wob{animation:wob .45s;background:#fde3d4}
+.punct{margin-left:-6px}
+.fixopts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+
+/* ---------- write ---------- */
+.frame{font-weight:800;color:var(--teal);margin:4px 0}
+.bank{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.bank button{border:2px solid var(--line);border-radius:8px;background:#fff7d1;padding:3px 10px;font-weight:800;font-size:16px}
+textarea{width:100%;min-height:70px;border:2px solid var(--line);border-radius:10px;padding:10px;font-size:19px;resize:none;overflow:hidden;line-height:1.5}
+.wc{font-size:14px;color:var(--muted)}
+.wc.ok{color:var(--ok);font-weight:800}
+
+/* ---------- footer, popup, gate ---------- */
+.foot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px}
+.foot .left{font-weight:800;color:var(--muted)}
+.pop{position:fixed;z-index:60;max-width:330px;background:#fff;border:2px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:10px 12px;display:none}
+.pop.show{display:block}
+.pop .pw{font-size:20px;font-weight:900}
+.pop .pt{font-size:19px;margin-top:2px}
+.pop .ps{font-size:15px;color:var(--muted);margin-top:6px;border-top:1px solid #d5dbe0;padding-top:6px}
+.pop .px{position:absolute;top:4px;right:6px;border:0;background:none;font-size:18px}
+.pop .pbtn{margin-top:6px;font-size:14px;padding:4px 10px}
+.gate{position:fixed;inset:0;z-index:100;background:#17222b;display:flex;align-items:center;justify-content:center;padding:14px;overflow:auto}
+.gbox{background:#fff;border:3px solid var(--orange);border-radius:16px;max-width:460px;width:100%;padding:20px 22px;box-shadow:6px 6px 0 rgba(0,0,0,.35)}
+.gbox h2{margin:0 0 4px;font-size:26px;font-weight:900}
+.gbox label{display:block;font-weight:800;margin:10px 0 3px;font-size:16px}
+.gbox input,.gbox select{width:100%;border:2px solid var(--line);border-radius:10px;padding:9px 10px;font-size:17px;background:#fff}
+.gbox .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.gerr{color:#a8461a;font-weight:800;min-height:1.4em;margin-top:6px}
+.gbox .gpic{float:right;width:120px;margin:0 0 6px 10px}
+.fw{position:fixed;inset:0;pointer-events:none;z-index:90}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#17222b;color:#fff;padding:12px 18px;border-radius:12px;border:2px solid var(--gold);font-weight:800;z-index:95;display:none}
+.toast.show{display:block}
+.lock{border:2px solid var(--line);border-radius:12px;background:#fff7ef;padding:14px;font-weight:800}
+.done-banner{border:3px solid var(--ok);background:var(--ok-soft);border-radius:14px;padding:14px 16px;font-weight:800;font-size:19px}
+@media (max-width:640px){
+  body{font-size:17px}
+  .para{font-size:19px;padding-left:46px}
+  .pic-r,.para .pr{width:42%}
+  .tt{grid-template-columns:1fr}
+  .faces{grid-template-columns:repeat(2,1fr)}
+  .doors{grid-template-columns:1fr}
+  .plate{min-width:58px}.plate .n{font-size:21px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="gate" id="gate">
+  <form class="gbox" id="gateForm" autocomplete="on">
+    <div class="gpic" id="gatePic"></div>
+    <h2>Brothers in Arms</h2>
+    <p class="dir" data-dir="Sign in to start. Your work saves by itself."><span class="en">Sign in to start. Your work saves by itself.</span><span class="tr"></span></p>
+    <div class="row">
+      <div><label for="gFirst">First name</label><input id="gFirst" required></div>
+      <div><label for="gLast">Last name</label><input id="gLast" required></div>
+    </div>
+    <label for="gEmail">School email</label>
+    <input id="gEmail" type="email" placeholder="name@s.sfusd.edu" required>
+    <div class="row">
+      <div><label for="gPeriod">Period</label><select id="gPeriod"><option value="">Choose…</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select></div>
+      <div><label for="gLang">My language</label><select id="gLang"><option value="">Choose…</option></select></div>
+    </div>
+    <div class="gerr" id="gErr"></div>
+    <button class="btn go big" type="submit" style="width:100%;margin-top:6px">Start reading</button>
+  </form>
+</div>
+
+<div class="top">
+  <h1>Brothers in Arms</h1>
+  <div class="lvl" id="lvl"><button type="button" data-l="A">Easier</button><button type="button" data-l="B">Harder</button></div>
+  <select id="lang" aria-label="My language"></select>
+  <span class="sp"></span>
+  <span class="saved" id="saved"></span>
+  <span class="who" id="who"></span>
+</div>
+
+<div class="street">
+  <div class="plates" id="plates"></div>
+  <div class="bar"><i id="barI"></i></div>
+  <div class="barlbl" id="barL"></div>
+</div>
+
+<main class="wrap">
+  <div class="steps" id="steps"></div>
+  <div id="screen"></div>
+</main>
+
+<div class="pop" id="pop" translate="no"><button class="px" type="button" aria-label="Close">×</button><div class="pw" id="popW"></div><div class="pt" id="popT"></div><div class="ps" id="popS"></div></div>
+<canvas class="fw" id="fw"></canvas>
+<div class="toast" id="toast"></div>
+<script src="../track.js"></script>
+<script>
+/* =====================================================================
+   DATA — Brothers in Arms (ELD 101 read-aloud, early emerging / SIFE)
+   Level A = the colleague's text (mom/dad → mother/father, the ELD 101 rule).
+   Level B = the same events with more detail, for high beginners.
+   [[phrase]] marks a key word: dotted orange, tap-to-translate with its meaning.
+   Never renumber an id: student work is keyed on them.
+   ===================================================================== */
+var GUIDE_KEY='brothers-in-arms';
+var CH=[
+/* ---------------------------------------------------------- 1 */
+{id:1,title:'Martin and Huero',img:['ch1'],panel:'ch1',lion:{l:'91%',t:'8%'},
+ pred:{A:'Look at the picture. Who is this story about?',B:'Look at the picture. Who do you think this story is about?',o:['two brothers','a teacher and her class','a soccer team','a girl and her dog']},
+ paras:{
+  A:[{t:'My name is Martin Luna. I am 16 years old. I [[live with]] my mother and my [[brother]] Huero. My father does not live with us.',pic:'livewith'},
+     {t:'My mother works a lot. I [[take care of]] my brother. My brother Huero is eight years old. I love Huero, and Huero loves me.',pic:'takecare'},
+     {t:'My [[friends]] are named Frankie, Chago, and Jesus. Chago and Jesus are 16 years old. Frankie is 19 years old.',pic:'friends'},
+     {t:'Frankie [[fights]] a lot. But I like Frankie.',pic:'fights'}],
+  B:[{t:'My name is Martin Luna, and I am 16 years old. I [[live with]] my mother and my little [[brother]], Huero, in a small house. My father does not live with us.',pic:'livewith'},
+     {t:'My mother works a lot, so I [[take care of]] my brother after school. Huero is eight years old. I love Huero, and Huero loves me. He follows me everywhere.',pic:'takecare'},
+     {t:'My best [[friends]] are Frankie, Chago, and Jesus. Chago and Jesus are 16, like me. Frankie is older. He is 19 years old.',pic:'friends'},
+     {t:'Frankie [[fights]] a lot, and people are afraid of him. But I like Frankie. He is my friend.',pic:'fights'}]},
+ words:[{w:'live with',m:'have your home with someone',pic:'livewith'},{w:'brother',m:'a boy with the same mother or father as you',pic:'brother'},{w:'take care of',m:'help and watch someone so they are safe',pic:'takecare'},{w:'friends',m:'people you like and spend time with',pic:'friends'},{w:'fights',m:'hits or pushes people; is in fights',pic:'fights'}],
+ mc:[{id:'c1look',pic:1,A:'Look at the picture. The words say Martin has 2 families. Who are they?',B:'Look at the picture. It says “Martin’s 2 families.” Who are his two families?',o:['his mother and brother, and his friends','his teachers and his class','his father and his sister','a soccer team and a coach'],p:0},
+     {id:'c1q1',A:'How old is Martin?',B:'Martin is the big brother. How old is he?',o:['16','8','19','12'],p:1},
+     {id:'c1q2',A:'Who takes care of Huero?',B:'Martin’s mother works a lot. Who takes care of Huero?',o:['Martin','Frankie','his father','Chago'],p:2},
+     {id:'c1q3',A:'Who fights a lot?',B:'Which friend fights a lot?',o:['Frankie','Huero','Martin’s mother','Jesus'],p:4}],
+ play:{type:'match',title:'Who is who?',dir:'Tap a sentence. Then tap the person who says it.',
+   items:[{id:'m1',l:'“I am 8 years old.”',r:'Huero'},{id:'m2',l:'“I am 16. I take care of my brother.”',r:'Martin'},{id:'m3',l:'“I am 19. I fight a lot.”',r:'Frankie'},{id:'m4',l:'“I work a lot.”',r:'Martin’s mother'}]},
+ fix:{kind:'Capital letters',dir:'Names and the first word need a capital letter. Tap a word that needs one.',
+   items:[{id:'f1',s:'my name is martin luna .',fx:{0:['My','MY'],3:['Martin','MARTIN'],4:['Luna','LUNA']}},
+          {id:'f2',s:'frankie , chago , and jesus are my friends .',fx:{0:['Frankie','FRANKIE'],2:['Chago','CHAGO'],5:['Jesus','JESUS']}}]},
+ write:[{id:'w1a',A:'Who does Martin live with?',B:'Who does Martin live with?',frameA:'Martin lives with his ___ and his ___.',bankA:['mother','brother','Huero','father','friends'],frameB:'Martin lives with …',min:5},
+        {id:'w1b',A:'Who does Martin love?',B:'Who does Martin love? How do you know?',frameA:'Martin loves ___.',bankA:['his brother','Huero','Frankie','his father'],frameB:'Martin loves … I know because …',min:3},
+        {id:'w1c',A:'Who are Martin’s friends?',B:'Who are Martin’s friends? Tell one thing about Frankie.',frameA:'Martin’s friends are ___, ___, and ___.',bankA:['Frankie','Chago','Jesus','Huero'],frameB:'Martin’s friends are … Frankie …',min:6}],
+ say:['I take care of my brother.','I love Huero, and Huero loves me.','Frankie fights a lot.']},
+
+/* ---------------------------------------------------------- 2 */
+{id:2,title:'The White Car',img:['ch2'],panel:'ch2',lion:{l:'4%',t:'70%'},
+ pred:{A:'Look at the picture. What will happen?',B:'Look at the picture. What do you think will happen in this chapter?',o:['Something bad will happen.','Martin will go to a party.','Huero will win a race.','The boys will play soccer.']},
+ paras:{
+  A:[{t:'Today I was with my friends. We were at Frankie’s house. My brother Huero was [[riding his bike]] in the [[street]]. My brother wanted to be with me.',pic:'bike'},
+     {t:'Then a white car came in the street. The white car was [[fast]]. There was a gun in the white car.',pic:'fast'},
+     {t:'The person in the white car [[shot]] the gun. He shot the gun at Frankie.',pic:'street'},
+     {t:'But Frankie did not get hurt. My little brother [[got hurt]]. My little brother [[died]]. I was so sad and angry. I [[cried]].',pic:'cried'}],
+  B:[{t:'Today I was with my friends at Frankie’s house. We were talking on the front steps. My brother Huero was [[riding his bike]] in the [[street]]. He wanted to be with me and my friends.',pic:'bike'},
+     {t:'Then a white car came down the street. It was going very [[fast]]. There was a man with a gun in the white car.',pic:'fast'},
+     {t:'The man in the white car [[shot]] the gun. He was trying to shoot Frankie.',pic:'street'},
+     {t:'But Frankie did not get hurt. My little brother [[got hurt]], and he [[died]]. I was so sad and so angry. I [[cried]] and cried.',pic:'cried'}]},
+ words:[{w:'riding his bike',m:'sitting on a bike and making it go',pic:'bike'},{w:'street',m:'the road where cars drive',pic:'street'},{w:'fast',m:'very quick; not slow',pic:'fast'},{w:'got hurt',m:'something hurt his body',pic:'hurt'},{w:'cried',m:'had tears come out of the eyes',pic:'cried'}],
+ mc:[{id:'c2look',pic:1,A:'Look at the picture. How does Martin feel?',B:'Look at the picture. Martin is holding his brother. How does Martin feel?',o:['very sad','happy','bored','excited'],p:0},
+     {id:'c2q1',A:'Where were Martin and his friends?',B:'Where were Martin and his friends talking?',o:['at Frankie’s house','at school','at the park','at the store'],p:1},
+     {id:'c2q2',A:'What color was the car?',B:'The car came very fast. What color was it?',o:['white','black','red','blue'],p:2},
+     {id:'c2q3',A:'Who got hurt?',B:'The man shot at Frankie. But who got hurt?',o:['Huero','Frankie','Martin','Chago'],p:4}],
+ play:{type:'order',title:'What happened first?',dir:'Tap a sentence. Then tap a number. Put them in order, 1 to 5.',
+   items:['Martin was at Frankie’s house.','Huero was riding his bike in the street.','A white car came very fast.','The man shot the gun at Frankie.','Huero died, and Martin cried.']},
+ fix:{kind:'Capitals and periods',dir:'A sentence starts with a capital and ends with a period. Tap a word that needs a fix.',
+   items:[{id:'f1',s:'huero was riding his bike the car was fast .',fx:{0:['Huero','huero.'],4:['bike.','bike,'],5:['The','the.']}},
+          {id:'f2',s:'frankie did not get hurt my brother got hurt .',fx:{0:['Frankie','FRANKIE'],4:['hurt.','hurt,'],5:['My','MY']}}]},
+ write:[{id:'w2b',A:'What happened to Martin’s brother?',B:'What happened to Martin’s brother? Why?',frameA:'Martin’s brother got ___, and he ___.',bankA:['hurt','died','cried','sad'],frameB:'Martin’s brother … because …',min:6},
+        {id:'w2a',A:'How did Martin feel? Why?',B:'How did Martin feel at the end of the chapter? Why?',frameA:'Martin felt ___ and ___ because his brother ___.',bankA:['sad','angry','died','happy','got hurt'],frameB:'Martin felt … because …',min:7}],
+ say:['My brother Huero was riding his bike.','The white car was fast.','I was so sad and angry.']},
+
+/* ---------------------------------------------------------- 3 */
+{id:3,title:'Frankie’s Gang',img:['ch3'],panel:'ch3',lion:{l:'48%',t:'4%'},
+ pred:{A:'Martin is sad and angry. What will he do?',B:'Martin is sad and angry. What do you think he will do?',o:['He will look for the man in the white car.','He will move to a new country.','He will buy a new bike.','He will forget about Huero.']},
+ paras:{
+  A:[{t:'I wanted to find the man who killed my brother. Frankie had a gun. Frankie and I [[looked for]] the man.',pic:'lookfor'},
+     {t:'Then Frankie took me to a [[party]]. At the party, Frankie’s friends hit me and kicked me. It hurt, but I did not care. Now I was in Frankie’s [[gang]].',pic:'party'},
+     {t:'My mother and I [[argued]]. My mother wanted to move to a different house. My mother was [[worried]] about me. She said, “You are sad and angry, and you will do something stupid.”',pic:'argued'},
+     {t:'The next day, we [[moved]] to a different house.',pic:'moved'}],
+  B:[{t:'I wanted to find the man who killed my brother. Frankie had a gun, so Frankie and I drove around and [[looked for]] the man. We did not find him.',pic:'lookfor'},
+     {t:'Then Frankie took me to a [[party]]. At the party, Frankie’s friends hit me and kicked me. It was a test. It hurt, but I did not care. After that, I was in Frankie’s [[gang]].',pic:'party'},
+     {t:'My mother and I [[argued]]. She wanted to move to a different house in a different neighborhood. She was [[worried]] about me. She said, “You are sad and angry, and you will do something stupid.”',pic:'argued'},
+     {t:'The next day, we put everything in boxes, and we [[moved]] to a different house.',pic:'moved'}]},
+ words:[{w:'looked for',m:'tried to find',pic:'lookfor'},{w:'party',m:'a time when many people are together for fun',pic:'party'},{w:'gang',m:'a group of people who fight and do crimes together',pic:'gang'},{w:'argued',m:'talked in an angry way because you do not agree',pic:'argued'},{w:'worried',m:'afraid that something bad will happen',pic:'worried'},{w:'moved',m:'went to live in a new home',pic:'moved'}],
+ mc:[{id:'c3look',pic:1,A:'Look at the picture. What are the young men doing?',B:'Look at the picture of the party. What are Frankie’s friends doing?',o:['hitting Martin','dancing','eating cake','playing soccer'],p:0},
+     {id:'c3q1',A:'What did Martin want?',B:'What did Martin want to do with Frankie?',o:['to find the man who killed his brother','to go to a new school','to buy a new bike','to play soccer'],p:1},
+     {id:'c3q2',A:'What happened at the party?',B:'What did Frankie’s friends do at the party?',o:['They hit and kicked Martin.','They gave Martin a cake.','They danced with Martin.','They called Martin’s mother.'],p:2},
+     {id:'c3q3',A:'Why did his mother want to move?',B:'Why did Martin’s mother want a different house?',o:['She was worried about Martin.','She got a new job.','The house was too small.','She wanted a big yard.'],p:3}],
+ play:{type:'faces',title:'How do they feel?',dir:'Read. Tap the face that shows the feeling.',
+   items:[{id:'e1',q:'Huero died. How does Martin feel?',a:'sad'},{id:'e2',q:'Martin is in a gang. How does his mother feel?',a:'worried'},{id:'e3',q:'Martin and his mother argued. How do they feel?',a:'angry'}],
+   faces:['sad','worried','angry','happy']},
+ fix:{kind:'Run-on sentences',dir:'This sentence says “and, and, and.” Tap an “and” to make two sentences. Then fix the capital.',
+   items:[{id:'f1',s:'Frankie took me to a party and his friends hit me .',fx:{6:['.','and'],7:['His','his']}},
+          {id:'f2',s:'My mother was worried and she wanted to move and we moved .',fx:{4:['.','and'],5:['She','she'],9:['.','and'],10:['We','we']}}]},
+ write:[{id:'w3b',A:'What happened at the party?',B:'What happened at the party? What happened after the party?',frameA:'At the party, Frankie’s friends ___ and ___ Martin.',bankA:['hit','kicked','hugged','helped'],frameB:'At the party, … After that, …',min:7},
+        {id:'w3a',A:'What did Martin’s mother want to do?',B:'What did Martin’s mother want to do? Why?',frameA:'His mother wanted to ___ to a different ___.',bankA:['move','house','school','party'],frameB:'His mother wanted to … because …',min:7}],
+ say:['I wanted to find the man.','My mother was worried about me.','We moved to a different house.']},
+
+/* ---------------------------------------------------------- 4 */
+{id:4,title:'A New School',img:['ch4'],panel:'ch4',lion:{l:'74%',t:'64%'},
+ pred:{A:'Martin goes to a new school. What will happen?',B:'Martin goes to a new school. What do you think will happen there?',o:['He will meet a new teacher.','He will see Huero.','He will join a soccer team.','He will go back to his old house.']},
+ paras:{
+  A:[{t:'I lived in a new [[neighborhood]]. I went to a new school.',pic:'neighborhood'},
+     {t:'My new English teacher was named Mr. Mitchell. Mr. Mitchell asked me if I had a [[hero]]. I said no. Mr. Mitchell said I had to write about my hero.',pic:'hero'},
+     {t:'I almost got in a fight in [[P.E. class]]. A boy named Steve was a [[bully]]. I told him to stop being a bully. I almost fought him.',pic:'bully'}],
+  B:[{t:'Now I lived in a new [[neighborhood]], far from Frankie. I went to a new school. I did not know anybody there.',pic:'neighborhood'},
+     {t:'My new English teacher was named Mr. Mitchell. One day, Mr. Mitchell asked me, “Do you have a [[hero]]?” I said no. Mr. Mitchell said I had to write a story about my hero for homework.',pic:'hero'},
+     {t:'In [[P.E. class]], I almost got in a fight. A boy named Steve was a [[bully]]. He pushed a smaller boy. I told Steve to stop being a bully. We almost fought.',pic:'bully'}]},
+ words:[{w:'neighborhood',m:'the streets and houses near your home',pic:'neighborhood'},{w:'hero',m:'a person you love and respect because they are good or brave',pic:'hero'},{w:'P.E. class',m:'the class where you play sports and exercise',pic:'pe'},{w:'bully',m:'a person who hurts or scares smaller people',pic:'bully'}],
+ mc:[{id:'c4look',pic:1,A:'Look at the big picture. Where is it?',B:'Look at the big picture. The sign says “Mr. Mitchell, English.” Where is it?',o:['in an English class','at a party','in a kitchen','at a park'],p:0},
+     {id:'c4q1',A:'Who was Mr. Mitchell?',B:'Mr. Mitchell was new for Martin. Who was he?',o:['Martin’s English teacher','Martin’s father','a bully','Frankie’s friend'],p:2},
+     {id:'c4q2',A:'What did Mr. Mitchell ask?',B:'What question did Mr. Mitchell ask Martin?',o:['“Do you have a hero?”','“Do you have a bike?”','“Where do you live?”','“How old are you?”'],p:2},
+     {id:'c4q3',A:'What happened in P.E. class?',B:'What almost happened in P.E. class?',o:['Martin almost got in a fight.','Martin won a game.','Martin got hurt.','Martin was sick.'],p:3}],
+ play:{type:'tf',title:'True or not true?',dir:'Read each sentence. Tap 👍 true or 👎 not true.',
+   items:[{id:'t1',s:'Martin went to a new school.',a:true},{id:'t2',s:'Mr. Mitchell was Martin’s math teacher.',a:false},{id:'t3',s:'Martin said he had a hero.',a:false},{id:'t4',s:'Steve was a bully.',a:true},{id:'t5',s:'Martin hit Steve in P.E. class.',a:false}]},
+ fix:{kind:'Add details',dir:'Which sentence is better? Pick the one with a good, true detail.',type:'choose',
+   items:[{id:'f1',base:'I went to a new school.',o:['I went to a new school in a new neighborhood.','I went to a new school on the moon.','I went to a school new.']},
+          {id:'f2',base:'A boy was a bully.',o:['A boy named Steve was a bully in P.E. class.','A boy named Steve was a bully in the sky.','A boy was a bully boy bully.']}]},
+ write:[{id:'w4a',A:'Who was Mr. Mitchell?',B:'Who was Mr. Mitchell? What did he ask Martin?',frameA:'Mr. Mitchell was Martin’s ___ ___.',bankA:['English','teacher','father','friend'],frameB:'Mr. Mitchell was … He asked …',min:5},
+        {id:'w4b',A:'What happened in P.E. class?',B:'What happened in P.E. class? Why?',frameA:'In P.E. class, Martin almost got in a ___ with a boy named ___.',bankA:['fight','Steve','bully','game'],frameB:'In P.E. class, … because …',min:8}],
+ say:['I went to a new school.','Steve was a bully.','Do you have a hero?']},
+
+/* ---------------------------------------------------------- 5 */
+{id:5,title:'My Hero',img:['ch5'],panel:'ch5',lion:{l:'6%',t:'6%'},
+ pred:{A:'Mr. Mitchell said, “Write about your hero.” Who will be Martin’s hero?',B:'Martin has to write about his hero. Who do you think his hero will be?',o:['his brother Huero','Frankie','a famous soccer player','Mr. Mitchell']},
+ paras:{
+  A:[{t:'I [[hated]] my new school. I hated my life. I got in a fight with my mother. My mother [[blamed]] me for my brother’s death.',pic:'blamed'},
+     {t:'I went to Huero’s [[grave]]. I [[missed]] my brother very much.',pic:'grave'},
+     {t:'I went to see Frankie. Frankie was going to help me get [[revenge]].',pic:'revenge'},
+     {t:'I did my English [[homework]]. I wrote about my hero. My brother Huero was my hero.',pic:'homework'}],
+  B:[{t:'I [[hated]] my new school, and I hated my life. One night, I got in a big fight with my mother. She was very upset. She [[blamed]] me for my brother’s death. She said Huero was in the street because of me.',pic:'blamed'},
+     {t:'I went to Huero’s [[grave]] and sat there for a long time. I [[missed]] my brother very much.',pic:'grave'},
+     {t:'Then I went back to my old neighborhood to see Frankie. Frankie said he was going to help me get [[revenge]].',pic:'revenge'},
+     {t:'At home, I did my English [[homework]]. I wrote about my hero. My hero was not a famous person. My hero was my little brother, Huero.',pic:'homework'}]},
+ words:[{w:'hated',m:'did not like at all; the opposite of loved',pic:'hated'},{w:'blamed',m:'said, “This bad thing is your fault”',pic:'blamed'},{w:'grave',m:'the place in the ground where a dead person is',pic:'grave'},{w:'missed',m:'felt sad because someone is not with you',pic:'missed'},{w:'revenge',m:'hurting someone because they hurt you',pic:'revenge'},{w:'homework',m:'school work you do at home',pic:'homework'}],
+ mc:[{id:'c5look',pic:1,A:'Look at the picture. Martin asks a question. What is it?',B:'Look at the picture. Martin is at the grave. What question is in his head?',o:['“Whose fault is it?”','“Where is my bike?”','“Who is my teacher?”','“What time is it?”'],p:0},
+     {id:'c5q1',A:'Who did Martin’s mother blame?',B:'Martin’s mother was upset. Who did she blame for Huero’s death?',o:['Martin','Frankie','Steve','Mr. Mitchell'],p:1},
+     {id:'c5q2',A:'Where did Martin go?',B:'Martin missed his brother. Where did he go?',o:['to Huero’s grave','to the beach','to a party','to the store'],p:2},
+     {id:'c5q3',A:'Who was Martin’s hero?',B:'Martin wrote about his hero. Who was it?',o:['his brother Huero','Frankie','Mr. Mitchell','a famous soccer player'],p:4}],
+ play:{type:'cloze',title:'Fill the story',dir:'Tap a blank. Then tap the word that goes there.',
+   text:'Martin {hated} his new school. His mother {blamed} him for Huero’s death. Martin went to Huero’s {grave}. Frankie wanted to help Martin get {revenge}. Martin wrote about his {hero}, Huero.'},
+ fix:{kind:'He / she + -s',dir:'With he, she, or one name, the verb needs -s. Tap the verb to fix.',
+   items:[{id:'f1',s:'Every day , Martin miss his brother .',fx:{4:['misses','missing']}},
+          {id:'f2',s:'Martin hate his new school .',fx:{1:['hates','hating']}},
+          {id:'f3',s:'Frankie want revenge .',fx:{1:['wants','wanting']}}]},
+ write:[{id:'w5b',A:'Where did Martin go?',B:'Where did Martin go? Why did he go there?',frameA:'Martin went to Huero’s ___.',bankA:['grave','house','school','party'],frameB:'Martin went to … because …',min:4},
+        {id:'w5a',A:'Who is Martin’s hero? Why?',B:'Who is Martin’s hero? Why is he a hero to Martin?',frameA:'Martin’s hero is his ___ because Martin ___ him.',bankA:['brother','Huero','loved','misses'],frameB:'Martin’s hero is … because …',min:7}],
+ say:['I missed my brother very much.','I wrote about my hero.','My brother Huero was my hero.']},
+
+/* ---------------------------------------------------------- 6 */
+{id:6,title:'Vicky',img:['ch6'],panel:'ch6',lion:{l:'90%',t:'72%'},
+ pred:{A:'Martin reads his story about Huero to a girl. What will she think?',B:'Martin reads his story about Huero to a girl named Vicky. What do you think she will say?',o:['She will like it.','She will laugh at it.','She will not listen.','She will tell Frankie.']},
+ paras:{
+  A:[{t:'I [[read]] my story about Huero to a girl named Vicky. She liked my story. She thought my story was very sad. I said, “I loved my brother. Now he’s dead.”',pic:'readto'},
+     {t:'At school, I got in a fight with Steve. I hit Steve.',pic:'fights'},
+     {t:'The [[principal]] called my mother. My mother was [[angry]]. She said, “Fighting is stupid. Gangs are stupid. You make stupid [[choices]].”',pic:'principal'}],
+  B:[{t:'In English class, I [[read]] my story about Huero to a girl named Vicky. She liked my story, but she thought it was very sad. I told her, “I loved my brother. Now he’s dead.” Vicky listened. She was kind to me.',pic:'readto'},
+     {t:'Later that day, I got in a fight with Steve. He said something mean, and I hit him.',pic:'fights'},
+     {t:'The [[principal]] called my mother. My mother was very [[angry]]. She said, “Fighting is stupid. Gangs are stupid. You make stupid [[choices]].”',pic:'principal'}]},
+ words:[{w:'read',m:'said the words on a page out loud',pic:'readto'},{w:'principal',m:'the boss of a school',pic:'principal'},{w:'angry',m:'very upset; mad',pic:'angry'},{w:'choices',m:'things you decide to do',pic:'choices'}],
+ mc:[{id:'c6look',pic:1,A:'Look at the picture. Who is the principal calling?',B:'Look at the picture. The principal says, “Mrs. Luna?” Who is she?',o:['Martin’s mother','Vicky','Mr. Mitchell','Frankie’s mother'],p:0},
+     {id:'c6q1',A:'Who was Vicky?',B:'Martin read his story to Vicky. Who was she?',o:['a girl at Martin’s school','Martin’s sister','a teacher','Frankie’s friend'],p:1},
+     {id:'c6q2',A:'What did Vicky think about the story?',B:'Vicky liked the story. What else did she think?',o:['It was very sad.','It was funny.','It was boring.','It was too long.'],p:1},
+     {id:'c6q3',A:'How did Martin’s mother feel?',B:'The principal called her. How did Martin’s mother feel?',o:['angry','happy','proud','sleepy'],p:3}],
+ play:{type:'who',title:'Who said it?',dir:'Read the words. Tap the person who said them.',
+   people:['Martin','Vicky','Martin’s mother','Mr. Mitchell'],
+   items:[{id:'s1',q:'“I loved my brother. Now he’s dead.”',a:'Martin'},{id:'s2',q:'“You make stupid choices.”',a:'Martin’s mother'},{id:'s3',q:'“Do you have a hero?”',a:'Mr. Mitchell'},{id:'s4',q:'“You will do something stupid.”',a:'Martin’s mother'}]},
+ fix:{kind:'Past tense',dir:'The story happened before. Tap the verb that needs the past tense.',
+   items:[{id:'f1',s:'My mother is angry .',fx:{2:['was','be']}},
+          {id:'f2',s:'The principal call my mother .',fx:{2:['called','calling']}},
+          {id:'f3',s:'Vicky like my story .',fx:{1:['liked','likes']}}]},
+ write:[{id:'w6a',A:'Who was Vicky?',B:'Who was Vicky? What did she think about Martin’s story?',frameA:'Vicky was a ___ at Martin’s ___.',bankA:['girl','school','teacher','house'],frameB:'Vicky was … She thought …',min:5},
+        {id:'w6b',A:'How did Martin’s mother feel? Why?',B:'How did Martin’s mother feel? Why?',frameA:'His mother felt ___ because Martin ___ Steve.',bankA:['angry','hit','happy','helped'],frameB:'His mother felt … because …',min:6}],
+ say:['She liked my story.','My mother was angry.','You make stupid choices.']},
+
+/* ---------------------------------------------------------- 7 */
+{id:7,title:'The Knife',img:['ch7'],panel:'ch7',lion:{l:'30%',t:'78%'},
+ pred:{A:'Steve is angry at Martin. What will happen?',B:'Steve and his friends are angry at Martin. What do you think will happen?',o:['Steve will try to fight Martin again.','Steve will say sorry.','Steve will move away.','Steve will be Martin’s friend.']},
+ paras:{
+  A:[{t:'Vicky and I were friends now. Vicky said I did not [[start]] the fight with Steve. The principal [[listened]] to Vicky.',pic:'listened'},
+     {t:'Steve and his friends were angry at me. They [[tried]] to fight me again. But Frankie [[stopped]] them. Frankie had a knife.',pic:'stopped'},
+     {t:'Frankie wanted to hurt Steve a lot. But I told Frankie not to hurt Steve.',pic:'nohurt'},
+     {t:'Then Frankie said he [[found]] the man who killed my brother. Frankie wanted me to kill the man.',pic:'found'}],
+  B:[{t:'Vicky and I were friends now. She told the principal, “Martin did not [[start]] the fight. Steve started it.” The principal [[listened]] to Vicky, so I did not get in big trouble.',pic:'listened'},
+     {t:'After school, Steve and his friends were waiting for me. They were angry, and they [[tried]] to fight me again. But Frankie came and [[stopped]] them. Frankie had a knife.',pic:'stopped'},
+     {t:'Frankie wanted to hurt Steve badly. But I said, “No, Frankie. Do not hurt him.” Steve ran away.',pic:'nohurt'},
+     {t:'Then Frankie told me, “I [[found]] the man who killed your brother.” Frankie wanted me to kill the man.',pic:'found'}]},
+ words:[{w:'start',m:'do the first part of something',pic:'start'},{w:'listened',m:'heard someone and paid attention',pic:'listened'},{w:'tried',m:'wanted to do something and worked to do it',pic:'tried'},{w:'stopped',m:'made someone not do something',pic:'stopped'},{w:'found',m:'saw the thing you were looking for',pic:'found'}],
+ mc:[{id:'c7look',pic:1,A:'Look at the first picture. What does Vicky say?',B:'Look at the first picture. What does Vicky tell Martin?',o:['“I’m going to tell the principal that Steve pushed you first!”','“I’m going to tell your mother.”','“I don’t want to be your friend.”','“Let’s go to a party.”'],p:0},
+     {id:'c7q1',A:'Who said Martin did not start the fight?',B:'Who told the principal the truth about the fight?',o:['Vicky','Steve','Frankie','Martin’s mother'],p:1},
+     {id:'c7q2',A:'Who stopped Steve and his friends?',B:'Steve’s friends tried to fight Martin. Who stopped them?',o:['Frankie','the principal','Vicky','Mr. Mitchell'],p:2},
+     {id:'c7q3',A:'What did Martin tell Frankie?',B:'Frankie wanted to hurt Steve. What did Martin say?',o:['Do not hurt Steve.','Hurt Steve a lot.','Give me the knife.','Call the principal.'],p:3}],
+ play:{type:'pairs',title:'Why? Match the halves',dir:'Tap the first half. Then tap the second half that goes with it.',
+   items:[{id:'h1',l:'The principal listened to Vicky,',r:'so Martin was not in big trouble.'},{id:'h2',l:'Steve and his friends were angry,',r:'so they tried to fight Martin.'},{id:'h3',l:'Frankie found the man who killed Huero,',r:'so he wanted Martin to kill the man.'}]},
+ fix:{kind:'Past tense',dir:'The story happened before. Tap the verb that needs the past tense.',
+   items:[{id:'f1',s:'Frankie stop them .',fx:{1:['stopped','stops']}},
+          {id:'f2',s:'Vicky and I are friends now .',fx:{3:['were','was']}},
+          {id:'f3',s:'Frankie find the man .',fx:{1:['found','finded']}}]},
+ write:[{id:'w7b',A:'What did Frankie want Martin to do?',B:'What did Frankie want Martin to do? Why?',frameA:'Frankie wanted Martin to ___ the man who ___ Huero.',bankA:['kill','killed','help','found'],frameB:'Frankie wanted Martin to … because …',min:8},
+        {id:'w7a',A:'Frankie wanted to hurt Steve. What did Martin say?',B:'Frankie wanted to hurt Steve. What did Martin say? Why do you think he said it?',frameA:'Martin told Frankie not to ___ Steve.',bankA:['hurt','help','find','call'],frameB:'Martin told Frankie … I think he said it because …',min:6}],
+ say:['Vicky and I were friends now.','Frankie stopped them.','Do not hurt Steve.']},
+
+/* ---------------------------------------------------------- 8 */
+{id:8,title:'Martin’s Choice',img:['ch8a','ch8b'],cover:1,panel:'ch8',lion:{l:'50%',t:'84%'},
+ pred:{A:'Frankie wants Martin to kill the man. What will Martin do?',B:'Frankie wants Martin to kill the man. What do you think Martin will do?',o:['He will not kill the man.','He will kill the man.','He will run away.','He will call the police.']},
+ paras:{
+  A:[{t:'Frankie gave me a gun. He took me to a house. He [[pointed]] at a man. He said, “That man killed your brother. Kill him.”',pic:'pointed'},
+     {t:'I [[understood]] something. The man was Frankie’s [[enemy]]. The man killed my brother [[by accident]]. The man wanted to kill Frankie. Frankie wanted me to kill the man.',pic:'enemy'},
+     {t:'It was not my [[problem]]. My brother was dead. I could not get my brother back.',pic:'accident'},
+     {t:'I [[gave]] Frankie the gun. I said, “I am not in your gang any more.” I did not kill the man. Frankie was angry, but I did not care.',pic:'walkaway'}],
+  B:[{t:'That night, Frankie gave me a gun. He drove me to a house and [[pointed]] at a man in the window. He said, “That man killed your brother. Kill him.”',pic:'pointed'},
+     {t:'Then I [[understood]] something. The man was Frankie’s [[enemy]]. He wanted to kill Frankie, not Huero. He killed my brother [[by accident]]. Frankie wanted me to kill the man for him.',pic:'enemy'},
+     {t:'This was Frankie’s fight, not my [[problem]]. My brother was dead. Nothing could bring my brother back.',pic:'accident'},
+     {t:'I [[gave]] the gun back to Frankie. I said, “I am not in your gang any more.” I did not kill the man. Frankie was very angry, but I did not care. I walked home.',pic:'walkaway'}]},
+ words:[{w:'pointed',m:'showed with your finger',pic:'pointed'},{w:'understood',m:'knew what something really meant',pic:'understood'},{w:'enemy',m:'a person who wants to hurt you; not a friend',pic:'enemy'},{w:'by accident',m:'not on purpose; not planned',pic:'accident'},{w:'problem',m:'something difficult that you must fix',pic:'problem'},{w:'gave',m:'put something in another person’s hand',pic:'gave'}],
+ mc:[{id:'c8look',pic:1,A:'Look at the picture. What does Martin say to Frankie?',B:'Look at the second picture. What does Martin tell Frankie?',o:['“I’m out, Frankie.”','“Let’s go, Frankie.”','“Give me the knife.”','“You are my hero.”'],p:0},
+     {id:'c8q1',A:'Who was the man?',B:'Frankie pointed at a man. Who was he?',o:['Frankie’s enemy','Martin’s father','Martin’s teacher','Steve’s friend'],p:2},
+     {id:'c8q2',A:'Who did the man want to kill?',B:'The man shot the gun in the street. Who did he want to kill?',o:['Frankie','Huero','Martin','Vicky'],p:2},
+     {id:'c8q3',A:'What did Martin do?',B:'What did Martin do with the gun?',o:['He gave the gun to Frankie.','He killed the man.','He threw the gun in the street.','He kept the gun.'],p:4}],
+ play:{type:'doors',title:'Martin’s choices',dir:'Martin had to choose. Which door did Martin really open? Tap it.',
+   items:[{id:'d1',q:'Huero died. Martin was sad and angry.',o:['Martin went into Frankie’s gang.','Martin went to the police.']},
+          {id:'d2',q:'Mr. Mitchell said, “Write about your hero.”',o:['Martin wrote about Huero.','Martin did not write anything.']},
+          {id:'d3',q:'Frankie gave Martin a gun.',o:['Martin gave the gun back.','Martin killed the man.']}]},
+ fix:{kind:'Past tense',dir:'Some verbs change a lot in the past. Tap the verb to fix it.',
+   items:[{id:'f1',s:'Frankie give me a gun .',fx:{1:['gave','gived']}},
+          {id:'f2',s:'I understand something .',fx:{1:['understood','understanded']}},
+          {id:'f3',s:'Frankie take me to a house .',fx:{1:['took','taked']}}]},
+ write:[{id:'w8c',A:'Why did the man kill Martin’s brother?',B:'Why did the man kill Martin’s brother? Who did he really want to kill?',frameA:'The man killed Huero by ___. He wanted to kill ___.',bankA:['accident','Frankie','Martin','mistake'],frameB:'The man killed Huero … He really wanted to …',min:8},
+        {id:'w8d',A:'Why did Frankie want Martin to kill the man?',B:'Why did Frankie want Martin to kill the man? Was it for Huero or for Frankie?',frameA:'Frankie wanted Martin to kill the man because the man was Frankie’s ___.',bankA:['enemy','friend','brother','teacher'],frameB:'Frankie wanted Martin to kill the man because …',min:10},
+        {id:'w8e',A:'What did Martin do at the end of the story?',B:'What did Martin do at the end of the story? Why?',frameA:'Martin ___ Frankie the gun. He said, “I am not in your ___ any more.”',bankA:['gave','gang','took','school'],frameB:'At the end, Martin … because …',min:10},
+        {id:'w8b',A:'What would you do?',B:'What would you do if you were Martin? Why?',frameA:'If I were Martin, I would ___.',bankA:['give the gun back','leave the gang','talk to my mother','talk to Vicky'],frameB:'If I were Martin, I would … because …',min:5}],
+ say:['I understood something.','I am not in your gang any more.','I did not kill the man.']}
+];
+
+/* After the book — unlocks when chapter 8 is finished */
+var AFTER={
+ order:['Martin takes care of his brother, Huero.','A man in a white car shoots at Frankie, and Huero dies.','Martin goes into Frankie’s gang.','Martin and his mother move to a new neighborhood.','Mr. Mitchell asks Martin about his hero.','Martin writes about Huero, his hero.','Frankie finds the man who killed Huero.','Martin gives the gun back and leaves the gang.'],
+ people:[{id:'p1',n:'Martin',d:'He is 16. He takes care of his little brother.'},{id:'p2',n:'Huero',d:'He is 8. He rides his bike in the street.'},{id:'p3',n:'Frankie',d:'He is 19. He fights a lot and has a gang.'},{id:'p4',n:'Martin’s mother',d:'She works a lot. She is worried about Martin.'},{id:'p5',n:'Mr. Mitchell',d:'He is Martin’s English teacher.'},{id:'p6',n:'Steve',d:'He is a bully in P.E. class.'},{id:'p7',n:'Vicky',d:'She likes Martin’s story and helps him.'}],
+ hero:{id:'hero',A:'Martin’s hero was his brother. Who is your hero? Why?',B:'Martin’s hero was his little brother. Who is your hero? Why? Tell one thing your hero did.',frameA:'My hero is my ___ because ___.',bankA:['mother','father','brother','sister','grandmother','grandfather','friend','teacher'],frameB:'My hero is … because … One time, …',min:7}
+};
+
+/* helpers who speak on a miss — never red, one line, then a hint */
+var QUIPS={
+ mitchell:['Good try. Read it one more time.','Not that one. You are close.','Hmm. Look back at the story.','Almost! Slow down and read again.'],
+ vicky:['Not that one. You can do it.','Try another one. I believe in you.','Nope, but good thinking.','Look again. The answer is in the story.']
+};
+/* =====================================================================
+   ART — every picture is drawn here as layered flat SVG.
+   P() draws a person; scenes are composed from props. No emoji images.
+   The colleague's chapter pictures load from img/ when present; the
+   drawn chapter panel is the fallback (and chapter 7's only picture).
+   ===================================================================== */
+var ART=(function(){
+var INK='#17222b';
+var SK={martin:'#b07a52',huero:'#c08860',mom:'#9c6a46',frankie:'#c99569',vicky:'#7a4b31',mitch:'#e9c4a1',steve:'#f1d0b0',prin:'#5b3a29',chago:'#8f5d3d',man:'#d2a27a'};
+function f(n){return Math.round(n*10)/10;}
+/* ---------- a person: feet at (x,y), about 100 tall at s=1 ---------- */
+function arm(side,kind,shirt,skin){
+  var sx=13*side, sy=-68, e, h, extra='';
+  switch(kind){
+    case 'out':  e=[22*side,-66]; h=[32*side,-64]; break;
+    case 'up':   e=[18*side,-84]; h=[20*side,-102]; break;
+    case 'wave': e=[25*side,-70]; h=[27*side,-92]; break;
+    case 'point':e=[25*side,-70]; h=[39*side,-72]; extra='<line x1="'+(39*side)+'" y1="-72" x2="'+(46*side)+'" y2="-73" stroke="'+skin+'" stroke-width="2.6" stroke-linecap="round"/>'; break;
+    case 'hip':  e=[25*side,-56]; h=[14*side,-46]; break;
+    case 'push': e=[24*side,-66]; h=[37*side,-66]; break;
+    case 'hold': e=[18*side,-52]; h=[6*side,-56]; break;
+    case 'face': e=[20*side,-62]; h=[6*side,-82]; break;
+    case 'fist': e=[22*side,-80]; h=[22*side,-98]; break;
+    case 'give': e=[22*side,-58]; h=[34*side,-58]; break;
+    case 'hand': e=[20*side,-56]; h=[30*side,-48]; break;
+    default:     e=[17*side,-54]; h=[16*side,-40];
+  }
+  return '<polyline points="'+sx+','+sy+' '+e[0]+','+e[1]+' '+h[0]+','+h[1]+'" fill="none" stroke="'+shirt+'" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round"/>'+
+    '<polyline points="'+sx+','+sy+' '+e[0]+','+e[1]+' '+h[0]+','+h[1]+'" fill="none" stroke="rgba(0,0,0,.12)" stroke-width="2" stroke-linecap="round" transform="translate('+(side*1.6)+',1.5)"/>'+
+    '<circle cx="'+h[0]+'" cy="'+h[1]+'" r="3.9" fill="'+skin+'" stroke="'+INK+'" stroke-width=".8"/>'+extra;
+}
+function face(mood,skin){
+  var s='', ex=4.2, ey=-86;
+  var eye=function(x){return '<ellipse cx="'+x+'" cy="'+ey+'" rx="1.4" ry="1.8" fill="'+INK+'"/>';};
+  var br='';
+  if(mood==='angry'||mood==='shout') br='<path d="M-7,-91 L-2,-89 M7,-91 L2,-89" stroke="'+INK+'" stroke-width="1.6" stroke-linecap="round"/>';
+  else if(mood==='sad'||mood==='cry') br='<path d="M-7,-89 L-2,-91 M7,-89 L2,-91" stroke="'+INK+'" stroke-width="1.4" stroke-linecap="round"/>';
+  else if(mood==='worried') br='<path d="M-7,-90 Q-4,-93 -2,-91 M7,-90 Q4,-93 2,-91" stroke="'+INK+'" fill="none" stroke-width="1.3" stroke-linecap="round"/>';
+  else br='<path d="M-7,-91 Q-4,-92.5 -2,-91 M7,-91 Q4,-92.5 2,-91" stroke="'+INK+'" fill="none" stroke-width="1.1" stroke-linecap="round"/>';
+  s+=br+eye(-ex)+eye(ex);
+  s+='<path d="M-1,-84 Q0,-81.5 1.4,-82.4" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="1"/>';
+  var m={smile:'<path d="M-4,-78.6 Q0,-75 4,-78.6" fill="none" stroke="'+INK+'" stroke-width="1.5" stroke-linecap="round"/>',
+    big:'<path d="M-5,-79 Q0,-72 5,-79 Z" fill="#7a2a22" stroke="'+INK+'" stroke-width="1.1"/><path d="M-3.6,-78.6 L3.6,-78.6" stroke="#fff" stroke-width="1.2"/>',
+    sad:'<path d="M-4,-76.6 Q0,-80.2 4,-76.6" fill="none" stroke="'+INK+'" stroke-width="1.5" stroke-linecap="round"/>',
+    cry:'<path d="M-4,-76.6 Q0,-80.2 4,-76.6" fill="none" stroke="'+INK+'" stroke-width="1.5" stroke-linecap="round"/><path d="M-5,-84 q-1.6,4 0,6.5 q1.6,-2.5 0,-6.5Z M5,-84 q-1.6,4 0,6.5 q1.6,-2.5 0,-6.5Z" fill="#5aa9e6"/>',
+    angry:'<path d="M-4,-77.4 Q0,-79.6 4,-77.4" fill="none" stroke="'+INK+'" stroke-width="1.7" stroke-linecap="round"/>',
+    shout:'<ellipse cx="0" cy="-77.6" rx="3.2" ry="2.6" fill="#7a2a22" stroke="'+INK+'" stroke-width="1"/>',
+    worried:'<path d="M-4,-77.8 q2,-1.4 4,0 q2,1.4 4,0" fill="none" stroke="'+INK+'" stroke-width="1.4" stroke-linecap="round"/><path d="M9,-93 q-2,3 0,4.6 q2,-1.6 0,-4.6Z" fill="#9fd3f5" stroke="'+INK+'" stroke-width=".5"/>',
+    shock:'<ellipse cx="0" cy="-77.6" rx="2.2" ry="2.8" fill="#7a2a22" stroke="'+INK+'" stroke-width="1"/>',
+    neutral:'<path d="M-3.4,-78 L3.4,-78" stroke="'+INK+'" stroke-width="1.5" stroke-linecap="round"/>'};
+  s+=(m[mood]||m.smile);
+  if(mood!=='angry'&&mood!=='shout') s+='<ellipse cx="-6.5" cy="-81" rx="1.8" ry="1.1" fill="#e58f86" opacity=".45"/><ellipse cx="6.5" cy="-81" rx="1.8" ry="1.1" fill="#e58f86" opacity=".45"/>';
+  return s;
+}
+function hairBack(t,c){
+  if(t==='long') return '<path d="M-12,-90 Q-15,-66 -11,-62 L11,-62 Q15,-66 12,-90 Z" fill="'+c+'"/>';
+  if(t==='bun') return '<circle cx="0" cy="-99" r="5.5" fill="'+c+'" stroke="'+INK+'" stroke-width=".8"/>';
+  if(t==='hijab') return '<path d="M-14,-88 Q-16,-64 -15,-60 L15,-60 Q16,-64 14,-88 Z" fill="'+c+'"/>';
+  return '';
+}
+function hairFront(t,c){
+  switch(t){
+    case 'short': return '<path d="M-11.4,-86 Q-12,-98 0,-97.6 Q11.6,-98 11.4,-86 Q9,-92 2,-92.5 Q-4,-91 -6,-93 Q-8,-90 -11.4,-86Z" fill="'+c+'" stroke="'+INK+'" stroke-width=".8"/>';
+    case 'spiky': return '<path d="M-11.4,-86 L-12,-94 L-8,-93 L-7,-99 L-3,-95 L0,-100.5 L3,-95 L7,-99 L8,-93 L12,-94 L11.4,-86 Q6,-92 0,-91.6 Q-6,-92 -11.4,-86Z" fill="'+c+'" stroke="'+INK+'" stroke-width=".8"/>';
+    case 'buzz': return '<path d="M-11,-87 Q-10.6,-97 0,-97 Q10.6,-97 11,-87 Q6,-93 0,-93 Q-6,-93 -11,-87Z" fill="'+c+'" opacity=".85"/>';
+    case 'curly': return '<g fill="'+c+'" stroke="'+INK+'" stroke-width=".7"><circle cx="-9" cy="-91" r="4"/><circle cx="-4" cy="-95.5" r="4.4"/><circle cx="2" cy="-96.4" r="4.4"/><circle cx="7.4" cy="-93.4" r="4"/><circle cx="10.4" cy="-88" r="3.2"/><circle cx="-11" cy="-86.4" r="3"/></g>';
+    case 'long': return '<path d="M-11.6,-84 Q-13,-99 0,-98.4 Q13,-99 11.6,-84 Q9,-93 0,-93 Q-4,-92 -6,-90 Q-9,-90 -11.6,-84Z" fill="'+c+'" stroke="'+INK+'" stroke-width=".8"/>';
+    case 'bun': return '<path d="M-11.4,-85 Q-12,-98 0,-97.4 Q12,-98 11.4,-85 Q8,-93 0,-92.6 Q-8,-93 -11.4,-85Z" fill="'+c+'" stroke="'+INK+'" stroke-width=".8"/>';
+    case 'cap': return '<path d="M-11.6,-88 Q-11,-99 0,-99 Q11,-99 11.6,-88 Z" fill="'+c+'" stroke="'+INK+'" stroke-width=".8"/><path d="M0,-89 L18,-88.4 Q18,-86 11,-86 L0,-87Z" fill="'+c+'" stroke="'+INK+'" stroke-width=".8"/><circle cx="0" cy="-99" r="1.2" fill="'+INK+'"/>';
+    case 'hijab': return '<path d="M-13.6,-84 Q-14,-101 0,-101 Q14,-101 13.6,-84 Q13,-76 8,-73 L8,-77 Q11,-82 10.6,-88 Q8,-94 0,-94 Q-8,-94 -10.6,-88 Q-11,-82 -8,-77 L-8,-73 Q-13,-76 -13.6,-84Z" fill="'+c+'" stroke="'+INK+'" stroke-width=".8"/>';
+    case 'rows': return '<path d="M-11.2,-86 Q-11.6,-98.6 0,-98.6 Q11.6,-98.6 11.2,-86 Q9,-91.6 0,-92.2 Q-9,-91.6 -11.2,-86Z" fill="'+c+'" stroke="'+INK+'" stroke-width=".8"/><g fill="none" stroke="#5a4636" stroke-width=".9"><path d="M-8.6,-89.4 Q-7,-95 -4,-97.6"/><path d="M-4.6,-91.4 Q-3.4,-96 -1.4,-98.4"/><path d="M0,-92 L0,-98.6"/><path d="M4.6,-91.4 Q3.4,-96 1.4,-98.4"/><path d="M8.6,-89.4 Q7,-95 4,-97.6"/></g>';
+    case 'bowl': return '<path d="M-11.8,-84 Q-13,-100 0,-100 Q13,-100 11.8,-84 L10.4,-88.6 L-10.4,-88.6 Z" fill="'+c+'" stroke="'+INK+'" stroke-width=".8"/><path d="M-10,-88.6 L10,-88.6" stroke="'+INK+'" stroke-width=".9"/>';
+    case 'grey': return '<path d="M-11.4,-84 Q-12,-90 -10,-91 L-9,-86 M11.4,-84 Q12,-90 10,-91 L9,-86" fill="none" stroke="'+c+'" stroke-width="3" stroke-linecap="round"/>';
+    default: return '';
+  }
+}
+function P(o){
+  o=o||{};
+  var x=o.x||0,y=o.y||0,s=o.s||1,sk=o.skin||SK.martin,sh=o.shirt||'#3d6fb0',pa=o.pants||'#2d3a4a',hc=o.hc||'#231a14',ht=o.hair||'short',
+      la=o.l||'down',ra=o.r||'down',mood=o.mood||'smile',shoes=o.shoes||'#f4f4f4';
+  var g='<g transform="translate('+x+','+y+') scale('+(o.flip?-s:s)+','+s+')">';
+  g+='<ellipse cx="0" cy="1" rx="15" ry="3" fill="rgba(0,0,0,.18)"/>';
+  g+=hairBack(ht,hc);
+  /* legs */
+  if(o.sit){
+    if(!o.ride)g+='<g><rect x="-16" y="-30" width="24" height="5" rx="1.5" fill="#8a5a3b" stroke="'+INK+'" stroke-width=".8"/><rect x="-14" y="-25" width="3" height="25" fill="#6b4228"/><rect x="3" y="-25" width="3" height="25" fill="#6b4228"/><rect x="-16" y="-58" width="4" height="30" rx="1.5" fill="#8a5a3b" stroke="'+INK+'" stroke-width=".8"/></g>';
+    g+='<path d="M-9,-40 L-9,-32 L10,-32 L10,-4" fill="none" stroke="'+pa+'" stroke-width="9" stroke-linejoin="round"/><path d="M3,-40 L3,-34 L18,-34 L18,-4" fill="none" stroke="'+pa+'" stroke-width="9" stroke-linejoin="round" opacity=".85"/>';
+    g+='<rect x="6" y="-5" width="11" height="5" rx="2" fill="'+shoes+'" stroke="'+INK+'" stroke-width=".8"/><rect x="14" y="-5" width="11" height="5" rx="2" fill="'+shoes+'" stroke="'+INK+'" stroke-width=".8"/>';
+  }else{
+    var lw=o.walk?'M-5,-40 L-11,-2':'M-5,-40 L-6,-3', rw=o.walk?'M5,-40 L10,-3':'M5,-40 L6,-3';
+    g+='<path d="'+lw+'" stroke="'+pa+'" stroke-width="9" stroke-linecap="round"/><path d="'+rw+'" stroke="'+pa+'" stroke-width="9" stroke-linecap="round"/>';
+    g+='<path d="'+rw+'" stroke="rgba(0,0,0,.15)" stroke-width="3" transform="translate(2,0)"/>';
+    var lx=o.walk?-11:-6, rx=o.walk?10:6;
+    g+='<path d="M'+(lx-6)+',-1 Q'+(lx-6)+',-6 '+lx+',-6 L'+(lx+3)+',-6 L'+(lx+3)+',0 Z" fill="'+shoes+'" stroke="'+INK+'" stroke-width=".9"/>';
+    g+='<path d="M'+(rx-3)+',-6 L'+rx+',-6 Q'+(rx+6)+',-6 '+(rx+6)+',-1 L'+(rx-3)+',0 Z" fill="'+shoes+'" stroke="'+INK+'" stroke-width=".9"/>';
+  }
+  /* body */
+  g+=arm(-1,la,sh,sk);
+  g+='<path d="M-13,-70 Q-14,-72 -9,-73 L9,-73 Q14,-72 13,-70 L12,-40 L-12,-40 Z" fill="'+sh+'" stroke="'+INK+'" stroke-width="1"/>';
+  g+='<path d="M3,-72 L12,-70 L11,-40 L4,-40 Z" fill="rgba(0,0,0,.13)"/>';
+  if(o.hood) g+='<path d="M-9,-73 Q0,-66 9,-73" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="2"/><path d="M-3,-70 L-3,-60 M3,-70 L3,-60" stroke="#fff" stroke-width="1"/><rect x="-7" y="-55" width="14" height="7" rx="2" fill="rgba(0,0,0,.12)"/>';
+  if(o.collar) g+='<path d="M-5,-73 L0,-66 L5,-73" fill="#fff" stroke="'+INK+'" stroke-width=".8"/><path d="M0,-66 L-1.6,-58 L0,-50 L1.6,-58Z" fill="'+o.collar+'"/>';
+  if(o.logo) g+='<text x="0" y="-52" text-anchor="middle" font-size="9" font-weight="900" fill="#fff" font-family="Nunito,sans-serif">'+o.logo+'</text>';
+  g+='<path d="M-12.2,-42 L12.2,-42" stroke="rgba(0,0,0,.35)" stroke-width="2.4"/>';
+  g+='<rect x="-3.4" y="-77" width="6.8" height="6" fill="'+sk+'"/>';
+  /* head */
+  g+='<ellipse cx="0" cy="-86" rx="11.2" ry="12" fill="'+sk+'" stroke="'+INK+'" stroke-width="1"/>';
+  if(ht!=='hijab') g+='<ellipse cx="-11.2" cy="-85" rx="2" ry="3" fill="'+sk+'" stroke="'+INK+'" stroke-width=".8"/><ellipse cx="11.2" cy="-85" rx="2" ry="3" fill="'+sk+'" stroke="'+INK+'" stroke-width=".8"/>';
+  g+=face(mood,sk);
+  g+=hairFront(ht,hc);
+  if(o.glasses) g+='<g fill="rgba(255,255,255,.25)" stroke="'+INK+'" stroke-width="1.1"><circle cx="-4.4" cy="-86" r="3.4"/><circle cx="4.4" cy="-86" r="3.4"/></g><path d="M-1,-86 L1,-86" stroke="'+INK+'"/>';
+  if(o.beard) g+='<path d="M-9,-82 Q-8,-72 0,-71 Q8,-72 9,-82 Q5,-77 0,-77.4 Q-5,-77 -9,-82Z" fill="'+o.beard+'" opacity=".85"/>';
+  g+=arm(1,ra,sh,sk);
+  if(o.acc) g+=o.acc;
+  return g+'</g>';
+}
+/* named people so every picture draws them the same way */
+var WHO={
+  martin:function(o){return P(Object.assign({skin:SK.martin,shirt:'#2f6db5',pants:'#2c3440',hair:'rows',hc:'#1b120d',hood:1},o));},
+  huero:function(o){return P(Object.assign({skin:SK.huero,shirt:'#e2672a',pants:'#3a5f8a',hair:'bowl',hc:'#2a1a10',s:.7},o));},
+  mom:function(o){return P(Object.assign({skin:SK.mom,shirt:'#8a4f9c',pants:'#3b3346',hair:'bun',hc:'#2c1d15',shoes:'#5a3a2a'},o));},
+  frankie:function(o){return P(Object.assign({skin:SK.frankie,shirt:'#1e1f24',pants:'#5d6672',hair:'buzz',hc:'#2a1d14',s:1.08,logo:'',shoes:'#222'},o));},
+  chago:function(o){return P(Object.assign({skin:SK.chago,shirt:'#3e8a5a',pants:'#2b3644',hair:'cap',hc:'#c23b2e'},o));},
+  jesus:function(o){return P(Object.assign({skin:SK.martin,shirt:'#c9a227',pants:'#2b3644',hair:'curly',hc:'#20140d'},o));},
+  vicky:function(o){return P(Object.assign({skin:SK.vicky,shirt:'#d9486a',pants:'#2f3a5a',hair:'long',hc:'#1a100b',shoes:'#fff'},o));},
+  mitch:function(o){return P(Object.assign({skin:SK.mitch,shirt:'#7aa0c4',pants:'#4a4136',hair:'grey',hc:'#9a9a9a',glasses:1,collar:'#9c2f2f',s:1.05,shoes:'#3a2a1e'},o));},
+  steve:function(o){return P(Object.assign({skin:SK.steve,shirt:'#b23434',pants:'#2c2c38',hair:'short',hc:'#c0612b',s:1.12},o));},
+  prin:function(o){return P(Object.assign({skin:SK.prin,shirt:'#2e3d5c',pants:'#2e3d5c',hair:'grey',hc:'#bbb',collar:'#e2b33a',glasses:1,s:1.05,shoes:'#222'},o));},
+  man:function(o){return P(Object.assign({skin:SK.man,shirt:'#6a6f5c',pants:'#333',hair:'short',hc:'#3a2a20',beard:'#3a2a20'},o));}
+};
+/* ---------- props ---------- */
+function sky(w,h,top,bot){var id='sk'+Math.round(Math.random()*1e6);return '<defs><linearGradient id="'+id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+top+'"/><stop offset="1" stop-color="'+bot+'"/></linearGradient></defs><rect width="'+w+'" height="'+h+'" fill="url(#'+id+')"/>';}
+function cloud(x,y,s){return '<g transform="translate('+x+','+y+') scale('+s+')" fill="#fff" opacity=".9"><ellipse cx="0" cy="0" rx="18" ry="9"/><ellipse cx="14" cy="-5" rx="13" ry="10"/><ellipse cx="-12" cy="-3" rx="11" ry="8"/></g>';}
+function house(x,y,w,h,wall,roof,door){
+  var g='<g transform="translate('+x+','+y+')">';
+  g+='<rect x="0" y="'+(-h)+'" width="'+w+'" height="'+h+'" fill="'+wall+'" stroke="'+INK+'" stroke-width="1.2"/>';
+  for(var i=1;i<h/8;i++) g+='<line x1="0" y1="'+(-h+i*8)+'" x2="'+w+'" y2="'+(-h+i*8)+'" stroke="rgba(0,0,0,.07)"/>';
+  g+='<rect x="'+(w*.62)+'" y="'+(-h)+'" width="'+(w*.38)+'" height="'+h+'" fill="rgba(0,0,0,.08)"/>';
+  g+='<path d="M-6,'+(-h)+' L'+(w/2)+','+(-h-h*.45)+' L'+(w+6)+','+(-h)+' Z" fill="'+roof+'" stroke="'+INK+'" stroke-width="1.2"/>';
+  g+='<path d="M'+(w/2)+','+(-h-h*.45)+' L'+(w+6)+','+(-h)+' L'+(w/2)+','+(-h)+'Z" fill="rgba(0,0,0,.15)"/>';
+  g+='<rect x="'+(w*.4)+'" y="'+(-h*.55)+'" width="'+(w*.2)+'" height="'+(h*.55)+'" fill="'+(door||'#6b4228')+'" stroke="'+INK+'"/><circle cx="'+(w*.56)+'" cy="'+(-h*.28)+'" r="1.4" fill="#e8c35a"/>';
+  g+='<rect x="'+(w*.1)+'" y="'+(-h*.75)+'" width="'+(w*.2)+'" height="'+(h*.25)+'" fill="#bfe0f2" stroke="'+INK+'"/><line x1="'+(w*.2)+'" y1="'+(-h*.75)+'" x2="'+(w*.2)+'" y2="'+(-h*.5)+'" stroke="'+INK+'" stroke-width=".7"/>';
+  g+='<rect x="'+(w*.7)+'" y="'+(-h*.75)+'" width="'+(w*.2)+'" height="'+(h*.25)+'" fill="#bfe0f2" stroke="'+INK+'"/><line x1="'+(w*.8)+'" y1="'+(-h*.75)+'" x2="'+(w*.8)+'" y2="'+(-h*.5)+'" stroke="'+INK+'" stroke-width=".7"/>';
+  g+='<rect x="'+(w*.34)+'" y="-3" width="'+(w*.32)+'" height="3" fill="#9a9086" stroke="'+INK+'" stroke-width=".6"/>';
+  return g+'</g>';
+}
+function bike(x,y,s,c){
+  return '<g transform="translate('+x+','+y+') scale('+s+')"><g fill="none" stroke="'+INK+'" stroke-width="2.4"><circle cx="-16" cy="-10" r="10"/><circle cx="16" cy="-10" r="10"/></g>'+
+   '<g stroke="#9aa5ae" stroke-width=".7"><line x1="-16" y1="-20" x2="-16" y2="0"/><line x1="-26" y1="-10" x2="-6" y2="-10"/><line x1="16" y1="-20" x2="16" y2="0"/><line x1="6" y1="-10" x2="26" y2="-10"/></g>'+
+   '<path d="M-16,-10 L-3,-10 L8,-24 L-8,-24 Z M8,-24 L16,-10 M-3,-10 L-8,-26" fill="none" stroke="'+c+'" stroke-width="3" stroke-linejoin="round"/>'+
+   '<path d="M8,-24 L10,-31 L15,-32" fill="none" stroke="'+INK+'" stroke-width="2.4" stroke-linecap="round"/><rect x="-13" y="-29" width="10" height="3.4" rx="1.6" fill="'+INK+'"/><circle cx="-3" cy="-10" r="2.4" fill="'+INK+'"/></g>';
+}
+function car(x,y,s,c,motion,flip){
+  var g='<g transform="translate('+x+','+y+') scale('+(flip?-s:s)+','+s+')">';
+  if(motion) g+='<g stroke="#8a96a0" stroke-width="2.4" stroke-linecap="round"><line x1="-70" y1="-26" x2="-48" y2="-26"/><line x1="-78" y1="-16" x2="-50" y2="-16"/><line x1="-66" y1="-6" x2="-50" y2="-6"/></g>';
+  g+='<path d="M-44,-8 L-44,-22 Q-44,-27 -38,-28 L-26,-29 L-14,-42 Q-11,-45 -6,-45 L18,-45 Q23,-45 27,-40 L36,-29 L44,-27 Q48,-26 48,-21 L48,-8 Z" fill="'+c+'" stroke="'+INK+'" stroke-width="1.4"/>';
+  g+='<path d="M-44,-16 L48,-16 L48,-8 L-44,-8Z" fill="rgba(0,0,0,.1)"/>';
+  g+='<path d="M-11,-41 L-1,-41 L-1,-29 L-22,-29 Z M3,-41 L18,-41 Q21,-41 24,-37 L30,-29 L3,-29 Z" fill="#2e4053" stroke="'+INK+'"/>';
+  g+='<path d="M-8,-40 L-5,-31 M6,-40 L10,-31" stroke="rgba(255,255,255,.5)" stroke-width="1.6"/>';
+  g+='<rect x="40" y="-24" width="7" height="4" rx="1" fill="#ffe08a" stroke="'+INK+'" stroke-width=".6"/><rect x="-44" y="-23" width="4" height="4" fill="#d9483b"/>';
+  g+='<g><circle cx="-26" cy="-8" r="9" fill="#222"/><circle cx="-26" cy="-8" r="4" fill="#b8c0c7"/><circle cx="30" cy="-8" r="9" fill="#222"/><circle cx="30" cy="-8" r="4" fill="#b8c0c7"/></g>';
+  return g+'</g>';
+}
+function tree(x,y,s){return '<g transform="translate('+x+','+y+') scale('+s+')"><rect x="-4" y="-34" width="8" height="34" fill="#7a5233" stroke="'+INK+'" stroke-width=".8"/><circle cx="0" cy="-48" r="20" fill="#4f8d4a" stroke="'+INK+'" stroke-width=".8"/><circle cx="-12" cy="-40" r="12" fill="#5e9f57"/><circle cx="10" cy="-56" r="10" fill="#6aac62"/><circle cx="8" cy="-38" r="9" fill="#447e40"/></g>';}
+function lamp(x,y,s){return '<g transform="translate('+x+','+y+') scale('+s+')"><rect x="-2" y="-120" width="4" height="120" fill="#3e4a55"/><path d="M0,-120 Q0,-128 12,-128 L18,-128" fill="none" stroke="#3e4a55" stroke-width="4"/><path d="M12,-128 L24,-128 L22,-122 L14,-122Z" fill="#3e4a55"/><ellipse cx="18" cy="-120" rx="5" ry="2.4" fill="#ffe9a8"/></g>';}
+function road(w,y,h){var g='<rect x="0" y="'+y+'" width="'+w+'" height="'+h+'" fill="#5b636b"/><rect x="0" y="'+y+'" width="'+w+'" height="5" fill="#9aa1a7"/>';for(var i=10;i<w;i+=46)g+='<rect x="'+i+'" y="'+(y+h/2)+'" width="24" height="3.4" fill="#f2d35b"/>';return g;}
+function boxes(x,y,s){return '<g transform="translate('+x+','+y+') scale('+s+')"><rect x="-30" y="-24" width="30" height="24" fill="#c99a62" stroke="'+INK+'"/><path d="M-30,-24 L0,-24 M-15,-24 L-15,-14" stroke="#8a6436" stroke-width="2"/><rect x="2" y="-18" width="24" height="18" fill="#d8ab72" stroke="'+INK+'"/><rect x="-22" y="-44" width="26" height="20" fill="#e0b783" stroke="'+INK+'"/><path d="M-9,-44 L-9,-36" stroke="#8a6436" stroke-width="2"/><text x="-9" y="-29" font-size="5.5" text-anchor="middle" fill="#5a3e1f" font-family="Nunito" font-weight="900">KITCHEN</text></g>';}
+function heart(x,y,s,c){return '<path transform="translate('+x+','+y+') scale('+s+')" d="M0,6 C-12,-3 -8,-14 0,-8 C8,-14 12,-3 0,6Z" fill="'+(c||'#e0465a')+'" stroke="'+INK+'" stroke-width=".8"/>';}
+function redX(x,y,s){return '<g transform="translate('+x+','+y+') scale('+(s||1)+')"><circle r="15" fill="#fff" stroke="#c0392b" stroke-width="3"/><path d="M-7,-7 L7,7 M7,-7 L-7,7" stroke="#c0392b" stroke-width="4" stroke-linecap="round"/></g>';}
+function bubble(x,y,w,h,txt,jag){
+  var g='<g transform="translate('+x+','+y+')">';
+  if(jag) g+='<path d="M0,'+(h/2)+' L'+(w*.1)+',0 L'+(w*.25)+','+(h*.15)+' L'+(w*.4)+',-4 L'+(w*.55)+','+(h*.12)+' L'+(w*.72)+',-3 L'+(w*.85)+','+(h*.15)+' L'+w+','+(h*.2)+' L'+(w*.92)+','+(h*.5)+' L'+w+','+(h*.85)+' L'+(w*.7)+','+(h*.85)+' L'+(w*.5)+','+(h+4)+' L'+(w*.3)+','+(h*.88)+' L'+(w*.08)+','+(h+2)+' Z" fill="#fff" stroke="'+INK+'" stroke-width="1.4"/>';
+  else g+='<rect x="0" y="0" width="'+w+'" height="'+h+'" rx="9" fill="#fff" stroke="'+INK+'" stroke-width="1.4"/><path d="M'+(w*.2)+','+h+' L'+(w*.16)+','+(h+10)+' L'+(w*.34)+','+h+'" fill="#fff" stroke="'+INK+'" stroke-width="1.4"/><path d="M'+(w*.21)+','+(h-1)+' L'+(w*.33)+','+(h-1)+'" stroke="#fff" stroke-width="2"/>';
+  if(txt) g+='<text x="'+(w/2)+'" y="'+(h/2+5)+'" text-anchor="middle" font-size="'+(h*.42)+'" font-weight="900" font-family="Nunito,sans-serif" fill="'+INK+'">'+txt+'</text>';
+  return g+'</g>';
+}
+function grave(x,y,s){return '<g transform="translate('+x+','+y+') scale('+s+')"><path d="M-22,0 L-22,-40 Q-22,-58 0,-58 Q22,-58 22,-40 L22,0Z" fill="#a9b1b8" stroke="'+INK+'" stroke-width="1.3"/><path d="M8,-56 Q22,-52 22,-40 L22,0 L10,0 Z" fill="rgba(0,0,0,.12)"/><text x="0" y="-36" font-size="9" text-anchor="middle" font-family="Nunito" font-weight="900" fill="#4a535b">HUERO</text><text x="0" y="-25" font-size="6" text-anchor="middle" font-family="Nunito" font-weight="700" fill="#4a535b">LUNA</text><path d="M-6,-16 L6,-16" stroke="#6d767e" stroke-width="1.4"/><path d="M-12,-8 q4,-3 8,0" stroke="#7a8288" fill="none"/><g transform="translate(-26,0)"><path d="M0,0 L0,-14 M-4,0 L-6,-12 M4,0 L5,-11" stroke="#4f8d4a" stroke-width="1.6"/><circle cx="0" cy="-15" r="3.4" fill="#e2672a"/><circle cx="-6" cy="-13" r="3" fill="#f2c14e"/><circle cx="5" cy="-12" r="3" fill="#e0465a"/></g><g transform="translate(26,0)"><path d="M0,0 L0,-12 M-3,0 L-5,-10" stroke="#4f8d4a" stroke-width="1.6"/><circle cx="0" cy="-13" r="3.2" fill="#fff" stroke="#ddd"/><circle cx="-5" cy="-11" r="3" fill="#f2c14e"/></g></g>';}
+function notebook(x,y,s,txt){return '<g transform="translate('+x+','+y+') scale('+s+')"><rect x="-30" y="-22" width="60" height="44" rx="3" fill="#fff" stroke="'+INK+'" stroke-width="1.3"/><line x1="0" y1="-22" x2="0" y2="22" stroke="'+INK+'"/><g stroke="#9fc3e6" stroke-width=".8"><line x1="-26" y1="-10" x2="-4" y2="-10"/><line x1="-26" y1="-2" x2="-4" y2="-2"/><line x1="-26" y1="6" x2="-4" y2="6"/><line x1="-26" y1="14" x2="-4" y2="14"/><line x1="4" y1="-10" x2="26" y2="-10"/><line x1="4" y1="-2" x2="26" y2="-2"/><line x1="4" y1="6" x2="26" y2="6"/></g><text x="-15" y="-13" text-anchor="middle" font-size="6.5" font-weight="900" fill="#2f6db5" font-family="Nunito">'+(txt||'My Hero')+'</text><path d="M-25,-4 q4,-3 8,0 t8,0 M-25,4 q4,-3 8,0 t8,0 M6,-4 q4,-3 8,0 t8,0" stroke="#555" fill="none" stroke-width=".8"/><g transform="translate(24,10) rotate(35)"><rect x="-2.4" y="-22" width="4.8" height="20" fill="#f2c14e" stroke="'+INK+'" stroke-width=".7"/><path d="M-2.4,-2 L0,4 L2.4,-2Z" fill="#e8c9a0" stroke="'+INK+'" stroke-width=".6"/><rect x="-2.4" y="-25" width="4.8" height="3" fill="#e0809a"/></g></g>';}
+function lion(){return '<svg viewBox="0 0 40 40"><g><circle cx="20" cy="20" r="17" fill="#c9861f"/><g fill="#b2701a">'+[0,40,80,120,160,200,240,280,320].map(function(a){var r=a*Math.PI/180;return '<circle cx="'+f(20+15*Math.cos(r))+'" cy="'+f(20+15*Math.sin(r))+'" r="5"/>';}).join('')+'</g><circle cx="20" cy="21" r="10.5" fill="#f2c14e" stroke="#7a4d12" stroke-width="1"/><circle cx="16" cy="19" r="1.5" fill="#222"/><circle cx="24" cy="19" r="1.5" fill="#222"/><path d="M18,24 L22,24 L20,26.4Z" fill="#6b3a1e"/><path d="M20,26.4 Q18,28.4 16.4,27.4 M20,26.4 Q22,28.4 23.6,27.4" stroke="#6b3a1e" fill="none" stroke-width=".9"/><circle cx="12.5" cy="12.5" r="2.6" fill="#f2c14e" stroke="#7a4d12" stroke-width=".8"/><circle cx="27.5" cy="12.5" r="2.6" fill="#f2c14e" stroke="#7a4d12" stroke-width=".8"/></g></svg>';}
+function wrap(w,h,inner,label){return '<svg viewBox="0 0 '+w+' '+h+'" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="'+(label||'picture')+'">'+inner+'</svg>';}
+function ground(w,h,y,c){return '<rect x="0" y="'+y+'" width="'+w+'" height="'+(h-y)+'" fill="'+c+'"/>';}
+function wall(w,h,c){var g='<rect width="'+w+'" height="'+h+'" fill="'+c+'"/>';return g;}
+function floor(w,h,y){var g='<rect x="0" y="'+y+'" width="'+w+'" height="'+(h-y)+'" fill="#c9a77a"/>';for(var i=0;i<w;i+=26)g+='<line x1="'+i+'" y1="'+y+'" x2="'+(i-14)+'" y2="'+h+'" stroke="rgba(0,0,0,.1)"/>';return g;}
+function window2(x,y,w,h){return '<g><rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="#bfe3f5" stroke="'+INK+'" stroke-width="1.4"/><line x1="'+(x+w/2)+'" y1="'+y+'" x2="'+(x+w/2)+'" y2="'+(y+h)+'" stroke="'+INK+'"/><line x1="'+x+'" y1="'+(y+h/2)+'" x2="'+(x+w)+'" y2="'+(y+h/2)+'" stroke="'+INK+'"/><path d="M'+(x+4)+','+(y+h-6)+' L'+(x+w/2-4)+','+(y+6)+'" stroke="#fff" stroke-width="2" opacity=".7"/></g>';}
+function board(x,y,w,h,txt){return '<g><rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="#2f5d48" stroke="#7a5233" stroke-width="4"/><text x="'+(x+w/2)+'" y="'+(y+h/2+5)+'" text-anchor="middle" font-family="Nunito" font-weight="800" font-size="13" fill="#e8f0ea">'+(txt||'')+'</text><rect x="'+(x+w-26)+'" y="'+(y+h-2)+'" width="20" height="4" fill="#ddd"/></g>';}
+
+/* ---------- word pictures (200 x 160) ---------- */
+var W={};
+W.livewith=function(){return wrap(200,160,sky(200,160,'#bfe0f5','#e9f4fb')+cloud(40,26,1)+ground(200,160,128,'#8bbf6a')+house(30,128,140,70,'#f0d9a8','#b8553a','#6b4228')+WHO.mom({x:44,y:158,s:.74,l:'hip'})+WHO.martin({x:100,y:158,s:.74,r:'hold'})+WHO.huero({x:140,y:158,s:.54,l:'up',mood:'big'})+heart(170,60,1.2),'Martin lives with his mother and brother');};
+W.brother=function(){return wrap(200,160,sky(200,160,'#ffe7c7','#fff6e8')+ground(200,160,130,'#a9c98b')+tree(170,132,.7)+WHO.martin({x:76,y:158,s:.9,r:'hold'})+WHO.huero({x:118,y:158,s:.66,l:'hold',mood:'big'})+'<g font-family="Nunito" font-weight="900" text-anchor="middle"><rect x="58" y="16" width="36" height="22" rx="6" fill="#fff" stroke="#17222b"/><text x="76" y="33" font-size="15" fill="#2f6db5">16</text><rect x="104" y="58" width="28" height="22" rx="6" fill="#fff" stroke="#17222b"/><text x="118" y="75" font-size="15" fill="#e2672a">8</text></g>','an older brother and a younger brother');};
+W.takecare=function(){return wrap(200,160,wall(200,160,'#f6e3c5')+floor(200,160,120)+window2(130,24,50,40)+'<rect x="20" y="96" width="70" height="8" fill="#8a5a3b"/><rect x="26" y="104" width="5" height="22" fill="#6b4228"/><rect x="80" y="104" width="5" height="22" fill="#6b4228"/>'+notebook(52,90,.5,'Math')+WHO.huero({x:46,y:142,s:.6,sit:1,l:'hold'})+WHO.martin({x:122,y:158,s:.84,l:'point'})+'<path d="M150,90 q10,-8 20,0" fill="none" stroke="#e2672a" stroke-width="2"/>','Martin helps his little brother with homework');};
+W.friends=function(){return wrap(200,160,sky(200,160,'#cfe7f7','#eef7fd')+ground(200,160,124,'#c8bfae')+'<rect x="0" y="118" width="200" height="6" fill="#a39a8a"/>'+WHO.chago({x:30,y:156,s:.76,r:'up'})+WHO.martin({x:76,y:156,s:.76,l:'out',r:'out'})+WHO.jesus({x:122,y:156,s:.76,l:'wave'})+WHO.frankie({x:170,y:156,s:.8,l:'hip',mood:'neutral'}),'four friends');};
+W.fights=function(){return wrap(200,160,wall(200,160,'#e7ecef')+ground(200,160,126,'#b9c2c9')+WHO.frankie({x:70,y:150,s:.62,r:'push',mood:'angry'})+WHO.steve({x:136,y:152,s:.56,l:'push',flip:1,mood:'shout'})+'<g transform="translate(103,58)"><path d="M0,-14 L4,-4 L14,-6 L7,2 L12,12 L2,6 L-6,14 L-5,3 L-15,0 L-5,-4Z" fill="#ffd75e" stroke="#17222b"/></g>','two people fighting');};
+W.bike=function(){return wrap(200,160,sky(200,160,'#bfe0f5','#eaf5fc')+cloud(150,24,.9)+house(10,118,60,46,'#e9c9a0','#8c4a32')+road(200,118,42)+bike(110,150,1.15,'#e2672a')+WHO.huero({x:108,y:134,s:.5,sit:1,ride:1,l:'out',r:'out',mood:'big'}),'a boy riding a bike in the street');};
+W.street=function(){return wrap(200,160,sky(200,160,'#cfe1ee','#eef5fa')+house(4,104,52,40,'#d9c1a0','#7d4a35')+house(64,104,48,46,'#b9cfd9','#4d6577')+house(122,104,64,38,'#e6d3a5','#9a5b38')+'<rect x="0" y="104" width="200" height="10" fill="#a8a29a"/>'+road(200,114,46)+lamp(186,114,.6)+tree(60,108,.4),'a street with houses');};
+W.fast=function(){return wrap(200,160,sky(200,160,'#d7e7f2','#f1f7fb')+road(200,100,60)+car(120,148,1.05,'#f4f4f4',1)+'<g transform="translate(150,40)"><circle r="22" fill="#fff" stroke="#17222b" stroke-width="2"/><path d="M0,0 L0,-15 M0,0 L12,8" stroke="#c0392b" stroke-width="3" stroke-linecap="round"/><circle r="2.4" fill="#17222b"/></g>','a white car going very fast');};
+W.hurt=function(){return wrap(200,160,wall(200,160,'#eef3f6')+'<rect x="20" y="94" width="160" height="14" rx="4" fill="#fff" stroke="#17222b"/><rect x="24" y="108" width="6" height="40" fill="#9aa5ae"/><rect x="170" y="108" width="6" height="40" fill="#9aa5ae"/>'+WHO.huero({x:100,y:150,s:.62,l:'face',mood:'cry'})+'<rect x="78" y="104" width="12" height="6" rx="2" fill="#f4e3c3" stroke="#17222b" stroke-width=".7" transform="rotate(-20 84 107)"/><path d="M150,40 l6,0 0,-6 6,0 0,6 6,0 0,6 -6,0 0,6 -6,0 0,-6 -6,0Z" fill="#e0465a" stroke="#17222b"/>','a boy who got hurt');};
+W.cried=function(){return wrap(200,160,sky(200,160,'#a9b6c2','#d7dee4')+'<g fill="#7d8b97">'+[20,50,80,110,140,170].map(function(x,i){return '<path d="M'+x+','+(18+i%2*12)+' l-3,8" stroke="#7d8b97" stroke-width="2"/>';}).join('')+'</g>'+ground(200,160,128,'#9aa69a')+WHO.martin({x:100,y:152,s:.82,l:'face',r:'face',mood:'cry'}),'a boy crying');};
+W.lookfor=function(){return wrap(200,160,sky(200,160,'#26344a','#4b5d78')+'<circle cx="160" cy="26" r="11" fill="#f4efd2"/>'+road(200,110,50)+lamp(30,112,.7)+'<path d="M42,30 L20,112 L64,112Z" fill="#ffe9a8" opacity=".18"/>'+WHO.martin({x:84,y:158,s:.86,r:'up',mood:'angry'})+WHO.frankie({x:144,y:158,s:.9,l:'point',mood:'neutral'}),'two people looking for someone at night');};
+W.party=function(){var g=wall(200,160,'#3b2f5a')+floor(200,160,124);g+='<g>'+[[30,'#e0465a'],[60,'#f2c14e'],[150,'#4fb3a9'],[176,'#e2672a']].map(function(b){return '<line x1="'+b[0]+'" y1="40" x2="'+b[0]+'" y2="70" stroke="#ddd"/><ellipse cx="'+b[0]+'" cy="30" rx="9" ry="11" fill="'+b[1]+'" stroke="#17222b" stroke-width=".7"/>';}).join('')+'</g>';g+='<path d="M0,12 Q50,30 100,12 T200,12" fill="none" stroke="#f2c14e" stroke-width="2"/>'+[20,50,80,120,150,180].map(function(x,i){return '<path d="M'+x+','+(18+(i%2)*4)+' l5,10 l5,-10Z" fill="'+['#e0465a','#4fb3a9','#f2c14e'][i%3]+'"/>';}).join('');g+='<g transform="translate(100,80)"><rect x="-14" y="-12" width="28" height="22" rx="3" fill="#222" stroke="#555"/><circle cx="-6" cy="0" r="5" fill="#444" stroke="#999"/><circle cx="7" cy="0" r="5" fill="#444" stroke="#999"/></g><text x="120" y="66" font-size="16" fill="#f2c14e">♪</text><text x="76" y="62" font-size="13" fill="#4fb3a9">♫</text>';g+=WHO.chago({x:36,y:158,s:.72,r:'up',mood:'big'})+WHO.frankie({x:146,y:158,s:.76,l:'hip',mood:'smile'})+WHO.jesus({x:180,y:158,s:.66,r:'wave',mood:'big'});return wrap(200,160,g,'a party with music');};
+W.gang=function(){return wrap(200,160,wall(200,160,'#9aa3aa')+'<g opacity=".55">'+[10,46,82,118,154].map(function(x){return '<rect x="'+x+'" y="20" width="32" height="14" fill="#7e868c"/><rect x="'+(x+16)+'" y="36" width="32" height="14" fill="#7e868c"/>';}).join('')+'</g>'+ground(200,160,124,'#6c747a')+WHO.chago({x:26,y:156,s:.7,mood:'neutral',shirt:'#1e1f24'})+P({x:172,y:156,s:.7,skin:'#d8a77c',shirt:'#1e1f24',hair:'cap',hc:'#222',mood:'neutral'})+WHO.jesus({x:62,y:158,s:.74,mood:'neutral',shirt:'#1e1f24'})+P({x:138,y:158,s:.74,skin:'#a87a55',shirt:'#1e1f24',hair:'buzz',mood:'neutral'})+WHO.frankie({x:100,y:160,s:.86,l:'hip',r:'hip',mood:'neutral'}),'a gang: a group in the same dark jackets');};
+W.argued=function(){return wrap(200,160,wall(200,160,'#f3e2c8')+floor(200,160,124)+'<rect x="150" y="60" width="40" height="64" fill="#e9eef1" stroke="#17222b"/><rect x="154" y="66" width="32" height="20" fill="#cfd8de"/>'+WHO.mom({x:58,y:152,s:.68,r:'point',mood:'shout'})+WHO.martin({x:132,y:152,s:.68,flip:1,l:'fist',mood:'angry'})+bubble(18,14,48,26,'!!',1)+bubble(118,10,52,26,'NO!',1),'a mother and son arguing');};
+W.worried=function(){return wrap(200,160,wall(200,160,'#e9e3f0')+'<rect x="20" y="40" width="54" height="40" fill="#bfd3e6" stroke="#17222b"/><circle cx="47" cy="60" r="10" fill="#26344a"/>'+WHO.mom({x:110,y:154,s:.86,l:'face',mood:'worried'})+'<g transform="translate(160,40)"><circle r="14" fill="#fff" stroke="#17222b" stroke-width="1.6"/><text y="6" text-anchor="middle" font-size="18" font-weight="900" fill="#c0392b" font-family="Nunito">?</text></g>','a worried mother');};
+W.moved=function(){return wrap(200,160,sky(200,160,'#cfe6f5','#eef7fc')+ground(200,160,128,'#a9c98b')+'<g transform="translate(98,132)"><rect x="-60" y="-58" width="76" height="52" fill="#f4f4f4" stroke="#17222b" stroke-width="1.3"/><text x="-22" y="-28" text-anchor="middle" font-size="10" font-weight="900" fill="#2f6db5" font-family="Nunito">MOVING</text><path d="M16,-44 L38,-44 L50,-28 L50,-6 L16,-6Z" fill="#2f6db5" stroke="#17222b" stroke-width="1.3"/><rect x="22" y="-40" width="16" height="12" fill="#bfe3f5" stroke="#17222b"/><circle cx="-40" cy="-4" r="8" fill="#222"/><circle cx="34" cy="-4" r="8" fill="#222"/><circle cx="-40" cy="-4" r="3" fill="#bbb"/><circle cx="34" cy="-4" r="3" fill="#bbb"/></g>'+boxes(186,140,.9)+WHO.martin({x:156,y:158,s:.62,l:'hold',r:'hold',acc:'<rect x="-14" y="-66" width="28" height="20" fill="#c99a62" stroke="#17222b"/>'}),'moving to a new house');};
+W.neighborhood=function(){return wrap(200,160,sky(200,160,'#d9ecf8','#f3f9fd')+cloud(150,22,.8)+house(2,110,46,40,'#cfe0c4','#6a7d4c')+house(52,110,46,48,'#f1d8b5','#a24e34')+house(104,110,44,40,'#c9d6e8','#536b8a')+house(152,110,46,44,'#efe1a9','#8b6a2f')+'<rect x="0" y="110" width="200" height="8" fill="#b1aaa0"/>'+road(200,118,42)+tree(98,112,.32)+'<g transform="translate(176,100)"><rect x="-1.4" y="-30" width="2.8" height="30" fill="#3e4a55"/><rect x="-18" y="-34" width="36" height="9" rx="2" fill="#1d7a46"/><text y="-27.4" text-anchor="middle" font-size="6.6" fill="#fff" font-weight="900" font-family="Nunito">ELM ST</text></g>','a neighborhood: streets and houses');};
+W.hero=function(){return wrap(200,160,wall(200,160,'#fff')+'<rect x="0" y="0" width="98" height="160" fill="#e6f4ea"/><rect x="102" y="0" width="98" height="160" fill="#f6ecec"/><rect x="98" y="0" width="4" height="160" fill="#17222b"/>'+ground(98,160,130,'#a9c98b')+'<rect x="102" y="130" width="98" height="30" fill="#c9bfae"/>'+WHO.martin({x:36,y:152,s:.56,r:'hand',mood:'smile'})+WHO.huero({x:68,y:150,s:.4,l:'up',mood:'big'})+heart(52,40,1)+WHO.steve({x:136,y:152,s:.56,l:'push',flip:1,mood:'angry'})+P({x:176,y:152,s:.4,skin:'#c99569',shirt:'#5ba0c9',hair:'short',mood:'sad',flip:1})+redX(186,26,.8),'a hero helps; a bully does not');};
+W.pe=function(){return wrap(200,160,wall(200,160,'#f0e6d6')+floor(200,160,118)+'<rect x="0" y="118" width="200" height="4" fill="#e2672a"/><path d="M0,140 Q100,124 200,140" fill="none" stroke="#fff" stroke-width="2"/><g transform="translate(176,30)"><rect x="-22" y="-14" width="44" height="30" fill="#fff" stroke="#17222b"/><rect x="-9" y="2" width="18" height="12" fill="none" stroke="#e2672a" stroke-width="2"/><path d="M-9,14 L-6,30 L6,30 L9,14" fill="none" stroke="#ddd" stroke-width="1.2"/></g><circle cx="120" cy="66" r="10" fill="#e2672a" stroke="#17222b"/><path d="M110,66 L130,66 M120,56 Q114,66 120,76 M120,56 Q126,66 120,76" stroke="#17222b" stroke-width=".8" fill="none"/>'+P({x:62,y:150,s:.66,skin:'#b07a52',shirt:'#9e9e9e',pants:'#2f6db5',hair:'spiky',r:'up',logo:'PE'})+P({x:108,y:150,s:.6,skin:'#7a4b31',shirt:'#9e9e9e',pants:'#2f6db5',hair:'curly',l:'out',logo:'PE'})+'<g transform="translate(26,60)"><rect x="-2" y="-14" width="4" height="22" fill="#555"/><circle cy="-16" r="4" fill="#e9c4a1"/></g>','P.E. class: the gym');};
+W.bully=function(){return wrap(200,160,wall(200,160,'#dfe6eb')+'<g opacity=".7">'+[14,46,78,110,142,174].map(function(x){return '<rect x="'+x+'" y="20" width="26" height="80" fill="#7a9cb8" stroke="#17222b" stroke-width=".8"/><rect x="'+(x+18)+'" y="54" width="3" height="10" fill="#333"/>';}).join('')+'</g>'+floor(200,160,118)+WHO.steve({x:80,y:152,s:.78,r:'push',mood:'shout'})+P({x:142,y:154,s:.5,skin:'#c99569',shirt:'#5ba0c9',hair:'short',mood:'shock',l:'up',r:'up',flip:1}),'a big boy bullying a small boy');};
+W.hated=function(){return wrap(200,160,sky(200,160,'#bcc6ce','#e2e7eb')+'<g transform="translate(150,96)"><rect x="-44" y="-52" width="88" height="56" fill="#d9c3a5" stroke="#17222b"/><path d="M-50,-52 L0,-72 L50,-52Z" fill="#8c4a32" stroke="#17222b"/><text y="-30" text-anchor="middle" font-size="9" font-weight="900" fill="#5a3e1f" font-family="Nunito">SCHOOL</text><rect x="-8" y="-20" width="16" height="24" fill="#6b4228"/></g>'+ground(200,160,100,'#b9c2c9')+WHO.martin({x:58,y:150,s:.86,l:'fist',r:'hip',mood:'angry'})+bubble(80,8,46,26,'NO!',1),'Martin hated his school');};
+W.blamed=function(){return wrap(200,160,wall(200,160,'#f1dfc4')+floor(200,160,124)+'<rect x="10" y="40" width="40" height="30" fill="#fff" stroke="#17222b"/>'+WHO.huero({x:30,y:68,s:.28})+WHO.mom({x:74,y:154,s:.86,r:'point',mood:'shout'})+WHO.martin({x:156,y:154,s:.76,flip:1,mood:'sad'})+bubble(76,6,70,26,'YOU!',1),'his mother blamed him');};
+W.grave=function(){return wrap(200,160,sky(200,160,'#b7c4cf','#e3e9ee')+ground(200,160,116,'#8fb07a')+'<g opacity=".5">'+grave(30,116,.4)+grave(178,114,.36)+'</g>'+tree(186,118,.6)+grave(96,136,1.05),'a grave with flowers');};
+W.missed=function(){return wrap(200,160,wall(200,160,'#e7e1ec')+'<rect x="0" y="118" width="200" height="42" fill="#b7a58c"/><rect x="18" y="96" width="70" height="26" fill="#6b5a7a" stroke="#17222b"/>'+WHO.martin({x:104,y:154,s:.86,sit:1,l:'hold',r:'hold',mood:'sad',acc:'<g transform="translate(6,-60)"><rect x="-10" y="-14" width="20" height="16" fill="#fff" stroke="#17222b"/></g>'})+'<g transform="translate(150,40)"><rect x="-26" y="-22" width="52" height="42" fill="#fff" stroke="#17222b" stroke-width="1.4"/><rect x="-22" y="-18" width="44" height="34" fill="#cfe6f5"/>'+WHO.huero({x:0,y:16,s:.28,mood:'big'})+'</g>'+heart(150,92,.9),'Martin misses his brother');};
+W.revenge=function(){return wrap(200,160,'<rect width="100" height="160" fill="#f6ecec"/><rect x="100" width="100" height="160" fill="#e6f4ea"/><rect x="98" width="4" height="160" fill="#17222b"/>'+WHO.frankie({x:52,y:152,s:.72,r:'fist',mood:'angry'})+bubble(4,8,62,24,'GET HIM!',1)+WHO.martin({x:150,y:152,s:.72,l:'out',r:'out',mood:'neutral'})+redX(86,24,.7)+'<text x="150" y="28" text-anchor="middle" font-size="12" font-weight="900" fill="#1d8448" font-family="Nunito">walk away</text>','revenge: hurting back');};
+W.homework=function(){return wrap(200,160,wall(200,160,'#f4ead8')+window2(140,16,46,40)+'<rect x="16" y="104" width="168" height="10" fill="#8a5a3b" stroke="#17222b"/><rect x="24" y="114" width="6" height="40" fill="#6b4228"/><rect x="170" y="114" width="6" height="40" fill="#6b4228"/>'+WHO.martin({x:70,y:156,s:.72,sit:1,l:'hold',r:'hold'})+notebook(124,92,.9,'My Hero')+'<g transform="translate(36,96)"><rect x="-6" y="-14" width="12" height="16" rx="2" fill="#e2672a" stroke="#17222b"/></g>','homework on a desk');};
+W.readto=function(){return wrap(200,160,wall(200,160,'#eef2e6')+board(20,14,110,46,'English')+floor(200,160,124)+WHO.martin({x:70,y:158,s:.86,l:'hold',r:'hold',acc:'<rect x="-6" y="-70" width="20" height="24" fill="#fff" stroke="#17222b" transform="rotate(-8)"/>'})+WHO.vicky({x:146,y:158,s:.82,flip:1,mood:'sad',l:'hip'})+bubble(138,18,56,26,'Huero',0),'Martin reads his story to Vicky');};
+W.principal=function(){return wrap(200,160,wall(200,160,'#e3e8ef')+'<rect x="20" y="16" width="56" height="40" fill="#fff" stroke="#17222b"/><text x="48" y="40" text-anchor="middle" font-size="8" font-weight="900" fill="#2e3d5c" font-family="Nunito">PRINCIPAL</text>'+floor(200,160,126)+WHO.prin({x:116,y:150,s:.8,l:'hand',r:'hold',mood:'neutral',acc:'<g transform="translate(6,-84)"><rect x="-2" y="-6" width="5" height="12" rx="2" fill="#222"/></g>'})+'<rect x="40" y="106" width="150" height="14" fill="#7a5233" stroke="#17222b"/><rect x="48" y="120" width="8" height="34" fill="#5a3b26"/><rect x="176" y="120" width="8" height="34" fill="#5a3b26"/><rect x="60" y="94" width="30" height="12" fill="#fff" stroke="#17222b"/><g transform="translate(160,98)"><rect x="-12" y="-6" width="24" height="10" rx="2" fill="#333"/><rect x="-8" y="-10" width="16" height="5" rx="2" fill="#555"/></g>','the principal in the office');};
+W.angry=function(){return wrap(200,160,'<rect width="200" height="160" fill="#fbe2d6"/><g stroke="#e2672a" stroke-width="2" opacity=".5">'+[0,30,60,90,120,150,180].map(function(a){return '<line x1="100" y1="80" x2="'+f(100+110*Math.cos(a*Math.PI/90))+'" y2="'+f(80+110*Math.sin(a*Math.PI/90))+'"/>';}).join('')+'</g>'+WHO.mom({x:100,y:158,s:1.12,l:'hip',r:'point',mood:'shout'}),'an angry mother');};
+W.choices=function(){return wrap(200,160,sky(200,160,'#d6ecf6','#f2f9fc')+'<path d="M100,160 L100,110 L40,40 M100,110 L160,40" stroke="#b9a37f" stroke-width="22" fill="none" stroke-linejoin="round"/><path d="M100,160 L100,110 L40,40 M100,110 L160,40" stroke="#d7c49f" stroke-width="16" fill="none" stroke-linejoin="round"/>'+'<g transform="translate(40,30)"><rect x="-26" y="-14" width="52" height="18" rx="3" fill="#1d8448" stroke="#17222b"/><text y="-1" text-anchor="middle" font-size="9" fill="#fff" font-weight="900" font-family="Nunito">school</text></g><g transform="translate(160,30)"><rect x="-26" y="-14" width="52" height="18" rx="3" fill="#7a2a22" stroke="#17222b"/><text y="-1" text-anchor="middle" font-size="9" fill="#fff" font-weight="900" font-family="Nunito">gang</text></g>'+WHO.martin({x:100,y:152,s:.6,l:'out',r:'out',mood:'worried'}),'two choices: two roads');};
+W.start=function(){return wrap(200,160,wall(200,160,'#e8edf1')+floor(200,160,126)+WHO.steve({x:66,y:154,s:.72,r:'push',mood:'shout'})+WHO.martin({x:142,y:154,s:.68,flip:1,mood:'shock',l:'up'})+'<g transform="translate(66,26)"><rect x="-26" y="-12" width="52" height="20" rx="4" fill="#ffd75e" stroke="#17222b"/><text y="3" text-anchor="middle" font-size="10" font-weight="900" font-family="Nunito">1st</text></g>','Steve starts the fight');};
+W.listened=function(){return wrap(200,160,wall(200,160,'#e3e8ef')+floor(200,160,126)+WHO.vicky({x:62,y:158,s:.86,r:'out',mood:'smile'})+WHO.prin({x:148,y:158,s:.9,flip:1,mood:'neutral',l:'face'})+'<g transform="translate(118,40)"><path d="M-6,-8 q10,-8 14,4 q2,8 -6,10 q-4,2 -2,8" fill="none" stroke="#17222b" stroke-width="2.4"/><path d="M-18,-4 q-4,6 0,12 M-24,-8 q-6,10 0,20" fill="none" stroke="#2f6db5" stroke-width="1.6"/></g>'+bubble(14,8,62,26,'Steve did it.',0),'the principal listens to Vicky');};
+W.tried=function(){return wrap(200,160,wall(200,160,'#eef0e6')+floor(200,160,126)+'<rect x="40" y="96" width="70" height="30" fill="#7a5233" stroke="#17222b"/><text x="75" y="116" text-anchor="middle" font-size="10" fill="#fff" font-weight="900" font-family="Nunito">HEAVY</text>'+WHO.huero({x:120,y:154,s:.6,l:'push',r:'push',mood:'worried',flip:1})+'<path d="M140,60 q6,-6 12,0 M146,52 q6,-6 12,0" stroke="#5aa9e6" fill="none" stroke-width="2"/>','he tried to push a heavy box');};
+W.stopped=function(){return wrap(200,160,sky(200,160,'#cfdbe4','#eef3f7')+ground(200,160,126,'#9aa3aa')+WHO.steve({x:40,y:154,s:.66,mood:'angry',r:'fist'})+WHO.frankie({x:110,y:154,s:.76,flip:1,l:'push',mood:'angry'})+WHO.martin({x:170,y:154,s:.6,flip:1,mood:'shock'})+'<g transform="translate(76,30)"><path d="M-14,-6 L-6,-14 L6,-14 L14,-6 L14,6 L6,14 L-6,14 L-14,6Z" fill="#c0392b" stroke="#fff" stroke-width="2"/><text y="4" text-anchor="middle" font-size="7.6" fill="#fff" font-weight="900" font-family="Nunito">STOP</text></g>','Frankie stopped them');};
+W.nohurt=function(){return wrap(200,160,sky(200,160,'#d7e3ec','#f1f6f9')+ground(200,160,126,'#a9b1b8')+WHO.frankie({x:62,y:154,s:.76,r:'fist',mood:'angry'})+WHO.martin({x:122,y:154,s:.72,flip:1,l:'push',r:'out',mood:'worried'})+WHO.steve({x:178,y:154,s:.6,walk:1,mood:'shock'})+bubble(98,8,70,26,'No!',0),'Martin says: do not hurt him');};
+W.found=function(){return wrap(200,160,sky(200,160,'#2a3550','#4d5f80')+'<circle cx="30" cy="26" r="10" fill="#f4efd2"/>'+house(110,128,80,60,'#8a8070','#4a3b30','#3a2a1e')+'<rect x="122" y="88" width="16" height="15" fill="#ffe08a"/>'+ground(200,160,128,'#4a5258')+WHO.frankie({x:60,y:154,s:.76,r:'point',mood:'neutral'})+'<g transform="translate(130,96)"><circle r="16" fill="none" stroke="#ffd75e" stroke-width="2" stroke-dasharray="4 3"/></g>','Frankie found the house');};
+W.pointed=function(){return wrap(200,160,sky(200,160,'#26344a','#4b5d78')+house(118,128,76,62,'#7d7466','#433529','#3a2a1e')+'<rect x="128" y="86" width="18" height="16" fill="#ffe08a"/><g transform="translate(137,104)">'+P({s:.18,mood:'neutral',shirt:'#6a6f5c',hair:'short'})+'</g>'+ground(200,160,128,'#3e464c')+WHO.frankie({x:40,y:158,s:.86,r:'point',mood:'angry'})+WHO.martin({x:92,y:158,s:.8,mood:'worried'}),'Frankie points at a man');};
+W.understood=function(){return wrap(200,160,'<rect width="200" height="160" fill="#fff8de"/>'+WHO.martin({x:100,y:156,s:1.02,l:'down',r:'hand',mood:'shock'})+'<g transform="translate(150,34)"><circle r="16" fill="#ffd75e" stroke="#17222b" stroke-width="1.4"/><rect x="-6" y="14" width="12" height="7" fill="#9aa5ae" stroke="#17222b"/><path d="M-4,4 L0,-6 L4,4" stroke="#e2672a" fill="none" stroke-width="2"/></g><g stroke="#f2c14e" stroke-width="2.4">'+[0,60,120,180,240,300].map(function(a){var r=a*Math.PI/180;return '<line x1="'+f(150+22*Math.cos(r))+'" y1="'+f(34+22*Math.sin(r))+'" x2="'+f(150+30*Math.cos(r))+'" y2="'+f(34+30*Math.sin(r))+'"/>';}).join('')+'</g>','Martin understood something');};
+W.enemy=function(){return wrap(200,160,'<rect width="98" height="160" fill="#e6f4ea"/><rect x="102" width="98" height="160" fill="#f6ecec"/><rect x="98" width="4" height="160" fill="#17222b"/><text x="49" y="20" text-anchor="middle" font-size="12" font-weight="900" fill="#1d8448" font-family="Nunito">friend</text><text x="151" y="20" text-anchor="middle" font-size="12" font-weight="900" fill="#7a2a22" font-family="Nunito">enemy</text>'+WHO.vicky({x:32,y:150,s:.5,r:'hand'})+WHO.martin({x:66,y:150,s:.5,l:'hand'})+heart(49,58,.7)+WHO.frankie({x:126,y:150,s:.52,mood:'angry',r:'fist'})+WHO.man({x:176,y:150,s:.52,flip:1,mood:'angry',l:'fist'})+'<path d="M140,58 L160,58" stroke="#c0392b" stroke-width="3"/><path d="M144,52 l12,12 M156,52 l-12,12" stroke="#c0392b" stroke-width="2.4"/>','friend and enemy');};
+W.accident=function(){return wrap(200,160,'<rect width="98" height="160" fill="#e9f1f8"/><rect x="102" width="98" height="160" fill="#f6ecec"/><rect x="98" width="4" height="160" fill="#17222b"/><text x="49" y="18" text-anchor="middle" font-size="10.5" font-weight="900" fill="#2f6db5" font-family="Nunito">by accident</text><text x="151" y="18" text-anchor="middle" font-size="10.5" font-weight="900" fill="#7a2a22" font-family="Nunito">on purpose</text>'+P({x:40,y:150,s:.5,skin:'#c99569',shirt:'#5ba0c9',hair:'curly',mood:'shock',l:'up',r:'out',walk:1})+'<g transform="translate(70,138) rotate(40)"><rect x="-5" y="-9" width="10" height="14" fill="#fff" stroke="#17222b"/></g><path d="M62,146 q8,-4 16,2 q4,6 -6,8 q-12,0 -10,-10Z" fill="#7cc0e8" opacity=".85"/><path d="M28,150 L44,150" stroke="#7a5233" stroke-width="3"/>'+P({x:146,y:150,s:.5,skin:'#f1d0b0',shirt:'#b23434',hair:'short',hc:'#c0612b',mood:'angry',r:'out'})+'<g transform="translate(176,120)"><rect x="-5" y="-9" width="10" height="14" fill="#fff" stroke="#17222b"/></g><path d="M166,112 l8,-4 m-8,10 l10,0" stroke="#17222b" stroke-width="1.4"/>'+redX(186,40,.6),'by accident and on purpose');};
+W.problem=function(){return wrap(200,160,wall(200,160,'#eef0f2')+WHO.martin({x:100,y:156,s:.94,l:'face',r:'face',mood:'worried'})+'<g font-family="Nunito" font-weight="900" fill="#c0392b"><text x="40" y="40" font-size="22">?</text><text x="150" y="30" font-size="18">?</text><text x="160" y="76" font-size="14">!</text></g><path d="M30,60 q10,-10 20,0 t20,0" fill="none" stroke="#17222b" stroke-width="1.6"/>','a problem');};
+W.gave=function(){return wrap(200,160,sky(200,160,'#2a3550','#4d5f80')+ground(200,160,126,'#3e464c')+WHO.martin({x:70,y:154,s:.84,r:'give',mood:'neutral'})+WHO.frankie({x:144,y:154,s:.86,flip:1,l:'give',mood:'angry'})+'<rect x="98" y="100" width="18" height="10" rx="2" fill="#3a3a3a" stroke="#17222b"/>','Martin gives it back to Frankie');};
+W.walkaway=function(){return wrap(200,160,sky(200,160,'#1f2a40','#3e4f6e')+'<g fill="#fff">'+[[20,20],[60,12],[150,22],[180,40],[110,8]].map(function(p){return '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="1.2"/>';}).join('')+'</g>'+road(200,118,42)+lamp(150,120,.8)+'<path d="M168,24 L140,118 L196,118Z" fill="#ffe9a8" opacity=".16"/>'+WHO.frankie({x:40,y:158,s:.84,mood:'angry',l:'fist'})+WHO.martin({x:150,y:158,s:.84,walk:1,mood:'neutral'}),'Martin walks home');};
+W.problemPair=W.problem;
+
+/* ---------- feelings faces for the Play step ---------- */
+function bigFace(mood){
+  var who={sad:'martin',worried:'mom',angry:'mom',happy:'huero'}[mood]||'martin';
+  var m={sad:'cry',worried:'worried',angry:'shout',happy:'big'}[mood];
+  return wrap(120,110,'<rect width="120" height="110" fill="'+({sad:'#dfe8f2',worried:'#efe4f5',angry:'#fbe2d6',happy:'#fff3c4'}[mood])+'"/>'+WHO[who]({x:60,y:300,s:2.7,mood:m,s2:1}),mood);
+}
+
+/* ---------- chapter panels (640 x 300) — drawn fallbacks ---------- */
+var PANEL={};
+PANEL.ch1=function(){return wrap(640,300,sky(640,300,'#bfe0f5','#f0f8fd')+cloud(90,50,1.6)+cloud(470,40,1.2)+ground(640,300,220,'#9cc97c')+house(170,232,210,120,'#f0d9a8','#b8553a','#6b4228')+tree(70,234,1.3)+tree(560,236,1)+'<rect x="0" y="232" width="640" height="16" fill="#c9c1b4"/>'+bike(470,286,1.2,'#e2672a')+WHO.mom({x:240,y:282,s:1.05,l:'hip',r:'wave'})+WHO.martin({x:330,y:284,s:1.05,r:'hold'})+WHO.huero({x:380,y:284,s:.78,l:'up',mood:'big'}),'Martin, his mother, and Huero at their house');};
+PANEL.ch2=function(){return wrap(640,300,sky(640,300,'#cfe1ee','#eef5fa')+house(30,196,140,96,'#d9c1a0','#7d4a35')+house(420,196,180,90,'#b9cfd9','#4d6577')+'<rect x="0" y="196" width="640" height="18" fill="#a8a29a"/>'+road(640,214,86)+WHO.chago({x:70,y:212,s:.8})+WHO.frankie({x:110,y:212,s:.86,mood:'neutral',l:'hip'})+WHO.martin({x:150,y:212,s:.82,r:'wave'})+bike(300,280,1.2,'#e2672a')+WHO.huero({x:298,y:262,s:.55,sit:1,ride:1,l:'out',r:'out',mood:'big'})+car(560,286,1.2,'#f4f4f4',1,1),'a street, a boy on a bike, a fast white car');};
+PANEL.ch3=function(){return wrap(640,300,wall(640,300,'#f3e2c8')+floor(640,300,232)+window2(470,40,110,80)+'<rect x="40" y="140" width="130" height="92" fill="#e9eef1" stroke="#17222b"/><rect x="48" y="150" width="114" height="34" fill="#cfd8de"/><circle cx="80" cy="210" r="8" fill="#9aa5ae"/><circle cx="130" cy="210" r="8" fill="#9aa5ae"/>'+boxes(560,282,1.4)+boxes(470,286,1)+WHO.mom({x:250,y:290,s:1.25,r:'point',mood:'worried'})+WHO.martin({x:380,y:290,s:1.22,flip:1,l:'fist',mood:'angry'})+bubble(196,20,110,44,'Move!',1)+bubble(330,26,110,44,'No!',1),'Martin and his mother argue, boxes are packed');};
+PANEL.ch4=function(){return wrap(640,300,wall(640,300,'#eef2e6')+board(150,30,300,110,'Who is your hero?')+floor(640,300,226)+'<g>'+[60,210,360,510].map(function(x){return '<rect x="'+x+'" y="214" width="96" height="10" fill="#8a5a3b" stroke="#17222b"/><rect x="'+(x+6)+'" y="224" width="5" height="40" fill="#6b4228"/><rect x="'+(x+86)+'" y="224" width="5" height="40" fill="#6b4228"/>';}).join('')+'</g>'+WHO.mitch({x:520,y:280,s:1.2,l:'point',mood:'smile',flip:1})+WHO.martin({x:260,y:272,s:1,sit:1,l:'hold',r:'hold',mood:'neutral'})+WHO.vicky({x:110,y:272,s:.95,sit:1,l:'hold',r:'hold'}),'a new classroom and a new teacher');};
+PANEL.ch5=function(){return wrap(640,300,sky(640,300,'#b7c4cf','#e7ecf0')+ground(640,300,210,'#8fb07a')+'<g opacity=".45">'+grave(90,210,.6)+grave(540,206,.55)+grave(460,210,.5)+'</g>'+tree(600,214,1.3)+tree(40,212,1)+grave(330,262,1.7)+WHO.martin({x:220,y:286,s:1.1,sit:1,l:'hold',r:'hold',mood:'sad'}),'Martin sits by Huero’s grave');};
+PANEL.ch6=function(){return wrap(640,300,wall(640,300,'#e3e8ef')+'<rect x="40" y="26" width="150" height="100" fill="#fff" stroke="#17222b"/><text x="115" y="70" text-anchor="middle" font-size="16" font-weight="900" fill="#2e3d5c" font-family="Nunito">PRINCIPAL</text><text x="115" y="94" text-anchor="middle" font-size="12" font-weight="800" fill="#56636e" font-family="Nunito">office</text>'+floor(640,300,230)+WHO.prin({x:300,y:286,s:1.2,r:'hold',mood:'neutral',acc:'<rect x="4" y="-92" width="5" height="12" rx="2" fill="#222"/>'})+'<rect x="220" y="216" width="200" height="16" fill="#7a5233" stroke="#17222b"/>'+WHO.mom({x:470,y:288,s:1.2,l:'hip',r:'point',mood:'angry'})+WHO.martin({x:560,y:288,s:1.1,flip:1,mood:'sad'}),'the principal, Martin’s mother, and Martin');};
+PANEL.ch7=function(){return wrap(640,300,sky(640,300,'#cfdbe4','#eef3f7')+'<rect x="0" y="40" width="640" height="150" fill="#c9b79c"/><g>'+[20,120,220,320,420,520].map(function(x){return '<rect x="'+x+'" y="60" width="80" height="60" fill="#bfe3f5" stroke="#17222b"/><line x1="'+(x+40)+'" y1="60" x2="'+(x+40)+'" y2="120" stroke="#17222b"/>';}).join('')+'</g><rect x="230" y="134" width="180" height="30" rx="4" fill="#1f4f8f" stroke="#17222b"/><text x="320" y="155" text-anchor="middle" font-size="17" font-weight="900" fill="#fff" font-family="Nunito">HIGH SCHOOL</text>'+ground(640,300,190,'#a9b1b8')+WHO.steve({x:90,y:282,s:1.15,r:'fist',mood:'angry'})+P({x:150,y:280,s:1,skin:'#e8c0a0',shirt:'#5a5a6a',hair:'cap',hc:'#222',mood:'angry'})+WHO.frankie({x:300,y:284,s:1.28,flip:1,l:'push',mood:'angry'})+WHO.martin({x:420,y:284,s:1.15,flip:1,l:'out',r:'out',mood:'worried'})+WHO.vicky({x:540,y:284,s:1.05,flip:1,mood:'worried',l:'face'})+bubble(372,30,120,46,'No!',0),'after school: Steve, Frankie, Martin, and Vicky');};
+PANEL.ch8=function(){return wrap(640,300,sky(640,300,'#1f2a40','#3e4f6e')+'<circle cx="80" cy="50" r="22" fill="#f4efd2"/><g fill="#fff">'+[[200,30],[300,60],[420,24],[560,50],[610,90]].map(function(p){return '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="1.6"/>';}).join('')+'</g>'+house(380,226,200,140,'#6d6658','#3a2e25','#2a1e15')+'<rect x="410" y="120" width="40" height="36" fill="#ffe08a"/>'+road(640,226,74)+lamp(300,228,1.3)+'<path d="M330,62 L280,226 L380,226Z" fill="#ffe9a8" opacity=".14"/>'+WHO.frankie({x:110,y:290,s:1.25,r:'fist',mood:'angry'})+WHO.martin({x:240,y:292,s:1.2,walk:1,mood:'neutral',flip:1}),'night: Martin walks away from Frankie');};
+
+/* helper avatars for quips */
+function head(who){return wrap(60,60,'<rect width="60" height="60" fill="#e9f4f3"/>'+WHO[who]({x:30,y:205,s:2.05}),who);}
+
+return {W:W,PANEL:PANEL,bigFace:bigFace,lion:lion,head:head,WHO:WHO,P:P,wrap:wrap,bike:bike};
+})();
+/* =====================================================================
+   ENGINE
+   ===================================================================== */
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var PROXY='https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
+var TABLE='brothers_responses';
+var LANGS=['Mandarin','Cantonese','Spanish','Arabic','Vietnamese','Thai','Nepali','Russian','Darija','Urdu','Tagalog','French','Korean','Hindi','Somali'];
+var CODE2NAME={es:'Spanish',zh:'Mandarin','zh-CN':'Mandarin','zh-TW':'Cantonese',yue:'Cantonese',ar:'Arabic',ary:'Darija',vi:'Vietnamese',ru:'Russian',ur:'Urdu',tl:'Tagalog',fr:'French',ko:'Korean',hi:'Hindi',so:'Somali',ne:'Nepali',th:'Thai'};
+var RTL=/^(Arabic|Darija|Urdu)$/;
+var STEPS=[{k:'read',n:'📖 Read'},{k:'check',n:'✔ Check'},{k:'play',n:'🎲 Play'},{k:'fix',n:'✏ Fix it'},{k:'write',n:'✍ Write'},{k:'say',n:'🎤 Say it'}];
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+function normLang(v){if(!v)return '';if(CODE2NAME[v])return CODE2NAME[v];if(/^Chinese/i.test(v))return /Trad/i.test(v)?'Cantonese':'Mandarin';for(var i=0;i<LANGS.length;i++)if(LANGS[i].toLowerCase()===String(v).toLowerCase())return LANGS[i];return '';}
+function H(pref){var h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};if(pref)h.Prefer=pref;return h;}
+
+var me=null, lang='', dirty=false, OPEN_ALL=false;
+var work={lv:'A',ch:1,st:'read',ord:{},mc:{},pred:{},play:{},fix:{},wr:{},miss:{},lion:{},visited:{},bt:false,prog:{}};
+try{ if(/[?&]open=all/.test(location.search)) localStorage.setItem('bia_open','1'); OPEN_ALL=localStorage.getItem('bia_open')==='1'; }catch(e){}
+
+/* ---------------- sign-in ---------------- */
+(function(){
+  var sel=$('gLang'), top=$('lang');
+  LANGS.forEach(function(l){var o=document.createElement('option');o.value=l;o.textContent=l;sel.appendChild(o);var o2=o.cloneNode(true);top.appendChild(o2);});
+  $('gatePic').innerHTML=ART.wrap(120,110,'<rect width="120" height="110" fill="#bfe0f5"/><rect y="86" width="120" height="24" fill="#8bbf6a"/>'+ART.WHO.martin({x:44,y:104,s:.82,r:'hold'})+ART.WHO.huero({x:80,y:104,s:.6,l:'up',mood:'big'}),'two brothers');
+  try{var rem=normLang(localStorage.getItem('vocab_lang'));if(rem)sel.value=rem;}catch(e){}
+  try{var prev=JSON.parse(localStorage.getItem('eld_signin')||'null');if(prev){$('gFirst').value=prev.first||'';$('gLast').value=prev.last||'';$('gEmail').value=prev.alias||prev.email||'';$('gPeriod').value=prev.period||'';}}catch(e){}
+  sel.addEventListener('change',function(){lang=this.value;translateDirs();});
+})();
+function canonEmail(raw){var e=String(raw||'').trim().toLowerCase();if(!/^[a-z0-9._+-]+@(s\.)?sfusd\.edu$/.test(e))return null;return {canon:e.split('@')[0]+'@sfusd.edu',alias:e};}
+$('gateForm').addEventListener('submit',function(ev){
+  ev.preventDefault();
+  var first=$('gFirst').value.trim(),last=$('gLast').value.trim(),em=canonEmail($('gEmail').value),per=$('gPeriod').value,lg=$('gLang').value,err=$('gErr');
+  err.textContent='';
+  if(!first||!last){err.textContent='Type your first and last name.';return;}
+  if(!em){err.textContent='Use your school email: name@s.sfusd.edu';return;}
+  if(!per){err.textContent='Choose your period.';return;}
+  if(!lg){err.textContent='Choose your language.';return;}
+  me={first:first,last:last,email:em.canon,alias:em.alias,period:per};
+  try{localStorage.setItem('eld_signin',JSON.stringify(me));}catch(e){}
+  setLang(lg);
+  $('who').textContent=first+' '+last+' · P'+per;
+  $('gate').style.display='none';
+  fetch(SUPA_URL+'/rest/v1/students?on_conflict=email',{method:'POST',headers:H('resolution=ignore-duplicates,return=minimal'),body:JSON.stringify([{email:me.email,first_name:first,last_name:last,period:per}])}).catch(function(){});
+  if(em.alias!==em.canon)fetch(SUPA_URL+'/rest/v1/student_aliases?on_conflict=alias_email',{method:'POST',headers:H('resolution=merge-duplicates,return=minimal'),body:JSON.stringify([{alias_email:em.alias,email:em.canon}])}).catch(function(){});
+  if(window.track){try{track({page:'brothers-in-arms',email:me.email,name:first+' '+last,period:per});}catch(e){}}
+  loadWork().then(function(){ensureOrders();fromHash();render();setInterval(function(){if(dirty)save();},20000);});
+});
+function setLang(l){
+  lang=normLang(l)||l; $('lang').value=lang; $('gLang').value=lang;
+  try{localStorage.setItem('vocab_lang',lang);}catch(e){}
+  loadShared(lang); translateDirs(); work.lang=lang;
+  if(window.SAY_CTL)try{SAY_CTL.refresh();}catch(e){}
+}
+$('lang').addEventListener('change',function(){setLang(this.value);dirty=true;render();});
+$('lvl').addEventListener('click',function(ev){var b=ev.target.closest('button');if(!b)return;work.lv=b.dataset.l;dirty=true;render();});
+
+/* ---------------- save / load ---------------- */
+function loadWork(){
+  return fetch(SUPA_URL+'/rest/v1/'+TABLE+'?select=answers&guide_key=eq.'+GUIDE_KEY+'&email=eq.'+encodeURIComponent(me.email),{headers:H()})
+   .then(function(r){return r.ok?r.json():[];}).then(function(rows){if(rows&&rows[0]&&rows[0].answers){var d=rows[0].answers;for(var k in work){if(d[k]!==undefined)work[k]=d[k];}}})
+   .catch(function(){});
+}
+var lastLogged=null;
+function save(){
+  if(!me)return Promise.resolve(false);
+  var sc=score();
+  var body={email:me.email,guide_key:GUIDE_KEY,name:me.first+' '+me.last,period:String(me.period),level:work.lv,lang:lang,answers:work,score:sc.s,max_score:sc.m,turned_in:afterDone(),updated_at:new Date().toISOString()};
+  return fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email,guide_key',{method:'POST',headers:H('resolution=merge-duplicates,return=minimal'),body:JSON.stringify(body)})
+   .then(function(r){if(r.ok){dirty=false;flash('Saved ✓');if(sc.s!==lastLogged){lastLogged=sc.s;try{if(window.GAL_logAttempt)GAL_logAttempt({score:sc.s,max_score:sc.m,detail:{source:'page',progress:true}});}catch(e){}}return true;}flash('Not saved ('+r.status+')');return false;})
+   .catch(function(){flash('Offline');return false;});
+}
+function flash(t){var s=$('saved');s.textContent=t;setTimeout(function(){if(s.textContent===t)s.textContent='';},2500);}
+function mark(){dirty=true;score();}
+window.addEventListener('beforeunload',function(){if(dirty&&me){try{save();}catch(e){}}});
+document.addEventListener('visibilitychange',function(){if(document.hidden&&dirty)save();});
+
+/* ---------------- answer order: shuffled once, stored, no 4-in-a-row ---------------- */
+function ensureOrders(){
+  var runs={};
+  function put(key,n,correct,grp){var run=runs[grp||'x']=runs[grp||'x']||[];
+    if(work.ord[key]&&work.ord[key].length===n){ if(correct!=null) run.push(work.ord[key].indexOf(correct)); return; }
+    var o, tries=0;
+    do{ o=shuffle(Array.from({length:n},function(_,i){return i;})); tries++; }
+    while(correct!=null&&run.length>=3&&tries<30&&run.slice(-3).every(function(p){return p===o.indexOf(correct);}));
+    work.ord[key]=o; if(correct!=null) run.push(o.indexOf(correct)); dirty=true;
+  }
+  CH.forEach(function(c){
+    put('pred'+c.id,c.pred.o.length,null);
+    c.mc.forEach(function(q){put(q.id,q.o.length,0,'mc');});
+    var p=c.play;
+    if(p.type==='match'||p.type==='pairs'){put('p'+c.id+'L',p.items.length,null);put('p'+c.id+'R',p.items.length,null);}
+    if(p.type==='order')put('p'+c.id+'pool',p.items.length,null);
+    if(p.type==='faces')p.items.forEach(function(it){put('p'+c.id+':'+it.id,p.faces.length,p.faces.indexOf(it.a),'play');});
+    if(p.type==='who')p.items.forEach(function(it){put('p'+c.id+':'+it.id,p.people.length,p.people.indexOf(it.a),'play');});
+    if(p.type==='doors')p.items.forEach(function(it){put('p'+c.id+':'+it.id,2,0,'play');});
+    if(p.type==='cloze')put('p'+c.id+'bank',clozeWords(p).length,null);
+    c.fix.items.forEach(function(it){
+      if(c.fix.type==='choose')put('x'+c.id+':'+it.id,it.o.length,0,'fix');
+      else Object.keys(it.fx).forEach(function(ix){put('x'+c.id+':'+it.id+':'+ix,fixOpts(it,ix).length,0,'fix');});
+    });
+  });
+  put('aOrder',AFTER.order.length,null); put('aPL',AFTER.people.length,null); put('aPR',AFTER.people.length,null);
+}
+function ordered(key,arr){var o=work.ord[key];if(!o||o.length!==arr.length)return arr.map(function(x,i){return {v:x,i:i};});return o.map(function(i){return {v:arr[i],i:i};});}
+function fixOpts(it,ix){var toks=it.s.split(' '),orig=toks[ix],o=it.fx[ix].slice();if(o.indexOf(orig)<0)o.push(orig);return o;}
+function clozeWords(p){var m=p.text.match(/\{([^}]+)\}/g)||[];return m.map(function(x){return x.slice(1,-1);});}
+
+/* ---------------- scoring ---------------- */
+function wrOk(id,min){var t=(work.wr[id]||'').trim();if(!t||/___/.test(t))return false;return t.split(/\s+/).length>=(min||3);}
+function chItems(c,step){
+  var out=[];
+  if(!step||step==='check')c.mc.forEach(function(q){out.push(!!(work.mc[q.id]&&work.mc[q.id].ok));});
+  if(!step||step==='play'){var p=c.play,k='p'+c.id+':';
+    if(p.type==='order')p.items.forEach(function(_,i){out.push(work.play[k+'o'+i]===true);});
+    else if(p.type==='cloze')clozeWords(p).forEach(function(_,i){out.push(work.play[k+'b'+i]===true);});
+    else p.items.forEach(function(it){out.push(work.play[k+it.id]===true);});}
+  if(!step||step==='fix')c.fix.items.forEach(function(it){
+    if(c.fix.type==='choose')out.push(work.fix['x'+c.id+':'+it.id]===true);
+    else Object.keys(it.fx).forEach(function(ix){out.push(work.fix['x'+c.id+':'+it.id+':'+ix]===true);});});
+  if(!step||step==='write')c.write.forEach(function(w){out.push(wrOk(w.id,w.min));});
+  return out;
+}
+function afterItems(){var o=[];AFTER.order.forEach(function(_,i){o.push(work.play['ao'+i]===true);});AFTER.people.forEach(function(p){o.push(work.play['ap:'+p.id]===true);});o.push(wrOk(AFTER.hero.id,AFTER.hero.min));return o;}
+function cnt(a){return a.filter(Boolean).length;}
+function pct(c){var a=chItems(c);return a.length?cnt(a)/a.length:1;}
+function afterDone(){var a=afterItems();return cnt(a)===a.length;}
+function score(){
+  var s=0,m=0;work.prog={};
+  CH.forEach(function(c){var a=chItems(c);s+=cnt(a);m+=a.length;work.prog[c.id]=[cnt(a),a.length];});
+  var b=afterItems();s+=cnt(b);m+=b.length;work.prog.after=[cnt(b),b.length];
+  window.GAL_SCORE=s;window.GAL_MAX=m;return {s:s,m:m};
+}
+window.GAL_SCORE=0;window.GAL_MAX=1;
+function locked(n){if(OPEN_ALL)return false;if(n==='after')return pct(CH[7])<0.85;if(n<=1)return false;return pct(CH[n-2])<0.85;}
+function missesLeft(n){var c=CH[n-2];var a=chItems(c);return Math.max(0,Math.ceil(a.length*0.85)-cnt(a));}
+
+/* ---------------- translation ---------------- */
+var shared={},sharedLoaded={},trCache={};
+function loadShared(l){if(!l)return Promise.resolve();if(sharedLoaded[l])return sharedLoaded[l];shared[l]={};
+  sharedLoaded[l]=fetch(SUPA_URL+'/rest/v1/song_tr?select=src,equiv,meaning,note&slug=eq.'+GUIDE_KEY+'&lang=eq.'+encodeURIComponent(l),{headers:H()})
+   .then(function(r){return r.ok?r.json():[];}).then(function(rows){(rows||[]).forEach(function(x){shared[l][x.src]={equiv:x.equiv,meaning:x.meaning,note:x.note};});}).catch(function(){});
+  return sharedLoaded[l];}
+function tr(text,ctx){
+  if(!lang||!text)return Promise.resolve(null);
+  var l=lang,src=ctx?text+'|'+ctx:text,key=l+'|'+src;
+  if(trCache[key])return trCache[key];
+  trCache[key]=loadShared(l).then(function(){
+    if(shared[l]&&shared[l][src])return shared[l][src];
+    var words=String(text).trim().split(/\s+/).length;
+    var u=PROXY+'?action=translate&mode='+(words<=3?'word':'sentence')+'&idiom='+encodeURIComponent(text)+'&meaning='+encodeURIComponent(ctx||'')+'&lang='+encodeURIComponent(l);
+    return fetch(u).then(function(r){return r.json();}).then(function(j){var t=(j&&j.ok&&j.translation)?j.translation:null;
+      if(t&&t.equiv){shared[l][src]=t;try{fetch(SUPA_URL+'/rest/v1/song_tr?on_conflict=slug,lang,src',{method:'POST',headers:H('resolution=merge-duplicates,return=minimal'),body:JSON.stringify({slug:GUIDE_KEY,lang:l,src:src,equiv:t.equiv||'',meaning:t.meaning||'',note:t.note||''})}).catch(function(){});}catch(e){}}
+      return t;}).catch(function(){delete trCache[key];return null;});
+  });
+  return trCache[key];
+}
+function eqHtml(t,word){return (t&&t.equiv)?'<span class="eq" dir="auto">'+esc(t.equiv)+'</span>':'<span class="eq none">'+esc(word)+'</span>';}
+function translateDirs(){
+  document.querySelectorAll('.dir').forEach(function(d){var en=d.dataset.dir,t=d.querySelector('.tr');if(!t)return;t.textContent='';t.setAttribute('dir',RTL.test(lang)?'rtl':'auto');
+    if(lang&&en)tr(en).then(function(x){if(x&&x.equiv&&d.dataset.dir===en)t.textContent=x.equiv;});});
+}
+function dirHtml(text){return '<p class="dir" data-dir="'+esc(text)+'"><span class="en">'+esc(text)+'</span><span class="tr"></span></p>';}
+
+/* ---------------- speech ---------------- */
+var SAYAS={'I':'eye','Huero':'Wero','Huero’s':'Weros','Jesus':'Hey-soos','Chago':'Chah-go','Mitchell':'Mitchell','P.E.':'P E','___':'blank'};
+function sayForm(tok){var core=tok.replace(/^[“"(]+|[”"),.!?:;]+$/g,'');var rep=SAYAS[core];return rep?tok.replace(core,rep):tok;}
+function voice(){var vs=speechSynthesis.getVoices().filter(function(v){return /^en(-|_)US/i.test(v.lang);});return vs.filter(function(v){return /Google|Samantha|Aria|Jenny/i.test(v.name);})[0]||vs[0]||null;}
+var reading=null;
+function speak(text,rate,onEnd){
+  if(!('speechSynthesis' in window))return;stopRead();
+  var t=String(text).split(/\s+/).map(sayForm).join(' ');
+  var u=new SpeechSynthesisUtterance(t);u.lang='en-US';u.rate=rate||0.9;var v=voice();if(v)u.voice=v;
+  if(onEnd){u.onend=onEnd;u.onerror=onEnd;}
+  speechSynthesis.speak(u);
+}
+function stopRead(){if(reading){reading.stop=true;clearTimeout(reading.timer);reading=null;}try{speechSynthesis.cancel();}catch(e){}document.querySelectorAll('.w.now').forEach(function(x){x.classList.remove('now');});var b=$('readBtn');if(b){b.classList.remove('on');b.textContent='🔊 Read it to me';}}
+function readParas(from,only,rate){
+  stopRead();if(!('speechSynthesis' in window))return;
+  var paras=Array.prototype.slice.call(document.querySelectorAll('.para'));
+  var R=reading={stop:false};var b=$('readBtn');if(b&&!only){b.classList.add('on');b.textContent='⏹ Stop';}
+  function one(pi){
+    if(R.stop||pi>=paras.length||(only&&pi!==from)){if(!R.stop)stopRead();return;}
+    var p=paras[pi];p.scrollIntoView({block:'nearest',behavior:'smooth'});
+    var spans=Array.prototype.slice.call(p.querySelectorAll('.w')),txt='',offs=[];
+    spans.forEach(function(s){offs.push(txt.length);txt+=sayForm(s.textContent)+' ';});
+    var u=new SpeechSynthesisUtterance(txt);u.lang='en-US';u.rate=rate||0.9;var v=voice();if(v)u.voice=v;
+    var got=false,cur=-1;
+    function hl(i){if(i===cur)return;if(spans[cur])spans[cur].classList.remove('now');cur=i;if(spans[i])spans[i].classList.add('now');}
+    u.onboundary=function(e){if(e.name&&e.name!=='word')return;got=true;var i=0;while(i+1<offs.length&&offs[i+1]<=e.charIndex)i++;hl(i);};
+    u.onend=function(){clearTimeout(R.timer);hl(-1);if(!R.stop)setTimeout(function(){one(pi+1);},250);};
+    u.onerror=u.onend;
+    speechSynthesis.speak(u);
+    /* fallback when the voice gives no word boundaries */
+    var start=Date.now(),per=(60000/(165*(rate||0.9)));
+    (function tick(){if(R.stop||got)return;var el=Date.now()-start,acc=0,i=0;for(;i<spans.length;i++){acc+=per*(0.6+spans[i].textContent.length/7);if(acc>el)break;}hl(Math.min(i,spans.length-1));R.timer=setTimeout(tick,120);})();
+  }
+  one(from||0);
+}
+if('speechSynthesis' in window)speechSynthesis.onvoiceschanged=function(){};
+
+/* ---------------- popup (tap to translate) ---------------- */
+var pop=$('pop');pop.querySelector('.px').onclick=function(){pop.classList.remove('show');};
+function showPop(x,y,word,opt){
+  opt=opt||{};
+  $('popW').innerHTML=esc(word)+' <button class="btn pbtn" type="button" id="popSay">🔊</button>';
+  $('popT').innerHTML=lang?'…':'<span class="eq none">'+esc(word)+'</span>';
+  $('popS').innerHTML=(opt.meaning?'<div>'+esc(opt.meaning)+'</div>':'')+(opt.sentence?'<div id="popSent" dir="auto"></div>':'');
+  pop.classList.add('show');
+  var w=pop.offsetWidth||260,h=pop.offsetHeight||90;
+  pop.style.left=Math.max(8,Math.min(x-w/2,window.innerWidth-w-8))+'px';
+  pop.style.top=(y-h-16<8?y+20:y-h-16)+'px';
+  $('popSay').onclick=function(){speak(word,0.8);};
+  speak(word,0.8);
+  if(!lang)return;
+  /* word + its sentence first; fall back to the word alone */
+  tr(word,opt.sentence?'In this sentence: '+opt.sentence:'').then(function(t){
+    if(t&&t.equiv)return t;return tr(word,'');
+  }).then(function(t){$('popT').innerHTML=eqHtml(t,word);});
+  if(opt.sentence)tr(opt.sentence).then(function(t){var s=$('popSent');if(s&&t&&t.equiv)s.innerHTML='<b>Sentence:</b> '+esc(t.equiv);});
+}
+document.addEventListener('click',function(ev){
+  var w=ev.target.closest&&ev.target.closest('.w');
+  if(w){ if(reading)return;
+    var core=w.textContent.replace(/^[“"(]+|[”"),.!?:;]+$/g,'');
+    var k=w.dataset.k, para=w.closest('.para'), sentence='';
+    if(para){sentence=Array.prototype.slice.call(para.querySelectorAll('.w[data-s="'+w.dataset.s+'"]')).map(function(x){return x.textContent;}).join(' ');}
+    var meaning='';if(k){var c=CH[work.ch-1];(c.words||[]).forEach(function(x){if(x.w.toLowerCase()===k.toLowerCase())meaning=x.m;});}
+    var r=w.getBoundingClientRect();showPop(r.left+r.width/2,r.top,k||core,{sentence:sentence,meaning:meaning});return;}
+  var tq=ev.target.closest&&ev.target.closest('[data-tr]');
+  if(tq){var r2=tq.getBoundingClientRect();showPop(r2.left+r2.width/2,r2.top,tq.dataset.tr,{});return;}
+  var sq=ev.target.closest&&ev.target.closest('[data-say]');
+  if(sq){speak(sq.dataset.say,0.85);return;}
+  if(!ev.target.closest('#pop'))pop.classList.remove('show');
+});
+
+/* ---------------- text tokens ---------------- */
+function tokenize(text){
+  var out=[],re=/\[\[([^\]]+)\]\]|(\S+)/g,m,s=0;
+  var raw=text.replace(/\[\[([^\]]+)\]\](\S*)/g,function(_,a,b){return '[['+a+']]'+(b?'\u0001'+b:'');});
+  while((m=re.exec(raw))){
+    if(m[1]){var parts=m[1].split(' ');parts.forEach(function(p,i){out.push({t:p,k:m[1],s:s});});}
+    else{var t=m[2];if(t.charAt(0)==='\u0001'){out[out.length-1].t+=t.slice(1);}else out.push({t:t,s:s});}
+    var last=out[out.length-1];if(last&&/[.!?][”"]?$/.test(last.t)&&!/^(Mr|Mrs|Ms|P\.E)\.$/.test(last.t))s++;
+  }
+  return out;
+}
+function paraHtml(text){return tokenize(text).map(function(x){return '<span class="w'+(x.k?' kw':'')+'"'+(x.k?' data-k="'+esc(x.k)+'"':'')+' data-s="'+x.s+'">'+esc(x.t)+'</span>';}).join(' ');}
+
+/* ---------------- render ---------------- */
+function render(){
+  score();
+  document.querySelectorAll('#lvl button').forEach(function(b){b.classList.toggle('on',b.dataset.l===work.lv);});
+  renderPlates();renderSteps();renderScreen();translateDirs();
+  var hh='#'+hashOf();if(location.hash!==hh){if(location.hash)history.pushState(null,'',hh);else history.replaceState(null,'',hh);}
+}
+function hashOf(){return work.ch==='after'?'after':('c'+work.ch+'-'+work.st);}
+function fromHash(){var h=location.hash.slice(1);if(h==='after'){work.ch='after';return;}var m=h.match(/^c(\d)-(\w+)$/);if(m){work.ch=+m[1];work.st=m[2];}}
+window.addEventListener('popstate',function(){if(!me)return;fromHash();stopRead();renderPlates();renderSteps();renderScreen();translateDirs();});
+function renderPlates(){
+  var h='',nextSet=false,tot=0,done=0;
+  CH.forEach(function(c){var a=chItems(c),d=cnt(a),full=d===a.length,lk=locked(c.id);tot+=a.length;done+=d;
+    var nxt=!full&&!nextSet&&!lk;if(nxt)nextSet=true;
+    h+='<button type="button" class="plate'+(full?' done':'')+(work.ch===c.id?' cur':'')+(nxt&&work.ch!==c.id?' next':'')+'" data-ch="'+c.id+'" title="Chapter '+c.id+': '+esc(c.title)+'"><span class="n">'+c.id+'</span><span class="c">'+(full?'✓ ':'')+d+'/'+a.length+'</span>'+(lk?'<span class="lk">🔒</span>':'')+'</button>';});
+  var b=afterItems(),bd=cnt(b);tot+=b.length;done+=bd;
+  h+='<button type="button" class="plate after'+(work.ch==='after'?' cur':'')+(bd===b.length?' done':'')+'" data-ch="after"><span class="n">★</span><span class="c">After · '+bd+'/'+b.length+'</span>'+(locked('after')?'<span class="lk">🔒</span>':'')+'</button>';
+  $('plates').innerHTML=h;
+  $('barI').style.width=Math.round(done/tot*100)+'%';
+  $('barL').textContent='Chapter '+(work.ch==='after'?'— after the book':work.ch+': '+CH[work.ch-1].title)+' · whole book '+done+' / '+tot;
+  $('plates').onclick=function(ev){var b=ev.target.closest('.plate');if(!b)return;stopRead();var v=b.dataset.ch;work.ch=v==='after'?'after':+v;work.st='read';dirty=true;render();window.scrollTo({top:0});};
+}
+function renderSteps(){
+  if(work.ch==='after'){$('steps').innerHTML='';return;}
+  var c=CH[work.ch-1];
+  $('steps').innerHTML=STEPS.map(function(s){var a=s.k==='read'||s.k==='say'?null:chItems(c,s.k);var full=a&&cnt(a)===a.length&&a.length;
+    return '<button type="button" class="step'+(work.st===s.k?' on':'')+(full?' ok':'')+'" data-st="'+s.k+'">'+s.n+(a?'<span class="cnt">'+cnt(a)+'/'+a.length+'</span>':'')+'</button>';}).join('');
+  $('steps').onclick=function(ev){var b=ev.target.closest('.step');if(!b)return;stopRead();work.st=b.dataset.st;dirty=true;render();window.scrollTo({top:0});};
+}
+function renderScreen(){
+  var el=$('screen');
+  if(work.ch==='after'){el.innerHTML=locked('after')?lockBox('after'):afterHtml();wireAfter();return;}
+  var c=CH[work.ch-1];work.visited[c.id+work.st]=1;
+  if(work.st!=='read'&&locked(c.id)){el.innerHTML=lockBox(c.id);return;}
+  var f={read:readHtml,check:checkHtml,play:playHtml,fix:fixHtml,write:writeHtml,say:sayHtml}[work.st]||readHtml;
+  el.innerHTML=f(c)+footHtml(c);
+  ({read:wireRead,check:wireChoices,play:wirePlay,fix:wireFix,write:wireWrite,say:wireSay}[work.st]||function(){})(c);
+  wireFoot(c);
+}
+function lockBox(n){var prev=n==='after'?8:n-1;return '<div class="box"><div class="lock">🔒 '+(n==='after'?'After the book':'The activities for this chapter')+' open when Chapter '+prev+' is almost done. Answer '+missesLeft(prev+1)+' more in Chapter '+prev+'.</div><div class="foot"><span></span><button class="btn go big" type="button" onclick="work.ch='+prev+';work.st=\'check\';render()">Go to Chapter '+prev+' →</button></div></div>';}
+function footHtml(c){
+  var i=STEPS.findIndex(function(s){return s.k===work.st;}),a=work.st==='read'||work.st==='say'?[]:chItems(c,work.st),left=a.length-cnt(a);
+  var nxt=i<STEPS.length-1?'Next: '+STEPS[i+1].n+' →':(c.id<8?'Done — go to Chapter '+(c.id+1)+' →':'Done — go to After the book →');
+  return '<div class="box"><div class="foot"><span class="left">'+(left>0?'Answer '+left+' more to finish this part.':(a.length?'<span class="chk">✓ This part is finished.</span>':''))+'</span><button class="btn go big" type="button" id="nextBtn">'+nxt+'</button></div></div>';
+}
+function wireFoot(c){$('nextBtn').onclick=function(){stopRead();var i=STEPS.findIndex(function(s){return s.k===work.st;});if(i<STEPS.length-1)work.st=STEPS[i+1].k;else{work.ch=c.id<8?c.id+1:'after';work.st='read';}dirty=true;save();render();window.scrollTo({top:0});};}
+function Q(c,o){return work.lv==='B'&&o.B?o.B:o.A;}
+
+/* ---------- READ ---------- */
+function sceneHtml(c){
+  var h='<div class="scene" id="scene">';
+  if(c.img.length===2)h+='<div class="two">'+c.img.map(function(n,ix){return imgTag(n,c,ix);}).join('')+'</div>';
+  else if(c.img.length===1)h+=imgTag(c.img[0],c);
+  else h+=ART.PANEL[c.panel]();
+  h+='<button class="lion" type="button" id="lion" aria-label="a tiny lion" style="left:'+c.lion.l+';top:'+c.lion.t+'">'+ART.lion()+'</button></div>';
+  return h;
+}
+function imgTag(n,c,ix){return '<img src="img/'+n+'.jpg" alt="Chapter '+c.id+' picture" data-n="'+n+'" data-panel="'+(ix===1?'W:gave':c.panel)+'" onerror="imgFail(this)">';}
+window.imgFail=function(im){if(!im.dataset.tried){im.dataset.tried='1';im.src='img/'+im.dataset.n+'.png';return;}var d=document.createElement('div'),pn=im.dataset.panel;d.innerHTML=pn.indexOf('W:')===0?ART.W[pn.slice(2)]():ART.PANEL[pn]();im.replaceWith(d.firstChild);};
+function readHtml(c){
+  var lv=work.lv,paras=c.paras[lv],pk='pred'+c.id,pv=work.pred[c.id];
+  var covered=c.cover&&pv==null;
+  var h='<div class="box"><h2>Chapter '+c.id+': '+esc(c.title)+'</h2>'+dirHtml(covered?'Make a guess first. Then you will see the picture.':'Look at the picture. Tap it to make it big. Make a guess. Then listen and read.')+(covered?'<div class="scene cover"><div class="covertxt">🙈 Make your guess below. Then the picture opens.</div>'+ART.W.choices()+'</div>':sceneHtml(c));
+  h+='<div class="q" translate="no"><div class="qt"><span class="tag">PREDICT</span>'+esc(Q(c,c.pred))+' <button class="btn pbtn" type="button" data-say="'+esc(Q(c,c.pred))+'">🔊</button> <button class="btn pbtn" type="button" data-tr="'+esc(Q(c,c.pred))+'">🌐</button></div><div class="opts">';
+  ordered(pk,c.pred.o).forEach(function(x){h+='<button type="button" class="opt'+(pv===x.i?' pick':'')+'" data-pred="'+x.i+'">'+esc(x.v)+'</button>';});
+  h+='</div><div class="pred-note">'+(pv!=null?'Your guess is saved. Read the story to find out.':'There is no wrong guess.')+'</div></div></div>';
+  h+='<div class="box"><h2>Listen and read</h2>'+dirHtml('Tap “Read it to me.” Follow the yellow word. Tap any word to hear it and see it in your language.');
+  h+='<div class="readctl"><button class="btn or big" type="button" id="readBtn">🔊 Read it to me</button><button class="btn" type="button" id="slowBtn">🐢 Slower</button></div><div translate="no">';
+  paras.forEach(function(p,i){var w=c.words.filter(function(x){return x.pic===p.pic;})[0];
+    h+='<div class="para"><button class="pn" type="button" data-pn="'+i+'" aria-label="read paragraph '+(i+1)+'">'+(i+1)+'</button><div class="pr" data-say="'+esc(w?w.w:'')+'">'+ART.W[p.pic]()+'</div>'+paraHtml(p.t)+'</div>';});
+  h+='</div></div>';
+  h+='<div class="box"><h2>Key words</h2>'+dirHtml('Tap a picture to hear the word. Tap the word or the meaning to see it in your language.')+'<div class="words" translate="no">';
+  c.words.forEach(function(w){h+='<div class="wcard"><button class="wpic" type="button" data-say="'+esc(w.w)+'">'+ART.W[w.pic]()+'</button><div class="wb"><span class="ww" data-tr="'+esc(w.w)+'">'+esc(w.w)+'</span><span class="wm" data-tr="'+esc(w.m)+'">'+esc(w.m)+'</span><span class="wt" data-wt="'+esc(w.w)+'"></span></div></div>';});
+  h+='</div></div>';
+  return h;
+}
+function wireRead(c){
+  var slow=false;
+  $('readBtn').onclick=function(){if(reading){stopRead();return;}readParas(0,false,slow?0.65:0.9);};
+  $('slowBtn').onclick=function(){slow=!slow;this.classList.toggle('on',slow);this.textContent=slow?'🐢 Slower: on':'🐢 Slower';};
+  document.querySelectorAll('[data-pn]').forEach(function(b){b.onclick=function(ev){ev.stopPropagation();readParas(+b.dataset.pn,true,slow?0.65:0.9);};});
+  document.querySelectorAll('[data-pred]').forEach(function(b){b.onclick=function(){work.pred[c.id]=+b.dataset.pred;mark();renderScreen();translateDirs();};});
+  wireLion(c);
+  if(lang)document.querySelectorAll('[data-wt]').forEach(function(s){tr(s.dataset.wt).then(function(t){s.innerHTML=eqHtml(t,s.dataset.wt);});});
+}
+function lightbox(src){var d=document.createElement('div');d.className='lb';d.innerHTML='<button type="button" class="lbx" aria-label="Close">×</button><img src="'+src+'" alt="big picture">';d.onclick=function(){d.remove();};document.body.appendChild(d);}
+document.addEventListener('click',function(ev){var im=ev.target.closest&&ev.target.closest('.scene img, .qpic img');if(im){ev.stopPropagation();lightbox(im.src);}},true);
+function wireLion(c){var l=$('lion');if(!l)return;l.onclick=function(ev){ev.stopPropagation();work.lion[c.id]=true;mark();fireworks(ev.clientX,ev.clientY);toast('🦁 You found the Galileo lion! '+Object.keys(work.lion).length+' of 8 found.');};}
+
+/* ---------- generic choice question (formative: fade, quip, hint, ✓) ---------- */
+var quipN=0;
+function quip(hint,look){var who=(quipN++%2)?'vicky':'mitch',L=QUIPS[who==='vicky'?'vicky':'mitchell'];var line=L[Math.floor(Math.random()*L.length)];
+  return '<div class="quip"><span class="av">'+ART.head(who)+'</span><span>'+(who==='vicky'?'Vicky':'Mr. Mitchell')+': “'+esc(line)+'”<span class="hint">💡 '+esc(hint)+'</span></span></div>'+(look||'');}
+function choiceQ(key,qtext,opts,correct,store,hint,optHtml,cls,look){
+  var st=store[key]||{},ok=st.ok===true||store[key]===true,faded=st.f||[];
+  var h='<div class="q'+(ok?' done':'')+'" data-key="'+esc(key)+'" translate="no"><div class="qt">'+qtext+'</div><div class="'+(cls||'opts')+'">';
+  ordered(key,opts).forEach(function(x){var isOk=x.i===correct;var c=ok&&isOk?' right':(faded.indexOf(x.i)>=0?' fade':'');
+    h+='<button type="button" class="'+(cls==='faces'?'face':cls==='doors'?'door':'opt')+c+'" data-i="'+x.i+'"'+(ok||faded.indexOf(x.i)>=0?' disabled':'')+'>'+(optHtml?optHtml(x.v,x.i):esc(x.v))+'</button>';});
+  h+='</div><div class="qfb">'+(ok?'<div class="chk" style="margin-top:6px">✓ Yes!</div>':(faded.length?quip(hint,faded.length>=2?look:''):''))+'</div></div>';
+  return h;
+}
+function wireChoices(c){
+  document.querySelectorAll('.q[data-key]').forEach(function(q){
+    q.querySelectorAll('button[data-i]').forEach(function(b){b.onclick=function(){
+      var key=q.dataset.key,i=+b.dataset.i,info=choiceInfo(key);if(!info)return;
+      var st=info.store[key];if(typeof st!=='object'||st===null)st={};
+      if(i===info.correct){if(info.flat)info.store[key]=true;else{st.ok=true;info.store[key]=st;}fireSmall(b);speakOk();}
+      else{st.f=(st.f||[]);if(st.f.indexOf(i)<0)st.f.push(i);st.tries=(st.tries||0)+1;work.miss[key]=(work.miss[key]||0)+1;if(info.flat)info.store[key+':f']=st;else info.store[key]=st;}
+      mark();renderScreen();renderPlates();renderSteps();translateDirs();
+    };});
+    var lb=q.querySelector('[data-look]');if(lb)lb.onclick=function(){var el=q.querySelector('.look');el.classList.toggle('hide');};
+  });
+}
+/* where each choice key lives */
+function choiceInfo(key){
+  var m;
+  for(var ci=0;ci<CH.length;ci++){var c=CH[ci];
+    for(var j=0;j<c.mc.length;j++)if(c.mc[j].id===key)return {store:work.mc,correct:0};
+    var p=c.play;
+    if((m=key.match(/^p(\d):(.+)$/))&&+m[1]===c.id){var it=p.items.filter(function(x){return x.id===m[2];})[0];if(!it)continue;
+      if(p.type==='faces')return {store:work.play,correct:p.faces.indexOf(it.a),flat:1};
+      if(p.type==='who')return {store:work.play,correct:p.people.indexOf(it.a),flat:1};
+      if(p.type==='doors')return {store:work.play,correct:0,flat:1};}
+    if((m=key.match(/^x(\d):(\w+)$/))&&+m[1]===c.id&&c.fix.type==='choose')return {store:work.fix,correct:0,flat:1};
+  }
+  return null;
+}
+/* flat stores keep misses beside the item */
+function flatState(store,key){var v=store[key];if(v===true)return {ok:true};return store[key+':f']||{};}
+function speakOk(){}
+
+/* ---------- CHECK ---------- */
+function lookHtml(c,pn){var p=c.paras[work.lv][pn-1];if(!p)return '';return '<div class="look">👀 Paragraph '+pn+': '+esc(p.t.replace(/\[\[|\]\]/g,''))+'</div>';}
+function checkHtml(c){
+  var h='<div class="box"><h2>Check: Chapter '+c.id+'</h2>'+dirHtml('Answer each question. If you are not sure, read the hint and try again.')+'<div class="pic-r" style="width:min(30%,170px)">'+ART.W.understood()+'</div>';
+  var pv=work.pred[c.id];if(pv!=null)h+='<div class="q" translate="no"><div class="qt"><span class="tag">PREDICT</span>Your guess was: “'+esc(c.pred.o[pv])+'” Were you right? Read and see!</div></div>';
+  c.mc.forEach(function(q,qi){var qt=Q(c,q);
+    if(q.pic){h+='<div class="qpic">'+c.img.map(function(n,ix){return imgTag(n,c,ix);}).join('')+'</div>';
+      h+=choiceQ(q.id,'<span class="tag">LOOK</span>'+esc(qt)+' <button class="btn pbtn" type="button" data-say="'+esc(qt)+'">🔊</button> <button class="btn pbtn" type="button" data-tr="'+esc(qt)+'">🌐</button>',q.o,0,work.mc,'Look at the picture again. Tap it to make it big. Read the words in it.');return;}
+    h+=choiceQ(q.id,'<span class="tag">'+(qi===3?'THINK':'FIND IT')+'</span>'+esc(qt)+' <button class="btn pbtn" type="button" data-say="'+esc(qt)+'">🔊</button> <button class="btn pbtn" type="button" data-tr="'+esc(qt)+'">🌐</button>',q.o,0,work.mc,'Look at paragraph '+q.p+'.',null,null,lookHtml(c,q.p));});
+  return h+'</div>';
+}
+
+/* ---------- PLAY ---------- */
+var sel=null; /* tap-then-tap selection */
+function playHtml(c){
+  var p=c.play,k='p'+c.id+':',h='<div class="box"><h2>'+esc(p.title)+'</h2>'+dirHtml(p.dir);
+  h+='<div class="pic-r" data-say="'+esc(p.title)+'">'+ART.W[{match:'friends',order:'street',faces:'worried',tf:'pe',cloze:'grave',who:'readto',pairs:'listened',doors:'choices'}[p.type]]()+'</div>';
+  var miss=work.play[k+'_m'];
+  if(p.type==='match'||p.type==='pairs'){
+    h+='<div class="tt" translate="no" style="clear:both"><div class="col">';
+    ordered('p'+c.id+'L',p.items).forEach(function(x){var ok=work.play[k+x.v.id]===true;h+='<button type="button" class="chip'+(ok?' ok':'')+(sel===x.v.id?' sel':'')+'" data-l="'+x.v.id+'"'+(ok?' disabled':'')+'>'+esc(x.v.l)+(ok?' <span class="chk">✓</span>':'')+'</button>';});
+    h+='</div><div class="col">';
+    ordered('p'+c.id+'R',p.items).forEach(function(x){var ok=work.play[k+x.v.id]===true;h+='<button type="button" class="chip'+(ok?' ok used':'')+'" data-r="'+x.v.id+'"'+(ok?' disabled':'')+'>'+esc(x.v.r)+'</button>';});
+    h+='</div></div>';
+  }
+  if(p.type==='order'){
+    h+='<div translate="no" style="clear:both"><div class="pool">';
+    ordered('p'+c.id+'pool',p.items).forEach(function(x){if(work.play[k+'o'+x.i]===true)return;h+='<button type="button" class="chip'+(sel===x.i?' sel':'')+'" data-o="'+x.i+'">'+esc(x.v)+'</button>';});
+    h+='</div><div class="slots">';
+    p.items.forEach(function(v,i){var ok=work.play[k+'o'+i]===true;h+='<button type="button" class="slot'+(ok?' ok':'')+'" data-slot="'+i+'"><span class="num">'+(i+1)+'</span>'+(ok?esc(v)+' <span class="chk">✓</span>':'')+'</button>';});
+    h+='</div></div>';
+  }
+  if(p.type==='faces')p.items.forEach(function(it){h+=choiceQ(k+it.id,esc(it.q)+' <button class="btn pbtn" type="button" data-say="'+esc(it.q)+'">🔊</button>',p.faces,p.faces.indexOf(it.a),work.play,'Look at the faces. Sad, worried, angry, or happy?',function(v){return ART.bigFace(v)+'<div>'+esc(v)+'</div>';},'faces');});
+  if(p.type==='who')p.items.forEach(function(it){h+=choiceQ(k+it.id,esc(it.q)+' <button class="btn pbtn" type="button" data-say="'+esc(it.q)+'">🔊</button>',p.people,p.people.indexOf(it.a),work.play,'Who talks like this? Think about the story.');});
+  if(p.type==='doors')p.items.forEach(function(it){h+=choiceQ(k+it.id,esc(it.q)+' <button class="btn pbtn" type="button" data-say="'+esc(it.q)+'">🔊</button>',it.o,0,work.play,'What did Martin really do in the story?',function(v){return doorSvg()+'<span>'+esc(v)+'</span>';},'doors');});
+  if(p.type==='tf')p.items.forEach(function(it){var key=k+it.id,ok=work.play[key]===true,fs=work.play[key+':f']||{};
+    h+='<div class="q'+(ok?' done':'')+'" translate="no"><div class="qt">'+esc(it.s)+' <button class="btn pbtn" type="button" data-say="'+esc(it.s)+'">🔊</button></div><div class="thumbs"><button type="button" class="opt'+(ok&&it.a?' right':'')+((fs.f||[]).indexOf(1)>=0?' fade':'')+'" data-tf="'+it.id+'" data-v="1"'+(ok?' disabled':'')+'>👍 True</button><button type="button" class="opt'+(ok&&!it.a?' right':'')+((fs.f||[]).indexOf(0)>=0?' fade':'')+'" data-tf="'+it.id+'" data-v="0"'+(ok?' disabled':'')+'>👎 Not true</button></div>'+(ok?'':((fs.f||[]).length?quip('Find it in the story. Does the story say the same thing?'):''))+'</div>';});
+  if(p.type==='cloze'){var words=clozeWords(p),n=0;
+    h+='<div translate="no" style="clear:both"><div class="pool">';
+    ordered('p'+c.id+'bank',words).forEach(function(x){var used=work.play[k+'b'+x.i]===true;h+='<button type="button" class="chip'+(used?' used':'')+(sel==='w'+x.i?' sel':'')+'" data-cw="'+x.i+'"'+(used?' disabled':'')+'>'+esc(x.v)+'</button>';});
+    h+='</div><div class="cloze">'+esc(p.text).replace(/\{([^}]+)\}/g,function(_,w){var i=n++,ok=work.play[k+'b'+i]===true;return '<button type="button" class="blank'+(ok?' ok':'')+(sel==='b'+i?' target':'')+'" data-blank="'+i+'"'+(ok?' disabled':'')+'>'+(ok?esc(w):'&nbsp;')+'</button>';})+'</div></div>';
+  }
+  h+='<div id="playFb">'+(miss?quip(miss):'')+'</div>';
+  return h+'</div>';
+}
+function doorSvg(){return ART.wrap(120,90,'<rect width="120" height="90" fill="#cfd8df"/><rect x="34" y="6" width="52" height="84" fill="#8a5a3b" stroke="#17222b" stroke-width="2"/><rect x="40" y="12" width="40" height="30" fill="#7a4d32" stroke="#5c3b26"/><rect x="40" y="48" width="40" height="36" fill="#7a4d32" stroke="#5c3b26"/><circle cx="78" cy="50" r="3" fill="#e8c35a" stroke="#17222b"/>','a door');}
+function playMiss(c,key,hint){var k='p'+c.id+':';work.miss[key]=(work.miss[key]||0)+1;work.play[k+'_m']=hint;mark();}
+function wirePlay(c){
+  var p=c.play,k='p'+c.id+':',root=$('screen');
+  function rerender(){renderScreen();renderPlates();renderSteps();translateDirs();}
+  function wob(el){el.classList.remove('wob');void el.offsetWidth;el.classList.add('wob');}
+  if(p.type==='match'||p.type==='pairs'){
+    root.querySelectorAll('[data-l]').forEach(function(b){b.onclick=function(){sel=b.dataset.l;work.play[k+'_m']='';rerender();};});
+    root.querySelectorAll('[data-r]').forEach(function(b){b.onclick=function(){if(!sel){wob(b);return;}
+      if(b.dataset.r===sel){work.play[k+sel]=true;sel=null;work.play[k+'_m']='';mark();fireSmall(b);rerender();}
+      else{playMiss(c,k+sel,p.type==='match'?'Look at the age or the job in the sentence.':'Read the first half. Why did it happen?');wob(b);var keep=sel;setTimeout(function(){sel=keep;rerender();},420);}};});
+  }
+  if(p.type==='order'){
+    root.querySelectorAll('[data-o]').forEach(function(b){b.onclick=function(){sel=+b.dataset.o;work.play[k+'_m']='';rerender();};});
+    root.querySelectorAll('[data-slot]').forEach(function(s){s.onclick=function(){if(sel===null||typeof sel!=='number'){wob(s);return;}var i=+s.dataset.slot;if(work.play[k+'o'+i]===true)return;
+      if(i===sel){work.play[k+'o'+i]=true;sel=null;work.play[k+'_m']='';mark();rerender();}
+      else{playMiss(c,k+'o'+sel,'Think: what happened first in the story? What happened next?');wob(s);setTimeout(rerender,420);}};});
+  }
+  if(p.type==='cloze'){
+    var words=clozeWords(p);
+    function tryFill(bi,wi){if(bi===wi||words[bi]===words[wi]){work.play[k+'b'+bi]=true;sel=null;work.play[k+'_m']='';mark();rerender();}else{playMiss(c,k+'b'+bi,'Read the whole sentence. Which word makes sense there?');sel=null;rerender();}}
+    root.querySelectorAll('[data-cw]').forEach(function(b){b.onclick=function(){var wi=+b.dataset.cw;if(typeof sel==='string'&&sel.charAt(0)==='b'){tryFill(+sel.slice(1),wi);return;}sel='w'+wi;rerender();};});
+    root.querySelectorAll('[data-blank]').forEach(function(b){b.onclick=function(){var bi=+b.dataset.blank;if(typeof sel==='string'&&sel.charAt(0)==='w'){tryFill(bi,+sel.slice(1));return;}sel='b'+bi;rerender();};});
+  }
+  if(p.type==='tf')root.querySelectorAll('[data-tf]').forEach(function(b){b.onclick=function(){var it=p.items.filter(function(x){return x.id===b.dataset.tf;})[0],key=k+it.id,v=b.dataset.v==='1';
+    if(v===it.a){work.play[key]=true;fireSmall(b);}else{var fs=work.play[key+':f']||{f:[]};if(fs.f.indexOf(+b.dataset.v)<0)fs.f.push(+b.dataset.v);work.play[key+':f']=fs;work.miss[key]=(work.miss[key]||0)+1;}
+    mark();rerender();};});
+  if(p.type==='faces'||p.type==='who'||p.type==='doors')wireFlatChoices(c);
+}
+/* faces / who / doors / choose: choice items whose done state is a plain true */
+function wireFlatChoices(c){
+  document.querySelectorAll('.q[data-key]').forEach(function(q){q.querySelectorAll('button[data-i]').forEach(function(b){b.onclick=function(){
+    var key=q.dataset.key,info=choiceInfo(key),i=+b.dataset.i;if(!info)return;
+    if(i===info.correct){info.store[key]=true;fireSmall(b);}
+    else{var fs=info.store[key+':f']||{f:[]};if(fs.f.indexOf(i)<0)fs.f.push(i);info.store[key+':f']=fs;work.miss[key]=(work.miss[key]||0)+1;}
+    mark();renderScreen();renderPlates();renderSteps();translateDirs();};});});
+}
+/* choiceQ reads faded options from the ':f' twin for flat stores */
+var _choiceQ=choiceQ;
+choiceQ=function(key,qtext,opts,correct,store,hint,optHtml,cls,look){
+  if(store!==work.mc){var tmp={};tmp[key]=store[key]===true?{ok:true}:(store[key+':f']||{});return _choiceQ(key,qtext,opts,correct,tmp,hint,optHtml,cls,look);}
+  return _choiceQ(key,qtext,opts,correct,store,hint,optHtml,cls,look);
+};
+
+/* ---------- FIX IT ---------- */
+var fixSel=null;
+var FIXHINT={'Capital letters':'Names and the first word need a big letter: Martin, not martin.','Capitals and periods':'Put a period at the end of the first sentence. Then a capital letter.','Run-on sentences':'Make a new sentence: a period, then a capital letter.','He / she + -s':'Martin = he. With he, the verb gets -s: he misses.','Past tense':'It happened before. Use the past: was, called, gave.','Add details':'Pick the sentence that is true and sounds right.'};
+function fixHtml(c){
+  var fx=c.fix,h='<div class="box"><h2>Fix it: '+esc(fx.kind)+'</h2>'+dirHtml(fx.dir)+'<div class="pic-r">'+ART.W.homework()+'</div><div style="clear:both"></div>';
+  if(fx.type==='choose'){fx.items.forEach(function(it){h+=choiceQ('x'+c.id+':'+it.id,'Make it better: <b>'+esc(it.base)+'</b> <button class="btn pbtn" type="button" data-say="'+esc(it.base)+'">🔊</button>',it.o,0,work.fix,FIXHINT['Add details']);});return h+'</div>';}
+  fx.items.forEach(function(it){
+    var toks=it.s.split(' '),allDone=Object.keys(it.fx).every(function(ix){return work.fix['x'+c.id+':'+it.id+':'+ix]===true;});
+    h+='<div class="q'+(allDone?' done':'')+'" translate="no"><div class="board">';
+    toks.forEach(function(t,ix){var key='x'+c.id+':'+it.id+':'+ix,isT=it.fx[ix]!==undefined,ok=work.fix[key]===true,show=ok?it.fx[ix][0]:t,pun=/^[.,]$/.test(show);
+      h+='<button type="button" class="tok'+(ok?' fixd':'')+(pun?' punct':'')+(fixSel===key?' pick':'')+'" data-fix="'+it.id+'" data-ix="'+ix+'"'+(ok?' disabled':'')+'>'+esc(show)+'</button>';});
+    h+='</div>';
+    if(fixSel&&fixSel.indexOf('x'+c.id+':'+it.id+':')===0){var ix=+fixSel.split(':')[2],st=work.fix[fixSel+':f']||{f:[]};
+      h+='<div class="fixopts">'+ordered(fixSel,fixOpts(it,ix)).map(function(x){return '<button type="button" class="opt'+(st.f.indexOf(x.i)>=0?' fade':'')+'" data-fo="'+x.i+'"'+(st.f.indexOf(x.i)>=0?' disabled':'')+'>'+esc(x.v)+'</button>';}).join('')+'</div>';}
+    if(work.fix['_m'+c.id+it.id])h+=quip(work.fix['_m'+c.id+it.id]);
+    h+=(allDone?'<div class="chk" style="margin-top:6px">✓ Fixed! <button class="btn pbtn" type="button" data-say="'+esc(toks.map(function(t,ix){return it.fx[ix]?it.fx[ix][0]:t;}).join(' ').replace(/ ([.,])/g,'$1'))+'">🔊 Hear it</button></div>':'')+'</div>';
+  });
+  return h+'</div>';
+}
+function wireFix(c){
+  if(c.fix.type==='choose'){wireFlatChoices(c);return;}
+  var root=$('screen');
+  root.querySelectorAll('[data-fix]').forEach(function(b){b.onclick=function(){
+    var it=c.fix.items.filter(function(x){return x.id===b.dataset.fix;})[0],ix=+b.dataset.ix,key='x'+c.id+':'+it.id+':'+ix;
+    if(it.fx[ix]===undefined){work.miss['x'+c.id+':'+it.id]=(work.miss['x'+c.id+':'+it.id]||0)+1;work.fix['_m'+c.id+it.id]='That word is OK. Look for a word that needs a fix.';mark();b.classList.remove('wob');void b.offsetWidth;b.classList.add('wob');setTimeout(function(){renderScreen();translateDirs();},450);return;}
+    fixSel=key;work.fix['_m'+c.id+it.id]='';renderScreen();translateDirs();};});
+  root.querySelectorAll('[data-fo]').forEach(function(b){b.onclick=function(){
+    var parts=fixSel.split(':'),it=c.fix.items.filter(function(x){return x.id===parts[1];})[0],i=+b.dataset.fo;
+    if(i===0){work.fix[fixSel]=true;fixSel=null;work.fix['_m'+c.id+it.id]='';fireSmall(b);}
+    else{var st=work.fix[fixSel+':f']||{f:[]};st.f.push(i);work.fix[fixSel+':f']=st;work.miss[fixSel]=(work.miss[fixSel]||0)+1;work.fix['_m'+c.id+it.id]=FIXHINT[c.fix.kind]||'Try another one.';}
+    mark();renderScreen();renderPlates();renderSteps();translateDirs();};});
+}
+
+/* ---------- WRITE ---------- */
+function writeBox(w,lv,label){
+  var q=lv==='B'?w.B:w.A,val=work.wr[w.id];
+  if(val==null&&lv==='A')val=w.frameA;
+  var ok=wrOk(w.id,w.min),n=(work.wr[w.id]||'').trim()?(work.wr[w.id]||'').trim().split(/\s+/).length:0;
+  var h='<div class="q'+(ok?' done':'')+'" translate="no"><div class="qt">'+(label?'<span class="tag">'+label+'</span>':'')+esc(q)+' <button class="btn pbtn" type="button" data-say="'+esc(q)+'">🔊</button> <button class="btn pbtn" type="button" data-tr="'+esc(q)+'">🌐</button></div>';
+  if(lv==='A'){h+='<div class="frame">Fill the blanks. Tap a word, or type.</div><div class="bank">'+w.bankA.map(function(b){return '<button type="button" data-bank="'+esc(w.id)+'" data-word="'+esc(b)+'">'+esc(b)+'</button>';}).join('')+'</div>';}
+  else h+='<div class="frame">Start like this: '+esc(w.frameB)+'</div>';
+  h+='<textarea data-wr="'+esc(w.id)+'" data-min="'+w.min+'" rows="2" spellcheck="true">'+esc(val||'')+'</textarea>';
+  h+='<div class="foot"><span class="wc'+(ok?' ok':'')+'" data-wc="'+esc(w.id)+'">'+(ok?'✓ ':'')+n+' words'+(ok?'':' · write '+w.min+' or more'+(/___/.test(val||'')?', fill every blank':''))+'</span><button class="btn pbtn" type="button" data-hear="'+esc(w.id)+'">🔊 Hear my answer</button></div></div>';
+  return h;
+}
+function writeHtml(c){
+  var h='<div class="box"><h2>Write</h2>'+dirHtml(work.lv==='A'?'Read the question. Finish the sentence. Use the word bank.':'Read the question. Answer in full sentences. Use the start if you need it.')+'<div class="pic-r">'+ART.W.homework()+'</div><div style="clear:both"></div>';
+  c.write.forEach(function(w){h+=writeBox(w,work.lv);});
+  return h+'</div>';
+}
+function grow(t){t.style.height='auto';t.style.height=(t.scrollHeight+4)+'px';}
+function wireWrite(){
+  document.querySelectorAll('textarea[data-wr]').forEach(function(t){grow(t);t.oninput=function(){work.wr[t.dataset.wr]=t.value;grow(t);mark();updWc(t);};});
+  document.querySelectorAll('[data-bank]').forEach(function(b){b.onclick=function(){var t=document.querySelector('textarea[data-wr="'+b.dataset.bank+'"]');var v=t.value,w=b.dataset.word;
+    if(/___/.test(v))v=v.replace('___',w);else{var s=t.selectionStart||v.length;v=v.slice(0,s).replace(/\s*$/,' ')+w+' '+v.slice(s).replace(/^\s*/,'');}
+    t.value=v;work.wr[t.dataset.wr]=v;grow(t);mark();updWc(t);speak(w,0.85);};});
+  document.querySelectorAll('[data-hear]').forEach(function(b){b.onclick=function(){var v=(work.wr[b.dataset.hear]||'').trim();if(v)speak(v.replace(/___/g,'blank'),0.85);};});
+}
+function updWc(t){var id=t.dataset.wr,min=+t.dataset.min,v=t.value.trim(),n=v?v.split(/\s+/).length:0,ok=wrOk(id,min),el=document.querySelector('[data-wc="'+id+'"]');
+  if(el){el.className='wc'+(ok?' ok':'');el.textContent=(ok?'✓ ':'')+n+' words'+(ok?'':' · write '+min+' or more'+(/___/.test(v)?', fill every blank':''));}
+  var q=t.closest('.q');if(q)q.classList.toggle('done',ok);renderPlates();renderSteps();}
+
+/* ---------- SAY IT ---------- */
+window.SAY_CTL=null;
+function sayHtml(c){return '<div class="box"><h2>Say it</h2>'+dirHtml('Listen. Then tap the red button and say it. Tap again to stop.')+'<div class="pic-r">'+ART.W.readto()+'</div><p translate="no" style="font-weight:800">Say three sentences from Chapter '+c.id+', then the key words.</p><div style="clear:both"></div><div id="sayMount" style="--say-accent:#1f4f8f;--say-soft:#e4ecf7;--say-radius:12px"></div></div>';}
+function wireSay(c){
+  function go(){try{SAY_CTL=Say.mount($('sayMount'),{decks:[{k:'s',name:'Sentences',e:'🗣',items:c.say},{k:'w',name:'Words',e:'🔤',items:c.words.map(function(w){return w.w;})}],setName:'brothers-ch'+c.id,
+    student:function(){return me?{email:me.email,name:me.first+' '+me.last,period:me.period}:null;},lang:function(){return lang||'none';},
+    translate:function(text,anchor){var r=anchor.getBoundingClientRect();showPop(r.left+r.width/2,r.top,text,{});}});}catch(e){$('sayMount').innerHTML='<p>The recorder did not load. Reload the page.</p>';}}
+  if(window.Say&&Say.mount)go();else{var s=document.createElement('script');s.src='/readings/say/say.js';s.onload=go;s.onerror=function(){$('sayMount').innerHTML='<p>The recorder did not load. Reload the page.</p>';};document.head.appendChild(s);}
+}
+
+/* ---------- AFTER THE BOOK ---------- */
+function afterHtml(){
+  var h='<div class="box"><h2>After the book</h2>'+dirHtml('You read the whole book! Put the story in order, match the people, and write about your hero.')+'<div class="pic-r">'+ART.W.walkaway()+'</div>';
+  h+='<h3>1. Put the story in order</h3>'+dirHtml('Tap a sentence. Then tap its number, 1 to 8.')+'<div style="clear:both" translate="no"><div class="pool">';
+  ordered('aOrder',AFTER.order).forEach(function(x){if(work.play['ao'+x.i]===true)return;h+='<button type="button" class="chip'+(sel==='a'+x.i?' sel':'')+'" data-ao="'+x.i+'">'+esc(x.v)+'</button>';});
+  h+='</div><div class="slots">';AFTER.order.forEach(function(v,i){var ok=work.play['ao'+i]===true;h+='<button type="button" class="slot'+(ok?' ok':'')+'" data-as="'+i+'"><span class="num">'+(i+1)+'</span>'+(ok?esc(v)+' <span class="chk">✓</span>':'')+'</button>';});
+  h+='</div></div>'+(work.play.a_m?quip(work.play.a_m):'')+'</div>';
+  h+='<div class="box"><h3>2. Who is it?</h3>'+dirHtml('Tap a person. Then tap the sentence about that person.')+'<div class="tt" translate="no"><div class="col">';
+  ordered('aPL',AFTER.people).forEach(function(x){var ok=work.play['ap:'+x.v.id]===true;h+='<button type="button" class="chip'+(ok?' ok':'')+(sel==='p'+x.v.id?' sel':'')+'" data-apl="'+x.v.id+'"'+(ok?' disabled':'')+'>'+esc(x.v.n)+(ok?' <span class="chk">✓</span>':'')+'</button>';});
+  h+='</div><div class="col">';ordered('aPR',AFTER.people).forEach(function(x){var ok=work.play['ap:'+x.v.id]===true;h+='<button type="button" class="chip'+(ok?' ok used':'')+'" data-apr="'+x.v.id+'"'+(ok?' disabled':'')+'>'+esc(x.v.d)+'</button>';});
+  h+='</div></div>'+(work.play.ap_m?quip(work.play.ap_m):'')+'</div>';
+  h+='<div class="box"><h3>3. My hero</h3>'+dirHtml('Write about your hero. Mr. Toby may show the class hero wall on the board, with first names only.')+'<div class="pic-r">'+ART.W.hero()+'</div><div style="clear:both"></div>'+writeBox(AFTER.hero,work.lv,'CONNECT')+'</div>';
+  h+=afterDone()?'<div class="done-banner">🎉 You finished Brothers in Arms! Go to Google Classroom for your next activity, or ask Mr. Toby.</div>':'<div class="box"><div class="foot"><span class="left">Answer '+(afterItems().length-cnt(afterItems()))+' more to finish the book.</span></div></div>';
+  return h;
+}
+function wireAfter(){
+  if(locked('after'))return;
+  var root=$('screen');function rr(){renderScreen();renderPlates();translateDirs();}
+  function wob(el){el.classList.remove('wob');void el.offsetWidth;el.classList.add('wob');}
+  root.querySelectorAll('[data-ao]').forEach(function(b){b.onclick=function(){sel='a'+b.dataset.ao;work.play.a_m='';rr();};});
+  root.querySelectorAll('[data-as]').forEach(function(s){s.onclick=function(){if(typeof sel!=='string'||sel.charAt(0)!=='a'){wob(s);return;}var i=+s.dataset.as,want=+sel.slice(1);if(work.play['ao'+i]===true)return;
+    if(i===want){work.play['ao'+i]=true;sel=null;mark();rr();}else{work.miss['ao'+want]=(work.miss['ao'+want]||0)+1;work.play.a_m='Think about the chapters: 1 is the start, 8 is the end.';mark();wob(s);setTimeout(rr,420);}};});
+  root.querySelectorAll('[data-apl]').forEach(function(b){b.onclick=function(){sel='p'+b.dataset.apl;work.play.ap_m='';rr();};});
+  root.querySelectorAll('[data-apr]').forEach(function(b){b.onclick=function(){if(typeof sel!=='string'||sel.charAt(0)!=='p'){wob(b);return;}var want=sel.slice(1);
+    if(b.dataset.apr===want){work.play['ap:'+want]=true;sel=null;mark();rr();}else{work.miss['ap:'+want]=(work.miss['ap:'+want]||0)+1;work.play.ap_m='Think: how old is the person? What do they do?';mark();wob(b);setTimeout(rr,420);}};});
+  wireWrite();
+}
+
+/* ---------------- fun ---------------- */
+function toast(t){var el=$('toast');el.textContent=t;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(function(){el.classList.remove('show');},3200);}
+function fireSmall(b){try{var r=b.getBoundingClientRect();fireworks(r.left+r.width/2,r.top+r.height/2,14);}catch(e){}}
+function fireworks(x,y,n){
+  var cv=$('fw'),ctx=cv.getContext('2d');cv.width=innerWidth;cv.height=innerHeight;n=n||90;
+  var cols=['#e2672a','#ffd75e','#14706c','#1f4f8f','#e0465a','#1d8448'],ps=[];
+  for(var i=0;i<n;i++){var a=Math.random()*Math.PI*2,s=2+Math.random()*(n>30?6:3);ps.push({x:x,y:y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,l:40+Math.random()*30,c:cols[i%cols.length]});}
+  (function step(){ctx.clearRect(0,0,cv.width,cv.height);var alive=0;ps.forEach(function(p){if(p.l<=0)return;alive++;p.x+=p.vx;p.y+=p.vy;p.vy+=0.12;p.l--;ctx.globalAlpha=Math.max(0,p.l/60);ctx.fillStyle=p.c;ctx.fillRect(p.x,p.y,4,4);});if(alive)requestAnimationFrame(step);else ctx.clearRect(0,0,cv.width,cv.height);})();
+}
+/* silent browser-translation canary */
+setInterval(function(){var c=document.documentElement.className||'';if(/translated-/.test(c)&&!work.bt){work.bt=true;dirty=true;}},3000);
+</script>
+</body>
+</html>

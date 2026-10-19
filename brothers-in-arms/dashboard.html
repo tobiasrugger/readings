@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brothers in Arms — Teacher</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#17222b;--muted:#56636e;--ok:#1d8448;--ok-soft:#dcf3e4;--plate:#1f4f8f;--orange:#e2672a}
+*{box-sizing:border-box}body{margin:0;font-family:'Nunito',system-ui,sans-serif;background:#e6eaee;color:var(--ink)}
+.top{background:#17222b;color:#fff;padding:10px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;border-bottom:3px solid var(--orange)}
+.top h1{margin:0;font-size:21px;font-weight:900}.top .sp{flex:1}
+select,button,input{font-family:inherit;font-size:15px}
+select,input{border:2px solid var(--ink);border-radius:8px;padding:6px 8px;background:#fff;color:var(--ink)}
+.btn{border:2px solid #fff;background:transparent;color:#fff;border-radius:10px;padding:6px 12px;font-weight:800;cursor:pointer}
+.btn.on{background:#fff;color:var(--ink)}
+.wrap{max-width:1300px;margin:14px auto;padding:0 12px}
+.box{background:#fff;border:2px solid var(--ink);border-radius:14px;box-shadow:4px 4px 0 rgba(23,34,43,.18);padding:14px;margin-bottom:14px;overflow:auto}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{border-bottom:1px solid #cfd6dc;padding:6px 6px;text-align:left;vertical-align:middle}
+th{background:#f1f4f6;position:sticky;top:0;font-weight:900}
+tr.s{cursor:pointer}tr.s:hover{background:#fff8ec}
+.cell{display:inline-block;min-width:44px;text-align:center;border-radius:6px;padding:2px 4px;font-weight:800;font-size:13px;border:1.5px solid #cfd6dc}
+.c0{background:#fff;color:#9aa5ae}.c1{background:#fff3c4}.c2{background:#d6eeec}.c3{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+.det{background:#fbfcfd}.det td{padding:12px}
+.ans{border:2px solid var(--ink);border-radius:10px;padding:8px 10px;margin:6px 0;background:#fff}
+.ans b{display:block;font-size:13px;color:var(--muted)}
+.gate{position:fixed;inset:0;background:#17222b;display:flex;align-items:center;justify-content:center;z-index:9}
+.gate .g{background:#fff;border:3px solid var(--orange);border-radius:14px;padding:20px;width:320px}
+.wall{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.hero{background:#fff;border:3px solid var(--ink);border-radius:16px;padding:16px;box-shadow:5px 5px 0 rgba(0,0,0,.2);font-size:22px;line-height:1.45}
+.hero .n{font-weight:900;color:var(--plate);font-size:18px;margin-bottom:4px}
+.muted{color:var(--muted);font-size:14px}
+.bt{color:#a8461a;font-weight:800}
+</style>
+</head>
+<body>
+<div class="gate" id="gate"><div class="g"><h2 style="margin:0 0 8px">Teacher view</h2><input id="pw" type="password" placeholder="Password" style="width:100%"><div id="pwErr" style="color:#a8461a;font-weight:800;min-height:1.3em"></div><button style="margin-top:8px;border:2px solid #17222b;border-radius:10px;padding:8px 14px;font-weight:800;background:#1d8448;color:#fff;cursor:pointer" id="pwGo">Open</button></div></div>
+<div class="top">
+  <h1>Brothers in Arms — Teacher</h1>
+  <select id="per"><option value="">All periods</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select>
+  <button class="btn on" id="vTable" type="button">Progress</button>
+  <button class="btn" id="vWall" type="button">Hero wall</button>
+  <span class="sp"></span>
+  <button class="btn" id="csv" type="button">CSV</button>
+  <button class="btn" id="reload" type="button">Reload</button>
+  <a class="btn" href="index.html?open=all" target="_blank" style="text-decoration:none">Open student page</a>
+</div>
+<div class="wrap" id="main"></div>
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var PW='galileo2026', ROWS=[], VIEW='table', OPEN={};
+var WR={w1a:'1. Who does Martin live with?',w1b:'1. Who does Martin love?',w1c:'1. Who are Martin’s friends?',w2b:'2. What happened to Martin’s brother?',w2a:'2. How did Martin feel? Why?',w3b:'3. What happened at the party?',w3a:'3. What did his mother want to do?',w4a:'4. Who was Mr. Mitchell?',w4b:'4. What happened in P.E. class?',w5b:'5. Where did Martin go?',w5a:'5. Who is Martin’s hero? Why?',w6a:'6. Who was Vicky?',w6b:'6. How did his mother feel? Why?',w7b:'7. What did Frankie want Martin to do?',w7a:'7. What did Martin tell Frankie?',w8c:'8. Why did the man kill Huero?',w8d:'8. Why did Frankie want Martin to kill the man?',w8e:'8. What did Martin do at the end?',w8b:'8. What would you do?',hero:'After: My hero'};
+function $(i){return document.getElementById(i);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function H(){return {apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY};}
+try{if(sessionStorage.getItem('bia_t')==='1')$('gate').style.display='none';}catch(e){}
+$('pwGo').onclick=function(){if($('pw').value===PW){$('gate').style.display='none';try{sessionStorage.setItem('bia_t','1');}catch(e){}load();}else $('pwErr').textContent='Wrong password.';};
+$('pw').onkeydown=function(e){if(e.key==='Enter')$('pwGo').click();};
+function load(){
+  $('main').innerHTML='<div class="box">Loading…</div>';
+  fetch(SUPA_URL+'/rest/v1/brothers_responses?select=*&guide_key=eq.brothers-in-arms&order=period.asc,name.asc',{headers:H()})
+   .then(function(r){if(!r.ok)return r.text().then(function(t){throw new Error(r.status+' '+t);});return r.json();})
+   .then(function(rows){ROWS=rows||[];draw();})
+   .catch(function(e){$('main').innerHTML='<div class="box">Could not load: '+esc(e.message)+'<br><span class="muted">If the table does not exist yet, run the SQL Claude sent with this page.</span></div>';});
+}
+function rows(){var p=$('per').value;return ROWS.filter(function(r){return !p||String(r.period)===p;});}
+function cell(pr){if(!pr)return '<span class="cell c0">—</span>';var d=pr[0],t=pr[1],f=t?d/t:0;var c=f>=1?'c3':f>=.6?'c2':f>0?'c1':'c0';return '<span class="cell '+c+'">'+d+'/'+t+'</span>';}
+function misses(a){var m=a.miss||{},n=0;for(var k in m)n+=m[k];return n;}
+function draw(){if(VIEW==='wall')return drawWall();
+  var R=rows(),h='<div class="box"><table><thead><tr><th>Student</th><th>P</th><th>Level</th><th>Lang</th>';
+  for(var i=1;i<=8;i++)h+='<th>Ch '+i+'</th>';
+  h+='<th>After</th><th>Score</th><th>Misses</th><th>🦁</th><th>Updated</th></tr></thead><tbody>';
+  if(!R.length)h+='<tr><td colspan="17" class="muted">No students yet.</td></tr>';
+  R.forEach(function(r){var a=r.answers||{},pr=a.prog||{};
+    h+='<tr class="s" data-e="'+esc(r.email)+'"><td><b>'+esc(r.name)+'</b><br><span class="muted">'+esc(r.email)+'</span>'+(a.bt?'<br><span class="bt">browser translate was on</span>':'')+'</td><td>'+esc(r.period)+'</td><td>'+(r.level==='B'?'Harder':'Easier')+'</td><td>'+esc(r.lang||'')+'</td>';
+    for(var i=1;i<=8;i++)h+='<td>'+cell(pr[i])+'</td>';
+    h+='<td>'+cell(pr.after)+'</td><td><b>'+(r.score||0)+'</b>/'+(r.max_score||0)+(r.turned_in?' ✓':'')+'</td><td>'+misses(a)+'</td><td>'+Object.keys(a.lion||{}).length+'</td><td class="muted">'+(r.updated_at?new Date(r.updated_at).toLocaleString():'')+'</td></tr>';
+    if(OPEN[r.email])h+='<tr class="det"><td colspan="17">'+detail(a)+'</td></tr>';
+  });
+  $('main').innerHTML=h+'</tbody></table></div>';
+  document.querySelectorAll('tr.s').forEach(function(t){t.onclick=function(){OPEN[t.dataset.e]=!OPEN[t.dataset.e];draw();};});
+}
+function detail(a){
+  var wr=a.wr||{},h='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px">';
+  Object.keys(WR).forEach(function(k){if(wr[k])h+='<div class="ans"><b>'+esc(WR[k])+'</b>'+esc(wr[k])+'</div>';});
+  h+='</div>';
+  var m=a.miss||{},top=Object.keys(m).sort(function(x,y){return m[y]-m[x];}).slice(0,8);
+  if(top.length)h+='<div class="muted" style="margin-top:6px">Most tries: '+top.map(function(k){return esc(k)+' ×'+m[k];}).join(' · ')+'</div>';
+  return h;
+}
+function drawWall(){
+  var R=rows().filter(function(r){return r.answers&&r.answers.wr&&String(r.answers.wr.hero||'').trim().length>8;});
+  var h='<div class="box" style="background:#17222b;color:#fff;font-size:26px;font-weight:900">Our heroes'+($('per').value?' · Period '+$('per').value:'')+'</div><div class="wall">';
+  if(!R.length)h+='<div class="hero">No heroes yet. Students write this after Chapter 8.</div>';
+  R.forEach(function(r){h+='<div class="hero"><div class="n">'+esc(String(r.name||'').split(' ')[0])+'</div>'+esc(r.answers.wr.hero)+'</div>';});
+  $('main').innerHTML=h+'</div>';
+}
+$('per').onchange=draw;$('reload').onclick=load;
+$('vTable').onclick=function(){VIEW='table';this.classList.add('on');$('vWall').classList.remove('on');draw();};
+$('vWall').onclick=function(){VIEW='wall';this.classList.add('on');$('vTable').classList.remove('on');draw();};
+$('csv').onclick=function(){var L=[['name','email','period','level','lang','ch1','ch2','ch3','ch4','ch5','ch6','ch7','ch8','after','score','max','misses'].concat(Object.keys(WR))];
+  rows().forEach(function(r){var a=r.answers||{},pr=a.prog||{},line=[r.name,r.email,r.period,r.level,r.lang];for(var i=1;i<=8;i++)line.push(pr[i]?pr[i][0]+'/'+pr[i][1]:'');line.push(pr.after?pr.after[0]+'/'+pr.after[1]:'',r.score,r.max_score,misses(a));Object.keys(WR).forEach(function(k){line.push((a.wr||{})[k]||'');});L.push(line);});
+  var csv=L.map(function(l){return l.map(function(x){return '"'+String(x==null?'':x).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='brothers-in-arms.csv';a.click();};
+if($('gate').style.display==='none')load();
+</script>
+</body>
+</html>
