@@ -13,6 +13,10 @@
    4. Plain browser dropdowns inside a sign-in box copy the look of that
       box's own text fields (rounded corners, padding, font).
 
+   7. Listen + translate safety net: tap any word on a student page to hear it,
+      see it in your language, and hear/translate its sentence or paragraph —
+      only where the page doesn't already do this (see section 7 for opt-outs).
+
    5. Every "Hear it" button shows the speaker icon: 🔊 Hear it. So do
       "Listen" buttons that play sound (never an answer choice that just
       says "listen" — that is a vocabulary word in Unit 1).
@@ -529,6 +533,225 @@
     }
   }
 
+  /* ========== 7. listen + translate safety net (T-67, Oct 19 2026) ==========
+     On any student page, tapping a word opens a small card: the word with 🔊,
+     its translation, and buttons to hear or translate the whole sentence and
+     hear the whole paragraph. It exists for pages that forgot to offer this,
+     so it stays out of the way everywhere else:
+       - page opt-out:    <html data-no-listen> or <body data-no-listen>,
+                          or window.GAL_NO_LISTEN = true
+       - auto opt-out:    pages running the Launch Plus tap-words engine (#wtip),
+                          teacher pages (dashboard, gradebook, assign, reports…)
+       - element opt-out: anything inside [data-no-listen]; buttons, links,
+                          inputs, labels, anything with a pointer cursor; the
+                          sign-in box; pop-ups; words the page already made
+                          tappable (.w, .tword, .tapline, [data-w]…)
+       - yield:           ~0.2s after a tap, if the page itself started speaking
+                          or opened its own pop-up, this does nothing.
+     A lone "I" is always spoken as "eye", never "capital I". */
+  var LISTEN_PROXY = 'https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
+  var TEACHER_PATH = /dashboard|teacher|gradebook|roadmap|\/assign|\/reports|\/audit|admin/i;
+  var OWN_TAP = '.w, .tw, .tword, .tapline, .qw, [data-w], [data-tap], .tapword, .tap-word, .vw, .gl, .gw';
+  var NO_GO = 'a, button, input, select, textarea, label, option, summary, [role=button], [role=tab], ' +
+              '[contenteditable], [onclick], [data-no-listen], [data-gal-std], #gate, .gate, ' +
+              '.pop, #galListenPop, .gal-listen-hint, svg, img, video, audio, canvas';
+  var POPLIKE = /(^|[\s_-])(pop|popup|tip|tooltip|bubble|gloss|wtip|trpop)([\s_-]|$)/i;
+
+  function listenOff() {
+    var h = document.documentElement, b = document.body;
+    if (window.GAL_NO_LISTEN || (h && h.hasAttribute('data-no-listen')) || (b && b.hasAttribute('data-no-listen'))) return true;
+    if (TEACHER_PATH.test(location.pathname)) return true;
+    if (document.getElementById('wtip')) return true;                 /* Launch Plus engine has its own */
+    return false;
+  }
+  function speakEn(text, rate) {
+    if (!window.speechSynthesis || !text) return;
+    var t = String(text).replace(/\bI\b(?![\u2019'])/g, 'eye');      /* "I" -> "eye" */
+    speechSynthesis.cancel();
+    var u = new SpeechSynthesisUtterance(t);
+    u.lang = 'en-US'; u.rate = rate || 0.85;
+    var vs = speechSynthesis.getVoices().filter(function (v) { return /^en(-|_)US/i.test(v.lang); });
+    if (vs.length) u.voice = vs[0];
+    u.__galListen = true;
+    speechSynthesis.speak(u);
+  }
+  function listenLang() {
+    var v = stored();
+    if (!v) { var p = document.getElementById('lang') || document.getElementById('langSel'); if (p && p.value && p.value !== 'none') v = p.value; }
+    return v ? (codeOf(v, v) || v) : '';
+  }
+  function proxyTranslate(text, mode, cb) {
+    var lg = listenLang(); if (!lg) { cb(null); return; }
+    var u = LISTEN_PROXY + '?action=translate&mode=' + mode + '&idiom=' + encodeURIComponent(text) +
+            '&meaning=&lang=' + encodeURIComponent(lg);
+    fetch(u).then(function (r) { return r.json(); }).then(function (d) {
+      var tr = d && d.translation, v = '';
+      if (tr && typeof tr === 'object') v = tr.equiv || tr.meaning || '';
+      else if (typeof tr === 'string') v = tr;
+      cb(String(v || '').trim());
+    }).catch(function () { cb(''); });
+  }
+  function blockOf(node) {
+    var el = node.nodeType === 3 ? node.parentElement : node;
+    while (el && el !== document.body) {
+      var d = getComputedStyle(el).display;
+      if (d && d !== 'inline' && d !== 'contents') return el;
+      el = el.parentElement;
+    }
+    return el;
+  }
+  /* the word, sentence and paragraph under a tap point, or null if the tap missed the text */
+  function textAt(x, y) {
+    var r = document.caretRangeFromPoint ? document.caretRangeFromPoint(x, y) : null;
+    if (!r && document.caretPositionFromPoint) {
+      var cp = document.caretPositionFromPoint(x, y);
+      if (cp) { r = document.createRange(); r.setStart(cp.offsetNode, cp.offset); }
+    }
+    if (!r || !r.startContainer || r.startContainer.nodeType !== 3) return null;
+    var node = r.startContainer, s = node.data, i = r.startOffset;
+    var isW = function (ch) { return /[A-Za-z\u00C0-\u024F'\u2019-]/.test(ch); };
+    var a = i, b = i;
+    while (a > 0 && isW(s.charAt(a - 1))) a--;
+    while (b < s.length && isW(s.charAt(b))) b++;
+    var word = s.slice(a, b).replace(/^['\u2019-]+|['\u2019-]+$/g, '');
+    if (!/[A-Za-z]/.test(word)) return null;
+    var wr = document.createRange(); wr.setStart(node, a); wr.setEnd(node, b);
+    var rect = wr.getBoundingClientRect();
+    if (x < rect.left - 3 || x > rect.right + 3 || y < rect.top - 3 || y > rect.bottom + 3) return null;
+    var blk = blockOf(node);
+    var para = (blk && (blk.innerText || blk.textContent) || '').replace(/\s+/g, ' ').trim();
+    /* where the word sits inside the paragraph text, to pick its sentence */
+    var pre = document.createRange();
+    try { pre.setStart(blk, 0); pre.setEnd(node, a); } catch (e) {}
+    var off = pre.toString().replace(/\s+/g, ' ').length;
+    var sents = para.match(/[^.!?]+[.!?]*["\u201d']?\s*/g) || [para], acc = 0, sent = para;
+    for (var k = 0; k < sents.length; k++) { if (off < acc + sents[k].length) { sent = sents[k].trim(); break; } acc += sents[k].length; }
+    return { word: word, sentence: sent, paragraph: para, rect: rect };
+  }
+  function visiblePopups() {
+    var n = 0, els = document.querySelectorAll('[class], [id]');
+    for (var i = 0; i < els.length; i++) {
+      var e = els[i];
+      if (e.id === 'galListenPop' || e.classList.contains('gal-listen-hint')) continue;
+      if (!POPLIKE.test((e.className && e.className.baseVal === undefined ? e.className : '') + ' ' + e.id)) continue;
+      /* fixed-position pop-ups have no offsetParent, so test the box itself */
+      var cs = getComputedStyle(e);
+      if (e.getClientRects().length && cs.display !== 'none' && cs.visibility !== 'hidden' && cs.opacity !== '0') n++;
+    }
+    return n;
+  }
+  function closeListen() { var p = document.getElementById('galListenPop'); if (p) p.remove(); }
+  function openListen(t) {
+    closeListen();
+    var p = document.createElement('div');
+    p.id = 'galListenPop'; p.setAttribute('translate', 'no'); p.setAttribute('data-no-listen', '');
+    var esc = function (s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
+    p.innerHTML =
+      '<div class="gl-top"><b class="gl-word">' + esc(t.word) + '</b>' +
+      '<button type="button" class="gl-b" data-act="w" aria-label="Hear the word">\uD83D\uDD0A</button></div>' +
+      '<div class="gl-tr"></div>' +
+      '<div class="gl-row">' +
+        '<button type="button" class="gl-b" data-act="s">\uD83D\uDD0A Sentence</button>' +
+        '<button type="button" class="gl-b" data-act="st">\uD83C\uDF10 Sentence</button>' +
+        (t.paragraph.length > t.sentence.length + 2 ? '<button type="button" class="gl-b" data-act="p">\uD83D\uDD0A Paragraph</button>' : '') +
+      '</div><div class="gl-str"></div>';
+    document.body.appendChild(p);
+    var x = Math.min(window.innerWidth - p.offsetWidth - 8, Math.max(8, t.rect.left));
+    var y = t.rect.bottom + 8;
+    if (y + p.offsetHeight > window.innerHeight - 8) y = Math.max(8, t.rect.top - p.offsetHeight - 8);
+    p.style.left = x + 'px'; p.style.top = y + 'px';
+    var trBox = p.querySelector('.gl-tr');
+    if (!listenLang()) trBox.innerHTML = '<span class="gl-none">Choose your language at sign-in to see a translation.</span>';
+    else {
+      trBox.textContent = '\u2026';
+      proxyTranslate(t.word, 'word', function (v) {
+        if (v) trBox.innerHTML = '<b class="gl-eq">' + esc(v) + '</b>';
+        else trBox.innerHTML = '<b class="gl-eq gl-grey">' + esc(t.word) + '</b>';
+      });
+    }
+    p.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('[data-act]'); if (!b) return;
+      e.stopPropagation();
+      var act = b.getAttribute('data-act');
+      if (act === 'w') speakEn(t.word, 0.75);
+      else if (act === 's') speakEn(t.sentence);
+      else if (act === 'p') speakEn(t.paragraph);
+      else if (act === 'st') {
+        var box = p.querySelector('.gl-str');
+        if (!listenLang()) { box.textContent = 'Choose your language at sign-in first.'; return; }
+        box.textContent = '\u2026';
+        proxyTranslate(t.sentence, 'sentence', function (v) { box.textContent = v || 'No translation came back. Tap again.'; });
+      }
+    });
+    speakEn(t.word, 0.75);
+  }
+  var LISTEN_CSS =
+    '#galListenPop{position:fixed;z-index:2147483000;background:#fff;color:#2b2233;border:2px solid #2b2233;border-radius:12px;' +
+    'box-shadow:0 10px 28px rgba(0,0,0,.28);padding:10px 12px;max-width:min(340px,92vw);font:600 16px/1.35 Nunito,system-ui,sans-serif;text-align:left}' +
+    '#galListenPop .gl-top{display:flex;align-items:center;gap:8px}#galListenPop .gl-word{font-size:20px}' +
+    '#galListenPop .gl-tr{margin:4px 0 8px;min-height:1.2em}' +
+    '#galListenPop .gl-eq{font-size:19px;text-decoration:underline;text-underline-offset:3px}#galListenPop .gl-grey{color:#8d8496}' +
+    '#galListenPop .gl-none{color:#6d6377;font-weight:600;font-size:14px}' +
+    '#galListenPop .gl-row{display:flex;flex-wrap:wrap;gap:6px}' +
+    '#galListenPop .gl-b{border:2px solid #2b2233;background:#f6f2fb;color:#2b2233;border-radius:999px;padding:4px 10px;font:800 14px Nunito,system-ui,sans-serif;cursor:pointer}' +
+    '#galListenPop .gl-str{margin-top:6px;color:#4a3f55}#galListenPop .gl-str:empty{display:none}' +
+    '.gal-listen-hint{position:fixed;left:12px;bottom:12px;z-index:2147482000;background:#2b2233;color:#fff;border-radius:999px;' +
+    'padding:8px 14px;font:700 14px Nunito,system-ui,sans-serif;box-shadow:0 6px 18px rgba(0,0,0,.25);transition:opacity .6s}';
+
+  function listenBoot() {
+    if (listenOff()) return;
+    if (!document.getElementById('gal-listen-css')) {
+      var st = document.createElement('style'); st.id = 'gal-listen-css'; st.textContent = LISTEN_CSS;
+      (document.head || document.documentElement).appendChild(st);
+    }
+    var before = 0, spoke = false;
+    /* capture phase: snapshot before the page's own handlers run */
+    document.addEventListener('click', function (e) {
+      if (listenOff()) return;
+      before = visiblePopups();
+      spoke = !!(window.speechSynthesis && (speechSynthesis.speaking || speechSynthesis.pending));
+    }, true);
+    document.addEventListener('click', function (e) {
+      if (listenOff()) return;
+      var pop = document.getElementById('galListenPop');
+      if (pop && pop.contains(e.target)) return;
+      if (pop) closeListen();
+      var tg = e.target;
+      if (!tg || !tg.closest) return;
+      if (tg.closest(NO_GO) || tg.closest(OWN_TAP)) return;
+      if (getComputedStyle(tg).cursor === 'pointer') return;
+      var sel = window.getSelection && window.getSelection();
+      if (sel && String(sel).trim()) return;                          /* a student selecting text */
+      var t = textAt(e.clientX, e.clientY); if (!t) return;
+      var x0 = before, s0 = spoke;
+      setTimeout(function () {                                         /* yield to the page */
+        var talking = window.speechSynthesis && (speechSynthesis.speaking || speechSynthesis.pending);
+        if ((talking && !s0) || visiblePopups() > x0) return;
+        openListen(t);
+      }, 220);
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeListen(); });
+    window.addEventListener('scroll', closeListen, { passive: true });
+    /* one quiet hint per page visit, only once something is on screen to read */
+    try {
+      var key = 'gal_listen_hint:' + location.pathname;
+      if (!sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, '1');
+        setTimeout(function () {
+          if (listenOff()) return;
+          var g = document.querySelector('[data-gal-std]');
+          if (g && g.offsetParent !== null) return;                    /* still on the sign-in box */
+          var h = document.createElement('div');
+          h.className = 'gal-listen-hint'; h.setAttribute('data-no-listen', ''); h.setAttribute('translate', 'no');
+          h.textContent = '\uD83D\uDC46 Tap any word: \uD83D\uDD0A hear it + see it in your language';
+          document.body.appendChild(h);
+          setTimeout(function () { h.style.opacity = '0'; }, 6000);
+          setTimeout(function () { h.remove(); }, 6800);
+        }, 2500);
+      }
+    } catch (e) {}
+  }
+
   function scan() {
     addCSS();
     speakerIcons();
@@ -541,6 +764,7 @@
     wrapFetch();
     warm();
     scan();
+    listenBoot();
     try { new MutationObserver(soon).observe(document.body, { childList: true, subtree: true }); } catch (e) {}
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
