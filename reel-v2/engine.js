@@ -404,8 +404,11 @@
     STEPS.forEach(function (s) {
       if (s.ln.type === 'q' && s.ln.kind === 'check') { t++; var a = state.answers[s.ln.id]; if (a && a.right) r++; }
     });
-    window.GAL_SCORE = r; window.GAL_MAX = t;
-    return { checks_first_try: r, checks_total: t };
+    var o = { checks_first_try: r, checks_total: t }, k;
+    var ts = window.REEL_TIERS ? REEL_TIERS.scores() : { pts: 0, max: 0, out: {} };   /* tiers.js (tiers chat) */
+    for (k in ts.out) o[k] = ts.out[k];
+    window.GAL_SCORE = r + ts.pts; window.GAL_MAX = t + ts.max;
+    return o;
   }
 
   /* ================= TRANSLATION ================= */
@@ -505,6 +508,7 @@
     $('lang').value = state.lang;
     try { localStorage.setItem('vocab_lang', state.lang); } catch (e) {}
     showDirections(); touch();
+    if (window.REEL_TIERS) REEL_TIERS.refresh();
   }
 
   /* ================= YOUR TURN ================= */
@@ -540,6 +544,7 @@
     });
     $('rewatch').addEventListener('click', function () { window.scrollTo(0, 0); start(true); });
     if (scroll) $('yt').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (window.REEL_TIERS) REEL_TIERS.show(false);   /* "After the story" tiers under Your turn */
   }
   function highlights() {
     var s = state.yt[state.level] || [];
@@ -639,16 +644,17 @@
     $('saved').className = 'saving';
     fetch(SUPA_URL + '/rest/v1/' + TABLE + '?on_conflict=email,episode', {
       method: 'POST', headers: sbHead('resolution=merge-duplicates,return=minimal'), body: JSON.stringify(payload())
-    }).then(function (r) { $('saved').className = r.ok ? '' : 'err'; })
+    }).then(function (r) { $('saved').className = r.ok ? '' : 'err'; if (r.ok && window.REEL_TIERS) REEL_TIERS.poll(); })
       .catch(function () { $('saved').className = 'err'; });
   }
   function load() {
-    fetch(SUPA_URL + '/rest/v1/' + TABLE + '?email=eq.' + encodeURIComponent(me.email) + '&episode=eq.' + encodeURIComponent(EP.id) + '&select=work',
+    fetch(SUPA_URL + '/rest/v1/' + TABLE + '?email=eq.' + encodeURIComponent(me.email) + '&episode=eq.' + encodeURIComponent(EP.id) + '&select=work,tier',
       { headers: sbHead() })
       .then(function (r) { return r.ok ? r.json() : []; })
       .then(function (rows) {
         var w = rows && rows[0] && rows[0].work;
         if (w) { for (var k in w) state[k] = w[k]; }
+        if (rows && rows[0] && window.REEL_TIERS) REEL_TIERS.setTier(rows[0].tier);   /* teacher's tier (reel_views.tier) */
         afterLoad();
       }).catch(function () { afterLoad(); });
   }
@@ -704,6 +710,7 @@
         state.level = b.getAttribute('data-l'); syncControls(); touch();
         render(pos, true);
         if ($('yt').style.display === 'block') showYourTurn(false);
+        else if (window.REEL_TIERS) REEL_TIERS.refresh();
       });
     });
     $('lang').addEventListener('change', function () { setLang(this.value); });
@@ -781,4 +788,11 @@
   syncControls();
   render(0, true);
   dots();
+
+  /* ---- "After the story" tiers live in ../tiers.js (owned by the tiers chat). The engine only hands it
+     these handles and loads it; tiers.js adds its own button, section, styles and episode data. ---- */
+  window.REEL_HOST = { EP: EP, state: state, me: me, $: $, esc: esc, txt: txt, save: save, touch: touch, score: score,
+                       wordPop: wordPop, showDirections: showDirections, spokenWord: spokenWord, pickVoice: pickVoice,
+                       boardState: boardState, R: R, PROXY: PROXY, SUPA_URL: SUPA_URL, TABLE: TABLE, sbHead: sbHead };
+  (function () { var ts = document.createElement('script'); ts.src = '../tiers.js'; document.body.appendChild(ts); })();
 })();
