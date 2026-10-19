@@ -365,9 +365,17 @@ function bump(key,ok,total){
   s.total=total; s.attempts=(s.attempts||0)+1;
   if(ok){ s.correct=(s.correct||0)+1; }
   s.best=Math.max(s.best||0, s.correct||0);
-  SC[key]=s; dirty=true;
+  SC[key]=s; dirty=true; publishScore();
 }
-function resetRound(key,total){ SC[key]=SC[key]||{correct:0,total:total,best:0,attempts:0}; SC[key].correct=0; SC[key].total=total; dirty=true; }
+function resetRound(key,total){ SC[key]=SC[key]||{correct:0,total:total,best:0,attempts:0}; SC[key].correct=0; SC[key].total=total; dirty=true; publishScore(); }
+/* Gradebook: add up the best score of every section the student has done.
+   Recomputed whenever a score changes, so it is current when the page is left. */
+function publishScore(){
+  var got=0, tot=0;
+  for(var k in SC){ var x=SC[k]; if(!x||!x.total)continue; got+=Math.max(x.best||0,x.correct||0); tot+=x.total; }
+  if(tot>0){ window.GAL_SCORE=got; window.GAL_MAX=tot; }
+}
+window.GAL_META={ title:'Describe a Classmate', unit:'Speaking', skills:['SPK.INFO','ADJ','SENT.BE','VOC.TOPIC'], sort_order:210 };
 function scoreLine(key){ var s=SC[key]; if(!s) return ''; return '<span class="score">'+(s.correct||0)+' / '+s.total+(s.best>s.correct?' (best '+s.best+')':'')+'</span>'; }
 
 /* ============ SPEECH ============ */
@@ -1098,5 +1106,6 @@ $('siGo').onclick=function(){
   else { render(); showSignin(); }
 })();
 </script>
+<script src="https://tobiasrugger.github.io/readings/track.js"></script>
 </body>
 </html>
