@@ -40,7 +40,7 @@ window.CATALOG=[
 "p": "/readings/brothers-in-arms/",
 "t": "Brothers in Arms",
 "d": "Read-aloud novel in 8 chapters for newcomers and SIFE: listen, tap to translate, check, play, fix, write, say it. Easier and Harder.",
-"m": "Newcomer · SIFE · 8 chapters · 2 levels",
+"m": "Newcomer · SIFE · 8 chapters · pictures by Thi Bui",
 "g": "Novels and long texts"
 },
 {
