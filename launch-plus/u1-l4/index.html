@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Launch Plus · Unit 1 Lesson 4 · 0 to 100</title>
-<meta name="build" content="launch-plus/u1-l4 T-20 2026-10-17">
+<meta name="build" content="launch-plus/u1-l4 T-60 2026-10-19">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{--pine:#1b4332;--pine2:#2d6a4f;--moss:#40916c;--sage:#95d5b2;--paper:#f4f5f2;--card:#fff;
@@ -76,8 +76,11 @@ textarea:focus{border-color:var(--moss);outline:none}
 #wtip.show{display:block}
 #wtipW{display:block;font-weight:800;font-size:.8rem;opacity:.72}
 #wtipT{font-weight:700;font-size:1.06rem}
+#wtipT .noeq{font-weight:800;text-decoration:underline;color:#c8d6cd}
 body.wt [translate="no"]{outline:2px dashed var(--gold);outline-offset:3px;border-radius:6px}
-body.wt [translate="no"] *{cursor:help !important}
+body.wt [translate="no"]{cursor:help}
+body.wt [translate="no"] button,body.wt [translate="no"] input,body.wt [translate="no"] select,body.wt [translate="no"] textarea,body.wt [translate="no"] label,body.wt [translate="no"] a{cursor:pointer}
+body.wt [translate="no"] input,body.wt [translate="no"] textarea{cursor:text}
 body.wt #sayMount,body.wt #sayMount *{outline:none;cursor:auto !important} body.wt #sayMount button{cursor:pointer !important}
 #canary{position:absolute;left:-9999px;top:-9999px;height:1px;overflow:hidden}
 #namewrap{position:fixed;inset:0;z-index:200;background:rgba(27,67,50,.94);display:none;align-items:center;justify-content:center;padding:20px}
@@ -626,6 +629,8 @@ function reelPlay(){
  setTimeout(function(){if(!done&&!REEL_PLAYING)finish();},words.length*per+6000);
  speechSynthesis.speak(u);
 }
+/* no equivalent in the student's language: show the English word, bold + underlined, in grey */
+function tipText(t,word){var el=$('wtipT');if(t){el.textContent=t;}else{el.innerHTML='<span class="noeq">'+String(word).replace(/[<>&]/g,'')+'</span>';}}
 function reelWord(el){
  var w=(el.textContent||'').trim().replace(/^[^\w]+|[^\w'\u2019-]+$/g,''),lg=lang();if(!lg){alert('First choose your language in the green bar.');$('lang').focus();return;}
  var sg=DATA.story[REELI],sent=plain(sg.text),r=el.getBoundingClientRect(),x=r.left+r.width/2,y=r.top;
@@ -633,8 +638,8 @@ function reelWord(el){
  var tw=tip.offsetWidth||220,th=tip.offsetHeight||60;tip.style.left=Math.max(8,Math.min(x-tw/2,window.innerWidth-tw-8))+'px';tip.style.top=(y-th-14<8?y+18:y-th-14)+'px';
  /* word + sentence first (the Level A fix), then the word alone */
  fetch(PROXY+'?action=translate&idiom='+encodeURIComponent(w)+'&meaning='+encodeURIComponent(sent)+'&lang='+encodeURIComponent(lg)).then(function(r){return r.json();})
- .then(function(d){var t=d&&d.ok&&d.translation&&d.translation.equiv;if(t){$('wtipT').textContent=t;return;}tr(w,lg,function(t2){$('wtipT').textContent=t2||'(not found)';});})
- .catch(function(){tr(w,lg,function(t2){$('wtipT').textContent=t2||'(not found)';});});
+ .then(function(d){var t=d&&d.ok&&d.translation&&d.translation.equiv;if(t){$('wtipT').textContent=t;return;}tr(w,lg,function(t2){tipText(t2,w);});})
+ .catch(function(){tr(w,lg,function(t2){tipText(t2,w);});});
 }
 /* ---- Say it with Amira ---- */
 function shadowWords(t,hits){return t.split(/\s+/).map(function(w,i){return '<span class="w '+(hits&&hits.length?(hits[i]?'hit':'miss'):'')+'">'+w+'</span>';}).join(' ');}
@@ -912,7 +917,7 @@ function turnIn(){
 var rosterLoaded=false,ROSTER=[];
 function hdr(p){var h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};if(p)h['Prefer']=p;return h;}
 function lastEmail(){try{return localStorage.getItem('gal_student_email')||'';}catch(e){return '';}}
-function askName(){var li=$('langIn');if(li.options.length<2){Array.prototype.slice.call($('lang').options,1).forEach(function(o){li.appendChild(o.cloneNode(true));});}
+function askName(){var wb=$('whobar');if(wb)wb.innerHTML='';var li=$('langIn');if(li.options.length<2){Array.prototype.slice.call($('lang').options,1).forEach(function(o){li.appendChild(o.cloneNode(true));});}
  function last(k){try{return localStorage.getItem(k)||'';}catch(e){return '';}}
  $('nameIn').value=ST.name||last('gal_student_name');$('emailIn').value=ST.email||lastEmail()||'';$('periodIn').value=ST.period||last('gal_student_period');li.value=lang()||savedLang()||'';$('nameErr').textContent='';$('namewrap').classList.add('show');loadRoster();}
 function loadRoster(){
@@ -1020,7 +1025,8 @@ function resumeLogin(){
 }
 function showWhoBar(){
  var el=$('whobar');if(!el)return;
- if(!ST.email){el.innerHTML='';return;}
+ var gate=$('namewrap');
+ if(!ST.email||(gate&&gate.classList.contains('show'))){el.innerHTML='';return;}
  var first=(ST.name||'').split(' ')[0]||'you';
  el.innerHTML='Signed in as <b>'+ST.name+'</b>'+(ST.period?' \u00b7 Period '+ST.period:'')+' \u2014 <button type="button" class="notme" onclick="askName()">Not '+first+'? Tap here</button>';
 }
@@ -1036,8 +1042,8 @@ var WT=false;
 function toggleWT(){if(!WT&&!lang()){alert('First choose your language in the green bar, then turn on Tap words.');return;}WT=!WT;document.body.classList.toggle('wt',WT);$('wtBtn').classList.toggle('on',WT);hideTip();}
 function hideTip(){$('wtip').classList.remove('show');}
 document.addEventListener('click',function(ev){if(!WT)return;if(window.Shades&&Shades.getMode()==='shades'&&ev.target.closest&&ev.target.closest('.sh-word'))return;if(ev.target.closest&&ev.target.closest('#sayMount'))return;
- /* buttons keep doing their own job (the speaker, the chips, the tabs) */
- if(ev.target.closest&&ev.target.closest('.spk,.numchip,.gtab,.stepb,#bar button,#bar select,.btn'))return;
+ /* anything a student can operate keeps doing its own job while Tap words is on */
+ if(ev.target.closest&&ev.target.closest('button,input,select,textarea,label,a,[role="button"],[contenteditable]'))return;
  if(ev.target.closest&&ev.target.closest('#wtip')){hideTip();return;}
  var host=ev.target.closest&&(ev.target.closest('[translate="no"]')||ev.target.closest('.dir'));
  if(!host){hideTip();return;}
@@ -1063,7 +1069,7 @@ function pickWord(ev){var t=ev.target,txt=(t.textContent||'').trim();if(txt&&txt
  while(a>0&&/[\w']/.test(s.charAt(a-1)))a--;while(b<s.length&&/[\w']/.test(s.charAt(b)))b++;return s.slice(a,b);}
 function showWord(word,x,y,sent){var tip=$('wtip');$('wtipW').textContent=word;$('wtipT').textContent='\u2026';tip.classList.add('show');
  var w=tip.offsetWidth||220,h=tip.offsetHeight||60;tip.style.left=Math.max(8,Math.min(x-w/2,window.innerWidth-w-8))+'px';tip.style.top=(y-h-14<8?y+18:y-h-14)+'px';
- trWord(word,sent||'',lang(),function(t){$('wtipT').textContent=t||'(not found)';});}
+ trWord(word,sent||'',lang(),function(t){tipText(t,word);});}
 document.addEventListener('scroll',hideTip,true);
 
 /* ===================== BROWSER-TRANSLATION CANARY ===================== */
