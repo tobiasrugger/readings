@@ -197,6 +197,120 @@
       { w: 'numerous',   i: 4, reg: 'formal',  m: 'very many', ex: 'There are numerous reasons.' },
       { w: 'countless',  i: 5, reg: 'formal',  m: 'too many to count', ex: 'She has helped countless students.' }
     ]},
+    fun: { pos: 'adjective', shades: [
+      { w: 'okay',      i: 1, reg: 'casual',  m: 'not boring, not great', ex: 'The party was okay.' },
+      { w: 'fun',       i: 3, reg: 'neutral', m: 'enjoyable', ex: 'Soccer is fun.', tip: '"fun" is the thing; "funny" makes you laugh.' },
+      { w: 'enjoyable', i: 3, reg: 'formal',  m: 'nice to do', ex: 'The class was enjoyable.' },
+      { w: 'exciting',  i: 4, reg: 'neutral', m: 'makes your heart beat fast', ex: 'The game was exciting.' },
+      { w: 'amazing',   i: 5, reg: 'neutral', m: 'so good it surprises you', ex: 'The trip was amazing.' }
+    ]},
+    boring: { pos: 'adjective', shades: [
+      { w: 'slow',     i: 2, reg: 'casual',  m: 'not much happens', ex: 'The movie was slow at the start.' },
+      { w: 'boring',   i: 3, reg: 'neutral', m: 'not interesting', ex: 'The video was boring.', tip: '"boring" is the thing; "bored" is you.' },
+      { w: 'dull',     i: 4, reg: 'formal',  m: 'with nothing interesting in it', ex: 'It was a dull afternoon.' }
+    ]},
+    new: { pos: 'adjective', shades: [
+      { w: 'new',    i: 3, reg: 'neutral', m: 'not here before', ex: 'I am a new student.' },
+      { w: 'recent', i: 3, reg: 'formal',  m: 'from a short time ago', ex: 'That is a recent photo.' },
+      { w: 'fresh',  i: 4, reg: 'neutral', m: 'new and clean, just made', ex: 'We had fresh bread.' },
+      { w: 'brand-new', i: 5, reg: 'casual', m: 'completely new', ex: 'He has brand-new shoes.' }
+    ]},
+    old: { pos: 'adjective', shades: [
+      { w: 'old',     i: 3, reg: 'neutral', m: 'from a long time ago; not young', ex: 'This is an old building.' },
+      { w: 'elderly', i: 3, reg: 'formal',  m: 'old (for people, polite)', ex: 'An elderly woman sat down.', tip: 'For people only. Politer than "old".' },
+      { w: 'ancient', i: 5, reg: 'formal',  m: 'extremely old', ex: 'They found an ancient city.' }
+    ]},
+    young: { pos: 'adjective', shades: [
+      { w: 'young',   i: 3, reg: 'neutral', m: 'not old', ex: 'My sister is young.' },
+      { w: 'younger', i: 3, reg: 'neutral', m: 'less old than someone', ex: 'He is younger than me.' },
+      { w: 'little',  i: 2, reg: 'casual',  m: 'young and small (family)', ex: 'That is my little brother.' }
+    ]},
+    clean: { pos: 'adjective', shades: [
+      { w: 'tidy',      i: 2, reg: 'neutral', m: 'everything in its place', ex: 'Her desk is tidy.' },
+      { w: 'clean',     i: 3, reg: 'neutral', m: 'not dirty', ex: 'The classroom is clean.' },
+      { w: 'spotless',  i: 5, reg: 'formal',  m: 'perfectly clean', ex: 'The kitchen was spotless.' }
+    ]},
+    dirty: { pos: 'adjective', shades: [
+      { w: 'messy',  i: 2, reg: 'casual',  m: 'not tidy', ex: 'My room is messy.' },
+      { w: 'dirty',  i: 3, reg: 'neutral', m: 'not clean', ex: 'My shoes are dirty.' },
+      { w: 'filthy', i: 5, reg: 'neutral', m: 'extremely dirty', ex: 'The window was filthy.' }
+    ]},
+    loud: { pos: 'adjective', shades: [
+      { w: 'noisy',      i: 3, reg: 'neutral', m: 'with a lot of sound', ex: 'The hallway is noisy.' },
+      { w: 'loud',       i: 3, reg: 'neutral', m: 'with a lot of sound', ex: 'The music is loud.' },
+      { w: 'deafening',  i: 5, reg: 'formal',  m: 'so loud it hurts', ex: 'The alarm was deafening.' }
+    ]},
+    quiet: { pos: 'adjective', shades: [
+      { w: 'quiet',  i: 3, reg: 'neutral', m: 'with little sound', ex: 'The library is quiet.' },
+      { w: 'calm',   i: 3, reg: 'neutral', m: 'quiet and not worried', ex: 'She stayed calm.' },
+      { w: 'silent', i: 5, reg: 'formal',  m: 'with no sound at all', ex: 'The room was silent.' }
+    ]},
+    busy: { pos: 'adjective', shades: [
+      { w: 'busy',    i: 3, reg: 'neutral', m: 'with a lot to do', ex: 'My mother is busy.' },
+      { w: 'packed',  i: 4, reg: 'casual',  m: 'very full of people', ex: 'The bus was packed.' },
+      { w: 'crowded', i: 4, reg: 'neutral', m: 'full of people', ex: 'The cafeteria is crowded.' }
+    ]},
+    strong: { pos: 'adjective', shades: [
+      { w: 'strong',    i: 3, reg: 'neutral', m: 'with a lot of power', ex: 'My father is strong.' },
+      { w: 'powerful',  i: 4, reg: 'formal',  m: 'with great power', ex: 'It is a powerful engine.' }
+    ]},
+    want: { pos: 'verb', shades: [
+      { w: 'want',     i: 3, reg: 'neutral', m: 'would like to have', ex: 'I want a new backpack.' },
+      { w: 'need',     i: 4, reg: 'neutral', m: 'must have', ex: 'I need a pencil.', tip: '"need" is stronger — you cannot do it without this.' },
+      { w: 'hope for', i: 3, reg: 'neutral', m: 'want and think it may happen', ex: 'We hope for good weather.' }
+    ]},
+    help: { pos: 'verb', shades: [
+      { w: 'help',    i: 3, reg: 'neutral', m: 'do something so it is easier for someone', ex: 'I help my little sister.' },
+      { w: 'assist',  i: 3, reg: 'formal',  m: 'help', ex: 'The aide assists the teacher.' },
+      { w: 'support', i: 4, reg: 'formal',  m: 'help someone over a long time', ex: 'My family supports me.' }
+    ]},
+    work: { pos: 'verb', shades: [
+      { w: 'work',    i: 3, reg: 'neutral', m: 'do a job', ex: 'My uncle works at a store.' },
+      { w: 'study',   i: 3, reg: 'neutral', m: 'work to learn', ex: 'I study English every night.' },
+      { w: 'practice',i: 3, reg: 'neutral', m: 'do something again and again to get better', ex: 'She practices the piano.' }
+    ]},
+    go: { pos: 'verb', shades: [
+      { w: 'go',      i: 3, reg: 'neutral', m: 'move to a place', ex: 'I go to school at 8.' },
+      { w: 'travel',  i: 3, reg: 'neutral', m: 'go a long way', ex: 'We traveled to Mexico.' },
+      { w: 'move',    i: 3, reg: 'neutral', m: 'go to live in a new place', ex: 'My family moved to San Francisco.' },
+      { w: 'arrive',  i: 3, reg: 'formal',  m: 'get to a place', ex: 'I arrive at 7:50.', tip: '"arrive at school", "arrive in San Francisco".' }
+    ]},
+    make: { pos: 'verb', shades: [
+      { w: 'make',    i: 3, reg: 'neutral', m: 'create something', ex: 'I make breakfast.' },
+      { w: 'build',   i: 4, reg: 'neutral', m: 'make something big, piece by piece', ex: 'They build houses.' },
+      { w: 'create',  i: 4, reg: 'formal',  m: 'make something new', ex: 'She created a poster.' },
+      { w: 'cook',    i: 3, reg: 'neutral', m: 'make food with heat', ex: 'My mother cooks rice.' }
+    ]},
+    think: { pos: 'verb', shades: [
+      { w: 'think',    i: 3, reg: 'neutral', m: 'have an idea in your mind', ex: 'I think it is easy.' },
+      { w: 'believe',  i: 4, reg: 'formal',  m: 'think something is true', ex: 'I believe she is right.' },
+      { w: 'remember', i: 3, reg: 'neutral', m: 'keep something in your mind from before', ex: 'I remember his name.' },
+      { w: 'wonder',   i: 2, reg: 'neutral', m: 'think and want to know', ex: 'I wonder where he is.' }
+    ]},
+    start: { pos: 'verb', shades: [
+      { w: 'start',  i: 3, reg: 'neutral', m: 'do the first part', ex: 'Class starts at 8:30.' },
+      { w: 'begin',  i: 3, reg: 'formal',  m: 'start', ex: 'We begin with the alphabet.' }
+    ]},
+    finish: { pos: 'verb', shades: [
+      { w: 'finish',   i: 3, reg: 'neutral', m: 'do the last part', ex: 'I finish my homework at 7.' },
+      { w: 'complete', i: 4, reg: 'formal',  m: 'finish all of it', ex: 'Complete the sentence.' }
+    ]},
+    ask: { pos: 'verb', shades: [
+      { w: 'ask',       i: 3, reg: 'neutral', m: 'say a question', ex: 'Ask the teacher.' },
+      { w: 'request',   i: 4, reg: 'formal',  m: 'ask politely for something', ex: 'He requested a new seat.' },
+      { w: 'wonder',    i: 2, reg: 'neutral', m: 'ask yourself, not out loud', ex: 'I wondered why he was late.' }
+    ]},
+    live: { pos: 'verb', shades: [
+      { w: 'live',   i: 3, reg: 'neutral', m: 'have your home somewhere', ex: 'I live in San Francisco.' },
+      { w: 'stay',   i: 2, reg: 'neutral', m: 'live somewhere for a short time', ex: 'I stay with my aunt.' },
+      { w: 'reside', i: 5, reg: 'formal',  m: 'live (very formal, for forms)', ex: 'The student resides with a parent.' }
+    ]},
+    speak: { pos: 'verb', shades: [
+      { w: 'speak',     i: 3, reg: 'neutral', m: 'use a language', ex: 'I speak Spanish and English.' },
+      { w: 'talk',      i: 3, reg: 'casual',  m: 'say things to someone', ex: 'We talk at lunch.' },
+      { w: 'chat',      i: 2, reg: 'casual',  m: 'talk in a friendly, easy way', ex: 'We chatted before class.' },
+      { w: 'discuss',   i: 4, reg: 'formal',  m: 'talk about something carefully', ex: 'We discussed the story.' }
+    ]},
     say: { pos: 'verb', shades: [
       { w: 'mention', i: 2, reg: 'formal',  m: 'say something briefly', ex: 'She mentioned the test.' },
       { w: 'say',     i: 3, reg: 'neutral', m: 'speak words', ex: 'He says hello every morning.' },
@@ -289,6 +403,10 @@
   .sh-chip{border:2px solid #c4b5fd;background:#f5f3ff;color:#4c1d95;border-radius:999px;padding:3px 10px;font:inherit;font-weight:800;cursor:pointer}
   .sh-chip:hover{background:#ede9fe}
   .sh-toggle.compact{padding:2px}.sh-toggle.compact button{padding:4px 10px;font-size:.8rem}
+  .sh-coach{position:fixed;z-index:9100;max-width:300px;background:#fff;border:2px solid #7c3aed;border-radius:16px;box-shadow:0 12px 36px rgba(76,29,149,.3);padding:14px 16px;font-family:Nunito,system-ui,sans-serif;font-size:.95rem;line-height:1.45;color:#1f1f23}
+  .sh-coach b{color:#4c1d95}
+  .sh-coach .ok{margin-top:10px;border:0;background:#16a34a;color:#fff;border-radius:999px;padding:7px 16px;font:inherit;font-weight:800;cursor:pointer}
+  .sh-empty{padding:14px;font-size:.92rem;color:#4b5563;line-height:1.45}
   .sh-flash{animation:shflash 1.2s ease}
   @keyframes shflash{0%{background:#bbf7d0}100%{background:transparent}}
   `;
@@ -340,18 +458,46 @@
   }
 
   /* ---------- MODE --------------------------------------------- */
+  var COACH = {
+    title: 'Two kinds of word help',
+    dict: 'Meaning: tap a word \u2192 what it means + your language.',
+    shade: 'Better word: tap a word \u2192 weaker and stronger words you could use instead. Tap <b>Use it</b> to put one in your writing.',
+    where: 'Dotted purple words have other choices. Your own writing is the best place to try it.'
+  };
+  function coach() {
+    try { if (localStorage.getItem('sh_coach') === '1') return; } catch (e) {}
+    var c = document.createElement('div'); c.className = 'sh-coach'; c.setAttribute('translate', 'no');
+    c.innerHTML = '<b>' + COACH.title + '</b><div style="margin-top:6px">\ud83d\udcd6 ' + COACH.dict + '</div><div style="margin-top:6px">\ud83c\udfa8 ' + COACH.shade + '</div><div style="margin-top:6px;color:#6b7280">' + COACH.where + '</div><button class="ok" type="button">Got it</button>';
+    document.body.appendChild(c);
+    var t = S.toggleEl && S.toggleEl.getBoundingClientRect();
+    if (t && window.innerWidth >= 700) { c.style.top = (t.bottom + 10) + 'px'; c.style.left = Math.max(8, Math.min(t.left, window.innerWidth - 320)) + 'px'; }
+    else { c.style.left = '8px'; c.style.right = '8px'; c.style.maxWidth = 'none'; c.style.bottom = '12px'; }
+    c.querySelector('.ok').onclick = function () { c.remove(); try { localStorage.setItem('sh_coach', '1'); } catch (e) {} };
+    if (S.opts.translateCoach) S.opts.translateCoach(c);
+  }
+  function countOnScreen() {
+    var n = 0; document.querySelectorAll('.sh-word').forEach(function (w) { if (w.offsetParent) n++; }); return n;
+  }
+  function emptyHint() {
+    if (!S.panel) buildPanel();
+    S.cur = null; S.panel.querySelector('h3').textContent = 'Better words';
+    S.panel.querySelector('.sh-list').innerHTML = '<div class="sh-empty">No word on this screen has other choices yet.<br><br>Go to the <b>Write</b> step and write a sentence \u2014 when you use a word like <b>happy</b>, <b>nice</b>, <b>big</b> or <b>good</b>, a <b>\u2728 Bigger word?</b> button appears under your box.</div>';
+    S.panel.querySelector('.sh-foot').innerHTML = '';
+    S.panel.classList.add('open'); document.body.classList.add('sh-open');
+  }
   function setMode(m, source) {
     if (!S.enabled) m = 'dictionary';
     S.mode = m === 'shades' ? 'shades' : 'dictionary';
     document.body.classList.toggle('sh-mode-shades', S.mode === 'shades');
     if (S.mode !== 'shades') close();
     if (S.toggleEl) S.toggleEl.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.m === S.mode));
+    if (S.mode === 'shades' && source === 'user') { coach(); if (!countOnScreen()) emptyHint(); }
     try { S.opts.onMode && S.opts.onMode(S.mode, source || 'page'); } catch (e) {}
   }
   function renderToggle(el) {
     el.innerHTML = '';
     const box = document.createElement('div'); box.className = 'sh-toggle' + (S.opts.compact ? ' compact' : '');
-    [['dictionary', '📖 Dictionary', 'dict'], ['shades', '🎨 Shades', '']].forEach(([m, label, cls]) => {
+    [['dictionary', '📖 Meaning', 'dict'], ['shades', '🎨 Better word', '']].forEach(([m, label, cls]) => {
       const b = document.createElement('button'); b.type = 'button'; b.dataset.m = m; b.className = cls; b.textContent = label;
       b.setAttribute('translate', 'no'); b.onclick = () => setMode(m, 'user'); box.appendChild(b);
     });
@@ -525,5 +671,5 @@
     setMode(S.opts.mode || qs('mode') || 'dictionary');
   }
 
-  global.Shades = { mount, mark, watch, open, close, setMode, setEnabled, setNudge, getMode: () => S.mode, isEnabled: () => S.enabled, DATA, setTarget: (el) => { S.target = el; }, words: BASES };
+  global.Shades = { mount, mark, watch, open, close, setMode, setEnabled, setNudge, coach, countOnScreen, getMode: () => S.mode, isEnabled: () => S.enabled, DATA, setTarget: (el) => { S.target = el; }, words: BASES };
 })(window);
