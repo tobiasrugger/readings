@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>What did you do this weekend?</title>
+<meta name="build" content="launch-plus/weekend T-57 2026-10-19">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+ --purple:#864D9E; --purple2:#6a3a80; --orange:#F8981F; --orange2:#d97d0c;
+ --ink:#23302b; --muted:#5c6b62; --pine:#1f4536; --pine2:#2d6a4f;
+ --cream:#f7f1e3; --card:#ffffff; --line:#8aa094; --sky:#e8f3ee;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--cream);color:var(--ink);font-family:Nunito,system-ui,Arial,sans-serif;font-size:17px;line-height:1.5;
+ padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+header{background:var(--pine);color:#fff;padding:14px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+ position:sticky;top:0;z-index:20;box-shadow:0 2px 10px rgba(0,0,0,.2)}
+header h1{font-size:1.32rem;margin:0;font-weight:900;letter-spacing:.01em}
+header .sub{font-size:.8rem;opacity:.85;font-weight:700;display:block}
+header a.home{margin-left:auto;color:#fff;text-decoration:none;font-weight:800;font-size:.82rem;
+ background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:7px 12px}
+header a.home:hover{background:rgba(255,255,255,.26)}
+main{max-width:1060px;margin:0 auto;padding:18px 16px 60px}
+.box{background:var(--card);border:2.5px solid var(--ink);border-radius:14px;box-shadow:0 3px 0 rgba(35,48,43,.18);
+ padding:16px 18px;margin:0 0 20px}
+.box::after{content:"";display:block;clear:both}
+.box h2{margin:0 0 4px;font-size:1.12rem;color:var(--pine);font-weight:900;display:flex;align-items:center;gap:9px}
+.box h2 .n{background:var(--pine2);color:#fff;border-radius:50%;width:30px;height:30px;display:inline-grid;place-items:center;font-size:.95rem;flex:none}
+.hint{color:var(--muted);font-size:.9rem;margin:2px 0 14px}
+.pic{float:right;width:min(32%,210px);margin:0 0 10px 16px;border:2px solid var(--ink);border-radius:12px;background:#fff;overflow:hidden}
+.pic svg{width:100%;height:auto;display:block}
+
+/* ---------- dice ---------- */
+#diceBox{text-align:center;background:#2b1b35;border-color:#140c1a}
+#diceBox h2{color:#f3e6ff;justify-content:center}
+#diceBox .hint{color:#c9b3d8}
+.dicewrap{display:flex;gap:26px;justify-content:center;align-items:center;margin:8px 0 16px;min-height:150px;flex-wrap:wrap}
+.die{width:132px;height:132px;border-radius:22px;position:relative;cursor:pointer;flex:none;
+ box-shadow:0 7px 0 rgba(0,0,0,.35),inset 0 -7px 0 rgba(0,0,0,.14),inset 0 7px 0 rgba(255,255,255,.22);
+ transition:transform .12s}
+.die.d1{background:linear-gradient(150deg,#a063bd,var(--purple) 55%,var(--purple2))}
+.die.d2{background:linear-gradient(150deg,#ffb455,var(--orange) 55%,var(--orange2))}
+.die:active{transform:translateY(3px)}
+.die.rolling{animation:tumble .62s cubic-bezier(.3,.1,.3,1)}
+@keyframes tumble{
+ 0%{transform:rotate(0) scale(1)} 25%{transform:rotate(-18deg) scale(1.06)}
+ 50%{transform:rotate(16deg) scale(.96)} 75%{transform:rotate(-9deg) scale(1.04)} 100%{transform:rotate(0) scale(1)}}
+.face{position:absolute;inset:11px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);
+ justify-items:center;align-items:center}
+.face>span{display:grid;place-items:center;width:100%;height:100%}
+.pip{display:block;width:26px;height:26px;border-radius:50%;box-shadow:inset 0 -3px 0 rgba(0,0,0,.25)}
+.d1 .pip{background:var(--orange)} .d2 .pip{background:var(--purple)}
+.lion{position:absolute;inset:8px;display:none;place-items:center}
+.lion svg{width:100%;height:100%}
+.die.roar .lion{display:grid;animation:roar .78s ease-out}
+.die.roar .face{opacity:0}
+@keyframes roar{0%{transform:scale(.4);opacity:0}30%{transform:scale(1.12);opacity:1}70%{transform:scale(1);opacity:1}100%{transform:scale(1.3);opacity:0}}
+.die.flash{animation:flash .5s ease-out}
+@keyframes flash{0%,100%{filter:none}40%{filter:brightness(1.28) saturate(1.1)}}
+.dicebtns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;align-items:center}
+.btn{font-family:inherit;font-weight:800;font-size:1rem;border:0;border-radius:12px;padding:13px 24px;cursor:pointer;
+ background:var(--pine2);color:#fff;box-shadow:0 3px 0 rgba(0,0,0,.25)}
+.btn:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.25)}
+.btn.big{font-size:1.18rem;padding:15px 34px;background:var(--orange);color:#2b1b35}
+.toggle{display:inline-flex;border:2px solid #c9b3d8;border-radius:12px;overflow:hidden}
+.toggle button{font-family:inherit;font-weight:800;font-size:.92rem;border:0;padding:11px 18px;cursor:pointer;background:transparent;color:#e7d8f2}
+.toggle button.on{background:#c9b3d8;color:#2b1b35}
+#total{color:#fff;font-weight:900;font-size:1.05rem;min-width:116px;display:inline-block}
+
+/* ---------- ask / frames ---------- */
+.line{display:flex;align-items:flex-start;gap:12px;padding:11px 12px;border:2px solid var(--line);border-radius:12px;
+ background:#fff;margin:0 0 10px}
+.line:nth-child(odd){background:var(--sky)}
+.line .say{flex:none;width:44px;height:44px;border-radius:50%;border:2px solid var(--pine2);background:#fff;color:var(--pine2);
+ font-size:1.25rem;cursor:pointer;display:grid;place-items:center}
+.line .say:hover{background:var(--pine2);color:#fff}
+.line .txt{font-size:1.1rem;font-weight:700;padding-top:7px}
+.line .txt b{color:var(--purple);background:#f3e9f8;border-radius:6px;padding:0 6px}
+.blank{display:inline-block;min-width:112px;border-bottom:3px solid var(--orange);margin:0 4px}
+
+/* ---------- vocab table ---------- */
+.tablewrap{overflow-x:auto;border:2px solid var(--ink);border-radius:12px;background:#fff}
+table{border-collapse:collapse;width:100%;min-width:900px}
+th,td{border:1px solid var(--line);padding:9px 10px;text-align:left;vertical-align:middle}
+thead th{background:var(--pine);color:#fff;font-size:.9rem;position:sticky;top:0}
+tbody tr:nth-child(even){background:var(--sky)}
+td.en{font-weight:900;font-size:1.04rem;white-space:nowrap}
+td.img{width:92px;padding:4px}
+td.img svg{width:84px;height:66px;display:block;border:1px solid var(--line);border-radius:8px;background:#fff}
+td.tr{font-size:1.02rem}
+.spk{border:0;background:transparent;font-size:1.1rem;cursor:pointer;padding:0 4px}
+.sect{margin:18px 0 8px;font-weight:900;color:var(--pine);font-size:1rem;text-transform:uppercase;letter-spacing:.04em}
+@media (max-width:620px){
+ .die{width:104px;height:104px} .pip{width:20px!important;height:20px!important}
+ .pic{width:42%;margin-left:10px} header h1{font-size:1.08rem}
+ .line .txt{font-size:1rem}
+}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>What did you do this weekend?</h1>
+    <span class="sub">ELD 101 · board game helper · Mr. Toby</span>
+  </div>
+  <a class="home" href="/readings/launch-plus/">&#8592; Practice</a>
+</header>
+<main>
+
+<section class="box" id="diceBox">
+  <h2>Roll the dice</h2>
+  <p class="hint">Tap a die to roll. Say the number out loud, then move your piece.</p>
+  <div class="dicewrap" id="dicewrap"></div>
+  <div class="dicebtns">
+    <button class="btn big" onclick="rollAll()">&#127922; Roll</button>
+    <span class="toggle">
+      <button id="t1" class="on" onclick="setDice(1)">1 die</button>
+      <button id="t2" onclick="setDice(2)">2 dice</button>
+    </span>
+    <span id="total"></span>
+  </div>
+</section>
+
+<section class="box">
+  <h2><span class="n">1</span>Ask the question</h2>
+  <p class="hint">Three ways to ask the same thing. Tap &#128266; to hear it. Ask the whole question &mdash; not just &ldquo;you?&rdquo;</p>
+  <div class="pic" id="askPic"></div>
+  <div id="asks"></div>
+</section>
+
+<section class="box">
+  <h2><span class="n">2</span>Answer with a sentence</h2>
+  <p class="hint">Fill the <span class="blank"></span> with a word from the table below.</p>
+  <div class="pic" id="framePic"></div>
+  <div id="frames"></div>
+</section>
+
+<section class="box">
+  <h2><span class="n">3</span>Words you need</h2>
+  <p class="hint">Find your language. Tap &#128266; to hear the English.</p>
+  <div class="sect">Weekend activities</div>
+  <div class="tablewrap"><table id="tblA"></table></div>
+  <div class="sect">Playing the game</div>
+  <div class="tablewrap"><table id="tblB"></table></div>
+</section>
+
+</main>
+<script>
+/* ============ speak ============ */
+var VOICE=null;
+function pickVoice(){try{var vs=speechSynthesis.getVoices().filter(function(v){return /^en[-_]/i.test(v.lang);});
+ VOICE=vs.filter(function(v){return /US/i.test(v.lang);})[0]||vs[0]||null;}catch(e){}}
+if(window.speechSynthesis){pickVoice();speechSynthesis.onvoiceschanged=pickVoice;}
+function say(t,el){
+ try{speechSynthesis.cancel();
+  var clean=String(t).replace(/_+/g,' blank ').replace(/\s+/g,' ').trim();
+  var u=new SpeechSynthesisUtterance(clean);u.lang='en-US';if(VOICE)u.voice=VOICE;u.rate=.84;
+  speechSynthesis.speak(u);}catch(e){}
+ if(el){el.style.transform='scale(1.18)';setTimeout(function(){el.style.transform='';},220);}
+}
+
+/* ============ dice ============ */
+var LION='<svg viewBox="0 0 64 64" aria-hidden="true">'
++'<g>'
+/* outer mane: big dark tufts */
++'<g fill="#8a3b1f">'+(function(){var s='';for(var i=0;i<9;i++){var a=i*40*Math.PI/180,x=32+Math.cos(a)*21,y=32+Math.sin(a)*21;s+='<ellipse cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" rx="11" ry="9" transform="rotate('+(i*40)+' '+x.toFixed(1)+' '+y.toFixed(1)+')"/>';}return s;})()+'</g>'
+/* inner mane: lighter, offset so the edge reads as fur not petals */
++'<g fill="#d8691f">'+(function(){var s='';for(var i=0;i<9;i++){var a=(i*40+20)*Math.PI/180,x=32+Math.cos(a)*16,y=32+Math.sin(a)*16;s+='<ellipse cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" rx="9" ry="7.5" transform="rotate('+(i*40+20)+' '+x.toFixed(1)+' '+y.toFixed(1)+')"/>';}return s;})()+'</g>'
+/* ears */
++'<circle cx="19" cy="20" r="5.5" fill="#8a3b1f"/><circle cx="19" cy="20" r="2.6" fill="#e8a07a"/>'
++'<circle cx="45" cy="20" r="5.5" fill="#8a3b1f"/><circle cx="45" cy="20" r="2.6" fill="#e8a07a"/>'
+/* face */
++'<circle cx="32" cy="33" r="15.5" fill="#f3c98f" stroke="#6b2f16" stroke-width="2"/>'
++'<ellipse cx="25.5" cy="29" rx="2.9" ry="3.4" fill="#2a1a10"/><ellipse cx="38.5" cy="29" rx="2.9" ry="3.4" fill="#2a1a10"/>'
++'<circle cx="26.6" cy="27.8" r="1.1" fill="#fff"/><circle cx="39.6" cy="27.8" r="1.1" fill="#fff"/>'
++'<ellipse cx="32" cy="38.5" rx="9" ry="6.5" fill="#f8ddb8"/>'
++'<path d="M27.5 35.5 h9 l-4.5 4.2z" fill="#6b2f16"/>'
++'<path d="M32 39.7 v3.2 M32 42.9 q-4.5 3.4-8 .4 M32 42.9 q4.5 3.4 8 .4" fill="none" stroke="#6b2f16" stroke-width="2.1" stroke-linecap="round"/>'
++'<path d="M22 36.5 l-8-2 M22 39.5 l-8 1.5 M42 36.5 l8-2 M42 39.5 l8 1.5" stroke="#6b2f16" stroke-width="1.5" stroke-linecap="round"/>'
++'</g></svg>';
+var PIPS={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
+var nDice=1,vals=[1,1];
+function dieHTML(i){
+ return '<div class="die d'+(i+1)+'" id="die'+i+'" onclick="rollOne('+i+')" role="button" tabindex="0" aria-label="die '+(i+1)+'">'
+  +'<div class="face" id="face'+i+'"></div><div class="lion">'+LION+'</div></div>';
+}
+function drawFace(i,n){
+ var cells='',on=PIPS[n];
+ for(var c=0;c<9;c++)cells+='<span>'+(on.indexOf(c)>=0?'<span class="pip"></span>':'')+'</span>';
+ document.getElementById('face'+i).innerHTML=cells;
+}
+function setDice(n){
+ nDice=n;
+ document.getElementById('t1').classList.toggle('on',n===1);
+ document.getElementById('t2').classList.toggle('on',n===2);
+ var h='';for(var i=0;i<n;i++)h+=dieHTML(i);
+ document.getElementById('dicewrap').innerHTML=h;
+ for(i=0;i<n;i++)drawFace(i,vals[i]||1);
+ showTotal();
+}
+function showTotal(){
+ var el=document.getElementById('total');
+ if(nDice===2){var t=vals[0]+vals[1];el.textContent='Total: '+t;}
+ else el.textContent='';
+}
+function rollOne(i,quiet){
+ var die=document.getElementById('die'+i);if(!die)return;
+ var n=1+Math.floor(Math.random()*6);
+ vals[i]=n;
+ die.classList.remove('rolling','roar','flash');void die.offsetWidth;
+ die.classList.add('rolling');
+ var spin=setInterval(function(){drawFace(i,1+Math.floor(Math.random()*6));},80);
+ setTimeout(function(){
+  clearInterval(spin);
+  drawFace(i,n);
+  die.classList.remove('rolling');
+  if(n===1){
+   /* the Galileo lion roars, then settles into the one */
+   die.classList.add('roar','flash');
+   setTimeout(function(){die.classList.remove('roar','flash');},800);
+  }
+  showTotal();
+  if(!quiet)setTimeout(function(){say(String(n));},n===1?820:120);
+ },620);
+}
+function rollAll(){
+ for(var i=0;i<nDice;i++)(function(k){setTimeout(function(){rollOne(k,k>0);},k*140);})(i);
+}
+
+/* ============ questions + frames ============ */
+var ASKS=[
+ 'What did you do this weekend?',
+ 'What did you do on Saturday and Sunday?',
+ 'Did you have a good weekend? What did you do?'
+];
+var FRAMES=[
+ 'On Saturday, I ______.',
+ 'On Sunday, I ______ with my ______.',
+ 'First, I ______. Then, I ______.',
+ 'I did not ______. I ______.',
+ 'My weekend was ______. I ______.'
+];
+function lineHTML(t,blanks){
+ var shown=blanks? t.replace(/______/g,'<span class="blank"></span>') : t;
+ return '<div class="line"><button class="say" onclick="say(this.dataset.t,this)" data-t="'+t.replace(/"/g,'&quot;')+'" aria-label="listen">&#128266;</button>'
+  +'<div class="txt">'+shown+'</div></div>';
+}
+document.getElementById('asks').innerHTML=ASKS.map(function(t){return lineHTML(t,false);}).join('');
+document.getElementById('frames').innerHTML=FRAMES.map(function(t){return lineHTML(t,true);}).join('');
+
+/* ============ pictures ============ */
+function P(inner,w,h){return '<svg viewBox="0 0 '+(w||200)+' '+(h||160)+'" role="img">'+inner+'</svg>';}
+var SKY='<rect width="200" height="160" fill="#dff0f7"/>', GND='<rect y="118" width="200" height="42" fill="#cdbb95"/>';
+function head(x,y,skin,hair,s){s=s||1;return '<g transform="translate('+x+','+y+') scale('+s+')">'
+ +'<rect x="-4" y="16" width="8" height="8" fill="'+skin+'"/>'
+ +'<circle cx="0" cy="0" r="14" fill="'+skin+'"/>'
+ +'<path d="M-14 -2 c0-14 6-19 14-19 c8 0 14 5 14 19 c-3-8-7-10-14-10 c-7 0-11 2-14 10z" fill="'+hair+'"/>'
+ +'<circle cx="-5" cy="0" r="1.8" fill="#1c2640"/><circle cx="5" cy="0" r="1.8" fill="#1c2640"/>'
+ +'<path d="M-5 6 q5 5 10 0" fill="none" stroke="#1c2640" stroke-width="1.8" stroke-linecap="round"/></g>';}
+var ART={
+ ask:P(SKY+GND
+  +'<rect x="0" y="60" width="200" height="58" fill="#e7ddc6"/>'
+  +'<rect x="12" y="70" width="46" height="38" rx="3" fill="#2d5b3c" stroke="#8a5a2b" stroke-width="3"/>'
+  +'<text x="35" y="94" text-anchor="middle" font-family="Nunito,Arial" font-weight="900" font-size="12" fill="#f4f1ee">Mon</text>'
+  +head(88,74,'#c68a5e','#1c1512',1.25)
+  +'<path d="M72 118 q0-24 16-26 q16 2 16 26z" fill="#2f6fbd"/>'
+  +head(144,76,'#f2cba6','#5a3a22',1.25)
+  +'<path d="M128 118 q0-24 16-26 q16 2 16 26z" fill="#d9567f"/>'
+  +'<g><path d="M104 44 h52 q6 0 6 6 v20 q0 6-6 6 h-30 l-10 9 v-9 h-12 q-6 0-6-6 v-20 q0-6 6-6z" fill="#fff" stroke="#23302b" stroke-width="2.5"/>'
+  +'<text x="130" y="62" text-anchor="middle" font-family="Nunito,Arial" font-weight="900" font-size="15" fill="#864D9E">? ? ?</text></g>'),
+ frame:P('<rect width="200" height="160" fill="#f7f1e3"/>'
+  +'<rect x="16" y="16" width="168" height="128" rx="8" fill="#fff" stroke="#23302b" stroke-width="3"/>'
+  +'<path d="M30 44 h140 M30 68 h140 M30 92 h100" stroke="#cfd9d3" stroke-width="3"/>'
+  +'<text x="30" y="40" font-family="Nunito,Arial" font-weight="900" font-size="15" fill="#23302b">On Saturday, I</text>'
+  +'<rect x="30" y="52" width="86" height="4" rx="2" fill="#F8981F"/>'
+  +'<text x="30" y="88" font-family="Nunito,Arial" font-weight="900" font-size="15" fill="#23302b">I</text>'
+  +'<rect x="42" y="76" width="74" height="4" rx="2" fill="#F8981F"/>'
+  +'<g transform="translate(150,104) rotate(-28)"><rect width="46" height="9" rx="4" fill="#f6c23a"/><path d="M46 0 l10 4.5-10 4.5z" fill="#f2cba6"/><rect x="-7" width="8" height="9" fill="#e07a1f"/></g>')
+};
+document.getElementById('askPic').innerHTML=ART.ask;
+document.getElementById('framePic').innerHTML=ART.frame;
+
+/* ============ vocabulary ============ */
+var LANGS=[['zh','\u4e2d\u6587'],['es','Espa\u00f1ol'],['ar','\u0627\u0644\u0639\u0631\u0628\u064a\u0629'],['vi','Ti\u1ebfng Vi\u1ec7t'],['th','\u0e44\u0e17\u0e22'],['ne','\u0928\u0947\u092a\u093e\u0932\u0940']];
+var WEEKEND=[
+ {en:'slept in', zh:'\u7761\u61d2\u89c9', es:'dorm\u00ed hasta tarde', ar:'\u0646\u0645\u062a\u064f \u0645\u062a\u0623\u062e\u0631\u064b\u0627', vi:'ng\u1ee7 n\u01b0\u1edbng', th:'\u0e19\u0e2d\u0e19\u0e15\u0e37\u0e48\u0e19\u0e2a\u0e32\u0e22', ne:'\u0905\u092c\u0947\u0930 \u0938\u092e\u094d\u092e \u0938\u0941\u0924\u0947\u0902', art:'sleep'},
+ {en:'played soccer', zh:'\u8e22\u8db3\u7403', es:'jugu\u00e9 al f\u00fatbol', ar:'\u0644\u0639\u0628\u062a\u064f \u0643\u0631\u0629 \u0627\u0644\u0642\u062f\u0645', vi:'\u0111\u00e1 b\u00f3ng', th:'\u0e40\u0e25\u0e48\u0e19\u0e1f\u0e38\u0e15\u0e1a\u0e2d\u0e25', ne:'\u092b\u0941\u091f\u092c\u0932 \u0916\u0947\u0932\u0947\u0902', art:'soccer'},
+ {en:'watched a movie', zh:'\u770b\u4e86\u7535\u5f71', es:'vi una pel\u00edcula', ar:'\u0634\u0627\u0647\u062f\u062a\u064f \u0641\u064a\u0644\u0645\u064b\u0627', vi:'xem phim', th:'\u0e14\u0e39\u0e2b\u0e19\u0e31\u0e07', ne:'\u092b\u093f\u0932\u094d\u092e \u0939\u0947\u0930\u0947\u0902', art:'movie'},
+ {en:'did my homework', zh:'\u505a\u4f5c\u4e1a', es:'hice la tarea', ar:'\u0639\u0645\u0644\u062a\u064f \u0627\u0644\u0648\u0627\u062c\u0628', vi:'l\u00e0m b\u00e0i t\u1eadp', th:'\u0e17\u0e33\u0e01\u0e32\u0e23\u0e1a\u0e49\u0e32\u0e19', ne:'\u0917\u0943\u0939\u0915\u093e\u0930\u094d\u092f \u0917\u0930\u0947\u0902', art:'homework'},
+ {en:'went to the park', zh:'\u53bb\u4e86\u516c\u56ed', es:'fui al parque', ar:'\u0630\u0647\u0628\u062a\u064f \u0625\u0644\u0649 \u0627\u0644\u062d\u062f\u064a\u0642\u0629', vi:'\u0111i c\u00f4ng vi\u00ean', th:'\u0e44\u0e1b\u0e2a\u0e27\u0e19\u0e2a\u0e32\u0e18\u0e32\u0e23\u0e13\u0e30', ne:'\u092a\u093e\u0930\u094d\u0915 \u0917\u090f\u0901', art:'park'},
+ {en:'ate with my family', zh:'\u548c\u5bb6\u4eba\u5403\u996d', es:'com\u00ed con mi familia', ar:'\u0623\u0643\u0644\u062a\u064f \u0645\u0639 \u0639\u0627\u0626\u0644\u062a\u064a', vi:'\u0103n c\u01a1m v\u1edbi gia \u0111\u00ecnh', th:'\u0e01\u0e34\u0e19\u0e02\u0e49\u0e32\u0e27\u0e01\u0e31\u0e1a\u0e04\u0e23\u0e2d\u0e1a\u0e04\u0e23\u0e31\u0e27', ne:'\u092a\u0930\u093f\u0935\u093e\u0930\u0938\u0901\u0917 \u0916\u093e\u0928\u093e \u0916\u093e\u090f\u0901', art:'family'},
+ {en:'worked', zh:'\u6253\u5de5', es:'trabaj\u00e9', ar:'\u0627\u0634\u062a\u063a\u0644\u062a\u064f', vi:'\u0111i l\u00e0m', th:'\u0e17\u0e33\u0e07\u0e32\u0e19', ne:'\u0915\u093e\u092e \u0917\u0930\u0947\u0902', art:'work'},
+ {en:'played video games', zh:'\u6253\u6e38\u620f', es:'jugu\u00e9 videojuegos', ar:'\u0644\u0639\u0628\u062a\u064f \u0623\u0644\u0639\u0627\u0628 \u0627\u0644\u0641\u064a\u062f\u064a\u0648', vi:'ch\u01a1i \u0111i\u1ec7n t\u1eed', th:'\u0e40\u0e25\u0e48\u0e19\u0e40\u0e01\u0e21', ne:'\u092d\u093f\u0921\u093f\u092f\u094b \u0917\u0947\u092e \u0916\u0947\u0932\u0947\u0902', art:'game'}
+];
+var GAME=[
+ {en:'roll the dice', zh:'\u63b7\u9ab0\u5b50', es:'tira los dados', ar:'\u0627\u0631\u0645\u0650 \u0627\u0644\u0646\u0631\u062f', vi:'gieo x\u00fac x\u1eafc', th:'\u0e17\u0e2d\u0e22\u0e25\u0e39\u0e01\u0e40\u0e15\u0e4b\u0e32', ne:'\u092a\u093e\u0938\u093e \u092b\u093e\u0932\u094d\u0928\u0941\u0939\u094b\u0938\u094d', art:'dice'},
+ {en:"it's your turn", zh:'\u8f6e\u5230\u4f60\u4e86', es:'te toca', ar:'\u062f\u0648\u0631\u0643', vi:'\u0111\u1ebfn l\u01b0\u1ee3t b\u1ea1n', th:'\u0e15\u0e32\u0e04\u0e38\u0e13\u0e41\u0e25\u0e49\u0e27', ne:'\u0924\u092a\u093e\u0908\u0902\u0915\u094b \u092a\u093e\u0932\u094b', art:'turn'},
+ {en:'move your piece', zh:'\u79fb\u52a8\u4f60\u7684\u68cb\u5b50', es:'mueve tu ficha', ar:'\u062d\u0631\u0651\u0643 \u0642\u0637\u0639\u062a\u0643', vi:'di chuy\u1ec3n qu\u00e2n c\u1edd', th:'\u0e40\u0e14\u0e34\u0e19\u0e2b\u0e21\u0e32\u0e01\u0e02\u0e2d\u0e07\u0e04\u0e38\u0e13', ne:'\u0906\u092b\u094d\u0928\u094b \u0917\u094b\u091f\u0940 \u0938\u093e\u0930\u094d\u0928\u0941\u0939\u094b\u0938\u094d', art:'piece'},
+ {en:'go back', zh:'\u540e\u9000', es:'retrocede', ar:'\u0627\u0631\u062c\u0639 \u0644\u0644\u062e\u0644\u0641', vi:'l\u00f9i l\u1ea1i', th:'\u0e16\u0e2d\u0e22\u0e01\u0e25\u0e31\u0e1a', ne:'\u092a\u091b\u093f \u091c\u093e\u0928\u0941\u0939\u094b\u0938\u094d', art:'back'},
+ {en:'skip a turn', zh:'\u8df3\u8fc7\u4e00\u8f6e', es:'pierdes un turno', ar:'\u062a\u062e\u0637\u0651\u064e \u062f\u0648\u0631\u0643', vi:'m\u1ea5t l\u01b0\u1ee3t', th:'\u0e02\u0e49\u0e32\u0e21\u0e15\u0e32', ne:'\u092a\u093e\u0932\u094b \u091b\u094b\u0921\u094d\u0928\u0941\u0939\u094b\u0938\u094d', art:'skip'},
+ {en:'you win', zh:'\u4f60\u8d62\u4e86', es:'ganaste', ar:'\u0641\u0632\u062a', vi:'b\u1ea1n th\u1eafng', th:'\u0e04\u0e38\u0e13\u0e0a\u0e19\u0e30', ne:'\u0924\u092a\u093e\u0908\u0901 \u091c\u093f\u0924\u094d\u0928\u0941\u092d\u092f\u094b', art:'win'}
+];
+/* small drawn scene for every word */
+var W=200,H=160;
+var VART={
+ sleep:P('<rect width="200" height="160" fill="#2b2f52"/><circle cx="162" cy="30" r="16" fill="#f6e7a8"/><circle cx="154" cy="26" r="14" fill="#2b2f52"/>'
+  +'<path d="M20 120 h160 v26 h-160z" fill="#8a5a2b"/><rect x="26" y="86" width="148" height="36" rx="8" fill="#e7ddc6"/>'
+  +'<rect x="34" y="92" width="44" height="24" rx="8" fill="#fff"/>'+head(56,96,'#c68a5e','#1c1512',.9)
+  +'<path d="M78 92 h92 q8 0 8 8 v22 h-100z" fill="#5b7fb5"/><path d="M78 104 h100" stroke="#89a7d1" stroke-width="3"/>'
+  +'<text x="112" y="56" font-family="Nunito,Arial" font-weight="900" font-size="26" fill="#f6e7a8">z</text>'
+  +'<text x="132" y="40" font-family="Nunito,Arial" font-weight="900" font-size="19" fill="#f6e7a8">z</text>'
+  +'<text x="146" y="70" font-family="Nunito,Arial" font-weight="900" font-size="14" fill="#f6e7a8">z</text>'),
+ soccer:P('<rect width="200" height="160" fill="#bfe3f5"/><rect y="96" width="200" height="64" fill="#2f7d4b"/>'
+  +'<path d="M0 118 h200" stroke="#e7efe6" stroke-width="3"/>'
+  +'<rect x="140" y="62" width="54" height="40" fill="none" stroke="#f4f1ee" stroke-width="4"/>'
+  +head(60,58,'#8d5a3a','#1c1512',1.1)+'<path d="M46 102 q0-22 14-24 q14 2 14 24z" fill="#F8981F"/>'
+  +'<path d="M50 102 l-8 24 M70 102 l8 24" stroke="#2b3a52" stroke-width="7" stroke-linecap="round"/>'
+  +'<circle cx="112" cy="126" r="14" fill="#fff" stroke="#1c2640" stroke-width="2"/>'
+  +'<path d="M112 116 l6 5-2 7h-8l-2-7z" fill="#1c2640"/>'),
+ movie:P('<rect width="200" height="160" fill="#241b33"/>'
+  +'<rect x="18" y="18" width="164" height="94" rx="6" fill="#0f0c18" stroke="#6a5a85" stroke-width="4"/>'
+  +'<rect x="28" y="28" width="144" height="74" fill="#3b5f8f"/><circle cx="70" cy="56" r="13" fill="#f6e7a8"/>'
+  +'<path d="M28 86 l40-26 28 20 24-16 52 28z" fill="#1f3a5c"/>'
+  +'<rect x="40" y="118" width="40" height="34" rx="4" fill="#c0392b"/><path d="M40 126 h40" stroke="#fff" stroke-width="3"/>'
+  +'<path d="M46 118 q6-10 14-6 q10-6 14 6z" fill="#f6e7a8"/>'
+  +'<rect x="96" y="124" width="22" height="28" rx="3" fill="#2a9d8f"/><rect x="100" y="118" width="14" height="8" fill="#e7efe6"/>'
+  +'<path d="M140 150 q10-16 22-4" stroke="#6a5a85" stroke-width="3" fill="none"/>'),
+ homework:P('<rect width="200" height="160" fill="#f7f1e3"/><rect y="112" width="200" height="48" fill="#c9a86a"/>'
+  +'<rect x="30" y="60" width="92" height="56" rx="3" fill="#fff" stroke="#9aa39d" stroke-width="2"/>'
+  +'<path d="M40 74 h72 M40 84 h72 M40 94 h48" stroke="#cfd9d3" stroke-width="3"/>'
+  +'<g transform="translate(118,56) rotate(35)"><rect width="52" height="10" rx="4" fill="#f6c23a"/><path d="M52 0 l12 5-12 5z" fill="#f2cba6"/><rect x="-8" width="9" height="10" fill="#e07a1f"/></g>'
+  +head(150,86,'#efcfae','#5a3a22',1)+'<path d="M134 116 q0-18 16-20 q16 2 16 20z" fill="#2d6a4f"/>'
+  +'<rect x="26" y="34" width="54" height="22" rx="4" fill="#864D9E"/><text x="53" y="50" text-anchor="middle" font-family="Nunito,Arial" font-weight="900" font-size="14" fill="#fff">ELD</text>'),
+ park:P('<rect width="200" height="160" fill="#bfe3f5"/><rect y="104" width="200" height="56" fill="#49a16a"/>'
+  +'<circle cx="38" cy="66" r="26" fill="#2d6a4f"/><rect x="33" y="84" width="10" height="24" fill="#6d4420"/>'
+  +'<circle cx="168" cy="52" r="20" fill="#3f8a5c"/><rect x="164" y="66" width="8" height="40" fill="#6d4420"/>'
+  +'<path d="M78 104 v-34 h44 v34" fill="none" stroke="#b5451b" stroke-width="5"/>'
+  +'<path d="M86 70 v16 M114 70 v16" stroke="#8a5a2b" stroke-width="3"/>'
+  +'<rect x="80" y="86" width="14" height="4" fill="#8a5a2b"/><rect x="106" y="86" width="14" height="4" fill="#8a5a2b"/>'
+  +head(87,96,'#f2cba6','#e2b74a',.8)+head(113,96,'#c68a5e','#1c1512',.8)
+  +'<circle cx="150" cy="128" r="8" fill="#fff" stroke="#1c2640" stroke-width="2"/>'),
+ family:P('<rect width="200" height="160" fill="#fff4e0"/><rect y="120" width="200" height="40" fill="#b5804a"/>'
+  +'<ellipse cx="100" cy="116" rx="86" ry="18" fill="#c9a86a"/><ellipse cx="100" cy="112" rx="86" ry="18" fill="#dcbd87"/>'
+  +'<circle cx="100" cy="108" r="24" fill="#fff" stroke="#9aa39d" stroke-width="2"/><circle cx="100" cy="108" r="15" fill="#e07a1f"/>'
+  +'<circle cx="52" cy="110" r="13" fill="#fff" stroke="#9aa39d" stroke-width="2"/><circle cx="148" cy="110" r="13" fill="#fff" stroke="#9aa39d" stroke-width="2"/>'
+  +head(44,74,'#c68a5e','#1c1512',.85)+head(78,66,'#f2cba6','#5a3a22',.9)
+  +head(122,66,'#8d5a3a','#1c1512',.9)+head(156,74,'#efcfae','#9a9a9a',.85)
+  +'<path d="M94 94 h12 v-10 h-12z" fill="#9aa39d"/>'),
+ work:P('<rect width="200" height="160" fill="#eef3f6"/><rect y="118" width="200" height="42" fill="#b9c3c9"/>'
+  +'<rect x="104" y="40" width="88" height="78" fill="#d9e2e8" stroke="#8fa0ab" stroke-width="2"/>'
+  +'<rect x="114" y="52" width="28" height="20" fill="#7fb3d5"/><rect x="152" y="52" width="28" height="20" fill="#7fb3d5"/>'
+  +'<rect x="114" y="82" width="28" height="20" fill="#7fb3d5"/><rect x="152" y="82" width="28" height="20" fill="#7fb3d5"/>'
+  +head(52,70,'#8d5a3a','#1c1512',1.15)+'<path d="M36 118 q0-24 16-26 q16 2 16 26z" fill="#2a9d8f"/>'
+  +'<rect x="34" y="92" width="36" height="8" fill="#1f8a7e"/>'
+  +'<rect x="68" y="96" width="30" height="22" rx="3" fill="#8a5a2b"/><path d="M76 96 v-6 h14 v6" fill="none" stroke="#5a3a22" stroke-width="3"/>'),
+ game:P('<rect width="200" height="160" fill="#1f2340"/>'
+  +'<rect x="24" y="24" width="152" height="80" rx="8" fill="#3a3f66" stroke="#6a72a8" stroke-width="3"/>'
+  +'<rect x="36" y="36" width="128" height="56" rx="4" fill="#79e3b0"/>'
+  +'<path d="M48 80 h20 v-12 h16 v-14 h18 v18 h16 v8 h20" fill="none" stroke="#1f6b4a" stroke-width="4"/>'
+  +'<rect x="52" y="116" width="96" height="30" rx="12" fill="#55607a"/>'
+  +'<circle cx="74" cy="131" r="4" fill="#e7efe6"/><path d="M68 131 h12 M74 125 v12" stroke="#e7efe6" stroke-width="3"/>'
+  +'<circle cx="124" cy="126" r="5" fill="#F8981F"/><circle cx="136" cy="134" r="5" fill="#864D9E"/>'),
+ dice:P('<rect width="200" height="160" fill="#f7f1e3"/><rect y="120" width="200" height="40" fill="#c9a86a"/>'
+  +'<g transform="rotate(-12 64 80)"><rect x="34" y="50" width="60" height="60" rx="12" fill="#864D9E"/>'
+  +'<circle cx="50" cy="66" r="6" fill="#F8981F"/><circle cx="78" cy="66" r="6" fill="#F8981F"/>'
+  +'<circle cx="50" cy="94" r="6" fill="#F8981F"/><circle cx="78" cy="94" r="6" fill="#F8981F"/></g>'
+  +'<g transform="rotate(14 136 92)"><rect x="106" y="62" width="60" height="60" rx="12" fill="#F8981F"/>'
+  +'<circle cx="136" cy="92" r="6" fill="#864D9E"/><circle cx="118" cy="74" r="6" fill="#864D9E"/><circle cx="154" cy="110" r="6" fill="#864D9E"/></g>'
+  +'<path d="M24 42 q10-14 22-4 M176 36 q-10-14-22-4" stroke="#9aa39d" stroke-width="3" fill="none"/>'),
+ turn:P('<rect width="200" height="160" fill="#eaf5ee"/>'
+  +head(56,66,'#c68a5e','#1c1512',1.2)+'<path d="M38 120 q0-26 18-28 q18 2 18 28z" fill="#2f6fbd"/>'
+  +head(146,66,'#f2cba6','#5a3a22',1.2)+'<path d="M128 120 q0-26 18-28 q18 2 18 28z" fill="#d9567f"/>'
+  +'<path d="M84 86 h26 l-6-8 14 12-14 12 6-8h-26z" fill="#F8981F" stroke="#23302b" stroke-width="2"/>'
+  +'<path d="M96 40 h44 q6 0 6 6 v16 q0 6-6 6 h-24 l-9 8v-8h-11 q-6 0-6-6v-16 q0-6 6-6z" fill="#fff" stroke="#23302b" stroke-width="2.5"/>'
+  +'<text x="118" y="58" text-anchor="middle" font-family="Nunito,Arial" font-weight="900" font-size="13" fill="#2d6a4f">YOU!</text>'),
+ piece:P('<rect width="200" height="160" fill="#f7f1e3"/>'
+  +'<rect x="14" y="40" width="172" height="80" rx="6" fill="#e7ddc6" stroke="#8a5a2b" stroke-width="3"/>'
+  +'<g>'+(function(){var s='',c=['#cfe3d6','#f6d6b8'];for(var i=0;i<8;i++)s+='<rect x="'+(22+i*20)+'" y="48" width="20" height="30" fill="'+c[i%2]+'"/>'+'<rect x="'+(22+i*20)+'" y="80" width="20" height="30" fill="'+c[(i+1)%2]+'"/>';return s;})()+'</g>'
+  +'<path d="M62 94 c0-8 6-10 6-16 a8 8 0 10-16 0 c0 6 6 8 6 16z" fill="#864D9E" stroke="#23302b" stroke-width="2"/>'
+  +'<path d="M118 62 c0-8 6-10 6-16 a8 8 0 10-16 0 c0 6 6 8 6 16z" fill="#F8981F" stroke="#23302b" stroke-width="2" opacity=".45"/>'
+  +'<path d="M72 86 q22-18 40-22" stroke="#2d6a4f" stroke-width="3" fill="none" stroke-dasharray="5 4"/>'
+  +'<path d="M112 62 l10 4-8 6z" fill="#2d6a4f"/>'),
+ back:P('<rect width="200" height="160" fill="#f7f1e3"/>'
+  +'<rect x="14" y="46" width="172" height="68" rx="6" fill="#e7ddc6" stroke="#8a5a2b" stroke-width="3"/>'
+  +(function(){var s='';for(var i=0;i<6;i++)s+='<rect x="'+(24+i*26)+'" y="56" width="22" height="48" rx="3" fill="'+(i===1?'#f9c9c0':'#cfe3d6')+'" stroke="#9aa39d"/>';return s;})()
+  +'<path d="M150 80 h-66 l10-10 -22 14 22 14 -10-10z" fill="#c0392b" stroke="#23302b" stroke-width="2"/>'
+  +'<path d="M40 70 c0-6 5-8 5-12 a6 6 0 10-12 0 c0 4 5 6 5 12z" fill="#864D9E" stroke="#23302b" stroke-width="2"/>'),
+ skip:P('<rect width="200" height="160" fill="#eef1f4"/>'
+  +head(100,64,'#efcfae','#1c1512',1.5)
+  +'<path d="M74 132 q0-30 26-32 q26 2 26 32z" fill="#5b6b7c"/>'
+  +'<path d="M86 50 q14-10 28 0" stroke="#1c2640" stroke-width="3" fill="none"/>'
+  +'<path d="M150 42 h34 q5 0 5 5 v16 q0 5-5 5 h-18 l-8 7v-7h-8q-5 0-5-5v-16 q0-5 5-5z" fill="#fff" stroke="#23302b" stroke-width="2.5"/>'
+  +'<text x="167" y="60" text-anchor="middle" font-family="Nunito,Arial" font-weight="900" font-size="15" fill="#c0392b">\u2014</text>'
+  +'<circle cx="34" cy="60" r="20" fill="none" stroke="#c0392b" stroke-width="5"/><path d="M20 46 l28 28" stroke="#c0392b" stroke-width="5"/>'),
+ win:P('<rect width="200" height="160" fill="#fff8e8"/>'
+  +'<path d="M70 44 h60 v22 a30 30 0 01-60 0z" fill="#f6c23a" stroke="#b5851b" stroke-width="3"/>'
+  +'<path d="M70 48 h-14 a12 12 0 0014 14z M130 48 h14 a12 12 0 01-14 14z" fill="none" stroke="#b5851b" stroke-width="4"/>'
+  +'<rect x="92" y="92" width="16" height="18" fill="#b5851b"/><rect x="76" y="110" width="48" height="12" rx="3" fill="#8a5a2b"/>'
+  +'<path d="M100 54 l4 9 10 1-7 7 2 10-9-5-9 5 2-10-7-7 10-1z" fill="#fff8e8"/>'
+  +(function(){var s='',c=['#864D9E','#F8981F','#2a9d8f','#c0392b'];for(var i=0;i<14;i++){var x=10+((i*37)%180),y=14+((i*53)%120);s+='<rect x="'+x+'" y="'+y+'" width="8" height="5" rx="2" fill="'+c[i%4]+'" transform="rotate('+(i*37)+' '+x+' '+y+')"/>';}return s;})())
+};
+function tableHTML(rows){
+ var h='<thead><tr><th>Picture</th><th>English</th>';
+ LANGS.forEach(function(l){h+='<th>'+l[1]+'</th>';});
+ h+='</tr></thead><tbody>';
+ rows.forEach(function(r){
+  h+='<tr><td class="img">'+(VART[r.art]||'')+'</td>'
+   +'<td class="en">'+r.en+' <button class="spk" onclick="say(this.dataset.t,this)" data-t="'+r.en.replace(/"/g,'&quot;')+'" aria-label="listen">&#128266;</button></td>';
+  LANGS.forEach(function(l){h+='<td class="tr"'+(l[0]==='ar'?' dir="rtl"':'')+'>'+(r[l[0]]||'')+'</td>';});
+  h+='</tr>';
+ });
+ return h+'</tbody>';
+}
+document.getElementById('tblA').innerHTML=tableHTML(WEEKEND);
+document.getElementById('tblB').innerHTML=tableHTML(GAME);
+
+setDice(1);
+</script>
+</body>
+</html>
