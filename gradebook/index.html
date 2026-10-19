@@ -76,6 +76,7 @@ dialog .row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
       <label>Since <select id="since"><option value="14">2 weeks</option><option value="42">6 weeks</option><option value="90" selected>Quarter</option><option value="0">All time</option></select></label>
       <input id="q" placeholder="find student…" style="min-width:160px">
       <label><input type="checkbox" id="hideempty" checked> hide activities nobody in view did</label>
+      <button class="btn" id="syn">Synergy export</button>
       <button class="btn sec" id="csv">Download CSV</button>
       <button class="btn sec" id="reload">Reload</button>
     </div>
@@ -84,6 +85,25 @@ dialog .row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
     <p class="legend">Cell = best attempt as a mark out of 4 (4 = 90%+, 3 = 75–89, 2 = 60–74, 1 = anything started, 0 = nothing right; ✓ = done but the activity reports no number). Press <b>Show percents</b> to switch back. A dotted outline means a completion score: parts done over parts on the page, for activities with no quiz number. Hover a cell for attempts and date. <b>Click an activity header</b> to copy that column for Synergy in roster order. Change a student's period with the dropdown in their row; it saves. Sort order inside a period = roster order if set, else last name.</p>
   </div>
 </div>
+
+<dialog id="syndlg">
+  <h3>Synergy export &mdash; one number for every student</h3>
+  <div id="synnote" style="color:var(--muted);font-size:.78rem;margin-bottom:8px"></div>
+  <div class="row" style="margin:0 0 8px">
+    <label style="font-size:.82rem">What <select id="synwhat"></select></label>
+    <label style="font-size:.82rem">Scale <select id="synscale"><option value="4" selected>0&ndash;4</option><option value="100">percent</option></select></label>
+    <label style="font-size:.82rem">Never did it <select id="synmiss"><option value="0" selected>0</option><option value="">blank</option></select></label>
+    <label style="font-size:.82rem">Done, no number <select id="syndone"><option value="full" selected>full credit</option><option value="half">half</option><option value="0">0</option></select></label>
+  </div>
+  <textarea id="syntext" readonly></textarea>
+  <div class="row">
+    <button class="btn" id="syncopyscores">Copy the numbers</button>
+    <button class="btn sec" id="syncopyboth">Copy name + number</button>
+    <button class="btn sec" id="syncopynames">Copy names only</button>
+    <button class="btn sec" id="synclose" style="margin-left:auto">Close</button>
+  </div>
+  <p style="font-size:.76rem;color:var(--muted);margin:10px 0 0">Every student in the current filter gets a number &mdash; no ticks, no blanks unless you ask for them. In Synergy, click the first student&rsquo;s cell in that column and paste. Copy names first if you want to check the roster order.</p>
+</dialog>
 
 <dialog id="dlg">
   <h3 id="dlgtitle">Copy for Synergy</h3>
@@ -287,6 +307,66 @@ document.getElementById('csv').onclick=function(){
   var csv=lines.map(function(r){return r.map(function(v){v=String(v==null?'':v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}).join(',');}).join('\n');
   var b=new Blob([csv],{type:'text/csv'});var u=URL.createObjectURL(b);var a=document.createElement('a');a.href=u;a.download='gradebook-'+new Date().toISOString().slice(0,10)+'.csv';a.click();URL.revokeObjectURL(u);
 };
+
+/* ---------- Synergy export ----------
+   One number per student for every student in the current filter, in roster order.
+   Nothing here can come out as a tick: a page that reports no number is scored by
+   the "Done, no number" rule, and a student who never did it by "Never did it".
+   So the column is always pasteable, every time. */
+function synRule(id){return document.getElementById(id).value;}
+function synPct(c){
+  if(!c) return null;                                   // never attempted
+  if(c.pct!=null) return +c.pct;
+  var r=synRule('syndone');                             // turned in, no number
+  return r==='full'?100:r==='half'?50:0;
+}
+function synOut(p){
+  if(p==null) return synRule('synmiss');
+  return synRule('synscale')==='4' ? String(band(Math.round(p))) : String(Math.round(p));
+}
+function synLists(){
+  var what=document.getElementById('synwhat').value, names=[], nums=[];
+  view.rows.forEach(function(s){
+    names.push(studentName(s));
+    var p=null;
+    if(what==='__avg'){
+      var sum=0,n=0;
+      view.cols.forEach(function(sl){
+        var v=synPct(view.byCell[s.email+'|'+sl]);
+        if(v!=null){sum+=v;n++;}
+      });
+      p=n?sum/n:null;
+    } else p=synPct(view.byCell[s.email+'|'+what]);
+    nums.push(synOut(p));
+  });
+  return {names:names,nums:nums};
+}
+function fillSyn(){
+  var L=synLists();
+  document.getElementById('syntext').value=L.names.map(function(n,i){return n+'\t'+L.nums[i];}).join('\n');
+  var per=document.getElementById('period').value;
+  document.getElementById('synnote').textContent=
+    (per&&per!=='none'?'Period '+per:'All periods')+' \u00b7 '+view.rows.length+' students in roster order';
+}
+function openSyn(){
+  var sel=document.getElementById('synwhat'), keep=sel.value;
+  sel.innerHTML='<option value="__avg">Overall average of everything in view</option>'+
+    view.cols.map(function(sl){var a=activities[sl]||{};return '<option value="'+esc(sl)+'">'+esc(a.title||sl)+'</option>';}).join('');
+  if(keep)sel.value=keep;
+  fillSyn();
+  document.getElementById('syndlg').showModal();
+}
+function synCopy(list,what){
+  navigator.clipboard.writeText(list.join('\n')).then(function(){
+    toast('Copied '+list.length+' '+what+'. Click the first cell in Synergy and paste.');
+  });
+}
+document.getElementById('syn').onclick=openSyn;
+document.getElementById('synclose').onclick=function(){document.getElementById('syndlg').close();};
+['synwhat','synscale','synmiss','syndone'].forEach(function(id){document.getElementById(id).addEventListener('change',fillSyn);});
+document.getElementById('syncopyscores').onclick=function(){synCopy(synLists().nums,'numbers');};
+document.getElementById('syncopynames').onclick=function(){synCopy(synLists().names,'names');};
+document.getElementById('syncopyboth').onclick=function(){var L=synLists();synCopy(L.names.map(function(n,i){return n+'\t'+L.nums[i];}),'rows');};
 
 ['period','course','unit','since','hideempty'].forEach(function(id){document.getElementById(id).addEventListener('change',render);});
 document.getElementById('q').addEventListener('input',render);

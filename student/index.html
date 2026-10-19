@@ -93,6 +93,16 @@ tbody tr:nth-child(even){background:#faf9fd}
 .tag{display:inline-block;padding:3px 11px;border-radius:999px;font-size:.78rem;font-weight:800}
 .tag.done{background:var(--green-bg);color:var(--green)}
 .tag.todo{background:var(--grey-bg);color:var(--muted)}
+.tag.part{background:#fff1bf;color:#8a6a00}
+#finishCard{border:3px solid #b5451b}
+#finishCard h2{color:#b5451b}
+.fin{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.fin:last-child{border-bottom:none}
+.fin .what{flex:1}
+.fin .what b{display:block;font-size:1.05rem}
+.fin .bar{height:9px;background:#eceeea;border-radius:5px;overflow:hidden;margin-top:6px;max-width:320px}
+.fin .bar i{display:block;height:100%;background:#b5451b}
+.fin .pcts{font-weight:900;min-width:52px;text-align:right}
 .up{color:var(--green);font-weight:800;font-size:.85rem}
 
 /* ---- skills ---- */
@@ -474,6 +484,13 @@ details.wq .qm{font-size:.85rem;color:var(--muted);font-weight:800}
   </div>
 
   <!-- Activities -->
+  <!-- Finish This: anything started but not complete -->
+  <div class="card hide" id="finishCard">
+    <h2><span class="ico">&#9203;</span>Finish This</h2>
+    <p class="note" id="finLead" style="margin-top:0"></p>
+    <div id="finBody"></div>
+  </div>
+
   <div class="card">
     <h2>My Activities</h2>
     <table>
@@ -874,7 +891,7 @@ function renderAll(){
         '<span style="background:#fff;color:var(--plum-dk)">no account yet &mdash; nothing saved</span>');
     },0);
   }
-  renderHero();renderWords();fillForm();renderFacts();renderWork();renderActs();renderSkills();
+  renderHero();renderWords();fillForm();renderFacts();renderWork();renderFinish();renderActs();renderSkills();
   translatePage();}
 
 /* ---------- My Words ----------
@@ -1164,6 +1181,39 @@ function renderActs(){
 }
 var SHOW_ALL=false;
 function toggleAll(){SHOW_ALL=!SHOW_ALL;renderActs();}
+
+/* ---------- Finish This ----------
+   Anything the student has started but not completed: their best attempt is
+   under 90% of the page. Ordered by how close they are, so the quickest win
+   is on top. Not a scolding list: it says what is left, not what is wrong. */
+var FINISH_AT=90;
+function renderFinish(){
+  var card=document.getElementById('finishCard'), body=document.getElementById('finBody');
+  if(!card)return;
+  var by={}; DATA.atts.forEach(function(a){(by[a.slug]=by[a.slug]||[]).push(a);});
+  var titleOf={}; (DATA.acts||[]).forEach(function(a){titleOf[a.slug]=a;});
+  var rows=[];
+  Object.keys(by).forEach(function(slug){
+    var l=by[slug], best=null;
+    l.forEach(function(a){ if(a.max_score>0 && a.score!=null){ var p=Math.round(100*a.score/a.max_score); if(best==null||p>best)best=p; } });
+    if(best==null||best>=FINISH_AT)return;
+    var act=titleOf[slug]||{};
+    rows.push({slug:slug,pct:best,title:act.title||slug,unit:act.unit||'',url:act.url||''});
+  });
+  rows.sort(function(a,b){return b.pct-a.pct;});
+  if(!rows.length){card.classList.add('hide');return;}
+  card.classList.remove('hide');
+  document.getElementById('finLead').textContent=
+    rows.length===1?'One activity still needs work. Finish it to raise your score.'
+                   :rows.length+' activities still need work. Start at the top \u2014 that one is closest to done.';
+  body.innerHTML=rows.map(function(r){
+    var btn=r.url?'<a class="btn sm" href="'+esc(r.url)+(r.url.indexOf('?')>-1?'&':'?')+'email='+encodeURIComponent(ME)+'">Finish</a>':'';
+    return '<div class="fin"><div class="what"><b>'+esc(r.title)+'</b>'+
+      (r.unit?'<span class="note">'+esc(r.unit)+'</span>':'')+
+      '<div class="bar"><i style="width:'+r.pct+'%"></i></div></div>'+
+      '<div class="pcts">'+r.pct+'%</div><div class="noprint">'+btn+'</div></div>';
+  }).join('');
+}
 
 function band(p){return p==null?'n':p>=90?'g':p>=80?'l':p>=70?'y':p>=60?'o':'r';}
 var KIND_ICON={practice:'\u270F\uFE0F',video:'\u25B6\uFE0F',quill:'\uD83E\uDEB6',reading:'\uD83D\uDCD6'};
