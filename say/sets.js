@@ -58,5 +58,12 @@ window.SAY_SETS={
     {k:'words', name:'Words', e:'🔤', items:['letter','alphabet','uppercase','lowercase','spell','vowel','consonant']},
     {k:'spell', name:'Spell it', e:'✏️', items:['C-H-R-I-S','M-A-R-I-A','O-M-A-R','A-N-D-I','T-H-A-N']},
     {k:'sent', name:'Sentences', e:'💬', items:['How do you spell your name?','I spell my name C-H-R-I-S.','The C is uppercase.','Could you please repeat that?','My name begins with the letter M.','The alphabet has 26 letters.']}
+  ] } ,
+  'zero-to-one-hundred':{ title:'0 to 100', back:'/readings/launch-plus/u1-l4/', decks:[
+    {k:'small', name:'0 to 20', e:'🔢', items:['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen','twenty']},
+    {k:'tens', name:'The tens', e:'🔟', items:['twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety','one hundred']},
+    {k:'pairs', name:'Tricky pairs', e:'👂', items:['thirteen','thirty','fourteen','forty','fifteen','fifty','sixteen','sixty','seventeen','seventy','eighteen','eighty','nineteen','ninety']},
+    {k:'hyphen', name:'With a hyphen', e:'➖', items:['twenty-five','thirty-two','forty-four','fifty-one','sixty-seven','seventy-three','eighty-eight','ninety-nine']},
+    {k:'sent', name:'Sentences', e:'💬', items:['How many students do you see?','I see fifteen students.','How many desks do you see?','There are twenty-five desks.','Eighty-eight is the largest number.','Seventy is the smallest number.','Thirty-two has a hyphen.','I am fifteen years old.']}
   ] }
 };
