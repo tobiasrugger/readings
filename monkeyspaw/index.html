@@ -697,6 +697,16 @@ body.easy .story p{ font-size:calc(var(--tsize) + .05rem); line-height:calc(var(
   background:#17915a; color:#fff; border:2px solid #0f7a4a; border-radius:9px; padding:.75rem 1.4rem;
   box-shadow:0 3px 0 #0b5e39; }
 @media print{ .chapters,.chunkfoot,.progwrap,.actbar{ display:none !important; } .chunk,.act{ display:block !important; } }
+
+/* translation progress, bottom-left, out of the way */
+#trbadge{ display:none; }
+#trbadge.on{ display:block; position:fixed; left:10px; bottom:10px; z-index:70;
+  font-family:'Courier Prime',monospace; font-size:.72rem; letter-spacing:.04em;
+  background:var(--ink); color:var(--cream); border:2px solid #4a3a28; border-radius:8px;
+  padding:.4rem .7rem; box-shadow:0 3px 10px rgba(0,0,0,.25); max-width:60vw; }
+#trbadge.warn{ background:#7b2a1f; cursor:pointer; }
+.dirtr.waiting{ opacity:.55; }
+@media print{ #trbadge{ display:none !important; } }
 </style>
 </head>
 <span id="canary" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden">the quick brown fox jumps over the lazy dog</span>
@@ -2922,15 +2932,64 @@ showScore();
   var C2N={es:'Spanish',zh:'Chinese (Simplified)','zh-CN':'Chinese (Simplified)',ar:'Arabic',
     vi:'Vietnamese',ru:'Russian',ur:'Urdu',tl:'Tagalog',fr:'French',ko:'Korean',hi:'Hindi',
     so:'Somali',ne:'Nepali',th:'Thai'};
+  /* ============================================================
+     Oct 2026 — translation was slow and patchy in Thai and Nepali.
+     The cause was not the language: the page asked the proxy for
+     every direction on every screen at once, hidden ones included,
+     so the later requests were throttled and never came back.
+     Three changes: remember answers between visits, ask only for
+     what is actually on screen, and queue the asks a few at a time
+     with a retry instead of firing all of them together.
+     ============================================================ */
+  var TRLS='gal_tr_v1';
+  (function(){ try{ var raw=localStorage.getItem(TRLS); if(raw){ var o=JSON.parse(raw)||{}; for(var k in o) tcache[k]=o[k]; } }catch(e){} })();
+  var trSaveT=null;
+  function trPersist(){
+    clearTimeout(trSaveT);
+    trSaveT=setTimeout(function(){
+      try{
+        var keys=Object.keys(tcache), o={}, i, start=Math.max(0, keys.length-600);
+        for(i=start;i<keys.length;i++) o[keys[i]]=tcache[keys[i]];
+        localStorage.setItem(TRLS, JSON.stringify(o));
+      }catch(e){}
+    }, 1200);
+  }
+  var TRQ=[], TRACTIVE=0, TRMAX=3;
+  window.__trPending=function(){ return TRQ.length+TRACTIVE; };
+  function trPump(){
+    while(TRACTIVE<TRMAX && TRQ.length){
+      (function(job){
+        TRACTIVE++;
+        var url=PROXY+'?action=translate&mode='+(String(job.text||'').trim().split(/\s+/).length<=3?'word':'sentence')
+          +'&idiom='+encodeURIComponent(job.text)+'&meaning=&lang='+encodeURIComponent(job.lang);
+        var ctl=null, timer=null;
+        try{ ctl=new AbortController(); timer=setTimeout(function(){ try{ctl.abort();}catch(e){} }, 12000); }catch(e){}
+        fetch(url, ctl?{signal:ctl.signal}:undefined)
+          .then(function(r){ return r.json(); })
+          .then(function(d){
+            if(timer) clearTimeout(timer);
+            if(d && d.ok && d.translation){ tcache[job.key]=d.translation; trPersist(); job.done(d.translation); }
+            else { retry(job); }
+          })
+          .catch(function(){ if(timer) clearTimeout(timer); retry(job); })
+          .then(function(){ TRACTIVE--; trPump(); });
+      })(TRQ.shift());
+    }
+  }
+  function retry(job){
+    job.tries=(job.tries||0)+1;
+    if(job.tries>=3){ job.done(null); return; }
+    setTimeout(function(){ TRQ.push(job); trPump(); }, 400*job.tries);
+  }
   function tr(text, code){
     var lang=(!code||code==='none')?'':(C2N[code]||code);
     var key=text+'|'+lang;
     if(tcache[key]) return Promise.resolve(tcache[key]);
-    var url=PROXY+'?action=translate&idiom='+encodeURIComponent(text)+'&meaning=&lang='+encodeURIComponent(lang);
-    return fetch(url).then(function(r){return r.json();}).then(function(d){
-      if(!d||!d.ok||!d.translation) return null;
-      tcache[key]=d.translation; return d.translation;
-    }).catch(function(){return null;});
+    if(!lang||!String(text||'').trim()) return Promise.resolve(null);
+    return new Promise(function(res){
+      TRQ.push({text:text, lang:lang, key:key, done:res});
+      trPump();
+    });
   }
 
   window.llTranslate=function(text, code, cb){
@@ -2970,14 +3029,45 @@ showScore();
     Array.prototype.forEach.call(list,function(p){
       var out=p.querySelector('.dirtr');
       if(!out){ out=document.createElement('span'); out.className='dirtr'; p.appendChild(out); }
-      if(!DIR_ON||!lang){ out.textContent=''; return; }
+      if(!DIR_ON||!lang){ out.textContent=''; out.className='dirtr'; return; }
+      /* a screen the student is not looking at costs a request it does not need */
+      if(p.offsetParent===null && !out.textContent){ return; }
       var k=p.getAttribute('data-dir'), en=p.getAttribute('data-en')||'';
-      out.textContent='…';
+      if(out.getAttribute('data-done')===en+'|'+lang) return;
+      out.className='dirtr waiting'; out.textContent='…';
       tr(en, lang).then(function(t){
-        out.textContent=t?(t.equiv||t.meaning||''):'';
-        if(out.textContent) logReveal(k, lang);
+        var txt=t?(t.equiv||t.meaning||''):'';
+        if(txt){
+          out.className='dirtr'; out.textContent=txt;
+          out.setAttribute('data-done', en+'|'+lang);
+          logReveal(k, lang);
+        } else {
+          out.className='dirtr failed'; out.textContent='';
+          out.setAttribute('data-retry', '1');
+        }
       });
     });
+    trBadge();
+  }
+  /* one quiet line so a slow connection looks like waiting, not like broken */
+  function trBadge(){
+    var el=document.getElementById('trbadge');
+    if(!el){
+      el=document.createElement('div'); el.id='trbadge'; document.body.appendChild(el);
+      el.addEventListener('click', function(){
+        var f=document.querySelectorAll('.dirtr.failed'), i;
+        for(i=0;i<f.length;i++) f[i].removeAttribute('data-done');
+        showDirections();
+      });
+    }
+    function tick(){
+      var n=window.__trPending?window.__trPending():0;
+      var failed=document.querySelectorAll('.dirtr.failed').length;
+      if(n>0){ el.className='on'; el.textContent='Translating… ' + n; setTimeout(tick, 400); }
+      else if(failed){ el.className='on warn'; el.textContent='Some lines did not translate — tap to try again'; }
+      else { el.className=''; el.textContent=''; }
+    }
+    tick();
   }
   var dirBtn=document.getElementById('btn-dir');
   if(dirBtn){
