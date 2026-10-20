@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teacher · Question Practice (Find Someone Who, ELD 103)</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:Nunito,system-ui,sans-serif;background:#eef2f8;color:#1d2433;font-size:17px}
+header{background:#1d2433;color:#fff;padding:10px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+header h1{font-size:20px;margin:0;flex:1}
+select,button,input{font:inherit;font-size:16px;padding:5px 10px;border-radius:8px;border:2px solid #1d2433}
+button{background:#1f5fbf;color:#fff;font-weight:900;cursor:pointer}
+main{max-width:1100px;margin:0 auto;padding:16px}
+.box{background:#fff;border:2px solid #1d2433;border-radius:12px;box-shadow:0 4px 0 rgba(0,0,0,.15);padding:14px;margin-bottom:14px}
+table{border-collapse:collapse;width:100%}
+th,td{border-bottom:1px solid #c9d1de;padding:6px 8px;text-align:left;vertical-align:top}
+th{background:#f1f4f9}
+tr.stu{cursor:pointer}
+tr.stu:hover{background:#f7f9fc}
+.ok{color:#1e8a4c;font-weight:900}.no{color:#999}
+.miss{color:#c62828}
+ol{margin:4px 0;padding-left:26px}
+li{margin:3px 0}
+.p{color:#666;font-size:14px}
+.tag{display:inline-block;background:#fdecec;border:1px solid #c62828;color:#c62828;border-radius:6px;font-size:13px;padding:0 5px;margin-left:4px}
+#gate{position:fixed;inset:0;background:#1d2433;display:flex;align-items:center;justify-content:center}
+.hidden{display:none!important}
+@media print{header,.noprint{display:none!important}.box{box-shadow:none}}
+</style>
+</head>
+<body>
+<div id="gate"><div class="box"><b>Teacher password</b><br><input id="pw" type="password" autofocus> <button id="pwBtn">Open</button></div></div>
+<header>
+  <h1>❓ Question Practice · Find Someone Who (ELD 103)</h1>
+  <label>Period <select id="per"><option value="">All</option><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select></label>
+  <button id="refresh">↻ Refresh</button>
+  <button id="openAll">Show all questions</button>
+  <button id="printBtn">🖨️ Print</button>
+</header>
+<main>
+  <div class="box"><div id="summary"></div></div>
+  <div class="box"><table><thead><tr><th>Student</th><th>P</th><th>Done</th><th>Score</th><th>1st-try</th><th>Turned in</th><th>Updated</th></tr></thead><tbody id="rows"></tbody></table></div>
+  <div class="box"><b>Most common misses</b><div id="rules"></div></div>
+</main>
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var SET='fsw-103';
+var PROMPTS=["has lived in more than two cities","would rather be invisible than be able to fly","has tried a food they really hated","thinks school here is harder than in their home country","knows a word in their language that has no English translation","would choose to live 100 years in the past, not the future","has a skill most people in this class don't know about","has read a whole book in English","disagrees with a school rule and can explain why","still remembers a strange dream","wants a job where they use two languages","thinks AI will make school easier, not harder","has taught someone how to do something","feels more confident speaking English now than in August","would change one thing about San Francisco","has been surprised by something in the U.S.","has stayed in a stranger's house or a cheap hotel","has had a bad feeling about a place or a person","thinks Billy trusts people too easily","would leave the Landlady's house right now"];
+var RULES={helper:'Wrong/missing helper verb',capital:'No capital letter',you:'“you” not after helper',their:'they/their not changed to you/your',participle:'Wrong form after Have you ever',base:'-s verb after Do/Would you',verb:'Different verb than the prompt',rather:'Would you rather … than',idea:'Left out part of the idea',qmark:'No question mark',copied:'Copied “Find someone who”',billy:'Billy trust (no -s)'};
+function $(i){return document.getElementById(i);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function H(){return {apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY};}
+$('pwBtn').onclick=function(){if($('pw').value==='galileo2026'){$('gate').classList.add('hidden');load();}};
+$('pw').addEventListener('keydown',function(e){if(e.key==='Enter')$('pwBtn').click();});
+$('refresh').onclick=load; $('per').onchange=draw; $('printBtn').onclick=function(){window.print();};
+var allOpen=false; $('openAll').onclick=function(){allOpen=!allOpen;draw();};
+var DATA=[], open={};
+function load(){
+  var a=fetch(SUPA_URL+'/rest/v1/question_work?select=*&set_slug=eq.'+SET,{headers:H()}).then(function(r){return r.ok?r.json():[];}).catch(function(){return [];});
+  var b=fetch(SUPA_URL+'/rest/v1/song_work?select=*&set_slug=eq.questions-'+SET,{headers:H()}).then(function(r){return r.ok?r.json():[];}).catch(function(){return [];});
+  Promise.all([a,b]).then(function(x){
+    var by={};
+    x[1].concat(x[0]).forEach(function(r){var o=by[r.email];if(!o||new Date(r.updated_at)>new Date(o.updated_at))by[r.email]=r;});
+    DATA=Object.keys(by).map(function(k){return by[k];}).sort(function(p,q){return String(p.name).localeCompare(String(q.name));});
+    draw();
+  });
+}
+function draw(){
+  var per=$('per').value, h='', rc={}, n=0, ti=0;
+  DATA.forEach(function(r,idx){
+    if(per&&String(r.period)!==per) return;
+    n++; if(r.turned_in) ti++;
+    var a=r.answers||{}, it=a.items||{}, done=0, first=0;
+    for(var i=0;i<PROMPTS.length;i++){var x=it[i];if(x&&x.final){done++;if(i>0&&x.tries<=1)first++;}(x&&x.misses||[]).forEach(function(m){rc[m.rule]=(rc[m.rule]||0)+1;});}
+    h+='<tr class="stu" data-i="'+idx+'"><td><b>'+esc(r.name)+'</b><br><span class="p">'+esc(r.email)+'</span></td><td>'+esc(r.period)+'</td><td>'+done+' / 20</td><td>'+(a.score||0)+' / '+(a.max||38)+'</td><td>'+first+' / 19</td><td>'+(r.turned_in?'<span class="ok">✓</span>':'<span class="no">—</span>')+'</td><td class="p">'+new Date(r.updated_at).toLocaleString()+'</td></tr>';
+    if(allOpen||open[idx]){
+      h+='<tr><td colspan="7"><ol>'+PROMPTS.map(function(p,i){var x=it[i]||{};var ms=(x.misses||[]);return '<li><span class="p">'+esc(p)+'</span><br>'+(x.final?'<b>'+esc(x.final)+'</b>':'<span class="no">not yet</span>')+(ms.length?' <span class="tag">'+ms.length+' miss'+(ms.length>1?'es':'')+'</span><br>'+ms.map(function(m){return '<span class="miss">✗ '+esc(m.text)+'</span> <span class="p">('+esc(RULES[m.rule]||m.rule)+')</span>';}).join('<br>'):'')+'</li>';}).join('')+'</ol></td></tr>';
+    }
+  });
+  $('rows').innerHTML=h||'<tr><td colspan="7" class="no">No students yet.</td></tr>';
+  $('summary').innerHTML='<b>'+n+'</b> student'+(n===1?'':'s')+(per?' in period '+per:'')+' · <b>'+ti+'</b> turned in · click a row to see that student’s questions';
+  var ks=Object.keys(rc).sort(function(a,b){return rc[b]-rc[a];});
+  $('rules').innerHTML=ks.length?'<ol>'+ks.map(function(k){return '<li>'+esc(RULES[k]||k)+' — <b>'+rc[k]+'</b></li>';}).join('')+'</ol>':'<span class="no">None yet.</span>';
+}
+document.addEventListener('click',function(e){var t=e.target.closest('tr.stu');if(t){var i=t.getAttribute('data-i');open[i]=!open[i];draw();}});
+</script>
+</body>
+</html>
