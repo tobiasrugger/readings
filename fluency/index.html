@@ -542,6 +542,15 @@ function loadTracker(){
   window.GAL_META={title:'Read aloud: '+(P.title||P.slug), unit:'Reading Fluency', skills:['fluency','pronunciation'], sort_order:520};
   var sc=document.createElement('script'); sc.src='/readings/track.js'; document.body.appendChild(sc);
 }
+/* Set the gradebook globals BEFORE the upload starts.
+   track.js logs an attempt as soon as it sees the Supabase POST, so anything
+   set afterwards arrives too late and the row lands with no number. */
+function galPrepare(){
+  var s0=stats();
+  window.GAL_SCORE=4; window.GAL_MAX=4;
+  window.GAL_SKILLS={fluency:{n:Math.round(s0.accuracy),d:100},pronunciation:{n:Math.max(0,s0.total-s0.errors),d:s0.total}};
+  window.GAL_COMPLETION={done:4,total:4};
+}
 function galReport(){
   var s0=stats();
   window.GAL_SCORE=4; window.GAL_MAX=4;
@@ -565,6 +574,7 @@ function autoSave(){
   var s0=stats();
   var folder=(P.slug.indexOf('news-')===0?'news/':'passages/')+P.slug+'/';
   var path=folder+ME.email.replace(/[^a-z0-9]/g,'_')+'_'+Date.now()+'.webm';
+  galPrepare();
   note('<b>Saving\u2026</b> keep this page open.');
   fetch(SUPA_URL+'/storage/v1/object/'+BUCKET+'/'+path,{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'audio/webm'},body:BLOB})
   .then(function(r){return r.ok?null:r.text().then(function(t){throw new Error('status '+r.status+'. '+t.slice(0,160));});})
