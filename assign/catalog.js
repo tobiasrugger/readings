@@ -16,6 +16,13 @@ window.CATALOG=[
 "g": "Novels and long texts"
 },
 {
+"p": "/readings/seedfolks/quiz-prep/",
+"t": "Seedfolks: Quiz Practice 1",
+"d": "Group quiz practice for Kim and Ana. Claude leads: one slide per question, directions in seven languages, spelling, pictures, capitals.",
+"m": "Group · 25 slides · 7 languages",
+"g": "Novels and long texts"
+},
+{
 "p": "/readings/maus/",
 "t": "Maus · Holocaust · Oral Histories",
 "d": "Full 12-week unit. Comics literacy, ten stages of genocide, all 11 chapters with reading roles, interview final project, class anthology.",

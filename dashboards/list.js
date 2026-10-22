@@ -39,6 +39,7 @@ window.DASHBOARDS = [
 {url:'odyssey/dashboard.html',          name:'The Odyssey',                   course:'103', group:'Reading'},
 {url:'romeo-juliet/dashboard.html',     name:'Romeo and Juliet',              course:'103', group:'Reading'},
 {url:'seedfolks/dashboard.html',        name:'Seedfolks',                     course:'both', group:'Reading'},
+{url:'seedfolks/quiz-prep/dashboard.html', name:'Seedfolks: Quiz Practice 1 (group)', course:'101', group:'Reading', note:'Slides marked right, not-yet taps, repeats asked, words spelled aloud.'},
 {url:'brothers-in-arms/dashboard.html', name:'Brothers in Arms',              course:'101', group:'Reading'},
 {url:'easy-true/dashboard.html',        name:'Very Easy True Stories',        course:'101', group:'Reading', note:'All six stories and their seven modules.'},
 {url:'arrival/dashboard.html',          name:'The Arrival',                   course:'101', group:'Reading'},
