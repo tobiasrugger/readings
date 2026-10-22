@@ -28,6 +28,7 @@ window.DASHBOARDS = [
 /* ---------- Reading ---------- */
 {url:'news/dashboard.html',             name:'This Week\u2019s Reading',      course:'103', group:'Reading', note:'Weekly news article, per student and per question.'},
 {url:'landlady/dashboard.html',         name:'The Landlady',                  course:'103', group:'Reading'},
+{url:'landlady/investigate/dashboard.html', name:'The Landlady: Investigate the tea', course:'103', group:'Reading', note:'Optional detective game: which bottle, which poison, the case report.'},
 {url:'telltale/dashboard.html',         name:'The Tell-Tale Heart',           course:'103', group:'Reading'},
 {url:'monkeyspaw/dashboard.html',       name:'The Monkey\u2019s Paw',         course:'103', group:'Reading'},
 {url:'omelas/dashboard.html',           name:'Omelas',                        course:'103', group:'Reading'},

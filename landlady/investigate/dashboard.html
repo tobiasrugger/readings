@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teacher — Landlady: Investigate the tea</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&family=Lora:wght@700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:Nunito,system-ui,sans-serif;background:#e9dfca;color:#2b2016;font-size:16px}
+h1{font-family:Lora,serif;font-size:1.4rem;margin:0}
+.wrap{max-width:1150px;margin:0 auto;padding:16px 12px 60px}
+.box{background:#fffaf0;border:2px solid #2b2016;border-radius:12px;box-shadow:4px 4px 0 rgba(43,32,22,.28);padding:14px 16px;margin:0 0 16px}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+select,input,button{font:inherit;padding:5px 8px;border:2px solid #2b2016;border-radius:8px}
+button{background:#2b2016;color:#fff;font-weight:800;cursor:pointer}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:820px}
+th,td{border-bottom:1px solid #cdbf9f;padding:6px 8px;text-align:left;vertical-align:top}
+th{background:#2b2016;color:#f3ecd9;position:sticky;top:0}
+tr.stu{cursor:pointer}tr.stu:hover{background:#fdf0d0}
+.pill{display:inline-block;border-radius:999px;padding:0 8px;font-weight:800;font-size:.85rem;border:1.5px solid #2b2016}
+.ok{background:#e2f2e6}.no{background:#fbe9e6}.mid{background:#fdf0c8}
+.det td{background:#fbf6ea}
+.rep{white-space:pre-wrap;border:2px dashed #8a7a62;border-radius:8px;padding:8px;background:#fff}
+.gate{position:fixed;inset:0;background:rgba(34,28,20,.86);display:flex;align-items:center;justify-content:center;z-index:50}
+.gbox{background:#fffaf0;border:3px solid #000;border-radius:14px;padding:18px;max-width:340px;width:100%}
+.err{color:#b0281e;font-weight:800}
+.small{font-size:.85rem;color:#6b5c46}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.stat{border:2px solid #2b2016;border-radius:10px;padding:8px 10px;background:#fff}
+.stat b{font-size:1.4rem;display:block}
+</style></head><body>
+<div class="gate" id="gate"><form class="gbox" id="pw"><h1>Teacher view</h1><p>Landlady: Investigate the tea</p><input id="pwi" type="password" placeholder="Password" style="width:100%" autofocus><p class="err" id="pwe"></p><button type="submit" style="width:100%">Open</button></form></div>
+<div class="wrap">
+ <div class="box"><h1>🔎 The Landlady — Investigate the tea</h1>
+  <p class="small">Optional game after the story. 14 items: smell the tea, name six bottles, the poison book, her notebook (2), which bottle, the poison's name, three clues, the case report. Every miss is kept. Student page: <a href="https://tobiasrugger.github.io/readings/landlady/investigate/" target="_blank">tobiasrugger.github.io/readings/landlady/investigate/</a> · Main Landlady view: <a href="/readings/landlady/dashboard.html">landlady/dashboard.html</a></p>
+  <div class="bar"><select id="per"><option value="">All periods</option></select><input id="q" placeholder="Search name"><button type="button" id="reload">Reload</button><span id="stat" class="small"></span></div></div>
+ <div class="box"><div class="grid" id="sum"></div></div>
+ <div class="box tbl"><table><thead><tr><th>Student</th><th>P</th><th>Score</th><th>Misses</th><th>First poison guess</th><th>Clue misses</th><th>Report</th><th>Turned in</th><th>Updated</th></tr></thead><tbody id="rows"></tbody></table></div>
+</div>
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var POISON=['Cyanide','Arsenic','Almond essence','Formalin'];
+var ITEMS=['T1','B_A','B_B','B_C','B_D','B_E','B_F','K1','N1','N2','A1','A2','A3','A4'];
+var rows=[],open={};
+function $(i){return document.getElementById(i);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function gate(){try{if(sessionStorage.getItem('gb_ok')==='1'||sessionStorage.getItem('gal_teacher')==='1'||sessionStorage.getItem('lli_t')==='1'){$('gate').style.display='none';load();}}catch(e){}}
+$('pw').addEventListener('submit',function(e){e.preventDefault();if($('pwi').value==='galileo2026'){$('gate').style.display='none';try{sessionStorage.setItem('lli_t','1');}catch(x){}load();}else $('pwe').textContent='Not right.';});
+function local(e){return String(e||'').toLowerCase().split('@')[0];}
+function load(){$('stat').textContent='Loading…';
+  fetch(SUPA_URL+'/rest/v1/landlady_responses?select=email,student_name,period,lang,mode,payload,answered,total,submitted,updated_at&guide_key=eq.landlady_investigate',{headers:{apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY}})
+  .then(function(r){if(!r.ok)throw new Error(r.status);return r.json();})
+  .then(function(d){
+    /* one student = one row: @s.sfusd.edu and @sfusd.edu merge, newest wins */
+    var by={};(d||[]).forEach(function(r){var k=local(r.email);if(!by[k]||String(r.updated_at)>String(by[k].updated_at))by[k]=r;});
+    rows=Object.keys(by).map(function(k){return by[k];}).sort(function(a,b){return (String(a.period)+a.student_name).localeCompare(String(b.period)+b.student_name);});
+    var ps={};rows.forEach(function(r){if(r.period)ps[r.period]=1;});var sel=$('per'),cur=sel.value;sel.innerHTML='<option value="">All periods</option>'+Object.keys(ps).sort().map(function(p){return '<option value="'+esc(p)+'">Period '+esc(p)+'</option>';}).join('');sel.value=cur;
+    $('stat').textContent=rows.length+' students';draw();})
+  .catch(function(e){$('stat').textContent='Could not load ('+e.message+')';});}
+function W(r){return (r.payload&&r.payload.work)||{items:{}};}
+function miss(s){return s?Math.max(0,(s.tries||[]).length-(s.done?1:0)):0;}
+function filt(){var p=$('per').value,q=$('q').value.trim().toLowerCase();return rows.filter(function(r){return (!p||String(r.period)===p)&&(!q||(r.student_name||'').toLowerCase().indexOf(q)>-1||(r.email||'').indexOf(q)>-1);});}
+function draw(){var list=filt(),h='';
+  var fin=0,arsFirst=0,a2n=0,totM=0;
+  list.forEach(function(r){var w=W(r),it=w.items||{},a2=it.A2||{},sc=0,m=0;
+    ITEMS.forEach(function(x){if(it[x]&&it[x].done)sc++;m+=miss(it[x]);});totM+=m;if(sc===ITEMS.length)fin++;
+    var first=(a2.tries&&a2.tries.length)?POISON[a2.tries[0]]:'';if(first){a2n++;if(first==='Arsenic')arsFirst++;}
+    var a3=it.A3||{},a4=it.A4||{};
+    var pct=Math.round(sc/ITEMS.length*100),cls=pct>=90?'ok':(pct>=60?'mid':'no');
+    h+='<tr class="stu" data-k="'+esc(r.email)+'"><td><b>'+esc(r.student_name)+'</b><br><span class="small">'+esc(r.email)+'</span></td><td>'+esc(r.period)+'</td><td><span class="pill '+cls+'">'+sc+'/'+ITEMS.length+'</span></td><td>'+m+'</td><td>'+(first?'<span class="pill '+(first==='Cyanide'?'ok':'no')+'">'+esc(first)+'</span>':'')+'</td><td>'+miss(a3)+'</td><td>'+(a4.done?'✓ filed':((a4.text||'').trim()?'draft':''))+'</td><td>'+(r.submitted?'✓':'')+'</td><td class="small">'+esc(String(r.updated_at||'').slice(0,16).replace('T',' '))+'</td></tr>';
+    if(open[r.email]){h+='<tr class="det"><td colspan="9"><b>Case report</b><div class="rep">'+esc(a4.text||'(none yet)')+'</div>'+(w.web?'<p><b>Internet fact:</b> '+esc(w.web)+'</p>':'')+
+      '<p class="small">Misses by item: '+ITEMS.map(function(x){return x.replace('B_','Bottle ')+': '+miss(it[x]);}).join(' · ')+(w.lion?' · found the lion 🦁':'')+' · level '+esc(w.level||'easy')+' · language '+esc(r.lang||'')+'</p></td></tr>';}
+  });
+  $('rows').innerHTML=h||'<tr><td colspan="9">No students yet.</td></tr>';
+  $('sum').innerHTML='<div class="stat"><b>'+list.length+'</b>started</div><div class="stat"><b>'+fin+'</b>solved the whole case</div><div class="stat"><b>'+arsFirst+' / '+a2n+'</b>guessed arsenic first</div><div class="stat"><b>'+(list.length?Math.round(totM/list.length*10)/10:0)+'</b>misses per student</div>';
+}
+document.addEventListener('click',function(e){var tr=e.target.closest('tr.stu');if(tr){var k=tr.dataset.k;open[k]=!open[k];draw();}});
+$('per').addEventListener('change',draw);$('q').addEventListener('input',draw);$('reload').addEventListener('click',load);
+gate();
+</script>
+<script src="/readings/grade04.js" data-slugs="landlady/investigate"></script>
+</body></html>

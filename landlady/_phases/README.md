@@ -13,3 +13,5 @@ forward from one phase to the next with nothing to migrate.
   2026-10-18 · saved before the T-45 change (Word practice after Part 1, inline practice, try-again on every question, Part 1 orgz) · same guide_key
 - **phase-5-before-highlight-practice.html** — Word practice after Part 1, inline practice, formative stops, Part 1 orgz, green Read-the-story button (T-51)
   2026-10-18 · saved before T-54 adds the highlight practice question (data-qid hl1, marked NEW) · same guide_key
+- **phase-7-before-investigate.html** — The page before the optional "Investigate the tea" game was linked from After you read
+  2026-10-22 · saved before the 🔎 Investigate the tea button (marked NEW) was added to the activity bar · same guide_key, no data-qid changed

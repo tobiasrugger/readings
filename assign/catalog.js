@@ -79,6 +79,13 @@ window.CATALOG=[
 "g": "Short stories"
 },
 {
+"p": "/readings/landlady/investigate/",
+"t": "The Landlady: Investigate the tea",
+"d": "Optional detective game after the story. Waft six bottles, read a poison book and the landlady's notebook, name the poison in Billy's tea, and write a case report.",
+"m": "ELD 103 · 14 items · drawn bottles · Easier/Harder report",
+"g": "Short stories"
+},
+{
 "p": "/readings/omelas/",
 "t": "The Ones Who Walk Away from Omelas",
 "d": "Le Guin. 221 glossed words, SVG figures, Easier/Harder wording on every question, feedback tab.",
