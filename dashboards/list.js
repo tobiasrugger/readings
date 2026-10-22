@@ -75,6 +75,7 @@ window.DASHBOARDS = [
 /* ---------- Grammar ---------- */
 {url:'verbs/dashboard.html',            name:'Verb drills',                   course:'both', group:'Grammar'},
 {url:'questions/teacher.html',          name:'Question Practice',             course:'103', group:'Grammar'},
+{url:'question-builder/dashboard.html', name:'Question Builder (pictures): Find Someone Who', course:'103', group:'Grammar'},
 {url:'grasshopper-ant/teacher.html',    name:'Grasshopper and Ant',           course:'101', group:'Grammar'},
 {url:'fables/teacher.html',             name:'Fables',                        course:'101', group:'Grammar'},
 
