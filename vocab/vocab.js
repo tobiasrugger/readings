@@ -51,18 +51,15 @@ function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').rep
 /* ---------- school email identity (shared standard) ----------
    Students were told two different domains, so accept both and resolve
    to ONE canonical address. Otherwise the same student gets two rows. */
-var CANON_DOMAIN='@s.sfusd.edu';
+var CANON_DOMAIN='@sfusd.edu';   /* T-89: canonical is @sfusd.edu, like every other page (was @s.sfusd.edu) */
 var ROSTER=[];
 function cleanMail(x){ return String(x||'').trim().toLowerCase(); }
 function localPart(e){ return cleanMail(e).split('@')[0]; }
 function validMail(e){ return /^[^@\s]+@(s\.)?sfusd\.edu$/.test(cleanMail(e)); }
-function canonMail(raw){
-  var lp=localPart(raw), i;
-  for(i=0;i<ROSTER.length;i++){
-    if(localPart(ROSTER[i].email)===lp) return cleanMail(ROSTER[i].email);
-  }
-  return lp+CANON_DOMAIN;
-}
+/* T-89: ALWAYS name@sfusd.edu. It used to copy the roster's spelling (often @s.sfusd.edu),
+   so the same student could save under two spellings. What they typed is still kept as an alias. */
+function canonMail(raw){ return localPart(raw)+CANON_DOMAIN; }
+function legacyMail(e){ return localPart(e)+'@s.sfusd.edu'; }
 function sbHead(pref){
   var h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};
   if(pref) h['Prefer']=pref;
@@ -184,13 +181,18 @@ function save(){
     })
     .catch(function(){ $('dot').className='err'; });
 }
-function load(){
+function load(who){
   clearTimeout(loadTimer);
-  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?email=eq.'+encodeURIComponent(me.email)+'&set_slug=eq.'+encodeURIComponent(SET.slug)+'&select=work',
+  if(typeof who!=='string') who=me.email;
+  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?email=eq.'+encodeURIComponent(who)+'&set_slug=eq.'+encodeURIComponent(SET.slug)+'&select=work',
     {headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}})
   .then(function(r){ if(!r.ok) throw new Error('load '+r.status); return r.json(); })
   .then(function(rows){
     if(!Array.isArray(rows)) throw new Error('load: not a list');
+    /* T-89: nothing under name@sfusd.edu yet — look once under the old @s.sfusd.edu spelling,
+       and carry that work forward (it saves under the canonical spelling) */
+    if(!rows.length && who===me.email && legacyMail(me.email)!==me.email){ load(legacyMail(me.email)); return; }
+    if(who!==me.email && rows.length && rows[0].work) dirty=true;
     var w = rows[0] && rows[0].work, old=null;
     if(!w){ try{ old=JSON.parse(localStorage.getItem(oldKey())||'null'); }catch(e){} if(old){ w=old; dirty=true; } }
     loaded=true; loadTries=0; $('dot').className=''; saveNote('');
@@ -1117,6 +1119,12 @@ function tLoad(){
   .then(function(res){ return res[0]; })
   .then(function(rows){
     tRows = rows || [];
+    /* T-89: one student = one row — rows whose emails differ only by @s.sfusd.edu vs @sfusd.edu are merged (newest wins) */
+    (function(){ var by={}, keep=[];
+      tRows.forEach(function(r){ var k=String(r.email||'').toLowerCase().split('@')[0];
+        if(!(k in by)){ by[k]=keep.length; keep.push(r); }
+        else if(String(r.updated_at||'')>String(keep[by[k]].updated_at||'')) keep[by[k]]=r; });
+      tRows=keep; })();
     if(!tRows.length){ $('tOut').innerHTML='<p translate="yes" class="lead">No work yet for this set.</p>'; return; }
     var h='<table class="tbl"><tr><th>Student</th><th>Per.</th><th>Match</th><th>Search</th><th>Choose</th><th>Blank</th><th>Fix</th><th>Spell</th><th>Turned in</th><th>Page</th></tr>';
     tRows.forEach(function(r){
