@@ -218,6 +218,33 @@ textarea{width:100%;min-height:70px;border:2px solid var(--line);border-radius:1
 .toast.show{display:block}
 .lock{border:2px solid var(--line);border-radius:12px;background:#fff7ef;padding:14px;font-weight:800}
 .done-banner{border:3px solid var(--ok);background:var(--ok-soft);border-radius:14px;padding:14px 16px;font-weight:800;font-size:19px}
+
+/* ---------- make it (build the picture) ---------- */
+.bchips{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 12px}
+.bgrid{display:grid;grid-template-columns:minmax(240px,36%) 1fr;gap:14px;align-items:start}
+.bleft .para{font-size:20px}
+.bbtns{display:flex;gap:8px;flex-wrap:wrap}
+.stagewrap{border:3px solid var(--line);border-radius:12px;overflow:hidden;background:#fff;box-shadow:var(--shadow)}
+.stage{display:block;width:100%;height:auto;touch-action:none;user-select:none}
+.stk{cursor:grab}
+.stk.sel{filter:drop-shadow(0 0 4px #e2672a)}
+.tools{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px;border:2px solid var(--line);border-radius:10px;padding:6px 8px;background:#fff}
+.tools.off .tbtn{opacity:.35;pointer-events:none}
+.tbtn{border:2px solid var(--line);border-radius:8px;background:#fff;min-width:38px;height:36px;font-size:18px;font-weight:900}
+.tbtn.on{background:var(--gold)}
+.tlab{font-size:14px;font-weight:800;color:var(--muted)}
+.sbank{margin-top:14px;border:2px solid var(--line);border-radius:12px;padding:8px 10px;background:#f7f9fa}
+.bankh{font-weight:900;font-size:15px;margin:4px 0}
+.bankrow{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 8px}
+.stb,.bgb{flex:0 0 auto;border:2px solid var(--line);border-radius:10px;background:#fff;padding:4px;display:flex;flex-direction:column;align-items:center;gap:2px;touch-action:none;cursor:grab}
+.stb svg{width:58px;height:62px}
+.stb span,.bgb span{font-size:12px;font-weight:800;max-width:86px;text-align:center;line-height:1.15}
+.bgb svg{width:88px;height:55px;border-radius:6px}
+.bgb.on{outline:3px solid var(--orange);background:var(--orange-soft)}
+.ghost{position:fixed;width:60px;height:64px;pointer-events:none;z-index:150;opacity:.85}
+.ghost svg{width:100%;height:100%}
+.w.cue{background:var(--gold);box-shadow:0 0 0 3px var(--gold);animation:pulse 1.4s infinite}
+@media (max-width:760px){.bgrid{grid-template-columns:1fr}}
 @media (max-width:640px){
   body{font-size:17px}
   .para{font-size:19px;padding-left:46px}
@@ -780,7 +807,8 @@ PANEL.ch8=function(){return wrap(640,300,sky(640,300,'#1f2a40','#3e4f6e')+'<circ
 /* helper avatars for quips */
 function head(who){return wrap(60,60,'<rect width="60" height="60" fill="#e9f4f3"/>'+WHO[who]({x:30,y:205,s:2.05}),who);}
 
-return {W:W,PANEL:PANEL,bigFace:bigFace,lion:lion,head:head,WHO:WHO,P:P,wrap:wrap,bike:bike};
+return {W:W,PANEL:PANEL,bigFace:bigFace,lion:lion,head:head,WHO:WHO,P:P,wrap:wrap,bike:bike,
+  lib:{sky:sky,cloud:cloud,house:house,bike:bike,car:car,tree:tree,lamp:lamp,road:road,boxes:boxes,heart:heart,grave:grave,notebook:notebook,wall:wall,floor:floor,window2:window2,board:board,ground:ground,bubble:bubble}};
 })();
 /* =====================================================================
    ENGINE
@@ -792,7 +820,7 @@ var TABLE='brothers_responses';
 var LANGS=['Mandarin','Cantonese','Spanish','Arabic','Vietnamese','Thai','Nepali','Russian','Darija','Urdu','Tagalog','French','Korean','Hindi','Somali'];
 var CODE2NAME={es:'Spanish',zh:'Mandarin','zh-CN':'Mandarin','zh-TW':'Cantonese',yue:'Cantonese',ar:'Arabic',ary:'Darija',vi:'Vietnamese',ru:'Russian',ur:'Urdu',tl:'Tagalog',fr:'French',ko:'Korean',hi:'Hindi',so:'Somali',ne:'Nepali',th:'Thai'};
 var RTL=/^(Arabic|Darija|Urdu)$/;
-var STEPS=[{k:'read',n:'📖 Read'},{k:'check',n:'✔ Check'},{k:'play',n:'🎲 Play'},{k:'fix',n:'✏ Fix it'},{k:'write',n:'✍ Write'},{k:'say',n:'🎤 Say it'}];
+var STEPS=[{k:'read',n:'📖 Read'},{k:'check',n:'✔ Check'},{k:'play',n:'🎲 Play'},{k:'build',n:'🧩 Make it'},{k:'fix',n:'✏ Fix it'},{k:'write',n:'✍ Write'},{k:'say',n:'🎤 Say it'}];
 function $(id){return document.getElementById(id);}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
@@ -800,7 +828,7 @@ function normLang(v){if(!v)return '';if(CODE2NAME[v])return CODE2NAME[v];if(/^Ch
 function H(pref){var h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};if(pref)h.Prefer=pref;return h;}
 
 var me=null, lang='', dirty=false, OPEN_ALL=false;
-var work={rec:{},lv:'A',ch:1,st:'read',ord:{},mc:{},pred:{},play:{},fix:{},wr:{},miss:{},lion:{},visited:{},bt:false,prog:{}};
+var work={build:{},bsel:{},rec:{},lv:'A',ch:1,st:'read',ord:{},mc:{},pred:{},play:{},fix:{},wr:{},miss:{},lion:{},visited:{},bt:false,prog:{}};
 try{ if(/[?&]open=all/.test(location.search)) localStorage.setItem('bia_open','1'); OPEN_ALL=localStorage.getItem('bia_open')==='1'; }catch(e){}
 
 /* ---------------- sign-in ---------------- */
@@ -903,6 +931,7 @@ function chItems(c,step){
   if(!step||step==='fix')c.fix.items.forEach(function(it){
     if(c.fix.type==='choose')out.push(work.fix['x'+c.id+':'+it.id]===true);
     else Object.keys(it.fx).forEach(function(ix){out.push(work.fix['x'+c.id+':'+it.id+':'+ix]===true);});});
+  if(!step||step==='build')(BUILD[c.id]||[]).forEach(function(_,i){out.push(!!(work.build[c.id+'-'+i]&&work.build[c.id+'-'+i].ok));});
   if(!step||step==='write')c.write.forEach(function(w){out.push(wrOk(w.id,w.min));});
   return out;
 }
@@ -1081,9 +1110,9 @@ function renderScreen(){
   if(work.ch==='after'){el.innerHTML=locked('after')?lockBox('after'):afterHtml();wireAfter();return;}
   var c=CH[work.ch-1];work.visited[c.id+work.st]=1;
   if(work.st!=='read'&&locked(c.id)){el.innerHTML=lockBox(c.id);return;}
-  var f={read:readHtml,check:checkHtml,play:playHtml,fix:fixHtml,write:writeHtml,say:sayHtml}[work.st]||readHtml;
+  var f={read:readHtml,check:checkHtml,play:playHtml,build:buildHtml,fix:fixHtml,write:writeHtml,say:sayHtml}[work.st]||readHtml;
   el.innerHTML=f(c)+footHtml(c);
-  ({read:wireRead,check:wireChoices,play:wirePlay,fix:wireFix,write:wireWrite,say:wireSay}[work.st]||function(){})(c);
+  ({read:wireRead,check:wireChoices,play:wirePlay,build:wireBuild,fix:wireFix,write:wireWrite,say:wireSay}[work.st]||function(){})(c);
   wireFoot(c);
 }
 function lockBox(n){var prev=n==='after'?8:n-1;return '<div class="box"><div class="lock">🔒 '+(n==='after'?'After the book':'The activities for this chapter')+' open when Chapter '+prev+' is almost done. Answer '+missesLeft(prev+1)+' more in Chapter '+prev+'.</div><div class="foot"><span></span><button class="btn go big" type="button" onclick="work.ch='+prev+';work.st=\'check\';render()">Go to Chapter '+prev+' →</button></div></div>';}
@@ -1407,6 +1436,188 @@ function fireworks(x,y,n){
 }
 /* silent browser-translation canary */
 setInterval(function(){var c=document.documentElement.className||'';if(/translated-/.test(c)&&!work.bt){work.bt=true;dirty=true;}},3000);
+/* =====================================================================
+   🧩 MAKE IT — rebuild each paragraph as a picture from stickers
+   (Thi Bui's paper version asked students to draw each paragraph.
+    Here they choose a place, drag in the people and things, and set faces.)
+   c = people who must be there · t = things (a|b = either) · bg = places that fit
+   mood = faces that fit · opt = people who may be there · cue = the word in the
+   paragraph to light up as a hint. Never renumber: work is keyed "chapter-index".
+   ===================================================================== */
+var BUILD={
+1:[{c:['martin','mom','huero'],cue:{martin:'I',mom:'mother',huero:'Huero'}},
+   {c:['mom','martin','huero'],cue:{mom:'mother',martin:'I',huero:'Huero'}},
+   {c:['frankie','chago','jesus'],cue:{frankie:'Frankie',chago:'Chago',jesus:'Jesus'}},
+   {c:['frankie'],mood:{frankie:['angry']},cue:{frankie:'Frankie',mood:'fights'}}],
+2:[{c:['huero','martin','frankie'],t:['bike'],bg:['street'],opt:['chago','jesus'],cue:{huero:'Huero',martin:'I',frankie:'Frankie',bike:'bike',bg:'street'}},
+   {t:['car'],bg:['street'],opt:['huero','frankie','chago','jesus'],cue:{car:'car',bg:'street'}},
+   {c:['frankie'],t:['car'],opt:['huero','chago','jesus'],cue:{frankie:'Frankie',car:'car'}},
+   {c:['martin','huero'],opt:['frankie','chago','jesus'],mood:{martin:['sad','cry','angry']},cue:{martin:'I',huero:'brother',mood:'sad'}}],
+3:[{c:['martin','frankie'],cue:{martin:'I',frankie:'Frankie'}},
+   {c:['martin','frankie'],bg:['party'],opt:['chago','jesus','teen'],cue:{frankie:'Frankie',bg:'party'}},
+   {c:['mom','martin'],mood:{mom:['worried','angry','sad']},cue:{mom:'mother',martin:'I',mood:'worried'}},
+   {c:['mom','martin'],t:['boxes|truck'],cue:{mom:'we',martin:'we',boxes:'moved'}}],
+4:[{c:['martin'],bg:['school','classroom','hallway'],cue:{martin:'I',bg:'school'}},
+   {c:['mitch','martin'],bg:['classroom'],opt:['teen','vicky'],cue:{mitch:'Mitchell',martin:'me',bg:'English'}},
+   {c:['steve','martin'],bg:['gym'],opt:['teen'],mood:{steve:['angry']},cue:{steve:'Steve',martin:'I',bg:'P.E.',mood:'bully'}}],
+5:[{c:['martin','mom'],mood:{mom:['angry','sad']},cue:{martin:'I',mom:'mother',mood:'blamed'}},
+   {c:['martin'],t:['grave'],bg:['cemetery'],opt:['huero'],mood:{martin:['sad','cry']},cue:{martin:'I',grave:'grave',bg:'grave',mood:'missed'}},
+   {c:['martin','frankie'],cue:{martin:'I',frankie:'Frankie'}},
+   {c:['martin'],t:['notebook'],opt:['huero'],cue:{martin:'I',notebook:'homework'}}],
+6:[{c:['martin','vicky'],t:['notebook'],cue:{martin:'I',vicky:'Vicky',notebook:'story'}},
+   {c:['martin','steve'],opt:['teen'],cue:{martin:'I',steve:'Steve'}},
+   {c:['prin','mom'],t:['phone'],mood:{mom:['angry']},cue:{prin:'principal',mom:'mother',phone:'called',mood:'angry'}}],
+7:[{c:['vicky','prin'],opt:['martin'],cue:{vicky:'Vicky',prin:'principal'}},
+   {c:['steve','frankie','martin'],opt:['teen'],cue:{steve:'Steve',frankie:'Frankie',martin:'me'}},
+   {c:['frankie','steve','martin'],mood:{frankie:['angry']},cue:{frankie:'Frankie',steve:'Steve',martin:'I',mood:'hurt'}},
+   {c:['frankie','martin'],cue:{frankie:'Frankie',martin:'me'}}],
+8:[{c:['frankie','martin','man'],t:['house'],bg:['night','street'],cue:{frankie:'Frankie',martin:'me',man:'man',house:'house'}},
+   {c:['man','frankie'],opt:['martin'],cue:{man:'man',frankie:'Frankie'}},
+   {c:['martin'],opt:['huero'],mood:{martin:['sad','cry']},cue:{martin:'my',mood:'dead'}},
+   {c:['martin','frankie'],mood:{frankie:['angry']},cue:{martin:'I',frankie:'Frankie',mood:'angry'}}]
+};
+
+var STK=(function(){
+  var L=ART.lib,W=ART.WHO,INK='#17222b';
+  function person(fn,name){return {type:'p',name:name,draw:function(m){return W[fn]({x:0,y:0,s:1,mood:m||'smile'});},vb:'-30 -112 60 116'};}
+  var S={
+    martin:person('martin','Martin'),huero:person('huero','Huero'),mom:person('mom','his mother'),frankie:person('frankie','Frankie'),
+    chago:person('chago','Chago'),jesus:person('jesus','Jesus'),vicky:person('vicky','Vicky'),mitch:person('mitch','Mr. Mitchell'),
+    steve:person('steve','Steve'),prin:person('prin','the principal'),man:person('man','the man'),
+    teen:{type:'p',name:'a student',draw:function(m){return ART.P({x:0,y:0,s:.95,skin:'#d8a77c',shirt:'#6b7a8f',hair:'cap',hc:'#333',mood:m||'smile'});},vb:'-30 -112 60 116'},
+    bike:{type:'t',name:'a bike',draw:function(){return L.bike(0,0,1,'#e2672a');},vb:'-30 -36 60 40'},
+    car:{type:'t',name:'a white car',draw:function(){return L.car(0,0,1,'#f4f4f4',false);},vb:'-52 -48 104 52'},
+    house:{type:'t',name:'a house',draw:function(){return L.house(-40,0,80,60,'#e9c9a0','#8c4a32');},vb:'-50 -92 100 96'},
+    tree:{type:'t',name:'a tree',draw:function(){return L.tree(0,0,1);},vb:'-26 -72 52 76'},
+    lamp:{type:'t',name:'a street light',draw:function(){return L.lamp(0,0,.75);},vb:'-10 -100 34 104'},
+    grave:{type:'t',name:'a grave',draw:function(){return L.grave(0,0,.85);},vb:'-50 -54 100 58'},
+    boxes:{type:'t',name:'boxes',draw:function(){return L.boxes(0,0,1);},vb:'-34 -48 64 52'},
+    truck:{type:'t',name:'a moving truck',draw:function(){return '<g><rect x="-58" y="-56" width="70" height="46" fill="#f4f4f4" stroke="'+INK+'" stroke-width="1.3"/><text x="-23" y="-28" text-anchor="middle" font-size="9" font-weight="900" fill="#2f6db5" font-family="Nunito">MOVING</text><path d="M12,-44 L34,-44 L46,-28 L46,-10 L12,-10Z" fill="#2f6db5" stroke="'+INK+'" stroke-width="1.3"/><rect x="18" y="-40" width="15" height="11" fill="#bfe3f5" stroke="'+INK+'"/><circle cx="-38" cy="-8" r="8" fill="#222"/><circle cx="30" cy="-8" r="8" fill="#222"/><circle cx="-38" cy="-8" r="3" fill="#bbb"/><circle cx="30" cy="-8" r="3" fill="#bbb"/></g>';},vb:'-62 -60 112 64'},
+    notebook:{type:'t',name:'homework',draw:function(){return L.notebook(0,-24,.9,'My Hero');},vb:'-32 -48 66 52'},
+    phone:{type:'t',name:'a phone',draw:function(){return '<g><rect x="-11" y="-40" width="22" height="40" rx="4" fill="#222" stroke="'+INK+'"/><rect x="-8" y="-35" width="16" height="27" fill="#7cc0e8"/><circle cy="-4" r="2" fill="#555"/><path d="M14,-40 q8,6 0,14 M19,-44 q12,10 0,22" fill="none" stroke="#e2672a" stroke-width="2"/></g>';},vb:'-16 -48 40 52'},
+    heart:{type:'t',name:'love',draw:function(){return L.heart(0,-14,1.8);},vb:'-24 -36 48 40'},
+    balloons:{type:'t',name:'balloons',draw:function(){return '<g>'+[[-14,'#e0465a',-62],[0,'#f2c14e',-70],[14,'#4fb3a9',-60]].map(function(b){return '<line x1="'+b[0]+'" y1="'+(b[2]+10)+'" x2="0" y2="0" stroke="#999"/><ellipse cx="'+b[0]+'" cy="'+b[2]+'" rx="9" ry="11" fill="'+b[1]+'" stroke="'+INK+'" stroke-width=".7"/>';}).join('')+'</g>';},vb:'-26 -84 52 88'},
+    desk:{type:'t',name:'a desk',draw:function(){return '<g><rect x="-34" y="-34" width="68" height="8" fill="#8a5a3b" stroke="'+INK+'"/><rect x="-30" y="-26" width="5" height="26" fill="#6b4228"/><rect x="25" y="-26" width="5" height="26" fill="#6b4228"/></g>';},vb:'-38 -38 76 42'},
+    ball:{type:'t',name:'a basketball',draw:function(){return '<g><circle cy="-10" r="10" fill="#e2672a" stroke="'+INK+'"/><path d="M-10,-10 L10,-10 M0,-20 Q-6,-10 0,0 M0,-20 Q6,-10 0,0" stroke="'+INK+'" stroke-width=".8" fill="none"/></g>';},vb:'-14 -24 28 28'}
+  };
+  return S;
+})();
+var PEOPLE=['martin','huero','mom','frankie','chago','jesus','vicky','mitch','steve','prin','man','teen'];
+var THINGS=['bike','car','house','tree','lamp','grave','boxes','truck','notebook','phone','heart','balloons','desk','ball'];
+var MOODS=[['smile','🙂','happy'],['big','😄','very happy'],['sad','🙁','sad'],['cry','😢','crying'],['worried','😟','worried'],['angry','😠','angry']];
+var BGS=(function(){
+  var L=ART.lib,W=400,H=250;
+  function fl(c){return L.floor(W,H,180);}
+  return {
+    street:{name:'street',draw:function(){return L.sky(W,H,'#bfe0f5','#eef7fd')+L.cloud(60,34,1.2)+L.house(20,170,80,60,'#d9c1a0','#7d4a35')+L.house(290,170,90,56,'#b9cfd9','#4d6577')+'<rect y="170" width="400" height="14" fill="#a8a29a"/>'+L.road(W,184,66);}},
+    night:{name:'street at night',draw:function(){return L.sky(W,H,'#1f2a40','#3e4f6e')+'<circle cx="60" cy="40" r="16" fill="#f4efd2"/>'+L.house(250,172,110,74,'#6d6658','#3a2e25','#2a1e15')+'<rect y="172" width="400" height="12" fill="#5c5650"/>'+L.road(W,184,66)+L.lamp(180,184,.9);}},
+    home:{name:'home',draw:function(){return L.wall(W,H,'#f3e2c8')+fl()+L.window2(260,40,80,60)+'<rect x="30" y="120" width="120" height="60" rx="10" fill="#8a4f9c" stroke="#17222b"/><rect x="30" y="110" width="120" height="22" rx="8" fill="#a466b6" stroke="#17222b"/>';}},
+    classroom:{name:'classroom',draw:function(){return L.wall(W,H,'#eef2e6')+L.board(110,24,180,70,'English')+fl()+'<rect x="330" y="60" width="44" height="30" fill="#fff" stroke="#17222b"/><circle cx="352" cy="75" r="11" fill="#fff" stroke="#17222b"/><path d="M352,75 L352,68 M352,75 L358,78" stroke="#17222b"/>';}},
+    hallway:{name:'school hallway',draw:function(){var g=L.wall(W,H,'#dfe6eb');for(var x=10;x<W;x+=40)g+='<rect x="'+x+'" y="40" width="34" height="140" fill="#7a9cb8" stroke="#17222b" stroke-width=".8"/><rect x="'+(x+24)+'" y="100" width="4" height="12" fill="#333"/>';return g+fl();}},
+    gym:{name:'gym (P.E.)',draw:function(){return L.wall(W,H,'#f0e6d6')+fl()+'<rect y="180" width="400" height="5" fill="#e2672a"/><g transform="translate(340,60)"><rect x="-30" y="-20" width="60" height="40" fill="#fff" stroke="#17222b"/><rect x="-12" y="2" width="24" height="16" fill="none" stroke="#e2672a" stroke-width="2"/></g><text x="200" y="60" text-anchor="middle" font-family="Nunito" font-weight="900" font-size="22" fill="#b5a68f">GYM</text>';}},
+    party:{name:'party',draw:function(){var g=L.wall(W,H,'#3b2f5a')+fl()+'<path d="M0,20 Q100,44 200,20 T400,20" fill="none" stroke="#f2c14e" stroke-width="3"/>';[40,120,280,360].forEach(function(x,i){g+='<path d="M'+x+',26 l7,14 l7,-14Z" fill="'+['#e0465a','#4fb3a9','#f2c14e','#e2672a'][i]+'"/>';});return g+'<text x="200" y="110" font-size="30" fill="#f2c14e" text-anchor="middle">♪ ♫</text>';}},
+    cemetery:{name:'cemetery',draw:function(){return L.sky(W,H,'#b7c4cf','#e3e9ee')+L.ground(W,H,160,'#8fb07a')+'<g opacity=".5">'+L.grave(60,165,.45)+L.grave(330,162,.4)+L.grave(260,166,.35)+'</g>'+L.tree(370,166,.9);}},
+    office:{name:"principal's office",draw:function(){return L.wall(W,H,'#e3e8ef')+'<rect x="30" y="24" width="120" height="60" fill="#fff" stroke="#17222b"/><text x="90" y="60" text-anchor="middle" font-size="13" font-weight="900" fill="#2e3d5c" font-family="Nunito">PRINCIPAL</text>'+fl()+L.window2(260,30,90,60);}},
+    school:{name:'school (outside)',draw:function(){var g=L.sky(W,H,'#cfdbe4','#eef3f7')+'<rect x="20" y="40" width="360" height="130" fill="#c9b79c" stroke="#17222b"/>';for(var x=40;x<360;x+=64)g+='<rect x="'+x+'" y="60" width="44" height="34" fill="#bfe3f5" stroke="#17222b"/>';return g+'<rect x="130" y="110" width="140" height="26" rx="4" fill="#1f4f8f" stroke="#17222b"/><text x="200" y="129" text-anchor="middle" font-size="14" font-weight="900" fill="#fff" font-family="Nunito">HIGH SCHOOL</text>'+L.ground(W,H,170,'#a9b1b8');}}
+  };
+})();
+var BGLIST=['street','night','home','classroom','hallway','gym','party','cemetery','office','school'];
+
+function bState(key){var s=work.build[key];if(!s){s={bg:'',items:[],t:0};work.build[key]=s;}return s;}
+function stkSvg(it,sel){var d=STK[it.k];if(!d)return '';var inner=d.draw(it.m);
+  return '<g class="stk'+(sel?' sel':'')+'" data-idx="'+it._i+'" transform="translate('+it.x+','+it.y+') scale('+((it.f?-1:1)*it.s)+','+it.s+')">'+(sel?'<rect x="-34" y="-118" width="68" height="122" fill="none" stroke="#e2672a" stroke-width="2.4" stroke-dasharray="6 4" vector-effect="non-scaling-stroke" '+(d.type==='t'?'style="display:none"':'')+'/>':'')+inner+'</g>';}
+function stageSvg(st,selIdx){
+  var bg=st.bg&&BGS[st.bg]?BGS[st.bg].draw():'<rect width="400" height="250" fill="#fbfcfd"/><text x="200" y="120" text-anchor="middle" font-family="Nunito" font-weight="800" font-size="16" fill="#8a96a0">1. Choose a place.  2. Drag people and things here.</text>';
+  var items=st.items.map(function(it,i){it._i=i;return it;}).slice().sort(function(a,b){return a.y-b.y;});
+  return '<svg class="stage" viewBox="0 0 400 250" xmlns="http://www.w3.org/2000/svg">'+bg+items.map(function(it){return stkSvg(it,it._i===selIdx);}).join('')+'</svg>';
+}
+function thumb(k){var d=STK[k];return '<svg viewBox="'+d.vb+'" xmlns="http://www.w3.org/2000/svg">'+d.draw('smile')+'</svg>';}
+function bgThumb(k){return '<svg viewBox="0 0 400 250" xmlns="http://www.w3.org/2000/svg">'+BGS[k].draw()+'</svg>';}
+
+var bSel=null; /* index of the selected sticker on the current board */
+function buildHtml(c){
+  var boards=BUILD[c.id]||[],bi=Math.min(work.bsel[c.id]||0,boards.length-1),key=c.id+'-'+bi,st=bState(key),p=c.paras[work.lv][bi];
+  var h='<div class="box"><h2>🧩 Make it: Chapter '+c.id+'</h2>'+dirHtml('Read the paragraph. Make a picture of it. Choose the place. Then tap or drag the people and things into the picture. Tap a person to change the face. Then tap “Check my picture.”');
+  h+='<div class="bchips">'+boards.map(function(_,i){var ok=work.build[c.id+'-'+i]&&work.build[c.id+'-'+i].ok;return '<button type="button" class="step'+(i===bi?' on':'')+(ok?' ok':'')+'" data-board="'+i+'">Paragraph '+(i+1)+(ok?' ✓':'')+'</button>';}).join('')+'</div>';
+  h+='<div class="bgrid"><div class="bleft"><div class="para" translate="no"><button class="pn" type="button" data-pn="'+bi+'">'+(bi+1)+'</button>'+paraHtml(p.t)+'</div>';
+  h+='<div class="bbtns"><button class="btn" type="button" id="bRead">🔊 Read it to me</button>'+(c.img.length?'<button class="btn" type="button" id="bPeek">👀 See the chapter picture</button>':'')+'</div>';
+  h+='<button class="btn go big" type="button" id="bCheck" style="width:100%;margin-top:8px">✔ Check my picture</button><div id="bFb">'+(st.ok?'<div class="done-banner" style="margin-top:8px">✓ Great picture! It matches the paragraph.</div>':(st.msg?quip(st.msg):''))+'</div></div>';
+  h+='<div class="bright"><div class="stagewrap" id="stageWrap">'+stageSvg(st,bSel)+'</div>';
+  h+='<div class="tools'+(bSel==null?' off':'')+'" id="bTools" translate="no">';
+  var sel=bSel!=null?st.items[bSel]:null;
+  if(sel&&STK[sel.k].type==='p')h+='<span class="tlab">Face:</span>'+MOODS.map(function(m){return '<button type="button" class="tbtn'+(sel.m===m[0]?' on':'')+'" data-mood="'+m[0]+'" title="'+m[2]+'">'+m[1]+'</button>';}).join('');
+  h+='<button type="button" class="tbtn" data-t="small" title="smaller">−</button><button type="button" class="tbtn" data-t="big" title="bigger">+</button><button type="button" class="tbtn" data-t="flip" title="turn around">↔</button><button type="button" class="tbtn" data-t="del" title="take away">🗑</button>'+(sel?'<span class="tlab">'+esc(STK[sel.k].name)+'</span>':'<span class="tlab">Tap a sticker in the picture to change it.</span>')+'</div>';
+  h+='</div></div>';
+  h+='<div class="sbank" translate="no"><div class="bankh">Place</div><div class="bankrow bgs">'+BGLIST.map(function(k){return '<button type="button" class="bgb'+(st.bg===k?' on':'')+'" data-bg="'+k+'">'+bgThumb(k)+'<span>'+esc(BGS[k].name)+'</span></button>';}).join('')+'</div>';
+  h+='<div class="bankh">People</div><div class="bankrow">'+PEOPLE.map(function(k){return '<button type="button" class="stb" data-stk="'+k+'">'+thumb(k)+'<span>'+esc(STK[k].name)+'</span></button>';}).join('')+'</div>';
+  h+='<div class="bankh">Things</div><div class="bankrow">'+THINGS.map(function(k){return '<button type="button" class="stb" data-stk="'+k+'">'+thumb(k)+'<span>'+esc(STK[k].name)+'</span></button>';}).join('')+'</div></div>';
+  return h+'</div>';
+}
+function svgPt(svg,cx,cy){var pt=svg.createSVGPoint();pt.x=cx;pt.y=cy;var m=svg.getScreenCTM();return m?pt.matrixTransform(m.inverse()):{x:200,y:200};}
+function wireBuild(c){
+  var boards=BUILD[c.id]||[],bi=Math.min(work.bsel[c.id]||0,boards.length-1),key=c.id+'-'+bi,st=bState(key);
+  function redraw(){var w=$('stageWrap');if(!w)return;w.innerHTML=stageSvg(st,bSel);wireStage();}
+  function full(){renderScreen();renderPlates();renderSteps();translateDirs();}
+  document.querySelectorAll('[data-board]').forEach(function(b){b.onclick=function(){work.bsel[c.id]=+b.dataset.board;bSel=null;mark();full();};});
+  document.querySelectorAll('[data-bg]').forEach(function(b){b.onclick=function(){st.bg=b.dataset.bg;speak(BGS[st.bg].name,0.85);mark();full();};});
+  $('bRead').onclick=function(){readParas(0,true,0.9);};
+  document.querySelectorAll('.bleft [data-pn]').forEach(function(b){b.onclick=function(ev){ev.stopPropagation();readParas(0,true,0.9);};});
+  var pk=$('bPeek');if(pk)pk.onclick=function(){lightbox('img/'+c.img[0]+'.jpg');};
+  document.querySelectorAll('#bTools [data-mood]').forEach(function(b){b.onclick=function(){if(bSel==null)return;st.items[bSel].m=b.dataset.mood;mark();full();};});
+  document.querySelectorAll('#bTools [data-t]').forEach(function(b){b.onclick=function(){if(bSel==null)return;var it=st.items[bSel],t=b.dataset.t;
+    if(t==='small')it.s=Math.max(.4,Math.round((it.s-.15)*100)/100);if(t==='big')it.s=Math.min(2.2,Math.round((it.s+.15)*100)/100);if(t==='flip')it.f=it.f?0:1;
+    if(t==='del'){st.items.splice(bSel,1);bSel=null;}mark();full();};});
+  /* add from the bank: tap to drop in the middle, or drag onto the picture */
+  document.querySelectorAll('[data-stk]').forEach(function(b){
+    b.onpointerdown=function(ev){ev.preventDefault();var k=b.dataset.stk,ghost=document.createElement('div');ghost.className='ghost';ghost.innerHTML=thumb(k);document.body.appendChild(ghost);
+      var moved=false,sx=ev.clientX,sy=ev.clientY;
+      function mv(e){if(Math.abs(e.clientX-sx)+Math.abs(e.clientY-sy)>6)moved=true;ghost.style.left=(e.clientX-30)+'px';ghost.style.top=(e.clientY-50)+'px';}
+      function up(e){document.removeEventListener('pointermove',mv);document.removeEventListener('pointerup',up);ghost.remove();
+        var svg=document.querySelector('#stageWrap svg');if(!svg)return;var r=svg.getBoundingClientRect(),inside=e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom;
+        var x,y;if(moved&&inside){var p=svgPt(svg,e.clientX,e.clientY);x=p.x;y=p.y+(STK[k].type==='p'?50:15);}else if(!moved){x=60+(st.items.length*47)%300;y=STK[k].type==='p'?232:226;}else return;
+        if(st.items.length>=20){toast('That is a lot of stickers! Take some away first.');return;}
+        st.items.push({k:k,x:Math.round(Math.max(10,Math.min(390,x))),y:Math.round(Math.max(40,Math.min(248,y))),s:STK[k].type==='p'?1:(k==='house'?1.2:1),f:0,m:'smile'});
+        bSel=st.items.length-1;speak(STK[k].name,0.85);mark();full();}
+      mv(ev);document.addEventListener('pointermove',mv);document.addEventListener('pointerup',up);};
+  });
+  function wireStage(){
+    var svg=document.querySelector('#stageWrap svg');if(!svg)return;
+    svg.onpointerdown=function(ev){
+      var g=ev.target.closest&&ev.target.closest('.stk');
+      if(!g){if(bSel!=null){bSel=null;full();}return;}
+      ev.preventDefault();var i=+g.dataset.idx,it=st.items[i],p0=svgPt(svg,ev.clientX,ev.clientY),ox=it.x,oy=it.y,moved=false;
+      if(bSel!==i){bSel=i;}
+      function mv(e){var p=svgPt(svg,e.clientX,e.clientY);if(Math.abs(p.x-p0.x)+Math.abs(p.y-p0.y)>2)moved=true;it.x=Math.round(Math.max(10,Math.min(390,ox+p.x-p0.x)));it.y=Math.round(Math.max(40,Math.min(248,oy+p.y-p0.y)));
+        var gg=svg.querySelector('.stk[data-idx="'+i+'"]');if(gg)gg.setAttribute('transform','translate('+it.x+','+it.y+') scale('+((it.f?-1:1)*it.s)+','+it.s+')');}
+      function up(){document.removeEventListener('pointermove',mv);document.removeEventListener('pointerup',up);if(moved)mark();full();}
+      document.addEventListener('pointermove',mv);document.addEventListener('pointerup',up);
+    };
+  }
+  wireStage();
+  $('bCheck').onclick=function(){var r=checkBoard(c,bi,st);
+    document.querySelectorAll('.w.cue').forEach(function(x){x.classList.remove('cue');});
+    if(r.ok){st.ok=true;st.msg='';fireworks(innerWidth/2,innerHeight/2,60);speak('Great picture!',0.9);}
+    else{st.t=(st.t||0)+1;work.miss['b'+key]=(work.miss['b'+key]||0)+1;st.msg=r.msg;}
+    mark();full();if(r.cue)lightCue(r.cue);};
+  if(!st.ok&&st.cue)lightCue(st.cue);
+}
+function normW(s){return String(s).toLowerCase().replace(/[“”"(),.!?:;]/g,'').replace(/’s$|'s$/,'');}
+function lightCue(word){var w=normW(word);var hit=null;document.querySelectorAll('.bleft .w').forEach(function(x){if(!hit&&normW(x.textContent)===w)hit=x;});if(hit){hit.classList.add('cue');}}
+function checkBoard(c,bi,st){
+  var need=BUILD[c.id][bi],have={},people=[];
+  st.items.forEach(function(it){have[it.k]=(have[it.k]||[]).concat([it]);if(STK[it.k].type==='p')people.push(it.k);});
+  var cue=need.cue||{},r={ok:false};
+  function miss(msg,cw){r.msg=msg;r.cue=cw;st.cue=cw;return r;}
+  var i,k;
+  for(i=0;i<(need.c||[]).length;i++){k=need.c[i];if(!have[k])return miss('Someone is missing. Read the yellow word. Who is it?',cue[k]);}
+  var allowed=(need.c||[]).concat(need.opt||[],['martin']);
+  for(i=0;i<people.length;i++){if(allowed.indexOf(people[i])<0)return miss('Is '+STK[people[i]].name+' in this paragraph? Read it again. Tap that person and take them away.',null);}
+  for(i=0;i<(need.t||[]).length;i++){var alts=need.t[i].split('|');if(!alts.some(function(a){return have[a];}))return miss('Something is missing. Read the yellow word. What thing do you need?',cue[alts[0]]);}
+  if(need.bg&&need.bg.indexOf(st.bg)<0)return miss(st.bg?'Is that the right place? Read the yellow word. Where are they?':'Choose a place first. Read the yellow word. Where are they?',cue.bg);
+  for(k in (need.mood||{})){var ok=(have[k]||[]).some(function(it){var m=it.m==='shout'?'angry':it.m;return need.mood[k].indexOf(m)>=0;});
+    if(!ok)return miss('Look at '+STK[k].name+'’s face. Read the yellow word. How does '+(k==='mom'?'she':'he')+' feel? Tap '+STK[k].name+', then tap a face.',cue.mood);}
+  st.cue=null;r.ok=true;return r;
+}
 </script>
 </body>
 </html>
