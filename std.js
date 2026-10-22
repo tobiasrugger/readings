@@ -591,16 +591,75 @@
     if (!v) { var p = document.getElementById('lang') || document.getElementById('langSel'); if (p && p.value && p.value !== 'none') v = p.value; }
     return v ? (codeOf(v, v) || v) : '';
   }
+  /* T-94 (Oct 22 2026): the proxy can hang. Every request now has a 10 s timeout and
+     2 retries; cb(value, failed, attempt). failed = true means "nothing came back at all"
+     (the card then offers "Tap to try again"); an empty value with failed = false means the
+     proxy answered but had no translation (the card shows the English word in grey). */
+  var TR_TIMEOUT = 10000, TR_TRIES = 3;
+  function trURL(text, mode, lg) {
+    return LISTEN_PROXY + '?action=translate&mode=' + mode + '&idiom=' + encodeURIComponent(text) +
+           '&meaning=&lang=' + encodeURIComponent(lg);
+  }
+  function fetchJSONTimed(u, ms) {
+    return new Promise(function (resolve, reject) {
+      var done = false, ctl = window.AbortController ? new AbortController() : null;
+      var tm = setTimeout(function () {
+        if (done) return; done = true; try { if (ctl) ctl.abort(); } catch (e) {}
+        reject(new Error('timeout'));
+      }, ms);
+      fetch(u, ctl ? { signal: ctl.signal } : undefined)
+        .then(function (r) { if (!r.ok) throw new Error('http ' + r.status); return r.json(); })
+        .then(function (d) { if (done) return; done = true; clearTimeout(tm); resolve(d); },
+              function (e) { if (done) return; done = true; clearTimeout(tm); reject(e); });
+    });
+  }
+  function trValue(d) {
+    var tr = d && d.translation, v = '';
+    if (tr && typeof tr === 'object') v = tr.equiv || tr.meaning || '';
+    else if (typeof tr === 'string') v = tr;
+    return String(v || '').trim();
+  }
   function proxyTranslate(text, mode, cb) {
-    var lg = listenLang(); if (!lg) { cb(null); return; }
-    var u = LISTEN_PROXY + '?action=translate&mode=' + mode + '&idiom=' + encodeURIComponent(text) +
-            '&meaning=&lang=' + encodeURIComponent(lg);
-    fetch(u).then(function (r) { return r.json(); }).then(function (d) {
-      var tr = d && d.translation, v = '';
-      if (tr && typeof tr === 'object') v = tr.equiv || tr.meaning || '';
-      else if (typeof tr === 'string') v = tr;
-      cb(String(v || '').trim());
-    }).catch(function () { cb(''); });
+    var lg = listenLang(); if (!lg) { cb(null, false, 0); return; }
+    var u = trURL(text, mode, lg), attempt = 0;
+    (function go() {
+      attempt++;
+      if (attempt > 1) cb(undefined, false, attempt);            /* tells the card "still trying" */
+      fetchJSONTimed(u, TR_TIMEOUT).then(function (d) { cb(trValue(d), false, attempt); },
+        function () { if (attempt < TR_TRIES) go(); else cb('', true, attempt); });
+    })();
+  }
+  /* T-94 warm-up: once a language is known, quietly ask for the words on screen, a few at a
+     time, so most taps are instant. Each request goes through the song_tr cache wrapper, so a
+     word any student already looked up costs nothing, and a new one is saved for everyone. */
+  var WARM_MAX = 80, WARM_AT_ONCE = 3, warmQ = [], warmSeen = {}, warmBusy = 0, warmSent = 0, warmLang = '';
+  var WARM_SKIP = /^(the|and|but|for|you|your|are|was|were|has|have|had|this|that|with|from|they|them|their|she|her|his|him|its|our|not|can|will|all|any|one|two|who|what|when|how|why|yes|did|does|too|very|into|out|then|than|there|here|about)$/i;
+  function warmPump() {
+    while (warmBusy < WARM_AT_ONCE && warmQ.length && warmSent < WARM_MAX) {
+      var w = warmQ.shift(), lg = listenLang(); if (!lg || lg !== warmLang) { warmQ = []; return; }
+      warmBusy++; warmSent++;
+      fetchJSONTimed(trURL(w, 'word', lg), TR_TIMEOUT).then(function () {}, function () {})
+        .then(function () { warmBusy--; setTimeout(warmPump, 150); });
+    }
+  }
+  function warmVisible() {
+    if (listenOff()) return;
+    var lg = listenLang(); if (!lg) return;
+    if (lg !== warmLang) { warmLang = lg; warmSeen = {}; warmQ = []; warmSent = 0; }
+    if (warmSent >= WARM_MAX) return;
+    var vh = window.innerHeight, walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), n, added = 0;
+    while ((n = walker.nextNode()) && added < 40) {
+      var el = n.parentElement; if (!el || !/[A-Za-z]{3}/.test(n.data)) continue;
+      if (el.closest(NO_GO) || el.closest(OWN_TAP) || el.closest('script,style,noscript')) continue;
+      var r = el.getBoundingClientRect(); if (!r.width || r.bottom < 0 || r.top > vh) continue;
+      var m = n.data.match(/[A-Za-z][A-Za-z'\u2019-]{2,}/g) || [];
+      for (var i = 0; i < m.length && added < 40; i++) {
+        var w = m[i].replace(/^['\u2019-]+|['\u2019-]+$/g, '');
+        if (w.length < 3 || WARM_SKIP.test(w) || warmSeen[w]) continue;
+        warmSeen[w] = 1; warmQ.push(w); added++;
+      }
+    }
+    warmPump();
   }
   function blockOf(node) {
     var el = node.nodeType === 3 ? node.parentElement : node;
@@ -672,14 +731,28 @@
     if (y + p.offsetHeight > window.innerHeight - 8) y = Math.max(8, t.rect.top - p.offsetHeight - 8);
     p.style.left = x + 'px'; p.style.top = y + 'px';
     var trBox = p.querySelector('.gl-tr');
-    if (!listenLang()) trBox.innerHTML = '<span class="gl-none">Choose your language at sign-in to see a translation.</span>';
-    else {
-      trBox.textContent = '\u2026';
-      proxyTranslate(t.word, 'word', function (v) {
+    warmSeen[t.word] = 1;                                           /* the warmer leaves this word to the card */
+    function showWord() {
+      trBox.innerHTML = '<span class="gl-wait">Translating\u2026</span>';
+      proxyTranslate(t.word, 'word', function (v, failed, attempt) {
+        if (v === undefined) { trBox.innerHTML = '<span class="gl-wait">Still translating\u2026</span>'; return; }
+        if (failed) { trBox.innerHTML = '<button type="button" class="gl-b gl-retry" data-act="rw">\u21bb Tap to try again</button>'; return; }
         if (v) trBox.innerHTML = '<b class="gl-eq">' + esc(v) + '</b>';
         else trBox.innerHTML = '<b class="gl-eq gl-grey">' + esc(t.word) + '</b>';
       });
     }
+    function showSentence() {
+      var box = p.querySelector('.gl-str');
+      if (!listenLang()) { box.textContent = 'Choose your language at sign-in first.'; return; }
+      box.innerHTML = '<span class="gl-wait">Translating\u2026</span>';
+      proxyTranslate(t.sentence, 'sentence', function (v, failed) {
+        if (v === undefined) { box.innerHTML = '<span class="gl-wait">Still translating\u2026</span>'; return; }
+        if (failed) { box.innerHTML = '<button type="button" class="gl-b gl-retry" data-act="rs">\u21bb Tap to try again</button>'; return; }
+        box.textContent = v || 'No translation came back. Tap again.';
+      });
+    }
+    if (!listenLang()) trBox.innerHTML = '<span class="gl-none">Choose your language at sign-in to see a translation.</span>';
+    else showWord();
     p.addEventListener('click', function (e) {
       var b = e.target.closest && e.target.closest('[data-act]'); if (!b) return;
       e.stopPropagation();
@@ -687,12 +760,8 @@
       if (act === 'w') speakEn(t.word, 0.75);
       else if (act === 's') speakEn(t.sentence);
       else if (act === 'p') speakEn(t.paragraph);
-      else if (act === 'st') {
-        var box = p.querySelector('.gl-str');
-        if (!listenLang()) { box.textContent = 'Choose your language at sign-in first.'; return; }
-        box.textContent = '\u2026';
-        proxyTranslate(t.sentence, 'sentence', function (v) { box.textContent = v || 'No translation came back. Tap again.'; });
-      }
+      else if (act === 'st' || act === 'rs') showSentence();
+      else if (act === 'rw') showWord();
     });
     speakEn(t.word, 0.75);
   }
@@ -703,6 +772,7 @@
     '#galListenPop .gl-tr{margin:4px 0 8px;min-height:1.2em}' +
     '#galListenPop .gl-eq{font-size:19px;text-decoration:underline;text-underline-offset:3px}#galListenPop .gl-grey{color:#8d8496}' +
     '#galListenPop .gl-none{color:#6d6377;font-weight:600;font-size:14px}' +
+    '#galListenPop .gl-wait{color:#6d6377;font-style:italic;font-weight:700}#galListenPop .gl-retry{background:#fff4d6;border-color:#8a6200;color:#5a4000}' +
     '#galListenPop .gl-row{display:flex;flex-wrap:wrap;gap:6px}' +
     '#galListenPop .gl-b{border:2px solid #2b2233;background:#f6f2fb;color:#2b2233;border-radius:999px;padding:4px 10px;font:800 14px Nunito,system-ui,sans-serif;cursor:pointer}' +
     '#galListenPop .gl-str{margin-top:6px;color:#4a3f55}#galListenPop .gl-str:empty{display:none}' +
@@ -734,6 +804,7 @@
       var sel = window.getSelection && window.getSelection();
       if (sel && String(sel).trim()) return;                          /* a student selecting text */
       var t = textAt(e.clientX, e.clientY); if (!t) return;
+      warmSeen[t.word] = 1;                                         /* T-94: the card will look this one up */
       var x0 = before, s0 = spoke;
       setTimeout(function () {                                         /* yield to the page */
         var talking = window.speechSynthesis && (speechSynthesis.speaking || speechSynthesis.pending);
@@ -742,6 +813,12 @@
       }, 220);
     });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeListen(); });
+    /* T-94: warm the cache with the words on screen once a language is chosen */
+    var lastLang = '', warmTimer = null;
+    function warmSoon(ms) { clearTimeout(warmTimer); warmTimer = setTimeout(warmVisible, ms); }
+    setInterval(function () { var lg = listenLang(); if (lg && lg !== lastLang) { lastLang = lg; warmSoon(1500); } }, 2000);
+    window.addEventListener('scroll', function () { if (lastLang) warmSoon(1500); }, { passive: true });
+    document.addEventListener('click', function () { if (lastLang) warmSoon(2500); });
     window.addEventListener('scroll', closeListen, { passive: true });
     /* one quiet hint per page visit, only once something is on screen to read */
     try {
