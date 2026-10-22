@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Conformance Checker · Feature Audit</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pine:#1F4D3D; --pine-soft:#e8f0ec; --ink:#16241f; --muted:#6b7b74;
+  --edge:#d9e2dd; --paper:#f6f8f7;
+  --ok:#0f5c34; --ok-bg:#b9e3c9; --ok-edge:#1F7A4D;
+  --warn:#6d4a00; --warn-bg:#f8dd9e; --warn-edge:#b5820c;
+  --bad:#8c2418; --bad-bg:#f4bcb3; --bad-edge:#b23a2c;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Nunito,system-ui,sans-serif;color:var(--ink);background:var(--paper)}
+header{background:var(--pine);color:#fff;padding:12px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+header h1{margin:0;font-size:1.05rem;font-weight:800;flex:1}
+.back{background:#fff;color:var(--pine);font:inherit;font-weight:800;font-size:.78rem;
+  padding:6px 11px;border-radius:999px;text-decoration:none;border:1px solid #fff}
+.wrap{padding:14px;max-width:1200px;margin:0 auto}
+.panel{background:#fff;border:1px solid var(--edge);border-radius:12px;padding:14px;margin-bottom:14px}
+.panel h2{margin:0 0 4px;font-size:.95rem}
+.panel p{margin:0 0 10px;font-size:.82rem;color:var(--muted);line-height:1.5}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+input[type=text]{flex:1;min-width:230px;font:inherit;font-size:.86rem;padding:8px 10px;
+  border:1px solid var(--edge);border-radius:9px}
+button{font:inherit;font-weight:800;font-size:.8rem;padding:8px 13px;border-radius:999px;
+  border:1px solid var(--pine);background:var(--pine);color:#fff;cursor:pointer}
+button.ghost{background:#fff;color:var(--pine)}
+button:disabled{opacity:.5;cursor:default}
+.bar{height:8px;background:var(--pine-soft);border-radius:999px;overflow:hidden;margin:10px 0 4px}
+.bar i{display:block;height:100%;background:var(--pine);width:0}
+.count{font-size:.78rem;color:var(--muted)}
+table{border-collapse:separate;border-spacing:0;width:100%;font-size:.78rem;margin-top:10px}
+th,td{padding:6px 8px;text-align:left;border-bottom:1px solid var(--edge);white-space:nowrap;vertical-align:top}
+thead th{position:sticky;top:0;background:var(--pine);color:#fff;font-size:.72rem;z-index:2}
+tbody th{position:sticky;left:0;background:#fff;font-weight:700;white-space:normal;max-width:260px;
+  border-right:1px solid var(--edge)}
+tbody th small{display:block;font-weight:400;color:var(--muted);font-size:.68rem}
+.tablewrap{overflow:auto;max-height:70vh;border:1px solid var(--edge);border-radius:12px;background:#fff}
+td.ok{background:var(--ok-bg);color:var(--ok);box-shadow:inset 3px 0 0 var(--ok-edge)}
+td.warn{background:var(--warn-bg);color:var(--warn);box-shadow:inset 3px 0 0 var(--warn-edge)}
+td.bad{background:var(--bad-bg);color:var(--bad);box-shadow:inset 3px 0 0 var(--bad-edge)}
+td.na{background:#eef1f5;color:#8494a8}
+.mark{font-weight:800}
+.det{display:block;font-size:.67rem;opacity:.85;white-space:normal;max-width:200px}
+tr.drift th{background:#fff7d6;box-shadow:inset 4px 0 0 #b5820c}
+.legend{font-size:.76rem;color:var(--muted);line-height:1.7;margin:6px 0 0}
+.chip{display:inline-block;padding:1px 7px;border-radius:999px;font-weight:800;font-size:.72rem}
+.chip.ok{background:var(--ok-bg);color:var(--ok)}
+.chip.warn{background:var(--warn-bg);color:var(--warn)}
+.chip.bad{background:var(--bad-bg);color:var(--bad)}
+.one{margin-top:10px;font-size:.84rem}
+.one .line{display:flex;gap:8px;padding:5px 0;border-bottom:1px solid var(--edge);align-items:baseline}
+.one .line b{min-width:110px}
+.err{color:var(--bad);font-weight:700;font-size:.82rem}
+code{background:var(--pine-soft);padding:1px 5px;border-radius:5px;font-size:.92em}
+</style>
+</head>
+<body>
+
+<header>
+  <a class="back" href="../dashboards/">All dashboards</a>
+  <h1>Conformance checker</h1>
+  <a class="back" href="./">Back to the grid</a>
+</header>
+
+<div class="wrap">
+
+  <div class="panel">
+    <h2>Check one page</h2>
+    <p>Type a path and it fetches the page as it is live right now and runs the same nine checks
+       the grid uses. Works for any repo on this site &mdash; <code>readings/news/</code>,
+       <code>languagelaunch/ll_practice.html</code>, or a full URL.</p>
+    <div class="row">
+      <input type="text" id="one" placeholder="readings/landlady/  or  https://tobiasrugger.github.io/readings/landlady/">
+      <button id="goOne">Check it</button>
+    </div>
+    <div id="oneOut" class="one"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Check everything, now</h2>
+    <p>Walks every page the grid knows about, fetches each one live, and re-runs the checks.
+       Rows that disagree with the saved grid are marked <b>changed</b> &mdash; that is drift
+       since the last scan. Nothing is written anywhere; use <b>Download fresh data</b> to
+       hand the result back for a rebuilt grid.</p>
+    <div class="row">
+      <button id="goAll">Run the full check</button>
+      <button class="ghost" id="onlyDrift" disabled>Show only changed</button>
+      <button class="ghost" id="dl" disabled>Download fresh data</button>
+      <span class="count" id="count"></span>
+    </div>
+    <div class="bar"><i id="bar"></i></div>
+    <p class="legend" id="summary"></p>
+  </div>
+
+  <div class="tablewrap" id="tablewrap" hidden>
+    <table>
+      <thead><tr>
+        <th>Page</th><th>Login</th><th>Languages</th><th>At sign-in</th><th>Period</th>
+        <th>Protect</th><th>Tap words</th><th>Canary</th><th>Tracker</th><th>Saving</th>
+      </tr></thead>
+      <tbody id="body"></tbody>
+    </table>
+  </div>
+
+  <p class="legend">
+    <span class="chip ok">&#10003;</span> meets the standard &nbsp;
+    <span class="chip warn">~</span> partly &nbsp;
+    <span class="chip bad">&#10007;</span> missing &nbsp;
+    &middot; dashboards, plans and landing pages show <b>N/A</b>: these features are for students.
+  </p>
+</div>
+
+<script>
+/* ────────────────────────────────────────────────────────────────
+   The same rules the Python scanner uses, ported so they can run
+   against the live site instead of a downloaded copy of the repo.
+   One source of truth for "does this page meet the standard?" —
+   if a rule changes, change it here and in audit.py together.
+   ──────────────────────────────────────────────────────────────── */
+
+var COLS = ['login','lang','gate','period','trans','tap','canary','track','supa'];
+var MARK = {ok:'\u2713', warn:'~', bad:'\u2717', na:'N/A'};
+
+var LANG_NAMES = {es:'Spanish','zh-CN':'Chinese','zh-TW':'Chinese',yue:'Chinese',zh:'Chinese',
+  ar:'Arabic',ary:'Darija','ar-MA':'Darija',vi:'Vietnamese',ru:'Russian',ur:'Urdu',tl:'Tagalog',
+  fil:'Tagalog',fr:'French',ko:'Korean',hi:'Hindi',so:'Somali',ne:'Nepali',th:'Thai',
+  pt:'Portuguese',ja:'Japanese',mn:'Mongolian',sm:'Samoan',my:'Burmese',fa:'Persian',
+  ps:'Pashto',km:'Khmer',ti:'Tigrinya',am:'Amharic'};
+var NAME_TO_CODE = {spanish:'es',chinese:'zh-CN',mandarin:'zh-CN',cantonese:'zh-TW',arabic:'ar',
+  darija:'ary',vietnamese:'vi',russian:'ru',urdu:'ur',tagalog:'tl',filipino:'tl',french:'fr',
+  korean:'ko',hindi:'hi',somali:'so',nepali:'ne',thai:'th'};
+var CORE = ['es','zh-CN','ar','vi','ru','ur','tl','fr','ko','hi','so','ne','th'];
+
+function langsIn(t){
+  var found = [], m, re = /(?:value\s*=\s*|\[\s*)["']([a-zA-Z]{2}(?:-[A-Za-z]{2,4})?)["']/g;
+  while ((m = re.exec(t))) {
+    var c = m[1], key = LANG_NAMES[c] ? c : (LANG_NAMES[c.toLowerCase()] ? c.toLowerCase() : null);
+    if (key && found.indexOf(key) < 0) found.push(key);
+  }
+  var byName = [], re2 = /<option value="([^"]{3,30})"|\[\s*['"]([A-Z][a-z]+(?: \([A-Za-z]+\))?)['"]\s*,/g;
+  while ((m = re2.exec(t))) {
+    var v = (m[1] || m[2] || '').trim().toLowerCase().split('(')[0].trim();
+    var c2 = NAME_TO_CODE[v];
+    if (c2 && byName.indexOf(c2) < 0) byName.push(c2);
+  }
+  if (found.length < 3) return byName.length >= 3 ? byName : [];
+  return found.length >= byName.length ? found : byName;
+}
+
+function periodInfo(t){
+  var re = /<select([^>]*)>([\s\S]*?)<\/select>/gi, m;
+  while ((m = re.exec(t))) {
+    var head = (m[1] || '').toLowerCase(), body = m[2];
+    if (head.indexOf('per') >= 0 || /\>\s*Period/i.test(body)) {
+      var nums = numbersIn(body);
+      if (nums.length) return {type:'select', nums:nums};
+    }
+  }
+  if (/<select[^>]*id\s*=\s*["'][^"']*[Pp]er[^"']*["']/.test(t)) {
+    var arr = t.match(/\[\s*(?:'\d'\s*,\s*){3,}'\d'\s*\]/);
+    if (arr) return {type:'select', nums:numbersIn(arr[0])};
+  }
+  if (/id\s*=\s*["'][^"']*per[^"']*["']/i.test(t) && /<input[^>]*per/i.test(t)) return {type:'input', nums:[]};
+  if (/Period/.test(t) && /<input/i.test(t)) return {type:'input', nums:[]};
+  return {type:'none', nums:[]};
+}
+function numbersIn(s){
+  var out = {}, m, a = /value\s*=\s*["'](\d)["']/g, b = /<option[^>]*>\s*(?:Period\s*)?(\d)\s*</gi, c = /'(\d)'/g;
+  while ((m = a.exec(s))) out[m[1]] = 1;
+  while ((m = b.exec(s))) out[m[1]] = 1;
+  while ((m = c.exec(s))) out[m[1]] = 1;
+  return Object.keys(out).map(Number).sort();
+}
+
+/* is the language picker on the sign-in screen, where it should be? */
+var GATEISH = /gate|login|log-in|sign-?in|signin|overlay|welcome|start-?screen|screen-name/i;
+var ENGINE = /id=["']gLang["']|getElementById\(\s*["']gLang["']|GS\.LANGS|window\.GS|vets-practice\.js|galStdLang/i;
+var SIGNIN_FIELD = /type\s*=\s*["']email["']|id\s*=\s*["'][^"']*[Mm]ail/;
+
+function gateCheck(t){
+  if (t.indexOf('gate-lang') >= 0 && (/<select[^>]*lang/i.test(t) || /LANGS\s*=\s*\[/.test(t)))
+    return ['ok','mirrored into sign-in'];
+  if (ENGINE.test(t)) return ['ok','picker built into the sign-in gate at load'];
+  if (t.indexOf('track.js') >= 0 && SIGNIN_FIELD.test(t)) return ['ok','std.js adds it to the sign-in box'];
+  var doc;
+  try { doc = new DOMParser().parseFromString(t, 'text/html'); } catch (e) { doc = null; }
+  if (!doc) return ['warn','could not read the page'];
+  var sels = doc.querySelectorAll('select'), sawGate = false, any = false, inGate = false;
+  var all = doc.querySelectorAll('[id],[class]');
+  for (var i = 0; i < all.length; i++) {
+    var ident = (all[i].id || '') + ' ' + (typeof all[i].className === 'string' ? all[i].className : '');
+    if (GATEISH.test(ident)) { sawGate = true; break; }
+  }
+  for (var j = 0; j < sels.length; j++) {
+    var s = sels[j];
+    var sid = (s.id || '') + ' ' + (s.className || '') + ' ' + (s.getAttribute('name') || '');
+    if (!/lang/i.test(sid)) continue;
+    any = true;
+    for (var n = s.parentElement; n; n = n.parentElement) {
+      var pid = (n.id || '') + ' ' + (typeof n.className === 'string' ? n.className : '');
+      if (GATEISH.test(pid)) { inGate = true; break; }
+    }
+  }
+  if (!any) return ['bad','no language picker'];
+  if (inGate) return ['ok','chosen at sign-in'];
+  if (!sawGate) return ['warn','picker present, no sign-in screen found'];
+  return ['warn','picker is after sign-in'];
+}
+
+function kindOf(path, t){
+  var low = path.toLowerCase(), name = low.split('/').pop();
+  var body0 = t.replace(/<input[^>]*type\s*=\s*["']password["'][^>]*>/gi, '')
+               .replace(/<input[^>]*(aria-label\s*=\s*["'][^"']*search|placeholder\s*=\s*["'][^"']*(find|search))[^>]*>/gi, '');
+  if (!/<textarea|<input|class="choice|data-q=|data-k=|data-ans=/i.test(body0)) return 'hub';
+  if (low.indexOf('dashboard') >= 0 || low.indexOf('teacher') >= 0) return 'teacher';
+  if (['gradebook.html','assign.html','wall.html','report.html'].indexOf(name) >= 0) return 'teacher';
+  if (['gradebook','roadmap'].indexOf(low.split('/')[0]) >= 0) return 'teacher';
+  var title = (t.match(/<title>([^<]{0,120})<\/title>/i) || [,''])[1];
+  if (/\bteacher\b/i.test(title)) return 'teacher';
+  if (/unit[-_ ]?plan|plans?\.html$/.test(name)) return 'plan';
+  return 'student';
+}
+
+function checkText(path, t){
+  var r = {path:path, bytes:t.length};
+  r.kind = kindOf(path, t);
+
+  var hasEmail = /type\s*=\s*["']email["']|id\s*=\s*["'][^"']*mail[^"']*["']/i.test(t);
+  var sfusd = /sfusd/i.test(t), alias = t.indexOf('student_aliases') >= 0,
+      prefill = t.indexOf('gal_student_email') >= 0;
+  var nameOnly = /id\s*=\s*["'](gname|sname|nameIn|stuName)["']/i.test(t);
+  if (hasEmail && sfusd && (alias || prefill))
+    r.login = ['ok','email + sfusd check' + (alias ? ' + alias' : '') + (prefill ? ' + prefill' : '')];
+  else if (hasEmail && sfusd) r.login = ['warn','sfusd check, no alias/prefill'];
+  else if (hasEmail) r.login = ['warn','email field, no sfusd validation'];
+  else if (nameOnly) r.login = ['bad','name only'];
+  else r.login = ['bad','no sign-in'];
+
+  var L = langsIn(t);
+  if (L.length) {
+    var missing = CORE.filter(function(c){
+      return L.indexOf(c) < 0 && !(c === 'zh-CN' && (L.indexOf('zh') >= 0 || L.indexOf('zh-TW') >= 0 || L.indexOf('yue') >= 0));
+    });
+    if (!missing.length && L.indexOf('ne') >= 0 && L.indexOf('th') >= 0) r.lang = ['ok','all 13 \u00b7 ' + L.length + ' in list'];
+    else if (L.indexOf('ne') >= 0 && L.indexOf('th') >= 0)
+      r.lang = ['warn', L.length + ' langs \u00b7 no ' + missing.slice(0,3).map(function(c){return LANG_NAMES[c];}).join(', ')];
+    else r.lang = ['bad', L.length + ' langs, missing ' +
+      ['ne','th'].filter(function(c){return L.indexOf(c) < 0;}).map(function(c){return LANG_NAMES[c];}).join('+')];
+  } else r.lang = ['bad','no language picker'];
+
+  r.gate = gateCheck(t);
+
+  var p = periodInfo(t);
+  if (p.type === 'select' && p.nums.join() === '1,2,3,4,5,6,7') r.period = ['ok','1-7'];
+  else if (p.type === 'select' && p.nums.length) r.period = ['warn', p.nums[0] + '-' + p.nums[p.nums.length-1] + ' \u00b7 standard is 1-7'];
+  else if (p.type === 'input') r.period = ['warn','free-text input'];
+  else r.period = ['bad','none'];
+
+  var tno = (t.match(/translate\s*=\s*["']no["']/g) || []).length;
+  var proxy = t.indexOf('script.google.com/macros') >= 0;
+  var reveals = t.indexOf('instruction_reveals') >= 0;
+  var toggle = reveals || /(three|3)[-_ ]?way|mode\s*toggle|Directions only|directions-only/i.test(t);
+  if (tno && toggle) r.trans = ['ok', tno + ' protected + mode toggle'];
+  else if (tno) r.trans = ['warn', tno + ' translate="no", no toggle'];
+  else if (proxy) r.trans = ['warn','translates, no protection'];
+  else r.trans = ['bad','none'];
+
+  var tap = /toggleWT|Tap words|tap-to-translate|wt-tap|tapdoc|wt-on|tapWord|data-w=/i.test(t);
+  if (tap && proxy) r.tap = ['ok','tap words on'];
+  else if (tap) r.tap = ['warn','tap UI, local dictionary only'];
+  else r.tap = ['bad','none'];
+
+  var canary = /canary|browserTranslated|detectTranslation|checkTranslation/i.test(t);
+  var logs = t.indexOf('page_translation') >= 0;
+  var banner = /(xlbanner|translation-banner|xl-banner)[^;\n]{0,80}classList\.add\(["']show|banner\.classList\.add\(["']show/i.test(t);
+  if (canary && logs && !banner) r.canary = ['ok','silent logging'];
+  else if (canary && banner) r.canary = ['warn','student-visible banner' + (/eld103/.test(path) ? ' (ELD 103 trial)' : '')];
+  else if (canary) r.canary = ['warn','detects, no page_translation row'];
+  else r.canary = ['bad','no detection'];
+
+  r.track = /src\s*=\s*["'][^"']*track\.js["']/i.test(t) ? ['ok','tracker on'] : ['bad','no tracker'];
+
+  var SECOND = {students:1, student_aliases:1, vocab_words:1, idioms:1, song_lyrics:1};
+  var tables = {}, m2, re3 = /\/rest\/v1\/([a-zA-Z0-9_]+)/g;
+  while ((m2 = re3.exec(t))) tables[m2[1]] = 1;
+  var re4 = /\b(?:TABLE|TBL|TABLE_NAME)\s*=\s*["']([a-zA-Z0-9_]+)["']/g;
+  while ((m2 = re4.exec(t))) tables[m2[1]] = 1;
+  var names = Object.keys(tables), main = names.filter(function(n){ return !SECOND[n]; });
+  if (!main.length) main = names;
+  if (main.length) r.supa = ['ok', main.slice(0,3).join(', ')];
+  else if (t.indexOf('supabase.co') >= 0) r.supa = ['warn','supabase, table name not literal'];
+  else if (t.indexOf('localStorage') >= 0) r.supa = ['warn','localStorage only'];
+  else r.supa = ['bad','no saving'];
+
+  if (r.kind !== 'student') { r.track = ['na','n/a']; r.gate = ['na','n/a']; }
+  return r;
+}
+
+/* ---------- fetching ---------- */
+function urlFor(repo, path){
+  var base = (repo === 'readings') ? '/readings/' : '/' + repo + '/';
+  return base + path;
+}
+function fetchPage(u){
+  return fetch(u, {cache:'no-store'}).then(function(res){
+    if (!res.ok) throw new Error(res.status + ' ' + res.statusText);
+    return res.text();
+  });
+}
+/* A page can get its features from a shared module — vets_l10n.js, std.js,
+   vets-practice.js. The scanner reads those too, so this must as well, or a
+   page looks bare when it is fine. */
+function fetchWithScripts(u){
+  return fetchPage(u).then(function(t){
+    var srcs = [], m, re = /<script[^>]+src=["']([^"':]+\.js)["']/gi;
+    while ((m = re.exec(t))) srcs.push(m[1]);
+    if (!srcs.length) return t;
+    var dir = u.replace(/[^/]*$/, '');
+    var jobs = srcs.slice(0, 8).map(function(s){
+      var su = (s.charAt(0) === '/') ? s : dir + s;
+      return fetch(su, {cache:'no-store'})
+        .then(function(r){ return r.ok ? r.text() : ''; })
+        .catch(function(){ return ''; });
+    });
+    return Promise.all(jobs).then(function(parts){
+      return t + '\n/* included */\n' + parts.join('\n');
+    });
+  });
+}
+
+/* ---------- one page ---------- */
+document.getElementById('goOne').addEventListener('click', function(){
+  var v = document.getElementById('one').value.trim(), out = document.getElementById('oneOut');
+  if (!v) return;
+  var u = v;
+  if (!/^https?:/i.test(u)) u = '/' + v.replace(/^\/+/, '');
+  if (/\/$/.test(u)) u += 'index.html';
+  out.innerHTML = '<p class="count">Fetching\u2026</p>';
+  fetchWithScripts(u).then(function(t){
+    var path = u.replace(/^\/[^/]+\//, '');
+    var r = checkText(path, t);
+    var h = '<p class="count">' + u + ' \u00b7 ' + Math.round(t.length/1024) + ' KB \u00b7 read as a <b>' + r.kind + '</b> page</p>';
+    COLS.forEach(function(c){
+      h += '<div class="line"><b>' + label(c) + '</b><span class="chip ' + r[c][0] + '">' +
+           MARK[r[c][0]] + '</span><span>' + r[c][1] + '</span></div>';
+    });
+    out.innerHTML = h;
+  }).catch(function(e){
+    out.innerHTML = '<p class="err">Could not fetch that page \u2014 ' + e.message +
+      '. Check the path, or try the full URL.</p>';
+  });
+});
+function label(c){
+  return {login:'Login', lang:'Languages', gate:'At sign-in', period:'Period', trans:'Protect',
+          tap:'Tap words', canary:'Canary', track:'Tracker', supa:'Saving'}[c];
+}
+
+/* ---------- everything ---------- */
+var SAVED = null, FRESH = [], driftOnly = false;
+
+function loadSaved(){
+  if (SAVED) return Promise.resolve(SAVED);
+  return fetchPage('/readings/audit/index.html').then(function(t){
+    var m = t.match(/<script id="data" type="application\/json">([\s\S]*?)<\/script>/);
+    SAVED = m ? JSON.parse(m[1]) : [];
+    return SAVED;
+  });
+}
+
+document.getElementById('goAll').addEventListener('click', function(){
+  var btn = this; btn.disabled = true;
+  var bar = document.getElementById('bar'), count = document.getElementById('count');
+  count.textContent = 'reading the saved grid\u2026';
+  loadSaved().then(function(rows){
+    var queue = rows.slice(), total = queue.length, done = 0;
+    FRESH = [];
+    document.getElementById('tablewrap').hidden = false;
+    function next(){
+      var row = queue.shift();
+      if (!row) return Promise.resolve();
+      var u = urlFor(row.repo, row.path);
+      return fetchWithScripts(u).then(function(t){
+        var fresh = checkText(row.path, t);
+        fresh.repo = row.repo; fresh.dir = row.dir; fresh.file = row.file;
+        fresh.drift = COLS.some(function(c){ return (row[c] ? row[c][0] : '') !== fresh[c][0]; });
+        fresh.gone = false;
+        FRESH.push(fresh);
+      }).catch(function(){
+        var fresh = JSON.parse(JSON.stringify(row));
+        fresh.gone = true; fresh.drift = false;
+        FRESH.push(fresh);
+      }).then(function(){
+        done++;
+        bar.style.width = Math.round(done / total * 100) + '%';
+        count.textContent = done + ' of ' + total + ' checked';
+        return next();
+      });
+    }
+    var lanes = [];
+    for (var i = 0; i < 6; i++) lanes.push(next());
+    return Promise.all(lanes);
+  }).then(function(){
+    render();
+    document.getElementById('onlyDrift').disabled = false;
+    document.getElementById('dl').disabled = false;
+    btn.disabled = false;
+  }).catch(function(e){
+    document.getElementById('count').innerHTML = '<span class="err">Stopped \u2014 ' + e.message + '</span>';
+    btn.disabled = false;
+  });
+});
+
+document.getElementById('onlyDrift').addEventListener('click', function(){
+  driftOnly = !driftOnly;
+  this.textContent = driftOnly ? 'Show everything' : 'Show only changed';
+  render();
+});
+
+document.getElementById('dl').addEventListener('click', function(){
+  var out = FRESH.map(function(r){
+    var o = {path:r.path, dir:r.dir, file:r.file, repo:r.repo, bytes:r.bytes, kind:r.kind};
+    COLS.forEach(function(c){ o[c] = r[c]; });
+    return o;
+  });
+  var blob = new Blob([JSON.stringify(out)], {type:'application/json'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'audit_data.json';
+  a.click();
+});
+
+function render(){
+  var body = document.getElementById('body');
+  body.innerHTML = '';
+  var shown = FRESH.filter(function(r){ return !driftOnly || r.drift; });
+  shown.forEach(function(r){
+    var tr = document.createElement('tr');
+    if (r.drift) tr.className = 'drift';
+    var th = document.createElement('th');
+    th.innerHTML = (r.drift ? '<b>changed</b> \u00b7 ' : '') + (r.file || r.path) +
+      '<small>' + r.repo + '/' + (r.dir || '') + (r.gone ? ' \u00b7 could not fetch' : '') + '</small>';
+    tr.appendChild(th);
+    COLS.forEach(function(c){
+      var v = r[c] || ['na','n/a'], td = document.createElement('td');
+      td.className = v[0];
+      td.innerHTML = '<span class="mark">' + MARK[v[0]] + '</span><span class="det">' + v[1] + '</span>';
+      tr.appendChild(td);
+    });
+    body.appendChild(tr);
+  });
+  var students = FRESH.filter(function(r){ return r.kind === 'student'; });
+  var green = students.filter(function(r){
+    return COLS.every(function(c){ return r[c][0] === 'ok' || r[c][0] === 'na'; });
+  }).length;
+  var drift = FRESH.filter(function(r){ return r.drift; }).length;
+  var gone = FRESH.filter(function(r){ return r.gone; }).length;
+  document.getElementById('summary').innerHTML =
+    '<b>' + FRESH.length + '</b> pages checked live \u00b7 <b>' + students.length + '</b> student pages \u00b7 <b>' +
+    green + '</b> meet every check \u00b7 <b>' + drift + '</b> changed since the saved grid' +
+    (gone ? ' \u00b7 <b>' + gone + '</b> could not be fetched (moved or deleted?)' : '') +
+    (shown.length !== FRESH.length ? ' \u00b7 showing ' + shown.length : '');
+}
+</script>
+</body>
+</html>
