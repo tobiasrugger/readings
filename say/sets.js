@@ -71,4 +71,12 @@ window.SAY_SETS={
     {k:'hyphen', name:'With a hyphen', e:'➖', items:['twenty-five','thirty-two','forty-four','fifty-one','sixty-seven','seventy-three','eighty-eight','ninety-nine']},
     {k:'sent', name:'Sentences', e:'💬', items:['How many students do you see?','I see fifteen students.','How many desks do you see?','There are twenty-five desks.','Eighty-eight is the largest number.','Seventy is the smallest number.','Thirty-two has a hyphen.','I am fifteen years old.']}
   ] }
+  ,
+  'about-me':{ title:'About Me', back:'/readings/launch-plus/u1-l5/', decks:[
+    {k:'words', name:'Words', e:'\ud83e\uddd1', items:['country','language','years','share','bilingual','pronoun','partner','age']},
+    {k:'ask', name:'Ask me', e:'\u2753', items:['How old are you?','Where are you from?','What languages do you speak?','Could you tell me about yourself?','What is your partner\u2019s name?']},
+    {k:'me', name:'About me', e:'\ud83d\udcac', items:['I am sixteen years old.','I am from Vietnam.','I speak Vietnamese and English.','I go to Galileo Academy.','I am bilingual.']},
+    {k:'partner', name:'About my partner', e:'\ud83d\udc65', items:['This is my partner.','She is from Yemen.','He speaks Spanish and English.','They are sixteen years old.','We are bilingual.']},
+    {k:'pron', name:'Pronouns', e:'\ud83d\udc46', items:['I','you','he','she','it','we','they']}
+  ] }
 };
