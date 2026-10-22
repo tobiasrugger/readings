@@ -90,7 +90,7 @@ function adoptLocal(canon, typed){
     var tries=[typed, lp+'@sfusd.edu', lp+'@s.sfusd.edu'], i, d;
     for(i=0;i<tries.length;i++){
       d=localStorage.getItem(k+tries[i]);
-      if(d){ localStorage.setItem(k+canon, d); return; }
+      if(d){ localStorage.setItem(k+canon, d); if(tries[i]!==canon) localStorage.removeItem(k+tries[i]); return; }   /* T-88: move, not copy */
     }
   }catch(err){}
 }
@@ -157,32 +157,60 @@ function payload(){
   return { email: me.email, set_slug: SET.slug, student_name: me.name, period: me.period,
            work: state, scores: scoreSummary(), turned_in: state.turned, updated_at: new Date().toISOString() };
 }
+/* T-88 (Oct 22 2026) data-loss guard, same as the reel's T-79: nothing is saved until the
+   student's saved work has actually loaded (an empty answer is fine: a new student). If the
+   load fails: one retry after 3 s, then the dot turns red with a note, and it keeps trying
+   every 20 s. Student work is no longer copied into the browser (project rule); an old
+   browser-only copy is carried up to the server once, then removed after a confirmed save. */
+var loaded=false, loadTries=0, loadTimer=null;
+function oldKey(){ return 'vocab_'+SET.slug+'_'+me.email; }
+function saveNote(msg){
+  var n=$('saveNote');
+  if(!n){ var d=$('dot'); if(!d) return; n=document.createElement('span'); n.id='saveNote'; n.setAttribute('translate','no');
+    n.style.cssText='font-weight:800;font-size:13px;color:#b5452f;margin-left:6px'; d.parentNode.insertBefore(n, d.nextSibling); }
+  n.textContent=msg||'';
+}
 function save(){
   reportScore();
-  if(!me.email) return;
+  if(!me.email || !loaded) return;            /* T-88: never save before a successful load */
   $('dot').className='saving';
-  try{ localStorage.setItem('vocab_'+SET.slug+'_'+me.email, JSON.stringify(state)); }catch(err){}
   fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email,set_slug', {
     method:'POST',
     headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
     body: JSON.stringify(payload())
-  }).then(function(r){ $('dot').className = r.ok ? '' : 'err'; })
+  }).then(function(r){
+      $('dot').className = r.ok ? '' : 'err';
+      if(r.ok){ try{ localStorage.removeItem(oldKey()); }catch(e){} }
+    })
     .catch(function(){ $('dot').className='err'; });
 }
 function load(){
+  clearTimeout(loadTimer);
   fetch(SUPA_URL+'/rest/v1/'+TABLE+'?email=eq.'+encodeURIComponent(me.email)+'&set_slug=eq.'+encodeURIComponent(SET.slug)+'&select=work',
     {headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}})
-  .then(function(r){ return r.json(); })
+  .then(function(r){ if(!r.ok) throw new Error('load '+r.status); return r.json(); })
   .then(function(rows){
-    var w = rows && rows[0] && rows[0].work;
-    if(!w){ try{ w=JSON.parse(localStorage.getItem('vocab_'+SET.slug+'_'+me.email)||'null'); }catch(e){} }
+    if(!Array.isArray(rows)) throw new Error('load: not a list');
+    var w = rows[0] && rows[0].work, old=null;
+    if(!w){ try{ old=JSON.parse(localStorage.getItem(oldKey())||'null'); }catch(e){} if(old){ w=old; dirty=true; } }
+    loaded=true; loadTries=0; $('dot').className=''; saveNote('');
     if(w){ state = Object.assign(state, w); restore(); }
-  }).catch(function(){});
+    else if(!rows.length) dirty=true;           /* new student, or work done while offline: save it */
+  }).catch(function(){ loadFailed(); });
 }
-setInterval(function(){ if(dirty){ dirty=false; save(); } }, 2500);
+function loadFailed(){
+  loadTries++;
+  if(loadTries===1){ loadTimer=setTimeout(load, 3000); return; }
+  $('dot').className='err';
+  saveNote('Can\u2019t reach the server \u2014 your work is not being saved yet');
+  loadTimer=setTimeout(load, 20000);
+}
+setInterval(function(){ if(dirty && loaded){ dirty=false; save(); } }, 2500);
+document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='hidden' && dirty && loaded){ dirty=false; save(); } });
 function touch(){ dirty = true; }
 
 $('turnin').addEventListener('click', function(){
+  if(!loaded){ alert('The page can\u2019t reach the server yet. Wait a moment, then press Turn in again.'); return; }
   state.turned = true; save();
   alert('Turned in. You can keep working — it saves.');
 });
