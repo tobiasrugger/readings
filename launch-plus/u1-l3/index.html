@@ -453,6 +453,7 @@ var DATA={
 };
 
 var ST={name:'',email:'',period:'',act:0,A:{},W:{},turnedIn:null,browserTranslated:false};
+var ST0=JSON.stringify(ST);function freshState(){return JSON.parse(ST0);}
 function $(i){return document.getElementById(i);}
 function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
 /* ===================== ITEMS ===================== */
@@ -808,7 +809,7 @@ function save(){
 function load(){try{var k=localStorage.getItem(LAST_KEY);if(!k)return;var d=JSON.parse(localStorage.getItem(k));if(d)ST=Object.assign(ST,d);}catch(e){}}
 function clean(s){return String(s||'').trim().toLowerCase();}
 function push(force){
- if(!ST.email)return;if(!dirty&&!force)return;if(pushing)return;
+ if(!ST.email)return;if(!SYNCED){syncFromServer();return;}if(progressOf(ST)<SERVER_P)return;if(!dirty&&!force)return;if(pushing)return;
  pushing=true;dot('busy');var mySeq=++pushSeq;
  setTimeout(function(){if(pushing&&mySeq===pushSeq){pushing=false;dirty=true;dot('err');}},15000);
  var snap=JSON.parse(JSON.stringify(ST));dirty=false;
@@ -824,10 +825,64 @@ function turnIn(){
  if(!ST.email){askName();return;}
  var left=[1,2,3,4,5].filter(function(p){return !partDone(p);});
  if(left.length&&!confirm('You still have '+left.length+' part'+(left.length===1?'':'s')+' to finish. Turn in anyway?')){go(left[0]);return;}
- ST.turnedIn=new Date().toISOString();publishScore();dirty=true;pushing=false;push(true);
+ ST.turnedIn=new Date().toISOString();publishScore();dirty=true;pushing=false;if(SYNCED)push(true);else syncFromServer();
  setTimeout(function(){
   if($('saveDot').classList.contains('err'))alert('Could not reach the server. Your work is saved on this device. Try Turn in again when you have a connection.');
   else alert('Turned in. Thank you, '+ST.name.split(' ')[0]+'.');},1400);
+}
+
+/* ===================== SERVER SYNC (T-78, Oct 2026) =====================
+   Work is read back from launch_plus whenever a student is known, and nothing is pushed
+   until that read has succeeded. The server copy and this device's copy are merged item by
+   item (a finished item always beats an unfinished one; the longer writing wins), so a blank
+   page can never overwrite saved work. Canonical email is always <name>@sfusd.edu; rows
+   saved under @s.sfusd.edu are still found. */
+var SYNCED=false,SYNCING=false,SYNC_RETRY=null,SERVER_P=0,SYNC_WARNED=false;
+function canonical(e){var lp=localPart(e);return lp?lp+'@sfusd.edu':'';}
+function emailForms(e){var lp=localPart(e);return [lp+'@sfusd.edu',lp+'@s.sfusd.edu'];}
+function progressOf(s){if(!s)return 0;var n=0,A=s.A||{},W=s.W||{};
+ Object.keys(A).forEach(function(k){var x=A[k];if(!x)return;if(x.done)n+=3;else if(x.tries)n+=1;});
+ Object.keys(W).forEach(function(k){n+=String(W[k]||'').trim().split(/\s+/).filter(Boolean).length;});
+ if(s.turnedIn)n+=5;if(s.sayOpened)n+=1;return n;}
+function itemRank(x){return !x?0:x.done?3:(x.tries?1:0);}
+function mergeState(cur,srv){
+ if(!srv)return cur;
+ var out=Object.assign({},srv,cur),A={},ka=cur.A||{},kb=srv.A||{},W={},wa=cur.W||{},wb=srv.W||{};
+ Object.keys(kb).concat(Object.keys(ka)).forEach(function(k){if(k in A)return;var a=ka[k],b=kb[k];A[k]=itemRank(b)>itemRank(a)?b:(a||b);});
+ Object.keys(wb).concat(Object.keys(wa)).forEach(function(k){if(k in W)return;var x=String(wa[k]||'').trim(),y=String(wb[k]||'').trim();W[k]=y.length>x.length?wb[k]:(wa[k]!=null?wa[k]:wb[k]);});
+ out.A=A;out.W=W;out.turnedIn=cur.turnedIn||srv.turnedIn||null;out.sayOpened=cur.sayOpened||srv.sayOpened;out.egg=cur.egg||srv.egg;
+ if((cur.shades||[]).length<(srv.shades||[]).length)out.shades=srv.shades;
+ if(cur.layout===srv.layout)out.act=Math.max(cur.act||0,srv.act||0);
+ else if(progressOf(srv)>progressOf(cur)){out.act=srv.act||0;out.layout=srv.layout;}   /* older page layout: migrateAct() shifts it after the merge */
+ else out.act=cur.act||0;
+ return out;}
+function restoreLocal(c){emailForms(c).some(function(x){try{var d=JSON.parse(localStorage.getItem('lp_'+UNIT+'_'+x.replace(/[^a-z0-9]+/g,'_'))||'null');if(d){ST=Object.assign(ST,d);return true;}}catch(e){}return false;});}
+function refreshAfterSync(){buildItems();renderAnchors();if(typeof migrateAct==='function')migrateAct();go(ST.act||0);}
+function syncFromServer(then){
+ if(!ST.email){if(then)then();return;}
+ if(SYNCING)return;SYNCING=true;dot('busy');
+ var forms=emailForms(ST.email).map(encodeURIComponent).join(',');
+ fetch(SUPA_URL+'/rest/v1/'+TABLE+'?select=email,payload,updated_at&unit=eq.'+encodeURIComponent(UNIT)+'&email=in.('+forms+')',{headers:hdr()})
+ .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+ .then(function(rows){
+   SYNCING=false;clearTimeout(SYNC_RETRY);
+   var best=null;(rows||[]).forEach(function(row){if(row&&row.payload&&(!best||progressOf(row.payload)>progressOf(best.payload)))best=row;});
+   var me={name:ST.name,email:ST.email,period:ST.period};
+   if(best){ST=mergeState(ST,best.payload);ST.name=me.name;ST.email=me.email;ST.period=me.period;SERVER_P=progressOf(best.payload);}
+   SYNCED=true;SYNC_WARNED=false;dirty=true;
+   refreshAfterSync();if(then)then();
+   push(true);})
+ .catch(function(){
+   SYNCING=false;SYNCED=false;dot('err');
+   if(!SYNC_WARNED){SYNC_WARNED=true;try{toast("Can't reach the server. Your work is kept on this Chromebook for now.");}catch(x){}}
+   clearTimeout(SYNC_RETRY);SYNC_RETRY=setTimeout(function(){syncFromServer(then);},20000);});
+}
+function adoptSharedLogin(){
+ if(ST.email)ST.email=canonical(ST.email);
+ try{var at=+(localStorage.getItem('gal_student_at')||0),e=canonical(localStorage.getItem('gal_student_email')||'');
+  if(e&&at&&Date.now()-at<=12*3600*1000&&ST.email&&e!==ST.email){
+   ST=freshState();restoreLocal(e);ST.email=e;ST.name=localStorage.getItem('gal_student_name')||ST.name||'';ST.period=localStorage.getItem('gal_student_period')||ST.period||'';}
+ }catch(x){}
 }
 
 /* ===================== SIGN IN ===================== */
@@ -848,7 +903,7 @@ function loadRoster(){
 }
 function pickRoster(){var sel=$('rosterSel');if(!sel.value)return;$('emailIn').value=sel.value;$('nameIn').value=sel.options[sel.selectedIndex].textContent;$('nameErr').textContent='';}
 function localPart(e){return clean(e).split('@')[0];}
-function canonEmail(raw){var lp=localPart(raw);for(var i=0;i<ROSTER.length;i++){if(localPart(ROSTER[i].email)===lp)return clean(ROSTER[i].email);}return lp+'@s.sfusd.edu';}
+function canonEmail(raw){return canonical(raw);}
 function recordAlias(a,c){if(!a||a===c)return;fetch(SUPA_URL+'/rest/v1/student_aliases?on_conflict=alias_email',{method:'POST',headers:hdr('resolution=merge-duplicates,return=minimal'),body:JSON.stringify([{alias_email:a,email:c}])}).catch(function(){});}
 function seedRoster(email,full,period){var parts=full.split(' '),first=parts.shift()||'',last=parts.join(' ')||'';
  fetch(SUPA_URL+'/rest/v1/students?on_conflict=email',{method:'POST',headers:hdr('resolution=ignore-duplicates,return=minimal'),body:JSON.stringify([{email:email,first_name:first,last_name:last,period:period}])}).catch(function(){});}
@@ -860,11 +915,11 @@ function saveName(){
  var lg=$('langIn').value;if(!lg){err.textContent='Please choose your language.';return;}
  $('lang').value=lg;setLang(lg);
  var canon=canonEmail(e);
- try{var mine=localStorage.getItem('lp_'+UNIT+'_'+canon.replace(/[^a-z0-9]+/g,'_'));if(mine&&canon!==ST.email){var d=JSON.parse(mine);if(d)ST=Object.assign(ST,d);}}catch(x){}
- recordAlias(e,canon);ST.name=n;ST.email=canon;ST.period=pd;
+ if(canon!==ST.email){ST=freshState();restoreLocal(canon);}
+ recordAlias(e,canon);ST.name=n;ST.email=canon;ST.period=pd;SYNCED=false;SERVER_P=0;
  $('whoami').textContent=n+' \u00b7 P'+pd;$('namewrap').classList.remove('show');showWhoBar();
  shareLogin();
- applyFlags();seedRoster(canon,n,pd);save();push(true);buildItems();go(ST.act||0);
+ applyFlags();seedRoster(canon,n,pd);buildItems();go(ST.act||0);syncFromServer();
 }
 
 /* ===================== DIRECTIONS IN MY LANGUAGE ===================== */
@@ -936,7 +991,7 @@ function resumeLogin(){
  try{
   var at=+(localStorage.getItem('gal_student_at')||0),e=localStorage.getItem('gal_student_email')||'';
   if(!e||!at||Date.now()-at>12*3600*1000)return false;
-  if(!ST.email){ST.email=e;ST.name=localStorage.getItem('gal_student_name')||'';ST.period=localStorage.getItem('gal_student_period')||'';}
+  if(!ST.email){ST.email=canonical(e);ST.name=localStorage.getItem('gal_student_name')||'';ST.period=localStorage.getItem('gal_student_period')||'';}
   return !!ST.email;
  }catch(x){return false;}
 }
@@ -1038,7 +1093,7 @@ function plantLeo(){var b=document.getElementById('leo');if(b&&!b.innerHTML){b.i
 
 /* ===================== BOOT ===================== */
 function boot(){
- load();buildItems();renderAnchors();
+ load();adoptSharedLogin();buildItems();renderAnchors();
  if(window.Shades){Shades.mount({root:null,toggle:$('wordmode'),compact:true,getLang:function(){var v=lang();return v==='Chinese (Simplified)'?'Mandarin':(v||'Spanish');},mode:new URLSearchParams(location.search).get('mode')||(ST.wordModePicked?ST.wordMode:'dictionary'),onMode:function(m,src){if(src==='user')ST.wordModePicked=true;if(ST.wordMode!==m||src==='user'){ST.wordMode=m;save();}},onUse:function(u){(ST.shades=ST.shades||[]).push(u);window.GAL_HIGHLIGHTS=[{label:'Bigger word',text:u.base+' \u2192 '+u.word+': '+u.sentence}]; save();}});}
  fetchFlags();
  $('whoami').textContent=ST.name?(ST.name+(ST.period?' \u00b7 P'+ST.period:'')):'';
@@ -1048,7 +1103,7 @@ function boot(){
  showWhoBar();
  go(ST.act||0);dot('on');
  if(L){showDirections();warmUp();}
- if(!ST.email||!L)askName();else if(resumed)push(false);
+ if(!ST.email||!L)askName();else syncFromServer();
  setTimeout(checkCanary,2500);setInterval(checkCanary,20000);
  setInterval(function(){push(false);},20000);
  document.addEventListener('visibilitychange',function(){if(document.hidden)push(false);});
