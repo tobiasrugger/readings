@@ -865,8 +865,11 @@
     if (/^\/readings\/student(\/|$)/.test(p)) return true;               /* the student page itself */
     if (/^\/readings\/?(index\.html)?$/.test(p)) return true;              /* the hub */
     if (TEACHER_PATH.test(p)) return true;
+    /* teacher-only screen = a password box and NO student email box. Email boxes are found by
+       type, autocomplete, id or name (News's is #gEmail with no type="email" — it used to be
+       mistaken for a teacher screen, so My Page never showed there). */
     var pw = document.querySelector('input[type=password]');
-    if (pw && !document.querySelector('input[type=email], #gmail')) return true; /* teacher-only screen */
+    if (pw && !document.querySelector('input[type=email], input[autocomplete=email], input[id*="mail" i], input[name*="mail" i]')) return true;
     return false;
   }
   function cleanTitle(t) {
@@ -897,7 +900,20 @@
     'font:800 17px Nunito,system-ui,sans-serif;vertical-align:middle}' +
     '@media print{#galMyBar,#galMyPage,#galMyDone,.gal-mypage-inline{display:none !important}}';
   var myDone = false;
-  function myPageHome() { return ss('gal_home') || ''; }
+  function myPageHome() {
+    var h = ss('gal_home');
+    /* a link opened in a NEW tab (target=_blank rel=noopener) starts with an empty sessionStorage,
+       but the browser still reports where it came from: if that was the student page, adopt it */
+    if (!h) {
+      try {
+        var r = document.referrer ? new URL(document.referrer) : null;
+        if (r && r.origin === location.origin && /^\/readings\/student(\/|$)/.test(r.pathname)) {
+          h = MYPAGE_DEFAULT; ss('gal_home', h);
+        }
+      } catch (e) {}
+    }
+    return h || '';
+  }
   function markDone() {
     if (myDone) return; myDone = true;
     ss('gal_last_done', '1');
