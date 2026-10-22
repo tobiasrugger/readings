@@ -566,7 +566,18 @@
   }
   function speakEn(text, rate) {
     if (!window.speechSynthesis || !text) return;
-    var t = String(text).replace(/\bI\b(?![\u2019'])/g, 'eye');      /* "I" -> "eye" */
+    var t = String(text);
+    /* T-87: never read emoji aloud (a 🌍 was spoken "globe showing Europe-Africa").
+       Same strip as the Holidays/Monsters engine: flags, then pictographs, then
+       variation selectors / joiners / keycaps, then collapse the spaces left behind. */
+    try {
+      t = t.replace(/[\u{1F1E6}-\u{1F1FF}]/gu, '')
+           .replace(/\p{Extended_Pictographic}/gu, '')
+           .replace(/[\uFE0F\u200D\u20E3]/g, '');
+    } catch (e) {}                                                     /* very old browser: speak as before */
+    t = t.replace(/\s{2,}/g, ' ').replace(/\s+([.,!?;:])/g, '$1').trim();
+    if (!t) return;
+    t = t.replace(/\bI\b(?![\u2019'])/g, 'eye');                       /* "I" -> "eye" */
     speechSynthesis.cancel();
     var u = new SpeechSynthesisUtterance(t);
     u.lang = 'en-US'; u.rate = rate || 0.85;
