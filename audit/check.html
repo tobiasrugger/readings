@@ -218,6 +218,7 @@ function kindOf(path, t){
                .replace(/<input[^>]*(aria-label\s*=\s*["'][^"']*search|placeholder\s*=\s*["'][^"']*(find|search))[^>]*>/gi, '');
   if (!/<textarea|<input|class="choice|data-q=|data-k=|data-ans=/i.test(body0)) return 'hub';
   if (low.indexOf('dashboard') >= 0 || low.indexOf('teacher') >= 0) return 'teacher';
+  if (/positioner|builder|editor|importer|admin/.test(name)) return 'teacher';
   if (['gradebook.html','assign.html','wall.html','report.html'].indexOf(name) >= 0) return 'teacher';
   if (['gradebook','roadmap'].indexOf(low.split('/')[0]) >= 0) return 'teacher';
   var title = (t.match(/<title>([^<]{0,120})<\/title>/i) || [,''])[1];
@@ -393,6 +394,7 @@ document.getElementById('goAll').addEventListener('click', function(){
       }).catch(function(){
         var fresh = JSON.parse(JSON.stringify(row));
         fresh.gone = true; fresh.drift = false;
+        fresh.why = (row.repo !== 'readings') ? 'not published on the web' : 'no longer there';
         FRESH.push(fresh);
       }).then(function(){
         done++;
@@ -443,7 +445,7 @@ function render(){
     if (r.drift) tr.className = 'drift';
     var th = document.createElement('th');
     th.innerHTML = (r.drift ? '<b>changed</b> \u00b7 ' : '') + (r.file || r.path) +
-      '<small>' + r.repo + '/' + (r.dir || '') + (r.gone ? ' \u00b7 could not fetch' : '') + '</small>';
+      '<small>' + r.repo + '/' + (r.dir || '') + (r.gone ? ' \u00b7 ' + (r.why || 'could not fetch') : '') + '</small>';
     tr.appendChild(th);
     COLS.forEach(function(c){
       var v = r[c] || ['na','n/a'], td = document.createElement('td');
@@ -462,7 +464,11 @@ function render(){
   document.getElementById('summary').innerHTML =
     '<b>' + FRESH.length + '</b> pages checked live \u00b7 <b>' + students.length + '</b> student pages \u00b7 <b>' +
     green + '</b> meet every check \u00b7 <b>' + drift + '</b> changed since the saved grid' +
-    (gone ? ' \u00b7 <b>' + gone + '</b> could not be fetched (moved or deleted?)' : '') +
+    (gone ? ' \u00b7 <b>' + gone + '</b> not reachable: ' +
+      FRESH.filter(function(r){ return r.gone && r.repo !== 'readings'; }).length +
+      ' in repos with no website, ' +
+      FRESH.filter(function(r){ return r.gone && r.repo === 'readings'; }).length +
+      ' gone from readings' : '') +
     (shown.length !== FRESH.length ? ' \u00b7 showing ' + shown.length : '');
 }
 </script>

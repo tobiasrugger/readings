@@ -2345,6 +2345,164 @@ var VETSX = (function(){
   return { togglePrint:togglePrint, toggleMotion:toggleMotion, toggleWT:toggleWT };
 })();
 </script>
-<script src="vets_std.js" data-slug="vets-01-101a"></script>
+<script src="vets_l10n.js" data-slug="vets-01"></script>
+<script src="/readings/track.js"></script>
+<script>
+/* ── Sign in ───────────────────────────────────────────────────────
+   Story 1 used to get its sign-in from vets_std.js. That module was
+   retired once the other stories were rebuilt with gates of their own,
+   which left this page with no way to know who the student is — and
+   its own save code bails out when gal_student_email is empty, so
+   nothing was being recorded. This is the same gate the other stories
+   carry, written into the page so it depends on nothing. */
+(function(){
+  'use strict';
+  var SUPA = 'https://lhmwtfyceilgndpygivj.supabase.co';
+  var KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+
+  function head(pref){
+    var h = {apikey:KEY, Authorization:'Bearer '+KEY, 'Content-Type':'application/json'};
+    if (pref) h.Prefer = pref;
+    return h;
+  }
+  function canon(e){
+    e = (e||'').trim().toLowerCase();
+    if (e.indexOf('@s.sfusd.edu') > 0) e = e.replace('@s.sfusd.edu', '@sfusd.edu');
+    return e;
+  }
+  function valid(e){ return /^[^@\s]+@(s\.)?sfusd\.edu$/.test((e||'').trim().toLowerCase()); }
+
+  function already(){
+    try { return localStorage.getItem('gal_student_email') || ''; } catch(e){ return ''; }
+  }
+
+  function css(){
+    var s = document.createElement('style');
+    s.textContent =
+      '#v1gate{position:fixed;inset:0;z-index:9999;background:#1A1F2E;color:#F5EFE2;' +
+      'display:flex;align-items:center;justify-content:center;padding:18px;font-family:inherit}' +
+      '#v1gate .box{background:#F5EFE2;color:#1A1F2E;border:2px solid #10131c;border-radius:16px;' +
+      'box-shadow:0 10px 30px rgba(0,0,0,.35);max-width:430px;width:100%;padding:20px}' +
+      '#v1gate h2{margin:0 0 4px;font-size:1.25rem}' +
+      '#v1gate p{margin:0 0 14px;font-size:.9rem;color:#4b5565}' +
+      '#v1gate label{display:block;font-weight:800;font-size:.82rem;margin:10px 0 3px}' +
+      '#v1gate input,#v1gate select{width:100%;font:inherit;font-size:.95rem;padding:10px;' +
+      'border:2px solid #c9c2b2;border-radius:10px;background:#fff;color:#1A1F2E}' +
+      '#v1gate button{width:100%;margin-top:16px;font:inherit;font-weight:800;font-size:1rem;' +
+      'padding:12px;border:0;border-radius:999px;background:#D94A38;color:#fff;cursor:pointer}' +
+      '#v1err{color:#B91C1C;font-weight:800;font-size:.84rem;min-height:20px;margin-top:8px}';
+    document.head.appendChild(s);
+  }
+
+  var LANGS = [['','Choose your language'],['Spanish','Espa\u00f1ol'],['Chinese (Simplified)','\u4e2d\u6587'],
+    ['Arabic','\u0627\u0644\u0639\u0631\u0628\u064a\u0629'],['Vietnamese','Ti\u1ebfng Vi\u1ec7t'],
+    ['Russian','\u0420\u0443\u0441\u0441\u043a\u0438\u0439'],['Urdu','\u0627\u0631\u062f\u0648'],
+    ['Tagalog','Tagalog'],['French','Fran\u00e7ais'],['Korean','\ud55c\uad6d\uc5b4'],
+    ['Hindi','\u0939\u093f\u0928\u094d\u0926\u0940'],['Somali','Soomaali'],
+    ['Nepali','\u0928\u0947\u092a\u093e\u0932\u0940'],['Thai','\u0e44\u0e17\u0e22']];
+
+  function build(){
+    css();
+    var g = document.createElement('div');
+    g.id = 'v1gate';
+    g.setAttribute('translate','no');
+    g.innerHTML =
+      '<div class="box">' +
+      '<h2>Very Easy True Stories</h2>' +
+      '<p>Sign in so your work saves.</p>' +
+      '<label for="v1mail">Your school email</label>' +
+      '<input id="v1mail" type="email" placeholder="name@s.sfusd.edu" autocomplete="email" autocapitalize="off">' +
+      '<label for="v1name">Your name</label>' +
+      '<input id="v1name" type="text" placeholder="First Last" autocomplete="name">' +
+      '<label for="v1per">Your class period</label>' +
+      '<select id="v1per"><option value="">Choose your period</option>' +
+      '<option>1</option><option>2</option><option>3</option><option>4</option>' +
+      '<option>5</option><option>6</option><option>7</option></select>' +
+      '<label for="v1lang">Your language</label>' +
+      '<select id="v1lang">' + LANGS.map(function(l){
+        return '<option value="' + l[0] + '">' + l[1] + '</option>'; }).join('') + '</select>' +
+      '<div id="v1err"></div>' +
+      '<button type="button" id="v1go">Start the story \u2192</button>' +
+      '</div>';
+    document.body.appendChild(g);
+
+    /* already signed in on another activity today? fill it in */
+    try {
+      var e = already(), n = localStorage.getItem('gal_student_name') || '',
+          p = localStorage.getItem('gal_student_period') || '',
+          l = localStorage.getItem('vocab_lang') || localStorage.getItem('gal_lang') || '';
+      if (e) document.getElementById('v1mail').value = e;
+      if (n) document.getElementById('v1name').value = n;
+      if (p) document.getElementById('v1per').value = p;
+      if (l) document.getElementById('v1lang').value = l;
+    } catch(err){}
+
+    document.getElementById('v1go').addEventListener('click', submit);
+    document.getElementById('v1mail').addEventListener('keydown', function(ev){
+      if (ev.key === 'Enter') document.getElementById('v1name').focus();
+    });
+  }
+
+  function submit(){
+    var raw  = document.getElementById('v1mail').value,
+        name = document.getElementById('v1name').value.trim(),
+        per  = document.getElementById('v1per').value,
+        lang = document.getElementById('v1lang').value,
+        err  = document.getElementById('v1err');
+    if (!valid(raw)) { err.textContent = 'Use your school email \u2014 it ends with @s.sfusd.edu'; return; }
+    if (name.length < 2) { err.textContent = 'Please type your name.'; return; }
+    if (!per) { err.textContent = 'Please choose your class period.'; return; }
+    err.textContent = '';
+
+    var email = canon(raw);
+    try {
+      localStorage.setItem('gal_student_email', email);
+      localStorage.setItem('gal_student_name', name);
+      localStorage.setItem('gal_student_period', per);
+      localStorage.setItem('gal_student_at', String(Date.now()));
+      if (lang) { localStorage.setItem('vocab_lang', lang); localStorage.setItem('gal_lang', lang); }
+    } catch(e){}
+
+    /* the address they typed is recorded too, so older rows still match */
+    if (canon(raw) !== raw.trim().toLowerCase()) {
+      fetch(SUPA + '/rest/v1/student_aliases?on_conflict=email', {method:'POST',
+        headers: head('resolution=merge-duplicates,return=minimal'),
+        body: JSON.stringify([{email: raw.trim().toLowerCase(), canonical: email}])}).catch(function(){});
+    }
+    fetch(SUPA + '/rest/v1/students?on_conflict=email', {method:'POST',
+      headers: head('resolution=merge-duplicates,return=minimal'),
+      body: JSON.stringify([{email: email, name: name, period: per}])}).catch(function(){});
+
+    /* hand the language to the page's own picker, which works in codes
+       and keeps its own key (vets_lang) */
+    var CODE = {Spanish:'es','Chinese (Simplified)':'zh-CN',Arabic:'ar',Vietnamese:'vi',
+      Russian:'ru',Urdu:'ur',Tagalog:'tl',French:'fr',Korean:'ko',Hindi:'hi',
+      Somali:'so',Nepali:'ne',Thai:'th'};
+    var code = CODE[lang] || '';
+    if (code) { try { localStorage.setItem('vets_lang', code); } catch(e){} }
+    var pick = document.getElementById('lang-pick');
+    if (pick && code) {
+      try {
+        pick.value = code;
+        if (pick.value !== code) {          /* not built yet — try again shortly */
+          setTimeout(function(){ pick.value = code; fire(pick); }, 600);
+        } else { fire(pick); }
+      } catch(e){}
+    }
+    var g = document.getElementById('v1gate');
+    if (g) g.remove();
+    if (typeof window.startStory === 'function') { try { window.startStory(); } catch(e){} }
+  }
+
+  function fire(el){
+    try { el.dispatchEvent(new Event('change', {bubbles:true})); } catch(e){}
+    if (typeof el.onchange === 'function') { try { el.onchange(); } catch(e){} }
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', build);
+  else build();
+})();
+</script>
+
 </body>
 </html>
