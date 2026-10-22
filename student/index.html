@@ -1434,6 +1434,14 @@ function toggleAll(){SHOW_ALL=!SHOW_ALL;renderActs();}
    under 90% of the page. Ordered by how close they are, so the quickest win
    is on top. Not a scolding list: it says what is left, not what is wrong. */
 var FINISH_AT=90;
+/* An attempt's slug is its path under /readings/ (track.js). Pages missing from the activities table
+   (Brothers in Arms, the new stories) still get a title and a working link: assign catalog first, then the folder. */
+function slugLink(slug){
+  slug=String(slug||'').replace(/^\/+|\/+$/g,'');
+  var c=window.CATALOG||[], tries=['/readings/'+slug+'/','/readings/'+slug+'.html'];
+  for(var i=0;i<tries.length;i++)for(var j=0;j<c.length;j++)if(c[j].p===tries[i])return {url:c[j].p,title:c[j].t.replace(/\s*\((locked)\)/,'')};
+  return {url:slug&&slug!=='home'?'/readings/'+slug+'/':'',title:prettySlug(slug.split('/').pop())};
+}
 function renderFinish(){
   var card=document.getElementById('finishCard'), body=document.getElementById('finBody');
   if(!card)return;
@@ -1445,7 +1453,8 @@ function renderFinish(){
     l.forEach(function(a){ if(a.max_score>0 && a.score!=null){ var p=Math.round(100*a.score/a.max_score); if(best==null||p>best)best=p; } });
     if(best==null||best>=FINISH_AT)return;
     var act=titleOf[slug]||{};
-    rows.push({slug:slug,pct:best,title:act.title||slug,unit:act.unit||'',url:act.url||''});
+    var sl=slugLink(slug);
+    rows.push({slug:slug,pct:best,title:act.title||sl.title,unit:act.unit||'',url:act.url||sl.url});
   });
   rows.sort(function(a,b){return b.pct-a.pct;});
   if(!rows.length){card.classList.add('hide');return;}
