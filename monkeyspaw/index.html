@@ -707,6 +707,32 @@ body.easy .story p{ font-size:calc(var(--tsize) + .05rem); line-height:calc(var(
 #trbadge.warn{ background:#7b2a1f; cursor:pointer; }
 .dirtr.waiting{ opacity:.55; }
 @media print{ #trbadge{ display:none !important; } }
+
+/* ===== Oct 22: the cozy/creepy questions could not be reached on an iPad.
+   On a narrow screen the side rail becomes a drawer a student has to open,
+   so the signal questions now sit in the story itself, under the paragraph
+   they belong to. The rail keeps them on a wide screen. ===== */
+.sigq{ clear:both; border:2px solid var(--amber); border-left-width:6px; border-radius:10px;
+  background:#fdf7e8; padding:.8rem .95rem .9rem; margin:.3rem 0 1.5rem;
+  box-shadow:0 3px 0 #e6d7b4; }
+.sigq.wrong{ background:#fbf0ee; border-color:var(--blood); }
+.sigq.both{ background:#fbf6ea; border-color:#8a6b42; }
+.sigq .sq-ask2{ margin-top:-.2rem; }
+.sigq .sq-lbl{ font-family:'Courier Prime',monospace; font-size:.62rem; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--amber-text); margin:0 0 .35rem; display:flex;
+  align-items:center; gap:.4rem; }
+.sigq.wrong .sq-lbl{ color:var(--blood); }
+.sigq .sq-mark{ font-size:1rem; }
+.sigq .sq-ask{ font-family:'Lora',Georgia,serif; font-size:1rem; line-height:1.55;
+  color:var(--ink); margin:0 0 .5rem; }
+.sigq textarea{ width:100%; min-height:62px; font:inherit; font-size:1rem; line-height:1.6;
+  border:2px solid #4a3a28; border-radius:8px; background:var(--card); color:var(--ink);
+  padding:.45rem .6rem; resize:vertical; outline:none; }
+.sigq textarea:focus{ border-color:var(--amber); }
+.sigq .sq-done{ font-family:'Courier Prime',monospace; font-size:.62rem; color:#3d6b4a;
+  margin-top:.3rem; min-height:1em; }
+@media (min-width:1100px){ .sigq{ display:none; } }
+@media print{ .sigq{ display:none !important; } }
 </style>
 </head>
 <span id="canary" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden">the quick brown fox jumps over the lazy dog</span>
@@ -3302,5 +3328,110 @@ showScore();
 </script>
 <script src="../vocab/monkeyspaw-art.js"></script>
 <script src="/readings/track.js"></script>
+
+<script>
+/* ============================================================
+   Oct 22 — the signal questions, in the story.
+   On an iPad or a phone the side rail is a drawer behind a ☰
+   button, so the cozy/creepy questions were effectively out of
+   reach. Each signal paragraph now carries its own question box
+   underneath it on narrow screens. It writes to the same NOTES
+   entry as the rail, so a student can switch devices mid-answer
+   and nothing is lost, and the teacher sees one note either way.
+   ============================================================ */
+(function(){
+  var NARROW = 1099;
+  function askFor(wrong){
+    try{ return wrong ? SIGQ.wrong : SIGQ.cozy; }catch(e){ return "What do you notice here?"; }
+  }
+  function labelFor(wrong){
+    var el = document.querySelector('.sigbox .legend-item' + (wrong ? ':nth-child(3)' : ':nth-child(2)'));
+    return wrong ? "SIGNAL" : "SIGNAL";
+  }
+  function build(){
+    if(window.innerWidth > NARROW){
+      var old = document.querySelectorAll('.sigq'), k;
+      for(k = 0; k < old.length; k++){
+        /* keep whatever was typed; the rail shows it on a wide screen */
+        old[k].parentNode.removeChild(old[k]);
+      }
+      return;
+    }
+    /* one box per signal PARAGRAPH, not per mark — a paragraph can carry
+       both a calm and a mad signal, and then it asks both questions */
+    var marks = document.querySelectorAll('.story .atm-label'), i;
+    var byPara = [], seen = {};
+    for(i = 0; i < marks.length; i++){
+      var pEl = marks[i].closest ? marks[i].closest('p') : null;
+      if(!pEl) continue;
+      var pid = pEl.getAttribute('data-p');
+      if(!pid) continue;
+      var sp = marks[i].closest('.atm');
+      var isWrong = !!(sp && sp.classList.contains('wrong-signal'));
+      if(!seen[pid]){ seen[pid] = { el: pEl, id: pid, calm: false, wrong: false }; byPara.push(seen[pid]); }
+      if(isWrong) seen[pid].wrong = true; else seen[pid].calm = true;
+    }
+    for(i = 0; i < byPara.length; i++){
+      var rec = byPara[i], para = rec.el, id = rec.id;
+      if(para.nextSibling && para.nextSibling.className &&
+         String(para.nextSibling.className).indexOf('sigq') > -1) continue;
+      var both = rec.calm && rec.wrong;
+      var wrong = rec.wrong && !rec.calm;
+      var marksTxt = (rec.calm ? '\u2600' : '') + (rec.wrong ? '\u2726' : '');
+      var box = document.createElement('div');
+      box.className = 'sigq' + (wrong ? ' wrong' : '') + (both ? ' both' : '');
+      box.setAttribute('data-for', id);
+      box.innerHTML =
+        '<p class="sq-lbl"><span class="sq-mark">' + marksTxt + '</span>' +
+        '<span>' + (both ? 'Two signals' : 'Signal') + ' \u00b7 paragraph ' + id + '</span></p>' +
+        '<p class="sq-ask"></p>' +
+        (both ? '<p class="sq-ask sq-ask2"></p>' : '') +
+        '<textarea placeholder="Write what you notice\u2026"></textarea>' +
+        '<div class="sq-done"></div>';
+      if(both){
+        box.querySelector('.sq-ask').textContent = '\u2600 ' + askFor(false);
+        box.querySelector('.sq-ask2').textContent = '\u2726 ' + askFor(true);
+      } else {
+        box.querySelector('.sq-ask').textContent = askFor(rec.wrong);
+      }
+      var ta = box.querySelector('textarea');
+      try{ ta.value = (NOTES && NOTES[id]) ? NOTES[id] : ''; }catch(e){}
+      (function(key, ta, box){
+        ta.addEventListener('input', function(){
+          NOTES[key] = this.value;
+          try{ saveNotes(); }catch(e){}
+          try{ markPens(); }catch(e){}
+          try{ drawNotePrint(); }catch(e){}
+          try{ queueSave(); }catch(e){}
+          box.querySelector('.sq-done').textContent = this.value.trim() ? 'Saved' : '';
+          /* keep the rail copy in step if it is on screen */
+          var twin = document.querySelector('.rprompt[data-for="' + key + '"] textarea');
+          if(twin && twin !== this) twin.value = this.value;
+        });
+      })(id, ta, box);
+      if(ta.value.trim()) box.querySelector('.sq-done').textContent = 'Saved';
+      para.parentNode.insertBefore(box, para.nextSibling);
+    }
+  }
+  /* the rail writing into the same note keeps the inline copy in step too */
+  document.addEventListener('input', function(e){
+    var t = e.target;
+    if(!t || !t.closest) return;
+    var card = t.closest('.rprompt');
+    if(!card) return;
+    var key = card.getAttribute('data-for');
+    var twin = document.querySelector('.sigq[data-for="' + key + '"] textarea');
+    if(twin && twin !== t) twin.value = t.value;
+  });
+  var t = null;
+  function kick(){ clearTimeout(t); t = setTimeout(build, 120); }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', kick);
+  else kick();
+  window.addEventListener('resize', kick);
+  document.addEventListener('click', function(){ setTimeout(kick, 200); });
+  setTimeout(kick, 900); setTimeout(kick, 2200);
+  window.GAL_buildSigQ = build;
+})();
+</script>
 </body>
 </html>
