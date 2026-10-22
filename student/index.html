@@ -363,6 +363,18 @@ details.wq .qm{font-size:.85rem;color:var(--muted);font-weight:800}
 /* Finish This sits inside the green band as a white box, not a second attention card */
 #finishCard.finsec{background:#fff;border:2px solid var(--plum-dk);border-radius:14px;padding:10px 14px 4px;margin:0 0 12px}
 #finishCard.finsec h2.finlabel{margin:0 0 4px;padding:0;border:0;font-size:.9rem;color:var(--green);text-transform:uppercase;letter-spacing:.05em}
+
+/* ---- Welcome back (T-100): a student returning from an activity lands on the band, sees it saved, and the next thing pulses ---- */
+.backtoast{display:flex;gap:12px;align-items:center;background:#1f7a4d;color:#fff;border:2px solid #0f4d2f;border-radius:14px;padding:12px 16px;margin:0 0 12px;font-weight:900;font-size:1.08rem;box-shadow:0 4px 0 rgba(0,0,0,.2)}
+.backtoast .big{font-size:1.6rem;line-height:1}
+.backtoast small{display:block;font-weight:700;font-size:.9rem;opacity:.92}
+.isnext{animation:isnext 1.4s ease-in-out 0s 6;outline:4px solid #f2b632;outline-offset:3px;border-radius:14px}
+@keyframes isnext{0%,100%{box-shadow:0 0 0 0 rgba(242,182,50,.0)}50%{box-shadow:0 0 0 10px rgba(242,182,50,.45)}}
+#pushBox{display:flex;flex-direction:column}
+.nextinner .pushrow:has(.pp.done){order:2;opacity:.8;box-shadow:none;border-width:2px;padding:9px 14px}
+.nextinner .pushrow:has(.pp.done) .pt{font-size:1.05rem}
+.nextinner .pushrow:has(.pp.done) .btn{background:#fff;color:var(--green);border:2px solid var(--green);font-size:.95rem;padding:7px 14px}
+.nexttag{display:inline-block;background:#f2b632;color:#3d2a10;border-radius:8px;padding:1px 8px;font-size:.78rem;font-weight:900;margin-left:8px;vertical-align:middle}
 /* ---- one attention band: Mr. Toby's assignment leads, practice follows ---- */
 .nextinner .pushrow{background:#fff;border:3px solid var(--plum-dk);border-radius:14px;padding:14px 16px;margin:0 0 12px;display:flex;gap:14px;align-items:center;justify-content:space-between;box-shadow:0 4px 0 rgba(43,34,68,.22)}
 .nextinner .pushrow .from{font-size:.78rem;font-weight:900;color:var(--plum);text-transform:uppercase;letter-spacing:.06em}
@@ -791,7 +803,8 @@ async function load(email){
   document.getElementById('page').classList.remove('hide');
   renderAll();
   loadSpeaking(email);
-  loadPushed(email);
+  markHome();
+  loadPushed(email).then(function(){ setTimeout(welcomeBack,600); });
   loadReading(email);
 }
 
@@ -848,6 +861,38 @@ async function loadReading(email){
       '<td class="noprint"><a class="btn sm '+(x.done?'ghost':'')+'" href="'+esc(url)+'">'+(x.done?'Open':'Keep going')+'</a></td></tr>';
   }).join('')+((DATA.atts||[]).length?'<tr class="secline"><td colspan="4">Practice</td></tr>':''):'';
   renderActs(); renderGlance(); translatePage();
+}
+
+/* ---------- Coming back from an activity (T-100) ----------
+   Contract with std.js (sitewide, owned by the std.js chat):
+     sessionStorage gal_home       = '/readings/student/'  (set here: this tab started on My Page)
+     sessionStorage gal_last_page  = path of the activity the student just left (set by std.js)
+     sessionStorage gal_last_title = its title (std.js)
+     sessionStorage gal_last_done  = '1' if they turned it in / finished (std.js)
+   sessionStorage only holds where the student came from in this tab — never their work. */
+function markHome(){ if(READ_ONLY)return; try{ sessionStorage.setItem('gal_home','/readings/student/'); }catch(e){} }
+function samePath(a,b){ function n(x){return String(x||'').split('?')[0].split('#')[0].replace(/index\.html$/,'').replace(/\/+$/,'');} return n(a)===n(b); }
+function welcomeBack(){
+  if(READ_ONLY)return;
+  var last='',title='',done=false;
+  try{ last=sessionStorage.getItem('gal_last_page')||''; title=sessionStorage.getItem('gal_last_title')||''; done=sessionStorage.getItem('gal_last_done')==='1';
+       sessionStorage.removeItem('gal_last_page'); sessionStorage.removeItem('gal_last_title'); sessionStorage.removeItem('gal_last_done'); }catch(e){}
+  if(!last||samePath(last,'/readings/student/'))return;
+  var inner=document.querySelector('#nextBand .nextinner'); if(!inner)return;
+  document.getElementById('nextBand').classList.remove('hide');
+  /* the next thing: first pushed row not turned in, then Finish This, then practice */
+  var cand=[].slice.call(document.querySelectorAll('#pushBox .pushrow')).filter(function(r){
+    var a=r.querySelector('a'); return !r.querySelector('.pp.done') && !(a&&samePath(a.getAttribute('href'),last)&&done);
+  }).concat([].slice.call(document.querySelectorAll('#finBody > *')).filter(function(r){var a=r.querySelector('a');return a&&!(done&&samePath(a.getAttribute('href'),last));}))
+    .concat([].slice.call(document.querySelectorAll('#growth .ncell')));
+  var next=cand[0]||null;
+  var t=document.createElement('div'); t.className='backtoast';
+  t.innerHTML='<span class="big">'+(done?'&#10003;':'&#128190;')+'</span><div>'+(done?'Done! ':'Saved. ')+esc(title||'Your work')+
+    '<small>'+(next?'Your next one is marked below.':'You finished everything on your list. Nice work!')+'</small></div>';
+  inner.insertBefore(t,inner.querySelector('#nextTitle').nextSibling);
+  if(next){ next.classList.add('isnext'); var h=next.querySelector('.pt,b,.ntitle'); if(h&&!h.querySelector('.nexttag'))h.insertAdjacentHTML('beforeend','<span class="nexttag">NEXT</span>'); }
+  try{ translatePage(); }catch(e){}
+  setTimeout(function(){ document.getElementById('nextBand').scrollIntoView({behavior:'smooth',block:'start'}); },150);
 }
 /* ---------- From Mr. Toby ----------
    Activities pushed to a period from /readings/assign/ live in class_assignments
