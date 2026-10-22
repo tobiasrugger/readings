@@ -1,4 +1,4 @@
-/* Built from the live repo 2026-10-19: the cards on the main hub (with their groups and descriptions), then every other student page on disk.
+/* Built from the live repo 2026-10-22: the cards on the main hub (with their groups and descriptions), then every other student page on disk.
    Rebuild by asking Claude for "refresh the assign catalog". p = path, t = title, d = description, m = card note, g = group. */
 window.CATALOG=[
 {
@@ -39,7 +39,7 @@ window.CATALOG=[
 {
 "p": "/readings/brothers-in-arms/",
 "t": "Brothers in Arms",
-"d": "Read-aloud novel in 8 chapters for newcomers and SIFE: listen, tap to translate, check, play, fix, write, say it. Easier and Harder.",
+"d": "Read-aloud novel in 8 chapters for newcomers and SIFE students: listen with highlighted words, tap to translate, check, play, fix, write, and say it. Easier and Harder levels.",
 "m": "Newcomer · SIFE · 8 chapters · pictures by Thi Bui",
 "g": "Novels and long texts"
 },
@@ -193,8 +193,15 @@ window.CATALOG=[
 {
 "p": "/readings/holidays/",
 "t": "Ghosts, Candy, and Remembering",
-"d": "Halloween and Día de los Muertos, then holidays from ten countries, with a family survey and class charts.",
-"m": "Multi-level · 9 tabs · 71 points · 10 days",
+"d": "Halloween, Día de los Muertos and where it came from, then days for the dead in thirteen countries — twelve picture screens, Level A and B.",
+"m": "ELD 101 · 12 screens · Level A/B · 81 points",
+"g": "History and the world"
+},
+{
+"p": "/readings/monsters/",
+"t": "Monsters as Symbols",
+"d": "What monsters symbolize: sixteen fears, eight classic monsters, and twelve scary stories from students’ home countries.",
+"m": "ELD 103 · 12 screens · 12 world stories · 63 points",
 "g": "History and the world"
 },
 {
@@ -787,7 +794,7 @@ window.CATALOG=[
 },
 {
 "p": "/readings/launch-plus/u1-l3/",
-"t": "Launch Plus · Unit 1 Lesson 3 · From A to Z",
+"t": "Launch Plus · From A to Z",
 "d": "From A to Z",
 "m": "",
 "g": "More: Launch Plus (ELD 101)"
@@ -803,6 +810,27 @@ window.CATALOG=[
 "p": "/readings/launch-plus/u1-l4/",
 "t": "Launch Plus · Unit 1 Lesson 4 · 0 to 100",
 "d": "0 to 100",
+"m": "",
+"g": "More: Launch Plus (ELD 101)"
+},
+{
+"p": "/readings/launch-plus/u1-l5/",
+"t": "Launch Plus · Unit 1 Lesson 5 · About Me",
+"d": "About Me",
+"m": "",
+"g": "More: Launch Plus (ELD 101)"
+},
+{
+"p": "/readings/launch-plus/weekend/",
+"t": "What did you do this weekend?",
+"d": "What did you do this weekend?",
+"m": "",
+"g": "More: Launch Plus (ELD 101)"
+},
+{
+"p": "/readings/launch-plus/weekend/board.html",
+"t": "Last Weekend: Board Game",
+"d": "Last Weekend: Board Game",
 "m": "",
 "g": "More: Launch Plus (ELD 101)"
 },
@@ -1598,6 +1626,13 @@ window.CATALOG=[
 "g": "More: Vocabulary sets"
 },
 {
+"p": "/readings/vocab/monkeyspaw-1/",
+"t": "The Monkey’s Paw · 12 words to know",
+"d": "",
+"m": "",
+"g": "More: Vocabulary sets"
+},
+{
 "p": "/readings/vocab/omelas-1/",
 "t": "Omelas · 12 words to know",
 "d": "Omelas · 12 words to know",
@@ -1801,6 +1836,13 @@ window.CATALOG=[
 "g": "More: Writing Ladders (ELD 103)"
 },
 {
+"p": "/readings/write/monkeyspaw/",
+"t": "Writing Ladder · The Monkey’s Paw",
+"d": "The Monkey’s Paw · Writing Ladder",
+"m": "",
+"g": "More: Writing Ladders (ELD 103)"
+},
+{
 "p": "/readings/write/telltale/",
 "t": "Writing Ladder · The Tell-Tale Heart",
 "d": "The Tell-Tale Heart · Writing Ladder",
@@ -1892,9 +1934,9 @@ window.CATALOG=[
 "g": "More: other pages"
 },
 {
-"p": "/readings/monsters/",
-"t": "Monsters as Symbols",
-"d": "Monsters as Symbols",
+"p": "/readings/monkeyspaw/",
+"t": "The Monkey’s Paw — W. W. Jacobs · Reading Guide",
+"d": "",
 "m": "",
 "g": "More: other pages"
 },
@@ -1902,6 +1944,13 @@ window.CATALOG=[
 "p": "/readings/oral-histories/readings-hub-card.html",
 "t": "/readings/oral-histories/readings-hub-card.html",
 "d": "",
+"m": "",
+"g": "More: other pages"
+},
+{
+"p": "/readings/questions/",
+"t": "Question Practice · Find Someone Who (ELD 103)",
+"d": "❓ Find Someone Who: Questions",
 "m": "",
 "g": "More: other pages"
 },
