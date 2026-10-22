@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>All dashboards · Readings</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pine:#1F4D3D; --pine-soft:#e8f0ec; --ink:#16241f; --muted:#6b7b74;
+  --edge:#c3cdc7; --paper:#f6f8f7; --gold:#b5820c; --rust:#b23a2c;
+  padding-top:env(safe-area-inset-top,0px);
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Nunito,system-ui,sans-serif;background:var(--paper);color:var(--ink)}
+header{background:var(--pine);color:#fff;padding:14px 18px;position:sticky;top:0;z-index:20}
+header h1{margin:0;font-size:1.2rem}
+header p{margin:3px 0 0;font-size:.8rem;opacity:.85}
+.wrap{max-width:1000px;margin:0 auto;padding:16px 16px 70px}
+.gate{max-width:360px;margin:60px auto;background:#fff;border:2px solid var(--edge);border-radius:12px;padding:22px}
+.gate input{width:100%;padding:10px;border:2px solid var(--edge);border-radius:8px;font:inherit;margin:8px 0}
+.btn{background:var(--pine);color:#fff;border:0;border-radius:9px;padding:9px 15px;font:inherit;font-weight:800;cursor:pointer}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.bar input{flex:1;min-width:200px;padding:10px 12px;border:2px solid var(--edge);border-radius:9px;font:inherit}
+.bar button{background:#fff;border:2px solid var(--edge);border-radius:9px;padding:8px 14px;font:inherit;font-weight:800;color:var(--muted);cursor:pointer}
+.bar button.on{background:var(--pine);border-color:var(--pine);color:#fff}
+h2.group{font-size:.95rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:20px 0 8px;border-bottom:2px solid var(--edge);padding-bottom:5px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+a.card{display:block;background:#fff;border:2px solid var(--ink);border-radius:11px;padding:11px 13px;text-decoration:none;color:var(--ink);box-shadow:0 2px 0 rgba(0,0,0,.1)}
+a.card:hover{border-color:var(--pine);background:var(--pine-soft)}
+a.card b{display:block;font-size:1rem;line-height:1.25}
+a.card .note{display:block;color:var(--muted);font-size:.8rem;margin-top:3px;line-height:1.4}
+a.card .tag{display:inline-block;font-size:.68rem;font-weight:900;border-radius:20px;padding:1px 8px;margin-top:6px;background:var(--pine-soft);color:var(--pine)}
+a.card .tag.c103{background:#fff1bf;color:#6d4a00}
+a.card .tag.cboth{background:#eceeea;color:var(--muted)}
+.none{color:var(--muted);padding:20px 0}
+footer{color:var(--muted);font-size:.76rem;text-align:center;padding:18px;line-height:1.6}
+</style>
+</head>
+<body>
+<header>
+  <h1>All dashboards</h1>
+  <p>Every teacher page in one place. One password for all of them: galileo2026</p>
+</header>
+<div class="wrap">
+  <div class="gate" id="gate">
+    <b>Teacher sign-in</b>
+    <input id="pw" type="password" placeholder="Password" autocomplete="current-password">
+    <button class="btn" id="go" style="width:100%">Open</button>
+    <div id="pwmsg" style="color:var(--rust);font-size:.8rem"></div>
+  </div>
+
+  <div id="app" style="display:none">
+    <div class="bar">
+      <input id="q" placeholder="Search — a story, a skill, a page…" autocomplete="off">
+      <button data-c="" class="on">All</button>
+      <button data-c="101">ELD 101</button>
+      <button data-c="103">ELD 103</button>
+    </div>
+    <div id="list"></div>
+  </div>
+</div>
+<footer id="foot"></footer>
+
+<script src="list.js"></script>
+<script>
+var PASS='galileo2026';
+var ORDER=['Data','Reading','Vocabulary','Speaking','Writing','Grammar','Unit'];
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+var COURSE='', Q='';
+
+function render(){
+  var all=(window.DASHBOARDS||[]).filter(function(d){
+    if(COURSE && d.course!==COURSE && d.course!=='both') return false;
+    if(!Q) return true;
+    var hay=(d.name+' '+(d.note||'')+' '+d.url+' '+d.group).toLowerCase();
+    return hay.indexOf(Q)>=0;
+  });
+  var host=document.getElementById('list');
+  if(!all.length){host.innerHTML='<p class="none">Nothing matches \u201c'+esc(Q)+'\u201d.</p>';return;}
+  var by={}; all.forEach(function(d){(by[d.group]=by[d.group]||[]).push(d);});
+  var groups=ORDER.filter(function(g){return by[g];}).concat(Object.keys(by).filter(function(g){return ORDER.indexOf(g)<0;}));
+  host.innerHTML=groups.map(function(g){
+    return '<h2 class="group">'+esc(g)+' <span style="font-weight:400;text-transform:none;letter-spacing:0">('+by[g].length+')</span></h2><div class="grid">'+
+      by[g].map(function(d){
+        var cls=d.course==='103'?'c103':(d.course==='both'?'cboth':'');
+        var label=d.course==='both'?'101 + 103':'ELD '+d.course;
+        return '<a class="card" href="../'+esc(d.url)+'"><b>'+esc(d.name)+'</b>'+
+          (d.note?'<span class="note">'+esc(d.note)+'</span>':'')+
+          '<span class="tag '+cls+'">'+label+'</span></a>';
+      }).join('')+'</div>';
+  }).join('');
+  document.getElementById('foot').textContent=all.length+' of '+(window.DASHBOARDS||[]).length+' pages shown \u00b7 Mr. Toby \u00b7 Galileo Academy';
+}
+
+document.getElementById('q').addEventListener('input',function(){Q=this.value.trim().toLowerCase();render();});
+document.querySelectorAll('.bar [data-c]').forEach(function(b){b.onclick=function(){
+  COURSE=b.dataset.c;
+  document.querySelectorAll('.bar [data-c]').forEach(function(x){x.classList.toggle('on',x===b);});
+  render();};});
+
+function open_(){
+  document.getElementById('gate').style.display='none';
+  document.getElementById('app').style.display='block';
+  render(); document.getElementById('q').focus();
+}
+/* one password everywhere: sign in here and the dashboards you open are already in */
+function unlock(){ try{ sessionStorage.setItem('gal_teacher','1');
+  ['gb_ok','gr_ok','rm_ok','dash_ok','teacher_ok'].forEach(function(k){sessionStorage.setItem(k,'1');}); }catch(e){} }
+if(sessionStorage.getItem('gal_teacher')==='1') open_();
+document.getElementById('go').onclick=function(){
+  if(document.getElementById('pw').value===PASS){unlock();open_();}
+  else document.getElementById('pwmsg').textContent='Not it.';
+};
+document.getElementById('pw').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('go').click();});
+</script>
+</body>
+</html>

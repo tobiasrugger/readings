@@ -122,7 +122,33 @@
     setTimeout(function () { pending = false; decorate(); }, 150);
   }
 
-  window.GAL04 = { band: band, fmt: fmt, badge: badge, load: load, canon: canon, decorate: schedule };
+  /* ---------- the way back ----------
+     Every teacher page gets one button, top left, to the front door at
+     readings/dashboards/. It lives here so a page never has to be edited
+     for it; a page that already has its own back link keeps that too. */
+  function backButton() {
+    if (document.getElementById('gal04-back')) return;
+    if (/\/dashboards\/?$|\/dashboards\/index/.test(location.pathname)) return;  // not on the front door itself
+    var depth = location.pathname.replace(/^\/+|\/+$/g, '').split('/');
+    depth.pop();                                   // drop the file name
+    var i = depth.indexOf('readings');
+    var up = i >= 0 ? depth.length - i - 1 : Math.max(0, depth.length - 1);
+    var href = (up ? new Array(up + 1).join('../') : './') + 'dashboards/';
+    if (i < 0 && location.hostname.indexOf('github.io') >= 0) href = '/readings/dashboards/';
+    var a = document.createElement('a');
+    a.id = 'gal04-back'; a.href = href; a.textContent = '\u2190 All dashboards';
+    a.setAttribute('style',
+      'position:fixed;left:10px;top:calc(10px + env(safe-area-inset-top,0px));z-index:9999;' +
+      'background:#1F4D3D;color:#fff;font:800 13px/1 Nunito,system-ui,sans-serif;' +
+      'padding:8px 12px;border-radius:9px;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.28)');
+    a.addEventListener('mouseenter', function () { a.style.background = '#2d6a4f'; });
+    a.addEventListener('mouseleave', function () { a.style.background = '#1F4D3D'; });
+    document.body.appendChild(a);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', backButton);
+  else backButton();
+
+  window.GAL04 = { band: band, fmt: fmt, badge: badge, load: load, canon: canon, decorate: schedule, back: backButton };
 
   var me = document.currentScript,
       slugs = me && me.getAttribute('data-slugs'),
