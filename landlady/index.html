@@ -4874,8 +4874,15 @@ applyHL();
         var nb2 = nav.querySelector('.cbtn[data-ch="' + nx + '"]');
         var label = (nb2 && nb2.childNodes[0]) ? nb2.childNodes[0].textContent.trim() : nx;
         btn.textContent = "Done \u2014 go to " + label + " \u2192";
-        btn.disabled = !isDone;
-        note.textContent = isDone ? "" : (cc[1] ? "Answer " + Math.max(0, Math.ceil(cc[1] * THRESH) - cc[0]) + " more to continue" : "");
+        /* Oct 22: the button used to refuse while the chip for the same part said
+           yes. A student with 11 of 13 answered read the refusal as the real
+           answer and stopped. The button now opens whenever the part is open;
+           the count stays as a nudge, not a wall. */
+        var nextOpen = (typeof unlocked === "function") ? unlocked(nx) : isDone;
+        btn.disabled = !(isDone || nextOpen);
+        var short = cc[1] ? Math.max(0, Math.ceil(cc[1] * THRESH) - cc[0]) : 0;
+        note.textContent = (isDone || !short) ? ""
+          : (nextOpen ? (short + " more here, if you can") : ("Answer " + short + " more to continue"));
       } else {
         var open = actbar && !actbar.classList.contains("hidden");
         btn.textContent = open ? "Done \u2014 start the activities \u2192" : "Finish the story to open the activities";
