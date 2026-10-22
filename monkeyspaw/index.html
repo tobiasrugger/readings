@@ -734,18 +734,29 @@ body.easy .story p{ font-size:calc(var(--tsize) + .05rem); line-height:calc(var(
 @media (min-width:1100px){ .sigq{ display:none; } }
 @media print{ .sigq{ display:none !important; } }
 
-/* Oct 22: a locked chapter chip now says what to do, instead of just refusing */
+
+
+/* Oct 22: every chapter chip says what it is. A pale chip with no cue reads as
+   "greyed out" to a student — one of them sat on the intro believing Part 1 was
+   locked when it was open the whole time. */
 .cbtn{ line-height:1.15; }
 .cbtn .cneed{ display:block; font-family:'Courier Prime',monospace; font-size:.58rem;
-  letter-spacing:.04em; text-transform:none; color:var(--blood); margin-top:.15rem; font-weight:600; }
+  letter-spacing:.03em; text-transform:none; margin-top:.18rem; font-weight:700; }
+.cbtn .cneed.go{ color:#2f6b45; }
+.cbtn .cneed.here{ color:var(--amber-text); }
+.cbtn .cneed.wait{ color:var(--blood); }
 .cbtn.locked{ opacity:.75; cursor:help; }
-.cbtn[aria-disabled="true"]{ cursor:help; }
 .cbtn.locked .ccnt{ display:none; }
+.cbtn[aria-disabled="true"]{ cursor:help; }
+.cbtn.open-now{ border-color:#2f6b45; box-shadow:0 0 0 2px rgba(47,107,69,.35); }
 #cneednote{ display:none; }
-#cneednote.on{ display:block; border:2px solid var(--blood); border-left-width:6px; border-radius:9px;
-  background:#fbf0ee; padding:.6rem .85rem; margin:0 0 1rem;
+#cneednote.on{ display:block; border:2px solid #4a3a28; border-left-width:6px; border-radius:9px;
+  background:var(--warm-bg); padding:.6rem .85rem; margin:0 0 1rem;
   font-family:'Lora',Georgia,serif; font-size:.98rem; color:var(--ink); }
-#cneednote .nn-what{ font-weight:700; }
+#cneednote.on.wait{ border-color:var(--blood); background:#fbf0ee; }
+#cneednote .nn-what{ font-weight:700; display:block; }
+#cneednote .dirtr{ display:block; color:var(--amber-text); font-weight:600; margin-top:.25rem; }
+@media print{ .cbtn .cneed, #cneednote{ display:none !important; } }
 </style>
 </head>
 <span id="canary" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden">the quick brown fox jumps over the lazy dog</span>
@@ -3447,24 +3458,28 @@ showScore();
 })();
 </script>
 
+
+
 <script>
 /* ============================================================
-   Oct 22 — a locked part tells the student what opens it.
-   A greyed-out chip with a padlock and nothing else is a dead
-   end: it refuses without saying why or what to do. Each locked
-   chip now carries a short line of its own ("4 more in Part 1"),
-   and tapping it explains in a sentence, in their language.
+   Oct 22 — the chapter bar says what each part is.
+   A student sat on the intro screen believing Part 1 was greyed
+   out. It was open; it just looked pale, and the green "Read the
+   story" button was three thousand pixels further down. Now every
+   chip carries one short line: where you are, what you can open,
+   or what you must finish first — and tapping a locked one says so
+   in a sentence, in the student's language.
    ============================================================ */
 (function(){
   var nav = document.getElementById("chapters");
   if(!nav) return;
   var ORDER = ["intro","p1","p2","p3","p4"];
-  var LABEL = {};
+  var LAB = {};
   function labelOf(id){
-    if(LABEL[id]) return LABEL[id];
+    if(LAB[id]) return LAB[id];
     var b = nav.querySelector('.cbtn[data-ch="' + id + '"]');
-    var t = b && b.childNodes[0] ? String(b.childNodes[0].textContent).trim() : id;
-    LABEL[id] = t; return t;
+    LAB[id] = (b && b.childNodes[0]) ? String(b.childNodes[0].textContent).trim() : id;
+    return LAB[id];
   }
   function counts(id){
     var c = document.getElementById("ch-" + id);
@@ -3473,66 +3488,106 @@ showScore();
     for(i = 0; i < t.length; i++){ n++; if((t[i].value || "").trim()) d++; }
     return [d,n];
   }
-  /* the part that is actually blocking this one, and how much is left in it */
+  function left(id){
+    var c = counts(id);
+    return c[1] ? Math.max(0, Math.ceil(c[1] * 0.85) - c[0]) : 0;
+  }
+  /* which earlier part is actually holding this one shut */
   function blocker(id){
-    var i = ORDER.indexOf(id);
-    if(i < 2) return null;
-    var k, c, need;
-    for(k = i - 1; k >= 1; k--){
-      c = counts(ORDER[k]);
-      need = Math.max(0, Math.ceil(c[1] * 0.85) - c[0]);
+    var i = ORDER.indexOf(id), k, need;
+    if(i < 1) return null;
+    for(k = i - 1; k >= 0; k--){
+      need = left(ORDER[k]);
       if(need > 0) return { id: ORDER[k], need: need, label: labelOf(ORDER[k]) };
     }
     return null;
+  }
+  /* short lines get the student's language too — only a handful, and they cache */
+  var TR = {};
+  function sayIt(el, en){
+    el.textContent = en;
+    var lang = "";
+    var sel = document.getElementById("lang"); if(sel) lang = sel.value;
+    if(!lang || lang === "none" || !window.llTranslate) return;
+    var key = en + "|" + lang;
+    if(TR[key] !== undefined){ if(TR[key]) el.textContent = TR[key]; return; }
+    window.llTranslate(en, lang, function(t){
+      TR[key] = t || "";
+      if(t && el.getAttribute("data-en") === en && el.getAttribute("data-lang") === lang) el.textContent = t;
+    });
+  }
+  function curLangCode(){
+    var sel = document.getElementById("lang");
+    return sel ? sel.value : "";
+  }
+  function line(b, cls, en){
+    var tag = b.querySelector(".cneed");
+    if(!tag){ tag = document.createElement("span"); b.appendChild(tag); }
+    tag.className = "cneed " + cls;
+    /* the language arrives after the first paint, so retry whenever either the
+       wording or the chosen language has moved on */
+    var lang = curLangCode();
+    if(tag.getAttribute("data-en") !== en || tag.getAttribute("data-lang") !== lang){
+      tag.setAttribute("data-en", en);
+      tag.setAttribute("data-lang", lang);
+      sayIt(tag, en);
+    }
+  }
+  function clearLine(b){
+    var tag = b.querySelector(".cneed");
+    if(tag) tag.parentNode.removeChild(tag);
+  }
+  function paintNeeds(){
+    var btns = nav.querySelectorAll(".cbtn"), i, nextOpen = null;
+    for(i = 0; i < btns.length; i++){
+      var b = btns[i], id = b.getAttribute("data-ch");
+      var locked = b.disabled || b.classList.contains("locked");
+      /* a disabled button swallows the tap, so a student asking "why?" gets
+         nothing at all. Keep it shut — show() checks the lock itself — but let
+         the tap reach us so we can answer. */
+      if(b.disabled){ b.disabled = false; b.setAttribute("aria-disabled", "true"); }
+      b.classList.remove("open-now");
+      if(locked){
+        var bl = blocker(id);
+        line(b, "wait", bl ? (bl.need + " more in " + bl.label) : "finish the part before");
+        continue;
+      }
+      if(b.classList.contains("on")){
+        var n = left(id);
+        line(b, "here", n ? ("you are here \u00b7 " + n + " more") : "you are here");
+        continue;
+      }
+      if(b.classList.contains("full")){ clearLine(b); continue; }
+      line(b, "go", "open \u00b7 tap to start");
+      if(!nextOpen) nextOpen = b;
+    }
+    /* the one they should go to next gets a green edge */
+    if(nextOpen) nextOpen.classList.add("open-now");
   }
   function note(){
     var el = document.getElementById("cneednote");
     if(!el){
       el = document.createElement("div");
       el.id = "cneednote";
-      el.setAttribute("translate", "yes");
+      el.innerHTML = '<span class="nn-what"></span>';
       nav.parentNode.insertBefore(el, nav.nextSibling);
     }
     return el;
   }
-  function paintNeeds(){
-    var btns = nav.querySelectorAll(".cbtn"), i;
-    for(i = 0; i < btns.length; i++){
-      var b = btns[i], id = b.getAttribute("data-ch");
-      var tag = b.querySelector(".cneed");
-      var locked = b.disabled || b.classList.contains("locked");
-      if(!locked){ if(tag) tag.parentNode.removeChild(tag); continue; }
-      /* a disabled button swallows the tap, so the student gets no answer at
-         all. Keep it refusing (show() checks the lock itself) but let the tap
-         through so we can say why. */
-      if(b.disabled){ b.disabled = false; b.setAttribute("aria-disabled", "true"); }
-      var bl = blocker(id);
-      var txt = bl ? (bl.need + " more in " + bl.label) : "finish the part before";
-      if(!tag){
-        tag = document.createElement("span");
-        tag.className = "cneed";
-        b.appendChild(tag);
-      }
-      if(tag.textContent !== txt) tag.textContent = txt;
-      b.title = bl ? (labelOf(id) + " opens when you answer " + bl.need + " more in " + bl.label + ".")
-                   : (labelOf(id) + " opens when you finish the part before it.");
-    }
-  }
   nav.addEventListener("click", function(e){
     var b = e.target.closest ? e.target.closest(".cbtn") : null;
     if(!b) return;
-    var el = note();
-    if(!(b.disabled || b.classList.contains("locked"))){ el.className = ""; return; }
-    var id = b.getAttribute("data-ch"), bl = blocker(id);
+    var el = note(), id = b.getAttribute("data-ch");
+    var locked = b.getAttribute("aria-disabled") === "true" || b.classList.contains("locked");
+    if(!locked){ el.className = ""; return; }
+    var bl = blocker(id);
     var en = bl
       ? (labelOf(id) + " opens when you answer " + bl.need + " more question" + (bl.need === 1 ? "" : "s") + " in " + bl.label + ".")
       : (labelOf(id) + " opens when you finish the part before it.");
-    el.innerHTML = '<span class="nn-what"></span>';
     el.querySelector(".nn-what").textContent = en;
     el.setAttribute("data-en", en);
     el.setAttribute("data-dir", "cneed" + id);
-    el.className = "on";
-    /* say it in their language too, through the page's own translator */
+    el.className = "on wait";
     if(window.__showDirections) setTimeout(window.__showDirections, 30);
     if(el.scrollIntoView) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
   });
@@ -3542,6 +3597,7 @@ showScore();
     if(e.target && e.target.hasAttribute && e.target.hasAttribute("data-id")) kick();
   });
   document.addEventListener("click", function(){ setTimeout(kick, 260); });
+  document.addEventListener("change", function(e){ if(e.target && e.target.id === "lang"){ TR = {}; setTimeout(paintNeeds, 80); } });
   if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", kick);
   else kick();
   setTimeout(kick, 900); setTimeout(kick, 2400);
