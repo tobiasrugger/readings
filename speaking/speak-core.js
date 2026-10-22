@@ -381,15 +381,22 @@ GS.initAll = function(slug, onReady){
 
 /* ---------------- listen (text to speech) ---------------- */
 var VOICE = null;
+/* T-109: prefer an on-device English voice (localService === true): on Chromebooks the
+   "Google US English" voice is network-backed, so every sentence waited on a server. The same
+   name list and US-then-any-English order run first over on-device voices, then over all. */
 function pickVoice(){
   if (!window.speechSynthesis) return;
-  var vs = speechSynthesis.getVoices() || [], i;
+  var all = (speechSynthesis.getVoices() || []).filter(function(v){ return /^en/i.test(v.lang); }), i, j;
   var prefs = ['Google US English','Samantha','Microsoft Aria','Microsoft Jenny'];
-  for (i = 0; i < prefs.length; i++){
-    for (var j = 0; j < vs.length; j++) if (vs[j].name.indexOf(prefs[i]) > -1){ VOICE = vs[j]; return; }
+  var pools = [all.filter(function(v){ return v.localService; }), all];
+  for (var k = 0; k < pools.length; k++){
+    var vs = pools[k]; if (!vs.length) continue;
+    for (i = 0; i < prefs.length; i++){
+      for (j = 0; j < vs.length; j++) if (vs[j].name.indexOf(prefs[i]) > -1){ VOICE = vs[j]; return; }
+    }
+    for (i = 0; i < vs.length; i++) if (/^en[-_]US/i.test(vs[i].lang)){ VOICE = vs[i]; return; }
+    VOICE = vs[0]; return;
   }
-  for (i = 0; i < vs.length; i++) if (/^en[-_]US/i.test(vs[i].lang)){ VOICE = vs[i]; return; }
-  for (i = 0; i < vs.length; i++) if (/^en/i.test(vs[i].lang)){ VOICE = vs[i]; return; }
 }
 if (window.speechSynthesis){ pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
 GS.say = function(text, slow, btn){
@@ -397,7 +404,7 @@ GS.say = function(text, slow, btn){
   speechSynthesis.cancel();
   var u = new SpeechSynthesisUtterance(String(text).replace(/_+/g, ' blank '));
   u.lang = 'en-US'; u.rate = slow ? 0.62 : 0.9;
-  if (VOICE) u.voice = VOICE;
+  if (VOICE) { try { u.voice = VOICE; } catch (e) {} }
   if (btn){ btn.classList.add('playing'); u.onend = u.onerror = function(){ btn.classList.remove('playing'); }; }
   speechSynthesis.speak(u);
 };

@@ -584,8 +584,10 @@
     speechSynthesis.cancel();
     var u = new SpeechSynthesisUtterance(t);
     u.lang = 'en-US'; u.rate = rate || 0.85;
+    /* T-109: on-device US English first (the network "Google US English" makes every tap wait) */
     var vs = speechSynthesis.getVoices().filter(function (v) { return /^en(-|_)US/i.test(v.lang); });
-    if (vs.length) u.voice = vs[0];
+    var loc = vs.filter(function (v) { return v.localService; });
+    try { if (loc.length) u.voice = loc[0]; else if (vs.length) u.voice = vs[0]; } catch (e) {}
     u.__galListen = true;
     speechSynthesis.speak(u);
   }

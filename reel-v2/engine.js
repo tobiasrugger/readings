@@ -204,12 +204,21 @@
     f: ['Google UK English Female', 'Samantha', 'Microsoft Jenny', 'Microsoft Aria', 'Victoria', 'Karen', 'Zira', 'Female', 'Google US English'],
     m: ['Google UK English Male', 'Daniel', 'Microsoft Guy', 'Microsoft Davis', 'David', 'Alex', 'Fred', 'Male', 'Google US English']
   };
+  /* T-109: on Chromebooks "Google US English" is a NETWORK voice — every sentence is a server
+     round trip and students wait. Prefer an on-device voice (localService === true) — first by the
+     usual name list, then any on-device US English, then any on-device English — and only fall
+     back to the network voices when the device has no English voice of its own. */
   function pickVoice(kind) {
-    var list = PREF[kind] || PREF.n, i, j;
-    for (i = 0; i < list.length; i++) {
-      for (j = 0; j < VOICES.length; j++) if (VOICES[j].name.indexOf(list[i]) >= 0) return VOICES[j];
+    var list = PREF[kind] || PREF.n, i, j, pools = [VOICES.filter(function (v) { return v.localService; }), VOICES];
+    for (var k = 0; k < pools.length; k++) {
+      var P = pools[k]; if (!P.length) continue;
+      for (i = 0; i < list.length; i++) {
+        for (j = 0; j < P.length; j++) if (P[j].name.indexOf(list[i]) >= 0) return P[j];
+      }
+      for (j = 0; j < P.length; j++) if (/^en[-_]US/i.test(P[j].lang)) return P[j];
+      if (P[0]) return P[0];
     }
-    return VOICES[0] || null;
+    return null;
   }
 
   var hlTimer = null, safety = null;
@@ -254,7 +263,7 @@
     }
     if (!window.speechSynthesis) { safety = setTimeout(finish, total + 500); return; }
     var u = new SpeechSynthesisUtterance(text);
-    var v = pickVoice(p.voice); if (v) u.voice = v;
+    var v = pickVoice(p.voice); if (v) { try { u.voice = v; } catch (e) {} }   /* an odd voice must never stop the line */
     u.lang = 'en-US'; u.rate = rate; u.pitch = p.pitch || 1;
     u.onboundary = function (e) {
       if (myId !== playId || typeof e.charIndex !== 'number' || opt.override) return;
@@ -268,7 +277,7 @@
   function sayWord(w) {
     if (!window.speechSynthesis) return;
     speechSynthesis.cancel();
-    var u = new SpeechSynthesisUtterance(spokenWord(w)); var v = pickVoice('n'); if (v) u.voice = v;
+    var u = new SpeechSynthesisUtterance(spokenWord(w)); var v = pickVoice('n'); if (v) { try { u.voice = v; } catch (e) {} }
     u.lang = 'en-US'; u.rate = 0.7; speechSynthesis.speak(u);
   }
 
@@ -424,16 +433,22 @@
     var u = PROXY + '?action=translate&mode=' + (want === 'equiv' ? 'word' : 'sentence') +
             '&idiom=' + encodeURIComponent(text) + '&meaning=' + encodeURIComponent(context || '') +
             '&lang=' + encodeURIComponent(lang);
-    fetch(u).then(function (r) { return r.text(); }).then(function (t) {
+    /* T-109: a 10 s timeout — a hung Apps Script request used to leave "…" on screen forever.
+       cb(value, failed): failed = true means nothing came back at all (timeout / network / HTML page). */
+    var done = false, ctl = window.AbortController ? new AbortController() : null;
+    var tm = setTimeout(function () { if (done) return; done = true; try { if (ctl) ctl.abort(); } catch (e) {} cb('', true); }, 10000);
+    fetch(u, ctl ? { signal: ctl.signal } : undefined).then(function (r) { return r.text(); }).then(function (t) {
+      if (done) return; done = true; clearTimeout(tm);
       var d = null, v = '';
-      try { d = JSON.parse(t); } catch (e) { d = null; }   /* Apps Script sometimes answers with an HTML page: treat as a miss */
+      try { d = JSON.parse(t); } catch (e) { d = null; }   /* Apps Script sometimes answers with an HTML page: treat as a failure */
+      if (!d) { cb('', true); return; }
       var tr = d && d.translation;
       if (tr && typeof tr === 'object') v = want === 'equiv' ? (tr.equiv || '') : (tr.equiv || tr.meaning || '');
       else if (typeof tr === 'string') v = tr;
       v = String(v || '').trim();
       if (v) tcache[key] = v;   /* a miss is never cached, so the next tap gets a real second chance */
-      cb(v);
-    }).catch(function () { cb(''); });
+      cb(v, false);
+    }).catch(function () { if (done) return; done = true; clearTimeout(tm); cb('', true); });
   }
   /* One word, four tries, in order:
        1. the word with its DEFINITION from EP.gloss (falls back to the sentence if a word has none)
@@ -441,18 +456,25 @@
        3. try 1 again after a short pause (the proxy hiccups under a whole class tapping at once)
      The proxy contract is idiom=WORD&meaning=DEFINITION: a definition is what stops "boy" coming back as "Boy!".
        4. the whole sentence, so the student still gets meaning instead of a grey word
-     cb(value, isSentence) */
+     cb(value, isSentence, failed, step) — step > 1 means "still trying"; failed = true means the
+     translator could not be reached on any of the three word tries (T-109: then "↻ Tap to try again"),
+     as opposed to answering with nothing (then the English word in grey). */
   function translateWord(w, sentence, lg, cb) {
-    var def = (EP.gloss && EP.gloss[w]) || sentence || '';
-    translate(w, lg, function (v1) {
-      if (v1) { cb(v1, false); return; }
-      translate(w, lg, function (v2) {
-        if (v2) { cb(v2, false); return; }
+    var def = (EP.gloss && EP.gloss[w]) || sentence || '', reached = false;
+    translate(w, lg, function (v1, f1) {
+      if (!f1) reached = true;
+      if (v1) { cb(v1, false, false, 1); return; }
+      cb('', false, false, 2);
+      translate(w, lg, function (v2, f2) {
+        if (!f2) reached = true;
+        if (v2) { cb(v2, false, false, 2); return; }
         setTimeout(function () {
-          translate(w, lg, function (v3) {
-            if (v3) { cb(v3, false); return; }
-            if (!sentence) { cb('', false); return; }
-            translate(sentence, lg, function (v4) { cb(v4, true); }, '', 'line');
+          translate(w, lg, function (v3, f3) {
+            if (!f3) reached = true;
+            if (v3) { cb(v3, false, false, 3); return; }
+            if (!reached) { cb('', false, true, 3); return; }       /* three tries, nothing came back */
+            if (!sentence) { cb('', false, false, 3); return; }
+            translate(sentence, lg, function (v4) { cb(v4, true, false, 4); }, '', 'line');
           }, def, 'equiv');
         }, 700);
       }, '', 'line');
@@ -475,15 +497,24 @@
     if (state.lang) {
       var lg = state.lang;
       var ask = function () {
-        var out0 = $('popTr'); if (out0) out0.textContent = '…';
-        translateWord(w, sentence || '', lg, function (v, isSentence) {
+        var out0 = $('popTr'); if (out0) out0.innerHTML = '<span class="eqwait">Translating\u2026</span>';
+        translateWord(w, sentence || '', lg, function (v, isSentence, failed, step) {
           var out = $('popTr'); if (!out) return;
+          if (!v && !failed && step === 2) { out.innerHTML = '<span class="eqwait">Still translating\u2026</span>'; return; }
+          if (!v && !failed && step < 3) return;
           if (v && !isSentence) out.innerHTML = '<b class="eq">' + esc(v) + '</b>';
           else if (v) out.innerHTML = '<b class="eq none">' + esc(w) + '</b><div class="eqsent">' + esc(v) + '</div>';
-          else out.innerHTML = '<b class="eq none">' + esc(w) + '</b><button type="button" class="eqretry" id="popRetry">↻</button>';
+          else if (failed) out.innerHTML = '<button type="button" class="eqretry" id="popRetry">\u21bb Tap to try again</button>';
+          else out.innerHTML = '<b class="eq none">' + esc(w) + '</b>';     /* answered, but no translation: English in grey */
           var rb = $('popRetry'); if (rb) rb.addEventListener('click', function (e) { e.stopPropagation(); ask(); });
         });
       };
+      if (!document.getElementById('t109css')) {
+        var st = document.createElement('style'); st.id = 't109css';
+        st.textContent = '.pop .eqwait{color:#6d6377;font-style:italic;font-weight:700}' +
+          '.pop .eqretry{font:800 14px Nunito,system-ui,sans-serif;border:2px solid #8a6200;background:#fff4d6;color:#5a4000;border-radius:999px;padding:4px 10px;cursor:pointer}';
+        document.head.appendChild(st);
+      }
       ask();
     } else {
       $('popTr').textContent = 'Choose your language at the top to see a translation.';
@@ -746,7 +777,10 @@
       var ln = STEPS[pos].ln, t = ln.type === 'q' ? txt(ln.q) : txt(ln);
       if (!state.lang) { $('capTr').textContent = 'Choose your language at the top first.'; return; }
       $('capTr').textContent = '…';
-      translate(t, state.lang, function (v) { $('capTr').textContent = v || 'No translation came back. Tap 🌐 again.'; }, '', 'line');
+      $('capTr').textContent = 'Translating\u2026';
+      translate(t, state.lang, function (v, failed) {
+        $('capTr').textContent = v || (failed ? 'Couldn\u2019t reach the translator. Tap 🌐 to try again.' : 'No translation came back. Tap 🌐 again.');
+      }, '', 'line');
     });
     document.querySelectorAll('#levelSeg button').forEach(function (b) {
       b.addEventListener('click', function () {
