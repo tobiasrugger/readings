@@ -733,6 +733,19 @@ body.easy .story p{ font-size:calc(var(--tsize) + .05rem); line-height:calc(var(
   margin-top:.3rem; min-height:1em; }
 @media (min-width:1100px){ .sigq{ display:none; } }
 @media print{ .sigq{ display:none !important; } }
+
+/* Oct 22: a locked chapter chip now says what to do, instead of just refusing */
+.cbtn{ line-height:1.15; }
+.cbtn .cneed{ display:block; font-family:'Courier Prime',monospace; font-size:.58rem;
+  letter-spacing:.04em; text-transform:none; color:var(--blood); margin-top:.15rem; font-weight:600; }
+.cbtn.locked{ opacity:.75; cursor:help; }
+.cbtn[aria-disabled="true"]{ cursor:help; }
+.cbtn.locked .ccnt{ display:none; }
+#cneednote{ display:none; }
+#cneednote.on{ display:block; border:2px solid var(--blood); border-left-width:6px; border-radius:9px;
+  background:#fbf0ee; padding:.6rem .85rem; margin:0 0 1rem;
+  font-family:'Lora',Georgia,serif; font-size:.98rem; color:var(--ink); }
+#cneednote .nn-what{ font-weight:700; }
 </style>
 </head>
 <span id="canary" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden">the quick brown fox jumps over the lazy dog</span>
@@ -3431,6 +3444,108 @@ showScore();
   document.addEventListener('click', function(){ setTimeout(kick, 200); });
   setTimeout(kick, 900); setTimeout(kick, 2200);
   window.GAL_buildSigQ = build;
+})();
+</script>
+
+<script>
+/* ============================================================
+   Oct 22 — a locked part tells the student what opens it.
+   A greyed-out chip with a padlock and nothing else is a dead
+   end: it refuses without saying why or what to do. Each locked
+   chip now carries a short line of its own ("4 more in Part 1"),
+   and tapping it explains in a sentence, in their language.
+   ============================================================ */
+(function(){
+  var nav = document.getElementById("chapters");
+  if(!nav) return;
+  var ORDER = ["intro","p1","p2","p3","p4"];
+  var LABEL = {};
+  function labelOf(id){
+    if(LABEL[id]) return LABEL[id];
+    var b = nav.querySelector('.cbtn[data-ch="' + id + '"]');
+    var t = b && b.childNodes[0] ? String(b.childNodes[0].textContent).trim() : id;
+    LABEL[id] = t; return t;
+  }
+  function counts(id){
+    var c = document.getElementById("ch-" + id);
+    if(!c) return [0,0];
+    var t = c.querySelectorAll("textarea[data-id]"), d = 0, n = 0, i;
+    for(i = 0; i < t.length; i++){ n++; if((t[i].value || "").trim()) d++; }
+    return [d,n];
+  }
+  /* the part that is actually blocking this one, and how much is left in it */
+  function blocker(id){
+    var i = ORDER.indexOf(id);
+    if(i < 2) return null;
+    var k, c, need;
+    for(k = i - 1; k >= 1; k--){
+      c = counts(ORDER[k]);
+      need = Math.max(0, Math.ceil(c[1] * 0.85) - c[0]);
+      if(need > 0) return { id: ORDER[k], need: need, label: labelOf(ORDER[k]) };
+    }
+    return null;
+  }
+  function note(){
+    var el = document.getElementById("cneednote");
+    if(!el){
+      el = document.createElement("div");
+      el.id = "cneednote";
+      el.setAttribute("translate", "yes");
+      nav.parentNode.insertBefore(el, nav.nextSibling);
+    }
+    return el;
+  }
+  function paintNeeds(){
+    var btns = nav.querySelectorAll(".cbtn"), i;
+    for(i = 0; i < btns.length; i++){
+      var b = btns[i], id = b.getAttribute("data-ch");
+      var tag = b.querySelector(".cneed");
+      var locked = b.disabled || b.classList.contains("locked");
+      if(!locked){ if(tag) tag.parentNode.removeChild(tag); continue; }
+      /* a disabled button swallows the tap, so the student gets no answer at
+         all. Keep it refusing (show() checks the lock itself) but let the tap
+         through so we can say why. */
+      if(b.disabled){ b.disabled = false; b.setAttribute("aria-disabled", "true"); }
+      var bl = blocker(id);
+      var txt = bl ? (bl.need + " more in " + bl.label) : "finish the part before";
+      if(!tag){
+        tag = document.createElement("span");
+        tag.className = "cneed";
+        b.appendChild(tag);
+      }
+      if(tag.textContent !== txt) tag.textContent = txt;
+      b.title = bl ? (labelOf(id) + " opens when you answer " + bl.need + " more in " + bl.label + ".")
+                   : (labelOf(id) + " opens when you finish the part before it.");
+    }
+  }
+  nav.addEventListener("click", function(e){
+    var b = e.target.closest ? e.target.closest(".cbtn") : null;
+    if(!b) return;
+    var el = note();
+    if(!(b.disabled || b.classList.contains("locked"))){ el.className = ""; return; }
+    var id = b.getAttribute("data-ch"), bl = blocker(id);
+    var en = bl
+      ? (labelOf(id) + " opens when you answer " + bl.need + " more question" + (bl.need === 1 ? "" : "s") + " in " + bl.label + ".")
+      : (labelOf(id) + " opens when you finish the part before it.");
+    el.innerHTML = '<span class="nn-what"></span>';
+    el.querySelector(".nn-what").textContent = en;
+    el.setAttribute("data-en", en);
+    el.setAttribute("data-dir", "cneed" + id);
+    el.className = "on";
+    /* say it in their language too, through the page's own translator */
+    if(window.__showDirections) setTimeout(window.__showDirections, 30);
+    if(el.scrollIntoView) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  });
+  var t = null;
+  function kick(){ clearTimeout(t); t = setTimeout(paintNeeds, 120); }
+  document.addEventListener("input", function(e){
+    if(e.target && e.target.hasAttribute && e.target.hasAttribute("data-id")) kick();
+  });
+  document.addEventListener("click", function(){ setTimeout(kick, 260); });
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", kick);
+  else kick();
+  setTimeout(kick, 900); setTimeout(kick, 2400);
+  window.GAL_paintNeeds = paintNeeds;
 })();
 </script>
 </body>
