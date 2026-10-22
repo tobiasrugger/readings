@@ -84,6 +84,7 @@ window.DASHBOARDS = [
 /* ---------- Unit ---------- */
 {url:'launch-plus/dashboard.html',      name:'Launch Plus',                   course:'101', group:'Unit', note:'Every lesson and its six parts, plus the Record step.'},
 {url:'basics/dashboard.html',           name:'Daily Basics',                  course:'101', group:'Unit'},
+{url:'basics/print/',                   name:'Daily Basics \u2014 print & project', course:'101', group:'Unit', note:'Make a paper do-now sheet (12\u201340 questions, answer key) or put the whole set on the board. Same questions as the tap-through page.'},
 {url:'donow/dashboard.html',            name:'Do Now \u2014 all',             course:'both', group:'Unit'},
 {url:'donow/dog-01/dashboard.html',     name:'Do Now: The Dog at the Bus Stop',course:'both', group:'Unit'},
 {url:'donow/0918/dashboard.html',       name:'Do Now: Sept 18',               course:'both', group:'Unit'},
