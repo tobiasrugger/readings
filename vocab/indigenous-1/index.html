@@ -1003,12 +1003,12 @@ buildCW();
 /* ---------- multiple choice ---------- */
 function buildMC(){
   var box=$('mcBox'); box.innerHTML='';
-  shuffle(SET.words).forEach(function(w, i){
-    var others = shuffle(SET.words.filter(function(x){ return x.w!==w.w; })).slice(0,3).map(function(x){ return x.w; });
-    var opts = shuffle(others.concat([w.w]));
+  var plan=galPlanFor('mcOrder');
+  plan.q.forEach(function(n, i){
+    var w=galWord(n); if(!w) return;
     var q=document.createElement('div'); q.className='q'; q.dataset.a=w.w; q.dataset.i=i;
     var html='<div class="stem">'+pic(w)+' '+esc(w.def)+'</div><div class="opts">';
-    opts.forEach(function(o){
+    plan.o[n].forEach(function(o){
       var ck = state.mc[w.w]===o ? ' checked' : '';
       html += '<label><input type="radio" name="mc'+i+'" value="'+esc(o)+'"'+ck+'> '+esc(o)+'</label>';
     });
@@ -1018,50 +1018,91 @@ function buildMC(){
     box.appendChild(q);
   });
 }
-/* Choose: unanswered -> "Not done yet" | right -> "Yes!" | wrong -> "Try again"
-   a DIFFERENT wrong pick after that -> the answer for that question only.
-   "Check all & show answers" (the old behavior) unlocks once half are answered. */
-function galHalf(n,tot){ return tot>0 && n >= Math.ceil(tot/2); }
-function galLock(b, ok, what){ if(!b) return; b.disabled=!ok; b.style.opacity=ok?'':'.45'; b.style.cursor=ok?'':'not-allowed'; b.title=ok?'':'Finish at least half of the '+what+' first'; }
-function galAllBtn(afterId, id){ if($(id)) return $(id); var b=document.createElement('button'); b.className='btn alt'; b.id=id; b.textContent='Check all & show answers'; var a=$(afterId); a.parentNode.insertBefore(b, a.nextSibling); return b; }
+/* ---------- T-45 (Oct 22 2026): formative checks, never reveal ----------
+   Every Check: empty -> "Not done yet" (grey) | right -> green check | wrong -> "Try again" + a hint
+   that gets stronger with each NEW wrong try. The answer itself is never shown.
+   ELD 101 sets (GAL_L103 = false): nothing turns red; a soft amber "try" style, and only the
+   green check once fixed. ELD 103 sets (GAL_L103 = true): the red X stays beside the green check
+   once fixed, as a record of the recovery. Every miss is still counted in state.*Tries.
+   Answer positions: shuffled once per student, stored in state.mcOrder / state.spOrder, so they
+   stay put on reload, and the right answer never sits in the same slot more than 3 times in a row. */
+var GAL_L103 = true;
+(function(){
+  var css = '.q.try{border-color:#e9c46a;background:#fffaf0}.fb.try{color:#8a6200}.fb.todo{color:#6d6377}' +
+            '.fb .was{color:#c1442f;font-weight:900}.opts label.gone{opacity:.28;text-decoration:line-through;pointer-events:none}' +
+            '.lvl101 .q.bad{border-color:#e9c46a;background:#fffaf0}.lvl101 .fb.bad{color:#8a6200}' +
+            '.lvl101 .mitem.bad{border-color:#e9c46a;background:#fffaf0}' +
+            '.lvl101 table.cw td.cell.bad,.lvl101 table.cw td.cell.cur.bad{background:#fff3cf;border-color:#c99a2e}';
+  var st=document.createElement('style'); st.textContent=css; document.head.appendChild(st);
+  if(!GAL_L103) document.documentElement.classList.add('lvl101');
+})();
+function galTodo(q,fb){ q.classList.remove('good','bad','try'); fb.className='fb todo'; fb.textContent='Not done yet.'; }
+function galMiss(q,fb,msg){ q.classList.remove('good','bad','try'); q.classList.add(GAL_L103?'bad':'try'); fb.className='fb '+(GAL_L103?'bad':'try'); fb.textContent=msg; }
+function galRight(q,fb,missed){ q.classList.remove('bad','try'); q.classList.add('good'); fb.className='fb good';
+  if(GAL_L103 && missed) fb.innerHTML='<span class="was">\u2717</span> \u2192 \u2713 Yes!'; else fb.textContent='\u2713 Yes!'; }
+/* letters shown, the rest blank: try 2 -> first + last letter; try 3+ -> every other letter too; never all */
+function galPattern(a, n){
+  var L=a.length, out=a.split('').map(function(ch,i){
+    if(/[^A-Za-z]/.test(ch)) return ch;
+    return (i===0 || i===L-1 || (n>=3 && i%2===0)) ? ch.toLowerCase() : '_';
+  });
+  if(out.indexOf('_')<0 && L>1) out[Math.floor(L/2)]='_';
+  return out.join(' ');
+}
+function galWord(n){ for(var i=0;i<SET.words.length;i++) if(SET.words[i].w===n) return SET.words[i]; return null; }
+function galPlan(names){
+  var q=shuffle(names), o={}, run=0, last=-1;
+  q.forEach(function(n){
+    var opts=shuffle(shuffle(names.filter(function(x){ return x!==n; })).slice(0,3).concat([n]));
+    var slot=opts.indexOf(n);
+    if(slot===last && run>=3 && opts.length>1){
+      var j=(slot+1+Math.floor(Math.random()*(opts.length-1)))%opts.length;
+      opts[slot]=opts[j]; opts[j]=n; slot=j;
+    }
+    run=(slot===last)?run+1:1; last=slot; o[n]=opts;
+  });
+  return {q:q, o:o};
+}
+function galPlanFor(key){
+  var names=SET.words.map(function(w){ return w.w; }), p=state[key], k=Math.min(4,names.length);
+  var ok = p && p.q && p.o && p.q.length===names.length && p.q.every(function(n){
+    return names.indexOf(n)>=0 && p.o[n] && p.o[n].length===k && p.o[n].indexOf(n)>=0; });
+  if(!ok){ p=galPlan(names); state[key]=p; touch(); }
+  return p;
+}
 function mcQs(){ return Array.prototype.filter.call($('mcBox').children, function(q){ return q.dataset && q.dataset.a; }); }
-function mcReady(){ var qs=mcQs(), n=qs.filter(function(q){ return state.mc[q.dataset.a]; }).length; galLock($('mcAll'), galHalf(n, qs.length), 'questions'); }
-galAllBtn('mcCheck','mcAll');
-['click','change'].forEach(function(ev){ $('mcBox').addEventListener(ev, function(){ setTimeout(mcReady,0); }); });
+function mcOptsOf(q){ return Array.prototype.map.call(q.querySelectorAll('input[type=radio]'), function(r){ return r.value; }); }
+function mcApplyGone(q){
+  var rec=(state.mcTries||{})[q.dataset.a], gone=(rec&&rec.gone)||[];
+  Array.prototype.forEach.call(q.querySelectorAll('label'), function(l){
+    var r=l.querySelector('input'); l.classList.toggle('gone', !!(r && gone.indexOf(r.value)>=0));
+  });
+}
 $('mcCheck').addEventListener('click', function(){
   if(!state.mcTries) state.mcTries = {};
   var ok=0, tot=0, todo=0;
   mcQs().forEach(function(q){
     tot++;
-    var a=q.dataset.a, got=state.mc[a];
-    q.classList.remove('good','bad');
-    var fb=q.querySelector('.fb');
+    var a=q.dataset.a, got=state.mc[a], fb=q.querySelector('.fb');
     var rec=state.mcTries[a] || (state.mcTries[a]={n:0,last:''});
-    if(!got){ q.classList.add('bad'); fb.className='fb bad'; fb.textContent='\u2717 Not done yet.'; todo++; return; }
-    if(got===a){ q.classList.add('good'); fb.className='fb good'; fb.textContent='\u2713 Yes!'; ok++; return; }
-    if(got!==rec.last){ rec.n++; rec.last=got; }
-    q.classList.add('bad'); fb.className='fb bad';
-    fb.textContent = rec.n>=2 ? 'The answer is '+a+'.' : 'Try again.';
+    if(!got){ galTodo(q,fb); todo++; return; }
+    if(got===a){ galRight(q,fb,rec.n>0); ok++; return; }
+    if(got!==rec.last){
+      rec.n++; rec.last=got;
+      if(rec.n>=2){                                   /* stronger hint: cross out one other wrong choice */
+        var gone=rec.gone||(rec.gone=[]), all=mcOptsOf(q);
+        var c=all.filter(function(v){ return v!==a && v!==got && gone.indexOf(v)<0; });
+        if(c.length && all.length-gone.length>2) gone.push(c[Math.floor(Math.random()*c.length)]);
+      }
+    }
+    mcApplyGone(q);
+    galMiss(q,fb, (rec.gone&&rec.gone.length) ? 'Try again. One wrong choice is crossed out now.' : 'Try again.');
   });
   $('mcScore').textContent = ok+' of '+tot+' right' + (todo ? ' \u00b7 '+todo+' not done yet' : '');
   this.textContent='Check again';
   touch();
 });
-$('mcAll').addEventListener('click', function(){
-  if(this.disabled) return;
-  var ok=0, tot=0;
-  mcQs().forEach(function(q){
-    tot++;
-    var a=q.dataset.a, got=state.mc[a];
-    q.classList.remove('good','bad');
-    var fb=q.querySelector('.fb');
-    if(got===a){ q.classList.add('good'); fb.className='fb good'; fb.textContent='\u2713 Yes!'; ok++; }
-    else { q.classList.add('bad'); fb.className='fb bad'; fb.textContent = got ? 'The answer is ' + a + '.' : 'The answer is ' + a + '.'; }
-  });
-  $('mcScore').textContent = ok+' of '+tot+' right';
-  touch();
-});
-(function(){ var orig=buildMC; buildMC=function(){ var r=orig.apply(this, arguments); mcReady(); return r; }; })();
+(function(){ var orig=buildMC; buildMC=function(){ var r=orig.apply(this, arguments); mcQs().forEach(mcApplyGone); return r; }; })();
 buildMC();
 
 /* ---------- cloze ---------- */
@@ -1099,27 +1140,10 @@ $('czBank').addEventListener('click', function(){
   b.style.display = hidden ? 'flex' : 'none';
   $('czBank').textContent = hidden ? 'Hide word bank' : 'Show word bank';
 });
-/* Check: never gives every answer away.
-   empty -> "Not done yet" | right -> "Yes!" | wrong 1st time -> "Try again" + hint
-   wrong again with a CHANGED word -> the answer for that blank only.
-   "Check all & show answers" (the old behavior) unlocks once half the blanks are filled. */
+/* Fill the blank (T-10, T-45): empty -> "Not done yet" | right -> check | wrong -> "Try again" + a hint:
+   1st wrong try: first letter + number of letters; each NEW wrong try after that: more letters shown
+   as a pattern (r _ d), never the whole word. No "show answers" button. */
 function czQs(){ return Array.prototype.filter.call($('clozeBox').children, function(q){ return q.dataset && q.dataset.a; }); }
-function czFilled(){ return czQs().filter(function(q){ return (state.cloze[q.dataset.a]||'').trim(); }).length; }
-function czReady(){
-  var all=$('czAll'); if(!all) return;
-  var qs=czQs(), ok = qs.length && czFilled() >= Math.ceil(qs.length/2);
-  all.disabled = !ok; all.style.opacity = ok ? '' : '.45'; all.style.cursor = ok ? '' : 'not-allowed';
-  all.title = ok ? '' : 'Fill in at least half of the blanks first';
-}
-(function(){
-  if(!$('czAll')){
-    var b=document.createElement('button'); b.className='btn alt'; b.id='czAll'; b.textContent='Check all & show answers';
-    $('czCheck').parentNode.insertBefore(b, $('czCheck').nextSibling);
-  }
-  $('clozeBox').addEventListener('input', czReady);
-  $('clozeBank').addEventListener('click', function(){ setTimeout(czReady, 0); });
-  czReady();
-})();
 function czHint(a){
   var w=a.trim(), n=w.replace(/[^A-Za-z]/g,'').length;
   return 'Try again. Hint: it starts with \u201c'+w.charAt(0).toLowerCase()+'\u201d and has '+n+' letter'+(n===1?'':'s')+'.';
@@ -1130,29 +1154,15 @@ $('czCheck').addEventListener('click', function(){
   czQs().forEach(function(q){
     var a=q.dataset.a; tot++;
     var got=(state.cloze[a]||'').trim().toLowerCase();
-    var fb=q.querySelector('.fb'); q.classList.remove('good','bad');
+    var fb=q.querySelector('.fb');
     var rec=state.czTries[a] || (state.czTries[a]={n:0,last:''});
-    if(!got){ q.classList.add('bad'); fb.className='fb bad'; fb.textContent='\u2717 Not done yet.'; todo++; return; }
-    if(got===a.toLowerCase()){ q.classList.add('good'); fb.className='fb good'; fb.textContent='\u2713 Yes!'; ok++; return; }
+    if(!got){ galTodo(q,fb); todo++; return; }
+    if(got===a.toLowerCase()){ galRight(q,fb,rec.n>0); ok++; return; }
     if(got!==rec.last){ rec.n++; rec.last=got; }
-    q.classList.add('bad'); fb.className='fb bad';
-    fb.textContent = rec.n>=2 ? 'The answer is '+a+'.' : czHint(a);
+    galMiss(q,fb, rec.n>=2 ? 'Try again. Hint: '+galPattern(a, rec.n) : czHint(a));
   });
   $('czScore').textContent = ok+' of '+tot+' right' + (todo ? ' \u00b7 '+todo+' not done yet' : '');
   this.textContent='Check again';
-  touch();
-});
-$('czAll').addEventListener('click', function(){
-  if(this.disabled) return;
-  var ok=0, tot=0;
-  czQs().forEach(function(q){
-    var a=q.dataset.a; tot++;
-    var got=(state.cloze[a]||'').trim().toLowerCase();
-    var fb=q.querySelector('.fb'); q.classList.remove('good','bad');
-    if(got===a.toLowerCase()){ q.classList.add('good'); fb.className='fb good'; fb.textContent='\u2713 Yes!'; ok++; }
-    else { q.classList.add('bad'); fb.className='fb bad'; fb.textContent='The answer is '+a+'.'; }
-  });
-  $('czScore').textContent = ok+' of '+tot+' right';
   touch();
 });
 buildCloze();
@@ -1172,54 +1182,44 @@ function buildFix(){
   });
 }
 function norm(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ').trim(); }
-/* Fix it: empty -> "Not done yet" | right -> "Yes!" | wrong -> "Try again" + the page's hint (no answer)
-   wrong again with a CHANGED sentence -> the corrected sentence for that one only.
-   "Check all & show answers" (the old behavior) unlocks once half are written. */
+/* Fix it (T-27, T-45): empty -> "Not done yet" | right -> check | wrong -> "Try again" + the page's hint;
+   each NEW wrong try after that also points at the word to change. Never the corrected sentence.
+   No "show answers" button. */
 function fxQs(){ return Array.prototype.filter.call($('fixBox').children, function(q){ return q.dataset && q.dataset.i != null; }); }
-function fxReady(){ var qs=fxQs(), n=qs.filter(function(q){ return (state.fix[q.dataset.i]||'').trim(); }).length; galLock($('fxAll'), galHalf(n, qs.length), 'sentences'); }
-galAllBtn('fxCheck','fxAll');
-$('fixBox').addEventListener('input', fxReady);
+function fxWord(f){
+  var good=norm(f.good).split(/\s+/), bad=String(f.bad||'').split(/\s+/), i, w;
+  for(i=0;i<bad.length;i++){ w=bad[i].replace(/[^A-Za-z'\u2019]/g,''); if(w && good.indexOf(norm(w))<0) return w; }
+  return '';
+}
 $('fxCheck').addEventListener('click', function(){
   if(!state.fxTries) state.fxTries = {};
   var ok=0, todo=0;
   fxQs().forEach(function(q){
     var i=q.dataset.i, f=SET.fix[i], got=norm(state.fix[i]);
-    var fb=q.querySelector('.fb'); q.classList.remove('good','bad');
+    var fb=q.querySelector('.fb');
     var rec=state.fxTries[i] || (state.fxTries[i]={n:0,last:''});
-    if(!got){ q.classList.add('bad'); fb.className='fb bad'; fb.textContent='\u2717 Not done yet.'; todo++; return; }
-    if(got===norm(f.good)){ q.classList.add('good'); fb.className='fb good'; fb.textContent='\u2713 Yes!'; ok++; return; }
+    if(!got){ galTodo(q,fb); todo++; return; }
+    if(got===norm(f.good)){ galRight(q,fb,rec.n>0); ok++; return; }
     if(got!==rec.last){ rec.n++; rec.last=got; }
-    q.classList.add('bad'); fb.className='fb bad';
-    fb.textContent = rec.n>=2 ? (f.hint ? f.hint + ' \u2192 ' : 'The answer is: ') + f.good : 'Try again.' + (f.hint ? ' Hint: ' + f.hint : '');
+    var hint = f.hint ? ' Hint: ' + f.hint + (/[.!?]$/.test(String(f.hint).trim()) ? '' : '.') : '', word = fxWord(f);
+    galMiss(q,fb, 'Try again.' + hint + (rec.n>=2 && word ? ' Look at the word \u201c'+word+'\u201d.' : ''));
   });
   $('fxScore').textContent = ok+' of '+SET.fix.length+' right' + (todo ? ' \u00b7 '+todo+' not done yet' : '');
   this.textContent='Check again';
   touch();
 });
-$('fxAll').addEventListener('click', function(){
-  if(this.disabled) return;
-  var ok=0;
-  fxQs().forEach(function(q){
-    var i=q.dataset.i, f=SET.fix[i];
-    var fb=q.querySelector('.fb'); q.classList.remove('good','bad');
-    if(norm(state.fix[i])===norm(f.good)){ q.classList.add('good'); fb.className='fb good'; fb.textContent='\u2713 Yes!'; ok++; }
-    else { q.classList.add('bad'); fb.className='fb bad'; fb.textContent = f.hint + ' \u2192 ' + f.good; }
-  });
-  $('fxScore').textContent = ok+' of '+SET.fix.length+' right';
-  touch();
-});
-(function(){ var orig=buildFix; buildFix=function(){ var r=orig.apply(this, arguments); fxReady(); return r; }; })();
 buildFix();
 
 /* ---------- listen and spell ---------- */
 function buildSpell(){
   var box=$('spBox'); box.innerHTML='';
   var lv = state.spellLevel;
-  shuffle(SET.words).forEach(function(w,i){
+  var plan=galPlanFor('spOrder');
+  plan.q.map(galWord).filter(Boolean).forEach(function(w,i){
     var q=document.createElement('div'); q.className='q'; q.dataset.a=w.w;
     var body;
     if(lv===1){
-      var opts = shuffle(shuffle(SET.words.filter(function(x){return x.w!==w.w;})).slice(0,3).concat([w]));
+      var opts = plan.o[w.w].map(galWord).filter(Boolean);
       body = '<div class="opts">' + opts.map(function(o){
         var ck = state.spell[w.w]===o.w ? ' checked' : '';
         return '<label><input type="radio" name="sp'+i+'" value="'+esc(o.w)+'"'+ck+'> '+esc(o.w)+'</label>';
@@ -1256,24 +1256,24 @@ Array.prototype.forEach.call(document.querySelectorAll('.lvl button[data-sl]'), 
     state.spellLevel = +b.dataset.sl; state.spell={}; touch(); buildSpell();
   });
 });
-/* Listen and spell: never shows the word.
-   empty -> "Not done yet" | right -> "Yes!" | wrong -> "Listen again. You wrote …"
-   a SECOND, different wrong try -> also a hint (first letter + length), still not the word. */
+/* Listen and spell (T-28, T-45): never shows the word.
+   empty -> "Not done yet" | right -> check | wrong -> "Listen again. You wrote/chose …"
+   a SECOND, different wrong try adds a hint (first letter + length); a third, a letter pattern. */
 $('spCheck').addEventListener('click', function(){
   if(!state.spTries) state.spTries = {};
   var ok=0, tot=0, todo=0;
   Array.prototype.forEach.call($('spBox').querySelectorAll('.q'), function(q){
     var a=q.dataset.a; tot++;
     var got=(state.spell[a]||'').trim().toLowerCase();
-    var fb=q.querySelector('.fb'); q.classList.remove('good','bad');
+    var fb=q.querySelector('.fb');
     var rec=state.spTries[a] || (state.spTries[a]={n:0,last:''});
-    if(!got){ q.classList.add('bad'); fb.className='fb bad'; fb.textContent='\u2717 Not done yet. Tap \ud83d\udd0a Play and listen.'; todo++; return; }
-    if(got===a.toLowerCase()){ q.classList.add('good'); fb.className='fb good'; fb.textContent='\u2713 Yes!'; ok++; return; }
+    if(!got){ galTodo(q,fb); fb.textContent='Not done yet. Tap \ud83d\udd0a Play and listen.'; todo++; return; }
+    if(got===a.toLowerCase()){ galRight(q,fb,rec.n>0); ok++; return; }
     if(got!==rec.last){ rec.n++; rec.last=got; }
-    q.classList.add('bad'); fb.className='fb bad';
     var n=a.replace(/[^A-Za-z]/g,'').length;
-    fb.textContent = 'Listen again. You '+(state.spellLevel===1?'chose':'wrote')+' "'+got+'".' +
-      (rec.n>=2 ? ' Hint: it starts with \u201c'+a.charAt(0).toLowerCase()+'\u201d and has '+n+' letter'+(n===1?'':'s')+'.' : '');
+    galMiss(q,fb, 'Listen again. You '+(state.spellLevel===1?'chose':'wrote')+' "'+got+'".' +
+      (rec.n>=3 ? ' Hint: '+galPattern(a, rec.n-1) :
+       rec.n>=2 ? ' Hint: it starts with \u201c'+a.charAt(0).toLowerCase()+'\u201d and has '+n+' letter'+(n===1?'':'s')+'.' : ''));
   });
   $('spScore').textContent = ok+' of '+tot+' right' + (todo ? ' \u00b7 '+todo+' not done yet' : '');
   this.textContent='Check again';
