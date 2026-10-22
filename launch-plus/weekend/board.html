@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Last Weekend: Board Game</title>
-<meta name="build" content="launch-plus/weekend/board T-70 2026-10-20 · T-71 5 players, score, colours 2026-10-22">
+<meta name="build" content="launch-plus/weekend/board T-70 2026-10-20 · T-95 5 players, score, colours · T-96 NOW/PAST squares 2026-10-22">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -57,8 +57,17 @@ main{max-width:1180px;margin:0 auto;padding:14px 12px 50px}
 .sq{position:relative;border:1.5px solid var(--ink);padding:4px 4px 5px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;
  cursor:pointer;min-height:104px;background:#fff;text-align:center}
 .sq:hover{outline:3px solid var(--orange);outline-offset:-3px;z-index:2}
-.sq svg.art{width:100%;max-width:112px;height:auto;display:block}
+.sq svg.art{width:100%;max-width:96px;height:auto;display:block}
 .sq .lab{font-weight:900;font-size:.92rem;line-height:1.1;margin-top:2px}
+.sq .lab .now,.sq .lab .past{display:block;font-size:.86rem;line-height:1.15}
+.sq .lab .tag{font-size:.6rem;font-weight:900;letter-spacing:.05em;border-radius:5px;padding:0 3px;margin-right:3px;vertical-align:1px}
+.sq .lab .now .tag{background:#23302b;color:#fff}
+.sq .lab .past .tag{background:#864D9E;color:#fff}
+.sq .lab .past{color:#6a3a80}
+.gap{letter-spacing:.12em;white-space:nowrap}
+.step .tagline{font-size:1.05rem;font-weight:800;margin:2px 0}
+.step .tagline .tag{font-size:.72rem;font-weight:900;border-radius:6px;padding:1px 6px;margin-right:6px;color:#fff;background:#23302b;vertical-align:2px}
+.step .tagline.p .tag{background:#864D9E}
 .sq .num{position:absolute;top:2px;left:4px;font-size:.66rem;font-weight:900;color:#7a867f}
 .sq.q,.sq.q2{box-shadow:inset 0 0 0 3px var(--purple)}
 .sq.q .lab,.sq.q2 .lab{font-size:.84rem}
@@ -170,6 +179,8 @@ main{max-width:1180px;margin:0 auto;padding:14px 12px 50px}
   <div class="pic" id="setupPic"></div>
   <h2>Who is playing?</h2>
   <div class="how" id="how"></div>
+  <p style="margin:10px 0 4px;font-weight:800">Squares:
+    <span class="count" id="hintMode"></span></p>
   <p style="margin:10px 0 4px;font-weight:800">How many players?
     <span class="count" id="count"></span></p>
   <div class="rows" id="prows"></div>
@@ -383,6 +394,9 @@ var ART={
 var COLORS=[['#e63946','red'],['#ffd23f','yellow'],['#2fb34a','green'],['#2f7de1','blue'],['#ff6fb5','pink']];
 var SQCOL=['#fde2c4','#ffd6d6','#fff1b3','#d6f5d1','#cfe9ff','#e9dcff','#ffe0f0','#d4f1ee','#ffe8b8','#e2f0c8','#dcdcff','#ffd9c9','#f6e0ff','#cdeffd','#fff5c2','#d9f7dc','#ffd8e4','#e0e8ff','#fbe6c8','#d7f2f9','#efe0c8','#ffe3a8'];
 function token(c){return '<svg viewBox="0 0 24 30" aria-hidden="true"><path d="M12 2 a6 6 0 1 1 0 12 a6 6 0 1 1 0-12z M5 28 q0-12 7-13 q7 1 7 13z" fill="'+c+'" stroke="#23302b" stroke-width="1.6"/><circle cx="10" cy="7" r="1.6" fill="#fff" opacity=".7"/></svg>';}
+var HINTS=true;
+function gap(v){return v.charAt(0)+' '+new Array(v.length).join('_ ').trim();}
+function setHints(on){HINTS=on;renderSetup();drawBoard();}
 var nPlayers=2,players=[],turn=0,practice=false,busy=false,lastRoll=0;
 function renderSetup(){
  document.getElementById('count').innerHTML=[2,3,4,5].map(function(n){return '<button class="'+(n===nPlayers?'on':'')+'" onclick="nPlayers='+n+';renderSetup()">'+n+'</button>';}).join('');
@@ -393,6 +407,7 @@ function renderSetup(){
    +'<select id="pl'+i+'" aria-label="language" onchange="renderHow()">'+LANGS.map(function(l){return '<option value="'+l[0]+'"'+(l[0]===keepL?' selected':'')+'>'+l[1]+'</option>';}).join('')+'</select></div>';
  }
  document.getElementById('prows').innerHTML=rows;
+ document.getElementById('hintMode').innerHTML='<button class="'+(HINTS?'on':'')+'" onclick="setHints(true)">Easier: I p _ _ _ _ _ soccer</button><button class="'+(HINTS?'':'on')+'" onclick="setHints(false)">Harder: no letters</button>';
  renderHow();
 }
 function renderHow(){
@@ -422,7 +437,9 @@ function sqInfo(id){
  if(id==='Q:sat')return {cls:'q',lab:'What did you do on Saturday?',art:ART.Q};
  if(id==='Q:sun')return {cls:'q',lab:'What did you do on Sunday?',art:ART.Q};
  if(id==='Q:main')return {cls:'q2',lab:'What did you do last weekend?',art:ART.Q};
- return {cls:'',lab:ACT[id].base,art:ART[id]};
+ var a=ACT[id];
+ return {cls:'',lab:'<span class="now"><span class="tag">NOW</span>I '+a.base+'.</span>'
+   +(HINTS?'<span class="past"><span class="tag">PAST</span>I <span class="gap">'+gap(a.v)+'</span>'+(a.rest?' '+a.rest:'')+'.</span>':''),art:ART[id]};
 }
 function drawBoard(){
  var cells=new Array(42),h='';
@@ -588,7 +605,9 @@ function openCard(i,landed,retry){
  var a=ACT[id],pos='I <span class="v">'+a.v+'</span>'+(a.rest?' '+a.rest:'')+'.',posT='I '+a.v+(a.rest?' '+a.rest:'')+'.',negT='I didn\u2019t '+a.neg+'.';
  h='<div class="pic">'+inf.art+'</div>'+(p?'<div class="k" style="font-weight:900;color:#6a3a80">'+p.name.toUpperCase()+(retry?' &middot; TRY IT HERE':'')+'</div>':'')
   +'<div class="step"><div class="k">1 &middot; A FRIEND ASKS</div><div class="big">What did you do last weekend? '+sayBtn('What did you do last weekend?')+'</div>'+trLine(MAINQ,lang)+'</div>'
-  +'<div class="step ans"><div class="k">2 &middot; YOU ANSWER IN THE PAST</div><div class="big">I ____ '+(a.rest||'')+'. <span class="base">'+a.base.split(' ')[0]+' &rarr; ?</span></div>'
+  +'<div class="step ans"><div class="k">2 &middot; YOU ANSWER IN THE PAST</div>'
+  +'<div class="tagline"><span class="tag">NOW</span>I '+a.base+'. '+sayBtn('I '+a.base+'.')+'</div>'
+  +'<div class="big tagline p"><span class="tag">PAST</span>I <span class="gap">'+(HINTS?gap(a.v):'____')+'</span>'+(a.rest?' '+a.rest:'')+'.</div>'
   +'<div style="font-size:.95rem;color:#4f5d55;font-weight:700;margin-top:3px">Say it out loud first. Then tap Check.</div></div>'
   +'<div class="check" id="chk"><div class="k">CHECK</div><div class="big">'+pos+' '+sayBtn(posT)
   +(a.kind==='reg'?' <span class="snd">-ed sounds like /'+a.snd+'/</span>':' <span class="snd">new word: '+a.base.split(' ')[0]+' &rarr; '+a.v+'</span>')+'</div>'
