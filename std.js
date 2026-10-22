@@ -13,6 +13,9 @@
    4. Plain browser dropdowns inside a sign-in box copy the look of that
       box's own text fields (rounded corners, padding, font).
 
+   8. Back to My Page (T-101): a green "← My Page" button for students who came from
+      /readings/student/, a finished signal it reads, and "My Page" beside Google Classroom.
+
    7. Listen + translate safety net: tap any word on a student page to hear it,
       see it in your language, and hear/translate its sentence or paragraph —
       only where the page doesn't already do this (see section 7 for opt-outs).
@@ -840,9 +843,134 @@
     } catch (e) {}
   }
 
+  /* ========== 8. back to My Page (T-101, Oct 22 2026) ==========
+     The student page (/readings/student/, T-100) sets sessionStorage gal_home when a
+     student opens it, and reads + clears gal_last_page / gal_last_title / gal_last_done
+     when they come back. On every other student page this section:
+       - shows a fixed green "← My Page" button (only when gal_home is set),
+       - records gal_last_page / gal_last_title,
+       - marks the page finished (gal_last_done = '1') when a Turn in / Submit / Finish /
+         Done button is pressed, or GAL_SCORE >= GAL_MAX > 0, and then grows the button
+         into a pulsing "✓ Done — back to My Page →",
+       - puts a green "My Page" button in front of any Google Classroom link or button.
+     sessionStorage here holds navigation state only, never student work. */
+  var MYPAGE_DEFAULT = '/readings/student/';
+  var FINISH_RE = /^(\u2713\s*)?(turn in|submit|finish|finished|done|i['\u2019]?m done)(\s+((my|this|chapter)\b[^?]{0,30}|the\s+(assessment|test|quiz|set|page|lesson|story|reading)\b[^?]{0,20}))?\s*[.!\u2192>\u00bb]*\s*$/i;
+  function ss(k, v) {
+    try { if (v === undefined) return sessionStorage.getItem(k) || ''; if (v === null) sessionStorage.removeItem(k); else sessionStorage.setItem(k, v); }
+    catch (e) { return ''; }
+  }
+  function myPageOff() {
+    var p = location.pathname;
+    if (/^\/readings\/student(\/|$)/.test(p)) return true;               /* the student page itself */
+    if (/^\/readings\/?(index\.html)?$/.test(p)) return true;              /* the hub */
+    if (TEACHER_PATH.test(p)) return true;
+    var pw = document.querySelector('input[type=password]');
+    if (pw && !document.querySelector('input[type=email], #gmail')) return true; /* teacher-only screen */
+    return false;
+  }
+  function cleanTitle(t) {
+    return String(t || '').replace(/\s*[\u00b7|\u2013\u2014-]\s*(Mr\.?\s*Toby|Readings)\s*$/i, '').trim();
+  }
+  /* Placement: pinned over the top-left corner it covered every page's own title / "← Practice" /
+     "Print" buttons, so by default the button sits top-left in a slim strip ABOVE the page (it pushes
+     the page down instead of covering it), and the finished state is a big pulsing button pinned at
+     the bottom centre. Set MYPAGE_PINNED = true to pin it over the top-left corner instead. */
+  var MYPAGE_PINNED = false;
+  var MYPAGE_CSS =
+    '#galMyBar{display:block;padding:8px 10px;background:#f4f1ea;border-bottom:2px solid #1d1a24;text-align:left;position:relative;z-index:2147482400}' +
+    '#galMyBar #galMyPage{position:static}' +
+    '#galMyDone{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:2147482600;display:inline-flex;align-items:center;' +
+    'min-height:56px;padding:14px 24px;border-radius:999px;background:#178a4f;color:#fff !important;text-decoration:none;' +
+    'border:2px solid #1d1a24;box-shadow:0 4px 0 rgba(0,0,0,.35),0 8px 18px rgba(0,0,0,.2);font:800 21px/1.1 Nunito,system-ui,sans-serif;' +
+    'animation:galMyPulseC 1.4s ease-in-out infinite;white-space:nowrap}' +
+    '@keyframes galMyPulseC{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.06)}}' +
+    '#galMyPage{position:fixed;top:10px;left:10px;z-index:2147482500;display:inline-flex;align-items:center;gap:6px;' +
+    'min-height:44px;padding:9px 16px;border-radius:999px;background:#1f7a4d;color:#fff !important;text-decoration:none;' +
+    'border:2px solid #1d1a24;box-shadow:0 4px 0 rgba(0,0,0,.35),0 8px 18px rgba(0,0,0,.18);font:800 17px/1.1 Nunito,system-ui,sans-serif}' +
+    '#galMyPage:hover{background:#18663f}#galMyPage:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.35)}' +
+    '#galMyPage.done{font-size:21px;padding:14px 22px;background:#178a4f;animation:galMyPulse 1.4s ease-in-out infinite}' +
+    '@keyframes galMyPulse{0%,100%{transform:scale(1);box-shadow:0 4px 0 rgba(0,0,0,.35),0 0 0 0 rgba(31,122,77,.55)}' +
+    '50%{transform:scale(1.06);box-shadow:0 4px 0 rgba(0,0,0,.35),0 0 0 14px rgba(31,122,77,0)}}' +
+    '.gal-mypage-inline{display:inline-flex;align-items:center;min-height:44px;padding:9px 18px;margin:4px 8px 4px 0;border-radius:999px;' +
+    'background:#1f7a4d;color:#fff !important;text-decoration:none;border:2px solid #1d1a24;box-shadow:0 4px 0 rgba(0,0,0,.3);' +
+    'font:800 17px Nunito,system-ui,sans-serif;vertical-align:middle}' +
+    '@media print{#galMyBar,#galMyPage,#galMyDone,.gal-mypage-inline{display:none !important}}';
+  var myDone = false;
+  function myPageHome() { return ss('gal_home') || ''; }
+  function markDone() {
+    if (myDone) return; myDone = true;
+    ss('gal_last_done', '1');
+    var b = document.getElementById('galMyPage');
+    if (!b) return;                                   /* didn't come from My Page: just record it */
+    if (MYPAGE_PINNED) { b.classList.add('done'); b.textContent = '\u2713 Done \u2014 back to My Page \u2192'; return; }
+    b.textContent = '\u2713 Done \u2014 back to My Page';
+    if (!document.getElementById('galMyDone')) {
+      var d = document.createElement('a');
+      d.id = 'galMyDone'; d.href = b.getAttribute('href'); d.textContent = '\u2713 Done \u2014 back to My Page \u2192';
+      d.setAttribute('data-no-listen', ''); d.setAttribute('translate', 'no');
+      document.body.appendChild(d);
+    }
+  }
+  function myPageScan() {
+    if (myPageOff() || !document.body) return;
+    var home = myPageHome() || MYPAGE_DEFAULT;
+    var els = document.querySelectorAll('a[href*="classroom.google.com"], a, button');
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i];
+      if (el.__galMyPage || el.id === 'galMyPage' || el.classList.contains('gal-mypage-inline')) continue;
+      var isGC = /classroom\.google\.com/i.test(el.getAttribute('href') || '') || /google classroom/i.test(el.textContent || '');
+      if (!isGC) continue;
+      el.__galMyPage = true;
+      var prev = el.previousElementSibling;
+      if (prev && prev.classList && prev.classList.contains('gal-mypage-inline')) continue;
+      var a = document.createElement('a');
+      a.className = 'gal-mypage-inline'; a.href = home; a.textContent = 'My Page';
+      a.setAttribute('data-no-listen', ''); a.setAttribute('translate', 'no');
+      el.parentNode.insertBefore(a, el);
+    }
+  }
+  function myPageBoot() {
+    if (myPageOff()) return;
+    if (!document.getElementById('gal-mypage-css')) {
+      var st = document.createElement('style'); st.id = 'gal-mypage-css'; st.textContent = MYPAGE_CSS;
+      (document.head || document.documentElement).appendChild(st);
+    }
+    /* 2. where the student is, for the student page to read when they come back */
+    if (ss('gal_last_page') !== location.pathname) ss('gal_last_done', null);   /* a new page is not finished yet */
+    ss('gal_last_page', location.pathname);
+    ss('gal_last_title', cleanTitle(document.title));
+    /* 1. the button, only for students who came from their page */
+    var home = myPageHome();
+    if (home && !document.getElementById('galMyPage')) {
+      var b = document.createElement('a');
+      b.id = 'galMyPage'; b.href = home; b.textContent = '\u2190 My Page';
+      b.setAttribute('data-no-listen', ''); b.setAttribute('translate', 'no');
+      if (MYPAGE_PINNED) document.body.appendChild(b);
+      else {
+        var bar = document.createElement('div'); bar.id = 'galMyBar';
+        bar.setAttribute('data-no-listen', ''); bar.setAttribute('translate', 'no');
+        bar.appendChild(b); document.body.insertBefore(bar, document.body.firstChild);
+      }
+    }
+    /* 3. finished: a finish button, or a full score */
+    document.addEventListener('click', function (e) {
+      var t = e.target && e.target.closest && e.target.closest('button, [role=button], a.btn, input[type=submit], input[type=button]');
+      if (!t || t.id === 'galMyPage' || t.id === 'galMyDone') return;
+      var label = (t.tagName === 'INPUT' ? t.value : t.textContent || '').replace(/\s+/g, ' ').trim();
+      if (FINISH_RE.test(label)) setTimeout(markDone, 300);
+    }, true);
+    setInterval(function () {
+      var s = +window.GAL_SCORE, m = +window.GAL_MAX;
+      if (m > 0 && s >= m) markDone();
+    }, 2000);
+    myPageScan();
+  }
+
   function scan() {
     addCSS();
     speakerIcons();
+    myPageScan();
     var ems = document.querySelectorAll('input[type=email], input[id*=mail i], input[name*=mail i]');
     for (var i = 0; i < ems.length; i++) fixBox(ems[i]);
   }
@@ -853,6 +981,7 @@
     warm();
     scan();
     listenBoot();
+    myPageBoot();
     try { new MutationObserver(soon).observe(document.body, { childList: true, subtree: true }); } catch (e) {}
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
