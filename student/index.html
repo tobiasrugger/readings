@@ -815,7 +815,11 @@ async function load(email){
    not activity_attempts, so they never showed here. Titles come from the
    assign catalog (/readings/assign/catalog.js). */
 var READ_GUIDES=[['landlady_responses','landlady'],['landlady_responses','landlady_easy'],['landlady_responses','landlady_hard'],
-  ['telltale_responses','telltale'],['omelas_responses','omelas'],['omelas_responses','omelas_easy'],['omelas_responses','omelas_hard']];
+  ['telltale_responses','telltale'],['monkeyspaw_responses','monkeyspaw'],['brothers_responses','brothers-in-arms'],['omelas_responses','omelas'],['omelas_responses','omelas_easy'],['omelas_responses','omelas_hard']];
+/* Brothers in Arms saves score / max_score / turned_in (not answered / total / submitted): read it in its own shape */
+var SCORE_SHAPE={brothers_responses:1};
+function guideCols(t){return SCORE_SHAPE[t]?'guide_key,score,max_score,turned_in,updated_at':'guide_key,answered,total,submitted,updated_at';}
+function guideRows(t,rows){return (rows||[]).map(function(r){return SCORE_SHAPE[t]?{guide_key:r.guide_key,answered:r.score||0,total:r.max_score||0,submitted:!!r.turned_in,updated_at:r.updated_at,pts:1}:r;});}
 function catTitle(path,fallback){
   var c=window.CATALOG||[];
   for(var i=0;i<c.length;i++) if(c[i].p===path) return c[i].t.replace(/\s*\((locked)\)/,'');
@@ -827,7 +831,7 @@ async function loadReading(email){
   var tabs={}; READ_GUIDES.forEach(function(g){(tabs[g[0]]=tabs[g[0]]||[]).push(g[1]);});
   var tnames=Object.keys(tabs);
   var res=await Promise.all(tnames.map(function(t){
-    return sb(t+'?email='+both+'&guide_key=in.('+tabs[t].join(',')+')&select=guide_key,answered,total,submitted,updated_at');
+    return sb(t+'?email='+both+'&guide_key=in.('+tabs[t].join(',')+')&select='+guideCols(t)).then(function(r){return guideRows(t,r);});
   }).concat([
     sb('write_work?email='+both+'&select=slug,score,max_score,turned_in,updated_at'),
     sb('vocab_work?email='+both+'&select=set_slug,scores,turned_in,updated_at')
@@ -838,7 +842,7 @@ async function loadReading(email){
     if(!r.answered)return;
     var path='/readings/'+String(r.guide_key).replace(/_/g,'-')+'/';
     keep(path,{path:path,title:catTitle(path,prettySlug(r.guide_key)),kind:'Reading',pct:r.total?Math.round(100*r.answered/r.total):0,
-      sub:r.answered+' of '+r.total+' answered',done:!!r.submitted,at:r.updated_at});
+      sub:r.pts?('score '+r.answered+' of '+r.total):(r.answered+' of '+r.total+' answered'),done:!!r.submitted,at:r.updated_at});
   });});
   (res[tnames.length]||[]).forEach(function(r){
     if(!r.score)return; var path='/readings/'+r.slug+'/';
@@ -902,7 +906,9 @@ function welcomeBack(){
 var PUSH_PROGRESS={
   '/readings/landlady':{table:'landlady_responses',keys:['landlady','landlady_easy','landlady_hard']},
   '/readings/telltale':{table:'telltale_responses',keys:['telltale']},
-  '/readings/omelas':{table:'omelas_responses',keys:['omelas','omelas_easy','omelas_hard']}
+  '/readings/omelas':{table:'omelas_responses',keys:['omelas','omelas_easy','omelas_hard']},
+  '/readings/monkeyspaw':{table:'monkeyspaw_responses',keys:['monkeyspaw']},
+  '/readings/brothers-in-arms':{table:'brothers_responses',keys:['brothers-in-arms']}
 };
 function pushPer(v){var m=String(v==null?'':v).match(/[1-7]/);return m?m[0]:'';}
 async function myPeriod(email){
@@ -930,15 +936,15 @@ async function loadPushed(email){
       var key=Object.keys(PUSH_PROGRESS).filter(function(k){return r.href.replace(/\/+$/,'')===k;})[0];
       if(!key)return null;
       var g=PUSH_PROGRESS[key];
-      return sb(g.table+'?email='+both+'&guide_key=in.('+g.keys.join(',')+')&select=answered,total,submitted');
+      return sb(g.table+'?email='+both+'&guide_key=in.('+g.keys.join(',')+')&select='+guideCols(g.table)).then(function(r){return r&&guideRows(g.table,r);});
     }));
     box.innerHTML=rows.map(function(r,i){
       var pr=prog[i], line='', started=false;
       if(pr){
-        var b=null; pr.forEach(function(x){var pc=x.total?Math.round(100*(x.answered||0)/x.total):0; if(!b||x.submitted||pc>b.pc)b={pc:pc,a:x.answered||0,t:x.total||0,done:!!x.submitted};});
+        var b=null; pr.forEach(function(x){var pc=x.total?Math.round(100*(x.answered||0)/x.total):0; if(!b||x.submitted||pc>b.pc)b={pc:pc,a:x.answered||0,t:x.total||0,done:!!x.submitted,pts:x.pts};});
         if(b&&b.a){started=true;
-          line=b.done?'<div class="pp done">&#10003; Turned in &middot; '+b.a+' of '+b.t+' answered</div>'
-            :'<div class="pp">'+b.a+' of '+b.t+' answered<span class="pbar"><i style="width:'+b.pc+'%"></i></span></div>';}
+          line=b.done?'<div class="pp done">&#10003; Turned in &middot; '+(b.pts?'score '+b.a+' of '+b.t:b.a+' of '+b.t+' answered')+'</div>'
+            :'<div class="pp">'+(b.pts?'score '+b.a+' of '+b.t:b.a+' of '+b.t+' answered')+'<span class="pbar"><i style="width:'+b.pc+'%"></i></span></div>';}
         else line='<div class="pp">Not started yet</div>';
       }
       var url=r.href+(r.href.indexOf('?')>-1?'&':'?')+'email='+encodeURIComponent(email);
