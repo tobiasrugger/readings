@@ -1202,6 +1202,13 @@ body.pqshim #rail::after{ animation:pqshim 1.6s ease-in-out 2; }
   margin-top:.3rem; min-height:1em; }
 @media (min-width:1100px){ .sigq{ display:none; } }
 @media print{ .sigq{ display:none !important; } }
+
+/* Oct 22: the practice sets are open from the start, so the strip above one
+   reads as its heading rather than as a button waiting to be found */
+.wpract{ border-bottom-left-radius:0; border-bottom-right-radius:0; margin-bottom:0 !important; }
+.wpract.open{ border-bottom:none; }
+.wpract + .pq-inline{ border-top-left-radius:0; border-top-right-radius:0; margin-top:0 !important; }
+.wpract button{ font-size:.78rem; padding:.25rem .6rem; }
 </style>
 </head>
 <span id="canary" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden">the quick brown fox jumps over the lazy dog</span>
@@ -4580,6 +4587,7 @@ function savePract(){ try{ localStorage.setItem(LKEY + "_pract", JSON.stringify(
 
 (function(){
   var rail = document.getElementById("rail"); if(!rail) return;
+  var INST = {};   /* one quiz per set — declared here so the build loop can open them */
 
   /* ---- carve the story into sets ---- */
   var ps = document.querySelectorAll(".story p[data-p]"), sets = [], buf = [], since = 0, lastP = null, i, j;
@@ -4604,23 +4612,31 @@ function savePract(){ try{ localStorage.setItem(LKEY + "_pract", JSON.stringify(
     var el = document.getElementById("wpract-" + set.n); if(!el) return;
     var r = PRACT["s" + set.n];
     el.classList.toggle("done", !!r);
-    el.querySelector("button").textContent = r ? ("Again \u00b7 " + r.score + "/" + r.total + " first try") : "Practice \u2192";
+    var open = !!(typeof INST !== "undefined" && INST[set.n]);
+    el.querySelector("button").textContent = open ? "Hide"
+      : (r ? ("Again \u00b7 " + r.score + "/" + r.total + " first try") : "Practice \u2192");
   }
   for(i = 0; i < sets.length; i++){
     (function(set){
       var box = document.createElement("div");
       box.className = "wpract"; box.id = "wpract-" + set.n;
       box.innerHTML = '<span class="wpw">Words from this part: <b>' + set.words.map(esc).join("</b>, <b>") +
-                      '</b></span><button type="button">Practice \u2192</button>';
-      box.querySelector("button").addEventListener("click", function(){ startPract(set); });
+                      '</b></span><button type="button">Hide</button>';
+      box.querySelector("button").addEventListener("click", function(){ toggle(set); });
       var anc = (set.after.closest && set.after.closest(".qbox,[data-qid]")) || set.after;
       anc.parentNode.insertBefore(box, anc.nextSibling);
+      /* Oct 22 — every set opens straight away. A student should see a question,
+         not a thin bar they have to know to tap. */
+      startPract(set, true);
       mark(set);
     })(sets[i]);
   }
 
-  /* ---- the quiz sits in the reading, right under its strip. The meanings stay in the margin. ---- */
-  var Q = null, qbox = null;
+  /* ---- Oct 22: every set runs its own quiz, so they are all open together.
+     The module used to hold one Q and one qbox, which is why only one could be
+     open and the rest sat shut. State is now per set in INST (declared at the
+     top of the module, because the build loop opens sets before reaching here). ---- */
+  function anyOpen(){ for(var z in INST){ if(INST[z]) return true; } return false; }
   function shuffle(a){ for(var x = a.length - 1; x > 0; x--){ var y = Math.floor(Math.random() * (x + 1)), t = a[x]; a[x] = a[y]; a[y] = t; } return a; }
   function pool(set){
     /* four choices even when the set has only two or three words */
@@ -4634,90 +4650,114 @@ function savePract(){ try{ localStorage.setItem(LKEY + "_pract", JSON.stringify(
   function shimmer(){
     document.body.classList.remove("pqshim"); void document.body.offsetWidth; document.body.classList.add("pqshim");
   }
-  function startPract(set){
-    closePract();
-    Q = { set: set, items: shuffle(set.words.slice()), i: 0, score: 0, pool: pool(set), missed: {}, tries: {} };
+  /* the margin follows whichever quiz the student is working in */
+  function focusSet(inst){
+    window.RAIL_FORCE = inst ? inst.pool.slice() : null;
+    try{ setRail(); lastPaint = ""; paintWords(); }catch(e){}
+  }
+  function startPract(set, quiet){
+    closePract(set);
+    var inst = { set: set, items: shuffle(set.words.slice()), i: 0, score: 0,
+                 pool: pool(set), missed: {}, tries: {}, box: null };
     var strip = document.getElementById("wpract-" + set.n);
-    qbox = document.createElement("div"); qbox.className = "pq-inline";
-    strip.parentNode.insertBefore(qbox, strip.nextSibling);
+    if(!strip) return;
+    inst.box = document.createElement("div");
+    inst.box.className = "pq-inline";
+    inst.box.setAttribute("data-set", set.n);
+    strip.parentNode.insertBefore(inst.box, strip.nextSibling);
     strip.classList.add("open");
-    window.RAIL_FORCE = Q.pool.slice();
+    INST[set.n] = inst;
     document.body.classList.add("pqon");
-    setRail(); lastPaint = ""; paintWords(); shimmer();
-    ask();
-    if(qbox.scrollIntoView) qbox.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    inst.box.addEventListener("pointerdown", function(){ focusSet(inst); });
+    ask(inst);
+    mark(set);
+    if(!quiet){
+      focusSet(inst); shimmer();
+      if(inst.box.scrollIntoView) inst.box.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
   }
-  function head(){
-    return '<div class="pq-head"><span>Practice \u00b7 set ' + Q.set.n + '</span>' +
-           (Q.i < Q.items.length ? '<span class="pq-num">' + (Q.i + 1) + ' of ' + Q.items.length + '</span>' : '') +
-           '<button type="button" class="px" title="Close">\u00d7</button></div>';
+  function toggle(set){
+    if(INST[set.n]) closePract(set); else startPract(set);
   }
-  function ask(){
-    if(!Q) return;
-    if(Q.i >= Q.items.length){ finish(); return; }
-    var k = Q.items[Q.i], g = GLOSS[k];
+  function head(inst){
+    return '<div class="pq-head"><span>Practice \u00b7 set ' + inst.set.n + '</span>' +
+           (inst.i < inst.items.length ? '<span class="pq-num">' + (inst.i + 1) + ' of ' + inst.items.length + '</span>' : '') +
+           '<button type="button" class="px" title="Hide">\u00d7</button></div>';
+  }
+  function ask(inst){
+    if(!inst || !INST[inst.set.n]) return;
+    if(inst.i >= inst.items.length){ finish(inst); return; }
+    var qbox = inst.box;
+    var k = inst.items[inst.i], g = GLOSS[k];
     var tr = (curLang !== "none" && g.t && g.t[curLang]) ? g.t[curLang] : "";
-    var opts = shuffle(Q.pool.slice()), h = "";
+    var opts = shuffle(inst.pool.slice()), h = "";
     for(var x = 0; x < opts.length; x++) h += '<button type="button" class="pq-opt" data-k="' + esc(opts[x]) + '">' + esc(opts[x]) + '</button>';
-    qbox.innerHTML = head() +
+    qbox.innerHTML = head(inst) +
       '<div class="pq-look"><span class="pq-arrow" aria-hidden="true"></span><span translate="yes">Not sure? The meanings are in the margin. Look there.</span></div>' +
       '<p class="pq-ask" translate="yes">Which word means this?</p>' +
       '<div class="pq-def" translate="no">' + esc(g.d) + '</div>' +
       (tr ? '<div class="pq-tr' + (RTL[curLang] ? " rtl" : "") + '" translate="no">' + esc(tr) + '</div>' : '') +
       '<div class="pq-opts" translate="no">' + h + '</div><div class="pq-fb" translate="yes"></div>';
-    qbox.querySelector(".px").addEventListener("click", closePract);
-    qbox.querySelector(".pq-look").addEventListener("click", shimmer);
+    qbox.querySelector(".px").addEventListener("click", function(){ closePract(inst.set); });
+    qbox.querySelector(".pq-look").addEventListener("click", function(){ focusSet(inst); shimmer(); });
     qbox.querySelector(".pq-opts").addEventListener("click", function(e){
       var b = e.target.closest ? e.target.closest(".pq-opt") : null;
-      if(!b || b.disabled || !Q) return;
+      if(!b || b.disabled || !INST[inst.set.n]) return;
       var fb = qbox.querySelector(".pq-fb");
       if(b.getAttribute("data-k") !== k){
         /* a miss: try again, with a hint. Nothing is given away and nothing moves on. */
         b.disabled = true; b.classList.add("wrong");
-        Q.missed[k] = true;
-        var n = Q.tries[k] = (Q.tries[k] || 0) + 1;
+        inst.missed[k] = true;
+        var n = inst.tries[k] = (inst.tries[k] || 0) + 1;
         fb.textContent = n === 1 ? "Not this one. Try again. Find this meaning in the margin."
                                  : "Try again. Hint: the word starts with \u201c" + k.charAt(0) + "\u201d.";
         fb.className = "pq-fb no";
-        shimmer();
+        focusSet(inst); shimmer();
         return;
       }
       var all = qbox.querySelectorAll(".pq-opt"), z;
       for(z = 0; z < all.length; z++) all[z].disabled = true;
       b.classList.add("right");
-      if(!Q.missed[k]) Q.score++;
-      fb.textContent = Q.missed[k] ? "\u2713 Fixed \u2014 " + k + "." : "\u2713 Yes \u2014 " + k + ".";
+      if(!inst.missed[k]) inst.score++;
+      fb.textContent = inst.missed[k] ? "\u2713 Fixed \u2014 " + k + "." : "\u2713 Yes \u2014 " + k + ".";
       fb.className = "pq-fb ok";
-      setTimeout(function(){ if(Q){ Q.i++; ask(); } }, 750);
+      setTimeout(function(){ if(INST[inst.set.n]){ inst.i++; ask(inst); } }, 750);
     });
   }
-  function finish(){
-    PRACT["s" + Q.set.n] = { score: Q.score, total: Q.items.length, missed: Object.keys(Q.missed), at: new Date().toISOString() };
-    savePract(); mark(Q.set);
-    var perfect = Q.score === Q.items.length, set = Q.set;
-    qbox.innerHTML = head() +
-      '<div class="pq-def">' + (perfect ? "\u2605 All " + Q.items.length + ", first try." : "Done. Right the first time: " + Q.score + " of " + Q.items.length + ". Every word is fixed now.") + '</div>' +
+  function finish(inst){
+    var set = inst.set, qbox = inst.box;
+    PRACT["s" + set.n] = { score: inst.score, total: inst.items.length, missed: Object.keys(inst.missed), at: new Date().toISOString() };
+    savePract();
+    var perfect = inst.score === inst.items.length;
+    qbox.innerHTML = head(inst) +
+      '<div class="pq-def">' + (perfect ? "\u2605 All " + inst.items.length + ", first try." : "Done. Right the first time: " + inst.score + " of " + inst.items.length + ". Every word is fixed now.") + '</div>' +
       '<div class="pq-opts"><button type="button" class="pq-opt" data-act="again">Again</button>' +
       '<button type="button" class="pq-opt go" data-act="back">Keep reading \u2193</button></div>';
-    qbox.querySelector(".px").addEventListener("click", closePract);
+    qbox.querySelector(".px").addEventListener("click", function(){ closePract(set); });
     qbox.querySelector('[data-act="again"]').addEventListener("click", function(){ startPract(set); });
-    qbox.querySelector('[data-act="back"]').addEventListener("click", closePract);
-    Q = null;
+    qbox.querySelector('[data-act="back"]').addEventListener("click", function(){ closePract(set); });
+    inst.doneView = true;
+    mark(set);
     if(typeof queueSave === "function") queueSave();
   }
-  function closePract(){
-    Q = null;
-    if(qbox && qbox.parentNode){
-      var strip = qbox.previousSibling; if(strip && strip.classList) strip.classList.remove("open");
-      qbox.parentNode.removeChild(qbox);
+  function closePract(set){
+    var inst = INST[set.n];
+    if(inst){
+      if(inst.box && inst.box.parentNode) inst.box.parentNode.removeChild(inst.box);
+      INST[set.n] = null;
     }
-    qbox = null;
-    window.RAIL_FORCE = null;
-    document.body.classList.remove("pqon", "pqshim");
-    lastPaint = ""; paintWords();
+    var strip = document.getElementById("wpract-" + set.n);
+    if(strip) strip.classList.remove("open");
+    mark(set);
+    if(!anyOpen()){
+      window.RAIL_FORCE = null;
+      document.body.classList.remove("pqon", "pqshim");
+      try{ lastPaint = ""; paintWords(); }catch(e){}
+    }
   }
   window.markPractAll = function(){ for(var i = 0; i < sets.length; i++) mark(sets[i]); };
   window.PRACT_SETS = sets.length;
+  window.GAL_practOpen = function(){ var n = 0; for(var z in INST){ if(INST[z]) n++; } return n; };
 })();
 
 /* ============================================================
@@ -5416,59 +5456,6 @@ function savePract(){ try{ localStorage.setItem(LKEY + "_pract", JSON.stringify(
 })();
 </script>
 
-<script>
-/* ============================================================
-   Oct 22 — the word practice opens itself.
-   The "Words from this part" strip needed a tap before a student
-   saw any question, so most never did. Now the practice opens on
-   its own the first time its strip is well on screen. Only one is
-   ever open (the engine allows one), a set already finished is
-   left alone, and if a student closes one it stays closed.
-   ============================================================ */
-(function(){
-  var seen = {}, io = null, armed = false;
-  function done(n){
-    try{ return !!PRACT["s" + n]; }catch(e){ return false; }
-  }
-  function openFor(strip){
-    var n = (strip.id || "").replace("wpract-", "");
-    if(!n || seen[n] || done(n)) return;
-    if(document.querySelector(".pq-inline")) return;   /* one at a time */
-    seen[n] = true;
-    var btn = strip.querySelector("button");
-    if(btn) btn.click();
-  }
-  function arm(){
-    var strips = document.querySelectorAll(".wpract"), i;
-    if(!strips.length) return;
-    if(!io && window.IntersectionObserver){
-      io = new IntersectionObserver(function(entries){
-        for(var k = 0; k < entries.length; k++){
-          if(entries[k].isIntersecting && entries[k].intersectionRatio > 0.55) openFor(entries[k].target);
-        }
-      }, { threshold: [0.55] });
-    }
-    for(i = 0; i < strips.length; i++){
-      if(strips[i].getAttribute("data-auto")) continue;
-      strips[i].setAttribute("data-auto", "1");
-      if(io) io.observe(strips[i]);
-    }
-    armed = true;
-  }
-  /* a student who closes one has said no — don't reopen that set */
-  document.addEventListener("click", function(e){
-    var x = e.target.closest ? e.target.closest(".pq-inline .px") : null;
-    if(x){
-      var box = x.closest(".pq-inline"), strip = box && box.previousElementSibling;
-      if(strip && strip.id) seen[strip.id.replace("wpract-", "")] = true;
-    }
-    setTimeout(arm, 250);
-  });
-  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", function(){ setTimeout(arm, 600); });
-  else setTimeout(arm, 600);
-  setTimeout(arm, 1800); setTimeout(arm, 3200);
-  window.GAL_armPractice = arm;
-})();
-</script>
+
 </body>
 </html>
