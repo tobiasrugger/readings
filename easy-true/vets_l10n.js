@@ -43,7 +43,7 @@ var CSS=[
 '#vl-bar button.on{background:#D94A38;color:#fff;border-color:#D94A38}',
 '.vl-dirtr{display:block;margin-top:4px;color:#2E6B8C;font-weight:700;font-size:.95em}',
 '.vl-dirtr:empty{display:none}',
-'body.vl-tap .vl-w{cursor:pointer;border-bottom:1px dotted #8a93a5}',
+'body.vl-tap .vl-w{cursor:pointer}',
 '.vl-bub{display:inline-block;margin-left:5px;padding:1px 6px;border-radius:6px;',
 '  background:#2E6B8C;color:#fff;font-size:.85em;font-weight:700}'
 ].join('\n');
@@ -101,8 +101,10 @@ function showDirections(){
 }
 
 /* ---------- tap any word ---------- */
-var TAP_ON=false;
-try{ TAP_ON=localStorage.getItem('vets_tap')==='1'; }catch(e){}
+/* on by default: a student should be able to tap any word without
+   finding a switch first. Still turn-off-able, and the choice sticks. */
+var TAP_ON=true;
+try{ var pref=localStorage.getItem('vets_tap'); if(pref==='0') TAP_ON=false; }catch(e){}
 function wrap(root){
   if(root.getAttribute('data-vwrapped'))return;
   root.setAttribute('data-vwrapped','1');
@@ -144,7 +146,11 @@ function check(){
       updated_at:new Date().toISOString()}])}).catch(function(){});
 }
 
+/* story 1 carries its own tap-a-word engine; don't stack a second one on it */
+var PAGE_HAS_OWN_TAP = !!(window.VETSX && typeof window.VETSX.toggleWT === 'function');
+
 function build(){
+  PAGE_HAS_OWN_TAP = !!(window.VETSX && typeof window.VETSX.toggleWT === 'function');
   document.head.appendChild(el('style',null,CSS));
   document.body.insertBefore(el('span',{id:'vl-canary',
     style:'position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden'},CAN),
@@ -182,7 +188,10 @@ function build(){
     tr(word,lang).then(function(t){ b.textContent=t?(t.equiv||t.meaning||'?'):'?'; });
   });
 
-  if(TAP_ON) setTimeout(function(){ setTap(true); },350);
+  if(PAGE_HAS_OWN_TAP){                    /* the page already does this */
+    var tb=document.getElementById('vl-tap'); if(tb) tb.remove();
+    try{ if(window.VETSX && !document.body.classList.contains('wt-on')) VETSX.toggleWT(); }catch(e){}
+  } else if(TAP_ON) setTimeout(function(){ setTap(true); },350);
   if(DIR_ON){ document.getElementById('vl-dir').classList.add('on'); setTimeout(showDirections,600); }
   setInterval(check,20000); setTimeout(check,4000);
 }
