@@ -583,11 +583,11 @@
   function cleanMail(x) { return String(x || '').trim().toLowerCase(); }
   function localPart(e) { return cleanMail(e).split('@')[0]; }
   function validMail(e) { return /^[^@\s]+@(s\.)?sfusd\.edu$/.test(cleanMail(e)); }
-  function canonMail(raw) {
-    var lp = localPart(raw), i;
-    for (i = 0; i < ROSTER.length; i++) if (localPart(ROSTER[i].email) === lp) return cleanMail(ROSTER[i].email);
-    return lp + CANON_DOMAIN;
-  }
+  /* T-79 (Oct 22): ALWAYS the canonical spelling name@sfusd.edu. It used to copy the roster's
+     spelling, so the same student saved as @s.sfusd.edu or @sfusd.edu depending on whether the
+     roster had loaded yet, and their work split across two rows (Elias). */
+  function canonMail(raw) { return localPart(raw) + CANON_DOMAIN; }
+  function legacyMail(email) { return localPart(email) + '@s.sfusd.edu'; }
   function sbHead(pref) {
     var h = { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' };
     if (pref) h['Prefer'] = pref;
@@ -639,24 +639,67 @@
     return [{ email: me.email, episode: EP.id, student_name: me.name, period: me.period, level: state.level, lang: state.lang,
               work: state, scores: score(), turned_in: state.turned, updated_at: new Date().toISOString() }];
   }
+  /* ---- T-79 data-loss guard (Oct 22 2026) ----
+     A student lost Ep 1 and Ep 2 work when load() failed and the autosave then
+     upserted a BLANK state over their real row. Now nothing is ever saved until
+     a load has succeeded (an empty result is fine: that's a new student). */
+  var loaded = false, loadTries = 0, loadTimer = null, offlineShown = false;
+  function saveNote(msg) {
+    var n = $('saveNote');
+    if (!n) {
+      n = document.createElement('span'); n.id = 'saveNote'; n.setAttribute('translate', 'no');
+      n.style.cssText = 'font-weight:800;font-size:14px;color:#ffd6a8;margin-left:6px';
+      var dot = $('saved'); dot.parentNode.insertBefore(n, dot.nextSibling);
+    }
+    n.textContent = msg || '';
+  }
   function save() {
-    if (!me.email) return;
+    if (!me.email || !loaded) return;          /* T-79: never save before a successful load */
     $('saved').className = 'saving';
     fetch(SUPA_URL + '/rest/v1/' + TABLE + '?on_conflict=email,episode', {
       method: 'POST', headers: sbHead('resolution=merge-duplicates,return=minimal'), body: JSON.stringify(payload())
     }).then(function (r) { $('saved').className = r.ok ? '' : 'err'; if (r.ok && window.REEL_TIERS) REEL_TIERS.poll(); })
       .catch(function () { $('saved').className = 'err'; });
   }
-  function load() {
-    fetch(SUPA_URL + '/rest/v1/' + TABLE + '?email=eq.' + encodeURIComponent(me.email) + '&episode=eq.' + encodeURIComponent(EP.id) + '&select=work,tier',
+  function load() { loadAttempt('work,tier', me.email); }
+  function loadAttempt(sel, who) {
+    fetch(SUPA_URL + '/rest/v1/' + TABLE + '?email=eq.' + encodeURIComponent(who) + '&episode=eq.' + encodeURIComponent(EP.id) + '&select=' + sel,
       { headers: sbHead() })
-      .then(function (r) { return r.ok ? r.json() : []; })
+      .then(function (r) {
+        /* a missing column (e.g. tier) answers 400: ask again without it */
+        if (r.status === 400 && sel !== 'work') { loadAttempt('work', who); return null; }
+        if (!r.ok) throw new Error('load ' + r.status);
+        return r.json();
+      })
       .then(function (rows) {
-        var w = rows && rows[0] && rows[0].work;
+        if (rows === null) return;                       /* the retry above is handling it */
+        if (!Array.isArray(rows)) throw new Error('load: not a list');
+        /* nothing under the canonical email: look under the old @s.sfusd.edu spelling once,
+           so a returning student's work is found (and then saved forward under @sfusd.edu) */
+        if (!rows.length && who === me.email && legacyMail(me.email) !== me.email) {
+          loadAttempt(sel, legacyMail(me.email)); return;
+        }
+        if (who !== me.email && rows.length && rows[0].work) dirty = true;   /* carry it forward */
+        var w = rows[0] && rows[0].work;
         if (w) { for (var k in w) state[k] = w[k]; }
-        if (rows && rows[0] && window.REEL_TIERS) REEL_TIERS.setTier(rows[0].tier);   /* teacher's tier (reel_views.tier) */
+        if (rows[0] && window.REEL_TIERS && ('tier' in rows[0])) REEL_TIERS.setTier(rows[0].tier);   /* teacher's tier (reel_views.tier) */
+        var firstTime = !offlineShown;
+        loaded = true; loadTries = 0; clearTimeout(loadTimer);
+        $('saved').className = ''; saveNote('');
+        /* reached the server late: a brand-new student keeps what they did meanwhile (and it saves);
+           a student with saved work gets their saved work back */
+        if (!firstTime && !w) dirty = true;
         afterLoad();
-      }).catch(function () { afterLoad(); });
+      }).catch(function () { loadFailed(); });
+  }
+  function loadFailed() {
+    loadTries++;
+    clearTimeout(loadTimer);
+    if (loadTries === 1) { loadTimer = setTimeout(load, 3000); return; }   /* one quick retry */
+    $('saved').className = 'err';
+    saveNote('Can\u2019t reach the server \u2014 your work is not being saved yet');
+    if (!offlineShown) { offlineShown = true; afterLoad(); }               /* the page still works, it just can't save */
+    loadTimer = setTimeout(load, 20000);                                   /* keep trying */
   }
   function afterLoad() {
     if (!state.yt) state.yt = { A: [], B: [] };
@@ -674,8 +717,8 @@
     if (state.done) showYourTurn(false);
     score(); highlights();
   }
-  setInterval(function () { if (dirty) { dirty = false; save(); } }, 20000);
-  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden' && dirty) { dirty = false; save(); } });
+  setInterval(function () { if (dirty && loaded) { dirty = false; save(); } }, 20000);
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden' && dirty && loaded) { dirty = false; save(); } });
   setInterval(function () { if (me.email && document.visibilityState === 'visible') { state.secs += 10; } }, 10000);
 
   /* ================= CONTROLS ================= */
