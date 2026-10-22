@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Question Builder: dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--line:#2b2b38;--green:#1f8a4c;--red:#c0392b;--amber:#b36b00}
+*{box-sizing:border-box}body{margin:0;background:#f4f1ea;color:#22232e;font-family:Nunito,system-ui,sans-serif;font-size:16px}
+.wrap{max-width:1180px;margin:0 auto;padding:14px}
+.box{background:#fff;border:2px solid var(--line);border-radius:12px;box-shadow:3px 4px 0 rgba(0,0,0,.15);padding:14px 16px;margin-bottom:14px}
+h1{margin:0 0 6px;font-size:1.4rem}
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+button,select,input{font-family:inherit;font-size:1rem}
+.btn{border:2px solid var(--line);background:#fff;border-radius:9px;padding:6px 12px;font-weight:800;cursor:pointer}
+.btn.on{background:var(--line);color:#fff}
+table{border-collapse:collapse;width:100%}
+th,td{border-bottom:1px solid #ddd;padding:7px 8px;text-align:left;vertical-align:top}
+th{background:#22232e;color:#fff;position:sticky;top:0}
+tr.stu{cursor:pointer}tr.stu:hover{background:#fff6d6}
+.g{display:inline-block;min-width:30px;text-align:center;border-radius:8px;font-weight:900;color:#fff;padding:1px 6px}
+.g4{background:#1f8a4c}.g3{background:#5aa04a}.g2{background:#d9a200}.g1{background:#d9851f}.g0{background:#c0392b}
+.qs{list-style:none;padding:0;margin:4px 0 8px}
+.qs li{padding:4px 0;border-bottom:1px dashed #ccc;display:flex;gap:8px}
+.qs .n{font-weight:900;min-width:26px}
+.qs .p{color:#777;font-size:.85rem}
+.qs .q{font-weight:800;font-size:1.05rem}
+.x{color:var(--red);font-weight:900}.ok{color:var(--green);font-weight:900}
+.wrong{color:#7a2a20;font-size:.9rem;text-decoration:line-through}
+.gate{position:fixed;inset:0;background:rgba(34,35,46,.85);display:flex;align-items:center;justify-content:center;z-index:9}
+.gate form{background:#fff;border:3px solid var(--line);border-radius:14px;padding:20px;width:320px}
+.gate input{width:100%;padding:8px;border:2px solid var(--line);border-radius:8px;margin:8px 0}
+.big .q{font-size:1.5rem}
+.small{font-size:.85rem;color:#555}
+@media print{.bar,.gate{display:none!important}}
+</style>
+</head>
+<body data-no-listen>
+<div class="gate" id="gate"><form id="pw"><h2 style="margin:0">Teacher view</h2><input id="pwi" type="password" placeholder="Password" autofocus><button class="btn" type="submit">Open</button><div id="pwe" style="color:#c0392b;font-weight:800"></div></form></div>
+<div class="wrap">
+  <div class="box">
+    <h1>Question Builder: Find Someone Who — teacher view</h1>
+    <div class="small">Student page: <a href="./" target="_blank">https://tobiasrugger.github.io/readings/question-builder/</a> · set <b id="setName"></b> · each student's corrected questions, how many tries, and what they typed first.</div>
+    <div class="bar" style="margin-top:10px">
+      <label>Period <select id="per"><option value="">All</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select></label>
+      <button class="btn on" id="vStu" type="button">By student</button>
+      <button class="btn" id="vItem" type="button">By question</button>
+      <button class="btn" id="reload" type="button">↻ Refresh</button>
+      <button class="btn" id="csv" type="button">⬇ CSV</button>
+      <button class="btn" type="button" onclick="window.print()">🖨 Print</button>
+      <span id="stat" class="small"></span>
+    </div>
+  </div>
+  <div class="box" id="out"></div>
+</div>
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var SET=(new URLSearchParams(location.search).get('set'))||'fsw-1';
+var PROMPTS=['has lived in more than two cities','would rather be invisible than be able to fly','has tried a food they really hated','thinks school here is harder than in their home country','knows a word in their language that has no English translation','would choose to live 100 years in the past, not the future','has a skill most people in this class don\u2019t know about','has read a whole book in English','disagrees with a school rule and can explain why','still remembers a strange dream','wants a job where they use two languages','thinks AI will make school easier, not harder','has taught someone how to do something','feels more confident speaking English now than in August','would change one thing about San Francisco','has been surprised by something in the U.S.','has stayed in a stranger\u2019s house or a cheap hotel','has had a bad feeling about a place or a person','thinks Billy trusts people too easily','would leave the Landlady\u2019s house right now'];
+var rows=[],view='stu',open={};
+function $(i){return document.getElementById(i);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+$('setName').textContent=SET;
+$('pw').addEventListener('submit',function(e){e.preventDefault();if($('pwi').value==='galileo2026'){$('gate').style.display='none';try{sessionStorage.setItem('qb_t','1');}catch(x){}load();}else $('pwe').textContent='Not right.';});
+try{if(sessionStorage.getItem('qb_t')==='1'){$('gate').style.display='none';load();}}catch(x){}
+function load(){$('stat').textContent='Loading…';var hd={headers:{apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY}};
+  fetch(SUPA_URL+'/rest/v1/question_work?select=email,name,period,lang,answers,score,max_score,turned_in,updated_at&set_slug=eq.'+encodeURIComponent(SET),hd)
+  .then(function(r){return r.ok?r.json():Promise.reject(r.status);}).then(function(d){var by={};
+    /* one student = one row: @s.sfusd.edu and @sfusd.edu merge, newest wins */
+    (d||[]).forEach(function(r){var k=String(r.email||'').toLowerCase().split('@')[0];var o=by[k];if(!o||new Date(r.updated_at)>new Date(o.updated_at))by[k]=r;});
+    rows=Object.keys(by).map(function(k){return by[k];}).sort(function(x,y){return String(x.name).localeCompare(String(y.name));});
+    $('stat').textContent=rows.length+' students · loaded '+new Date().toLocaleTimeString();render();})
+  .catch(function(e){$('stat').textContent='Could not load ('+e+').';});}
+function grade(r){var m=r.max_score||20;return Math.round((r.score||0)/m*4);}
+function its(r){return (r.answers&&r.answers.items)||{};}
+function miss(s){return s?(s.tries||[]).length-(s.done?1:0):0;}
+function filtered(){var p=$('per').value;return rows.filter(function(r){return !p||String(r.period)===p;});}
+function render(){view==='stu'?renderStu():renderItem();}
+function renderStu(){
+  var f=filtered(),h='<table><tr><th>Student</th><th>P</th><th>Done</th><th>0–4</th><th>Right first try</th><th>Misses</th><th>Turned in</th><th>Updated</th></tr>';
+  f.forEach(function(r,i){var I=its(r),first=0,ms=0,done=0;for(var n=1;n<=20;n++){var s=I[n];if(s&&s.done){done++;if(miss(s)===0)first++;}ms+=miss(s);}
+    var g=grade(r);
+    h+='<tr class="stu" data-e="'+esc(r.email)+'"><td><b>'+esc(r.name)+'</b><div class="small">'+esc(r.email)+' · '+esc(r.lang||'')+'</div></td><td>'+esc(r.period)+'</td><td>'+done+'/20</td><td><span class="g g'+g+'">'+g+'</span></td><td>'+first+'</td><td>'+ms+'</td><td>'+(r.turned_in?'✓':'')+'</td><td class="small">'+(r.updated_at?new Date(r.updated_at).toLocaleString():'')+'</td></tr>';
+    if(open[r.email]){h+='<tr><td colspan="8"><ul class="qs">';for(var k=1;k<=20;k++){var s2=I[k];h+='<li><span class="n">'+k+'</span><div><div class="p">Find someone who '+esc(PROMPTS[k-1])+'</div>'+
+      (s2&&s2.done?'<div class="q">'+(miss(s2)?'<span class="x">'+'✗'.repeat(Math.min(5,miss(s2)))+'</span> ':'')+'<span class="ok">✓</span> '+esc(s2.final)+'</div>':'<div class="small">'+(s2&&s2.tries&&s2.tries.length?'working on it':'not started')+'</div>')+
+      (s2&&miss(s2)?'<div class="wrong">'+esc(s2.tries[0])+'</div>':'')+'</div></li>';}h+='</ul></td></tr>';}
+  });
+  $('out').innerHTML=f.length?h+'</table><p class="small">Tap a student to see their final questions (first wrong try crossed out below each one).</p>':'<p>No work yet for this period.</p>';
+}
+function renderItem(){
+  var f=filtered(),h='';
+  for(var k=1;k<=20;k++){var done=0,first=0,wrongs={};f.forEach(function(r){var s=its(r)[k];if(s&&s.done){done++;if(miss(s)===0)first++;}if(s&&s.tries){(s.done?s.tries.slice(0,-1):s.tries).forEach(function(t){var key=t.toLowerCase();wrongs[key]=(wrongs[key]||0)+1;});}});
+    var top=Object.keys(wrongs).sort(function(a,b){return wrongs[b]-wrongs[a];}).slice(0,4);
+    h+='<div style="border-bottom:2px solid #ddd;padding:8px 0"><b>'+k+'. Find someone who '+esc(PROMPTS[k-1])+'</b> <span class="small">— '+done+' done · '+first+' right first try</span>'+
+      (top.length?'<ul class="qs">'+top.map(function(t){return '<li><span class="x">✗</span><span>'+esc(t)+(wrongs[t]>1?' <span class="small">×'+wrongs[t]+'</span>':'')+'</span></li>';}).join('')+'</ul>':'')+'</div>';}
+  $('out').innerHTML=h;
+}
+$('out').addEventListener('click',function(e){var tr=e.target.closest('tr.stu');if(!tr)return;var em=tr.dataset.e;open[em]=!open[em];render();});
+$('per').addEventListener('change',render);
+$('reload').addEventListener('click',load);
+$('vStu').addEventListener('click',function(){view='stu';this.classList.add('on');$('vItem').classList.remove('on');render();});
+$('vItem').addEventListener('click',function(){view='item';this.classList.add('on');$('vStu').classList.remove('on');render();});
+$('csv').addEventListener('click',function(){var L=[['name','email','period','done','grade_0_4'].concat(PROMPTS.map(function(p,i){return 'Q'+(i+1);}))];
+  filtered().forEach(function(r){var I=its(r),done=0,q=[];for(var n=1;n<=20;n++){var s=I[n];if(s&&s.done)done++;q.push(s&&s.done?s.final:'');}L.push([r.name,r.email,r.period,done,grade(r)].concat(q));});
+  var csv=L.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='questions-'+SET+'.csv';a.click();});
+</script>
+<script src="https://tobiasrugger.github.io/readings/grade04.js" data-prefix="question-builder"></script>
+</body>
+</html>

@@ -275,6 +275,13 @@ window.CATALOG=[
 "g": "Academic writing and grammar"
 },
 {
+"p": "/readings/question-builder/",
+"t": "Question Builder: Find Someone Who",
+"d": "Picture version: turn each \u201cFind someone who\u2026\u201d into a yes/no question, get a hint, fix it, then copy the corrected list onto the paper sheet.",
+"m": "ELD 103 \u00b7 20 questions \u00b7 pictures \u00b7 hints",
+"g": "Academic writing and grammar"
+},
+{
 "p": "/readings/false-friends/",
 "t": "False Friends: funny mistakes between languages",
 "d": "Funny mistakes between languages: embarazada, 手紙, siguro, Gift. Cards filtered to the student’s language, a guessing game, and a class wall students add to.",
