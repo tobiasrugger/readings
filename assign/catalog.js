@@ -23,6 +23,13 @@ window.CATALOG=[
 "g": "Novels and long texts"
 },
 {
+"p": "/readings/group/",
+"t": "Group Practice",
+"d": "Small-group practice led by the lion: one slide per question, directions in seven languages. Any story or topic, or several mixed.",
+"m": "Group · any deck · 7 languages",
+"g": "Novels and long texts"
+},
+{
 "p": "/readings/maus/",
 "t": "Maus · Holocaust · Oral Histories",
 "d": "Full 12-week unit. Comics literacy, ten stages of genocide, all 11 chapters with reading roles, interview final project, class anthology.",
