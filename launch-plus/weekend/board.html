@@ -141,6 +141,15 @@ main{max-width:1180px;margin:0 auto;padding:14px 12px 50px}
 .check .neg{color:#8f2f22}
 .check .v{color:var(--purple2);text-decoration:underline;text-decoration-thickness:3px;text-decoration-color:var(--orange)}
 .snd{display:inline-block;font-size:.85rem;font-weight:900;border:2px solid var(--ink);border-radius:20px;padding:1px 9px;background:#fff;margin-left:4px}
+.sayit{margin-top:8px;border-top:2px dashed #c9b9a3;padding-top:8px;font-weight:800;font-size:1rem}
+.sayit .line2{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 8px}
+.rec{font-family:inherit;font-weight:900;font-size:1rem;border:0;border-radius:12px;padding:11px 18px;cursor:pointer;background:#d62828;color:#fff;box-shadow:0 3px 0 rgba(0,0,0,.28);display:inline-flex;align-items:center;gap:8px}
+.rec svg{width:20px;height:20px}
+.rec.on{background:#7a0f0f;animation:recpulse 1s ease-in-out infinite}
+@keyframes recpulse{0%,100%{box-shadow:0 0 0 0 rgba(214,40,40,.6)}50%{box-shadow:0 0 0 9px rgba(214,40,40,0)}}
+.play{font-family:inherit;font-weight:900;font-size:.95rem;border:2px solid var(--ink);border-radius:12px;padding:9px 14px;cursor:pointer;background:#fff;color:var(--ink)}
+.recnote{font-size:.85rem;color:#4f5d55;font-weight:700}
+.btn.go{background:#2f9e44}
 .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;clear:both}
 .follow{font-size:.95rem;color:var(--muted);font-weight:700;margin:2px 0 10px}
 
@@ -595,7 +604,8 @@ function openCard(i,landed,retry){
   h='<div class="pic">'+ART.Q+'</div>'+(p?'<div class="k" style="font-weight:900;color:#6a3a80">'+p.name.toUpperCase()+'</div>':'')
    +'<div class="step"><div class="k">1 &middot; A FRIEND ASKS</div><div class="big">'+Q.en+' '+sayBtn(Q.en)+'</div>'+trLine(Q,lang)+'</div>'
    +'<div class="step ans"><div class="k">2 &middot; YOU ANSWER &mdash; ANYTHING TRUE!</div><div class="big">'+day+'I ____. '+sayBtn(day+'I blank.')+'</div>'
-   +'<div class="big" style="font-size:1.05rem">Then, I ____. I didn\u2019t ____.</div></div>'
+   +'<div class="big" style="font-size:1.05rem">Then, I ____. I didn\u2019t ____.</div>'
+   +'<div class="sayit">Say it out loud.<div class="line2">'+recHTML()+'</div></div></div>'
    +'<div class="follow">Friend, ask more: '+FUNQ.en+' '+sayBtn(FUNQ.en)+trLine(FUNQ,lang)+'</div>'
    +ptsBox('3 &middot; FRIENDS: WAS IT A WHOLE SENTENCE IN THE PAST?',2,true)
    +'<div class="hint2" id="hint2">Hint: start with the day, then a past verb: '+day+'I went&hellip; / I played&hellip; Say it again!</div>'
@@ -608,7 +618,8 @@ function openCard(i,landed,retry){
   +'<div class="step ans"><div class="k">2 &middot; YOU ANSWER IN THE PAST</div>'
   +'<div class="tagline"><span class="tag">NOW</span>I '+a.base+'. '+sayBtn('I '+a.base+'.')+'</div>'
   +'<div class="big tagline p"><span class="tag">PAST</span>I <span class="gap">'+(HINTS?gap(a.v):'____')+'</span>'+(a.rest?' '+a.rest:'')+'.</div>'
-  +'<div style="font-size:.95rem;color:#4f5d55;font-weight:700;margin-top:3px">Say it out loud first. Then tap Check.</div></div>'
+  +'<div class="sayit">Say it out loud first.<div class="line2">'+recHTML()+'</div>'
+  +'Then tap Check.<div class="line2"><button class="btn go" id="chkBtn" onclick="doCheck()">&#10003; Check</button></div></div></div>'
   +'<div class="check" id="chk"><div class="k">CHECK</div><div class="big">'+pos+' '+sayBtn(posT)
   +(a.kind==='reg'?' <span class="snd">-ed sounds like /'+a.snd+'/</span>':' <span class="snd">new word: '+a.base.split(' ')[0]+' &rarr; '+a.v+'</span>')+'</div>'
   +(a.note?'<div style="font-weight:800;color:#6a3a80">'+a.note+'</div>':'')
@@ -617,14 +628,40 @@ function openCard(i,landed,retry){
   +ptsBox('3 &middot; DID YOU SAY IT RIGHT?',1,false)
   +'<div class="hint2" id="hint2">'+(a.kind==='reg'?'Hint: add <b>-ed</b> to <b>'+a.base.split(' ')[0]+'</b>.':'Hint: <b>'+a.base.split(' ')[0]+'</b> changes to a new word. Look at the Verb list.')+' Say the whole sentence again, then Check.</div>'
   +'<div class="follow">Friend, ask more: '+FUNQ.en+' '+sayBtn(FUNQ.en)+trLine(FUNQ,lang)+'</div>'
-  +'<div class="row"><button class="btn ghost small" onclick="toggleVerbsCard()">&#128161; Verb list</button><button class="btn" id="chkBtn" onclick="doCheck()">&#10003; Check</button>'+next+'</div><div id="cardVerbs"></div>';
+  +'<div class="row"><button class="btn ghost small" onclick="toggleVerbsCard()">&#128161; Verb list</button>'+next+'</div><div id="cardVerbs"></div>';
  show(h);if(landed)setTimeout(function(){say('What did you do last weekend?');},250);
 }
 function doCheck(){document.getElementById('chk').classList.add('on');var b=document.getElementById('chkBtn');if(b)b.style.display='none';
  var pb=document.getElementById('ptsBox');if(pb&&!awarded)pb.classList.add('on');}
 function toggleVerbsCard(){var d=document.getElementById('cardVerbs');d.innerHTML=d.innerHTML?'':document.getElementById('verbs').outerHTML.replace('style="display:none"','').replace('id="verbs"','');}
-function show(h){document.getElementById('card').innerHTML=h;document.getElementById('veil').classList.add('on');}
-function closeCard(){document.getElementById('veil').classList.remove('on');}
+function show(h){stopRec(true);document.getElementById('card').innerHTML=h;document.getElementById('veil').classList.add('on');}
+function closeCard(){stopRec(true);document.getElementById('veil').classList.remove('on');}
+/* ===== record: kept ONLY in this card on this Chromebook — nothing is uploaded or saved; it is thrown away when the card closes ===== */
+var REC=null;
+function recHTML(){return '<button class="rec" id="recBtn" onclick="toggleRec()"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><rect x=\"8.5\" y=\"2\" width=\"7\" height=\"12\" rx=\"3.5\" fill=\"#fff\"/><path d=\"M5 11 a7 7 0 0 0 14 0 M12 18 v3 M8.5 21 h7\" fill=\"none\" stroke=\"#fff\" stroke-width=\"2\" stroke-linecap=\"round\"/></svg><span>Record</span></button><span id="recOut"></span>';}
+function toggleRec(){ if(REC&&REC.mr&&REC.mr.state==='recording'){stopRec();return;} startRec(); }
+function startRec(){
+ var b=document.getElementById('recBtn'),out=document.getElementById('recOut');
+ if(!navigator.mediaDevices||!window.MediaRecorder){out.innerHTML='<span class="recnote">No microphone here &mdash; just say it out loud.</span>';return;}
+ dropRec();
+ navigator.mediaDevices.getUserMedia({audio:true}).then(function(st){
+  var chunks=[],mr=new MediaRecorder(st);REC={mr:mr,st:st,url:null};
+  mr.ondataavailable=function(e){if(e.data&&e.data.size)chunks.push(e.data);};
+  mr.onstop=function(){st.getTracks().forEach(function(x){x.stop();});
+   if(!REC||REC.mr!==mr||REC.discard)return;
+   var url=URL.createObjectURL(new Blob(chunks,{type:mr.mimeType||'audio/webm'}));REC.url=url;
+   var o=document.getElementById('recOut');if(o)o.innerHTML='<button class="play" onclick="playRec()">&#9654; Listen to me</button>';
+   var bb=document.getElementById('recBtn');if(bb){bb.classList.remove('on');bb.querySelector('span').textContent='Record again';}
+  };
+  mr.start();b.classList.add('on');b.querySelector('span').textContent='Stop';out.innerHTML='<span class="recnote">Recording&hellip;</span>';
+  REC.timer=setTimeout(function(){stopRec();},12000);
+ }).catch(function(){out.innerHTML='<span class="recnote">The microphone is off &mdash; just say it out loud.</span>';});
+}
+function stopRec(discard){ if(!REC)return; clearTimeout(REC.timer); if(discard)REC.discard=true;
+ try{if(REC.mr.state==='recording')REC.mr.stop();else REC.st.getTracks().forEach(function(x){x.stop();});}catch(e){}
+ if(discard)dropRec(); }
+function dropRec(){ if(REC&&REC.url){try{URL.revokeObjectURL(REC.url);}catch(e){}} REC=null; }
+function playRec(){ if(REC&&REC.url){try{speechSynthesis.cancel();}catch(e){} new Audio(REC.url).play();} }
 function newGame(){closeCard();players.forEach(function(p){p.pos=0;p.score=0;});turn=0;placeTokens();updateTurn(players[0].name+', roll the die!');}
 
 /* ================= lion easter egg ================= */
