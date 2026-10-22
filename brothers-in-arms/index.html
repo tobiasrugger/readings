@@ -116,6 +116,13 @@ select option{color:#17222b;background:#fff}
 .wcard .wm{display:block;font-size:15px;color:var(--muted);cursor:pointer}
 .wcard .wt{display:block;font-size:17px;margin-top:2px;min-height:1.2em}
 .eq{font-weight:900;text-decoration:underline}
+.recrow{display:flex;align-items:center;gap:8px;margin-top:6px;border-top:1px solid #d5dbe0;padding-top:6px}
+.recb{width:40px;height:40px;flex:0 0 40px;border-radius:50%;border:2px solid var(--line);background:#fff;display:flex;align-items:center;justify-content:center;padding:0}
+.recb .dot{width:18px;height:18px;border-radius:50%;background:#d93a3a}
+.recb.live{animation:pulse 1s infinite;background:#fde3e3}
+.recmsg{font-size:14px;font-weight:700;color:var(--muted);flex:1}
+.recplay{border:2px solid var(--line);border-radius:8px;background:#fff;padding:2px 9px;font-weight:900}
+.wcard.recok{border-color:var(--ok);box-shadow:0 0 0 3px var(--ok-soft)}
 .eq.none{color:#8a96a0}
 
 /* ---------- questions ---------- */
@@ -268,6 +275,7 @@ textarea{width:100%;min-height:70px;border:2px solid var(--line);border-radius:1
 <canvas class="fw" id="fw"></canvas>
 <div class="toast" id="toast"></div>
 <script src="../track.js"></script>
+<script src="/readings/speaking/speak-core.js"></script>
 <script>
 /* =====================================================================
    DATA — Brothers in Arms (ELD 101 read-aloud, early emerging / SIFE)
@@ -792,7 +800,7 @@ function normLang(v){if(!v)return '';if(CODE2NAME[v])return CODE2NAME[v];if(/^Ch
 function H(pref){var h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};if(pref)h.Prefer=pref;return h;}
 
 var me=null, lang='', dirty=false, OPEN_ALL=false;
-var work={lv:'A',ch:1,st:'read',ord:{},mc:{},pred:{},play:{},fix:{},wr:{},miss:{},lion:{},visited:{},bt:false,prog:{}};
+var work={rec:{},lv:'A',ch:1,st:'read',ord:{},mc:{},pred:{},play:{},fix:{},wr:{},miss:{},lion:{},visited:{},bt:false,prog:{}};
 try{ if(/[?&]open=all/.test(location.search)) localStorage.setItem('bia_open','1'); OPEN_ALL=localStorage.getItem('bia_open')==='1'; }catch(e){}
 
 /* ---------------- sign-in ---------------- */
@@ -940,39 +948,54 @@ function translateDirs(){
 function dirHtml(text){return '<p class="dir" data-dir="'+esc(text)+'"><span class="en">'+esc(text)+'</span><span class="tr"></span></p>';}
 
 /* ---------------- speech ---------------- */
-var SAYAS={'I':'eye','Huero':'Wero','Huero’s':'Weros','Jesus':'Hey-soos','Chago':'Chah-go','Mitchell':'Mitchell','P.E.':'P E','___':'blank','Thi':'Tee','Bui':'Boo-ee','Bui’s':'Boo-ees'};
+var SAYAS={'I':'eye','Huero':'Wero','Huero’s':'Weros','Jesus':'Hey-soos','Chago':'Chaw-go','Chago’s':'Chaw-gos','Mitchell':'Mitchell','P.E.':'P E','___':'blank','Thi':'Tee','Bui':'Boo-ee','Bui’s':'Boo-ees'};
 function sayForm(tok){var core=tok.replace(/^[“"(]+|[”"),.!?:;]+$/g,'');var rep=SAYAS[core];return rep?tok.replace(core,rep):tok;}
 function voice(){var vs=speechSynthesis.getVoices().filter(function(v){return /^en(-|_)US/i.test(v.lang);});return vs.filter(function(v){return /Google|Samantha|Aria|Jenny/i.test(v.name);})[0]||vs[0]||null;}
 var reading=null;
+var GAP_SENT=420, GAP_PARA=750; /* pauses after a sentence / after a paragraph, in ms */
+var speakTok=0;
 function speak(text,rate,onEnd){
   if(!('speechSynthesis' in window))return;stopRead();
-  var t=String(text).split(/\s+/).map(sayForm).join(' ');
-  var u=new SpeechSynthesisUtterance(t);u.lang='en-US';u.rate=rate||0.9;var v=voice();if(v)u.voice=v;
-  if(onEnd){u.onend=onEnd;u.onerror=onEnd;}
-  speechSynthesis.speak(u);
+  var my=++speakTok;
+  var parts=String(text).split(/(?<=[.!?][”"’)]?)\s+/).filter(function(x){return x.trim();});
+  (function next(i){
+    if(my!==speakTok)return;
+    if(i>=parts.length){if(onEnd)onEnd();return;}
+    var u=new SpeechSynthesisUtterance(parts[i].split(/\s+/).map(sayForm).join(' '));u.lang='en-US';u.rate=rate||0.9;var v=voice();if(v)u.voice=v;
+    u.onend=u.onerror=function(){if(my!==speakTok)return;setTimeout(function(){next(i+1);},i<parts.length-1?GAP_SENT:0);};
+    speechSynthesis.speak(u);
+  })(0);
 }
-function stopRead(){if(reading){reading.stop=true;clearTimeout(reading.timer);reading=null;}try{speechSynthesis.cancel();}catch(e){}document.querySelectorAll('.w.now').forEach(function(x){x.classList.remove('now');});var b=$('readBtn');if(b){b.classList.remove('on');b.textContent='🔊 Read it to me';}}
+function stopRead(){speakTok++;if(reading){reading.stop=true;clearTimeout(reading.timer);reading=null;}try{speechSynthesis.cancel();}catch(e){}document.querySelectorAll('.w.now').forEach(function(x){x.classList.remove('now');});var b=$('readBtn');if(b){b.classList.remove('on');b.textContent='🔊 Read it to me';}}
 function readParas(from,only,rate){
   stopRead();if(!('speechSynthesis' in window))return;
   var paras=Array.prototype.slice.call(document.querySelectorAll('.para'));
   var R=reading={stop:false};var b=$('readBtn');if(b&&!only){b.classList.add('on');b.textContent='⏹ Stop';}
-  function one(pi){
-    if(R.stop||pi>=paras.length||(only&&pi!==from)){if(!R.stop)stopRead();return;}
-    var p=paras[pi];p.scrollIntoView({block:'nearest',behavior:'smooth'});
-    var spans=Array.prototype.slice.call(p.querySelectorAll('.w')),txt='',offs=[];
+  /* queue of sentences: each is the word spans that share one data-s, plus the pause after it */
+  var Q=[];
+  paras.forEach(function(p,pi){
+    if(pi<(from||0)||(only&&pi!==from))return;
+    var groups=[],last=null;
+    p.querySelectorAll('.w').forEach(function(s){if(s.dataset.s!==last){groups.push([]);last=s.dataset.s;}groups[groups.length-1].push(s);});
+    groups.forEach(function(g,gi){Q.push({p:p,spans:g,gap:gi<groups.length-1?GAP_SENT:GAP_PARA});});
+  });
+  function one(k){
+    if(R.stop)return;
+    if(k>=Q.length){stopRead();return;}
+    var q=Q[k],spans=q.spans,txt='',offs=[];
+    if(k===0||Q[k-1].p!==q.p)q.p.scrollIntoView({block:'nearest',behavior:'smooth'});
     spans.forEach(function(s){offs.push(txt.length);txt+=sayForm(s.textContent)+' ';});
     var u=new SpeechSynthesisUtterance(txt);u.lang='en-US';u.rate=rate||0.9;var v=voice();if(v)u.voice=v;
     var got=false,cur=-1;
     function hl(i){if(i===cur)return;if(spans[cur])spans[cur].classList.remove('now');cur=i;if(spans[i])spans[i].classList.add('now');}
     u.onboundary=function(e){if(e.name&&e.name!=='word')return;got=true;var i=0;while(i+1<offs.length&&offs[i+1]<=e.charIndex)i++;hl(i);};
-    u.onend=function(){clearTimeout(R.timer);hl(-1);if(!R.stop)setTimeout(function(){one(pi+1);},250);};
-    u.onerror=u.onend;
+    u.onend=u.onerror=function(){if(R.stop)return;clearTimeout(R.timer);hl(-1);R.timer=setTimeout(function(){one(k+1);},q.gap);};
     speechSynthesis.speak(u);
     /* fallback when the voice gives no word boundaries */
     var start=Date.now(),per=(60000/(165*(rate||0.9)));
     (function tick(){if(R.stop||got)return;var el=Date.now()-start,acc=0,i=0;for(;i<spans.length;i++){acc+=per*(0.6+spans[i].textContent.length/7);if(acc>el)break;}hl(Math.min(i,spans.length-1));R.timer=setTimeout(tick,120);})();
   }
-  one(from||0);
+  one(0);
 }
 if('speechSynthesis' in window)speechSynthesis.onvoiceschanged=function(){};
 
@@ -1097,7 +1120,7 @@ function readHtml(c){
     h+='<div class="para"><button class="pn" type="button" data-pn="'+i+'" aria-label="read paragraph '+(i+1)+'">'+(i+1)+'</button><div class="pr" data-say="'+esc(w?w.w:'')+'">'+ART.W[p.pic]()+'</div>'+paraHtml(p.t)+'</div>';});
   h+='</div></div>';
   h+='<div class="box"><h2>Key words</h2>'+dirHtml('Tap a picture to hear the word. Tap the word or the meaning to see it in your language.')+'<div class="words" translate="no">';
-  c.words.forEach(function(w){h+='<div class="wcard"><button class="wpic" type="button" data-say="'+esc(w.w)+'">'+ART.W[w.pic]()+'</button><div class="wb"><span class="ww" data-tr="'+esc(w.w)+'">'+esc(w.w)+'</span><span class="wm" data-tr="'+esc(w.m)+'">'+esc(w.m)+'</span><span class="wt" data-wt="'+esc(w.w)+'"></span></div></div>';});
+  c.words.forEach(function(w){h+='<div class="wcard"><button class="wpic" type="button" data-say="'+esc(w.w)+'">'+ART.W[w.pic]()+'</button><div class="wb"><span class="ww" data-tr="'+esc(w.w)+'">'+esc(w.w)+'</span><span class="wm" data-tr="'+esc(w.m)+'">'+esc(w.m)+'</span><span class="wt" data-wt="'+esc(w.w)+'"></span>'+recRow(w.w)+'</div></div>';});
   h+='</div></div>';
   return h;
 }
@@ -1112,6 +1135,31 @@ function wireRead(c){
 }
 function lightbox(src){var d=document.createElement('div');d.className='lb';d.innerHTML='<button type="button" class="lbx" aria-label="Close">×</button><img src="'+src+'" alt="big picture">';d.onclick=function(){d.remove();};document.body.appendChild(d);}
 document.addEventListener('click',function(ev){var im=ev.target.closest&&ev.target.closest('.scene img, .qpic img');if(im){ev.stopPropagation();lightbox(im.src);}},true);
+function recRow(w){var r=(work.rec||{})[w]||{};
+  return '<div class="recrow"><button type="button" class="recb" data-rec="'+esc(w)+'" aria-label="Record yourself saying '+esc(w)+'"><span class="dot"></span></button><span class="recmsg" data-recmsg="'+esc(w)+'">'+(r.ok?'✓ I heard you say it.':(r.tries?'Try again — say: <b>'+esc(w)+'</b>':'Say it: tap the red button'))+'</span><button type="button" class="recplay" data-play="'+esc(w)+'" hidden aria-label="Play my voice">▶</button></div>';}
+var recCtl=null;
+function recWord(btn){
+  var w=btn.dataset.rec,msg=document.querySelector('[data-recmsg="'+w+'"]'),card=btn.closest('.wcard');
+  if(!window.GS||!GS.record){msg.textContent='The microphone is still loading. Try again in a moment.';return;}
+  if(recCtl){recCtl.stop();return;}
+  stopRead();btn.classList.add('live');msg.innerHTML='Listening… say: <b>'+esc(w)+'</b>';
+  recCtl=GS.record({maxMs:5000,onDone:function(res){
+    recCtl=null;btn.classList.remove('live');
+    if(res.error==='nomic'||res.error==='not-allowed'){msg.textContent='The page can’t use the microphone. Ask Mr. Toby.';return;}
+    var best=GS.bestMatch(res.alts||[],[w]),ok=best.score>=0.6;
+    if(!ok&&!GS.canRecognize&&res.blob&&res.secs>0.6){ok=true;best.heard='(recorded — Mr. Toby will listen)';}
+    work.rec=work.rec||{};var r=work.rec[w]||{tries:0};r.tries++;if(ok)r.ok=true;r.heard=best.heard||'';r.score=Math.round(best.score*100)/100;work.rec[w]=r;
+    if(res.blob){var pl=document.querySelector('[data-play="'+w+'"]');if(pl){pl._url=URL.createObjectURL(res.blob);pl.hidden=false;}}
+    msg.innerHTML=ok?'✓ I heard you say it.':(best.heard?'I heard “'+esc(best.heard)+'”. Try again — say: <b>'+esc(w)+'</b>':'I didn’t hear you. Tap the red button and say: <b>'+esc(w)+'</b>');
+    card.classList.toggle('recok',!!r.ok);
+    if(me){try{GS.saveAttempt({activity:'brothers-in-arms-words',item_id:w,email:me.email,speaker_name:me.first+' '+me.last,period:String(me.period),device_email:me.email,target_text:w,said_text:best.heard||'',transcript:(res.alts&&res.alts[0]&&res.alts[0].t)||'',alternatives:res.alts||[],match_score:best.score,attempt_no:r.tries,accepted:ok,practice:false},res.blob);}catch(e){}}
+    mark();
+  }});
+}
+document.addEventListener('click',function(ev){
+  var rb=ev.target.closest&&ev.target.closest('.recb');if(rb){ev.stopPropagation();recWord(rb);return;}
+  var pb=ev.target.closest&&ev.target.closest('.recplay');if(pb&&pb._url){ev.stopPropagation();new Audio(pb._url).play();}
+},true);
 function wireLion(c){var l=$('lion');if(!l)return;l.onclick=function(ev){ev.stopPropagation();work.lion[c.id]=true;mark();fireworks(ev.clientX,ev.clientY);toast('🦁 You found the Galileo lion! '+Object.keys(work.lion).length+' of 8 found.');};}
 
 /* ---------- generic choice question (formative: fade, quip, hint, ✓) ---------- */
