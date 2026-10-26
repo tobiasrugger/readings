@@ -57,7 +57,7 @@ window.DASHBOARDS = [
 {url:'vocab/pre/dashboard.html',          name:'Vocabulary pre-assessments',  course:'101', group:'Vocabulary'},
 {url:'vocab/pre/report.html',             name:'Vocabulary \u2014 class report', course:'101', group:'Vocabulary'},
 {url:'vocab/pretest-ll12/dashboard.html', name:'Vocabulary pre-test (U1\u2013U2)', course:'101', group:'Vocabulary'},
-{url:'false-friends/teacher.html',        name:'False Friends',               course:'both', group:'Vocabulary'},
+{url:'false-friends/dashboard.html',        name:'False Friends',               course:'both', group:'Vocabulary'},
 
 /* ---------- Speaking ---------- */
 {url:'say/dashboard/',                  name:'Say the Words',                 course:'101', group:'Speaking', note:'Every recording, by set.'},
@@ -80,10 +80,10 @@ window.DASHBOARDS = [
 
 /* ---------- Grammar ---------- */
 {url:'verbs/dashboard.html',            name:'Verb drills',                   course:'both', group:'Grammar'},
-{url:'questions/teacher.html',          name:'Question Practice',             course:'103', group:'Grammar'},
+{url:'questions/dashboard.html',          name:'Question Practice',             course:'103', group:'Grammar'},
 {url:'question-builder/dashboard.html', name:'Question Builder (pictures): Find Someone Who', course:'103', group:'Grammar'},
-{url:'grasshopper-ant/teacher.html',    name:'Grasshopper and Ant',           course:'101', group:'Grammar'},
-{url:'fables/teacher.html',             name:'Fables',                        course:'101', group:'Grammar'},
+{url:'grasshopper-ant/dashboard.html',    name:'Grasshopper and Ant',           course:'101', group:'Grammar'},
+{url:'fables/dashboard.html',             name:'Fables',                        course:'101', group:'Grammar'},
 
 /* ---------- Unit ---------- */
 {url:'launch-plus/dashboard.html',      name:'Launch Plus',                   course:'101', group:'Unit', note:'Every lesson and its six parts, plus the Record step.'},
@@ -100,9 +100,14 @@ window.DASHBOARDS = [
    arrival/arrival_dashboard.html -> arrival/dashboard.html
    eld103/ch3_dashboard.html      -> eld103/ch3/dashboard.html
    dashboard.html (repo root)     -> easy-true/dashboard.html
+   fables/ false-friends/ grasshopper-ant/ questions/ teacher.html -> dashboard.html (T-121)
    New dashboards are named dashboard.html inside their activity's folder. */
 window.DASHBOARD_LEGACY = {
   'arrival/arrival_dashboard.html': 'arrival/dashboard.html',
   'eld103/ch3_dashboard.html':      'eld103/ch3/dashboard.html',
-  'dashboard.html':                 'easy-true/dashboard.html'
+  'dashboard.html':                 'easy-true/dashboard.html',
+  'fables/teacher.html':            'fables/dashboard.html',
+  'false-friends/teacher.html':     'false-friends/dashboard.html',
+  'grasshopper-ant/teacher.html':   'grasshopper-ant/dashboard.html',
+  'questions/teacher.html':         'questions/dashboard.html'
 };
