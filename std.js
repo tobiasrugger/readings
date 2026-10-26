@@ -13,6 +13,9 @@
    4. Plain browser dropdowns inside a sign-in box copy the look of that
       box's own text fields (rounded corners, padding, font).
 
+   9. Prefill period + language (T-136): a student whose email arrives by autofill gets their
+      period and home language from the students table — always before Start goes through.
+
    8. Back to My Page (T-101): a green "← My Page" button for students who came from
       /readings/student/, a finished signal it reads, and "My Page" beside Google Classroom.
 
@@ -985,9 +988,135 @@
     myPageScan();
   }
 
+  /* ========== 9. prefill period + language from the class list (T-136, Oct 26 2026) ==========
+     Students whose name/email come from the browser's own autofill (or are already filled in)
+     never pick from the roster, type or blur, so period and language stayed blank (Abdul, Xingqi…).
+     Their period and home language ARE in the students table. So for every student sign-in box:
+       - look the student up (both email spellings) as soon as an email is known: input/change on the
+         email box (autofill fires these), a roster pick, the box showing with an email already in it,
+         a remembered session;
+       - SAFETY NET: when Start (or Enter) is pressed with period or language still empty and a valid
+         email, wait for the lookup (2 s at most), fill the blanks, THEN let sign-in continue. A failed
+         or slow lookup never blocks sign-in;
+       - fill only EMPTY fields, never overwrite the student's own choice; fire input + change on both
+         so the page's own picker and vocab_lang follow; remember the period in gal_student_period. */
+  var PF_CACHE = {}, PF_WAIT = 2000;
+  var PF_EMAIL = /^[^@\s]+@(s\.)?sfusd\.edu$/i;
+  function pfLocal(e) { return String(e || '').trim().toLowerCase().split('@')[0]; }
+  function pfLookup(email) {
+    var lp = pfLocal(email); if (!lp || !PF_EMAIL.test(String(email).trim())) return Promise.resolve(null);
+    if (PF_CACHE[lp]) return PF_CACHE[lp];
+    var list = '("' + lp + '@sfusd.edu","' + lp + '@s.sfusd.edu")';
+    var u = SUPA_URL + '/rest/v1/students?email=in.' + encodeURIComponent(list) + '&select=period,home_language';
+    var p = fetch(u, { headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY } })
+      .then(function (r) { if (!r.ok) throw new Error('students ' + r.status); return r.json(); })
+      .then(function (rows) {
+        var out = { period: '', lang: '' };
+        (rows || []).forEach(function (r) {
+          if (!out.period && r.period != null && String(r.period).trim()) out.period = String(r.period).replace(/[^0-9]/g, '');
+          if (!out.lang && r.home_language) out.lang = String(r.home_language).trim();
+        });
+        return (out.period || out.lang) ? out : null;
+      })
+      .catch(function () { delete PF_CACHE[lp]; return null; });   /* a failure is retried next time */
+    PF_CACHE[lp] = p;
+    return p;
+  }
+  function pfStudentBox(box) { return box && !box.querySelector('input[type=password]') && !/dashboard|teacher/i.test(location.pathname); }
+  function pfFields(box) {
+    var f = { email: null, period: null, lang: null }, els = box.querySelectorAll('input, select');
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i]; if (el.type === 'hidden' || el.type === 'password') continue;
+      if (el.tagName === 'SELECT' && (el.id === 'galStdLang' || looksLikeLangSelect(el))) { if (!f.lang || el.id === 'galStdLang') f.lang = el; continue; }
+      var k = fieldKind(el, box);
+      if (k === 'email' && !f.email) f.email = el;
+      else if (k === 'period' && !f.period) f.period = el;
+    }
+    return f;
+  }
+  function pfNeeds(f) { return !!((f.period && !String(f.period.value || '').trim()) || (f.lang && !f.lang.value)); }
+  function pfFire(el) { try { el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); } catch (e) {} }
+  function pfFill(box, info) {
+    if (!info) return;
+    var f = pfFields(box);
+    if (info.period && f.period && !String(f.period.value || '').trim()) {
+      if (f.period.tagName === 'SELECT') {
+        for (var i = 0; i < f.period.options.length; i++) {
+          var o = f.period.options[i], d = ((o.value || '') + ' ' + (o.textContent || '')).match(/\d+/);
+          if (o.value && d && d[0] === info.period) { f.period.value = o.value; pfFire(f.period); break; }
+        }
+      } else { f.period.value = info.period; pfFire(f.period); }
+      if (String(f.period.value || '').trim()) { try { localStorage.setItem('gal_student_period', info.period); } catch (e) {} }
+    }
+    var code = info.lang ? (codeOf(info.lang, info.lang) || '') : '';
+    if (code && f.lang && !f.lang.value) {
+      for (var j = 0; j < f.lang.options.length; j++) {
+        var op = f.lang.options[j];
+        if (op.value && (codeOf(op.value, op.text) === code || aliases(code).indexOf(norm(op.value)) >= 0)) { f.lang.value = op.value; pfFire(f.lang); break; }
+      }
+      if (f.lang.value) { store(code); var m = box.querySelector('.gal-std-lang-msg'); if (m) m.textContent = ''; }
+    }
+  }
+  function pfTry(box) {
+    if (!pfStudentBox(box)) return;
+    var f = pfFields(box);
+    if (!f.email || !pfNeeds(f)) return;
+    var em = String(f.email.value || '').trim();
+    if (!PF_EMAIL.test(em) || box.__galPfFor === em) return;
+    box.__galPfFor = em;
+    pfLookup(em).then(function (info) { pfFill(box, info); });
+  }
+  function pfScan() {
+    var bs = document.querySelectorAll('[data-gal-std]');
+    for (var i = 0; i < bs.length; i++) if (shown(bs[i]) || bs[i].offsetParent !== null) pfTry(bs[i]);
+  }
+  function pfBoot() {
+    function boxOf(t) { return t && t.closest && t.closest('[data-gal-std]'); }
+    /* an email arrives: typed, pasted, autofilled, or set by a roster pick */
+    var deb = null;
+    ['input', 'change'].forEach(function (ev) {
+      document.addEventListener(ev, function (e) {
+        var box = boxOf(e.target); if (!box) return;
+        clearTimeout(deb); deb = setTimeout(function () { box.__galPfFor = ''; pfTry(box); }, 250);
+      }, true);
+    });
+    /* the box shows with an email already in it (autofill that fired nothing, a remembered session) */
+    var n = 0, t = setInterval(function () { pfScan(); if (++n > 20) clearInterval(t); }, 1000);
+    /* SAFETY NET: Start / Enter waits (≤ 2 s) for the lookup and fills the blanks first */
+    function hold(e, btn, box) {
+      var f = pfFields(box);
+      if (!f.email || !pfNeeds(f)) return false;
+      var em = String(f.email.value || '').trim();
+      if (!PF_EMAIL.test(em)) return false;
+      e.preventDefault(); e.stopImmediatePropagation();
+      var done = false;
+      function go() {
+        if (done) return; done = true;
+        btn.__galPfPass = true;
+        try { btn.click(); } finally { setTimeout(function () { btn.__galPfPass = false; }, 0); }
+      }
+      setTimeout(go, PF_WAIT);
+      pfLookup(em).then(function (info) { pfFill(box, info); go(); }, go);
+      return true;
+    }
+    window.addEventListener('click', function (e) {
+      var btn = e.target && e.target.closest && e.target.closest('button, input[type=submit]');
+      if (!btn || btn.__galPfPass) return;
+      var box = boxOf(btn); if (!pfStudentBox(box) || startButton(box) !== btn) return;
+      hold(e, btn, box);
+    }, true);
+    window.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter' || !e.target || e.target.tagName === 'TEXTAREA') return;
+      var box = boxOf(e.target); if (!pfStudentBox(box)) return;
+      var btn = startButton(box); if (!btn || btn.__galPfPass) return;
+      hold(e, btn, box);
+    }, true);
+  }
+
   function scan() {
     addCSS();
     speakerIcons();
+    pfScan();
     myPageScan();
     var ems = document.querySelectorAll('input[type=email], input[id*=mail i], input[name*=mail i]');
     for (var i = 0; i < ems.length; i++) fixBox(ems[i]);
@@ -1000,6 +1129,7 @@
     scan();
     listenBoot();
     myPageBoot();
+    pfBoot();
     try { new MutationObserver(soon).observe(document.body, { childList: true, subtree: true }); } catch (e) {}
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);

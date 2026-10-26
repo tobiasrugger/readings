@@ -64,6 +64,7 @@ window.ATLAS_BOOK = [
         sc:'track.js reads the score (GAL_SCORE, the saved score, or the page\u2019s own score box) on Turn in.',
         mp:'std.js shows \u201c\u2190 My Page\u201d and grows it into \u201c\u2713 Done \u2014 back to My Page\u201d when the student finishes.'},
  notes:[
+  ['Oct 26','T-136','Sign-in boxes fill in a student\u2019s period and home language from the class list when the name and email come from the browser\u2019s autofill (or a roster pick, or a remembered session) \u2014 Start waits up to 2 seconds for it, never blocks, and never overwrites what the student chose. Seen on https://tobiasrugger.github.io/readings/basics/, https://tobiasrugger.github.io/readings/landlady/ and https://tobiasrugger.github.io/readings/student/.'],
   ['Oct 22','T-109','Reel translate timeout fixed and on-device voices used first (engine.js, speak-core.js, std.js).'],
   ['Oct 22','T-107','\u201c\u2190 My Page\u201d also appears on News and on pages opened in a new tab (std.js reads where the student came from).'],
   ['Oct 22','T-101','\u201c\u2190 My Page\u201d button and finish detection: the button grows into a pulsing \u201c\u2713 Done \u2014 back to My Page\u201d at the bottom. Whether it sits in a strip or floats pinned is check C-18.'],
