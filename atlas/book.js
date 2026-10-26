@@ -103,7 +103,7 @@ window.ATLAS_BOOK = [
 {id:'atlas', ring:0, kind:'teacher', course:'both', name:'The Atlas (this book)', home:'atlas/', match:['atlas/'], files:['atlas/book.js','atlas/scan.js','atlas/scan.py'],
  what:'This book. The spiral of everything built, each thing\u2019s layers as transparent sheets, the standard chart, and a dated history of what changed.',
  use:'When a chat tells you something worth keeping, it is also written here, under the thing it changed.',
- notes:[['Oct 23','T-114','Built: spiral (flat or tilted into 3D layers), transparencies, contents, the everything-grid and the tables index. 370 pages scanned.']]},
+ notes:[['Oct 26','T-117','Every dot on the spiral can be tapped. Only the ELD 103 ring (27 of 79) answered before: each chapter is its own see-through layer, and the top one was catching the taps meant for the layers underneath.'],['Oct 23','T-114','Built: spiral (flat or tilted into 3D layers), transparencies, contents, the everything-grid and the tables index. 370 pages scanned.']]},
 
 {id:'assign', ring:0, kind:'teacher', course:'both', name:'Push an activity, class report, class data', home:'assign/', match:['assign/','reports/','teacher/'], files:['assign/catalog.js'], own:'stu',
  what:'Push an activity sends one page to a period or a student (it appears in their green band). The class report and class data show who did what. assign/catalog.js is the list of every student page and is refreshed whenever a hub card changes.',
