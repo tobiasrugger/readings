@@ -234,6 +234,7 @@ window.ATLAS_BOOK = [
  files:['vocab/vocab.js'], own:'std',
  what:'Picture word cards with sound and translation, then practice games. Colors, foods, animals, drinks, sports, school subjects, five sets of action verbs, how I look, strengths, personality traits, and My Words.',
  notes:[
+  ['Oct 26','T-126','vocab/assign.html now opens with a big green signpost to the main Assign page: https://tobiasrugger.github.io/readings/assign/ (password galileo2026).'],
   ['Oct 22','T-89','Saves under the canonical @sfusd.edu email; old rows carried forward.'],
   ['Oct 22','T-88','Load-guard: never saves before the student\u2019s work has loaded.'],
   ['Oct 22','T-45','Never reveal: \u201cshow answers\u201d buttons gone across all 21 pages.']]},
