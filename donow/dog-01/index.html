@@ -71,8 +71,6 @@ h1{font-size:1.6rem;line-height:1.25;margin:.2em 0 .2em}
 #wtip.show{display:block}
 #wtipW{display:block;font-weight:800;font-size:.8rem;opacity:.72}
 #wtipT{font-weight:700;font-size:1.06rem}
-body.wt [translate="no"]{outline:2px dashed var(--gold);outline-offset:3px;border-radius:6px}
-body.wt [translate="no"] *{cursor:help !important}
 #canary{position:absolute;left:-9999px;top:-9999px;height:1px;overflow:hidden}
 #namewrap{position:fixed;inset:0;z-index:200;background:rgba(27,67,50,.94);display:none;align-items:center;justify-content:center;padding:20px}
 #namewrap.show{display:flex}
@@ -664,14 +662,17 @@ function toggleDir(){
 function setLang(v){try{localStorage.setItem('eld103_lang',v);}catch(e){}if(DIR_ON)showDirections();if(!v&&WT)toggleWT();}
 
 /* ===================== TAP WORDS ===================== */
-var WT=false;
+var WT=true; /* Tap words ON from the start: no outline, no ? cursor */
+(function(){function wtOn(){if(!WT)return;document.body.classList.add('wt');var b=document.getElementById('wtBtn');if(b){b.classList.add('on');if(/^Tap words:/.test(b.textContent))b.textContent='Tap words: ON';}}if(document.body)wtOn();else document.addEventListener('DOMContentLoaded',wtOn);})();
+
 function toggleWT(){
  if(!WT&&!lang()){alert('First choose your language in the green bar, then turn on Tap words.');return;}
  WT=!WT;document.body.classList.toggle('wt',WT);$('wtBtn').classList.toggle('on',WT);hideTip();
 }
 function hideTip(){$('wtip').classList.remove('show');}
+function galWtSkip(t){if(!t||!t.closest)return false;if(t.closest('button,input,select,textarea,label,a,[role="button"],[contenteditable],[onclick],[draggable="true"],#sayMount'))return true;for(var e=t;e&&e!==document.body;e=e.parentElement){if(typeof e.onclick==='function')return true;}try{if(getComputedStyle(t).cursor==='pointer')return true;}catch(x){}return false;}
 document.addEventListener('click',function(ev){
- if(!WT)return;
+ if(!WT)return;if(galWtSkip(ev.target))return;
  var host=ev.target.closest&&(ev.target.closest('[translate="no"]')||ev.target.closest('.dir'));
  if(!host)return;
  ev.preventDefault();ev.stopPropagation();
@@ -694,7 +695,7 @@ function showWord(word,x,y){
  var w=tip.offsetWidth||220,h=tip.offsetHeight||60;
  tip.style.left=Math.max(8,Math.min(x-w/2,window.innerWidth-w-8))+'px';
  tip.style.top=(y-h-14<8?y+18:y-h-14)+'px';
- tr(word,lang(),function(t){$('wtipT').textContent=t||'(not found)';});
+ tr(word,lang(),function(t){(function(e){e.textContent='';var b=document.createElement('b');b.style.textDecoration='underline';if(!t)b.style.color='#6b7280';b.textContent=t||word;e.appendChild(b);})($('wtipT'));});
 }
 document.addEventListener('scroll',hideTip,true);
 

@@ -122,7 +122,6 @@ textarea.lg{min-height:170px}textarea.xl{min-height:320px}
 #nameErr{color:var(--rust);font-weight:700;font-size:.9rem;min-height:1.2em;margin-top:8px}
 #wtip{position:fixed;z-index:120;background:var(--plum);color:#fff;padding:8px 12px;border-radius:10px;font-size:.95rem;display:none;max-width:280px;box-shadow:0 6px 18px rgba(0,0,0,.3)}
 #wtip.show{display:block}#wtipW{display:block;font-weight:800;color:var(--yellow);font-size:.8rem}
-body.wt [translate="no"]{cursor:help}
 @media(max-width:560px){.mgrid{grid-template-columns:1fr}body{font-size:16px}}
 </style>
 <script>
@@ -731,10 +730,13 @@ function openSay(){shareLogin();if(!ST.sayOpened){ST.sayOpened=true;}
  SAY_CTL=Say.mount($('sayMount'),{set:DATA.say,student:function(){return ST.email?{email:ST.email,name:ST.name,period:ST.period}:null;},lang:sayLang,translate:sayTranslate});}
 
 /* ===================== TAP WORDS ===================== */
-var WT=false;
+var WT=true; /* Tap words ON from the start: no outline, no ? cursor */
+(function(){function wtOn(){if(!WT)return;document.body.classList.add('wt');var b=document.getElementById('wtBtn');if(b){b.classList.add('on');if(/^Tap words:/.test(b.textContent))b.textContent='Tap words: ON';}}if(document.body)wtOn();else document.addEventListener('DOMContentLoaded',wtOn);})();
+
 function toggleWT(){if(!WT&&!lang()){alert('First choose your language in the purple bar, then turn on Tap words.');return;}WT=!WT;document.body.classList.toggle('wt',WT);$('wtBtn').classList.toggle('on',WT);hideTip();}
 function hideTip(){$('wtip').classList.remove('show');}
-document.addEventListener('click',function(ev){if(!WT)return;if(ev.target.closest&&ev.target.closest('#sayMount'))return;if(ev.target.closest&&ev.target.closest('textarea,input,select'))return;
+function galWtSkip(t){if(!t||!t.closest)return false;if(t.closest('button,input,select,textarea,label,a,[role="button"],[contenteditable],[onclick],[draggable="true"],#sayMount'))return true;for(var e=t;e&&e!==document.body;e=e.parentElement){if(typeof e.onclick==='function')return true;}try{if(getComputedStyle(t).cursor==='pointer')return true;}catch(x){}return false;}
+document.addEventListener('click',function(ev){if(!WT)return;if(galWtSkip(ev.target))return;if(ev.target.closest&&ev.target.closest('#sayMount'))return;if(ev.target.closest&&ev.target.closest('textarea,input,select'))return;
  var host=ev.target.closest&&(ev.target.closest('[translate="no"]')||ev.target.closest('.dir'));if(!host)return;
  ev.preventDefault();ev.stopPropagation();var w=pickWord(ev);if(w)showWord(w,ev.clientX,ev.clientY);},true);
 function pickWord(ev){var t=ev.target,txt=(t.textContent||'').trim();if(txt&&txt.split(/\s+/).length===1)return txt.replace(/^[^\w']+|[^\w']+$/g,'');
@@ -743,7 +745,7 @@ function pickWord(ev){var t=ev.target,txt=(t.textContent||'').trim();if(txt&&txt
  while(a>0&&/[\w']/.test(s.charAt(a-1)))a--;while(b<s.length&&/[\w']/.test(s.charAt(b)))b++;return s.slice(a,b);}
 function showWord(word,x,y){var tip=$('wtip');$('wtipW').textContent=word;$('wtipT').textContent='\u2026';tip.classList.add('show');
  var w=tip.offsetWidth||220,h=tip.offsetHeight||60;tip.style.left=Math.max(8,Math.min(x-w/2,window.innerWidth-w-8))+'px';tip.style.top=(y-h-14<8?y+18:y-h-14)+'px';
- tr(word,lang(),function(t){$('wtipT').textContent=t||'(not found)';});}
+ tr(word,lang(),function(t){(function(e){e.textContent='';var b=document.createElement('b');b.style.textDecoration='underline';if(!t)b.style.color='#6b7280';b.textContent=t||word;e.appendChild(b);})($('wtipT'));});}
 document.addEventListener('scroll',hideTip,true);
 
 /* ===================== BROWSER-TRANSLATION CANARY ===================== */

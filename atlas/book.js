@@ -149,10 +149,12 @@ window.ATLAS_BOOK = [
 
 {id:'write', ring:1, kind:'engine', course:'103', name:'Writing Ladder (ELD 103)', home:'write/', match:['write/'], own:'e103',
  what:'An eight-rung writing climb for each story, same engine with a new data block per text. Placement from student_profiles.ladder_start; per-text skips in excusals.',
- use:'Texts so far: The Landlady, The Tell-Tale Heart, The Monkey\u2019s Paw. Omelas is next.'},
+ use:'Texts so far: The Landlady, The Tell-Tale Heart, The Monkey\u2019s Paw. Omelas is next.',
+ notes:[['Oct 26','T-118','Tap words is on from the start \u2014 no yellow dashed outline, no ? cursor; tap any word to translate, while buttons and answer choices keep working.']]},
 
 {id:'wit', ring:1, kind:'engine', course:'both', name:'Sentence Work (WIT item pool)', home:'wit/', match:['wit/'], files:['wit/items.js'],
- what:'Writing-is-Thinking sentence activities for both levels with a level toggle. Its items.js is the shared pool that Daily Basics and the Launch Plus Extras draw from.'},
+ what:'Writing-is-Thinking sentence activities for both levels with a level toggle. Its items.js is the shared pool that Daily Basics and the Launch Plus Extras draw from.',
+ notes:[['Oct 26','T-118','Tap words is on from the start \u2014 no yellow dashed outline, no ? cursor; tap any word to translate. Buttons and tap-to-fix words keep working; a word with no translation shows in grey instead of \u201c(not found)\u201d.']]},
 
 {id:'shades', ring:1, kind:'engine', course:'101', name:'Shades of Meaning', home:'shades/', match:['shades/'], files:['shades/shades.js'],
  what:'A thesaurus-style word line (tiny \u2192 huge) that any page can switch on with a dictionary/shades toggle. Launch Plus uses it as \u201cBetter word\u201d.',
@@ -165,16 +167,18 @@ window.ATLAS_BOOK = [
  what:'Short grammar checks that feed the skills on each student\u2019s page; the report shows the class.'},
 
 {id:'topic', ring:1, kind:'engine', course:'101', name:'Topic Sentences', home:'topic-sentence/', match:['topic-sentence/'], own:'lp',
- what:'Pick the best topic sentence, numbered sets (?set=N) that go with each Launch Plus lesson.'},
+ what:'Pick the best topic sentence, numbered sets (?set=N) that go with each Launch Plus lesson.',
+ notes:[['Oct 26','T-118','Tap words is on from the start \u2014 no yellow dashed outline, no ? cursor; tap any word to translate. Buttons and tap-to-fix words keep working; a word with no translation shows in grey instead of \u201c(not found)\u201d.']]},
 
 {id:'revise', ring:1, kind:'engine', course:'101', name:'Fix the Paragraph', home:'revise/', match:['revise/'],
- what:'A revision and editing ladder for beginners: find and fix the errors in a short paragraph.'},
+ what:'A revision and editing ladder for beginners: find and fix the errors in a short paragraph.',
+ notes:[['Oct 26','T-118','Tap words is on from the start \u2014 no yellow dashed outline, no ? cursor; tap any word to translate. Buttons and tap-to-fix words keep working; a word with no translation shows in grey instead of \u201c(not found)\u201d.']]},
 
 /* ===================== 2 · EVERY DAY & EVERY WEEK ===================== */
 {id:'basics', ring:2, kind:'activity', course:'101', name:'Daily Basics', home:'basics/', match:['basics/'], own:'lp',
  what:'Twelve quick questions a day, seeded per student per day, drawn from every lesson so far. ?lesson=u1-l5 puts that lesson\u2019s items first.',
  use:'Reusable do-now, warm-up, sub plan or filler \u2014 you asked to be reminded of it. Paper version: https://tobiasrugger.github.io/readings/basics/print/',
- notes:[['Oct 22','T-104','\u201cWhere?\u201d clues rewritten so each is true for exactly one of the eight places (wrong answers come from all eight, not the four shown).']]},
+ notes:[['Oct 26','T-118','Tap words is on from the start \u2014 no yellow dashed outline, no ? cursor; tap any word to translate. Buttons and tap-to-fix words keep working; a word with no translation shows in grey instead of \u201c(not found)\u201d.'],['Oct 22','T-104','\u201cWhere?\u201d clues rewritten so each is true for exactly one of the eight places (wrong answers come from all eight, not the four shown).']]},
 
 {id:'news', ring:2, kind:'activity', course:'both', name:'This Week\u2019s Reading (news)', home:'news/', match:['news/'],
  what:'A weekly news article with levels, translations and questions; students\u2019 level is remembered.'},
@@ -183,7 +187,8 @@ window.ATLAS_BOOK = [
  what:'Students read a passage aloud; words correct per minute, accuracy and the recording are saved.'},
 
 {id:'donow', ring:2, kind:'activity', course:'both', name:'Do Nows', home:'donow/', match:['donow/'],
- what:'Short opening tasks: The Dog at the Bus Stop, Mr. Toby\u2019s Weekend.'},
+ what:'Short opening tasks: The Dog at the Bus Stop, Mr. Toby\u2019s Weekend.',
+ notes:[['Oct 26','T-118','Tap words is on from the start \u2014 no yellow dashed outline, no ? cursor; tap any word to translate, while buttons and answer choices keep working.']]},
 
 {id:'find', ring:2, kind:'activity', course:'101', name:'Find Someone Who (Go Around the Class)', home:'launch-plus/find/', match:['launch-plus/find/'], own:'lp',
  what:'The mingle on a phone: questions tied to the lesson, a bolder opt-in set per period, and a class wall for the projector.',
@@ -206,6 +211,7 @@ window.ATLAS_BOOK = [
  what:'The stretch after each book lesson: read a paragraph, fix the sentence, bigger words, zoom in, write, record. Lessons: People at School, Introductions, From A to Z, 0 to 100, About Me \u2014 plus Extras pages.',
  use:'Book pages first, then the matching lesson. Dashboard: https://tobiasrugger.github.io/readings/launch-plus/dashboard.html (password galileo2026).',
  notes:[
+  ['Oct 26','T-118','Tap words is on from the start \u2014 no yellow dashed outline, no ? cursor; tap any word to translate. Buttons and tap-to-fix words keep working; a word with no translation shows in grey instead of \u201c(not found)\u201d.'],
   ['Oct 22','T-78','Data-loss fix: every lesson loads first and merges before it saves.'],
   ['Oct 22','T-77','u1-l2 \u201cThe whole story\u201d with Dalia.'],
   ['Oct 22','T-24','u1-l5 About Me, with pronoun pictures (check C-11).'],
@@ -283,13 +289,15 @@ window.ATLAS_BOOK = [
 {id:'sept11', ring:4, kind:'activity', course:'103', name:'September 11, 2001', home:'sept11/', match:['sept11/','sept11-easy/']},
 {id:'psychology', ring:4, kind:'activity', course:'103', name:'Who Am I? Psychology and The Jacket', home:'psychology/', match:['psychology/'], what:'Six readings (Big Five, the Somebody, actual/ideal/ought selves, The Jacket, influence), grammar gym, PEA paragraphs, assessment.'},
 {id:'monsters', ring:4, kind:'activity', course:'103', name:'Monsters as Symbols', home:'monsters/', match:['monsters/'], own:'hol', what:'Twelve picture screens with fear cards and a side panel.', notes:[['Oct 23','T-113','Quips match the screen; quiz Q11 hint no longer points at a missing story.'],['Oct 22','T-93','Fear cards and instant glossary taps.']]},
-{id:'four-agreements', ring:4, kind:'activity', course:'103', name:'The Four Agreements', home:'four-agreements/', match:['four-agreements/']},
+{id:'four-agreements', ring:4, kind:'activity', course:'103', name:'The Four Agreements', home:'four-agreements/', match:['four-agreements/'],
+ notes:[['Oct 26','T-118','Tap words is on from the start \u2014 no yellow dashed outline, no ? cursor; tap any word to translate, while buttons and answer choices keep working.']]},
 {id:'creativity', ring:4, kind:'activity', course:'103', name:'Open Mode (Cleese on creativity)', home:'creativity/', match:['creativity/']},
 {id:'human-rights', ring:4, kind:'activity', course:'103', name:'Human Rights and the UDHR', home:'human-rights/', match:['human-rights/']},
 {id:'mlk', ring:4, kind:'activity', course:'103', name:'Martin Luther King, Jr.', home:'mlk/', match:['mlk/']},
 {id:'resume', ring:4, kind:'activity', course:'103', name:'My R\u00e9sum\u00e9', home:'resume/', match:['resume/'], what:'Three lessons and a r\u00e9sum\u00e9 builder.'},
 {id:'this-is-how', ring:4, kind:'activity', course:'103', name:'This Is How We Do It', home:'this-is-how/', match:['this-is-how/']},
-{id:'eld103', ring:4, kind:'activity', course:'103', name:'ELD 103 academic writing', home:'eld103/', match:['eld103/','eld103-unit1/'], what:'Paragraphs and sentences, paragraph structure, Introducing People.'},
+{id:'eld103', ring:4, kind:'activity', course:'103', name:'ELD 103 academic writing', home:'eld103/', match:['eld103/','eld103-unit1/'], what:'Paragraphs and sentences, paragraph structure, Introducing People.',
+ notes:[['Oct 26','T-118','Tap words is on from the start \u2014 no yellow dashed outline, no ? cursor; tap any word to translate, while buttons and answer choices keep working.']]},
 {id:'oral-histories', ring:4, kind:'activity', course:'103', name:'Oral Histories', home:'oral-histories/', match:['oral-histories/'], what:'The family interview unit, with a teacher guide.'},
 {id:'gratitude', ring:4, kind:'activity', course:'103', name:'Gratitude', home:'gratitude/', match:['gratitude/','gratitude-letters/'], what:'The science of gratitude, and a poem turned into a letter turned into an email.'},
 {id:'thoughts', ring:4, kind:'activity', course:'both', name:'Be Careful of Your Thoughts', home:'thoughts-chain/', match:['thoughts/','thoughts-chain/']},

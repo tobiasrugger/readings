@@ -77,8 +77,6 @@ textarea:focus{border-color:var(--moss);outline:none}
 #wtipW{display:block;font-weight:800;font-size:.8rem;opacity:.72}
 #wtipT{font-weight:700;font-size:1.06rem}
 #wtipT .noeq{font-weight:800;text-decoration:underline;color:#c8d6cd}
-body.wt [translate="no"]{outline:2px dashed var(--gold);outline-offset:3px;border-radius:6px}
-body.wt [translate="no"]{cursor:help}
 body.wt [translate="no"] button,body.wt [translate="no"] input,body.wt [translate="no"] select,body.wt [translate="no"] textarea,body.wt [translate="no"] label,body.wt [translate="no"] a{cursor:pointer}
 body.wt [translate="no"] input,body.wt [translate="no"] textarea{cursor:text}
 body.wt #sayMount,body.wt #sayMount *{outline:none;cursor:auto !important} body.wt #sayMount button{cursor:pointer !important}
@@ -1010,12 +1008,14 @@ function openSay(){shareLogin();if(!ST.sayOpened){ST.sayOpened=true;save();}
  SAY_CTL=Say.mount($('sayMount'),{set:SAY_SET,student:function(){return ST.email?{email:ST.email,name:ST.name,period:ST.period}:null;},lang:sayLang,translate:sayTranslate});}
 
 /* ===================== TAP WORDS ===================== */
-var WT=false;
+var WT=true; /* Tap words is ON from the start: no outline, no ? cursor, just tap a word */
+(function(){function wtOn(){if(!WT)return;document.body.classList.add('wt');var b=document.getElementById('wtBtn');if(b)b.classList.add('on');}if(document.body)wtOn();else document.addEventListener('DOMContentLoaded',wtOn);})();
 function toggleWT(){if(!WT&&!lang()){alert('First choose your language in the green bar, then turn on Tap words.');return;}WT=!WT;document.body.classList.toggle('wt',WT);$('wtBtn').classList.toggle('on',WT);hideTip();}
 function hideTip(){$('wtip').classList.remove('show');}
+function galWtSkip(t){if(!t||!t.closest)return false;if(t.closest('button,input,select,textarea,label,a,[role="button"],[contenteditable],[onclick],[draggable="true"],#sayMount'))return true;for(var e=t;e&&e!==document.body;e=e.parentElement){if(typeof e.onclick==='function')return true;}try{if(getComputedStyle(t).cursor==='pointer')return true;}catch(x){}return false;}
 document.addEventListener('click',function(ev){if(!WT)return;if(window.Shades&&Shades.getMode()==='shades'&&ev.target.closest&&ev.target.closest('.sh-word'))return;if(ev.target.closest&&ev.target.closest('#sayMount'))return;
  /* anything a student can operate keeps doing its own job while Tap words is on */
- if(ev.target.closest&&ev.target.closest('button,input,select,textarea,label,a,[role="button"],[contenteditable]'))return;
+ if(galWtSkip(ev.target))return;
  if(ev.target.closest&&ev.target.closest('#wtip')){hideTip();return;}
  var host=ev.target.closest&&(ev.target.closest('[translate="no"]')||ev.target.closest('.dir'));
  if(!host){hideTip();return;}

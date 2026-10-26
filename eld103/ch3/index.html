@@ -159,8 +159,6 @@ h3{font-size:1.02rem; margin:1.4em 0 .4em; color:var(--pine2)}
 #wtip.show{display:block}
 #wtip #wtipW{display:block;font-weight:800;font-size:.8rem;opacity:.72;letter-spacing:.4px}
 #wtip #wtipT{font-weight:700;font-size:1.06rem}
-body.wt [translate="no"]{background:#fffbe8;outline:2px dashed var(--gold);outline-offset:3px;border-radius:6px}
-body.wt [translate="no"] *{cursor:help !important}
 #bar button#wtBtn.on{background:var(--gold);border-color:var(--gold);color:#3d2c00}
 #xlbanner{position:fixed;left:0;right:0;bottom:0;z-index:180;background:#b5451b;color:#fff;
   padding:13px 18px;display:none;font-size:.9rem;line-height:1.5}
@@ -872,7 +870,9 @@ function turnIn(){
 }
 
 /* ============ WORD TAP TRANSLATE ============ */
-var WT=false, wtCache={};
+var WT=true, wtCache={}; /* Tap words ON from the start: no outline, no ? cursor */
+(function(){function wtOn(){if(!WT)return;document.body.classList.add('wt');var b=document.getElementById('wtBtn');if(b){b.classList.add('on');if(/^Tap words:/.test(b.textContent))b.textContent='Tap words: ON';}}if(document.body)wtOn();else document.addEventListener('DOMContentLoaded',wtOn);})();
+
 function setLang(v){
   try{localStorage.setItem('eld103_lang',v)}catch(e){}
   wtCache={};
@@ -890,13 +890,13 @@ function toggleWT(){
   b.textContent='Tap words: '+(WT?'ON':'off');
   b.classList.toggle('on',WT);
   hideTip();
-  if(WT) alert('Tap any word in a yellow box to see it in your language. The activity is paused until you turn this off.');
 }
 function hideTip(){document.getElementById('wtip').classList.remove('show')}
 
 /* While ON, a tap inside protected content translates instead of answering. */
+function galWtSkip(t){if(!t||!t.closest)return false;if(t.closest('button,input,select,textarea,label,a,[role="button"],[contenteditable],[onclick],[draggable="true"],#sayMount'))return true;for(var e=t;e&&e!==document.body;e=e.parentElement){if(typeof e.onclick==='function')return true;}try{if(getComputedStyle(t).cursor==='pointer')return true;}catch(x){}return false;}
 document.addEventListener('click',function(ev){
-  if(!WT) return;
+  if(!WT) return;if(galWtSkip(ev.target))return;
   var host=ev.target.closest && ev.target.closest('[translate="no"]');
   if(!host) return;
   if(/^(TEXTAREA|INPUT|SELECT|BUTTON)$/.test(ev.target.tagName)) return;
