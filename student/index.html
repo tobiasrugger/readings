@@ -379,6 +379,23 @@ details.wq .qm{font-size:.85rem;color:var(--muted);font-weight:800}
 #storyCard .storyhead{display:flex;align-items:center;gap:12px}
 #storyCard .storyart{width:84px;height:auto;flex:0 0 auto;border:2px solid var(--plum-dk);border-radius:10px}
 @media(max-width:620px){#storyCard .storyart{width:60px}}
+/* T-130: a pushed story's part buttons sit inside its row, full width under the title */
+#pushBox .pushrow{flex-wrap:wrap}
+#pushBox .pushrow .spcard.inband{flex:1 1 100%;margin:8px 0 0;background:#fff;box-shadow:none}
+#pushBox .pushrow .spcard.inband h3{display:none}
+#pushBox .pushrow:has(.spcard.inband) > div > .pp{display:none}
+@media(max-width:620px){#pushBox .spcard.inband .spstep{min-width:0;flex:1 1 calc(50% - 8px)}}
+#pushBox .pushrow:has(.pp.done) .spcard.inband{display:none}
+/* T-127: the teacher's assignment is the first, biggest thing in the band and the arrow points at it */
+#pushBox .pushrow{border-left:9px solid #e2a42b}
+#pushBox .pushrow .from{color:#8a5a00;font-size:.84rem}
+#pushBox .pushrow .pt{font-size:1.5rem}
+#pushBox .pushrow:has(.pp.done){border-left-color:#9aa39e}
+#pushBox .pushrow:has(.pp.done) .pt{font-size:1.05rem}
+@media(max-width:620px){#pushBox{clear:both}}
+.nextband.haspush .nextpoint{align-items:flex-start}
+.nextinner.haspush .thenline{font-size:.78rem;margin-top:10px}
+.nextinner.haspush .ncell{transform:scale(.97);transform-origin:left top}
 /* ---- one attention band: Mr. Toby's assignment leads, practice follows ---- */
 .nextinner .pushrow{background:#fff;border:3px solid var(--plum-dk);border-radius:14px;padding:14px 16px;margin:0 0 12px;display:flex;gap:14px;align-items:center;justify-content:space-between;box-shadow:0 4px 0 rgba(43,34,68,.22)}
 .nextinner .pushrow .from{font-size:.78rem;font-weight:900;color:var(--plum);text-transform:uppercase;letter-spacing:.06em}
@@ -826,9 +843,8 @@ async function load(email){
   renderAll();
   loadSpeaking(email);
   markHome();
-  loadPushed(email).then(function(){ setTimeout(welcomeBack,600); });
+  loadPushed(email).then(function(){ return loadStories(email); }).then(function(){ setTimeout(welcomeBack,600); });
   loadReading(email);
-  loadStories(email);
 }
 
 
@@ -920,16 +936,38 @@ function welcomeBack(){
   if(next){ next.classList.add('isnext'); var h=next.querySelector('.pt,b,.ntitle'); if(h&&!h.querySelector('.nexttag'))h.insertAdjacentHTML('beforeend','<span class="nexttag">NEXT</span>'); }
   try{ translatePage(); }catch(e){}
   setTimeout(function(){ document.getElementById('nextBand').scrollIntoView({behavior:'smooth',block:'start'}); },150);
+  setTimeout(aimArrow,60);
 }
 /* ---------- My stories (T-124) ----------
    StoryProgress (landlady/progress.js) reads landlady/telltale/monkeyspaw_responses for both email
    spellings, read-only, and resolves to the number of cards it drew. Runs in the teacher ?email= view too. */
 function loadStories(email){
+  /* T-130: a story Mr. Toby pushed shows its part buttons INSIDE its "Most important" row, at the top of the band.
+     Every other started story stays in the My stories box below. One read of the story tables does both. */
   var card=document.getElementById('storyCard'), box=document.getElementById('storyProgress');
-  if(!window.StoryProgress||!box){card.classList.add('hide');return;}
-  Promise.resolve(window.StoryProgress.render(box,email)).then(function(n){
-    card.classList.toggle('hide',!n);
-    if(n){ try{translatePage();}catch(e){} }
+  if(!window.StoryProgress||!box){card.classList.add('hide');return Promise.resolve();}
+  var MAPS=window.StoryProgress.map||{}, rows=[].slice.call(document.querySelectorAll('#pushBox .pushrow')), want={};
+  function pathOf(h){return String(h||'').split('?')[0].split('#')[0].replace(/index\.html$/,'').replace(/\/?$/,'/');}
+  rows.forEach(function(r){var a=r.querySelector('a');if(!a)return;var p=pathOf(a.getAttribute('href'));
+    Object.keys(MAPS).forEach(function(k){if(pathOf(MAPS[k].url)===p){want[k]=r;}});});
+  var tmp=document.createElement('div');
+  return Promise.resolve(window.StoryProgress.render(tmp,email,{only:Object.keys(want)})).then(function(){
+    var cards=[].slice.call(tmp.querySelectorAll('.spcard'));
+    Object.keys(want).forEach(function(k){
+      var row=want[k], fam=k.split('_')[0];
+      /* the student may be working in the Easier/Harder copy of the same story: use that card if the plain one is empty */
+      var c=tmp.querySelector('.spcard[data-guide="'+k+'"]'), alt=cards.filter(function(x){var g=x.getAttribute('data-guide');return g!==k&&g.split('_')[0]===fam&&!want[g];})[0];
+      if(alt&&(!c||/\b0 of \d+ answered/.test(c.textContent))){c=alt;}
+      if(!c)return;
+      var old=row.parentNode.querySelector('.inband[data-for="'+k+'"]'); if(old)old.remove();
+      c.classList.add('inband'); c.setAttribute('data-for',k);
+      row.appendChild(c);
+    });
+    var rest=[].slice.call(tmp.querySelectorAll('.spcard'));
+    box.innerHTML=''; rest.forEach(function(x){box.appendChild(x);});
+    card.classList.toggle('hide',!rest.length);
+    try{translatePage();}catch(e){}
+    try{aimArrow();}catch(e){}
   }).catch(function(){card.classList.add('hide');});
 }
 /* ---------- From Mr. Toby ----------
@@ -982,7 +1020,7 @@ async function loadPushed(email){
         else line='<div class="pp">Not started yet</div>';
       }
       var url=r.href+(r.href.indexOf('?')>-1?'&':'?')+'email='+encodeURIComponent(email);
-      return '<div class="pushrow"><div><div class="from">&#128204; From Mr. Toby</div><div class="pt">'+esc(r.title||r.href)+'</div>'+
+      return '<div class="pushrow"><div><div class="from">&#11088; Most important</div><div class="pt">'+esc(r.title||r.href)+'</div>'+
         (r.note?'<div class="pn">'+esc(r.note)+'</div>':'')+line+'</div>'+
         '<a class="btn noprint" href="'+esc(url)+'">'+(line.indexOf('Turned in')>-1?'Open &rarr;':started?'Keep going &rarr;':'Start &rarr;')+'</a></div>';
     }).join('');
@@ -993,6 +1031,7 @@ async function loadPushed(email){
 function bandMode(push){
   var band=document.getElementById('nextBand'), inner=band.querySelector('.nextinner'), h=document.getElementById('nextTitle');
   inner.classList.toggle('haspush',push);
+  band.classList.toggle('haspush',push);
   document.getElementById('nextArtSlot').classList.toggle('hide',!push);
   document.getElementById('targetArt').classList.toggle('hide',push);
   var hasCells=!!document.querySelector('#growth .ncell');
@@ -1003,7 +1042,20 @@ function bandMode(push){
   if(push)band.classList.remove('hide');
   else if(!hasCells&&!(DATA.skills||[]).length&&!(!document.getElementById('finishCard').classList.contains('hide')))band.classList.add('hide');
   try{translatePage();}catch(e){}
+  setTimeout(aimArrow,50);
 }
+/* point the green arrow at the first unfinished assignment (or the middle of the band when there is none) */
+function aimArrow(){
+  var band=document.getElementById('nextBand'), pt=band&&band.querySelector('.nextpoint'); if(!pt)return;
+  if(!band.classList.contains('haspush')){pt.style.paddingTop='';return;}
+  var rows=[].slice.call(document.querySelectorAll('#pushBox .pushrow')), row=rows.filter(function(r){return !r.querySelector('.pp.done');})[0]||rows[0];
+  if(!row){pt.style.paddingTop='';return;}
+  var tgt=row.querySelector('.spstep.next')||row;  /* T-130: aim at the next story part when the pushed row has its buttons */
+  var y=tgt.getBoundingClientRect().top-band.getBoundingClientRect().top+tgt.offsetHeight/2;
+  var gh=parseFloat(getComputedStyle(pt).fontSize)*1.15;
+  pt.style.paddingTop=Math.max(0,Math.round(y-gh/2))+'px';
+}
+window.addEventListener('resize',function(){clearTimeout(window._aimT);window._aimT=setTimeout(aimArrow,120);});
 /* ---------- My Speaking summary (speaking_attempts; either email domain) ---------- */
 function loadSpeaking(email){
   var lp=email.split('@')[0], a=encodeURIComponent(lp+'@s.sfusd.edu'), b=encodeURIComponent(lp+'@sfusd.edu');
