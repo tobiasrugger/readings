@@ -16,7 +16,7 @@
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
   var me = { name: '', email: '', period: '' };
-  var state = { level: 'A', lang: '', pos: 0, maxPos: 0, answers: {}, yt: { A: [], B: [] }, turned: false, secs: 0, slow: false, cc: true, done: false };
+  var state = { level: 'A', lang: '', pos: 0, maxPos: 0, answers: {}, yt: { A: [], B: [], C: [] }, turned: false, secs: 0, slow: false, cc: true, done: false };
   var dirty = false;
   function touch() { dirty = true; }
 
@@ -42,10 +42,15 @@
   });
   var pos = 0, playing = false, playId = 0;
 
+  /* T-115: Level C. Every level lookup falls back C -> B -> A (B -> A, A), so an episode with no
+     C text still plays on C using B's text, and B still falls back to A as before. */
+  function lvOrder() { return state.level === 'C' ? ['C', 'B', 'A'] : state.level === 'B' ? ['B', 'A'] : ['A']; }
+  function pickLv(get) { var o = lvOrder(), v; for (var i = 0; i < o.length; i++) { v = get(o[i]); if (v != null && v !== '') return v; } return null; }
+  function lvWith(get) { var o = lvOrder(); for (var i = 0; i < o.length; i++) { if (get(o[i]) != null) return o[i]; } return 'A'; }
   function txt(obj) {
     if (!obj) return '';
     if (typeof obj === 'string') return obj;
-    return obj[state.level] || obj.A || '';
+    return pickLv(function (L) { return obj[L]; }) || '';
   }
   function person(who) {
     if (!who || who === 'narrator') return R.NARRATOR;
@@ -307,7 +312,7 @@
     var ln = STEPS[pos].ln;
     if (ln.type === 'q') { showQ(ln); say(SPOKEN, R.NARRATOR, null); return; }
     if (ln.who && cast[ln.who]) setTalking(ln.who);
-    var ov = ln['s' + state.level] || ln.sA || '';
+    var ov = pickLv(function (L) { return ln['s' + L]; }) || '';
     say(ov || SPOKEN, person(ln.who), function () {
       setTalking(null);
       if (then) then();
@@ -366,7 +371,9 @@
   var answeredNow = false;
   function showQ(ln) {
     answeredNow = false;
-    var q = ln.q, opts = q[state.level + 'o'] || q.Ao, ans = q[state.level + 'a'] != null ? q[state.level + 'a'] : q.Aa;
+    /* options and answer key always come from the SAME level (C -> B -> A), never mixed */
+    var q = ln.q, qL = lvWith(function (L) { return q[L + 'o']; }), opts = q[qL + 'o'] || q.Ao,
+        ans = q[qL + 'a'] != null ? q[qL + 'a'] : q.Aa;
     var box = $('qcard'), h = '';
     var kindTxt = ln.kind === 'predict' ? 'Predict. What do you think?' : 'Check. Choose the answer.';
     h += '<p class="qkind" translate="yes" data-en="' + kindTxt + '">' + kindTxt + '</p>';
@@ -375,7 +382,23 @@
       return '<span class="w qw" data-w="' + esc(t.replace(/[^A-Za-z'\u2019-]/g, '').toLowerCase()) + '">' + esc(t) + '</span>';
     }).join('') + '</p>';
     h += '<div class="qopts">';
-    opts.forEach(function (o, i) { h += '<button class="qopt" data-i="' + i + '" translate="no">' + esc(o) + '</button>'; });
+    /* answer positions (project rule): options shuffled ONCE per student and stored, so they stay put on
+       reload; the right answer never lands in the same slot more than 3 times in a row. Buttons keep their
+       ORIGINAL index in data-i, so scoring, answer records and tiers are unchanged. */
+    var okey = ln.id + ':' + qL, ord = (state.qord || (state.qord = {}))[okey];
+    if (!ord || ord.length !== opts.length) {
+      ord = opts.map(function (_, i) { return i; });
+      for (var si = ord.length - 1; si > 0; si--) { var sj = Math.floor(Math.random() * (si + 1)), t0 = ord[si]; ord[si] = ord[sj]; ord[sj] = t0; }
+      if (typeof ans === 'number' && ord.length > 1) {
+        var runs = state.qruns || (state.qruns = []), slot = ord.indexOf(ans);
+        if (runs.length >= 3 && runs.slice(-3).every(function (x) { return x === slot; })) {
+          var sw = (slot + 1) % ord.length, t1 = ord[sw]; ord[sw] = ord[slot]; ord[slot] = t1; slot = sw;
+        }
+        runs.push(slot); if (runs.length > 6) runs.shift();
+      }
+      state.qord[okey] = ord; touch();
+    }
+    ord.forEach(function (i) { h += '<button class="qopt" data-i="' + i + '" translate="no">' + esc(opts[i]) + '</button>'; });
     h += '</div>';
     h += '<div class="qfoot"><span class="qmsg" id="qmsg" translate="yes"></span><button class="go" id="qgo" style="display:none" translate="yes">Keep watching</button></div>';
     box.innerHTML = h; box.style.display = 'block';
@@ -544,7 +567,7 @@
 
   /* ================= YOUR TURN ================= */
   function showYourTurn(scroll) {
-    var yt = EP.yourTurn[state.level] || EP.yourTurn.A, h = '';
+    var yt = pickLv(function (L) { return EP.yourTurn[L]; }) || EP.yourTurn.A, h = '';
     var saved = state.yt[state.level] || (state.yt[state.level] = []);
     h += '<h2>Your turn</h2><p class="lead" translate="yes" data-en="' + esc(yt.intro) + '">' + esc(yt.intro) + '</p>';
     yt.prompts.forEach(function (p, i) {
@@ -579,7 +602,7 @@
   }
   function highlights() {
     var s = state.yt[state.level] || [];
-    var yt = (EP.yourTurn || {})[state.level] || {}, labels = EP.highlightLabels || [];
+    var yt = pickLv(function (L) { return (EP.yourTurn || {})[L]; }) || {}, labels = EP.highlightLabels || [];
     window.GAL_HIGHLIGHTS = s.filter(function (x) { return x && x.trim(); }).slice(0, 2).map(function (x, i) {
       var lab = labels[i] || ((yt.prompts || [])[i] || {}).ask || ('Sentence ' + (i + 1));
       return { label: String(lab).replace(/\.\s.*$/, ''), text: x.trim() };

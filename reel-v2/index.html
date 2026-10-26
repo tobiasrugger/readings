@@ -58,6 +58,7 @@
     <div class="seg" id="levelSeg" role="group" aria-label="Level">
       <button data-l="A" aria-pressed="true" translate="yes">Level A</button>
       <button data-l="B" aria-pressed="false" translate="yes">Level B</button>
+      <button data-l="C" aria-pressed="false" translate="yes">Level C</button>
     </div>
   </div>
   <div class="cast" id="cast"></div>
@@ -115,6 +116,8 @@
 
   /* ---------- cast gallery ---------- */
   var level = 'A';
+  /* T-115: Level C falls back C -> B -> A, like the engine */
+  function aboutFor(c) { return level === 'C' ? (c.aboutC || c.aboutB || c.aboutA) : level === 'B' ? (c.aboutB || c.aboutA) : c.aboutA; }
   function drawCast() {
     var out = '';
     Object.keys(R.CAST).forEach(function (id) {
@@ -122,7 +125,7 @@
       out += '<article class="person"><div class="pic"><svg viewBox="-140 -625 280 640" aria-label="' + esc(c.name) + '">' +
              '<g transform="scale(' + c.h + ')">' + R.drawChar(id, { expr: 'smile' }) + '</g></svg></div>' +
              '<div class="b"><h3 translate="no">' + esc(c.name) + '<button class="say" data-id="' + id + '" aria-label="Listen">🔊</button></h3>' +
-             '<p class="about" translate="no">' + esc(level === 'B' ? c.aboutB : c.aboutA) + '</p></div></article>';
+             '<p class="about" translate="no">' + esc(aboutFor(c)) + '</p></div></article>';
     });
     $('cast').innerHTML = out;
   }
@@ -131,7 +134,7 @@
     var b = e.target.closest('.say'); if (!b || !window.speechSynthesis) return;
     var c = R.CAST[b.getAttribute('data-id')];
     speechSynthesis.cancel();
-    var u = new SpeechSynthesisUtterance(level === 'B' ? c.aboutB : c.aboutA);
+    var u = new SpeechSynthesisUtterance(aboutFor(c));
     u.lang = 'en-US'; u.rate = 0.88; speechSynthesis.speak(u);
   });
   document.querySelectorAll('#levelSeg button').forEach(function (b) {
@@ -162,7 +165,8 @@
   function summarize(r) {
     var w = r.work || {}, sc = r.scores || {}, ans = w.answers || {}, preds = [];
     Object.keys(ans).forEach(function (k) { if (ans[k].kind === 'predict') preds.push(k + ':' + (ans[k].pick != null ? 'ABC'.charAt(ans[k].pick) : '?')); });
-    var yt = (w.yt && (w.yt[r.level] || w.yt.A)) || [];
+    /* T-115: the student's sentences for their own level; a C student with none yet falls back to B, then A */
+    var Y = w.yt || {}, yt = Y[r.level] || (r.level === 'C' ? Y.B : null) || Y.A || [];
     return { checks: (sc.checks_first_try || 0) + ' / ' + (sc.checks_total || 0), preds: preds.join(' '),
              s1: yt[0] || '', s2: yt[1] || '', s3: yt[2] || '', mins: Math.round((w.secs || 0) / 60),
              done: !!w.done, reached: w.maxPos || 0 };
