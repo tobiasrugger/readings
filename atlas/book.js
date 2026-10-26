@@ -131,7 +131,7 @@ window.ATLAS_BOOK = [
 {id:'group', ring:1, kind:'maker', course:'both', name:'Group Practice + deck maker', home:'group/maker.html', match:['group/','seedfolks/quiz-prep/'], files:['group/engine.js','group/decks/list.js'], own:'lp',
  what:'Small-group slides led by the lion: one slide per question, directions in seven languages, spelling aloud, pictures, capitals, multiple choice that never reveals. The maker lets you type words, sentences, pictures and questions, translates them, saves the deck and gives you a student link. Tick several decks to get one mixed link.',
  use:'Make: https://tobiasrugger.github.io/readings/group/maker.html (password galileo2026). Play: https://tobiasrugger.github.io/readings/group/?deck=seedfolks-1 \u2014 or ?deck=a,b to mix.',
- notes:[
+ notes:[['Oct 26','T-138','Listening slides now show one blank per letter, so the line changes with each word (backpack = 8, can\u2019t = 3 + \u2019 + 1, find = 4); sentences show one group per word. Apostrophes and hyphens show; the period and capital stay the student\u2019s job.'],
   ['Oct 23','C-19','Check: save one small deck in the maker \u2014 \u201c\u2713 Saved\u201d means the group_decks SQL ran.'],
   ['Oct 22','T-111','Seedfolks Quiz Practice now runs on the engine. Same slides and same link (https://tobiasrugger.github.io/readings/seedfolks/quiz-prep/), it still saves to the same table (seedfolks_work), and its dashboard is unchanged. New dashboard for every deck: https://tobiasrugger.github.io/readings/group/dashboard.html (password galileo2026). Needs SQL for group_decks + group_work before the maker can save.'],
   ['Oct 22','T-106','Seedfolks Quiz Practice 1 built as a one-off deck: 25 slides, 7 languages.']]},

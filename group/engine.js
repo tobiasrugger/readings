@@ -602,7 +602,23 @@ function answerHTML(s){
 function blankHTML(s){
   if(s.kind==='letters'){var n=(s.spell||s.ans).length,b='';for(var i=0;i<n;i++)b+='_ ';return '<span class="blank">'+b.trim()+'</span>';}
   if(s.kind==='cap')return '<span class="blank">“ __ ”</span>';
-  return '<span class="blank">“ ________ ”</span>';
+  return shapeBlank(s.ans,s.kind==='sent');
+}
+/* one blank per letter, so the line shows the word's shape: backpack = 8, can't = 3 + ' + 1, find = 4.
+   Apostrophes and hyphens stay (they are part of the word); other punctuation is hidden so the
+   period and capital are still the student's job. Words in a sentence wrap as whole words. */
+function shapeBlank(t,isSent){
+  var words=String(t||'').split(/\s+/).filter(Boolean),longest=0;
+  var sent=isSent||words.length>1,cw=sent?1.35:1.9;
+  var cell='display:inline-block;width:'+cw+'rem;height:'+(cw*1.25)+'rem;margin:0 '+(cw*0.17)+'rem;border-bottom:'+(sent?3:4)+'px solid #3d5560;vertical-align:bottom';
+  var mark='display:inline-block;width:'+(cw*0.45)+'rem;text-align:center;font-weight:900;font-size:'+(cw*1.1)+'rem;line-height:1;color:var(--ink);vertical-align:bottom';
+  var h=words.map(function(w){
+    var cells=w.split('').filter(function(c){return /[A-Za-z0-9\u00C0-\u024F'\u2019-]/.test(c);});
+    if(cells.length>longest)longest=cells.length;
+    return '<span style="white-space:nowrap;display:inline-block;margin:.25rem '+(cw*0.55)+'rem">'+cells.map(function(c){
+      return /['\u2019-]/.test(c)?'<span style="'+mark+'">'+esc(c)+'</span>':'<span style="'+cell+'"></span>';}).join('')+'</span>';
+  }).join('');
+  return '<span class="blank" aria-label="'+words.length+' word(s)" style="font-size:1rem;letter-spacing:0;line-height:1;display:inline-block;padding:.3rem 0">'+h+'</span>';
 }
 function ringSVG(){return '<svg class="ring" viewBox="-30 -30 60 60"><ellipse cx="0" cy="0" rx="24" ry="22"/></svg>';}
 function circled(sent,target){
