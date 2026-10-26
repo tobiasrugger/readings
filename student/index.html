@@ -391,6 +391,7 @@ details.wq .qm{font-size:.85rem;color:var(--muted);font-weight:800}
 #pushBox .pushrow .from{color:#8a5a00;font-size:.84rem}
 #pushBox .pushrow .pt{font-size:1.5rem}
 #pushBox .pushrow:has(.pp.done){border-left-color:#9aa39e}
+#pushBox .pushrow:has(.pp.done) .from{color:var(--green)}
 #pushBox .pushrow:has(.pp.done) .pt{font-size:1.05rem}
 @media(max-width:620px){#pushBox{clear:both}}
 .nextband.haspush .nextpoint{align-items:flex-start}
@@ -922,6 +923,11 @@ function welcomeBack(){
        sessionStorage.removeItem('gal_last_page'); sessionStorage.removeItem('gal_last_title'); sessionStorage.removeItem('gal_last_done'); }catch(e){}
   if(!last||samePath(last,'/readings/student/'))return;
   var inner=document.querySelector('#nextBand .nextinner'); if(!inner)return;
+  if(done){ [].slice.call(document.querySelectorAll('#pushBox .pushrow')).forEach(function(r){
+      var a=r.querySelector('a.btn'); if(!a||!samePath(a.getAttribute('href'),last)||r.querySelector('.pp.done'))return;
+      var pp=r.querySelector('.pp'); var h='<div class="pp done">&#10003; Done</div>';
+      if(pp)pp.outerHTML=h; else r.firstElementChild.insertAdjacentHTML('beforeend',h);
+      a.innerHTML='Open &rarr;'; var f=r.querySelector('.from'); if(f)f.innerHTML='&#10003; Done'; }); }
   document.getElementById('nextBand').classList.remove('hide');
   /* the next thing: first pushed row not turned in, then Finish This, then practice */
   var cand=[].slice.call(document.querySelectorAll('#pushBox .pushrow')).filter(function(r){
@@ -975,6 +981,8 @@ function loadStories(email){
    with area "site". A student's period comes from their profile; if that is empty,
    from the newest period they typed on a reading page. Known reading guides also
    show how far the student got. */
+/* pages that are a fresh job every day: done only if finished TODAY */
+var DAILY_SLUGS=['basics'];
 var PUSH_PROGRESS={
   '/readings/landlady':{table:'landlady_responses',keys:['landlady','landlady_easy','landlady_hard']},
   '/readings/telltale':{table:'telltale_responses',keys:['telltale']},
@@ -1010,6 +1018,20 @@ async function loadPushed(email){
       var g=PUSH_PROGRESS[key];
       return sb(g.table+'?email='+both+'&guide_key=in.('+g.keys.join(',')+')&select='+guideCols(g.table)).then(function(r){return r&&guideRows(g.table,r);});
     }));
+    function attemptSince(r){
+      var path=String(r.href||'').split('?')[0].split('#')[0];
+      var slug=path.replace(/^\/?readings\//,'').replace(/\/index\.html?$/,'').replace(/\.html?$/,'').replace(/\/+$/,'');
+      if(!slug)return null;
+      var daily=DAILY_SLUGS.indexOf(slug)>-1, since=r.created_at?new Date(r.created_at):new Date(0);
+      if(daily){var t=new Date();t.setHours(0,0,0,0);if(t>since)since=t;}
+      var best=null;
+      (DATA.atts||[]).forEach(function(a){
+        if(a.slug!==slug)return; var when=a.completed_at?new Date(a.completed_at):null;
+        if(!when||when<since)return;
+        if(!best||(a.score||0)>(best.score||0))best={score:a.score||0,max:a.max_score||0,daily:daily};
+      });
+      return best;
+    }
     box.innerHTML=rows.map(function(r,i){
       var pr=prog[i], line='', started=false;
       if(pr){
@@ -1018,11 +1040,16 @@ async function loadPushed(email){
           line=b.done?'<div class="pp done">&#10003; Turned in &middot; '+(b.pts?'score '+b.a+' of '+b.t:b.a+' of '+b.t+' answered')+'</div>'
             :'<div class="pp">'+(b.pts?'score '+b.a+' of '+b.t:b.a+' of '+b.t+' answered')+'<span class="pbar"><i style="width:'+b.pc+'%"></i></span></div>';}
         else line='<div class="pp">Not started yet</div>';
+      } else {
+        /* T-131: any other pushed page (Daily Basics, practice pages…) counts as done when the student has a
+           finished attempt for it since it was pushed. Daily Basics is a daily job: only today's attempt counts. */
+        var at=attemptSince(r);
+        if(at){ line='<div class="pp done">&#10003; Done'+(at.daily?' today':'')+(at.max?' &middot; score '+at.score+' of '+at.max:'')+'</div>'; }
       }
       var url=r.href+(r.href.indexOf('?')>-1?'&':'?')+'email='+encodeURIComponent(email);
-      return '<div class="pushrow"><div><div class="from">&#11088; Most important</div><div class="pt">'+esc(r.title||r.href)+'</div>'+
+      return '<div class="pushrow"><div><div class="from">'+(/pp done/.test(line)?'&#10003; Done':'&#11088; Most important')+'</div><div class="pt">'+esc(r.title||r.href)+'</div>'+
         (r.note?'<div class="pn">'+esc(r.note)+'</div>':'')+line+'</div>'+
-        '<a class="btn noprint" href="'+esc(url)+'">'+(line.indexOf('Turned in')>-1?'Open &rarr;':started?'Keep going &rarr;':'Start &rarr;')+'</a></div>';
+        '<a class="btn noprint" href="'+esc(url)+'">'+(line.indexOf('Turned in')>-1||line.indexOf('pp done')>-1?'Open &rarr;':started?'Keep going &rarr;':'Start &rarr;')+'</a></div>';
     }).join('');
     DATA.pushN=rows.length; bandMode(true);
   }catch(e){box.innerHTML='';bandMode(false);}
