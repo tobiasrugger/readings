@@ -14,6 +14,7 @@
 window.DASHBOARDS = [
 
 /* ---------- Data: the pages that answer "how is everyone doing?" ---------- */
+{url:'atlas/',                  name:'The Atlas \u2014 everything we\u2019ve built', course:'both', group:'Data', note:'Every page, maker and engine on one spiral. Tap one to peel its layers: sign-in, pictures, listening, translation, saving, score, My Page, dashboard \u2014 and read what changed.'},
 {url:'gradebook/',              name:'Gradebook — all scores',       course:'both', group:'Data', note:'Every student, every activity, 0\u20134. Synergy export lives here.'},
 {url:'groups/',                 name:'Group grades',                 course:'both', group:'Data', note:'Seat tables, then tap a table and a 0\u20134 while you walk around.'},
 {url:'teacher/',                name:'Class data',                   course:'both', group:'Data', note:'Skill bars and activity history per student.'},
