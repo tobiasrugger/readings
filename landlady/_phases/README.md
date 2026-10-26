@@ -17,3 +17,4 @@ forward from one phase to the next with nothing to migrate.
   2026-10-22 · saved before the 🔎 Investigate the tea button (marked NEW) was added to the activity bar · same guide_key, no data-qid changed
 - **phase-8-before-cyanide-fix.html** — The page while "What the poison was" still said arsenic
   2026-10-22 · saved before T-98: that section now says cyanide (bitter almonds), arsenic moved to the taxidermy section, question e4 reworded (same qid, right answer still choice 0), word bank arsenic → cyanide, shelf picture redrawn (killing jar + almonds instead of fly-paper). New lines marked NEW.
+- **phase-9-before-deep-links.html** — before T-123 deep links (#p1…#p4, #words, #police and the other After-you-read names open that part; added for the progress card on the student page). No content or data-qid changed.
