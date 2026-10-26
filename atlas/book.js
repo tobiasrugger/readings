@@ -84,6 +84,7 @@ window.ATLAS_BOOK = [
  what:'Each student\u2019s own page: one green \u201cDo this next\u201d band (what the teacher assigned \u2192 Finish this \u2192 Then practice), their scores, skills and activity history. Every finished activity comes back here.',
  use:'Students open https://tobiasrugger.github.io/readings/student/ first; from then on every activity shows \u201c\u2190 My Page\u201d.',
  notes:[
+  ['Oct 26','T-124','\u201cMy stories\u201d box under the green band: one card per ELD 103 story the student has started (Landlady, Tell-Tale Heart, Monkey\u2019s Paw), a button per part with its own count, locked parts greyed with the reason, the next part pulsing. Tapping a part opens the story at that part (e.g. https://tobiasrugger.github.io/readings/landlady/#p2). Drawn by landlady/progress.js; shows in the teacher ?email= view too; hidden when the student has no story yet.'],
   ['Oct 22','T-110','Finish This rows link through the assign catalog, so Brothers in Arms at 11% now has a Finish button.'],
   ['Oct 22','T-108','Brothers in Arms and Monkey\u2019s Paw show their progress here (READ_GUIDES + PUSH_PROGRESS).'],
   ['Oct 22','T-100','Welcome-back: \u201c\u2713 Done! <title>\u201d in the band and a NEXT marker on the next item.'],
@@ -234,7 +235,6 @@ window.ATLAS_BOOK = [
  files:['vocab/vocab.js'], own:'std',
  what:'Picture word cards with sound and translation, then practice games. Colors, foods, animals, drinks, sports, school subjects, five sets of action verbs, how I look, strengths, personality traits, and My Words.',
  notes:[
-  ['Oct 26','T-126','vocab/assign.html now opens with a big green signpost to the main Assign page: https://tobiasrugger.github.io/readings/assign/ (password galileo2026).'],
   ['Oct 22','T-89','Saves under the canonical @sfusd.edu email; old rows carried forward.'],
   ['Oct 22','T-88','Load-guard: never saves before the student\u2019s work has loaded.'],
   ['Oct 22','T-45','Never reveal: \u201cshow answers\u201d buttons gone across all 21 pages.']]},

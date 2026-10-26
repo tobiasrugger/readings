@@ -375,6 +375,10 @@ details.wq .qm{font-size:.85rem;color:var(--muted);font-weight:800}
 .nextinner .pushrow:has(.pp.done) .pt{font-size:1.05rem}
 .nextinner .pushrow:has(.pp.done) .btn{background:#fff;color:var(--green);border:2px solid var(--green);font-size:.95rem;padding:7px 14px}
 .nexttag{display:inline-block;background:#f2b632;color:#3d2a10;border-radius:8px;padding:1px 8px;font-size:.78rem;font-weight:900;margin-left:8px;vertical-align:middle}
+/* My stories box (T-124) */
+#storyCard .storyhead{display:flex;align-items:center;gap:12px}
+#storyCard .storyart{width:84px;height:auto;flex:0 0 auto;border:2px solid var(--plum-dk);border-radius:10px}
+@media(max-width:620px){#storyCard .storyart{width:60px}}
 /* ---- one attention band: Mr. Toby's assignment leads, practice follows ---- */
 .nextinner .pushrow{background:#fff;border:3px solid var(--plum-dk);border-radius:14px;padding:14px 16px;margin:0 0 12px;display:flex;gap:14px;align-items:center;justify-content:space-between;box-shadow:0 4px 0 rgba(43,34,68,.22)}
 .nextinner .pushrow .from{font-size:.78rem;font-weight:900;color:var(--plum);text-transform:uppercase;letter-spacing:.06em}
@@ -528,6 +532,23 @@ th,td{border-bottom:2px solid var(--line-dk)}
       <p class="thenline hide" id="thenLine">Then practice:</p>
       <div class="nextcells" id="growth"></div>
     </div>
+  </div>
+
+  <!-- My stories (T-124): per-part progress for the ELD 103 story guides, drawn by /readings/landlady/progress.js (owned by the ELD 103 chat). Hidden until it draws a card. -->
+  <div class="card hide" id="storyCard">
+    <h2 class="storyhead"><svg class="storyart" viewBox="0 0 120 90" role="img" aria-label="An open storybook by candlelight">
+      <rect width="120" height="90" rx="10" fill="#2b2140"/>
+      <circle cx="98" cy="18" r="9" fill="#f6e7b0"/><circle cx="102" cy="15" r="8" fill="#2b2140"/>
+      <g fill="#f6e7b0" opacity=".8"><circle cx="20" cy="14" r="1.2"/><circle cx="44" cy="9" r="1"/><circle cx="70" cy="16" r="1.3"/></g>
+      <path d="M14 72 q22 -9 46 0 q24 -9 46 0 v6 q-22 -8 -46 1 q-24 -9 -46 -1z" fill="#5a3b20"/>
+      <path d="M17 34 q20 -8 43 3 v35 q-21 -9 -43 -2z" fill="#fffaf0" stroke="#2b2016" stroke-width="1.5"/>
+      <path d="M103 34 q-20 -8 -43 3 v35 q21 -9 43 -2z" fill="#fff3d8" stroke="#2b2016" stroke-width="1.5"/>
+      <g stroke="#b9aa8c" stroke-width="1.4" stroke-linecap="round"><path d="M23 45 q15 -4 31 1"/><path d="M23 53 q15 -4 31 1"/><path d="M23 61 q12 -3 24 1"/><path d="M66 46 q15 -5 31 -1"/><path d="M66 54 q15 -5 31 -1"/></g>
+      <path d="M70 60 l6 6 l14 -15" fill="none" stroke="#2e7d4f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="8" y="50" width="7" height="22" rx="1.5" fill="#efe6cf"/><path d="M11.5 42 q-4 5 0 9 q4 -4 0 -9z" fill="#f2b632"/><path d="M11.5 45 q-1.8 3 0 5 q1.8 -2 0 -5z" fill="#fff3c4"/>
+    </svg><span>My stories</span></h2>
+    <p class="note" style="margin:0 0 10px">Tap a part to jump straight to it.</p>
+    <div id="storyProgress"></div>
   </div>
 
   <!-- Activities -->
@@ -699,6 +720,7 @@ th,td{border-bottom:2px solid var(--line-dk)}
 <script>document.write('<script src="/readings/vocab/pre/quizzes.js?v='+Math.floor(Date.now()/3600000)+'"><\/script>');</script>
 <script src="/readings/vocab/mywords/words.js"></script>
 <script src="/readings/assign/catalog.js"></script>
+<script src="/readings/landlady/progress.js"></script>
 <script src="/readings/phonics/phonics.js"></script>
 <script>
 const SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
@@ -806,6 +828,7 @@ async function load(email){
   markHome();
   loadPushed(email).then(function(){ setTimeout(welcomeBack,600); });
   loadReading(email);
+  loadStories(email);
 }
 
 
@@ -897,6 +920,17 @@ function welcomeBack(){
   if(next){ next.classList.add('isnext'); var h=next.querySelector('.pt,b,.ntitle'); if(h&&!h.querySelector('.nexttag'))h.insertAdjacentHTML('beforeend','<span class="nexttag">NEXT</span>'); }
   try{ translatePage(); }catch(e){}
   setTimeout(function(){ document.getElementById('nextBand').scrollIntoView({behavior:'smooth',block:'start'}); },150);
+}
+/* ---------- My stories (T-124) ----------
+   StoryProgress (landlady/progress.js) reads landlady/telltale/monkeyspaw_responses for both email
+   spellings, read-only, and resolves to the number of cards it drew. Runs in the teacher ?email= view too. */
+function loadStories(email){
+  var card=document.getElementById('storyCard'), box=document.getElementById('storyProgress');
+  if(!window.StoryProgress||!box){card.classList.add('hide');return;}
+  Promise.resolve(window.StoryProgress.render(box,email)).then(function(n){
+    card.classList.toggle('hide',!n);
+    if(n){ try{translatePage();}catch(e){} }
+  }).catch(function(){card.classList.add('hide');});
 }
 /* ---------- From Mr. Toby ----------
    Activities pushed to a period from /readings/assign/ live in class_assignments
