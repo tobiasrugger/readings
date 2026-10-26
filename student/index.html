@@ -379,6 +379,18 @@ details.wq .qm{font-size:.85rem;color:var(--muted);font-weight:800}
 #storyCard .storyhead{display:flex;align-items:center;gap:12px}
 #storyCard .storyart{width:84px;height:auto;flex:0 0 auto;border:2px solid var(--plum-dk);border-radius:10px}
 @media(max-width:620px){#storyCard .storyart{width:60px}}
+/* T-134: class-started rows — blue edge, below the teacher's own */
+#pushBox .pushrow.classrow{border-left-color:#3b78c4}
+#pushBox .pushrow.classrow .from{color:#2a5b97}
+#pushBox .pushrow.classrow .pt{font-size:1.3rem}
+/* T-133: finished pushes live at the bottom of the band */
+#pushDone .pushrow{opacity:.8;box-shadow:none;border:2px solid var(--plum-dk);border-left:9px solid #9aa39e;padding:9px 14px;margin:0 0 8px}
+#pushDone .pushrow .from{color:var(--green)}
+#pushDone .pushrow .pt{font-size:1.05rem}
+#pushDone .pushrow .btn{background:#fff;color:var(--green);border:2px solid var(--green);font-size:.95rem;padding:7px 14px}
+#pushDone .spcard.inband{display:none}
+.thenline.donehead{margin-top:14px}
+.nextband.aimed .nextpoint{align-items:flex-start}
 /* T-130: a pushed story's part buttons sit inside its row, full width under the title */
 #pushBox .pushrow{flex-wrap:wrap}
 #pushBox .pushrow .spcard.inband{flex:1 1 100%;margin:8px 0 0;background:#fff;box-shadow:none}
@@ -549,6 +561,8 @@ th,td{border-bottom:2px solid var(--line-dk)}
       </div>
       <p class="thenline hide" id="thenLine">Then practice:</p>
       <div class="nextcells" id="growth"></div>
+      <!-- T-133: finished teacher pushes sink here, below everything still to do -->
+      <div id="pushDoneWrap" class="hide"><p class="thenline donehead">&#10003; Finished:</p><div id="pushDone"></div></div>
     </div>
   </div>
 
@@ -923,11 +937,13 @@ function welcomeBack(){
        sessionStorage.removeItem('gal_last_page'); sessionStorage.removeItem('gal_last_title'); sessionStorage.removeItem('gal_last_done'); }catch(e){}
   if(!last||samePath(last,'/readings/student/'))return;
   var inner=document.querySelector('#nextBand .nextinner'); if(!inner)return;
+  if(!done){ [].slice.call(document.querySelectorAll('#pushBox .pushrow, #pushDone .pushrow')).forEach(function(r){
+      var a=r.querySelector('a.btn'); if(a&&samePath(a.getAttribute('href'),last)&&r.querySelector('.pp.done'))done=true; }); }
   if(done){ [].slice.call(document.querySelectorAll('#pushBox .pushrow')).forEach(function(r){
       var a=r.querySelector('a.btn'); if(!a||!samePath(a.getAttribute('href'),last)||r.querySelector('.pp.done'))return;
       var pp=r.querySelector('.pp'); var h='<div class="pp done">&#10003; Done</div>';
       if(pp)pp.outerHTML=h; else r.firstElementChild.insertAdjacentHTML('beforeend',h);
-      a.innerHTML='Open &rarr;'; var f=r.querySelector('.from'); if(f)f.innerHTML='&#10003; Done'; }); }
+      a.innerHTML='Open &rarr;'; var f=r.querySelector('.from'); if(f)f.innerHTML='&#10003; Done'; }); sinkDone(); }
   document.getElementById('nextBand').classList.remove('hide');
   /* the next thing: first pushed row not turned in, then Finish This, then practice */
   var cand=[].slice.call(document.querySelectorAll('#pushBox .pushrow')).filter(function(r){
@@ -976,6 +992,43 @@ function loadStories(email){
     try{aimArrow();}catch(e){}
   }).catch(function(){card.classList.add('hide');});
 }
+
+/* ---------- Your class is doing this (T-134) ----------
+   Nobody has to assign anything: when enough classmates in the SAME period (by their profile period)
+   have started an activity in the last 14 days, it shows on every other student's page in that period.
+   Computed here when the page loads — nothing is written to anyone's records. */
+var CLASS_DAYS=14, CLASS_MIN=5, CLASS_SHOW=6;
+async function classDoing(email,p,pushed){
+  if(!p)return [];
+  var me=email.split('@')[0].toLowerCase();
+  var studs=await sb('students?select=email,period')||[];
+  var mates={}; studs.forEach(function(s){ var lp=String(s.email||'').toLowerCase().split('@')[0]; if(lp&&lp!==me&&pushPer(s.period)===p)mates[lp]=1; });
+  var lps=Object.keys(mates); if(lps.length<2)return [];
+  var need=Math.max(2,Math.min(CLASS_MIN,Math.ceil(lps.length/3)));
+  var since=new Date(Date.now()-CLASS_DAYS*864e5).toISOString();
+  var inList='in.('+lps.map(function(l){return encodeURIComponent(l+'@sfusd.edu')+','+encodeURIComponent(l+'@s.sfusd.edu');}).join(',')+')';
+  var tabs=[['activity_attempts','slug','completed_at'],['landlady_responses','guide_key','updated_at'],['telltale_responses','guide_key','updated_at'],
+            ['monkeyspaw_responses','guide_key','updated_at'],['omelas_responses','guide_key','updated_at'],['brothers_responses','guide_key','updated_at'],
+            ['vocab_work','set_slug','updated_at'],['write_work','slug','updated_at']];
+  var res=await Promise.all(tabs.map(function(t){ return sb(t[0]+'?email='+inList+'&'+t[2]+'=gte.'+encodeURIComponent(since)+'&select=email,'+t[1]+','+t[2]); }));
+  var by={};
+  tabs.forEach(function(t,i){ (res[i]||[]).forEach(function(r){
+    var k=r[t[1]]; if(!k)return; var path;
+    if(t[1]==='guide_key') path='/readings/'+String(k).replace(/_/g,'-')+'/';
+    else if(t[1]==='set_slug') path='/readings/vocab/'+k+'/';
+    else path=slugLink(k).url;
+    if(!path||/\/(student|teacher|assign|reports|dashboards?|atlas)\//.test(path)||/dashboard/.test(path))return;
+    var lp=String(r.email||'').toLowerCase().split('@')[0];
+    var b=by[path]||(by[path]={who:{},last:''}); b.who[lp]=1; if((r[t[2]]||'')>b.last)b.last=r[t[2]];
+  }); });
+  var pushedPaths=(pushed||[]).map(function(x){return String(x.href||'').split('?')[0];});
+  return Object.keys(by).filter(function(path){
+      return Object.keys(by[path].who).length>=need && !pushedPaths.some(function(h){return samePath(h,path);});
+    }).sort(function(a,b){ return by[a].last<by[b].last?1:-1; }).slice(0,CLASS_SHOW)
+    .map(function(path){ var n=Object.keys(by[path].who).length;
+      return {href:path, title:catTitle(path, slugLink(path.replace(/^\/readings\//,'')).title), cls:true, created_at:'1970-01-01T00:00:00Z',
+              note:n+' classmates started this', n:n}; });
+}
 /* ---------- From Mr. Toby ----------
    Activities pushed to a period from /readings/assign/ live in class_assignments
    with area "site". A student's period comes from their profile; if that is empty,
@@ -1010,6 +1063,10 @@ async function loadPushed(email){
       '&or=(expires_at.is.null,expires_at.gt.'+encodeURIComponent(now)+')&order=created_at.desc&select=*');
     rows=rows||[];
     var seen={}; rows=rows.filter(function(r){if(seen[r.href])return false;seen[r.href]=1;return true;});
+    DATA.pushN=rows.length;
+    /* T-134: what the rest of the class is doing comes in under the teacher's own pushes */
+    var cls=[]; try{ cls=await classDoing(email,p,rows); }catch(e){ cls=[]; }
+    rows=rows.concat(cls);
     if(!rows.length){box.innerHTML='';DATA.pushN=0;bandMode(false);return;}
     var lp=email.split('@')[0], both='in.('+encodeURIComponent(lp+'@s.sfusd.edu')+','+encodeURIComponent(lp+'@sfusd.edu')+')';
     var prog=await Promise.all(rows.map(function(r){
@@ -1047,12 +1104,17 @@ async function loadPushed(email){
         if(at){ line='<div class="pp done">&#10003; Done'+(at.daily?' today':'')+(at.max?' &middot; score '+at.score+' of '+at.max:'')+'</div>'; }
       }
       var url=r.href+(r.href.indexOf('?')>-1?'&':'?')+'email='+encodeURIComponent(email);
-      return '<div class="pushrow"><div><div class="from">'+(/pp done/.test(line)?'&#10003; Done':'&#11088; Most important')+'</div><div class="pt">'+esc(r.title||r.href)+'</div>'+
+      return '<div class="pushrow'+(r.cls?' classrow':'')+'"><div><div class="from">'+(/pp done/.test(line)?'&#10003; Done':r.cls?'&#128101; Your class is doing this':'&#11088; Most important')+'</div><div class="pt">'+esc(r.title||r.href)+'</div>'+
         (r.note?'<div class="pn">'+esc(r.note)+'</div>':'')+line+'</div>'+
         '<a class="btn noprint" href="'+esc(url)+'">'+(line.indexOf('Turned in')>-1||line.indexOf('pp done')>-1?'Open &rarr;':started?'Keep going &rarr;':'Start &rarr;')+'</a></div>';
     }).join('');
-    DATA.pushN=rows.length; bandMode(true);
+    sinkDone(); bandMode(true);
   }catch(e){box.innerHTML='';bandMode(false);}
+}
+function sinkDone(){
+  var wrap=document.getElementById('pushDoneWrap'), dest=document.getElementById('pushDone'); if(!dest)return;
+  [].slice.call(document.querySelectorAll('#pushBox .pushrow')).forEach(function(r){ if(r.querySelector('.pp.done'))dest.appendChild(r); });
+  wrap.classList.toggle('hide',!dest.children.length);
 }
 /* the band says "Do this next" when Mr. Toby pushed something, "Practice Next" otherwise */
 function bandMode(push){
@@ -1074,10 +1136,13 @@ function bandMode(push){
 /* point the green arrow at the first unfinished assignment (or the middle of the band when there is none) */
 function aimArrow(){
   var band=document.getElementById('nextBand'), pt=band&&band.querySelector('.nextpoint'); if(!pt)return;
-  if(!band.classList.contains('haspush')){pt.style.paddingTop='';return;}
-  var rows=[].slice.call(document.querySelectorAll('#pushBox .pushrow')), row=rows.filter(function(r){return !r.querySelector('.pp.done');})[0]||rows[0];
-  if(!row){pt.style.paddingTop='';return;}
-  var tgt=row.querySelector('.spstep.next')||row;  /* T-130: aim at the next story part when the pushed row has its buttons */
+  /* T-133: aim at what the student should do next — the NEXT-marked item, else the first unfinished push — never a finished row */
+  var tgt=band.querySelector('.isnext');
+  if(!tgt){ var rows=[].slice.call(document.querySelectorAll('#pushBox .pushrow')).filter(function(r){return !r.querySelector('.pp.done');});
+    if(rows[0])tgt=rows[0].querySelector('.spstep.next')||rows[0]; }
+  if(tgt&&tgt.classList.contains('pushrow')&&tgt.querySelector('.spstep.next'))tgt=tgt.querySelector('.spstep.next');
+  band.classList.toggle('aimed',!!tgt);
+  if(!tgt){pt.style.paddingTop='';return;}
   var y=tgt.getBoundingClientRect().top-band.getBoundingClientRect().top+tgt.offsetHeight/2;
   var gh=parseFloat(getComputedStyle(pt).fontSize)*1.15;
   pt.style.paddingTop=Math.max(0,Math.round(y-gh/2))+'px';
