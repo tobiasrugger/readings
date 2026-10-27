@@ -379,6 +379,8 @@ details.wq .qm{font-size:.85rem;color:var(--muted);font-weight:800}
 #storyCard .storyhead{display:flex;align-items:center;gap:12px}
 #storyCard .storyart{width:84px;height:auto;flex:0 0 auto;border:2px solid var(--plum-dk);border-radius:10px}
 @media(max-width:620px){#storyCard .storyart{width:60px}}
+/* T-135: Classroom tag */
+.clstag{display:inline-block;margin-left:8px;padding:1px 8px;border:1.5px solid #1e8e3e;border-radius:999px;background:#e6f4ea;color:#137333;font-size:.72rem;font-weight:800;letter-spacing:0;text-transform:none;vertical-align:middle}
 /* T-142 v3: per-student extra work */
 #extraWrap{border:2px solid #2a64b8;background:#eaf2fc;border-radius:14px;padding:10px 12px 4px;margin:0 0 12px}
 #extraWrap .extrahead{margin:0 0 8px;font-size:1rem;font-weight:900;color:#2a64b8}
@@ -1077,6 +1079,10 @@ async function loadPushed(email){
       '&or=(expires_at.is.null,expires_at.gt.'+encodeURIComponent(now)+')&order=created_at.desc&select=*');
     rows=rows||[];
     var seen={}; rows=rows.filter(function(r){if(seen[r.href])return false;seen[r.href]=1;return true;});
+    /* T-135: posts copied from Google Classroom come first, soonest due date first; undated pushes keep their order */
+    rows=rows.map(function(r,i){r._i=i;return r;}).sort(function(a,b){
+      var da=a.due_at?Date.parse(a.due_at):Infinity, db=b.due_at?Date.parse(b.due_at):Infinity;
+      return da!==db?da-db:a._i-b._i; });
     DATA.pushN=rows.length;
     /* T-142 v3: extras for this student only (period 'extra' never matches the period in (all, N) query above) */
     var lpx=email.split('@')[0], ex=[];
@@ -1124,7 +1130,7 @@ async function loadPushed(email){
         if(at){ line='<div class="pp done">&#10003; Done'+(at.daily?' today':'')+(at.max?' &middot; score '+at.score+' of '+at.max:'')+'</div>'; }
       }
       var url=r.href+(r.href.indexOf('?')>-1?'&':'?')+'email='+encodeURIComponent(email);
-      return '<div class="pushrow'+(r.cls?' classrow':'')+(r.extra?' extrarow':'')+'"><div><div class="from">'+(/pp done/.test(line)?'&#10003; Done':r.cls?'&#128101; Your class is doing this':r.extra?'&#10133; Just for you':'&#11088; Most important')+'</div><div class="pt">'+esc(r.title||r.href)+'</div>'+
+      return '<div class="pushrow'+(r.cls?' classrow':'')+(r.extra?' extrarow':'')+'"><div><div class="from">'+(/pp done/.test(line)?'&#10003; Done':r.cls?'&#128101; Your class is doing this':r.extra?'&#10133; Just for you':'&#11088; Most important')+(r.source==='classroom'?' <span class="clstag">from Classroom'+(r.due_at?' &middot; due '+esc(new Date(r.due_at).toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'})):'')+'</span>':'')+'</div><div class="pt">'+esc(r.source==='classroom'?catTitle(String(r.href).split('?')[0],r.title||r.href).replace(/\s+[\u2014\u00b7|].*$/,''):(r.title||r.href))+'</div>'+
         (r.note?'<div class="pn">'+esc(r.note)+'</div>':'')+line+'</div>'+
         '<a class="btn noprint" href="'+esc(url)+'">'+(line.indexOf('Turned in')>-1||line.indexOf('pp done')>-1?'Open &rarr;':started?'Keep going &rarr;':'Start &rarr;')+'</a></div>';
     }).join('');

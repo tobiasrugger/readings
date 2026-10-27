@@ -85,6 +85,7 @@ window.ATLAS_BOOK = [
  what:'Each student\u2019s own page: one green \u201cDo this next\u201d band (what the teacher assigned \u2192 Finish this \u2192 Then practice), their scores, skills and activity history. Every finished activity comes back here.',
  use:'Students open https://tobiasrugger.github.io/readings/student/ first; from then on every activity shows \u201c\u2190 My Page\u201d.',
  notes:[
+  ['Oct 27','T-135','Google Classroom posts that link to a readings page now show on My Page like a push (\u201c\u2b50 Most important\u201d) with a small green \u201cfrom Classroom \u00b7 due \u2026\u201d tag, soonest due date first. Copied by a script in Mr. Toby\u2019s own Google account (readings/classroom/Code.gs) every 15 minutes on school days. https://tobiasrugger.github.io/readings/student/'],
   ['Oct 27','T-153','\u201c\u2795 Extra work for you\u201d: work the Teacher\u2019s Desk gives ONE student (class_assignments period \u201cextra\u201d, email = that student) shows in its own blue-bordered box in the green band under Mr. Toby\u2019s pushes, each with its note; when finished it gets a green border and \u2713 and drops to \u201c\u2713 Finished:\u201d. Only that student ever sees it. https://tobiasrugger.github.io/readings/student/'],
   ['Oct 26','T-134','\u201c\U0001F465 Your class is doing this\u201d: when enough classmates in the same period (5, or a third of the class if smaller, by profile period) started an activity in the last 14 days, it appears on every other student\u2019s page in that period, under the teacher\u2019s own pushes \u2014 so a student back from an absence sees the work they missed. Worked out when the page loads; nothing written. https://tobiasrugger.github.io/readings/student/'],
   ['Oct 26','T-133','Finished teacher pushes now sink to a \u201c\u2713 Finished:\u201d line at the very bottom of the green band (below Finish this and practice), the pulsing arrow points at the item marked NEXT instead of at a finished row, and coming back from a finished Daily Basics says \u201c\u2713 Done!\u201d, not \u201cSaved.\u201d https://tobiasrugger.github.io/readings/student/'],
@@ -120,7 +121,8 @@ window.ATLAS_BOOK = [
 
 {id:'assign', ring:0, kind:'teacher', course:'both', name:'Push an activity, class report, class data', home:'assign/', match:['assign/','reports/','teacher/'], files:['assign/catalog.js'], own:'stu',
  what:'Push an activity sends one page to a period or a student (it appears in their green band). The class report and class data show who did what. assign/catalog.js is the list of every student page and is refreshed whenever a hub card changes.',
- notes:[['Oct 22','T-84','Catalog refreshed from the live repo (294 pages).']]},
+ notes:[
+  ['Oct 27','T-135','The \u201cLive right now\u201d list also shows rows copied from Google Classroom (source classroom); Clear works on them and the script will not bring a cleared one back. Setup steps: readings/classroom/README.md. https://tobiasrugger.github.io/readings/assign/'],['Oct 22','T-84','Catalog refreshed from the live repo (294 pages).']]},
 
 {id:'audit', ring:0, kind:'teacher', course:'both', name:'Feature audit + conformance checker', home:'audit/', match:['audit/','check.html'], own:'audit',
  what:'Which pages meet the student-page standard, and a checker that re-reads every page live and shows what drifted.',
