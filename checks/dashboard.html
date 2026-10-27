@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Read-aloud Check · Teacher</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#1d2433;--line:#2b3448;--bg:#f4f1ea;--card:#fff;--soft:#eef2f8;--miss:#d93636;--missbg:#ffe1e1;--prev:#d98a00;--ok:#1f8a4c;--okbg:#dff3e6;--blue:#1f5fbf;--gold:#c48a00}
+*{box-sizing:border-box}
+body{margin:0;font-family:Nunito,system-ui,sans-serif;color:var(--ink);background:var(--bg);font-size:17px}
+button,select,input,textarea{font:inherit}
+.wrap{max-width:1180px;margin:0 auto;padding:56px 14px 60px}
+h1{font-size:1.7rem;margin:0 0 4px;font-weight:900}
+.sub{margin:0 0 14px;color:#4a5468}
+.box{background:var(--card);border:2px solid var(--line);border-radius:14px;box-shadow:0 4px 0 rgba(29,36,51,.18);padding:14px 16px;margin:0 0 16px;overflow:hidden}
+.box>h2{margin:0 0 10px;font-size:1.15rem;font-weight:900;display:flex;gap:8px;align-items:center}
+.num{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--ink);color:#fff;font-size:.95rem}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+label.f{display:flex;flex-direction:column;font-weight:800;font-size:.9rem;gap:4px}
+select,input[type=password]{border:2px solid var(--line);border-radius:10px;padding:8px 10px;background:#fff}
+.seg{display:inline-flex;border:2px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:#fff;padding:8px 14px;font-weight:900;cursor:pointer;border-right:2px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed=true]{background:var(--ink);color:#fff}
+.tabs{display:flex;gap:8px;margin:0 0 14px}
+.tab{border:2px solid var(--line);background:#fff;border-radius:10px;padding:8px 16px;font-weight:900;cursor:pointer}
+.tab[aria-pressed=true]{background:var(--ink);color:#fff}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:2px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font-weight:800;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.chip .dot{width:11px;height:11px;border-radius:50%;background:#c3c9d4;border:1px solid #7a8396}
+.chip.done .dot{background:var(--ok);border-color:var(--ok)}
+.chip .lv{font-size:.8rem;background:var(--soft);border-radius:6px;padding:0 5px}
+.chip[aria-pressed=true]{background:#fff6d6;border-color:var(--gold);box-shadow:0 0 0 3px #f6d873}
+.who{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;margin-bottom:8px}
+.who h3{margin:0;font-size:1.6rem;font-weight:900}
+.key{display:flex;flex-wrap:wrap;gap:14px;font-size:.9rem;margin:6px 0 10px;color:#4a5468}
+.key span{display:inline-flex;gap:6px;align-items:center}
+.sw{display:inline-block;width:34px;height:18px;border-radius:4px}
+.text{border:2px solid var(--line);border-radius:12px;padding:10px 12px;background:#fffdf7}
+.ln{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px dashed #b9c0cc}
+.ln:last-child{border-bottom:0}
+.ln .n{min-width:34px;font-weight:900;color:#6b7488;padding-top:6px}
+.ln .sp{font-size:.85rem;font-weight:900;color:#4a5468;min-width:62px;padding-top:7px}
+.ln .ws{font-size:1.55rem;line-height:2.1;flex:1}
+.ln.out{opacity:.38}
+.ln.out .ws{font-size:1.15rem}
+.scene{font-weight:900;font-size:.85rem;text-transform:uppercase;letter-spacing:.05em;color:#6b7488;margin:10px 0 0}
+.w{cursor:pointer;border-radius:6px;padding:0 3px;margin:0 1px;border-bottom:3px solid transparent;user-select:none;-webkit-user-select:none}
+.ln.out .w{cursor:default}
+.w:hover{background:#eef2f8}
+.w.prev{border-bottom:3px dotted var(--prev)}
+.w.miss{background:var(--missbg);color:var(--miss);border-bottom:3px solid var(--miss);font-weight:800}
+.w.fixed{background:var(--okbg)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:12px 0}
+.stat{border:2px solid var(--line);border-radius:12px;padding:8px 10px;text-align:center;background:var(--soft)}
+.stat b{display:block;font-size:1.6rem;font-weight:900}
+.scores{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.sc{width:52px;height:52px;border-radius:12px;border:2px solid var(--line);background:#fff;font-weight:900;font-size:1.4rem;cursor:pointer}
+.sc.sug{box-shadow:0 0 0 3px #9cc4ff}
+.sc[aria-pressed=true]{background:var(--ink);color:#fff}
+textarea{width:100%;min-height:62px;border:2px solid var(--line);border-radius:10px;padding:8px 10px;margin-top:8px}
+.btn{border:2px solid var(--line);border-radius:12px;padding:10px 18px;font-weight:900;cursor:pointer;background:#fff}
+.btn.go{background:var(--ok);border-color:#155f35;color:#fff}
+.btn.blue{background:var(--blue);border-color:#163f7f;color:#fff}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.status{font-weight:800;margin-left:8px}
+.err{background:#ffe1e1;border:2px solid var(--miss);border-radius:10px;padding:10px 12px;font-weight:800;color:#8a1c1c;margin:0 0 12px;display:none}
+.empty{color:#6b7488;font-style:italic;padding:10px 0}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:640px}
+th,td{border:1.5px solid #8e97a8;padding:6px 8px;text-align:left;vertical-align:top}
+th{background:var(--soft);font-weight:900}
+td.c{text-align:center}
+.b04{display:inline-block;min-width:26px;text-align:center;border-radius:6px;font-weight:900;color:#fff;padding:1px 6px}
+.b4{background:#1f8a4c}.b3{background:#4f9d2d}.b2{background:#c48a00}.b1{background:#d9622b}.b0{background:#9b2c2c}
+.missed-list{display:flex;flex-wrap:wrap;gap:8px}
+.mw{border:2px solid var(--line);border-radius:10px;padding:4px 10px;background:#fff;font-weight:800;cursor:pointer}
+.mw small{color:var(--miss);font-weight:900;margin-left:4px}
+.hide{display:none!important}
+#panel{scroll-margin-top:60px}
+#gate{position:fixed;inset:0;background:var(--bg);display:grid;place-items:center;z-index:50}
+#gate .box{width:min(380px,92vw)}
+.help{font-size:.9rem;color:#4a5468;margin:6px 0 0}
+details.teach{margin-top:8px}
+details.teach summary{cursor:pointer;font-weight:800}
+@media (max-width:600px){.ln .ws{font-size:1.25rem}.ln .sp{display:none}}
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="box">
+    <h2>🔒 Read-aloud Check</h2>
+    <label class="f">Password <input type="password" id="pw" autocomplete="current-password"></label>
+    <p class="help" id="pwMsg"></p>
+    <button class="btn go" id="pwGo" style="margin-top:10px">Open</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>🎧 Read-aloud Check</h1>
+  <p class="sub">A student reads to you. Tap every word they get wrong. Save. On the next check, last time’s misses show with an orange dotted line, so you can hear whether they fixed them.</p>
+  <div class="err" id="err"></div>
+
+  <div class="tabs">
+    <button class="tab" id="tabCheck" aria-pressed="true">Check a student</button>
+    <button class="tab" id="tabClass" aria-pressed="false">Class view</button>
+  </div>
+
+  <section class="box">
+    <h2><span class="num">1</span> What are you checking?</h2>
+    <div class="row">
+      <label class="f">Story <select id="story"></select></label>
+      <label class="f">Period <select id="period"><option value="">Choose…</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select></label>
+      <label class="f">Which check <select id="checkNo"><option value="1">1st check</option><option value="2">2nd check</option><option value="3">3rd check</option></select></label>
+      <label class="f">Lines from <select id="from"></select></label>
+      <label class="f">to <select id="to"></select></label>
+    </div>
+    <p class="help">Lines are the story’s caption lines, in order (questions are skipped). The first four slides = lines 1 to 4.</p>
+  </section>
+
+  <div id="viewCheck">
+    <section class="box">
+      <h2><span class="num">2</span> Who is reading?</h2>
+      <div class="chips" id="studs"><div class="empty">Choose a period.</div></div>
+      <p class="help">Green dot = already checked this time. The small letter = the level you said they should use.</p>
+    </section>
+
+    <section class="box hide" id="panel">
+      <div class="who">
+        <h3 id="sName"></h3>
+        <div class="row">
+          <label class="f">Text they read <span class="seg" id="readLv"><button data-l="A" aria-pressed="true">A</button><button data-l="B" aria-pressed="false">B</button><button data-l="C" aria-pressed="false">C</button></span></label>
+          <label class="f">They should use <span class="seg" id="useLv"><button data-l="A" aria-pressed="false">A</button><button data-l="B" aria-pressed="false">B</button><button data-l="C" aria-pressed="false">C</button></span></label>
+        </div>
+      </div>
+      <div class="key">
+        <span><i class="sw" style="background:var(--missbg);border-bottom:3px solid var(--miss)"></i> missed now (tap again to clear)</span>
+        <span><i class="sw" style="border-bottom:3px dotted var(--prev)"></i> missed last check</span>
+        <span><i class="sw" style="background:var(--okbg)"></i> missed last time, right now</span>
+        <span id="reelInfo"></span>
+      </div>
+      <div class="text" id="text"></div>
+      <button class="btn" id="more" style="margin-top:10px">They read more — add the next line</button>
+
+      <div class="stats">
+        <div class="stat"><b id="stWords">0</b>words read</div>
+        <div class="stat"><b id="stMiss">0</b>missed</div>
+        <div class="stat"><b id="stAcc">—</b>accuracy</div>
+        <div class="stat" id="stFixBox"><b id="stFix">—</b>fixed since last</div>
+      </div>
+
+      <div class="scores">
+        <b>Score&nbsp;0–4:</b>
+        <button class="sc" data-s="0">0</button><button class="sc" data-s="1">1</button><button class="sc" data-s="2">2</button><button class="sc" data-s="3">3</button><button class="sc" data-s="4">4</button>
+        <span class="help" id="sugTxt"></span>
+      </div>
+      <textarea id="note" placeholder="Note (optional): e.g. says “fine” for find; drops final -s; too fast"></textarea>
+      <div class="row" style="margin-top:10px;align-items:center">
+        <button class="btn go" id="save">Save</button>
+        <button class="btn blue" id="saveNext">Save &amp; next student →</button>
+        <button class="btn" id="absent">Not today (skip)</button>
+        <span class="status" id="status"></span>
+      </div>
+      <details class="teach">
+        <summary>How the score is suggested</summary>
+        <p class="help">Accuracy on the lines read: 97%+ → 4 · 92–96% → 3 · 85–91% → 2 · under 85% → 1. Tap any number to choose your own. The score goes to the gradebook as “Read-aloud check”; a student who scores under 3 sees it on My Page under Finish This, linked to the episode so they can practise.</p>
+      </details>
+    </section>
+  </div>
+
+  <div id="viewClass" class="hide">
+    <section class="box">
+      <h2><span class="num">2</span> Words this period missed most</h2>
+      <div class="missed-list" id="topMiss"><div class="empty">Choose a period.</div></div>
+      <p class="help">Tap a word to hear it. Good for a two-minute whole-class pronunciation warm-up.</p>
+    </section>
+    <section class="box">
+      <h2><span class="num">3</span> Every student</h2>
+      <div class="tablewrap"><table id="classTbl"></table></div>
+      <div class="row" style="margin-top:10px"><button class="btn" id="csv">Copy for Synergy (name, email, score)</button><span class="status" id="csvMsg"></span></div>
+    </section>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var PASS='galileo2026';
+/* Stories this page can check. Add a line to check another reel episode. */
+var STORIES=[
+  {id:'reel-ep02', name:'Story Reel 2: The Backpack', src:'/readings/reel-v2/ep02/index.html', episode:'ep02', url:'/readings/reel-v2/ep02/'},
+  {id:'reel-ep01', name:'Story Reel 1: The New Student', src:'/readings/reel-v2/ep01/index.html', episode:'ep01', url:'/readings/reel-v2/ep01/'}
+];
+var SCORE_PCT={4:95,3:82,2:67,1:40,0:0};   /* 0–4 written to activity_attempts so the gradebook bands it back to the same 0–4 */
+
+function H(x){var h={apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY,'Content-Type':'application/json'};for(var k in x)h[k]=x[k];return h;}
+function sb(path){return fetch(SUPA_URL+'/rest/v1/'+path,{headers:H()}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();});}
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function canon(e){e=String(e||'').trim().toLowerCase();return e.replace(/@s\.sfusd\.edu$/,'@sfusd.edu');}
+function lp(e){return canon(e).split('@')[0];}
+function norm(w){return String(w).toLowerCase().replace(/[’']/g,"'").replace(/^[^a-z0-9']+|[^a-z0-9']+$/g,'');}
+function pref(k,v){try{if(v===undefined)return sessionStorage.getItem('chk_'+k);sessionStorage.setItem('chk_'+k,v);}catch(e){return null;}}
+
+/* ---------- state ---------- */
+var S={story:null, lines:[], students:[], checks:{}, reel:{}, cur:null, miss:{}, readLv:'A', useLv:'', score:null, scoreSet:false, dirty:false, loaded:false};
+
+function showErr(m){var e=$('err');e.textContent=m;e.style.display=m?'block':'none';}
+
+/* ---------- gate ---------- */
+function openPage(){ $('gate').classList.add('hide'); init(); }
+$('pwGo').onclick=function(){ if($('pw').value===PASS){pref('ok','1');openPage();} else $('pwMsg').textContent='Not right — try again.'; };
+$('pw').addEventListener('keydown',function(e){if(e.key==='Enter')$('pwGo').click();});
+if(pref('ok')==='1') openPage();
+
+/* ---------- load an episode's text from its own page ---------- */
+function loadStory(st){
+  return fetch(st.src).then(function(r){if(!r.ok)throw new Error('episode '+r.status);return r.text();}).then(function(html){
+    var m=html.match(/<script>([\s\S]*?window\.EP\s*=[\s\S]*?)<\/script>/);
+    if(!m) throw new Error('no EP block');
+    var box={}; new Function('window',m[1])(box);
+    var EP=box.EP, out=[], n=0;
+    (EP.scenes||[]).forEach(function(sc,si){
+      (sc.lines||[]).forEach(function(ln){
+        if(ln.type==='q') return;
+        n++; out.push({n:n, scene:si, alt:sc.alt||'', who:ln.who||'', A:ln.A||'', B:ln.B||ln.A||'', C:ln.C||ln.B||ln.A||''});
+      });
+    });
+    return out;
+  });
+}
+
+function fillRange(){
+  var f=$('from'), t=$('to'), o='';
+  S.lines.forEach(function(l){o+='<option value="'+l.n+'">'+l.n+'</option>';});
+  f.innerHTML=o; t.innerHTML=o;
+  f.value=pref('from_'+S.story.id)||'1';
+  t.value=pref('to_'+S.story.id)||String(Math.min(4,S.lines.length));
+}
+
+/* ---------- data ---------- */
+function loadAll(){
+  showErr('');
+  S.loaded=false;
+  var st=S.story, p=$('period').value;
+  var jobs=[
+    sb('teacher_checks?item=eq.'+st.id+'&select=*').then(function(rows){
+      S.checks={}; rows.forEach(function(r){ var k=lp(r.email)+'|'+r.check_no; S.checks[k]=r; }); S.loaded=true;
+    }).catch(function(){ showErr('Can’t reach the saved checks yet (has the teacher_checks SQL been run?). Nothing will be saved until this loads — reload to try again.'); }),
+    sb('reel_views?episode=eq.'+st.episode+'&select=email,level,turned_in,updated_at').then(function(rows){
+      S.reel={}; rows.forEach(function(r){ var k=lp(r.email), o=S.reel[k]; if(!o||(r.updated_at||'')>(o.updated_at||''))S.reel[k]=r; });
+    }).catch(function(){ S.reel={}; })
+  ];
+  if(p) jobs.push(sb('students?select=email,first_name,last_name,period,roster_order&period=eq.'+encodeURIComponent(p)).then(function(rows){
+      var seen={}; S.students=[];
+      rows.forEach(function(r){ var k=lp(r.email); if(!k||seen[k])return; seen[k]=1; r.email=canon(r.email); S.students.push(r); });
+      S.students.sort(function(a,b){return (a.roster_order||9999)-(b.roster_order||9999)||nm(a).localeCompare(nm(b));});
+    }).catch(function(){ S.students=[]; showErr('Couldn’t load the roster for this period.'); }));
+  else S.students=[];
+  return Promise.all(jobs).then(function(){ renderStudents(); renderClass(); updateSaveBtns(); });
+}
+function nm(s){return ((s.first_name||'')+' '+(s.last_name||'')).trim()||lp(s.email);}
+function shortNm(s){return (s.first_name||lp(s.email))+(s.last_name?' '+s.last_name.charAt(0)+'.':'');}
+function checkOf(email,no){return S.checks[lp(email)+'|'+no];}
+function lastUse(email){ for(var no=3;no>=1;no--){var c=checkOf(email,no); if(c&&c.use_level)return c.use_level;} return ''; }
+
+/* ---------- students ---------- */
+function renderStudents(){
+  var box=$('studs'), no=+$('checkNo').value;
+  if(!$('period').value){box.innerHTML='<div class="empty">Choose a period.</div>';return;}
+  if(!S.students.length){box.innerHTML='<div class="empty">No students in this period yet.</div>';return;}
+  box.innerHTML=S.students.map(function(s){
+    var c=checkOf(s.email,no), u=lastUse(s.email);
+    return '<button class="chip'+(c&&!c.absent?' done':'')+'" data-e="'+esc(s.email)+'" aria-pressed="'+(S.cur&&S.cur.email===s.email)+'"><i class="dot"></i>'+esc(shortNm(s))+(u?'<span class="lv">'+u+'</span>':'')+(c&&c.absent?' <span class="lv">skip</span>':'')+'</button>';
+  }).join('');
+  Array.prototype.forEach.call(box.querySelectorAll('.chip'),function(b){ b.onclick=function(){ pick(b.getAttribute('data-e')); }; });
+}
+
+function pick(email){
+  if(S.dirty&&S.cur) save(false);
+  var s=S.students.filter(function(x){return x.email===email;})[0]; if(!s)return;
+  S.cur=s; S.curNo=+$('checkNo').value; S.curStory=S.story; S.curPeriod=String($('period').value);
+  var no=S.curNo, c=checkOf(email,no);
+  S.miss={}; S.scoreSet=false; S.score=null; S.dirty=false;
+  var r=S.reel[lp(email)];
+  if(c){ (c.missed||[]).forEach(function(m){S.miss[m.k]=1;}); S.readLv=c.read_level||'A'; S.useLv=c.use_level||''; S.score=(c.score04==null?null:c.score04); S.scoreSet=c.score04!=null; $('note').value=c.note||'';
+         if(c.lines_from){$('from').value=c.lines_from;$('to').value=c.lines_to;} }
+  else { $('from').value=pref('from_'+S.story.id)||'1'; $('to').value=pref('to_'+S.story.id)||String(Math.min(4,S.lines.length));
+         var prev=checkOf(email,no-1); S.readLv=(prev&&prev.use_level)||(r&&r.level)||'A'; S.useLv=lastUse(email); $('note').value=''; }
+  $('sName').textContent=nm(s);
+  $('reelInfo').innerHTML=r?'📺 On the reel: Level '+esc(r.level||'A')+(r.turned_in?' · turned in ✓':'')+' · last seen '+esc(String(r.updated_at||'').slice(5,10)):'📺 Not opened this episode yet';
+  setSeg('readLv',S.readLv); setSeg('useLv',S.useLv);
+  $('panel').classList.remove('hide'); $('status').textContent=c?(c.absent?'Marked “not today”.':'Saved earlier — edit and save again if needed.'):'';
+  renderStudents(); renderText();
+  $('panel').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function setSeg(id,v){ Array.prototype.forEach.call($(id).querySelectorAll('button'),function(b){b.setAttribute('aria-pressed',String(b.getAttribute('data-l')===v));}); }
+['readLv','useLv'].forEach(function(id){
+  $(id).addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b)return; var v=b.getAttribute('data-l');
+    if(id==='readLv'){ if(v!==S.readLv){ S.readLv=v; S.miss={}; } } else S.useLv=(S.useLv===v?'':v);
+    setSeg(id,id==='readLv'?S.readLv:S.useLv); S.dirty=true; renderText(); });
+});
+
+/* ---------- the text ---------- */
+function prevMissKeys(){
+  if(!S.cur) return {};
+  var no=+$('checkNo').value, p=null;
+  for(var k=no-1;k>=1&&!p;k--){var c=checkOf(S.cur.email,k); if(c&&!c.absent)p=c;}
+  var out={}; if(!p) return out;
+  /* match by line + word text, so a different level still shows the same words where they appear */
+  (p.missed||[]).forEach(function(m){ out[m.n+'|'+norm(m.w)]=1; });
+  return out;
+}
+function renderText(){
+  if(!S.cur) return;
+  var from=+$('from').value, to=+$('to').value, lv=S.readLv, pm=prevMissKeys(), html='', lastScene=-1;
+  var shown=S.lines.filter(function(l){return l.n<=to+2;});
+  shown.forEach(function(l){
+    if(l.scene!==lastScene){ html+='<p class="scene">Scene '+(l.scene+1)+' · '+esc(l.alt)+'</p>'; lastScene=l.scene; }
+    var inR=l.n>=from&&l.n<=to;
+    var ws=String(l[lv]).split(/\s+/).filter(Boolean).map(function(w,i){
+      var k=l.n+':'+i, cls='w';
+      if(inR){ var was=pm[l.n+'|'+norm(w)]; if(was)cls+=' prev'; if(S.miss[k])cls+=' miss'; else if(was)cls+=' fixed'; }
+      return '<span class="'+cls+'" data-k="'+k+'" data-in="'+(inR?1:0)+'">'+esc(w)+'</span>';
+    }).join(' ');
+    html+='<div class="ln'+(inR?'':' out')+'"><span class="n">'+l.n+'</span><span class="sp">'+esc(l.who==='narrator'?'Narrator':cap(l.who))+'</span><span class="ws">'+ws+'</span></div>';
+  });
+  $('text').innerHTML=html;
+  $('more').classList.toggle('hide',to>=S.lines.length);
+  stats();
+}
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+$('text').addEventListener('click',function(e){
+  var w=e.target.closest('.w'); if(!w||w.getAttribute('data-in')!=='1')return;
+  var k=w.getAttribute('data-k'); if(S.miss[k])delete S.miss[k]; else S.miss[k]=1;
+  S.dirty=true; renderText();
+});
+$('more').onclick=function(){ var t=$('to'); t.value=String(Math.min(S.lines.length,+t.value+1)); S.dirty=true; renderText(); };
+
+function rangeWords(){
+  var from=+$('from').value,to=+$('to').value,lv=S.readLv,list=[];
+  S.lines.forEach(function(l){ if(l.n<from||l.n>to)return; String(l[lv]).split(/\s+/).filter(Boolean).forEach(function(w,i){ list.push({k:l.n+':'+i,n:l.n,i:i,w:w}); }); });
+  return list;
+}
+function suggest(acc){ return acc>=97?4:acc>=92?3:acc>=85?2:1; }
+function stats(){
+  var ws=rangeWords(), miss=ws.filter(function(x){return S.miss[x.k];}), total=ws.length;
+  var acc=total?Math.round(100*(total-miss.length)/total):null;
+  $('stWords').textContent=total; $('stMiss').textContent=miss.length; $('stAcc').textContent=acc==null?'—':acc+'%';
+  var pm=prevMissKeys(), pk=Object.keys(pm);
+  if(pk.length){ var inR={},fixed=0,had=0; ws.forEach(function(x){ var key=x.n+'|'+norm(x.w); if(pm[key]&&!inR[key]){ inR[key]=1; had++; if(!ws.some(function(y){return S.miss[y.k]&&(y.n+'|'+norm(y.w))===key;}))fixed++; } });
+    $('stFix').textContent=had?fixed+' of '+had:'—'; $('stFixBox').classList.remove('hide'); }
+  else $('stFixBox').classList.add('hide');
+  var sug=acc==null?null:suggest(acc);
+  if(!S.scoreSet) S.score=sug;
+  Array.prototype.forEach.call(document.querySelectorAll('.sc'),function(b){ var v=+b.getAttribute('data-s'); b.classList.toggle('sug',v===sug); b.setAttribute('aria-pressed',String(v===S.score)); });
+  $('sugTxt').textContent=sug==null?'':(S.scoreSet&&S.score!==sug?'(suggested '+sug+' — you chose '+S.score+')':'(suggested from accuracy)');
+}
+Array.prototype.forEach.call(document.querySelectorAll('.sc'),function(b){ b.onclick=function(){ var v=+b.getAttribute('data-s'); if(S.scoreSet&&S.score===v){S.scoreSet=false;}else{S.score=v;S.scoreSet=true;} S.dirty=true; stats(); }; });
+$('note').addEventListener('input',function(){S.dirty=true;});
+
+/* ---------- save ---------- */
+function updateSaveBtns(){ ['save','saveNext','absent'].forEach(function(id){ $(id).disabled=!S.loaded; }); }
+function post(path,rows,prefer){
+  return fetch(SUPA_URL+'/rest/v1/'+path,{method:'POST',headers:H({Prefer:prefer||'return=minimal'}),body:JSON.stringify(rows)}).then(function(r){ if(!r.ok) return r.text().then(function(t){throw new Error(r.status+' '+t.slice(0,140));}); });
+}
+function save(next,absent){
+  if(!S.cur||!S.loaded) return Promise.resolve();
+  var st=S.curStory||S.story, s=S.cur, no=S.curNo||+$('checkNo').value, ws=rangeWords();
+  var missed=ws.filter(function(x){return S.miss[x.k];}).map(function(x){return {k:x.k,n:x.n,i:x.i,w:norm(x.w)||x.w};});
+  var total=ws.length, acc=total?Math.round(100*(total-missed.length)/total):null;
+  var now=new Date().toISOString();
+  var row={ email:s.email, check_key:st.id+'|'+no, item:st.id, check_no:no, student_name:nm(s), period:S.curPeriod||String($('period').value),
+            read_level:S.readLv, use_level:S.useLv||null, lines_from:+$('from').value, lines_to:+$('to').value,
+            missed:absent?[]:missed, words_total:absent?0:total, words_missed:absent?0:missed.length, accuracy:absent?null:acc,
+            score04:absent?null:S.score, note:$('note').value||null, absent:!!absent, checked_at:now };
+  $('status').textContent='Saving…';
+  var keep=s;
+  return post('teacher_checks?on_conflict=email,check_key',[row],'resolution=merge-duplicates,return=minimal').then(function(){
+    S.checks[lp(s.email)+'|'+no]=row; if(keep===S.cur)S.dirty=false;
+    if(!absent && S.score!=null){
+      var slug='checks/dashboard/'+st.id;
+      post('activities?on_conflict=slug',[{slug:slug,title:'Read-aloud check: '+st.name.replace(/^Story Reel (\d+): /,'Story Reel $1 — '),unit:'Story Reel',url:location.origin+st.url,skills:['speaking','reading-aloud','pronunciation'],max_score:100,sort_order:600}],'resolution=merge-duplicates,return=minimal').catch(function(){});
+      post('activity_attempts',[{email:s.email,slug:slug,score:SCORE_PCT[S.score],max_score:100,detail:{source:'teacher',check_no:no,score04:S.score,accuracy:acc,words:total,missed:missed.length,read_level:S.readLv,use_level:S.useLv||null},completed_at:now}]).catch(function(){});
+      if(total) post('skill_attempts',[{email:s.email,slug:slug,skill:'reading-aloud',n:total-missed.length,d:total,completed_at:now}]).catch(function(){});
+    }
+    var msg=absent?'Marked “not today”.':'✓ Saved'+(S.score!=null?' — score '+S.score:'');
+    renderStudents(); renderClass();
+    if(next){ goNext(); if(S.cur!==keep) msg='✓ Saved '+(keep.first_name||'')+(absent?' (not today)':'')+' — now '+(S.cur.first_name||nm(S.cur)); }
+    $('status').textContent=msg;
+  }).catch(function(e){ $('status').textContent=''; showErr('Not saved: '+e.message+'. If it mentions teacher_checks, the SQL hasn’t been run yet.'); });
+}
+function goNext(){
+  var no=+$('checkNo').value, i=S.students.indexOf(S.cur);
+  for(var j=1;j<=S.students.length;j++){ var s=S.students[(i+j)%S.students.length]; if(!checkOf(s.email,no)){ S.dirty=false; pick(s.email); return; } }
+  $('status').textContent='✓ Saved — everyone in this period has a check '+no+'.';
+}
+$('save').onclick=function(){save(false);};
+$('saveNext').onclick=function(){save(true);};
+$('absent').onclick=function(){save(true,true);};
+
+/* ---------- class view ---------- */
+function speak(w){ try{ speechSynthesis.cancel(); var u=new SpeechSynthesisUtterance(w); u.lang='en-US'; u.rate=.85; speechSynthesis.speak(u);}catch(e){} }
+function renderClass(){
+  var tbl=$('classTbl'), top=$('topMiss'), no=+$('checkNo').value;
+  if(!$('period').value){ tbl.innerHTML=''; top.innerHTML='<div class="empty">Choose a period.</div>'; return; }
+  var counts={};
+  S.students.forEach(function(s){ var c=checkOf(s.email,no); if(c)(c.missed||[]).forEach(function(m){ var w=norm(m.w); if(w)counts[w]=(counts[w]||0)+1; }); });
+  var words=Object.keys(counts).sort(function(a,b){return counts[b]-counts[a]||a.localeCompare(b);}).slice(0,30);
+  top.innerHTML=words.length?words.map(function(w){return '<button class="mw" data-w="'+esc(w)+'">🔊 '+esc(w)+'<small>×'+counts[w]+'</small></button>';}).join(''):'<div class="empty">No misses saved for check '+no+' yet.</div>';
+  Array.prototype.forEach.call(top.querySelectorAll('.mw'),function(b){b.onclick=function(){speak(b.getAttribute('data-w'));};});
+  var head='<tr><th>Student</th><th>Should use</th>';
+  [1,2,3].forEach(function(k){head+='<th>Check '+k+'</th>';});
+  head+='<th>Change</th><th>Words they missed (latest)</th></tr>';
+  var body=S.students.map(function(s){
+    var cells='', first=null, last=null;
+    [1,2,3].forEach(function(k){ var c=checkOf(s.email,k);
+      if(!c){cells+='<td class="c">—</td>';return;}
+      if(c.absent){cells+='<td class="c">not today</td>';return;}
+      if(!first)first=c; last=c;
+      cells+='<td class="c">'+(c.score04!=null?'<span class="b04 b'+c.score04+'">'+c.score04+'</span> ':'')+(c.accuracy!=null?c.accuracy+'%':'')+'<br><small>lines '+c.lines_from+'–'+c.lines_to+' · '+c.read_level+'</small></td>'; });
+    var ch=(first&&last&&first!==last&&first.accuracy!=null&&last.accuracy!=null)?((last.accuracy-first.accuracy>=0?'+':'')+(last.accuracy-first.accuracy)+'%'):'';
+    var mw=last?(last.missed||[]).map(function(m){return esc(m.w);}).join(', '):'';
+    return '<tr><td><b>'+esc(nm(s))+'</b></td><td class="c">'+esc(lastUse(s.email)||'')+'</td>'+cells+'<td class="c">'+ch+'</td><td>'+(mw||'<span class="empty">—</span>')+'</td></tr>';
+  }).join('');
+  tbl.innerHTML=head+(body||'<tr><td colspan="7" class="empty">No students.</td></tr>');
+}
+$('csv').onclick=function(){
+  var no=+$('checkNo').value, lines=['name\temail\tscore 0-4\taccuracy\tshould use'];
+  S.students.forEach(function(s){ var c=checkOf(s.email,no); lines.push(nm(s)+'\t'+s.email+'\t'+(c&&c.score04!=null?c.score04:'')+'\t'+(c&&c.accuracy!=null?c.accuracy+'%':'')+'\t'+(c&&c.use_level||'')); });
+  var txt=lines.join('\n');
+  (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(function(){$('csvMsg').textContent='Copied — paste into a spreadsheet.';},function(){$('csvMsg').textContent='Couldn’t copy on this device.';});
+};
+
+/* ---------- tabs and controls ---------- */
+function tab(which){ $('tabCheck').setAttribute('aria-pressed',String(which==='check')); $('tabClass').setAttribute('aria-pressed',String(which==='class'));
+  $('viewCheck').classList.toggle('hide',which!=='check'); $('viewClass').classList.toggle('hide',which!=='class'); pref('tab',which); }
+$('tabCheck').onclick=function(){tab('check');}; $('tabClass').onclick=function(){if(S.dirty&&S.cur)save(false);tab('class');};
+
+function chooseStory(id){
+  S.story=STORIES.filter(function(s){return s.id===id;})[0]||STORIES[0]; pref('story',S.story.id);
+  S.cur=null; $('panel').classList.add('hide');
+  return loadStory(S.story).then(function(lines){ S.lines=lines; fillRange(); return loadAll(); })
+    .catch(function(e){ showErr('Couldn’t load the story text ('+e.message+').'); });
+}
+function init(){
+  $('story').innerHTML=STORIES.map(function(s){return '<option value="'+s.id+'">'+esc(s.name)+'</option>';}).join('');
+  $('story').value=pref('story')||STORIES[0].id;
+  $('period').value=pref('period')||''; $('checkNo').value=pref('check')||'1';
+  updateSaveBtns(); tab(pref('tab')||'check');
+  $('story').onchange=function(){ if(S.dirty&&S.cur)save(false); chooseStory(this.value); };
+  $('period').onchange=function(){ if(S.dirty&&S.cur)save(false); pref('period',this.value); S.cur=null; $('panel').classList.add('hide'); loadAll(); };
+  $('checkNo').onchange=function(){ if(S.dirty&&S.cur)save(false); pref('check',this.value); var c=S.cur; S.cur=null; renderStudents(); renderClass(); if(c)pick(c.email); };
+  ['from','to'].forEach(function(id){ $(id).onchange=function(){ if(+$('from').value>+$('to').value)$('to').value=$('from').value; pref(id+'_'+S.story.id,this.value); S.dirty=true; renderText(); }; });
+  chooseStory($('story').value);
+}
+window.addEventListener('beforeunload',function(e){ if(S.dirty&&S.cur){ save(false); e.preventDefault(); e.returnValue=''; } });
+})();
+</script>
+<script src="/readings/grade04.js"></script>
+</body>
+</html>

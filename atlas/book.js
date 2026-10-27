@@ -198,6 +198,11 @@ window.ATLAS_BOOK = [
 {id:'news', ring:2, kind:'activity', course:'both', name:'This Week\u2019s Reading (news)', home:'news/', match:['news/'],
  what:'A weekly news article with levels, translations and questions; students\u2019 level is remembered.'},
 
+{id:'checks', ring:0, kind:'teacher', course:'both', name:'Read-aloud Check (teacher listens, taps the misses)', home:'checks/dashboard.html', match:['checks/'],
+ what:'A student reads a Story Reel episode aloud beside you; tap every word they get wrong, set the level they should use, save a 0\u20134. The next check shows last time\u2019s misses with an orange dotted line, so you hear whether they fixed them. Class view: the words a period missed most, every student\u2019s checks side by side, and a copy-for-Synergy button.',
+ use:'Ep 2 read-alouds Wed\u2013Fri Oct 28\u201330 and Mon\u2013Tue Nov 2\u20133 (grades due Nov 2). Scores reach the gradebook as \u201cRead-aloud check: Story Reel 2\u201d; under 3 shows on the student\u2019s My Page under Finish This, linked to the episode.',
+ notes:[['Oct 27','T-146','Built: https://tobiasrugger.github.io/readings/checks/dashboard.html (pw galileo2026). New table teacher_checks (SQL in the T-146 message). Story text is read live from each episode page, so a fixed line in the reel shows here too. Saves also write activity_attempts (slug checks/dashboard/reel-ep02, 0\u20134 as 95/82/67/40/0 so the gradebook bands it back to the same number) and skill_attempts (reading-aloud). First piece of the skills-tracking plan (T-145).']]},
+
 {id:'fluency', ring:2, kind:'activity', course:'both', name:'Fluency Tracker (read aloud)', home:'fluency/', match:['fluency/'],
  what:'Students read a passage aloud; words correct per minute, accuracy and the recording are saved.'},
 
