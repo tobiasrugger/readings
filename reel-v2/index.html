@@ -159,26 +159,56 @@
     fetch(SUPA_URL + '/rest/v1/reel_views?episode=eq.' + encodeURIComponent($('tEp').value) + '&select=*&order=period,student_name',
       { headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY } })
       .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
-      .then(function (rows) { ROWS = rows || []; draw(); })
+      .then(function (rows) {
+        /* one student = one row: rows whose emails differ only by @s.sfusd.edu vs @sfusd.edu are merged (newest wins) */
+        var by = {}, keep = [];
+        (rows || []).forEach(function (r) {
+          var k = String(r.email || '').toLowerCase().split('@')[0];
+          if (!(k in by)) { by[k] = keep.length; keep.push(r); }
+          else if (String(r.updated_at || '') > String(keep[by[k]].updated_at || '')) keep[by[k]] = r;
+        });
+        ROWS = keep; draw();
+      })
       .catch(function (s) { $('tCount').textContent = 'Could not load results (' + s + '). Check that the reel_views table exists.'; });
+  }
+  /* T-147: the practice log the engine saves in work.log */
+  function practice(r) {
+    var L = (r.work && r.work.log) || {}, W = L.w || {}, listens = 0, trans = 0, words = [];
+    Object.keys(W).forEach(function (k) { var e = W[k] || {}; listens += e.say || 0; trans += e.tr || 0; words.push([k, (e.say || 0) + (e.tr || 0)]); });
+    words.sort(function (a, b) { return b[1] - a[1]; });
+    var last = L.last ? new Date(L.last) : null, ago = last ? (Date.now() - last.getTime()) / 60000 : null, lastTxt = '';
+    if (last && ago <= 2) lastTxt = '<span class="pill yes">active now</span>';
+    else if (last) lastTxt = ago < 60 ? Math.round(ago) + ' min ago' : ago < 1440 ? Math.round(ago / 60) + ' h ago' : last.toLocaleDateString();
+    /* browser translation: off / on (how much of the page) / LEAKED into protected (translate="no") text */
+    var B = L.bt || null, btTxt = '', btHtml = '';
+    if (B && B.on) {
+      btTxt = 'on' + (B.widget ? ' (widget)' : '') + (B.lang ? ' · ' + B.lang : '') + ' · ' + (B.cover || 0) + '% of page' + (B.leak ? ' · LEAKED into protected text: ' + (B.sample || B.leak + ' spots') : ' · blocked where it should be');
+      btHtml = B.leak ? '<span class="pill no" title="' + esc(btTxt) + '">\u26a0 leaked</span> ' + esc((B.sample || '').slice(0, 40)) : esc('on' + (B.lang ? ' · ' + B.lang : '') + ' · ' + (B.cover || 0) + '%');
+    }
+    return { pmin: Math.round((L.secs || 0) / 60), listens: listens, trans: trans, lastTxt: lastTxt, lastIso: L.last || '', btTxt: btTxt, btHtml: btHtml,
+             top: words.slice(0, 5).map(function (x) { return x[0] + ' ×' + x[1]; }).join(', ') };
   }
   function summarize(r) {
     var w = r.work || {}, sc = r.scores || {}, ans = w.answers || {}, preds = [];
     Object.keys(ans).forEach(function (k) { if (ans[k].kind === 'predict') preds.push(k + ':' + (ans[k].pick != null ? 'ABC'.charAt(ans[k].pick) : '?')); });
     /* T-115: the student's sentences for their own level; a C student with none yet falls back to B, then A */
     var Y = w.yt || {}, yt = Y[r.level] || (r.level === 'C' ? Y.B : null) || Y.A || [];
-    return { checks: (sc.checks_first_try || 0) + ' / ' + (sc.checks_total || 0), preds: preds.join(' '),
+    var out = { checks: (sc.checks_first_try || 0) + ' / ' + (sc.checks_total || 0), preds: preds.join(' '),
              s1: yt[0] || '', s2: yt[1] || '', s3: yt[2] || '', mins: Math.round((w.secs || 0) / 60),
-             done: !!w.done, reached: w.maxPos || 0 };
+             done: !!w.done, reached: w.maxPos || 0 }, P = practice(r);
+    for (var k in P) out[k] = P[k];
+    return out;
   }
   function draw() {
     var per = $('tPer').value, list = ROWS.filter(function (r) { return !per || String(r.period) === per; });
-    var h = '<tr><th>Per</th><th>Name</th><th>Level</th><th>Finished</th><th>Checks (1st try)</th><th>Sentence 1</th><th>Sentence 2</th><th>Sentence 3</th><th>Turned in</th><th>Min</th></tr>';
+    var h = '<tr><th>Per</th><th>Name</th><th>Level</th><th>Finished</th><th>Checks (1st try)</th><th>Sentence 1</th><th>Sentence 2</th><th>Sentence 3</th>' +
+            '<th>Practice min</th><th>Listens</th><th>Translations</th><th>Last active</th><th>Most tapped</th><th>Browser translate</th><th>Turned in</th><th>Min</th></tr>';
     list.forEach(function (r) {
       var s = summarize(r);
       h += '<tr data-email="' + esc(r.email) + '"><td>' + esc(r.period) + '</td><td>' + esc(r.student_name) + '</td><td>' + esc(r.level) + '</td>' +
            '<td><span class="pill ' + (s.done ? 'yes' : 'no') + '">' + (s.done ? 'yes' : 'not yet') + '</span></td>' +
            '<td>' + s.checks + '</td><td>' + esc(s.s1) + '</td><td>' + esc(s.s2) + '</td><td>' + esc(s.s3) + '</td>' +
+           '<td>' + s.pmin + '</td><td>' + s.listens + '</td><td>' + s.trans + '</td><td>' + s.lastTxt + '</td><td>' + esc(s.top) + '</td><td>' + s.btHtml + '</td>' +
            '<td><span class="pill ' + (r.turned_in ? 'yes' : 'no') + '">' + (r.turned_in ? 'yes' : 'no') + '</span></td><td>' + s.mins + '</td></tr>';
     });
     $('tTable').innerHTML = h;
@@ -190,10 +220,12 @@
   $('tRefresh').addEventListener('click', fetchRows);
   $('tCsv').addEventListener('click', function () {
     var TD = window.REEL_TIERS_DASH;
-    var rows = [['period', 'name', 'email', 'episode', 'level', 'finished', 'checks_first_try', 'predictions', 'sentence_1', 'sentence_2', 'sentence_3'].concat(TD ? TD.csvHead() : []).concat(['turned_in', 'minutes', 'updated_at'])];
+    var rows = [['period', 'name', 'email', 'episode', 'level', 'finished', 'checks_first_try', 'predictions', 'sentence_1', 'sentence_2', 'sentence_3',
+                 'practice_minutes', 'listens', 'translations', 'last_active', 'most_tapped', 'browser_translate'].concat(TD ? TD.csvHead() : []).concat(['turned_in', 'minutes', 'updated_at'])];
     ROWS.forEach(function (r) {
       var s = summarize(r);
-      rows.push([r.period, r.student_name, r.email, r.episode, r.level, s.done, s.checks, s.preds, s.s1, s.s2, s.s3].concat(TD ? TD.csvRow(r) : []).concat([r.turned_in, s.mins, r.updated_at]));
+      rows.push([r.period, r.student_name, r.email, r.episode, r.level, s.done, s.checks, s.preds, s.s1, s.s2, s.s3,
+                 s.pmin, s.listens, s.trans, s.lastIso, s.top, s.btTxt].concat(TD ? TD.csvRow(r) : []).concat([r.turned_in, s.mins, r.updated_at]));
     });
     var csv = rows.map(function (row) { return row.map(function (v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; }).join(','); }).join('\n');
     var a = document.createElement('a');

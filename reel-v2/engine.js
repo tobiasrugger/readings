@@ -19,6 +19,23 @@
   var state = { level: 'A', lang: '', pos: 0, maxPos: 0, answers: {}, yt: { A: [], B: [], C: [] }, turned: false, secs: 0, slow: false, cc: true, done: false };
   var dirty = false;
   function touch() { dirty = true; }
+  /* ---- T-147 practice log (Oct 27 2026): saved inside state, so it rides the same reel_views upsert.
+     log.w[word] = {say: listens, tr: translations}; replays; slow; secs = active seconds (counted only when
+     there was a tap / key / playback in the last 60 s and the tab is visible); last = time of last activity. */
+  function LOG() {
+    var l = state.log;
+    if (!l || typeof l !== 'object') l = state.log = {};
+    if (!l.w) l.w = {}; if (!l.replays) l.replays = 0; if (!l.slow) l.slow = 0; if (!l.secs) l.secs = 0; if (!l.last) l.last = '';
+    return l;
+  }
+  var lastAct = 0;
+  function active() { lastAct = Date.now(); LOG().last = new Date(lastAct).toISOString(); }
+  function logWord(w, say, tr) {
+    w = String(w || '').toLowerCase().replace(/[^a-z'\u2019-]/g, ''); if (!w) return;
+    var e = LOG().w[w] || (LOG().w[w] = { say: 0, tr: 0 });
+    if (say) e.say++; if (tr) e.tr++;
+    active(); touch();
+  }
 
   /* ---------- how words are SPOKEN (captions stay as written) ----------
      ___ is read as "blank", names get their real pronunciation,
@@ -515,8 +532,9 @@
     var r = el.getBoundingClientRect();
     pop.style.left = Math.max(8, Math.min(window.innerWidth - 262, r.left + window.scrollX)) + 'px';
     pop.style.top = (r.top + window.scrollY - pop.offsetHeight - 10) + 'px';
-    $('popSay').addEventListener('click', function () { sayWord(w); });
+    $('popSay').addEventListener('click', function () { sayWord(w); logWord(w, true, false); });
     sayWord(w);
+    logWord(w, true, !!state.lang);     /* T-147: a word tap = heard (+ translated when a language is set) */
     if (state.lang) {
       var lg = state.lang;
       var ask = function () {
@@ -596,7 +614,7 @@
       $('turnIn').textContent = 'Turned in. Turn in again';
       $('ytMsg').textContent = 'Saved. You can keep editing.';
     });
-    $('rewatch').addEventListener('click', function () { window.scrollTo(0, 0); start(true); });
+    $('rewatch').addEventListener('click', function () { LOG().replays++; active(); touch(); window.scrollTo(0, 0); start(true); });
     if (scroll) $('yt').scrollIntoView({ behavior: 'smooth', block: 'start' });
     if (window.REEL_TIERS) REEL_TIERS.show(false);   /* "After the story" tiers under Your turn */
   }
@@ -774,6 +792,13 @@
   setInterval(function () { if (dirty && loaded) { dirty = false; save(); } }, 20000);
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden' && dirty && loaded) { dirty = false; save(); } });
   setInterval(function () { if (me.email && document.visibilityState === 'visible') { state.secs += 10; } }, 10000);
+  /* T-147: active practice time — any tap, click or key counts as activity, and so does playback */
+  ['pointerdown', 'keydown', 'touchstart'].forEach(function (ev) { document.addEventListener(ev, function () { if (me.email) active(); }, { capture: true, passive: true }); });
+  setInterval(function () {
+    if (!me.email || document.visibilityState !== 'visible') return;
+    if (playing) active();
+    if (lastAct && Date.now() - lastAct < 60000) { LOG().secs += 5; if (LOG().secs % 30 === 0) touch(); }
+  }, 5000);
 
   /* ================= CONTROLS ================= */
   function syncControls() {
@@ -789,8 +814,14 @@
     $('again').addEventListener('click', function () { start(true); });
     $('nextBtn').addEventListener('click', function () { next(false); });
     $('prevBtn').addEventListener('click', prev);
-    $('repBtn').addEventListener('click', function () { if (STEPS[pos].ln.type !== 'q') speakStep(null); });
-    $('slowBtn').addEventListener('click', function () { state.slow = !state.slow; syncControls(); touch(); });
+    $('repBtn').addEventListener('click', function () {
+      if (STEPS[pos].ln.type !== 'q') { speakStep(null); LOG().replays++; if (state.slow) LOG().slow++; active(); touch(); }
+    });
+    $('slowBtn').addEventListener('click', function () {
+      state.slow = !state.slow; syncControls();
+      if (state.slow) { LOG().slow++; active(); }                 /* T-147: a slow-repeat use */
+      touch();
+    });
     $('ccBtn').addEventListener('click', function () { state.cc = !state.cc; syncControls(); touch(); });
     $('line').addEventListener('click', function (e) {
       if (!state.cc && !$('line').classList.contains('peek')) { $('line').classList.add('peek'); return; }
@@ -859,8 +890,38 @@
      should say, so any drift means an outside translator is running.
      Nothing is shown to the student. */
   var TR_SENT = '';
+  /* T-147: how much of the page the BROWSER translated (Chrome's own translate or the Google Translate
+     widget both wrap translated text in <font> and mark <html> "translated-ltr/rtl"), and whether any of it
+     LEAKED into text we protect with translate="no" — a leak means a bug or an element missing the rule. */
+  function browserTranslateStats() {
+    var html = document.documentElement, cls = html.className || '';
+    var widget = !!document.querySelector('.goog-te-banner-frame, iframe.skiptranslate, .goog-te-combo, #goog-gt-tt');
+    var on = /translated-(ltr|rtl)/.test(cls) || widget || !!document.querySelector('font[style*="vertical-align"]');
+    if (!on) return { on: false };
+    var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), n, total = 0, done = 0, leak = 0, sample = '';
+    while ((n = walker.nextNode())) {
+      var el = n.parentElement, t = (n.data || '').trim(); if (!el || !t || /^(SCRIPT|STYLE|NOSCRIPT)$/.test(el.tagName)) continue;
+      if (el.closest('#saveNote, .pop')) continue;
+      total += t.length;
+      var f = el.closest('font');
+      if (f) {
+        done += t.length;
+        var prot = f.closest('[translate="no"]');
+        if (prot) { leak++; if (!sample) sample = prot.tagName.toLowerCase() + (prot.id ? '#' + prot.id : '') + (prot.className && typeof prot.className === 'string' ? '.' + prot.className.split(/\s+/)[0] : '') + ': ' + t.slice(0, 30); }
+      }
+    }
+    return { on: true, widget: widget, lang: html.lang || '', cover: total ? Math.round(100 * done / total) : 0, leak: leak, sample: sample };
+  }
   function checkTranslation() {
     if (!me.email) return;
+    var bt = browserTranslateStats(), L = LOG();
+    if (bt.on) {
+      var prev = L.bt || {};
+      L.bt = { on: true, widget: bt.widget, lang: bt.lang, cover: Math.max(bt.cover, prev.on ? prev.cover || 0 : 0),
+               leak: Math.max(bt.leak, prev.leak || 0), sample: bt.sample || prev.sample || '',
+               first: prev.first || new Date().toISOString(), last: new Date().toISOString() };
+      touch();
+    }
     var observed = '', els = document.querySelectorAll('[data-canary]'), i;
     for (i = 0; i < els.length; i++) {
       var got = (els[i].textContent || '').trim();
