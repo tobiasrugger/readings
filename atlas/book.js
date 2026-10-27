@@ -257,6 +257,10 @@ window.ATLAS_BOOK = [
 {id:'lp-book', ring:3, kind:'activity', course:'101', name:'Seven Ways to School (picture book)', home:'launch-plus/book/', match:['launch-plus/book/'], own:'lp',
  what:'A short illustrated book about getting to school, for the first weeks.'},
 
+{id:'teachme', ring:3, kind:'activity', course:'101', name:'Teach Mr. Toby (students teach you their words)', home:'teachme/', match:['teachme/'], files:['teachme/words.js'],
+ what:'Students say each Unit 1 word in their language for one pinned meaning (picture + sentence), plus another way to say it. Speech recognition writes down what they said; your page adds English letters (pinyin etc.) and reads it back into English to sort usual word / synonym / other meaning.',
+ use:'Students: https://tobiasrugger.github.io/readings/teachme/ \u00b7 You: https://tobiasrugger.github.io/readings/teachme/dashboard.html (password galileo2026) \u2014 Check their words, then My practice (five a day, with their voices).',
+ notes:[['Oct 27','T-156','New: Teach Mr. Toby. Student page https://tobiasrugger.github.io/readings/teachme/ (12 Unit 1 words, each one meaning; say it, say another way, class wall). Teacher page https://tobiasrugger.github.io/readings/teachme/dashboard.html (password galileo2026): check their words with romanization + back-translation, and My practice. Tables teachme_work + teachme_lex; voices in fluency-recordings/teachme/.']]},
 {id:'alphabet', ring:3, kind:'activity', course:'101', name:'The Alphabet: A to Z', home:'alphabet/', match:['alphabet/'], what:'Letters, sounds and spelling names aloud.'},
 {id:'pronouns', ring:3, kind:'activity', course:'101', name:'Pronouns', home:'pronouns/', match:['pronouns/'], what:'I, you, he, she, it, we, they with pictures. \u201cI\u201d is always said \u201ceye\u201d.'},
 {id:'exceptions', ring:3, kind:'activity', course:'101', name:'Tricky Words', home:'exceptions/', match:['exceptions/'], what:'man/men, bored/boring, fun/funny, good/well.'},

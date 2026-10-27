@@ -1892,6 +1892,13 @@ window.CATALOG=[
 "g": "More: Writing Ladders (ELD 103)"
 },
 {
+"p": "/readings/teachme/",
+"t": "Teach Mr. Toby · ELD 101",
+"d": "Teach Mr. Toby",
+"m": "",
+"g": "More: other pages"
+},
+{
 "p": "/readings/basics/",
 "t": "Daily Basics · ELD 101",
 "d": "Daily Basics",
