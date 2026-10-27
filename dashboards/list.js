@@ -61,6 +61,7 @@ window.DASHBOARDS = [
 {url:'false-friends/dashboard.html',        name:'False Friends',               course:'both', group:'Vocabulary'},
 
 /* ---------- Speaking ---------- */
+{url:'skills/dashboard.html',            name:'Skill Map',                     course:'both', group:'Data', note:'What each student practised and showed in listening, speaking, reading, writing; strengths, needs work, what to give next; gaps in what the site practises.'},
 {url:'checks/dashboard.html',            name:'Read-aloud Check',              course:'both', group:'Speaking', note:'A student reads to you; tap the words they miss. Next check shows last time\u2019s misses. Most-missed words per period.'},
 {url:'reel-v2/#teacher',               name:'Story Reel \u2014 who watched, practiced, translated', course:'101', group:'Speaking', note:'The Teacher table at the foot of the Story Reel page: one row per student per episode \u2014 level, answers, Your Turn, practice minutes, listens, translations (words + whole lines), last active, and Browser translate (on / leaked / nudged \u00d7N).'},
 {url:'reel-test/ep02/dashboard.html',      name:'Story Check 2: The Backpack (read-aloud + test)', course:'101', group:'Speaking', note:'Practice and test versions of the Ep 2 check. Listen to every read-aloud and set 0\u20132 per sentence; set 0\u20134 on the extras; your numbers go to the gradebook.'},

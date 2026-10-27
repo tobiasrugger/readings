@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skill Map · Teacher</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#1d2433;--line:#2b3448;--bg:#f4f1ea;--card:#fff;--soft:#eef2f8;--shown:#1f8a4c;--prac:#e2a400;--weak:#d9622b;--L:#2a64b8;--S:#8a3fb8;--R:#1f7a6b;--W:#b8562a;--H:#5b6475}
+*{box-sizing:border-box}
+body{margin:0;font-family:Nunito,system-ui,sans-serif;color:var(--ink);background:var(--bg);font-size:16px}
+button,select{font:inherit}
+.wrap{max-width:1300px;margin:0 auto;padding:56px 14px 60px}
+h1{font-size:1.7rem;margin:0 0 4px;font-weight:900}
+.sub{margin:0 0 14px;color:#4a5468;max-width:900px}
+.box{background:var(--card);border:2px solid var(--line);border-radius:14px;box-shadow:0 4px 0 rgba(29,36,51,.18);padding:14px 16px;margin:0 0 16px;overflow:hidden}
+.box>h2{margin:0 0 10px;font-size:1.15rem;font-weight:900;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.num{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--ink);color:#fff;font-size:.95rem}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+label.f{display:flex;flex-direction:column;font-weight:800;font-size:.9rem;gap:4px}
+select,input[type=password]{border:2px solid var(--line);border-radius:10px;padding:8px 10px;background:#fff;font:inherit}
+.tabs{display:flex;gap:8px;margin:0 0 14px;flex-wrap:wrap}
+.tab{border:2px solid var(--line);background:#fff;border-radius:10px;padding:8px 16px;font-weight:900;cursor:pointer}
+.tab[aria-pressed=true]{background:var(--ink);color:#fff}
+.btn{border:2px solid var(--line);border-radius:12px;padding:8px 14px;font-weight:900;cursor:pointer;background:#fff}
+.btn.go{background:var(--shown);border-color:#155f35;color:#fff}
+.help{font-size:.9rem;color:#4a5468;margin:6px 0 0}
+.err{background:#ffe1e1;border:2px solid #d93636;border-radius:10px;padding:10px 12px;font-weight:800;color:#8a1c1c;margin:0 0 12px;display:none}
+.legend{display:flex;flex-wrap:wrap;gap:16px;font-size:.92rem;margin:4px 0 10px}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+.c{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;font-weight:900;font-size:.72rem;border:2px solid #b9c0cc;background:#fff;color:#7a8396}
+.c.shown{background:var(--shown);border-color:var(--shown);color:#fff}
+.c.prac{background:#fff3c9;border-color:var(--prac);color:#7a5800}
+.c.weak{background:#ffe4d6;border-color:var(--weak);color:#8a3a12;box-shadow:0 0 0 2px #ffd0b8}
+.tablewrap{overflow-x:auto;border:2px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:max-content;min-width:100%}
+th,td{border:1px solid #c3c9d4;padding:4px 5px;text-align:center;vertical-align:middle}
+th{background:var(--soft);font-weight:900;font-size:.78rem}
+th.dom{color:#fff;font-size:.85rem}
+th.dom.L{background:var(--L)}th.dom.S{background:var(--S)}th.dom.R{background:var(--R)}th.dom.W{background:var(--W)}th.dom.H{background:var(--H)}
+th.sk{writing-mode:vertical-rl;transform:rotate(180deg);height:150px;white-space:nowrap;font-size:.78rem;padding:6px 3px;font-weight:800}
+td.nm,th.nm{text-align:left;position:sticky;left:0;background:#fff;z-index:1;min-width:170px;border-right:2px solid var(--line)}
+th.nm{background:var(--soft)}
+td.nm button{border:0;background:none;font:inherit;font-weight:900;cursor:pointer;color:var(--ink);text-align:left;padding:2px 0}
+td.nm button:hover{text-decoration:underline}
+td.nm .crs{font-size:.72rem;font-weight:800;border-radius:6px;padding:0 5px;margin-left:4px;background:#e7d8f5;color:#5a2a80}
+tr.cls td{background:#f7f4ec;font-weight:800;font-size:.8rem}
+tr.sel td{background:#fff6d6}
+td.sum{font-weight:900;font-size:.85rem;min-width:44px}
+.bar{display:block;height:8px;border-radius:4px;background:#e3e6ec;margin-top:3px;overflow:hidden}
+.bar i{display:block;height:100%}
+#detail{display:none}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:12px}
+.dbox{border:2px solid var(--line);border-radius:12px;padding:10px 12px;background:#fff}
+.dbox h3{margin:0 0 8px;font-size:1.05rem;display:flex;gap:8px;align-items:center}
+.dbox h3 i{display:inline-block;width:14px;height:14px;border-radius:4px}
+.sl{display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-bottom:1px dashed #c3c9d4}
+.sl:last-child{border-bottom:0}
+.sl .tx{flex:1}
+.sl .tx b{display:block}
+.sl small{color:#4a5468}
+.sl a{color:#1f5fbf;font-weight:800}
+.sw{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-bottom:12px}
+.sw .dbox ul{margin:0;padding-left:20px}
+.gap td{text-align:left;vertical-align:top;font-size:.9rem}
+.gap td.n{text-align:center;font-weight:900}
+.flag{display:inline-block;background:#ffe1e1;color:#8a1c1c;border:2px solid #d93636;border-radius:8px;padding:0 6px;font-weight:900;font-size:.8rem}
+.hide{display:none!important}
+#gate{position:fixed;inset:0;background:var(--bg);display:grid;place-items:center;z-index:50}
+#gate .box{width:min(380px,92vw)}
+.empty{color:#6b7488;font-style:italic;padding:10px 0}
+details.teach summary{cursor:pointer;font-weight:800}
+@media print{
+  body{background:#fff}
+  .wrap>*:not(#detail){display:none!important}
+  #detail{display:block!important;box-shadow:none}
+  #gal04-back,.noprint{display:none!important}
+}
+</style>
+</head>
+<body>
+<div id="gate">
+  <div class="box">
+    <h2>🔒 Skill Map</h2>
+    <label class="f">Password <input type="password" id="pw" autocomplete="current-password"></label>
+    <p class="help" id="pwMsg"></p>
+    <button class="btn go" id="pwGo" style="margin-top:10px">Open</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>🧭 Skill Map</h1>
+  <p class="sub">What each student has <b>practised</b> and <b>shown</b> in listening, speaking, reading, writing and how English works. Every activity on the site is tagged to skills, so this fills in by itself. Your Read-aloud Checks count straight away.</p>
+  <div class="err" id="err"></div>
+
+  <section class="box">
+    <h2><span class="num">1</span> Which class?</h2>
+    <div class="row">
+      <label class="f">Period <select id="period"><option value="">Choose…</option><option>1</option><option>3</option><option>4</option><option>5</option><option>6</option><option>2</option><option>7</option></select></label>
+      <label class="f">Time <select id="win"><option value="sem">This semester (since Aug 1)</option><option value="30">Last 30 days</option><option value="14">Last 14 days</option></select></label>
+      <span class="help" id="crsTxt"></span>
+    </div>
+    <details class="teach" style="margin-top:10px"><summary>How “practised”, “shown” and “needs work” are decided</summary>
+      <p class="help"><b>Practised</b>: the student did an activity that works on this skill (each activity on each day counts once). <b>Shown</b>: a score of 3 or more (75%+) on two different days, or one Read-aloud Check from you scored 3+. <b>Needs work</b>: practised 3 or more times, not shown, and the last three scores average under 60%. Activities with no score count as practice but never as “shown”. Each period uses its course’s skills (101: periods 1, 4, 6 · 103: periods 3, 5); a student working at the other level can be switched with the 101/103 button in their report.</p>
+    </details>
+  </section>
+
+  <div class="tabs noprint">
+    <button class="tab" id="tabStu" aria-pressed="true">Students</button>
+    <button class="tab" id="tabGap" aria-pressed="false">Gaps in what we practise</button>
+  </div>
+
+  <div id="viewStu">
+    <section class="box">
+      <h2><span class="num">2</span> The class at a glance</h2>
+      <div class="legend">
+        <span><i class="c shown">✓</i> shown</span>
+        <span><i class="c prac">4</i> practised (times)</span>
+        <span><i class="c weak">!</i> needs work</span>
+        <span><i class="c"></i> not yet</span>
+      </div>
+      <div class="tablewrap" id="gridWrap"><div class="empty" style="padding:12px">Choose a period.</div></div>
+      <p class="help">Tap a name for that student’s report: strengths, what needs work, and which activities to give next. The top row shows how many students practised each skill.</p>
+    </section>
+
+    <section class="box" id="detail"></section>
+  </div>
+
+  <div id="viewGap" class="hide">
+    <section class="box">
+      <h2><span class="num">2</span> Which skills does the site practise — and which does it skip?</h2>
+      <p class="help" style="margin-bottom:10px">For this period’s course: how many activities work on each skill, and how many of these students practised it in the time chosen. A red flag means one activity or fewer, or fewer than a third of the class practised it.</p>
+      <div class="tablewrap"><table class="gap" id="gapTbl"></table></div>
+    </section>
+  </div>
+</div>
+
+<script src="/readings/skills/skills.js"></script>
+<script src="/readings/assign/catalog.js"></script>
+<script>
+(function(){
+'use strict';
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var PASS='galileo2026';
+var G=window.GAL_SKILLS, CAT=window.CATALOG||[];
+var DOMS=['L','S','R','W','H'];
+var SHOWN_PCT=75, WEAK_PCT=60;
+
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function H(){return {apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY};}
+function lp(e){return String(e||'').trim().toLowerCase().split('@')[0];}
+function pref(k,v){try{if(v===undefined)return localStorage.getItem('skills_'+k);if(v===null)localStorage.removeItem('skills_'+k);else localStorage.setItem('skills_'+k,v);}catch(e){return null;}}
+function spref(k,v){try{if(v===undefined)return sessionStorage.getItem('skm_'+k);sessionStorage.setItem('skm_'+k,v);}catch(e){return null;}}
+function showErr(m){$('err').textContent=m||'';$('err').style.display=m?'block':'none';}
+function getAll(path){var out=[],from=0,step=1000;function next(){return fetch(SUPA_URL+'/rest/v1/'+path,{headers:Object.assign(H(),{Range:from+'-'+(from+step-1),'Range-Unit':'items'})}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();}).then(function(rows){out=out.concat(rows||[]);if(rows&&rows.length===step){from+=step;return next();}return out;});}return next();}
+
+/* activity titles + links from the assign catalog */
+var TITLE={};
+CAT.forEach(function(c){var s=G.clean(c.p);if(!TITLE[s])TITLE[s]={t:c.t,p:c.p};});
+function titleOf(slug){var s=G.clean(slug);if(TITLE[s])return TITLE[s].t;if(/^checks\/dashboard\//.test(s))return 'Read-aloud check: '+s.split('/').pop().replace('reel-ep0','Story Reel ');var p=s;while(p.indexOf('/')>0){p=p.replace(/\/[^/]*$/,'');if(TITLE[p])return TITLE[p].t+' · '+s.slice(p.length+1);}return s;}
+/* catalog activities per skill (student pages only) */
+var ACTS={};
+CAT.forEach(function(c){if(/hub-card|snippet|unit-?plan|readings_index|_index\.html|\?mode=test/.test(c.p))return;var s=G.clean(c.p);
+  G.skillsOf(s).forEach(function(id){(ACTS[id]=ACTS[id]||[]).push({slug:s,t:c.t,p:c.p});});});
+
+var ST={students:[],att:{},course:'101',sel:null,loaded:false};
+
+/* ---------- gate ---------- */
+function openPage(){$('gate').classList.add('hide');init();}
+$('pwGo').onclick=function(){if($('pw').value===PASS){spref('ok','1');openPage();}else $('pwMsg').textContent='Not right — try again.';};
+$('pw').addEventListener('keydown',function(e){if(e.key==='Enter')$('pwGo').click();});
+try{if(spref('ok')==='1'||sessionStorage.getItem('gal_teacher')==='1')openPage();}catch(e){}
+
+function sinceISO(){var w=$('win').value;if(w==='sem')return '2026-08-01T00:00:00Z';return new Date(Date.now()-(+w)*864e5).toISOString();}
+function courseOfStudent(s){return pref('course_'+lp(s.email))||ST.course;}
+
+/* ---------- load ---------- */
+function load(){
+  var p=$('period').value; showErr('');
+  ST.sel=null; $('detail').style.display='none';
+  if(!p){$('gridWrap').innerHTML='<div class="empty" style="padding:12px">Choose a period.</div>';$('gapTbl').innerHTML='';$('crsTxt').textContent='';return;}
+  ST.course=G.PERIOD_COURSE[p]||'101';
+  $('crsTxt').textContent='Period '+p+' = ELD '+ST.course+' skills';
+  $('gridWrap').innerHTML='<div class="empty" style="padding:12px">Loading…</div>';
+  getAll('students?select=email,first_name,last_name,period,roster_order&period=eq.'+encodeURIComponent(p)).then(function(rows){
+    var seen={};ST.students=[];
+    rows.forEach(function(r){var k=lp(r.email);if(!k||seen[k])return;seen[k]=1;ST.students.push({k:k,email:k+'@sfusd.edu',first:r.first_name||k,last:r.last_name||'',ro:r.roster_order});});
+    ST.students.sort(function(a,b){return (a.ro==null?9999:a.ro)-(b.ro==null?9999:b.ro)||(a.last+a.first).localeCompare(b.last+b.first);});
+    if(!ST.students.length){$('gridWrap').innerHTML='<div class="empty" style="padding:12px">No students in this period.</div>';renderGaps();return;}
+    var emails=[];ST.students.forEach(function(s){emails.push(s.k+'@sfusd.edu',s.k+'@s.sfusd.edu');});
+    var chunks=[];for(var i=0;i<emails.length;i+=40)chunks.push(emails.slice(i,i+40));
+    return Promise.all(chunks.map(function(ch){
+      return getAll('activity_attempts?select=email,slug,score,max_score,completed_at,source:detail->>source&completed_at=gte.'+encodeURIComponent(sinceISO())+'&email=in.('+ch.map(encodeURIComponent).join(',')+')&order=completed_at.asc');
+    })).then(function(parts){
+      ST.att={};
+      parts.forEach(function(rows){rows.forEach(function(r){var k=lp(r.email);(ST.att[k]=ST.att[k]||[]).push(r);});});
+      ST.loaded=true; renderGrid(); renderGaps();
+    });
+  }).catch(function(e){showErr('Couldn’t load from the database ('+e.message+'). Reload to try again.');$('gridWrap').innerHTML='';});
+}
+
+/* ---------- per-student skill evidence ---------- */
+function evidence(k){
+  var rows=ST.att[k]||[], by={};
+  rows.forEach(function(r){
+    var slug=G.clean(r.slug), ids=G.skillsOf(slug); if(!ids.length)return;
+    var day=String(r.completed_at||'').slice(0,10), pct=null;
+    if(r.max_score&&+r.max_score>0&&r.score!=null)pct=Math.max(0,Math.min(100,100*(+r.score)/(+r.max_score)));
+    var teacher=r.source==='teacher'||/^checks\/dashboard/.test(slug);
+    ids.forEach(function(id){
+      var e=by[id]=by[id]||{keys:{},n:0,goodDays:{},scored:[],teacherOk:false,acts:{}};
+      var key=slug+'|'+day; if(!e.keys[key]){e.keys[key]=1;e.n++;}
+      if(pct!=null){e.scored.push(pct); if(pct>=SHOWN_PCT)e.goodDays[day]=1; if(teacher&&pct>=SHOWN_PCT)e.teacherOk=true;}
+      var a=e.acts[slug]=e.acts[slug]||{n:0,best:null,last:''}; a.n++; if(pct!=null&&(a.best==null||pct>a.best))a.best=pct; if(day>a.last)a.last=day;
+    });
+  });
+  Object.keys(by).forEach(function(id){var e=by[id];
+    e.shown=e.teacherOk||Object.keys(e.goodDays).length>=2;
+    var last3=e.scored.slice(-3), avg=last3.length?last3.reduce(function(a,b){return a+b;},0)/last3.length:null;
+    e.weak=!e.shown&&e.n>=3&&avg!=null&&avg<WEAK_PCT; e.avg3=avg;
+  });
+  return by;
+}
+function stateOf(e){if(!e)return 'none';if(e.shown)return 'shown';if(e.weak)return 'weak';return 'prac';}
+function cell(e){var s=stateOf(e);if(s==='shown')return '<i class="c shown" title="Shown">✓</i>';if(s==='weak')return '<i class="c weak" title="Needs work: practised '+e.n+'×, recent average '+Math.round(e.avg3)+'%">!</i>';if(s==='prac')return '<i class="c prac" title="Practised '+e.n+'×">'+(e.n>99?'99':e.n)+'</i>';return '<i class="c" title="Not yet"></i>';}
+
+/* ---------- grid ---------- */
+function skillsFor(course){return G.forCourse(course);}
+function renderGrid(){
+  var SK=skillsFor(ST.course), EV={};
+  ST.students.forEach(function(s){EV[s.k]=evidence(s.k);});
+  var h='<table><thead><tr><th class="nm" rowspan="2">Student</th>';
+  DOMS.forEach(function(d){var n=SK.filter(function(x){return x.d===d;}).length;if(n)h+='<th class="dom '+d+'" colspan="'+(n+1)+'">'+G.DOMAINS[d]+'</th>';});
+  h+='</tr><tr>';
+  DOMS.forEach(function(d){var list=SK.filter(function(x){return x.d===d;});if(!list.length)return;
+    h+='<th class="sk" title="Skills shown out of '+list.length+'">shown</th>';
+    list.forEach(function(x){h+='<th class="sk" title="'+esc(x.label+' · '+x.eld.join(', '))+'">'+esc(x.short||x.label)+'</th>';});});
+  h+='</tr></thead><tbody>';
+  /* class row */
+  h+='<tr class="cls"><td class="nm">Class: practised by</td>';
+  var N=ST.students.length;
+  DOMS.forEach(function(d){var list=SK.filter(function(x){return x.d===d;});if(!list.length)return;h+='<td></td>';
+    list.forEach(function(x){var c=ST.students.filter(function(s){return EV[s.k][x.id];}).length;h+='<td title="'+c+' of '+N+' students">'+c+'/'+N+'</td>';});});
+  h+='</tr>';
+  ST.students.forEach(function(s){
+    var ev=EV[s.k], crs=courseOfStudent(s), mySK=skillsFor(crs);
+    h+='<tr data-k="'+s.k+'"'+(ST.sel===s.k?' class="sel"':'')+'><td class="nm"><button type="button" data-k="'+s.k+'">'+esc(s.first+' '+s.last)+'</button>'+(crs!==ST.course?'<span class="crs">'+crs+'</span>':'')+'</td>';
+    DOMS.forEach(function(d){var list=SK.filter(function(x){return x.d===d;});if(!list.length)return;
+      var mine=mySK.filter(function(x){return x.d===d;}),sh=mine.filter(function(x){return ev[x.id]&&ev[x.id].shown;}).length,pc=mine.length?sh/mine.length:0;
+      h+='<td class="sum">'+sh+'/'+mine.length+'<span class="bar"><i style="width:'+Math.round(pc*100)+'%;background:var(--'+d+')"></i></span></td>';
+      list.forEach(function(x){h+='<td>'+cell(ev[x.id])+'</td>';});});
+    h+='</tr>';
+  });
+  h+='</tbody></table>';
+  $('gridWrap').innerHTML=h;
+  Array.prototype.forEach.call($('gridWrap').querySelectorAll('td.nm button'),function(b){b.onclick=function(){openDetail(b.getAttribute('data-k'));};});
+  if(ST.sel)openDetail(ST.sel,true);
+}
+
+/* ---------- one student's report ---------- */
+function linkFor(a){return '<a href="'+esc(a.p.indexOf('http')===0?a.p:'https://tobiasrugger.github.io'+a.p)+'" target="_blank" rel="noopener">'+esc(a.t)+'</a>';}
+function suggest(id,ev,course){
+  var done={}; Object.keys(ev[id]?ev[id].acts:{}).forEach(function(s){done[s]=1;});
+  var list=(ACTS[id]||[]).filter(function(a){return !done[a.slug];});
+  /* prefer pages for the student's level */
+  list.sort(function(a,b){function sc(x){var t=x.slug;var hard=/landlady|telltale|monkeyspaw|omelas|thank-you|maus|manzanar|romeo|odyssey|psychology|write\/|stand-by-me|eld103/.test(t);var easy=/launch-plus|reel|basics|vocab|easy-true|phonics|alphabet|say|wit/.test(t);return course==='101'?(hard?2:easy?0:1):(hard?0:easy?2:1);}return sc(a)-sc(b);});
+  return list.slice(0,2);
+}
+function openDetail(k,quiet){
+  var s=ST.students.filter(function(x){return x.k===k;})[0]; if(!s)return;
+  ST.sel=k;
+  Array.prototype.forEach.call(document.querySelectorAll('#gridWrap tr[data-k]'),function(tr){tr.classList.toggle('sel',tr.getAttribute('data-k')===k);});
+  var crs=courseOfStudent(s), SK=skillsFor(crs), ev=evidence(k);
+  var strengths=SK.filter(function(x){return ev[x.id]&&ev[x.id].shown;});
+  var weak=SK.filter(function(x){return ev[x.id]&&ev[x.id].weak;});
+  var notyet=SK.filter(function(x){return !ev[x.id];});
+  var total=(ST.att[k]||[]).length;
+  var h='<h2><span class="num">3</span> '+esc(s.first+' '+s.last)+' · Period '+esc($('period').value)+' · ELD '+crs+
+    ' <button class="btn noprint" id="crsBtn" title="Use the other course’s skills for this student">Use '+(crs==='101'?'103':'101')+' skills</button>'+
+    ' <button class="btn noprint" id="prBtn">🖨 Print</button></h2>';
+  h+='<p class="help" style="margin:0 0 10px">'+total+' activity attempts '+($('win').value==='sem'?'this semester':'in the last '+$('win').value+' days')+' · printed '+new Date().toLocaleDateString()+'</p>';
+  h+='<div class="sw">';
+  h+='<div class="dbox"><h3>💪 Strengths</h3>'+(strengths.length?'<ul>'+strengths.map(function(x){return '<li>'+esc(x.label)+'</li>';}).join('')+'</ul>':'<div class="empty">Nothing shown twice yet — keep going.</div>')+'</div>';
+  h+='<div class="dbox"><h3>🔧 Needs work</h3>'+(weak.length?'<ul>'+weak.map(function(x){return '<li>'+esc(x.label)+' <small>(recent average '+Math.round(ev[x.id].avg3)+'%)</small></li>';}).join('')+'</ul>':'<div class="empty">No skill practised 3+ times with low scores.</div>')+'</div>';
+  var nexts=weak.concat(notyet).slice(0,4);
+  h+='<div class="dbox"><h3>➡️ Give next</h3>'+(nexts.length?'<ul>'+nexts.map(function(x){var sg=suggest(x.id,ev,crs);return '<li><b>'+esc(x.label)+'</b>'+(sg.length?': '+sg.map(linkFor).join(' or '):' <small>(no activity on the site yet)</small>')+'</li>';}).join('')+'</ul>':'<div class="empty">Every skill has been practised.</div>')+'</div>';
+  h+='</div><div class="dgrid">';
+  DOMS.forEach(function(d){var list=SK.filter(function(x){return x.d===d;});if(!list.length)return;
+    h+='<div class="dbox"><h3><i style="background:var(--'+d+')"></i>'+G.DOMAINS[d]+'</h3>';
+    list.forEach(function(x){var e=ev[x.id];
+      var acts=e?Object.keys(e.acts).sort(function(a,b){return e.acts[b].last.localeCompare(e.acts[a].last);}).slice(0,3):[];
+      h+='<div class="sl">'+cell(e)+'<div class="tx"><b>'+esc(x.label)+'</b><small>'+(e?('practised '+e.n+'× '+(e.shown?'· shown':e.weak?'· needs work':'')+'<br>'+acts.map(function(a){var A=e.acts[a];return esc(titleOf(a))+(A.best!=null?' ('+Math.round(A.best)+'%)':'');}).join(' · ')):'not practised yet')+'</small></div></div>';});
+    h+='</div>';});
+  h+='</div>';
+  var box=$('detail'); box.innerHTML=h; box.style.display='block';
+  $('crsBtn').onclick=function(){var other=crs==='101'?'103':'101'; pref('course_'+k, other===ST.course?null:other); renderGrid(); openDetail(k);};
+  $('prBtn').onclick=function(){window.print();};
+  if(!quiet)box.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+/* ---------- gaps ---------- */
+function renderGaps(){
+  var SK=skillsFor(ST.course), N=ST.students.length, EV={};
+  ST.students.forEach(function(s){EV[s.k]=evidence(s.k);});
+  var h='<thead><tr><th style="text-align:left">Skill</th><th>CA ELD</th><th>Activities on the site</th><th>Students who practised it</th><th>Shown</th><th style="text-align:left">Some activities that practise it</th></tr></thead><tbody>';
+  DOMS.forEach(function(d){
+    SK.filter(function(x){return x.d===d;}).forEach(function(x){
+      var acts=(ACTS[x.id]||[]), seen={}, uniq=acts.filter(function(a){if(seen[a.slug])return false;seen[a.slug]=1;return true;});
+      var pr=ST.students.filter(function(s){return EV[s.k][x.id];}).length, sh=ST.students.filter(function(s){return EV[s.k][x.id]&&EV[s.k][x.id].shown;}).length;
+      var flag=uniq.length<=1||(N&&pr/N<1/3);
+      h+='<tr><td><b style="color:var(--'+d+')">'+G.DOMAINS[d]+'</b><br>'+esc(x.label)+(flag?' <span class="flag">gap</span>':'')+'</td><td class="n">'+esc(x.eld.join(', '))+'</td><td class="n">'+uniq.length+'</td><td class="n">'+(N?pr+' / '+N:'—')+'</td><td class="n">'+(N?sh+' / '+N:'—')+'</td><td>'+(uniq.slice(0,4).map(linkFor).join(' · ')||'<span class="flag">none yet</span>')+'</td></tr>';
+    });
+  });
+  $('gapTbl').innerHTML=h+'</tbody>';
+}
+
+/* ---------- tabs ---------- */
+function tab(w){$('tabStu').setAttribute('aria-pressed',String(w==='stu'));$('tabGap').setAttribute('aria-pressed',String(w==='gap'));$('viewStu').classList.toggle('hide',w!=='stu');$('viewGap').classList.toggle('hide',w!=='gap');spref('tab',w);}
+$('tabStu').onclick=function(){tab('stu');};$('tabGap').onclick=function(){tab('gap');};
+
+function init(){
+  $('period').value=spref('period')||''; $('win').value=spref('win')||'sem'; tab(spref('tab')||'stu');
+  $('period').onchange=function(){spref('period',this.value);load();};
+  $('win').onchange=function(){spref('win',this.value);load();};
+  if(!G){showErr('skills.js did not load.');return;}
+  load();
+}
+})();
+</script>
+<script src="/readings/grade04.js"></script>
+</body>
+</html>
