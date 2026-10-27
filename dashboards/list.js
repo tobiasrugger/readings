@@ -52,7 +52,7 @@ window.DASHBOARDS = [
 {url:'four-agreements/dashboard.html',  name:'The Four Agreements',           course:'103', group:'Reading'},
 {url:'psychology/dashboard.html',       name:'Who Am I? (psychology)',        course:'103', group:'Reading'},
 {url:'creativity/dashboard.html',       name:'Open Mode (Cleese)',            course:'103', group:'Reading'},
-{url:'fluency/dashboard.html',          name:'Fluency \u2014 read aloud',     course:'both', group:'Reading', note:'Words correct per minute, accuracy, and the recordings.'},
+{url:'fluency/dashboard.html',          name:'Fluency \u2014 read aloud',     course:'both', group:'Reading', note:'Words per minute and the recordings. Listen and tap the words they missed; your marks replace the computer\u2019s guess.'},
 
 /* ---------- Vocabulary ---------- */
 {url:'vocab/pre/dashboard.html',          name:'Vocabulary pre-assessments',  course:'101', group:'Vocabulary'},

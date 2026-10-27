@@ -43,10 +43,20 @@ textarea{width:100%;font-family:inherit;font-size:15px;padding:10px;border:1px s
 label{display:block;font-weight:700;margin:12px 0 4px;font-size:14px}
 input.f{width:100%}
 audio{height:34px;width:100%;margin-bottom:10px}
+.mk span.w{cursor:pointer;border-radius:4px;padding:1px 3px}
+.mk span.w:hover{background:#f1efe6}
+.mk span.w.cmp{text-decoration:underline dotted #b45309 2px;text-underline-offset:4px}
+.mk span.w.miss{background:#fee2e2;color:#b91c1c;font-weight:800;box-shadow:inset 0 -2px 0 #b91c1c}
+.mk{font-size:18px;line-height:2;border:2px solid #22241f;border-radius:10px;padding:10px 12px;background:#fff}
+.mkbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:8px 0}
+.mine{background:#dcfce7;color:#15803d;border-radius:6px;padding:1px 7px;font-weight:800;font-size:13px}
+.est{color:#b45309;font-weight:800}
+a.alld{background:#fff;color:var(--pine);text-decoration:none}
 </style>
 </head>
 <body>
 <div class="bar">
+  <a class="btn alld" href="/readings/dashboards/">&larr; All dashboards</a>
   <h1>Fluency — Dashboard</h1>
   <select id="per">
     <option value="">All periods</option>
@@ -71,6 +81,7 @@ audio{height:34px;width:100%;margin-bottom:10px}
     <div class="stats" id="stats"></div>
     <div class="wrap"><table id="tbl"></table></div>
     <p class="muted" style="margin-top:10px">Sorted by growth, not by speed — the slowest readers often grow the most. Tap a student for their readings.</p>
+    <p class="muted"><span class="est">~</span> = the computer&rsquo;s guess (speech recognition, often wrong on accents). To make it real: tap a student, play a recording, tap the words they missed, Save. <span class="mine">yours</span> = your marks.</p>
   </section>
 
   <section class="pane" id="p-sounds">
@@ -128,28 +139,39 @@ function load(){
 function build(){
   var by={};
   RUNS.forEach(function(r){
-    if(!by[r.email]) by[r.email]={email:r.email,name:r.student_name||'',period:r.period||'',l1:r.l1||'',runs:[]};
-    by[r.email].runs.push(r);
-    if(!by[r.email].name&&r.student_name) by[r.email].name=r.student_name;
-    if(!by[r.email].period&&r.period) by[r.email].period=r.period;
+    var k=canonE(r.email);
+    if(!by[k]) by[k]={email:k,name:r.student_name||'',period:r.period||'',l1:r.l1||'',runs:[]};
+    by[k].runs.push(r);
+    if(!by[k].name&&r.student_name) by[k].name=r.student_name;
+    if(!by[k].period&&r.period) by[k].period=r.period;
   });
   ROWS=Object.keys(by).map(function(k){
     var s=by[k],cold=s.runs.filter(function(r){return r.attempt==='cold';});
-    s.first=cold.length?+cold[0].wcpm:null;
-    s.last=cold.length?+cold[cold.length-1].wcpm:null;
+    s.first=cold.length?eff(cold[0]).wcpm:null;
+    s.last=cold.length?eff(cold[cold.length-1]).wcpm:null;
     s.growth=(s.first==null||s.last==null||cold.length<2)?null:s.last-s.first;
-    s.acc=s.runs.length?Math.round(s.runs.reduce(function(a,r){return a+(+r.accuracy||0);},0)/s.runs.length):0;
+    var mineRuns=s.runs.filter(function(r){return eff(r).mine;});
+    s.accMine=mineRuns.length>0;
+    var accRuns=mineRuns.length?mineRuns:s.runs;   /* once Toby has marked any, only his marks count */
+    s.acc=accRuns.length?Math.round(accRuns.reduce(function(a,r){return a+(eff(r).acc||0);},0)/accRuns.length):0;
+    s.marked=mineRuns.length;
     s.lastAt=s.runs[s.runs.length-1].created_at;
     var lifts=[];
     s.runs.forEach(function(r){
       if(r.attempt!=='hot')return;
       var c=cold.filter(function(x){return x.passage_slug===r.passage_slug;})[0];
-      if(c) lifts.push(+r.wcpm-+c.wcpm);
+      if(c) lifts.push(eff(r).wcpm-eff(c).wcpm);
     });
     s.lift=lifts.length?Math.round(lifts.reduce(function(a,b){return a+b;},0)/lifts.length):null;
     return s;
   });
 }
+/* T-163: Toby's marks (teacher_*) replace the computer's estimate */
+function eff(r){
+  if(r.teacher_marked_at!=null&&r.teacher_accuracy!=null) return {wcpm:+r.teacher_wcpm,acc:+r.teacher_accuracy,mine:true};
+  return {wcpm:+r.wcpm,acc:+r.accuracy,mine:false};
+}
+function canonE(e){return String(e||'').toLowerCase().replace(/@s\.sfusd\.edu$/,'@sfusd.edu');}
 function rows(){var p=$('per').value;return ROWS.filter(function(r){return !p||String(r.period)===p;});}
 function draw(){
   var rs=rows().slice();
@@ -175,7 +197,7 @@ function draw(){
       '<td class="num">'+(r.last==null?'—':r.last)+'</td>'+
       '<td class="num">'+(r.growth==null?'<span class="muted">needs 2</span>':'<span class="'+(r.growth>=0?'up':'down')+'">'+(r.growth>0?'+':'')+r.growth+'</span>')+'</td>'+
       '<td class="num">'+(r.lift==null?'—':(r.lift>0?'+':'')+r.lift)+'</td>'+
-      '<td class="num">'+r.acc+'%</td><td class="num">'+r.runs.length+'</td><td class="muted">'+when(r.lastAt)+'</td></tr>';
+      '<td class="num">'+(r.accMine?r.acc+'% <span class="mine">yours</span>':'<span class="est">~'+r.acc+'%</span>')+'</td><td class="num">'+r.runs.length+(r.marked?' <span class="muted">('+r.marked+' marked)</span>':'')+'</td><td class="muted">'+when(r.lastAt)+'</td></tr>';
     if(OPEN===r.email) h+='<tr><td colspan="9" style="white-space:normal;background:#fbfaf6">'+detail(r)+'</td></tr>';
   });
   $('tbl').innerHTML=h;
@@ -185,14 +207,52 @@ function detail(r){
   var h='<div style="padding:6px 0">';
   r.runs.slice().reverse().forEach(function(run,idx){
     var id='run_'+r.email.replace(/[^a-z0-9]/g,'')+'_'+idx;
+    var e=eff(run);
     h+='<div class="card" style="margin-bottom:10px"><h3>'+when(run.created_at)+' · '+esc(run.passage_slug)+' · '+
        (run.attempt==='cold'?'first read':'after practice')+'</h3>'+
-       '<div class="muted" style="margin-bottom:8px"><b>'+run.wcpm+' WCPM</b> · '+run.accuracy+'% accuracy · '+
-       run.errors+' missed · '+Math.round(run.seconds)+'s · '+run.word_count+' words</div>';
+       '<div class="muted" style="margin-bottom:8px" id="sum_'+run.id+'">'+runSum(run)+'</div>';
     if(run.audio_path) h+='<audio controls preload="none" data-p="'+esc(run.audio_path)+'" src="'+SUPA_URL+'/storage/v1/object/public/'+BUCKET+'/'+esc(run.audio_path)+'"></audio>';
-    h+='<div class="marked">'+marked(body(run.passage_slug),run.error_words||[])+'</div></div>';
+    h+='<div class="mkbar"><b>Listen, then tap every word they got wrong.</b> <span class="muted">Dotted = the computer&rsquo;s guess.</span></div>'+
+       '<div class="mk" data-run="'+run.id+'">'+markable(run)+'</div>'+
+       '<div class="mkbar"><button class="btn" style="background:var(--pine);color:#fff" data-save="'+run.id+'">Save my marks</button>'+
+       '<button class="btn" style="border:1px solid var(--rule)" data-clear="'+run.id+'">Clear</button><span class="muted" id="msg_'+run.id+'"></span></div></div>';
   });
   return h+'</div>';
+}
+function runSum(run){
+  var e=eff(run);
+  return '<b>'+e.wcpm+' WCPM</b> · '+(e.mine?e.acc+'% accuracy <span class="mine">yours</span> · '+run.teacher_errors+' missed':'<span class="est">~'+run.accuracy+'%</span> computer guess · '+run.errors+' flagged')+
+    ' · '+Math.round(run.seconds)+'s · '+run.word_count+' words';
+}
+var PEND={};
+function markable(run){
+  var text=body(run.passage_slug);
+  if(!text) return '<span class="muted">This passage is not in the passages list, so the words cannot be shown.</span>';
+  var cmp={};(run.error_words||[]).forEach(function(x){cmp[x.i]=1;});
+  var mine={};(run.teacher_marks||[]).forEach(function(i){mine[i]=1;});
+  PEND[run.id]=Object.assign({},mine);
+  var i=0;
+  return String(text).trim().split(/\s+/).map(function(tok){
+    var m=tok.match(/^([^A-Za-z0-9\u2019']*)([A-Za-z0-9\u2019'-]+)(.*)$/);
+    var k=i++;                                   /* same numbering as the student page: every token counts */
+    if(!m) return '<span class="w" data-i="'+k+'">'+esc(tok)+'</span>';
+    return esc(m[1])+'<span class="w'+(cmp[k]?' cmp':'')+(mine[k]?' miss':'')+'" data-i="'+k+'">'+esc(m[2])+'</span>'+esc(m[3]);
+  }).join(' ');
+}
+function runById(id){return RUNS.filter(function(r){return String(r.id)===String(id);})[0];}
+function saveMarks(id){
+  var run=runById(id);if(!run)return;
+  var idx=Object.keys(PEND[id]||{}).map(Number).sort(function(a,b){return a-b;});
+  var total=+run.word_count||1,errs=idx.length,mins=(+run.seconds||1)/60;
+  var patch={teacher_marks:idx,teacher_errors:errs,teacher_accuracy:Math.round((total-errs)/total*1000)/10,
+             teacher_wcpm:Math.round((total-errs)/mins),teacher_marked_at:new Date().toISOString()};
+  $('msg_'+id).textContent='Saving\u2026';
+  fetch(SUPA_URL+'/rest/v1/fluency_runs?id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:Object.assign({},H,{'Prefer':'return=minimal'}),body:JSON.stringify(patch)})
+  .then(function(r){
+    if(!r.ok) return r.text().then(function(t){throw new Error(t.slice(0,140));});
+    Object.assign(run,patch);$('sum_'+id).innerHTML=runSum(run);
+    $('msg_'+id).textContent='\u2713 Saved \u2014 '+errs+' missed, '+patch.teacher_accuracy+'%. (Refresh to update the table.)';
+  }).catch(function(e){$('msg_'+id).textContent='Did not save. Has the T-163 SQL been run? '+e.message;});
 }
 function marked(text,errs){
   if(!text) return '<span class="muted">This passage is not in the passages list, so the words cannot be shown.</span>';
@@ -212,6 +272,13 @@ document.addEventListener('error',function(e){
   .then(function(r){return r.json();}).then(function(j){if(j.signedURL)el.src=SUPA_URL+'/storage/v1'+j.signedURL;});
 },true);
 $('tbl').addEventListener('click',function(e){
+  var w=e.target.closest('.mk span.w');
+  if(w){var id=w.closest('.mk').dataset.run,i=+w.dataset.i;PEND[id]=PEND[id]||{};
+    if(PEND[id][i])delete PEND[id][i];else PEND[id][i]=1;w.classList.toggle('miss');$('msg_'+id).textContent='Not saved yet.';return;}
+  var sv=e.target.closest('[data-save]');if(sv){saveMarks(sv.dataset.save);return;}
+  var cl=e.target.closest('[data-clear]');if(cl){var id2=cl.dataset.clear;PEND[id2]={};
+    [].forEach.call(document.querySelectorAll('.mk[data-run="'+id2+'"] span.miss'),function(x){x.classList.remove('miss');});$('msg_'+id2).textContent='Cleared \u2014 Save to keep it.';return;}
+  if(e.target.closest('.card'))return;
   var th=e.target.closest('th');if(th&&th.dataset.s){SORT=th.dataset.s;draw();return;}
   if(e.target.closest('audio'))return;
   var tr=e.target.closest('tr.row');if(!tr)return;
@@ -232,12 +299,18 @@ var PATTERNS=[
  {id:'sInit',name:'s- at the start (school, Spanish)',test:/^s[ctpkmnlw]/i},
  {id:'long',name:'long multisyllable words',test:/^[a-z]{8,}$/i}
 ];
+/* Toby's marks when he has marked this reading, else the computer's */
+function missWords(run){
+  if(run.teacher_marked_at==null||!run.teacher_marks) return run.error_words||[];
+  var toks=String(body(run.passage_slug)).trim().split(/\s+/);
+  return run.teacher_marks.map(function(i){return {i:i,type:'error',word:String(toks[i]||'').replace(/^[^A-Za-z0-9\u2019']+|[^A-Za-z0-9\u2019'-]+$/g,'')};});
+}
 function sounds(){
   var emails={},words={},rs=rows();
   var keep={};rs.forEach(function(r){keep[r.email]=1;});
   RUNS.forEach(function(run){
-    if(!keep[run.email])return;
-    (run.error_words||[]).forEach(function(e){
+    if(!keep[canonE(run.email)])return;
+    missWords(run).forEach(function(e){
       if(e.type!=='error')return;
       var w=String(e.word||'').toLowerCase();
       words[w]=(words[w]||0)+1;
