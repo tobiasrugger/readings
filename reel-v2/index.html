@@ -63,7 +63,8 @@
   </div>
   <div class="cast" id="cast"></div>
 
-  <section class="teacher">
+  <section class="teacher" id="teacher">
+    <a href="../dashboards/" style="float:left;margin:0 12px 6px 0;background:#2B2233;color:#fff;font-weight:800;text-decoration:none;border-radius:999px;padding:6px 14px;font-size:15px">← All dashboards</a>
     <h2 translate="yes">Teacher</h2>
     <div id="tGate" class="row">
       <input class="txt" id="tPass" type="password" style="max-width:240px" aria-label="Password" placeholder="Password">
@@ -89,6 +90,10 @@
   var SUPA_URL = 'https://lhmwtfyceilgndpygivj.supabase.co';
   var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
   var TPASS = 'galileo2026';
+  /* T-159: the dashboards front door links here as reel-v2/#teacher — land on the teacher table */
+  if (location.hash === '#teacher') window.addEventListener('load', function () {
+    setTimeout(function () { var t = document.getElementById('teacher'); if (t) t.scrollIntoView({ block: 'start' }); var p = document.getElementById('tPass'); if (p && p.offsetParent) p.focus(); }, 300);
+  });
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
@@ -175,6 +180,7 @@
   function practice(r) {
     var L = (r.work && r.work.log) || {}, W = L.w || {}, listens = 0, trans = 0, words = [];
     Object.keys(W).forEach(function (k) { var e = W[k] || {}; listens += e.say || 0; trans += e.tr || 0; words.push([k, (e.say || 0) + (e.tr || 0)]); });
+    if (L.lineTr) trans = trans + ' words + ' + L.lineTr + ' whole lines';   /* T-159: the 🌐 line button */
     words.sort(function (a, b) { return b[1] - a[1]; });
     var last = L.last ? new Date(L.last) : null, ago = last ? (Date.now() - last.getTime()) / 60000 : null, lastTxt = '';
     if (last && ago <= 2) lastTxt = '<span class="pill yes">active now</span>';
@@ -184,6 +190,8 @@
     if (B && B.on) {
       btTxt = 'on' + (B.widget ? ' (widget)' : '') + (B.lang ? ' · ' + B.lang : '') + ' · ' + (B.cover || 0) + '% of page' + (B.leak ? ' · LEAKED into protected text: ' + (B.sample || B.leak + ' spots') : ' · blocked where it should be');
       btHtml = B.leak ? '<span class="pill no" title="' + esc(btTxt) + '">\u26a0 leaked</span> ' + esc((B.sample || '').slice(0, 40)) : esc('on' + (B.lang ? ' · ' + B.lang : '') + ' · ' + (B.cover || 0) + '%');
+      /* T-159: how often the friendly "story stays in English" bar was shown, and whether they tapped OK */
+      if (B.nudged) { btTxt += ' · nudged ×' + B.nudged + (B.okd ? ' · OK ×' + B.okd : ''); btHtml += ' · nudged ×' + B.nudged; }
     }
     return { pmin: Math.round((L.secs || 0) / 60), listens: listens, trans: trans, lastTxt: lastTxt, lastIso: L.last || '', btTxt: btTxt, btHtml: btHtml,
              top: words.slice(0, 5).map(function (x) { return x[0] + ' ×' + x[1]; }).join(', ') };

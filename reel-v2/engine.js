@@ -807,6 +807,11 @@
     $('ccBtn').setAttribute('aria-pressed', state.cc ? 'true' : 'false');
     document.body.classList.toggle('nocc', !state.cc);
     $('lang').value = state.lang || '';
+    /* T-159 (Toby, Oct 27): the 🌐 whole-sentence translation is a Level A support only.
+       B and C keep tap-a-word translation (orange words) but not the whole line. */
+    var lineOk = state.level === 'A';
+    $('trBtn').style.display = lineOk ? '' : 'none';
+    if (!lineOk) $('capTr').textContent = '';
   }
   function wire() {
     $('playBtn').addEventListener('click', togglePlay);
@@ -829,7 +834,10 @@
     });
     $('trBtn').addEventListener('click', function () {
       var ln = STEPS[pos].ln, t = ln.type === 'q' ? txt(ln.q) : txt(ln);
+      if (state.level !== 'A') return;   /* whole-line translation is Level A only */
       if (!state.lang) { $('capTr').textContent = 'Choose your language at the top first.'; return; }
+      /* T-159: count whole-line translations (the 🌐 button), per line, so the teacher table shows them */
+      if (me.email) { var L = LOG(); L.lines = L.lines || {}; var lk = 'L' + (pos + 1); L.lines[lk] = (L.lines[lk] || 0) + 1; L.lineTr = (L.lineTr || 0) + 1; touch(); }
       $('capTr').textContent = '…';
       $('capTr').textContent = 'Translating\u2026';
       translate(t, state.lang, function (v, failed) {
@@ -913,14 +921,21 @@
     return { on: true, widget: widget, lang: html.lang || '', cover: total ? Math.round(100 * done / total) : 0, leak: leak, sample: sample };
   }
   function checkTranslation() {
+    protectSvgs();
+    var bt = browserTranslateStats();
+    if (bt.on) showNudge(bt); else hideNudge();          /* T-159: the nudge shows even before sign-in */
     if (!me.email) return;
-    var bt = browserTranslateStats(), L = LOG();
+    var L = LOG();
     if (bt.on) {
       var prev = L.bt || {};
       L.bt = { on: true, widget: bt.widget, lang: bt.lang, cover: Math.max(bt.cover, prev.on ? prev.cover || 0 : 0),
                leak: Math.max(bt.leak, prev.leak || 0), sample: bt.sample || prev.sample || '',
-               first: prev.first || new Date().toISOString(), last: new Date().toISOString() };
+               first: prev.first || new Date().toISOString(), last: new Date().toISOString(),
+               nudged: prev.nudged || 0, okd: prev.okd || 0, nudgeLast: prev.nudgeLast || '' };
       touch();
+    }
+    if (nudgeShown && !nudgeLogged && L.bt) {             /* one nudge view per visit, logged once signed in */
+      nudgeLogged = true; L.bt.nudged = (L.bt.nudged || 0) + 1; L.bt.nudgeLast = new Date().toISOString(); touch();
     }
     var observed = '', els = document.querySelectorAll('[data-canary]'), i;
     for (i = 0; i < els.length; i++) {
@@ -938,8 +953,162 @@
                               html_lang: document.documentElement.lang || '', html_class: cls, updated_at: new Date().toISOString() }])
     }).catch(function () {});
   }
+
+  /* ================= T-159 BROWSER-TRANSLATE NUDGE (Oct 27 2026) ================= */
+  /* When Chrome / Google Translate is translating the page, a friendly sticky bar explains — in the
+     student's own language, from this built-in table (never through Google) — that the story stays in
+     English and the orange words give the translation. Never red, never blocking; OK hides it for this
+     visit. The bar and every scene picture are translate="no" + notranslate. Views logged in L.bt.nudged. */
+  var NUDGE = {
+    en:    { m: 'The story stays in English so you can learn it. Tap any orange word for your language.', h: 'To turn it off: tap the translate icon in the address bar, then tap English (Show original).', q: 'I tried that too! Tap the words instead.', ok: 'OK' },
+    es:    { m: 'La historia se queda en inglés para que la aprendas. Toca cualquier palabra naranja para verla en español.', h: 'Para apagarlo: toca el ícono de traducir en la barra de direcciones y luego toca English (Mostrar original).', q: '¡Yo también lo intenté! Mejor toca las palabras.', ok: 'OK' },
+    'zh-CN': { m: '故事保持英文，这样你才能学会。点任何橙色的词，就能看到中文。', h: '关闭方法：点地址栏里的翻译图标，再点 English（显示原文）。', q: '我也试过！还是点单词吧。', ok: '好的' },
+    yue:   { m: '故事保持英文，咁你先學得識。㩒任何橙色嘅字，就睇到中文。', h: '點樣關：㩒網址列嘅翻譯圖示，再㩒 English（顯示原文）。', q: '我都試過㗎！不如㩒啲字啦。', ok: '好' },
+    ar:    { m: 'القصة تبقى بالإنجليزية لكي تتعلمها. اضغط على أي كلمة برتقالية لتراها بالعربية.', h: 'لإيقافها: اضغط على أيقونة الترجمة في شريط العنوان، ثم اضغط English (عرض الأصل).', q: 'أنا جربت ذلك أيضًا! اضغط على الكلمات بدلًا من ذلك.', ok: 'حسنًا' },
+    ary:   { m: 'القصة كتبقى بالنجليزية باش تتعلمها. ضغط على أي كلمة ليمونية باش تشوفها بالعربية.', h: 'باش تطفيها: ضغط على أيقونة الترجمة لفوق، ومن بعد ضغط على English (عرض الأصل).', q: 'حتى أنا جربتها! ضغط على الكلمات أحسن.', ok: 'واخا' },
+    vi:    { m: 'Câu chuyện giữ bằng tiếng Anh để bạn học. Chạm vào bất kỳ từ màu cam nào để xem tiếng Việt.', h: 'Để tắt: chạm vào biểu tượng dịch trên thanh địa chỉ, rồi chạm English (Hiển thị bản gốc).', q: 'Mình cũng từng thử! Chạm vào từng từ thì hơn.', ok: 'OK' },
+    th:    { m: 'เรื่องจะเป็นภาษาอังกฤษไว้ เพื่อให้คุณได้เรียน แตะคำสีส้มคำไหนก็ได้เพื่อดูเป็นภาษาไทย', h: 'วิธีปิด: แตะไอคอนแปลภาษาในแถบที่อยู่ แล้วแตะ English (แสดงต้นฉบับ)', q: 'ฉันก็เคยลองแบบนั้น! แตะที่คำแทนดีกว่า', ok: 'ตกลง' },
+    ne:    { m: 'कथा अङ्ग्रेजीमै रहन्छ, ताकि तपाईंले सिक्न सक्नुहुन्छ। नेपालीका लागि कुनै पनि सुन्तला रङको शब्दमा ट्याप गर्नुहोस्।', h: 'बन्द गर्न: ठेगाना पट्टीमा अनुवाद आइकनमा ट्याप गर्नुहोस्, अनि English (मूल देखाउनुहोस्) मा ट्याप गर्नुहोस्।', q: 'मैले पनि त्यो गरेर हेरेँ! बरु शब्दहरूमा ट्याप गर।', ok: 'ठीक छ' },
+    ru:    { m: 'История остаётся на английском, чтобы ты её выучил. Нажми на любое оранжевое слово, чтобы увидеть его по-русски.', h: 'Как выключить: нажми значок перевода в адресной строке, затем English (Показать оригинал).', q: 'Я тоже так пробовала! Лучше нажимай на слова.', ok: 'OK' },
+    ur:    { m: 'کہانی انگریزی میں ہی رہتی ہے تاکہ آپ اسے سیکھ سکیں۔ اردو کے لیے کسی بھی نارنجی لفظ کو ٹیپ کریں۔', h: 'بند کرنے کے لیے: ایڈریس بار میں ترجمے کے آئیکن کو ٹیپ کریں، پھر English (اصل دکھائیں) کو ٹیپ کریں۔', q: 'میں نے بھی یہ آزمایا تھا! اس کے بجائے الفاظ کو ٹیپ کریں۔', ok: 'ٹھیک ہے' },
+    tl:    { m: 'Nananatili sa Ingles ang kuwento para matutunan mo ito. I-tap ang kahit anong orange na salita para sa Tagalog.', h: 'Para patayin: i-tap ang translate icon sa address bar, tapos i-tap ang English (Ipakita ang orihinal).', q: "Sinubukan ko rin 'yan! I-tap mo na lang ang mga salita.", ok: 'OK' },
+    fr:    { m: "L'histoire reste en anglais pour que tu l'apprennes. Touche un mot orange pour le voir en français.", h: "Pour l'arrêter : touche l'icône de traduction dans la barre d'adresse, puis touche English (Afficher l'original).", q: "Moi aussi, j'ai essayé ! Touche plutôt les mots.", ok: 'OK' },
+    ko:    { m: '이야기는 영어로 그대로 둬요. 그래야 배울 수 있어요. 주황색 단어를 누르면 한국어로 볼 수 있어요.', h: '끄는 방법: 주소창의 번역 아이콘을 누르고 English(원본 보기)를 누르세요.', q: '나도 그거 해봤어! 대신 단어를 눌러 봐.', ok: '확인' },
+    hi:    { m: 'कहानी अंग्रेज़ी में ही रहती है ताकि आप इसे सीख सकें। हिंदी के लिए किसी भी नारंगी शब्द पर टैप करें।', h: 'बंद करने के लिए: एड्रेस बार में अनुवाद आइकन पर टैप करें, फिर English (मूल दिखाएँ) पर टैप करें।', q: 'मैंने भी यह आज़माया था! इसके बजाय शब्दों पर टैप करो।', ok: 'ठीक है' },
+    so:    { m: 'Sheekadu waxay ku jirtaa Ingiriis si aad u barato. Taabo eray kasta oo oranji ah si aad Soomaali ugu aragto.', h: 'Si aad u damiso: taabo astaanta turjumaadda ee barta ciwaanka, kadibna taabo English (Muuji asalka).', q: 'Aniguna waan isku dayay! Taabo erayada beddelkeeda.', ok: 'Hagaag' }
+  };
+  var NUDGE_EN_NAME = { es: 'Spanish', yue: 'Cantonese', 'zh-CN': 'Chinese', ar: 'Arabic', ary: 'Darija', vi: 'Vietnamese', th: 'Thai', ne: 'Nepali',
+                        ru: 'Russian', ur: 'Urdu', tl: 'Tagalog', fr: 'French', ko: 'Korean', hi: 'Hindi', so: 'Somali' };
+  var NUDGE_RTL = { ar: 1, ary: 1, ur: 1 };
+  /* the browser's target language (<html lang> after translating) -> our language code */
+  function nudgeCodeFromHtml(l) {
+    l = String(l || '').toLowerCase();
+    if (!l || /^en/.test(l)) return '';
+    if (/^zh-(tw|hk|hant|mo)|^yue/.test(l)) return 'yue';
+    if (/^zh/.test(l)) return 'zh-CN';
+    var p = l.split(/[-_]/)[0];
+    if (p === 'fil') p = 'tl';
+    return NUDGE[p] ? p : '';
+  }
+  /* Protect every drawn scene: the stage <svg>, the storyboard thumbnails, any picture added later. */
+  function protectSvgs() {
+    var s = document.querySelectorAll('svg'), i;
+    for (i = 0; i < s.length; i++) {
+      if (s[i].getAttribute('translate') !== 'no') s[i].setAttribute('translate', 'no');
+      if (s[i].classList && !s[i].classList.contains('notranslate')) s[i].classList.add('notranslate');
+    }
+  }
+  /* Small drawn picture: the address bar with Chrome's translate icon, an arrow, and the bubble with
+     the English tab tapped. All its text stays untranslated (it shows what the student will see). */
+  function nudgeHowSvg() {
+    return '<svg class="bt-how notranslate" translate="no" viewBox="0 0 260 96" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+      /* browser window top */
+      '<rect x="2" y="2" width="256" height="92" rx="10" fill="#f4f1f7" stroke="#2B2233" stroke-width="2"/>' +
+      '<circle cx="14" cy="13" r="3.2" fill="#e8736b"/><circle cx="24" cy="13" r="3.2" fill="#f2c230"/><circle cx="34" cy="13" r="3.2" fill="#6bbf7a"/>' +
+      /* address bar */
+      '<rect x="10" y="22" width="240" height="22" rx="11" fill="#fff" stroke="#b9b0c4" stroke-width="1.5"/>' +
+      '<path d="M22 33 a4 4 0 1 1 0.1 0" fill="none" stroke="#8a8094" stroke-width="1.6"/>' +
+      '<rect x="32" y="30.5" width="96" height="5" rx="2.5" fill="#d9d3e3"/>' +
+      /* the translate icon (blue G + 文 tile), circled in orange */
+      '<circle cx="218" cy="33" r="13" fill="none" stroke="#F8981F" stroke-width="3"/>' +
+      '<rect x="208" y="25" width="11" height="13" rx="2" fill="#4a7fd9"/><text x="213.5" y="35" font-size="10" font-weight="900" fill="#fff" text-anchor="middle" font-family="Arial">G</text>' +
+      '<rect x="217" y="29" width="11" height="12" rx="2" fill="#fff" stroke="#4a7fd9" stroke-width="1.4"/><text x="222.5" y="38.5" font-size="8.5" fill="#4a7fd9" text-anchor="middle">文</text>' +
+      '<text x="218" y="17" font-size="10" font-weight="900" fill="#2B2233" text-anchor="middle" font-family="Nunito,Arial">1</text>' +
+      /* arrow down to the bubble */
+      '<path d="M206 46 C 196 58, 186 60, 176 62" fill="none" stroke="#2B2233" stroke-width="2" stroke-dasharray="4 3"/>' +
+      '<path d="M176 62 l7 -6 M176 62 l8 3" stroke="#2B2233" stroke-width="2" fill="none" stroke-linecap="round"/>' +
+      /* the translate bubble: [English] [other] tabs, English tapped */
+      '<rect x="40" y="52" width="134" height="36" rx="7" fill="#fff" stroke="#2B2233" stroke-width="2"/>' +
+      '<rect x="46" y="58" width="60" height="24" rx="5" fill="#F8981F"/><text x="76" y="74.5" font-size="11.5" font-weight="900" fill="#2B2233" text-anchor="middle" font-family="Nunito,Arial">English</text>' +
+      '<rect x="110" y="58" width="58" height="24" rx="5" fill="#eef0f8"/><text x="139" y="74.5" font-size="11" fill="#6d6377" text-anchor="middle">中文…</text>' +
+      '<text x="30" y="74" font-size="10" font-weight="900" fill="#2B2233" text-anchor="middle" font-family="Nunito,Arial">2</text>' +
+      /* tapping finger on English */
+      '<g transform="translate(101 84) rotate(-24)"><path d="M0 0 q-3 -10 2 -12 q4 -1 5 5 l1 4 q5 -3 8 1 q4 -2 6 2 q4 -1 5 4 l0 8 q-1 9 -10 10 l-8 0 q-6 -1 -8 -7 z" fill="#f5d2b4" stroke="#2B2233" stroke-width="1.6"/></g>' +
+      '</svg>';
+  }
+  var nudgeShown = false, nudgeLogged = false, nudgeOkd = false, nudgeIO = null;
+  function nudgeOk() {
+    nudgeOkd = true; hideNudge();
+    if (me.email) { var L = LOG(); if (L.bt) { L.bt.okd = (L.bt.okd || 0) + 1; touch(); } }
+  }
+  function showNudge(bt) {
+    if (nudgeOkd) return;
+    var code = state.lang || nudgeCodeFromHtml(bt.lang);
+    /* a student who never picked a language: the browser told us which one they want — use it for the orange words */
+    if (!state.lang && code) { try { setLang(code); } catch (e) {} }
+    var S = NUDGE[code] || NUDGE.en, E = NUDGE.en, dir = NUDGE_RTL[code] ? ' dir="rtl"' : '';
+    var bar = $('btNudge'), slim = $('btSlim');
+    if (!bar) {
+      /* full explanation: at the top of the page, scrolls away with the page */
+      bar = document.createElement('div');
+      bar.id = 'btNudge'; bar.className = 'bt-nudge notranslate';
+      bar.setAttribute('translate', 'no'); bar.setAttribute('role', 'status');
+      document.body.insertBefore(bar, document.body.firstChild);
+      /* slim one-line reminder that stays at the top only while the full bar is scrolled out of sight */
+      slim = document.createElement('div');
+      slim.id = 'btSlim'; slim.className = 'bt-slim notranslate'; slim.setAttribute('translate', 'no');
+      document.body.insertBefore(slim, bar.nextSibling);
+      try {
+        nudgeIO = new IntersectionObserver(function (es) {
+          var out = !es[0].isIntersecting;
+          slim.classList.toggle('on', out && bar.style.display !== 'none');
+        });
+        nudgeIO.observe(bar);
+      } catch (e) {}
+    }
+    if (bar.getAttribute('data-code') !== (code || 'en')) {          /* rebuild only when the language changes */
+      bar.setAttribute('data-code', code || 'en');
+      var enLine = code && NUDGE_EN_NAME[code] ? E.m.replace('your language', NUDGE_EN_NAME[code]) : E.m;
+      var linh = '';
+      try { if (R.drawChar) linh = '<svg class="bt-linh notranslate" translate="no" viewBox="-150 -600 300 300" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+        R.drawChar('linh', { expr: 'smile', pose: 'idle', face: 1 }) + '</svg>'; } catch (e) { linh = ''; }
+      var okTxt = esc(S.ok) + (S.ok !== 'OK' ? ' · OK' : '');
+      bar.innerHTML =
+        '<div class="bt-who">' + linh + '<p class="bt-q"><b>Linh:</b> <span' + dir + '>' + esc(S.q) + '</span>' +
+          (S !== E ? '<br><span class="bt-en">' + esc(E.q) + '</span>' : '') + '</p></div>' +
+        '<div class="bt-msg"><p class="bt-main"' + dir + '>' + esc(S.m) + '</p>' +
+          (S !== E ? '<p class="bt-en">' + esc(enLine) + '</p>' : '') + '</div>' +
+        '<div class="bt-help">' + nudgeHowSvg() + '<p class="bt-hint"' + dir + '>' + esc(S.h) + '</p></div>' +
+        '<button class="bt-ok" type="button">' + okTxt + '</button>';
+      slim.innerHTML = '<span class="bt-slim-t"' + dir + '>\ud83c\udf10 ' + esc(S.m) + '</span><button class="bt-ok" type="button">' + okTxt + '</button>';
+      bar.querySelector('.bt-ok').onclick = nudgeOk;
+      slim.querySelector('.bt-ok').onclick = nudgeOk;
+    }
+    bar.style.display = '';
+    nudgeShown = true;
+  }
+  function hideNudge() { var b = $('btNudge'), sl = $('btSlim'); if (b) b.style.display = 'none'; if (sl) sl.classList.remove('on'); }
   setInterval(checkTranslation, 20000);
   setTimeout(checkTranslation, 4000);
+  /* T-159: react the moment the browser starts or stops translating (it rewrites <html class/lang>) */
+  try {
+    new MutationObserver(function () { clearTimeout(checkTranslation._t); checkTranslation._t = setTimeout(checkTranslation, 400); })
+      .observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'lang'] });
+  } catch (e) {}
+  protectSvgs();
+  /* T-159 (Toby, Oct 27): lock the WHOLE page against browser translation. Chrome stops offering to
+     translate, and a forced "Translate to…" changes nothing. Students lose no help: every direction already
+     shows our own translation underneath, and the orange words and the line button use our translator. */
+  (function lockPage() {
+    var h = document.documentElement;
+    h.setAttribute('translate', 'no'); h.classList.add('notranslate');
+    if (!document.querySelector('meta[name="google"][content="notranslate"]')) {
+      var m = document.createElement('meta'); m.name = 'google'; m.content = 'notranslate'; document.head.appendChild(m);
+    }
+  })();
+  /* new pictures (storyboard thumbnails, Your Turn, tier cards) get the same protection as they appear */
+  try {
+    var psPending = false;
+    new MutationObserver(function (ms) {
+      if (psPending) return;
+      for (var i = 0; i < ms.length; i++) for (var j = 0; j < ms[i].addedNodes.length; j++) {
+        var n = ms[i].addedNodes[j];
+        if (n.nodeType === 1 && (n.tagName.toLowerCase() === 'svg' || (n.querySelector && n.querySelector('svg:not([translate])')))) {
+          psPending = true; requestAnimationFrame(function () { psPending = false; protectSvgs(); }); return;
+        }
+      }
+    }).observe(document.body, { childList: true, subtree: true });
+  } catch (e) {}
 
   /* ================= BOOT ================= */
   $('epNum').textContent = 'Episode ' + EP.num;
