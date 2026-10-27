@@ -62,6 +62,7 @@ window.DASHBOARDS = [
 
 /* ---------- Speaking ---------- */
 {url:'checks/dashboard.html',            name:'Read-aloud Check',              course:'both', group:'Speaking', note:'A student reads to you; tap the words they miss. Next check shows last time\u2019s misses. Most-missed words per period.'},
+{url:'reel-test/ep02/dashboard.html',      name:'Story Check 2: The Backpack (read-aloud + test)', course:'101', group:'Speaking', note:'Practice and test versions of the Ep 2 check. Listen to every read-aloud and set 0\u20132 per sentence; set 0\u20134 on the extras; your numbers go to the gradebook.'},
 {url:'say/dashboard/',                  name:'Say the Words',                 course:'101', group:'Speaking', note:'Every recording, by set.'},
 {url:'describe/dashboard/',             name:'Describe a Classmate',          course:'101', group:'Speaking'},
 {url:'oral-histories/dashboard.html',   name:'Oral Histories',                course:'103', group:'Speaking'},

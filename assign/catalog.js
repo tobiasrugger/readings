@@ -1087,6 +1087,20 @@ window.CATALOG=[
 "g": "More: Story Reel"
 },
 {
+"p": "/readings/reel-test/ep02/",
+"t": "Story Check 2: The Backpack (practice)",
+"d": "Practice check on The Backpack: read aloud, words, listening, story questions, fix the sentence, grammar. Hints on a mistake.",
+"m": "",
+"g": "More: Story Reel"
+},
+{
+"p": "/readings/reel-test/ep02/?mode=test",
+"t": "Story Check 2: The Backpack (test)",
+"d": "The same check as a test: one try, no hints.",
+"m": "",
+"g": "More: Story Reel"
+},
+{
 "p": "/readings/reel/",
 "t": "Story Reel (reel)",
 "d": "Story Reel",
