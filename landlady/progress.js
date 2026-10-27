@@ -9,7 +9,7 @@
      StoryProgress.render(document.getElementById('storyProgress'), email [, {only:['landlady'], period:'3'}]);
    Shows one card per story the student has started (plus any guide_key in opts.only even if not started):
    a link to the story, one button per part, the part's own count, and greyed-out parts with the reason
-   ("Finish Part 1 first") \u2014 the same 85% rule, hidden Harder-only questions skipped in Easier, that the
+   ("Finish Part 1 first") \u2014 the same 70% rule (T-139; was 85%), hidden Harder-only questions skipped in Easier, that the
    story page itself uses. Read-only: it never writes. */
 (function(){
 var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
@@ -40,9 +40,9 @@ function card(gk,row){
   var pay=(row&&row.payload)||{},easy=((pay.meta&&pay.meta.mode)||(row&&row.mode))==='easy';
   var ans={};(pay.questions||[]).forEach(function(q){if(q&&q.id&&String(q.a||'').trim())ans[q.id]=1;});
   var byId={};m.steps.forEach(function(s){byId[s.id]=s;});
-  function done(id){var c=countFor(byId[id],ans,easy);return c[1]===0||c[0]>=Math.ceil(c[1]*0.85);}
+  function done(id){var c=countFor(byId[id],ans,easy);return c[1]===0||c[0]>=Math.ceil(c[1]*0.70);}
   var sd=0,sn=0;m.story.forEach(function(id){var c=countFor(byId[id],ans,easy);sd+=c[0];sn+=c[1];});
-  var storyOpen=sn>0&&sd>=Math.max(1,Math.ceil(sn*0.85));
+  var storyOpen=sn>0&&sd>=Math.max(1,Math.ceil(sn*0.70));
   var all=0,alld=0,next=null,html={ch:'',act:''};
   m.steps.forEach(function(s){
     var c=countFor(s,ans,easy),lock=false,why='';
