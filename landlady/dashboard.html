@@ -230,6 +230,19 @@ document.getElementById("pw").addEventListener("keydown", function(e){
 });
 
 /* ---------- load ---------- */
+/* T-142: the Teacher's Desk opens one student here with ?email=…&guide=… */
+var AUTO_DONE = false;
+function autoPick(){
+  if(AUTO_DONE) return; AUTO_DONE = true;
+  var q = new URLSearchParams(location.search), em = (q.get("email") || "").toLowerCase().split("@")[0], g = q.get("guide") || "";
+  if(!em) return;
+  var hit = rows.filter(function(r){ return String(r.email || "").toLowerCase().split("@")[0] === em && (!g || r.guide_key === g); })[0]
+         || rows.filter(function(r){ return String(r.email || "").toLowerCase().split("@")[0] === em; })[0];
+  if(!hit) return;
+  selected = hit.id; draw(); showDetail(hit.id);
+  var li = document.querySelector('#roster li[data-id="' + String(hit.id) + '"]'); if(li && li.scrollIntoView) li.scrollIntoView({block:"center"});
+}
+
 function load(){
   document.getElementById("count").textContent = "Loading\u2026";
   var url = SUPA_URL + "/rest/v1/" + TABLE +
@@ -243,6 +256,7 @@ function load(){
       rows = data || [];
       buildPeriodFilter();
       draw();
+      autoPick();
       loadActs();
     })
     .catch(function(e){
