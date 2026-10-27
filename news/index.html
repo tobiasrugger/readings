@@ -346,6 +346,14 @@ function parseDoc(txt){
   out.read=out.reads[lvs.indexOf('B')>=0?'B':lvs[0]]||[];
   return out;
 }
+/* read-aloud text: ---RECORD--- if the document has one, otherwise the first
+   paragraphs (about 120+ words) of the B reading — same rule as the Fluency Tracker (T-154) */
+function recordOf(d){
+  if(d&&String(d.record||'').trim()) return d.record;
+  var r=(d&&d.reads)||{}, ps=r.B||r.A||r[Object.keys(r)[0]]||[], out=[], n=0;
+  for(var j=0;j<ps.length&&n<120;j++){out.push(ps[j]);n+=plain(ps[j]).trim().split(/\s+/).length;}
+  return out.join(' ');
+}
 function levelsOf(d){return ['A','B','C','D'].filter(function(k){return d.reads&&d.reads[k]&&d.reads[k].length;});}
 function applyLevel(lv){
   if(!A||!A.reads)return;
@@ -576,13 +584,14 @@ function render(){
   $('talkBody').innerHTML=ROLE?t:'<p class="muted">Choose A or B above to see your half of the chart.</p>';
 
   /* RECORD — hands off to the fluency tracker so everything lands in one growth chart */
-  var wc=A.record?plain(A.record).trim().split(/\s+/).length:0;
+  var RECTXT=recordOf(A);
+  var wc=RECTXT?plain(RECTXT).trim().split(/\s+/).length:0;
   var fslug='news-'+A.meta.SLUG;
   $('recBody').innerHTML=
     '<div class="card"><h3>Read aloud</h3>'+
     '<p class="muted">You will read this passage out loud in the Fluency Tracker. It times you, you mark your own mistakes, and it shows you which sounds to practice.</p>'+
-    '<div class="passage" translate="no">'+rich(A.record)+'</div>'+
-    '<div class="rec"><button class="spk" data-raw="'+esc(plain(A.record)).replace(/"/g,'&quot;')+'" style="font-size:15px;padding:8px 12px">&#128266; Listen first</button>'+
+    '<div class="passage" translate="no">'+rich(RECTXT)+'</div>'+
+    '<div class="rec"><button class="spk" data-raw="'+esc(plain(RECTXT)).replace(/"/g,'&quot;')+'" style="font-size:15px;padding:8px 12px">&#128266; Listen first</button>'+
     '<span class="muted">'+wc+' words</span></div>'+
     '<a class="big" style="display:block;text-align:center;margin-top:18px;text-decoration:none" href="../fluency/index.html?p='+encodeURIComponent(fslug)+'">Open the Fluency Tracker</a>'+
     '<p class="muted" style="margin-top:10px">Read it once on Monday and again on Thursday after you practice. The second reading is how you see yourself getting better.</p>'+
@@ -863,7 +872,7 @@ function saveDoc(live){
     if(!r.ok){$('pubMsg').textContent='Did not save \u2014 check the table exists.';return;}
     if(!live){$('pubMsg').textContent='Draft saved. Students cannot see it.';loadList();return;}
     $('pubMsg').textContent='Published. Adding the read-aloud passage\u2026';
-    var body=plain(d.record||'').trim();
+    var body=plain(recordOf(d)).replace(/\s+/g,' ').trim();
     if(!body){$('pubMsg').textContent='Published. (No ---RECORD--- passage.)';A=d;ROLE='';ANS={};ARCH=null;render();loadList();return;}
     return fetch(SUPA_URL+'/rest/v1/fluency_passages?on_conflict=slug',{
       method:'POST',headers:Object.assign({},H,{'Prefer':'resolution=merge-duplicates,return=minimal'}),

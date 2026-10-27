@@ -128,7 +128,8 @@ summary{cursor:pointer;color:#6d736b;font-size:14px}
     <label class="q">Which text?</label>
     <select id="pick"></select>
     <p class="muted" id="attemptNote" style="margin-top:14px"></p>
-    <button class="big" id="toRead" style="margin-top:6px;width:100%">Show me the text</button>
+    <div class="passage" id="preview" translate="no" style="margin:8px 0 14px;font-size:18px;line-height:1.8"></div>
+    <button class="big" id="toRead" style="margin-top:6px;width:100%">I&rsquo;m ready &mdash; start reading aloud</button>
   </div>
 </section>
 
@@ -139,6 +140,7 @@ summary{cursor:pointer;color:#6d736b;font-size:14px}
     Read out loud at a comfortable speed. Clear is better than fast. If you make a mistake, keep going. The computer listens while you read.
   </div>
   <div class="card">
+    <h2 id="readTitle" translate="no" style="margin:0 0 10px"></h2>
     <div class="passage" id="readText"></div>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:14px">
       <button class="sbtn" id="listen">&#128266; Listen first</button>
@@ -298,7 +300,7 @@ $('gGo').onclick=function(){
   localStorage.setItem('gal_student_name',n);localStorage.setItem('gal_period',p);localStorage.setItem('gal_student_period',p);localStorage.setItem('gal_lang',lg);
   if(raw!==c) fetch(SUPA_URL+'/rest/v1/student_aliases',{method:'POST',headers:Object.assign({},H,{'Prefer':'resolution=ignore-duplicates,return=minimal'}),body:JSON.stringify({alias:raw,canonical:c})}).catch(function(){});
   fetch(SUPA_URL+'/rest/v1/students?on_conflict=email',{method:'POST',headers:Object.assign({},H,{'Prefer':'resolution=ignore-duplicates,return=minimal'}),body:JSON.stringify({email:c,name:n,period:p})}).catch(function(){});
-  $('gate').style.display='none';chip();peek();dualTranslate();
+  $('gate').style.display='none';chip();peek();dualTranslate();autoOpen();
 };
 (function(){
   var e=localStorage.getItem('gal_student_email'),f=localStorage.getItem('gal_student_first'),l=localStorage.getItem('gal_student_last'),
@@ -314,19 +316,72 @@ $('gGo').onclick=function(){
 
 /* ---------- passages ---------- */
 function loadPassages(){
-  fetch(SUPA_URL+'/rest/v1/fluency_passages?select=*&active=is.true&order=assigned_week.desc.nullslast,created_at.desc',{headers:H})
-  .then(function(r){return r.json();}).then(function(rows){
-    PASSAGES=rows||[];
-    if(!PASSAGES.length){$('pick').innerHTML='<option>No texts yet \u2014 ask Mr. Toby</option>';return;}
-    var newest=PASSAGES[0];
+  /* every passage row (active or not) + every published news article.
+     A published article with no passage row gets one built here, so the
+     tracker never misses a week (T-154: the neighbors article had none). */
+  var pRows=fetch(SUPA_URL+'/rest/v1/fluency_passages?select=*',{headers:H}).then(function(r){return r.json();});
+  var aRows=fetch(SUPA_URL+'/rest/v1/news_articles?select=slug,title,week_of,doc&published=is.true',{headers:H})
+    .then(function(r){return r.ok?r.json():[];}).catch(function(){return [];});
+  Promise.all([pRows,aRows]).then(function(res){
+    var all=Array.isArray(res[0])?res[0]:[], arts=Array.isArray(res[1])?res[1]:[];
+    var have={};all.forEach(function(p){have[p.slug]=p;});
+    arts.forEach(function(a){
+      if(!a||!a.slug)return;
+      var slug='news-'+a.slug, old=have[slug];
+      if(old&&String(old.body||'').trim())return;      /* already there (even if Mr. Toby turned it off) */
+      var body=recordFromDoc(a.doc||'');
+      if(!body)return;
+      var row={slug:slug,title:a.title||a.slug,level:'B',body:body,word_count:countWords(body),
+               assigned_week:a.week_of||null,active:old?old.active!==false:true};
+      if(old){Object.assign(old,row);} else {row.created_at=new Date().toISOString();all.push(row);have[slug]=row;}
+      fetch(SUPA_URL+'/rest/v1/fluency_passages?on_conflict=slug',{method:'POST',
+        headers:Object.assign({},H,{'Prefer':'resolution=merge-duplicates,return=minimal'}),
+        body:JSON.stringify({slug:row.slug,title:row.title,level:'B',body:body,word_count:row.word_count,assigned_week:row.assigned_week,active:row.active})
+      }).catch(function(){});
+    });
+    PASSAGES=all.filter(function(p){return p.active!==false&&String(p.body||'').trim();});
+    PASSAGES.sort(function(a,b){
+      var wa=a.assigned_week||'',wb=b.assigned_week||'';
+      if(wa!==wb){if(!wa)return 1;if(!wb)return -1;return wa<wb?1:-1;}
+      return String(b.created_at||'')<String(a.created_at||'')?-1:1;
+    });
+    if(!PASSAGES.length){$('pick').innerHTML='<option>No texts yet \u2014 ask Mr. Toby</option>';$('preview').textContent='';return;}
     $('pick').innerHTML=PASSAGES.map(function(p,i){
       var tag=i===0?'This week \u00b7 ':'';
       return '<option value="'+esc(p.slug)+'">'+tag+esc(p.title)+' ('+(p.word_count||countWords(p.body))+' words)</option>';
     }).join('');
     var want=new URLSearchParams(location.search).get('p');
-    if(want&&PASSAGES.some(function(p){return p.slug===want;})) $('pick').value=want;
-    peek();articleLink();
-  }).catch(function(){$('pick').innerHTML='<option>Could not load texts</option>';});
+    WANT_OK=!!(want&&PASSAGES.some(function(p){return p.slug===want;}));
+    if(WANT_OK) $('pick').value=want;
+    peek();articleLink();preview();autoOpen();
+  }).catch(function(){$('pick').innerHTML='<option>Could not load texts</option>';$('preview').innerHTML='<b>Could not reach the server.</b> Check the wifi and reload the page.';});
+}
+/* the read-aloud part of an article document: ---RECORD--- if it has one,
+   otherwise the first paragraphs of the middle reading level (about 120+ words) */
+function recordFromDoc(doc){
+  var parts=String(doc).split(/^\s*---([A-Z]+)(?::([A-Z]))?---\s*$/m), rec='', reads={};
+  for(var i=1;i<parts.length;i+=3){
+    var name=parts[i],lv=parts[i+1]||'B',body=(parts[i+2]||'').trim();
+    if(name==='RECORD') rec=body;
+    else if(name==='READ') reads[lv]=body.split(/\n\s*\n/).map(function(x){return x.trim();}).filter(Boolean);
+  }
+  if(!rec){
+    var ps=reads.B||reads.A||reads[Object.keys(reads)[0]]||[], out=[], n=0;
+    for(var j=0;j<ps.length&&n<120;j++){out.push(ps[j]);n+=countWords(plainDoc(ps[j]));}
+    rec=out.join('\n\n');
+  }
+  return plainDoc(rec).replace(/\s+/g,' ').trim();
+}
+function plainDoc(x){return String(x).replace(/\[\[(.+?)\|.+?\]\]/g,'$1').replace(/\(\((.+?)\)\)/g,'$1').replace(/\{\{([\s\S]+?)\}\}/g,'$1');}
+var WANT_OK=false,AUTO_DONE=false;
+function preview(){
+  var p=PASSAGES.filter(function(x){return x.slug===$('pick').value;})[0];
+  $('preview').textContent=p?String(p.body):'';
+}
+/* arriving from an article (?p=…): open straight onto the text, no picker step */
+function autoOpen(){
+  if(AUTO_DONE||!WANT_OK||!ME.email||$('gate').style.display!=='none')return;
+  AUTO_DONE=true;$('toRead').click();
 }
 function countWords(b){return String(b||'').trim().split(/\s+/).filter(Boolean).length;}
 loadPassages();
@@ -338,7 +393,7 @@ function articleLink(){
     a.href=href;a.classList.remove('hide');d.href=href;
   } else {a.classList.add('hide');d.href='../news/';}
 }
-$('pick').onchange=function(){peek();articleLink();};
+$('pick').onchange=function(){peek();articleLink();preview();};
 $('navRestart').onclick=function(e){e.preventDefault();if(mr&&mr.state==='recording')return;show('s1');};
 function peek(){
   if(!ME.email||!$('pick').value)return;
@@ -353,6 +408,7 @@ $('toRead').onclick=function(){
   P=PASSAGES.filter(function(p){return p.slug===$('pick').value;})[0];
   if(!P){alert('Choose a text first.');return;}
   WORDS=tokenize(P.body);
+  $('readTitle').textContent=P.title||'';
   $('readText').innerHTML=WORDS.map(function(w){return w.pre+'<span>'+esc(w.word)+'</span>'+w.post;}).join(' ');
   $('wcLabel').textContent=WORDS.length+' words';
   $('clock').textContent='0.0s';$('live').textContent='';

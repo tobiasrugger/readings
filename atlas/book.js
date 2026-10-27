@@ -197,7 +197,8 @@ window.ATLAS_BOOK = [
  notes:[['Oct 26','T-132','The finish screen now sends students back where they came from: the \u201cAll practice pages\u201d button is gone and the line reads \u201cGo back to My Page or to Google Classroom. If you are not sure, ask Mr. Toby.\u201d The green \u201c\u2190 My Page\u201d beside Google Classroom is added by std.js for students who came from https://tobiasrugger.github.io/readings/student/, so it is not hard-coded here. Page: https://tobiasrugger.github.io/readings/basics/'],['Oct 26','T-118','Tap words is on from the start \u2014 no yellow dashed outline, no ? cursor; tap any word to translate. Buttons and tap-to-fix words keep working; a word with no translation shows in grey instead of \u201c(not found)\u201d.'],['Oct 22','T-104','\u201cWhere?\u201d clues rewritten so each is true for exactly one of the eight places (wrong answers come from all eight, not the four shown).']]},
 
 {id:'news', ring:2, kind:'activity', course:'both', name:'This Week\u2019s Reading (news)', home:'news/', match:['news/'],
- what:'A weekly news article with levels, translations and questions; students\u2019 level is remembered.'},
+ what:'A weekly news article with levels, translations and questions; students\u2019 level is remembered.',
+ notes:[['Oct 27','T-154','An article with no ---RECORD--- part still gets a Read aloud passage (first 120+ words of the B reading), here and in the Fluency Tracker. https://tobiasrugger.github.io/readings/news/']]},
 
 {id:'storycheck', ring:2, kind:'activity', course:'101', name:'Story Check (Story Reel tests: read aloud, words, listening, grammar, extras)', home:'reel-test/ep02/', match:['reel-test/'], files:['reel-test/ep02/content.js'],
  what:'A self-contained check on a Story Reel episode. Part 1 for everyone: read 10 sentences aloud (recorded, the computer suggests a score, Mr. Toby decides), 12 word matches (pictures + home language), letters, dictation, listen-and-answer, story questions, fix the sentence, grammar. Part 2 after Turn in: order the places, summary, describe and compare characters (Venn), retell aloud, your backpack. ?mode=test = one try, no hints; plain URL = practice with hints.',
@@ -211,7 +212,8 @@ window.ATLAS_BOOK = [
  notes:[['Oct 27','T-146','Built: https://tobiasrugger.github.io/readings/checks/dashboard.html (pw galileo2026). New table teacher_checks (SQL in the T-146 message). Story text is read live from each episode page, so a fixed line in the reel shows here too. Saves also write activity_attempts (slug checks/dashboard/reel-ep02, 0\u20134 as 95/82/67/40/0 so the gradebook bands it back to the same number) and skill_attempts (reading-aloud). First piece of the skills-tracking plan (T-145).']]},
 
 {id:'fluency', ring:2, kind:'activity', course:'both', name:'Fluency Tracker (read aloud)', home:'fluency/', match:['fluency/'],
- what:'Students read a passage aloud; words correct per minute, accuracy and the recording are saved.'},
+ what:'Students read a passage aloud; words correct per minute, accuracy and the recording are saved.',
+ notes:[['Oct 27','T-154','Fixed: a published article with no read-aloud passage (the neighbors article) now appears anyway \u2014 the tracker builds it from the article (its ---RECORD--- part, or the first 120+ words of the B reading) and saves it. Coming from an article opens straight onto the text with its title; opening the tracker on its own shows the chosen text under the dropdown, no extra click. The news page uses the same rule for its Read aloud card. https://tobiasrugger.github.io/readings/fluency/']]},
 
 {id:'donow', ring:2, kind:'activity', course:'both', name:'Do Nows', home:'donow/', match:['donow/'],
  what:'Short opening tasks: The Dog at the Bus Stop, Mr. Toby\u2019s Weekend.',
