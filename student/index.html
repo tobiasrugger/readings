@@ -379,6 +379,18 @@ details.wq .qm{font-size:.85rem;color:var(--muted);font-weight:800}
 #storyCard .storyhead{display:flex;align-items:center;gap:12px}
 #storyCard .storyart{width:84px;height:auto;flex:0 0 auto;border:2px solid var(--plum-dk);border-radius:10px}
 @media(max-width:620px){#storyCard .storyart{width:60px}}
+/* T-142 v3: per-student extra work */
+#extraWrap{border:2px solid #2a64b8;background:#eaf2fc;border-radius:14px;padding:10px 12px 4px;margin:0 0 12px}
+#extraWrap .extrahead{margin:0 0 8px;font-size:1rem;font-weight:900;color:#2a64b8}
+#extraBox .pushrow{border:2px solid #2a64b8;border-left:9px solid #2a64b8;background:#fff;box-shadow:none;margin:0 0 8px}
+#extraBox .pushrow .from{color:#2a64b8}
+#extraBox .pushrow .pt{font-size:1.3rem}
+#pushDone .pushrow.extrarow{border:2px solid var(--green);border-left:9px solid var(--green)}
+#extraBox .pushrow{flex-wrap:wrap}
+#extraBox .pushrow .spcard.inband{flex:1 1 100%;margin:8px 0 0;background:#fff;box-shadow:none}
+#extraBox .pushrow .spcard.inband h3{display:none}
+#extraBox .pushrow:has(.spcard.inband) > div > .pp{display:none}
+@media(max-width:620px){#extraBox{clear:both}#extraBox .spcard.inband .spstep{min-width:0;flex:1 1 calc(50% - 8px)}}
 /* T-134: class-started rows — blue edge, below the teacher's own */
 #pushBox .pushrow.classrow{border-left-color:#3b78c4}
 #pushBox .pushrow.classrow .from{color:#2a5b97}
@@ -553,6 +565,8 @@ th,td{border-bottom:2px solid var(--line-dk)}
 </svg><h2 id="nextTitle"><span class="ico">&#127919;</span>Practice Next</h2>
       <!-- From Mr. Toby: pushed from /readings/assign/ (class_assignments, area "site"). It sits INSIDE the pulsing band so the page has one place that says "do this". -->
       <div id="pushBox"></div>
+      <!-- T-142 v3: work Mr. Toby gave THIS student from the Teacher's Desk (class_assignments period 'extra', email = the student) -->
+      <div id="extraWrap" class="hide"><h3 class="extrahead">&#10133; Extra work for you</h3><div id="extraBox"></div></div>
       <!-- Finish This (Gradebook chat): started-but-not-done work. Lives INSIDE the band so the page has one "do this" place. -->
       <div class="finsec hide" id="finishCard">
         <h2 class="finlabel"><span class="ico">&#9203;</span>Finish this</h2>
@@ -937,16 +951,16 @@ function welcomeBack(){
        sessionStorage.removeItem('gal_last_page'); sessionStorage.removeItem('gal_last_title'); sessionStorage.removeItem('gal_last_done'); }catch(e){}
   if(!last||samePath(last,'/readings/student/'))return;
   var inner=document.querySelector('#nextBand .nextinner'); if(!inner)return;
-  if(!done){ [].slice.call(document.querySelectorAll('#pushBox .pushrow, #pushDone .pushrow')).forEach(function(r){
+  if(!done){ [].slice.call(document.querySelectorAll('#pushBox .pushrow, #extraBox .pushrow, #pushDone .pushrow')).forEach(function(r){
       var a=r.querySelector('a.btn'); if(a&&samePath(a.getAttribute('href'),last)&&r.querySelector('.pp.done'))done=true; }); }
-  if(done){ [].slice.call(document.querySelectorAll('#pushBox .pushrow')).forEach(function(r){
+  if(done){ [].slice.call(document.querySelectorAll('#pushBox .pushrow, #extraBox .pushrow')).forEach(function(r){
       var a=r.querySelector('a.btn'); if(!a||!samePath(a.getAttribute('href'),last)||r.querySelector('.pp.done'))return;
       var pp=r.querySelector('.pp'); var h='<div class="pp done">&#10003; Done</div>';
       if(pp)pp.outerHTML=h; else r.firstElementChild.insertAdjacentHTML('beforeend',h);
       a.innerHTML='Open &rarr;'; var f=r.querySelector('.from'); if(f)f.innerHTML='&#10003; Done'; }); sinkDone(); }
   document.getElementById('nextBand').classList.remove('hide');
   /* the next thing: first pushed row not turned in, then Finish This, then practice */
-  var cand=[].slice.call(document.querySelectorAll('#pushBox .pushrow')).filter(function(r){
+  var cand=[].slice.call(document.querySelectorAll('#pushBox .pushrow, #extraBox .pushrow')).filter(function(r){
     var a=r.querySelector('a'); return !r.querySelector('.pp.done') && !(a&&samePath(a.getAttribute('href'),last)&&done);
   }).concat([].slice.call(document.querySelectorAll('#finBody > *')).filter(function(r){var a=r.querySelector('a');return a&&!(done&&samePath(a.getAttribute('href'),last));}))
     .concat([].slice.call(document.querySelectorAll('#growth .ncell')));
@@ -968,7 +982,7 @@ function loadStories(email){
      Every other started story stays in the My stories box below. One read of the story tables does both. */
   var card=document.getElementById('storyCard'), box=document.getElementById('storyProgress');
   if(!window.StoryProgress||!box){card.classList.add('hide');return Promise.resolve();}
-  var MAPS=window.StoryProgress.map||{}, rows=[].slice.call(document.querySelectorAll('#pushBox .pushrow')), want={};
+  var MAPS=window.StoryProgress.map||{}, rows=[].slice.call(document.querySelectorAll('#pushBox .pushrow, #extraBox .pushrow')), want={};
   function pathOf(h){return String(h||'').split('?')[0].split('#')[0].replace(/index\.html$/,'').replace(/\/?$/,'/');}
   rows.forEach(function(r){var a=r.querySelector('a');if(!a)return;var p=pathOf(a.getAttribute('href'));
     Object.keys(MAPS).forEach(function(k){if(pathOf(MAPS[k].url)===p){want[k]=r;}});});
@@ -1064,6 +1078,12 @@ async function loadPushed(email){
     rows=rows||[];
     var seen={}; rows=rows.filter(function(r){if(seen[r.href])return false;seen[r.href]=1;return true;});
     DATA.pushN=rows.length;
+    /* T-142 v3: extras for this student only (period 'extra' never matches the period in (all, N) query above) */
+    var lpx=email.split('@')[0], ex=[];
+    try{ ex=await sb('class_assignments?area=eq.site&period=eq.extra&email=in.('+encodeURIComponent(lpx+'@s.sfusd.edu')+','+encodeURIComponent(lpx+'@sfusd.edu')+')'+
+      '&or=(expires_at.is.null,expires_at.gt.'+encodeURIComponent(now)+')&order=created_at.asc&select=*')||[]; }catch(e){ ex=[]; }
+    ex=ex.filter(function(r){ if(!r.href||seen[r.href])return false; seen[r.href]=1; r.extra=true; return true; });
+    rows=rows.concat(ex);
     /* T-134: what the rest of the class is doing comes in under the teacher's own pushes */
     var cls=[]; try{ cls=await classDoing(email,p,rows); }catch(e){ cls=[]; }
     rows=rows.concat(cls);
@@ -1104,7 +1124,7 @@ async function loadPushed(email){
         if(at){ line='<div class="pp done">&#10003; Done'+(at.daily?' today':'')+(at.max?' &middot; score '+at.score+' of '+at.max:'')+'</div>'; }
       }
       var url=r.href+(r.href.indexOf('?')>-1?'&':'?')+'email='+encodeURIComponent(email);
-      return '<div class="pushrow'+(r.cls?' classrow':'')+'"><div><div class="from">'+(/pp done/.test(line)?'&#10003; Done':r.cls?'&#128101; Your class is doing this':'&#11088; Most important')+'</div><div class="pt">'+esc(r.title||r.href)+'</div>'+
+      return '<div class="pushrow'+(r.cls?' classrow':'')+(r.extra?' extrarow':'')+'"><div><div class="from">'+(/pp done/.test(line)?'&#10003; Done':r.cls?'&#128101; Your class is doing this':r.extra?'&#10133; Just for you':'&#11088; Most important')+'</div><div class="pt">'+esc(r.title||r.href)+'</div>'+
         (r.note?'<div class="pn">'+esc(r.note)+'</div>':'')+line+'</div>'+
         '<a class="btn noprint" href="'+esc(url)+'">'+(line.indexOf('Turned in')>-1||line.indexOf('pp done')>-1?'Open &rarr;':started?'Keep going &rarr;':'Start &rarr;')+'</a></div>';
     }).join('');
@@ -1113,8 +1133,11 @@ async function loadPushed(email){
 }
 function sinkDone(){
   var wrap=document.getElementById('pushDoneWrap'), dest=document.getElementById('pushDone'); if(!dest)return;
-  [].slice.call(document.querySelectorAll('#pushBox .pushrow')).forEach(function(r){ if(r.querySelector('.pp.done'))dest.appendChild(r); });
+  var xb=document.getElementById('extraBox');
+  if(xb){ [].slice.call(document.querySelectorAll('#pushBox .pushrow.extrarow')).forEach(function(r){ xb.appendChild(r); }); }
+  [].slice.call(document.querySelectorAll('#pushBox .pushrow, #extraBox .pushrow')).forEach(function(r){ if(r.querySelector('.pp.done'))dest.appendChild(r); });
   wrap.classList.toggle('hide',!dest.children.length);
+  if(xb)document.getElementById('extraWrap').classList.toggle('hide',!xb.children.length);
 }
 /* the band says "Do this next" when Mr. Toby pushed something, "Practice Next" otherwise */
 function bandMode(push){
@@ -1138,7 +1161,7 @@ function aimArrow(){
   var band=document.getElementById('nextBand'), pt=band&&band.querySelector('.nextpoint'); if(!pt)return;
   /* T-133: aim at what the student should do next — the NEXT-marked item, else the first unfinished push — never a finished row */
   var tgt=band.querySelector('.isnext');
-  if(!tgt){ var rows=[].slice.call(document.querySelectorAll('#pushBox .pushrow')).filter(function(r){return !r.querySelector('.pp.done');});
+  if(!tgt){ var rows=[].slice.call(document.querySelectorAll('#pushBox .pushrow, #extraBox .pushrow')).filter(function(r){return !r.querySelector('.pp.done');});
     if(rows[0])tgt=rows[0].querySelector('.spstep.next')||rows[0]; }
   if(tgt&&tgt.classList.contains('pushrow')&&tgt.querySelector('.spstep.next'))tgt=tgt.querySelector('.spstep.next');
   band.classList.toggle('aimed',!!tgt);
