@@ -211,6 +211,7 @@ function detail(r){
     h+='<div class="card" style="margin-bottom:10px"><h3>'+when(run.created_at)+' · '+esc(run.passage_slug)+' · '+
        (run.attempt==='cold'?'first read':'after practice')+'</h3>'+
        '<div class="muted" style="margin-bottom:8px" id="sum_'+run.id+'">'+runSum(run)+'</div>';
+    h+=micLine(run);
     if(run.audio_path) h+='<audio controls preload="none" data-p="'+esc(run.audio_path)+'" src="'+SUPA_URL+'/storage/v1/object/public/'+BUCKET+'/'+esc(run.audio_path)+'"></audio>';
     h+='<div class="mkbar"><b>Listen, then tap every word they got wrong.</b> <span class="muted">Dotted = the computer&rsquo;s guess.</span></div>'+
        '<div class="mk" data-run="'+run.id+'">'+markable(run)+'</div>'+
@@ -218,6 +219,15 @@ function detail(r){
        '<button class="btn" style="border:1px solid var(--rule)" data-clear="'+run.id+'">Clear</button><span class="muted" id="msg_'+run.id+'"></span></div></div>';
   });
   return h+'</div>';
+}
+/* T-165: what the page could hear */
+function micLine(run){
+  var L=run.sr_log;
+  if(!L) return run.created_at<'2026-10-08'?'':'<div class="muted" style="margin-bottom:8px">\uD83C\uDFA4 (no microphone details saved for this reading)</div>';
+  var col=L.loudness==='silent'?'#b91c1c':(L.loudness==='very quiet'?'#b45309':'#15803d');
+  var errs=Object.keys(L.errors||{}).map(function(k){return k+(L.errors[k]>1?' \u00d7'+L.errors[k]:'');}).join(', ');
+  return '<div style="margin-bottom:8px;font-size:14px"><b style="color:'+col+'">\uD83C\uDFA4 '+esc(L.mic||'microphone')+' \u00b7 '+esc(L.loudness||'?')+'</b>'+
+    ' <span class="muted">\u00b7 heard '+(L.heard_words||0)+' words, matched '+(L.matched||0)+' of '+run.word_count+(L.restarts?' \u00b7 restarted '+L.restarts+'\u00d7':'')+(errs?' \u00b7 problems: '+esc(errs):'')+'</span></div>';
 }
 function runSum(run){
   var e=eff(run);

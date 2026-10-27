@@ -70,6 +70,11 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 details{margin-top:10px}
 summary{cursor:pointer;color:#6d736b;font-size:14px}
 .hide{display:none}
+#meter{display:flex;align-items:center;gap:10px;margin-top:12px;font-weight:700;font-size:14px}
+#meter .mbar{flex:1;max-width:260px;height:14px;border:2px solid #22241f;border-radius:8px;background:#fff;overflow:hidden}
+#meter .mbar div{height:100%;width:0;background:#15803d;transition:width .1s}
+#micWarn{display:none;margin-top:10px;border:2px solid #b45309;background:#fff8e6;border-radius:10px;padding:10px 12px;font-weight:700}
+.passage span.w.guess{text-decoration:underline dotted #b45309 3px;text-underline-offset:5px;color:#7a3e06;font-weight:700}
 #live{min-height:24px;font-size:14px;color:#6d736b;font-style:italic;margin-top:8px}
 </style>
 </head>
@@ -163,6 +168,8 @@ summary{cursor:pointer;color:#6d736b;font-size:14px}
       <button class="big" id="recBtn">Start reading</button>
       <span class="clock" id="clock">0.0s</span>
     </div>
+    <div id="meter" class="hide"><span>&#127908;</span><div class="mbar"><div id="mfill"></div></div><span id="mtxt" data-xl="I can hear you">I can hear you</span></div>
+    <div id="micWarn" data-xl="I can't hear your microphone. If you have headphones in, take them out or check the microphone. Then tap Start over.">I can&rsquo;t hear your microphone. If you have headphones in, take them out or check the microphone. Then tap Start over.</div>
     <div id="live"></div>
   </div>
 </section>
@@ -255,7 +262,7 @@ var L1CODE={Spanish:'es',Cantonese:'yue',Mandarin:'zh',Arabic:'ar',Darija:'ary',
 var ME={email:'',first:'',last:'',name:'',period:'',lang:''};
 var PASSAGES=[],P=null,WORDS=[],MARKS={},BLOB=null,SECS=0,RUNS=[];
 var ATTEMPT='cold',RUNID=null,saveTimer=null;
-var HEARD='',AUTO=false;
+var HEARD='',AUTO=false,LOWC=false,LASTR=null;
 
 function $(i){return document.getElementById(i);}
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
@@ -460,23 +467,63 @@ function tokenize(body){
 /* ---------- speech recognition ---------- */
 var SR=window.SpeechRecognition||window.webkitSpeechRecognition||null;
 var rec=null,recOn=false,finals=[],interim='';
+var SRLOG={errors:{},restarts:0,sessions:0};
+function makeRec(){
+  var r=new SR();r.lang='en-US';r.continuous=true;r.interimResults=true;r.maxAlternatives=1;
+  r.onresult=function(e){
+    interim='';
+    for(var i=e.resultIndex;i<e.results.length;i++){
+      var t=e.results[i][0].transcript;
+      if(e.results[i].isFinal) finals.push(t); else interim+=t;
+    }
+    $('live').textContent=(finals.slice(-2).join(' ')+' '+interim).trim().slice(-140);
+  };
+  r.onerror=function(ev){var c=(ev&&ev.error)||'unknown';SRLOG.errors[c]=(SRLOG.errors[c]||0)+1;};
+  r.onend=function(){
+    if(!recOn)return;
+    if(interim){finals.push(interim);interim='';}          /* keep words Chrome never finalized */
+    SRLOG.restarts++;
+    setTimeout(function(){
+      if(!recOn)return;
+      try{r.start();SRLOG.sessions++;}
+      catch(e){try{rec=makeRec();rec.start();SRLOG.sessions++;}catch(e2){SRLOG.errors.restart_failed=(SRLOG.errors.restart_failed||0)+1;}}
+    },120);
+  };
+  return r;
+}
 function startRec(){
-  finals=[];interim='';HEARD='';
-  if(!SR){$('live').textContent='(This browser cannot listen. Your recording still saves.)';return;}
+  finals=[];interim='';HEARD='';SRLOG={errors:{},restarts:0,sessions:0};
+  if(!SR){$('live').textContent='(This browser cannot listen. Your recording still saves.)';SRLOG.errors.no_browser_support=1;return;}
+  try{rec=makeRec();recOn=true;rec.start();SRLOG.sessions=1;}catch(e){rec=null;SRLOG.errors.start_failed=1;}
+}
+/* microphone level: is any sound reaching the page? */
+var MIC={label:'',peak:0,sum:0,n:0,quietFor:0},actx=null,mtimer=null;
+function startMeter(stream){
+  MIC={label:'',peak:0,sum:0,n:0,quietFor:0};
+  try{var tr=stream.getAudioTracks()[0];MIC.label=(tr&&tr.label)||'';}catch(e){}
+  $('meter').classList.remove('hide');$('micWarn').style.display='none';
   try{
-    rec=new SR();rec.lang='en-US';rec.continuous=true;rec.interimResults=true;rec.maxAlternatives=1;
-    rec.onresult=function(e){
-      interim='';
-      for(var i=e.resultIndex;i<e.results.length;i++){
-        var t=e.results[i][0].transcript;
-        if(e.results[i].isFinal) finals.push(t); else interim+=t;
-      }
-      $('live').textContent=(finals.slice(-2).join(' ')+' '+interim).trim().slice(-140);
-    };
-    rec.onerror=function(){};
-    rec.onend=function(){ if(recOn){ try{rec.start();}catch(e){} } };
-    recOn=true;rec.start();
-  }catch(e){rec=null;}
+    actx=new (window.AudioContext||window.webkitAudioContext)();
+    var src=actx.createMediaStreamSource(stream),an=actx.createAnalyser();an.fftSize=1024;src.connect(an);
+    var buf=new Uint8Array(an.fftSize);
+    mtimer=setInterval(function(){
+      an.getByteTimeDomainData(buf);var m=0;for(var i=0;i<buf.length;i++){var v=Math.abs(buf[i]-128);if(v>m)m=v;}
+      var lvl=Math.min(1,m/64);MIC.peak=Math.max(MIC.peak,lvl);MIC.sum+=lvl;MIC.n++;
+      $('mfill').style.width=Math.round(lvl*100)+'%';
+      if(lvl<0.04){MIC.quietFor+=0.1;}else{MIC.quietFor=0;}
+      var heardSome=!!(finals.length||interim);
+      if(MIC.peak<0.025&&MIC.n>40&&!heardSome) $('micWarn').style.display='block';     /* 4 s of true silence and no words */
+      else $('micWarn').style.display='none';
+    },100);
+  }catch(e){MIC.noMeter=true;}
+}
+function stopMeter(){clearInterval(mtimer);mtimer=null;try{actx&&actx.close();}catch(e){}actx=null;$('meter').classList.add('hide');}
+function micSummary(){
+  var avg=MIC.n?MIC.sum/MIC.n:0;
+  var heard=!!String(HEARD||finals.join(' ')+interim).trim();
+  var loud=MIC.noMeter?'unknown':(MIC.peak<0.025?'silent':(MIC.peak<0.15?'very quiet':'ok'));
+  if(heard&&loud==='silent') loud='very quiet';            /* it heard words, so the mic works */
+  return {mic:MIC.label||'(unknown)',peak:Math.round(MIC.peak*100)/100,avg:Math.round(avg*100)/100,loudness:loud};
 }
 function stopRec(cb){
   recOn=false;
@@ -509,7 +556,7 @@ function align(){
   var tw=HEARD.split(/\s+/).map(norm).filter(Boolean);
   var n=pw.length,m=tw.length;
   var missed={};
-  if(!m) return {missed:missed,confident:false,matched:0};
+  if(!m) return {missed:missed,confident:false,matched:0,lastHit:-1};
   var dp=[],i,j;
   for(i=0;i<=n;i++){dp[i]=[];for(j=0;j<=m;j++)dp[i][j]=0;}
   for(i=1;i<=n;i++)for(j=1;j<=m;j++)dp[i][j]=sim(pw[i-1],tw[j-1])?dp[i-1][j-1]+1:Math.max(dp[i-1][j],dp[i][j-1]);
@@ -520,16 +567,18 @@ function align(){
   }
   var matched=Object.keys(hit).length;
   var confident=matched>=Math.max(4,n*0.45);
-  if(confident){
+  var lastHit=-1;Object.keys(hit).forEach(function(k){if(+k>lastHit)lastHit=+k;});
+  if(matched>=2){                                           /* T-165: mark whenever it heard something */
     WORDS.forEach(function(w,k){
       if(hit[k])return;
+      if(k>lastHit)return;                                    /* after the computer stopped hearing: don't blame the student */
       if(/\d/.test(w.word))return;                           /* numbers: never flag */
       if(k>0&&/^[A-Z]/.test(w.word)&&!/[.!?]$/.test(WORDS[k-1].post.replace(/&[^;]+;/g,'')))return; /* names mid-sentence: never flag */
       if(norm(w.word).length<=2)return;                      /* a, I, to: too short to trust */
       missed[k]=1;
     });
   }
-  return {missed:missed,confident:confident,matched:matched};
+  return {missed:missed,confident:confident,matched:matched,lastHit:lastHit};
 }
 
 /* ---------- record ---------- */
@@ -538,10 +587,10 @@ $('recBtn').onclick=function(){
   var b=$('recBtn');
   if(mr&&mr.state==='recording'){mr.stop();return;}
   navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
-    chunks=[];mr=new MediaRecorder(stream);
+    chunks=[];mr=new MediaRecorder(stream);startMeter(stream);
     mr.ondataavailable=function(e){chunks.push(e.data);};
     mr.onstop=function(){
-      clearInterval(tick);stream.getTracks().forEach(function(t){t.stop();});
+      clearInterval(tick);stopMeter();stream.getTracks().forEach(function(t){t.stop();});
       SECS=(Date.now()-t0)/1000;BLOB=new Blob(chunks,{type:'audio/webm'});
       b.textContent='Start reading';b.classList.remove('stop');b.disabled=true;
       $('live').textContent='One moment\u2026';
@@ -549,7 +598,7 @@ $('recBtn').onclick=function(){
         b.disabled=false;
         $('aud').src=URL.createObjectURL(BLOB);
         var r=align();
-        MARKS={};AUTO=r.confident;
+        MARKS={};AUTO=r.confident;LOWC=!r.confident;LASTR=r;
         Object.keys(r.missed).forEach(function(k){MARKS[k]=1;});
         RUNID=null;
         showResults(r);
@@ -566,7 +615,7 @@ $('recBtn').onclick=function(){
 /* ---------- results ---------- */
 function drawMark(){
   $('markText').innerHTML=WORDS.map(function(w,i){
-    var c=MARKS[i]===1?' err':(MARKS[i]===2?' sc':'');
+    var c=MARKS[i]===1?(LOWC?' guess':' err'):(MARKS[i]===2?' sc':'');
     return w.pre+'<span class="w'+c+'" data-i="'+i+'">'+esc(w.word)+'</span>'+w.post;
   }).join(' ');
   tiles();
@@ -587,10 +636,15 @@ function tiles(){
 function showResults(r){
   drawMark();
   $('heard').textContent=HEARD||'(nothing)';
-  if(!SR) $('resNote').textContent='This browser cannot listen while you read, so no words are marked. Your time and recording are saved.';
-  else if(!r.confident) $('resNote').textContent='The computer could not hear you clearly, so it did not mark any words. Your time and recording are saved. Try again a little louder, closer to the microphone.';
-  else if(!r.missed||!Object.keys(r.missed).length) $('resNote').textContent='The computer understood every word. Nice.';
-  else $('resNote').textContent='The words in red are the ones the computer did not catch. The computer is not always right. Practice them below, then read again.';
+  var ms=micSummary(),nm=Object.keys(r.missed||{}).length,msg;
+  if(ms.loudness==='silent') msg='The computer could not hear your microphone at all. If you have headphones in, take them out (or check the microphone) and read again. Mr. Toby still has your time.';
+  else if(!SR) msg='This browser cannot listen while you read, so no words are marked. Your time and recording are saved.';
+  else if(!r.matched||r.matched<2) msg='The computer could not understand the words. Try again a little louder, closer to the microphone.'+(ms.loudness==='very quiet'?' Your microphone was very quiet.':'');
+  else if(!nm) msg='The computer understood every word. Nice.';
+  else if(LOWC) msg='The computer had trouble hearing you, so these are only its guesses (dotted). Practice the words below, then read again.';
+  else msg='The words in red are the ones the computer did not catch. The computer is not always right. Practice them below, then read again.';
+  if(r.lastHit>=0&&r.lastHit<WORDS.length-6&&ms.loudness!=='silent') msg+=' (The computer stopped hearing you near "'+WORDS[r.lastHit].word+'", so words after that are not marked.)';
+  $('resNote').textContent=msg;
   practiceWords();
 }
 var PW=[],PWOK={},PWTRY={};
@@ -716,12 +770,18 @@ function autoSave(){
   fetch(SUPA_URL+'/storage/v1/object/'+BUCKET+'/'+path,{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'audio/webm'},body:BLOB})
   .then(function(r){return r.ok?null:r.text().then(function(t){throw new Error('status '+r.status+'. '+t.slice(0,160));});})
   .then(function(){
-    return fetch(SUPA_URL+'/rest/v1/fluency_runs',{method:'POST',headers:Object.assign({},H,{'Prefer':'return=representation'}),
-      body:JSON.stringify({email:ME.email,student_name:ME.name,period:ME.period,l1:ME.lang,
+    var row={email:ME.email,student_name:ME.name,period:ME.period,l1:ME.lang,
         passage_slug:P.slug,attempt:ATTEMPT,seconds:Math.round(SECS*10)/10,
         word_count:s0.total,errors:s0.errors,wpm:s0.wpm,wcpm:s0.wcpm,accuracy:s0.accuracy,
-        error_words:errList(),audio_path:path,transcript:HEARD||null,auto_marked:AUTO})
-    }).then(function(r){ if(!r.ok)return r.text().then(function(t){throw new Error('status '+r.status+'. '+t.slice(0,160));}); return r.json(); });
+        error_words:errList(),audio_path:path,transcript:HEARD||null,auto_marked:AUTO};
+    var log=Object.assign({},micSummary(),{errors:SRLOG.errors,restarts:SRLOG.restarts,sessions:SRLOG.sessions,
+        heard_words:HEARD?HEARD.split(/\s+/).length:0,matched:LASTR?LASTR.matched:0,last_hit:LASTR?LASTR.lastHit:-1,ua:navigator.userAgent.slice(0,160)});
+    function post(withLog){
+      var b=Object.assign({},row);if(withLog)b.sr_log=log;
+      return fetch(SUPA_URL+'/rest/v1/fluency_runs',{method:'POST',headers:Object.assign({},H,{'Prefer':'return=representation'}),body:JSON.stringify(b)});
+    }
+    return post(true).then(function(r){ return r.ok?r:post(false); })     /* if the sr_log column is missing, save without it */
+    .then(function(r){ if(!r.ok)return r.text().then(function(t){throw new Error('status '+r.status+'. '+t.slice(0,160));}); return r.json(); });
   })
   .then(function(rows){RUNID=(rows&&rows[0]&&rows[0].id)||null;note('<b>Saved.</b> Mr. Toby has your recording.','ok');galReport();})
   .catch(function(e){
