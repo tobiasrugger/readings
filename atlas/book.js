@@ -55,7 +55,7 @@ window.ATLAS_BOOK = [
 /* ===================== 0 · THE START ===================== */
 {id:'standard', ring:0, kind:'platform', course:'both', name:'The page standard (track.js + std.js)',
  files:['track.js','std.js'], own:'std',
- what:'Two files every student page loads with one line. track.js notices the student\u2019s saves and turns them into gradebook rows; std.js adds the language dropdown to every sign-in box, the tap-any-word listen and translate card, stay-signed-in for 12 hours, and the \u201c\u2190 My Page\u201d button.',
+ what:'Two files every student page loads with one line. track.js notices the student\u2019s saves and turns them into gradebook rows; std.js adds the language dropdown to every sign-in box, the tap-any-word listen and translate card, stay-signed-in for one class period (70 minutes, never pressing Start for the student), and the \u201c\u2190 My Page\u201d button.',
  use:'Nothing to do. If a page has <script src="/readings/track.js"></script> at the bottom, it gets all of this.',
  chart:{si:'std.js adds the language dropdown to any sign-in box that lacks one, and remembers the choice as vocab_lang.',
         tt:'std.js: tap any word on any student page \u2192 its translation, plus buttons to hear or translate the whole sentence.',
@@ -64,6 +64,7 @@ window.ATLAS_BOOK = [
         sc:'track.js reads the score (GAL_SCORE, the saved score, or the page\u2019s own score box) on Turn in.',
         mp:'std.js shows \u201c\u2190 My Page\u201d and grows it into \u201c\u2713 Done \u2014 back to My Page\u201d when the student finishes.'},
  notes:[
+  ['Oct 28','T-167','Shared Chromebooks: no page signs a student in by itself any more. A sign-in from the last 70 minutes (one class period) still fills the box, with a yellow \u201cSigned in as <name> \u00b7 Period N \u2014 Not <name>? Tap here\u201d box, and the student taps Start. After 70 minutes the old name and email are cleared from the box and forgotten on that computer (it used to walk the next student straight into the last one\u2019s work for 12 hours \u2014 how Amira\u2019s Landlady work was lost). Same fix in the vocab practice pages\u2019 own sign-in (vocab.js + 21 pages), which used to auto-sign-in from their own saved copy with no time limit. Try it at https://tobiasrugger.github.io/readings/vocab/colors/.'],
   ['Oct 26','T-136','Sign-in boxes fill in a student\u2019s period and home language from the class list when the name and email come from the browser\u2019s autofill (or a roster pick, or a remembered session) \u2014 Start waits up to 2 seconds for it, never blocks, and never overwrites what the student chose. Seen on https://tobiasrugger.github.io/readings/basics/, https://tobiasrugger.github.io/readings/landlady/ and https://tobiasrugger.github.io/readings/student/.'],
   ['Oct 22','T-109','Reel translate timeout fixed and on-device voices used first (engine.js, speak-core.js, std.js).'],
   ['Oct 22','T-107','\u201c\u2190 My Page\u201d also appears on News and on pages opened in a new tab (std.js reads where the student came from).'],

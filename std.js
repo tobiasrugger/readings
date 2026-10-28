@@ -27,10 +27,12 @@
       "Listen" buttons that play sound (never an answer choice that just
       says "listen" — that is a vocabulary word in Unit 1).
 
-   6. Stay signed in: a student who signed in on any activity in the last
-      12 hours is recognised on the next one. The sign-in box fills itself
-      in, shows "Signed in as <name> — Not <name>? Tap here", and walks
-      straight through when nothing is left to type.
+   6. Stay signed in (T-167, Oct 28 2026): a student who signed in on any
+      activity in the last 70 minutes (one class period) is recognised on the
+      next one. The sign-in box fills itself in and shows a yellow "Signed in
+      as <name> · Period N — Not you? Tap here" box, but NEVER presses Start:
+      the student taps it. (It used to walk straight in for 12 hours, which
+      put the next student on a shared Chromebook into the last one's work.)
    7. Translation cache: every call to the Apps Script proxy checks the
       shared song_tr table first, so the second student to tap a word gets
       it instantly and the proxy is asked once per word per language.
@@ -103,9 +105,11 @@
   var HIDE_ROSTER = true;
   var ROSTER_CSS = HIDE_ROSTER ? '#grosterwrap{display:none !important}' : '';
 
-  var WHO_CSS = '.gal-std-who{font-size:14px;font-weight:700;margin:8px 0;line-height:1.5}' +
-    '.gal-std-notme{font:inherit;font-size:13px;font-weight:700;background:none;border:0;padding:0;' +
-    'text-decoration:underline;cursor:pointer;color:inherit;opacity:.85}';
+  /* T-167: the "Signed in as" line is now the only guard on a shared computer, so it is loud */
+  var WHO_CSS = '.gal-std-who{font-size:16px;font-weight:800;margin:10px 0;line-height:1.45;color:#2B2233;' +
+    'background:#fff3c4;border:2px solid #2B2233;border-radius:10px;padding:8px 10px;box-shadow:0 3px 0 rgba(43,34,51,.25)}' +
+    '.gal-std-notme{font:inherit;font-size:15px;font-weight:800;background:#fff;border:2px solid #2B2233;border-radius:999px;' +
+    'padding:3px 12px;margin-left:4px;cursor:pointer;color:#2B2233;text-decoration:none;opacity:1}';
   function addCSS() {
     if (document.getElementById('gal-std-css')) return;
     var st = document.createElement('style');
@@ -195,8 +199,9 @@
 
   /* ========== shared session: signed in once, signed in everywhere ==========
      Written by any page that signs a student in (here, or by the page's own
-     code where it already does this). Read by every page for 12 hours. */
-  var SESSION_HOURS = 12;
+     code where it already does this). Read by every page for one class
+     period (70 min, T-167 — was 12 hours). */
+  var SESSION_HOURS = 70 / 60;
   function sess() {
     try {
       var at = +(localStorage.getItem('gal_student_at') || 0);
@@ -306,9 +311,33 @@
       }, 60);
     }, false);
   }
+  /* T-167: a sign-in older than one class period is someone else's now. Many pages fill the
+     email box themselves from gal_student_email with no time limit, so clear what matches the
+     old student (email, and the name beside it) and forget them on this computer. */
+  var STALE = (function () {
+    try {
+      var em = localStorage.getItem('gal_student_email') || '', at = +(localStorage.getItem('gal_student_at') || 0);
+      if (!em || (at && Date.now() - at <= SESSION_HOURS * 3600 * 1000)) return null;
+      var st = { em: em.toLowerCase(), nm: (localStorage.getItem('gal_student_name') || '').trim().toLowerCase() };
+      forget();
+      return st;
+    } catch (e) { return null; }
+  })();
+  function clearExpired(box) {
+    if (!STALE) return;
+    var user = STALE.em.split('@')[0], els = box.querySelectorAll('input');
+    for (var i = 0; i < els.length; i++) {
+      var k = fieldKind(els[i], box), v = (els[i].value || '').trim().toLowerCase();
+      if (!v) continue;
+      if ((k === 'email' && (v === STALE.em || v.split('@')[0] === user)) || (k === 'name' && STALE.nm && v === STALE.nm)) {
+        els[i].value = '';
+        try { els[i].dispatchEvent(new Event('input', { bubbles: true })); } catch (e) {}
+      }
+    }
+  }
   function resume(box, btn) {
     var s = sess();
-    if (!s) { watchSignIn(box, btn); return; }
+    if (!s) { clearExpired(box); setTimeout(function () { clearExpired(box); }, 600); watchSignIn(box, btn); return; }
     watchSignIn(box, btn);
     tryResume(box, btn, s);
     /* a language picker added after us (the mirror block, or a page engine)
@@ -335,14 +364,10 @@
     }
     var r = fillFrom(box, s);
     whoLine(box, s, null, btn);
-    /* name, email and period known, and a language chosen? walk straight in.
-       Other fields in the box are left as the page set them. */
-    var lang = box.querySelector('#galStdLang');
-    var langOK = !lang || !!lang.value;
-    if (r.left === 0 && r.have.email && langOK && !box.getAttribute('data-gal-walked')) {
-      box.setAttribute('data-gal-walked', '1');
-      setTimeout(function () { if (shown(btn)) btn.click(); }, 400);
-    }
+    /* T-167: never press Start for them. The fields are filled and the yellow
+       "Signed in as … — Not you?" box is showing; the student taps Start. A
+       shared Chromebook must never walk the next student into someone else's work. */
+    void r;
   }
 
   /* ========== translation cache (song_tr) ==========

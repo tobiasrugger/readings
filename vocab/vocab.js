@@ -139,12 +139,14 @@ $('groster').addEventListener('change', function(){
 $('gmail').addEventListener('keydown', function(ev){ if(ev.key==='Enter') signIn(); });
 (function(){
   try{
+    /* T-167: only prefill for a student who signed in during this class period (70 min) —
+       a shared Chromebook must not hand the next student the last one's name */
+    var g=localStorage.getItem('gal_student_email')||'', at=+(localStorage.getItem('gal_student_at')||0);
+    var fresh=g && at && (Date.now()-at)<=70*60*1000;
     var s=JSON.parse(localStorage.getItem('vocab_me')||'null');
-    if(s&&s.email){ $('gname').value=s.name||''; $('gmail').value=s.email; $('gper').value=String(s.period||'').replace(/[^0-9]/g,''); }
-    else {
-      var g=localStorage.getItem('gal_student_email');   /* signed in elsewhere already */
-      if(g) $('gmail').value=g;
-    }
+    if(fresh && s&&s.email&&String(s.email).toLowerCase().split('@')[0]===g.toLowerCase().split('@')[0]){
+      $('gname').value=s.name||''; $('gmail').value=s.email; $('gper').value=String(s.period||'').replace(/[^0-9]/g,'');
+    } else if(fresh){ $('gmail').value=g; }
   }catch(err){}
   loadRoster();
 })();
@@ -1456,13 +1458,16 @@ setTimeout(checkTranslation, 4000);
       if(o && o.email && o.name && o.period) st = { email: o.email, name: o.name, period: String(o.period) };
     }
   }catch(e){ st = null; }
-  if(st && st.email){
+  /* T-167 (Oct 28): prefill only for the student signed in during this class period (70 min),
+     and never press Start for them — on a shared Chromebook the next student must not land in
+     the last one's work. The yellow "Signed in as … — Not you?" box (std.js) shows who it is. */
+  var g = '', at = 0;
+  try{ g = localStorage.getItem('gal_student_email') || ''; at = +(localStorage.getItem('gal_student_at') || 0); }catch(e){}
+  var fresh = g && at && (Date.now() - at) <= 70 * 60 * 1000;
+  if(st && st.email && fresh && String(st.email).toLowerCase().split('@')[0] === g.toLowerCase().split('@')[0]){
     $('gname').value = st.name || '';
     $('gmail').value = st.email;
     $('gper').value = String(st.period || '').replace(/[^0-9]/g, '');
-    if(st.name && st.period && typeof signIn === 'function'){
-      signIn();                                   /* same path as pressing Start; stays on the gate only if something fails validation */
-    }
   }
 })();
 
