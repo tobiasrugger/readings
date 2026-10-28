@@ -205,6 +205,7 @@ table.gb{border-collapse:collapse;font-size:.92rem;min-width:100%;background:rep
 <div class="vw" id="vw"><div class="ovbar"><button class="btn dk" id="vwBack">← Back to desk</button><button class="btn" id="vwPile">▦ The pile</button><span class="t" id="vwT"></span><button class="btn" id="vwWork">Their work</button><button class="btn" id="vwPage">My Page</button><button class="btn" id="vwPrev">◀ Prev</button><button class="btn dk" id="vwNext">Next ▶</button></div><iframe id="vwF" title="Student work"></iframe></div>
 <script src="/readings/dashboards/list.js"></script>
 <script src="/readings/assign/catalog.js"></script>
+<script src="/readings/skills/skills.js"></script><!-- T-164: R W S L letters come from the Skill Map -->
 <script>
 /* T-142 v1 — Teacher's Desk v1 (ELD 103 chat c1e00dcf, Oct 27). Reads students,
    class_assignments and gradebook_best. Since T-142 v3 (Oct 27) it WRITES one thing:
@@ -406,7 +407,10 @@ var DOMAIN=[['landlady/investigate','R'],['landlady','RW'],['telltale','RW'],['m
   ['reel','L'],['songs','L'],['listen','L'],
   ['launch-plus','RWS'],['basics','R'],['vocab','R'],['news','R'],['phonics','R'],['holidays','R'],['monsters','R']];
 var DNAME={R:'Reading',W:'Writing',S:'Speaking',L:'Listening'};
-function domOf(slug){for(var i=0;i<DOMAIN.length;i++)if(slug.indexOf(DOMAIN[i][0])===0)return DOMAIN[i][1];return 'R';}
+/* T-164: use the Skill Map (skills/skills.js) so the Desk, the Skill Map and printed reports agree; DOMAIN above is only the fallback if skills.js did not load. */
+function domOf(slug){
+  try{if(window.GAL_SKILLS&&GAL_SKILLS.domainOf){var d=String(GAL_SKILLS.domainOf(slug)||'').replace(/[^RWSL]/g,'');if(d)return d;}}catch(e){}
+  for(var i=0;i<DOMAIN.length;i++)if(slug.indexOf(DOMAIN[i][0])===0)return DOMAIN[i][1];return 'R';}
 function rwsl(k){
   var t={R:0,W:0,S:0,L:0},m=BEST[k]||{},cut=Date.now()-30*864e5;
   Object.keys(m).forEach(function(sl){var c=m[sl];if(c.last_at&&Date.parse(c.last_at)<cut)return;if(/dashboard|^teacher|^assign|^student$/.test(sl))return;
