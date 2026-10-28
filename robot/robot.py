@@ -505,7 +505,10 @@ async def run_page(browser, rel):
             if out:
                 try: await page.click(f'[data-robot="{out[0]["id"]}"]', timeout=1500)
                 except Exception: pass
-                await settle(page, 2500)
+                await page.wait_for_timeout(1500)
+                try: await page.wait_for_load_state("domcontentloaded", timeout=8000)
+                except Exception: pass
+                await settle(page, 2500); await page.wait_for_timeout(800)
                 g = await fill_gate(page, B); how = "signed-out-first"
             else:
                 how = "page-kept-A-signed-in"

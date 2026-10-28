@@ -23,7 +23,7 @@
   var PATH = location.pathname.replace(/index\.html?$/, '');
   var INFRA = /^(students|student_aliases|activity_attempts|skill_attempts|activities|instruction_reveals|page_translation|song_tr|student_work|response_history|class_assignments|excusals|student_profiles|song_lyrics|news_translations|teacher_checks|rpc)$/;
   var KEYCOLS = ['set_slug', 'slug', 'guide_key', 'episode', 'lesson', 'lesson_id', 'page', 'story', 'activity', 'set_id', 'unit',
-    'part', 'deck', 'item', 'kind', 'set_key', 'story_id', 'lesson_key', 'quiz', 'chapter', 'text_slug', 'song', 'module', 'section'];
+    'part', 'deck', 'item', 'kind', 'set_key', 'story_id', 'lesson_key', 'quiz', 'chapter', 'text_slug', 'song', 'module', 'section', 'character_slug', 'field_key', 'qid', 'question', 'item_id', 'week'];
   var SKIPFILL = /^(id|email|student_email|updated_at|created_at|saved_at)$/;
   var KEEP = /^(__sg|gal_|vocab_lang|std_)|lang|_dir$|_tap$|font|theme|textsize|bigtext/i;
 
@@ -43,6 +43,18 @@
     Storage.prototype.getItem = function (k) { var v = gi.call(this, k); if (this === LS && v != null && !SG.who) note(k); return v; };
     Storage.prototype.setItem = function (k, v) { if (this === LS) { if (SG.reloading && mine[k]) return; note(k); } return si.call(this, k, v); };
   } catch (e) {}
+
+  /* a clean-up asked for by the last page load: done before this page's own scripts read anything
+     (a page can re-save its answers while it unloads, so the keys are cleared again here) */
+  try { var CL = JSON.parse(SS.getItem('__sg_clear') || 'null'); if (CL) { SS.removeItem('__sg_clear'); CL.forEach(function (k) { LS.removeItem(k); }); } } catch (e) {}
+
+  /* keys a page writes without setItem (localStorage[k] = v) are found by comparing snapshots */
+  var snap = {};
+  try { for (var si0 = 0; si0 < LS.length; si0++) { var k0 = LS.key(si0); snap[k0] = gi.call(LS, k0); } } catch (e) {}
+  function sweep() { if (SG.reloading) return; try { for (var i = 0; i < LS.length; i++) { var k = LS.key(i); var v = gi.call(LS, k);
+    if (snap[k] !== v) { snap[k] = v; if (SG.who) note(k); } } } catch (e) {} }
+  setInterval(sweep, 4000);
+  window.addEventListener('pagehide', sweep);
 
   /* ---------- shared Chromebook: the last student is never signed in for the next one ----------
      Older than 70 minutes (one class period): the last student's sign-in is cleared before the page runs.
@@ -68,7 +80,9 @@
       n.querySelector('span').textContent = OWNER;
       n.querySelector('button').onclick = function () {
         SG.reloading = true;
-        idKeys(OWNER).concat(Object.keys(mine)).forEach(function (k) { try { LS.removeItem(k); } catch (e) {} });
+        var gone = idKeys(OWNER).concat(Object.keys(mine));
+        gone.forEach(function (k) { try { LS.removeItem(k); } catch (e) {} });
+        try { SS.setItem('__sg_clear', JSON.stringify(gone)); } catch (e) {}
         try { LS.removeItem('__sg_owner'); LS.removeItem('__sg_owner_at'); } catch (e) {}
         location.reload();
       };
@@ -118,7 +132,7 @@
     try { si.call(LS, '__sg_owner', l); si.call(LS, '__sg_owner_at', String(Date.now())); } catch (e) {}
     if (hadOther && !SG.who) {
       Object.keys(mine).forEach(function (k) { try { LS.removeItem(k); } catch (e) {} });
-      try { SS.setItem('__sg_fresh', String(email).trim().toLowerCase()); } catch (e) {}
+      try { SS.setItem('__sg_fresh', String(email).trim().toLowerCase()); SS.setItem('__sg_clear', JSON.stringify(Object.keys(mine))); } catch (e) {}
       SG.reloading = true; location.reload(); return false;
     }
     SG.who = l; return true;

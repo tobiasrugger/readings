@@ -793,18 +793,30 @@ function sbHeaders(extra){
   return h;
 }
 
+/* T-170: work is kept by school email (from the sign-in box), not by the typed name,
+   so two students with the same name, or the next student on this Chromebook, never share answers. */
+function who(){
+  var m = (window.SBM_STD && window.SBM_STD.me && window.SBM_STD.me()) || {};
+  if(m.email){
+    if(m.name && m.name !== STATE.name){ STATE.name = m.name; saveStudent(); var n = document.getElementById('inName'); if(n) n.value = m.name; }
+    if(m.period && String(m.period) !== String(STATE.period)){ STATE.period = String(m.period); saveStudent(); var p = document.getElementById('inPeriod'); if(p) p.value = STATE.period; }
+  }
+  return {email: m.email || '', name: m.name || STATE.name, period: m.period || STATE.period};
+}
 function saveField(fieldKey, content, mark){
-  if(!STATE.name){ if(mark) setMark(mark, 'Type your name at the top to save', 'err'); return; }
+  var me = who();
+  if(!me.email){ if(mark) setMark(mark, 'Sign in at the top to save', 'err'); return; }
   var row = {
-    student_name: STATE.name,
-    period: STATE.period,
+    email: me.email,
+    student_name: me.name,
+    period: me.period,
     character_slug: STATE.slug,
     field_key: fieldKey,
     content: content,
     updated_at: new Date().toISOString()
   };
   if(mark) setMark(mark, 'Saving\u2026', '');
-  var url = SUPA_URL + '/rest/v1/' + TABLE + '?on_conflict=student_name,character_slug,field_key';
+  var url = SUPA_URL + '/rest/v1/' + TABLE + '?on_conflict=email,character_slug,field_key';
   fetch(url, {
     method:'POST',
     headers: sbHeaders({'Prefer':'resolution=merge-duplicates,return=minimal'}),
@@ -817,15 +829,24 @@ function saveField(fieldKey, content, mark){
 }
 
 function loadMine(slug, cb){
-  if(!STATE.name){ cb({}); return; }
+  var me = who();
+  if(!me.email){ cb({}); return; }
+  /* both email spellings (saveguard.js widens eq. to both); old rows saved by name only fill empty boxes */
   var url = SUPA_URL + '/rest/v1/' + TABLE
-    + '?student_name=eq.' + encodeURIComponent(STATE.name)
+    + '?email=eq.' + encodeURIComponent(me.email)
+    + '&character_slug=eq.' + encodeURIComponent(slug)
+    + '&select=field_key,content,updated_at';
+  var legacy = SUPA_URL + '/rest/v1/' + TABLE
+    + '?email=is.null&student_name=eq.' + encodeURIComponent(me.name || '')
     + '&character_slug=eq.' + encodeURIComponent(slug)
     + '&select=field_key,content';
-  fetch(url, {headers: sbHeaders()}).then(function(r){ return r.json(); })
-  .then(function(rows){
+  Promise.all([
+    fetch(url, {headers: sbHeaders()}).then(function(r){ if(!r.ok) throw new Error('load ' + r.status); return r.json(); }),
+    me.name ? fetch(legacy, {headers: sbHeaders()}).then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; }) : Promise.resolve([])
+  ]).then(function(res){
     var out = {};
-    if(Array.isArray(rows)) rows.forEach(function(r){ out[r.field_key] = r.content; });
+    (res[1] || []).forEach(function(r){ if(r.content) out[r.field_key] = r.content; });
+    (res[0] || []).forEach(function(r){ if(r.content) out[r.field_key] = r.content; });
     cb(out);
   }).catch(function(){ cb({}); });
 }
