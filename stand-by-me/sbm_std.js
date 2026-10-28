@@ -195,7 +195,7 @@ function signIn(){
   var c=canon(raw);
   alias(raw,c);seed(name,c,per);
   me={name:name,email:c,period:per};
-  try{localStorage.setItem('sbm_me',JSON.stringify(me));
+  try{localStorage.setItem('sbm_me',JSON.stringify(me));localStorage.setItem('sbm_me_at',String(Date.now()));
       localStorage.setItem('gal_student_email',c);}catch(e){}
   document.getElementById('sbm-gate').style.display='none';
   document.querySelector('#sbm-bar .who').textContent=me.name+' · P'+me.period;
@@ -257,6 +257,9 @@ function build(){
 
   try{
     var saved=JSON.parse(localStorage.getItem('sbm_me')||'null');
+    /* T-173: the last student's name waits in the box for one class period (70 min) only */
+    if(saved&&!(Date.now()-(+localStorage.getItem('sbm_me_at')||0)<70*60*1000)){
+      localStorage.removeItem('sbm_me');localStorage.removeItem('sbm_me_at');saved=null;}
     if(saved&&saved.email){
       document.getElementById('sbm-mail').value=saved.email;
       document.getElementById('sbm-name').value=saved.name||'';

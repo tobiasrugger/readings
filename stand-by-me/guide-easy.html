@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="/readings/saveguard.js"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Reading Guide #1 — The Body / Stand By Me</title>
@@ -636,7 +637,7 @@ document.addEventListener("click", function(e){
   function signIn(addr, silent){
     email = String(addr || "").trim().toLowerCase();
     if(email.indexOf('@') < 1){ status('Please type your full email address', 'warn'); return; }
-    try{ window.localStorage.setItem(EMAIL_KEY, email); }catch(e){}
+    try{ window.localStorage.setItem(EMAIL_KEY, email); window.localStorage.setItem(EMAIL_KEY + '_at', String(Date.now())); }catch(e){}
     signedInUI();
     status('Loading your work\u2026');
     pull().then(function(answers){
@@ -691,7 +692,14 @@ document.addEventListener("click", function(e){
   /* ---------- auto sign-in ---------- */
   var saved = null;
   try{ saved = window.localStorage.getItem(EMAIL_KEY); }catch(e){}
-  if(saved){ $('cl-email').value = saved; signIn(saved, true); }
+  /* T-173: never sign in by itself. Within 70 minutes (one class period) the email is waiting in the box; the student taps Sign in. */
+  var savedAt = 0; try{ savedAt = +window.localStorage.getItem(EMAIL_KEY + '_at') || 0; }catch(e){}
+  if(saved && Date.now() - savedAt < 70*60*1000){
+    $('cl-email').value = saved;
+    status('Is this you? ' + saved + ' \u2014 tap Sign in. Not you? Type your own email.', 'warn');
+  } else if(saved){
+    try{ window.localStorage.removeItem(EMAIL_KEY); window.localStorage.removeItem(EMAIL_KEY + '_at'); }catch(e){}
+  }
 })();
 </script>
 
