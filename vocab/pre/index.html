@@ -67,6 +67,10 @@ main{max-width:760px;margin:0 auto;padding:18px 20px 40px}
   padding:22px 10px;margin-bottom:18px;
   font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;
 }
+.emoji{border-color:#3d2a52;box-shadow:0 3px 0 rgba(61,42,82,.25)}
+.emoji.pic{padding:14px 10px}
+.opt{border-color:#5a4670 !important}
+.emoji.pic svg{width:clamp(150px,44vw,220px);height:auto;display:block}
 .sent{
   background:#fff;border:2px solid var(--line);border-radius:24px;
   padding:26px 24px;margin-bottom:18px;min-height:150px;display:grid;align-items:center;
@@ -274,7 +278,7 @@ $('btnSignin').addEventListener('click', function(){
 
 function buildItems(){
   S.items = shuffle(QUIZ.items).map(function(it, n){
-    return { k:'q' + (n+1) + '_' + it.w.replace(/\s+/g,'-'), w:it.w, e:it.e || '', s:it.s || '', opts:shuffle([it.w].concat(it.opts)) };
+    return { k:'q' + (n+1) + '_' + it.w.replace(/\s+/g,'-'), w:it.w, e:it.e || '', icon:it.icon || '', s:it.s || '', opts:shuffle([it.w].concat(it.opts)) };
   });
   S.answers = {}; S.i = 0; S.created = false;
 }
@@ -326,7 +330,13 @@ function render(){
     $('sent').setAttribute('data-s', it.s); $('sent').classList.remove('hidden');
     $('emoji').classList.add('hidden');
   } else {
-    $('emoji').textContent = it.e; $('emoji').classList.remove('hidden');
+    /* drawn picture first (icon:), then emoji (e:). Saved tries from before this fix
+       stored items without icon, so look the word up in the quiz too. */
+    var src = it.icon ? it : (QUIZ.items.filter(function(q){ return q.w === it.w; })[0] || {});
+    var svg = src.icon && (window.ICONS || {})[src.icon];
+    if (svg){ $('emoji').innerHTML = svg; $('emoji').classList.add('pic'); }
+    else { $('emoji').textContent = it.e || src.e || ''; $('emoji').classList.remove('pic'); }
+    $('emoji').classList.remove('hidden');
     $('sent').classList.add('hidden');
   }
   $('dots').innerHTML = S.items.map(function(x, n){

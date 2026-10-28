@@ -284,7 +284,7 @@ window.ATLAS_BOOK = [
   ['Oct 22','T-45','Never reveal: \u201cshow answers\u201d buttons gone across all 21 pages.']]},
 
 {id:'vocab-checks', ring:3, kind:'activity', course:'101', name:'Vocabulary checks (before & after)', home:'vocab/pre/', match:['vocab/pre/','vocab/pretest-ll12/'],
- what:'Pre- and post-unit word checks for nine topics, plus the Units 1\u20132 pre-test, with a class report.'},
+ what:'Pre- and post-unit word checks for nine topics, plus the Units 1\u20132 pre-test, with a class report.', notes:[['Oct 28','T-174','Drawn pictures now show on the quiz page; nine quizzes had a blank picture box (hard-school-words, hard-time-compare, dp-strengths-pics, dp-traits-3, dp-traits-4, u1-l6, u1-l9, u1-l11, u1-l7). Darker borders. https://tobiasrugger.github.io/readings/vocab/pre/?q=hard-school-words']]},
 
 {id:'phonics', ring:3, kind:'activity', course:'101', name:'Phonics', home:'phonics/', match:['phonics/'], files:['phonics/phonics.js','phonics/lesson.js'],
  what:'Six lessons: C and G, Magic E, letter teams, bossy R, vowel teams, heart words.'},
