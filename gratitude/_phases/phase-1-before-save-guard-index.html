@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gratitude — Mr. Toby</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pine:#1f4d3d;
+  --pine-dk:#163a2d;
+  --pine-lt:#e7f0ec;
+  --paper:#fbfaf6;
+  --card:#ffffff;
+  --ink:#1d2320;
+  --muted:#6b7370;
+  --line:#dfe3e0;
+  --gold:#b8842c;
+  --gold-lt:#fdf4e3;
+  --rose:#a14a4a;
+  --rose-lt:#fbecec;
+  --r:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Nunito',system-ui,sans-serif;
+  background:var(--paper);color:var(--ink);
+  line-height:1.65;font-size:17px;
+  padding-bottom:80px;
+}
+
+/* ---------- SIGN IN ---------- */
+#signin{position:fixed;inset:0;background:var(--pine);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px}
+.signin-card{background:var(--card);border-radius:16px;padding:30px 28px;max-width:420px;width:100%;box-shadow:0 18px 50px rgba(0,0,0,.3)}
+.signin-card h1{font-size:24px;margin-bottom:4px;color:var(--pine)}
+.signin-card p.sub{color:var(--muted);font-size:15px;margin-bottom:20px}
+.signin-card label{display:block;font-weight:700;font-size:14px;margin:14px 0 5px}
+.signin-card input,.signin-card select{width:100%;padding:11px 12px;border:2px solid var(--line);border-radius:9px;font-family:inherit;font-size:16px;background:#fff}
+.signin-card input:focus,.signin-card select:focus{outline:none;border-color:var(--pine)}
+.signin-card button{width:100%;margin-top:20px;padding:13px;background:var(--pine);color:#fff;border:none;border-radius:9px;font-family:inherit;font-size:17px;font-weight:800;cursor:pointer}
+.signin-card button:hover{background:var(--pine-dk)}
+#signin-err{color:var(--rose);font-size:14px;font-weight:700;margin-top:10px;min-height:20px}
+
+/* ---------- TOOLBAR ---------- */
+#bar{position:sticky;top:0;z-index:400;background:var(--pine);color:#fff;display:flex;align-items:center;gap:10px;padding:9px 14px;flex-wrap:wrap;box-shadow:0 2px 10px rgba(0,0,0,.15)}
+#bar .ttl{font-weight:800;font-size:17px;margin-right:auto;letter-spacing:.2px}
+#bar select,#bar button{font-family:inherit;font-size:14px;font-weight:700;border-radius:8px;border:none;padding:7px 11px;cursor:pointer}
+#bar select{background:rgba(255,255,255,.15);color:#fff;border:1.5px solid rgba(255,255,255,.35)}
+#bar select option{color:#000}
+#bar button{background:rgba(255,255,255,.15);color:#fff;border:1.5px solid rgba(255,255,255,.35)}
+#bar button:hover{background:rgba(255,255,255,.28)}
+#bar button.turnin{background:var(--gold);border-color:var(--gold)}
+#who{font-size:13px;opacity:.9;cursor:pointer;text-decoration:underline}
+.dot{width:10px;height:10px;border-radius:50%;background:#8aa39a;display:inline-block}
+.dot.saving{background:#e0a33c}
+.dot.ok{background:#63c48b}
+.dot.err{background:#e06060}
+#savetxt{font-size:12px;opacity:.85}
+
+/* ---------- LAYOUT ---------- */
+.wrap{max-width:760px;margin:0 auto;padding:0 18px}
+.hero{background:var(--pine);color:#fff;padding:36px 18px 40px;margin-bottom:26px}
+.hero .wrap{padding:0 18px}
+.hero h1{font-size:34px;line-height:1.15;font-weight:800;margin-bottom:10px}
+.hero p{font-size:17px;opacity:.92;max-width:52ch}
+.hero .by{margin-top:16px;font-size:14px;opacity:.75}
+
+h2.sec{font-size:24px;font-weight:800;color:var(--pine);margin:38px 0 4px;padding-top:10px;border-top:3px solid var(--pine)}
+h2.sec .n{display:inline-block;background:var(--pine);color:#fff;width:28px;height:28px;line-height:28px;text-align:center;border-radius:50%;font-size:15px;margin-right:8px;vertical-align:2px}
+p.secsub{color:var(--muted);margin-bottom:16px;font-size:15px}
+h3{font-size:19px;font-weight:800;margin:22px 0 6px;color:var(--pine-dk)}
+.read p{margin-bottom:13px}
+.card{background:var(--card);border:1.5px solid var(--line);border-radius:var(--r);padding:16px 18px;margin:14px 0}
+
+/* ---------- GLOSSARY ---------- */
+.g{border-bottom:2.5px dotted var(--gold);cursor:pointer;font-weight:700;color:var(--pine-dk)}
+.g:hover{background:var(--gold-lt)}
+#tip{position:absolute;z-index:500;max-width:290px;background:var(--pine-dk);color:#fff;padding:11px 13px;border-radius:10px;font-size:15px;line-height:1.45;box-shadow:0 8px 24px rgba(0,0,0,.3);display:none}
+#tip .w{font-weight:800;font-size:16px;margin-bottom:3px}
+#tip .tr{margin-top:7px;padding-top:7px;border-top:1px solid rgba(255,255,255,.25);font-size:16px}
+#tip .load{opacity:.6;font-style:italic}
+
+/* ---------- QUESTION BOXES ---------- */
+.q{background:var(--card);border:1.5px solid var(--line);border-left:5px solid var(--pine);border-radius:var(--r);padding:14px 16px;margin:14px 0}
+.q .tag{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;padding:3px 8px;border-radius:20px;margin-bottom:7px}
+.tag.review{background:var(--pine-lt);color:var(--pine)}
+.tag.infer{background:var(--gold-lt);color:var(--gold)}
+.tag.connect{background:var(--rose-lt);color:var(--rose)}
+.tag.lang{background:#eae7f5;color:#5a4a8a}
+.q .qt{font-weight:700;margin-bottom:9px}
+.q .hint{font-size:14px;color:var(--muted);font-style:italic;margin-bottom:8px}
+textarea{width:100%;min-height:74px;border:1.5px solid var(--line);border-radius:9px;padding:10px 11px;font-family:inherit;font-size:16px;line-height:1.55;resize:vertical;background:#fffdf8}
+textarea:focus{outline:none;border-color:var(--pine);background:#fff}
+input[type=text]{width:100%;border:none;border-bottom:2px solid var(--line);padding:6px 2px;font-family:inherit;font-size:16px;background:transparent}
+input[type=text]:focus{outline:none;border-bottom-color:var(--pine)}
+
+/* ---------- RATING ---------- */
+.rate{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.rate button{flex:1;min-width:58px;padding:12px 4px;border:2px solid var(--line);background:#fff;border-radius:10px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;line-height:1.25}
+.rate button .em{display:block;font-size:24px;margin-bottom:2px}
+.rate button.on{border-color:var(--pine);background:var(--pine-lt)}
+
+/* ---------- VOCAB ---------- */
+.vgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin:14px 0}
+.vcard{background:var(--card);border:1.5px solid var(--line);border-radius:var(--r);padding:13px 10px;text-align:center}
+.vcard svg{width:52px;height:52px;color:var(--pine);display:block;margin:0 auto 7px}
+.vcard .w{font-weight:800;font-size:16px;color:var(--pine-dk)}
+.vcard .d{font-size:13px;color:var(--muted);line-height:1.4;margin-top:3px}
+.vcard .tr{font-size:15px;margin-top:6px;font-weight:700;min-height:20px}
+.matchrow{display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--line);padding:9px 0;flex-wrap:wrap}
+.matchrow svg{width:40px;height:40px;color:var(--pine);flex-shrink:0}
+.matchrow select{flex:1;min-width:150px;padding:9px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:inherit;font-size:16px;background:#fff}
+.matchrow .mk{font-size:20px;width:24px;text-align:center}
+.fib{margin:12px 0}
+.fib .s{margin-bottom:5px}
+.fib select{padding:5px 8px;border:1.5px solid var(--gold);border-radius:7px;font-family:inherit;font-size:16px;background:var(--gold-lt);font-weight:700}
+.wordbank{background:var(--pine-lt);border-radius:var(--r);padding:12px 15px;margin:12px 0;font-weight:700;line-height:2}
+.wordbank span{display:inline-block;background:#fff;border:1.5px solid var(--pine);border-radius:20px;padding:2px 12px;margin:3px 5px 3px 0;font-size:15px}
+
+/* ---------- BREATHING ---------- */
+.breathe-box{background:var(--pine-dk);border-radius:16px;padding:28px 18px;text-align:center;color:#fff;margin:16px 0}
+#circle{width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.14);border:3px solid rgba(255,255,255,.5);margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:800;transition:transform 4s ease-in-out}
+#circle.inhale{transform:scale(1.45)}
+#breathe-msg{font-size:16px;min-height:24px;opacity:.9}
+.breathe-box button{margin-top:14px;padding:11px 26px;border:none;border-radius:9px;background:#fff;color:var(--pine-dk);font-family:inherit;font-size:16px;font-weight:800;cursor:pointer}
+
+/* ---------- JOURNAL ---------- */
+.jbox{background:var(--gold-lt);border:1.5px solid #ecd9b0;border-radius:var(--r);padding:16px 18px;margin:14px 0}
+.jbox h3{margin-top:0;color:var(--gold)}
+.jline{display:flex;align-items:center;gap:10px;margin:9px 0}
+.jline .num{width:24px;height:24px;flex-shrink:0;background:var(--gold);color:#fff;border-radius:50%;text-align:center;line-height:24px;font-size:13px;font-weight:800}
+.jrow{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px}
+.jrow label{font-weight:700;font-size:14px;display:block;margin-bottom:4px}
+.jrow input[type=date],.jrow select{padding:9px 10px;border:1.5px solid var(--line);border-radius:8px;font-family:inherit;font-size:15px;background:#fff}
+.btn{padding:11px 20px;border:none;border-radius:9px;background:var(--pine);color:#fff;font-family:inherit;font-size:16px;font-weight:800;cursor:pointer}
+.btn:hover{background:var(--pine-dk)}
+.btn.ghost{background:#fff;color:var(--pine);border:2px solid var(--pine)}
+.entry{background:var(--card);border:1.5px solid var(--line);border-left:5px solid var(--gold);border-radius:var(--r);padding:13px 16px;margin:11px 0}
+.entry .meta{font-size:13px;color:var(--muted);font-weight:700;margin-bottom:6px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.entry ol{margin:0 0 8px 20px}
+.entry li{margin-bottom:2px}
+.entry .why{font-style:italic;color:var(--pine-dk);border-top:1px solid var(--line);padding-top:7px;margin-top:7px}
+.entry .del{background:none;border:none;color:var(--rose);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;text-decoration:underline}
+.empty{color:var(--muted);font-style:italic;padding:14px 0}
+
+.note{background:var(--pine-lt);border-radius:var(--r);padding:13px 16px;margin:14px 0;font-size:15px}
+.note b{color:var(--pine)}
+.src{font-size:13px;color:var(--muted);margin-top:6px}
+footer{text-align:center;color:var(--muted);font-size:14px;padding:36px 18px 10px}
+
+/* ---------- PRINT ---------- */
+.printhead{display:none}
+@media print{
+  @page{margin:1.6cm}
+  body{background:#fff;font-size:12pt;padding-bottom:0}
+  #bar,#signin,#tip,.breathe-box button,.btn,.entry .del,.noprint{display:none!important}
+  .hero{background:#fff;color:#000;padding:0 0 8px;margin-bottom:10px;border-bottom:3px solid #000}
+  .hero h1{font-size:22pt}
+  .hero p{font-size:11pt}
+  .printhead{display:block;border-bottom:1px solid #000;padding-bottom:5px;margin-bottom:14px;font-size:11pt}
+  .wrap{max-width:100%;padding:0}
+  .q,.card,.vcard,.entry,.jbox{break-inside:avoid;page-break-inside:avoid}
+  h2.sec{break-after:avoid;page-break-after:avoid;font-size:15pt}
+  textarea{border:none;border-bottom:1px solid #999;border-radius:0;min-height:0;background:#fff;overflow:visible;resize:none}
+  .g{border-bottom:1px dotted #666;color:#000}
+  .rate button{padding:6px 2px}
+  .rate button.on{background:#ddd!important;border-color:#000!important}
+  .vgrid{grid-template-columns:repeat(4,1fr)}
+  #circle{transform:none!important}
+}
+body.blank textarea,body.blank input[type=text]{color:transparent!important}
+body.blank .rate button.on{background:#fff!important;border-color:var(--line)!important}
+body.blank select{color:transparent!important}
+body.blank .entry{display:none}
+
+#btn-dir.on,#btn-tap.on{background:#1F4D3D;color:#fff}
+.dirtr{display:block;margin-top:4px;color:#2f6f57;font-weight:700}
+.dirtr:empty{display:none}
+body.tap-on .wt-tap{cursor:pointer;border-bottom:1px dotted #8aa79a}
+body.tap-on .wt-tap:hover{background:#eef5f1}
+.wt-bub{display:inline-block;margin-left:5px;padding:1px 6px;border-radius:6px;
+  background:#1F4D3D;color:#fff;font-size:.85em;font-weight:700}
+</style>
+</head>
+<body>
+
+<!-- ============ SIGN IN ============ -->
+<div id="signin">
+  <div class="signin-card">
+    <h1>Gratitude</h1>
+    <p class="sub">Sign in so your work saves automatically.</p>
+    <label for="si-email">School email</label>
+    <input id="si-email" type="email" placeholder="name@s.sfusd.edu" autocomplete="email">
+    <label for="si-name">Full name</label>
+    <input id="si-name" type="text" placeholder="First and last name" autocomplete="name">
+    <label for="si-period">Period</label>
+    <select id="si-period">
+    <option value="">Choose your period</option>
+    <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option>
+  </select>
+    <div id="signin-err"></div>
+    <button id="si-go">Start</button>
+  </div>
+</div>
+
+<!-- ============ TOOLBAR ============ -->
+<span id="canary" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden">the quick brown fox jumps over the lazy dog</span>
+<div id="bar">
+  <span class="ttl">Gratitude</span>
+  <span id="who" title="Sign out"></span>
+  <select id="lang" title="Translation language">
+    <option value="">Language</option>
+    <option value="Spanish">Español</option>
+    <option value="Chinese (Simplified)">中文</option>
+    <option value="Arabic">العربية</option>
+    <option value="Vietnamese">Tiếng Việt</option>
+    <option value="Russian">Русский</option>
+    <option value="Urdu">اردو</option>
+    <option value="Tagalog">Tagalog</option>
+    <option value="French">Français</option>
+    <option value="Korean">한국어</option>
+    <option value="Hindi">हिन्दी</option>
+    <option value="Somali">Soomaali</option>
+    <option value="Nepali">नेपाली</option>
+    <option value="Thai">ไทย</option>
+  </select>
+  <span class="dot" id="dot"></span><span id="savetxt"></span>
+  <button id="btn-dir" title="Show the directions in your language">Directions</button>
+  <button id="btn-tap" title="Tap any word for its meaning">Tap words</button>
+  <button id="btn-blank">Print blank</button>
+  <button id="btn-print">Print my work</button>
+  <button class="turnin" id="btn-turnin">Turn in</button>
+</div>
+
+<div class="printhead">
+  Name: <b id="ph-name">________________________</b> &nbsp;&nbsp; Period: <b id="ph-period">____</b> &nbsp;&nbsp; Date: ____________
+</div>
+
+<!-- ============ HERO ============ -->
+<div class="hero">
+  <div class="wrap">
+    <h1>Why saying thank you<br>changes your brain</h1>
+    <p>A reading, a vocabulary set, a breathing practice, and a journal you will keep for the rest of the semester.</p>
+    <div class="by">Mr. Toby &middot; ELD</div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ============ 1. WARM UP ============ -->
+<h2 class="sec"><span class="n">1</span>Before we start</h2>
+<p class="secsub" translate="yes" data-dir="nobodyseesthisbu" data-en="Nobody sees this but you and me. Be honest.">Nobody sees this but you and me. Be honest.<span class="dirtr"></span></p>
+
+<div class="q" translate="no" data-tap="1">
+  <div class="qt">Right now, how happy do you feel?</div>
+  <div class="rate" id="rate-before" data-k="rateBefore">
+    <button data-v="1"><span class="em">😞</span>1</button>
+    <button data-v="2"><span class="em">🙁</span>2</button>
+    <button data-v="3"><span class="em">😐</span>3</button>
+    <button data-v="4"><span class="em">🙂</span>4</button>
+    <button data-v="5"><span class="em">😄</span>5</button>
+  </div>
+</div>
+
+<div class="q" translate="no" data-tap="1">
+  <span class="tag connect">Connect</span>
+  <div class="qt">Name one small good thing that happened to you this week.</div>
+  <div class="hint">Small is fine. The bus came on time. Someone laughed at your joke.</div>
+  <textarea data-k="warm1"></textarea>
+</div>
+
+<!-- ============ 2. READING ============ -->
+<h2 class="sec"><span class="n">2</span>Reading: What scientists found</h2>
+<p class="secsub" translate="yes" data-dir="tapanyunderlined" data-en="Tap any underlined word to see what it means. Choose your language in the green bar first.">Tap any <span class="g" style="cursor:default">underlined word</span> to see what it means. Choose your language in the green bar first.<span class="dirtr"></span></p>
+
+<div class="read">
+
+<h3>What is gratitude?</h3>
+<p><span class="g" data-d="the feeling of noticing good things and being thankful for them">Gratitude</span> means noticing the good things in your life. Sometimes you say thank you out loud. Sometimes you only think it. It is not only for big things. A warm bed is a good thing. A friend who waits for you is a good thing. Food you like is a good thing.</p>
+<p>Most people only think about gratitude one time a year, in November. Scientists say that is a mistake.</p>
+
+<h3>A scientist asked a question</h3>
+<p>Sonja Lyubomirsky is a <span class="g" data-d="a person who studies something carefully to learn the truth about it">scientist</span> in California. She wanted to know one thing: <i>can a person become happier on purpose?</i></p>
+<p>She did an experiment. First she <span class="g" data-d="tested something to find out how big or how much it is">measured</span> how happy people felt. Then she gave them a job. Every week, write five things you are thankful for. Some people wrote one time each week. Other people wrote three times each week. They did this for six weeks. Then she measured their happiness again.</p>
+
+<h3>What she found</h3>
+<p>The people who wrote <b>one time each week</b> became happier. That part was not a surprise.</p>
+<p>But the people who wrote <b>three times each week</b> did not change at all. Nothing happened to them.</p>
+<p>Lyubomirsky thinks she knows why. Three times a week was too much. The people got <span class="g" data-d="tired of something because it is always the same">bored</span>. Writing became a <span class="g" data-d="a boring job you have to do, like washing dishes">chore</span>, like homework. When something becomes a chore, it stops working.</p>
+<div class="note"><b>So here is the rule for this class:</b> we will do this once a week, and we will change how we do it. Sometimes you will write. Sometimes you will draw. Sometimes you will tell a person. Keeping it fresh is the whole point.</div>
+
+<h3>Three reasons it works</h3>
+<p><b>1. You slow down.</b> When you write the good thing down, you live it a second time. Scientists call this <span class="g" data-d="enjoying something slowly, on purpose, instead of rushing past it">savoring</span>.</p>
+<p><b>2. It helps on hard days.</b> Gratitude does not make a hard life easy. But people who practice it can <span class="g" data-d="deal with something difficult without giving up">cope</span> better. After September 11, 2001, researchers found that gratitude was the second most common feeling Americans reported — right after sympathy.</p>
+<p><b>3. You stop taking things for granted.</b> Humans get used to good things very fast. A new phone feels amazing for one week. Then it feels normal. Scientists call this <span class="g" data-d="the way people quickly get used to good things and stop enjoying them">hedonic adaptation</span>, and it is the quiet enemy of happiness. Gratitude slows it down.</p>
+
+<h3>Two other ideas</h3>
+<p><b>Mindful breathing.</b> When you are angry or stressed, your heart beats fast. Slow breathing lowers your <span class="g" data-d="how fast your heart beats">heart rate</span> and tells your body that you are safe. This is what apps like Headspace teach. We will practice it below.</p>
+<p><b>Flow.</b> A scientist named Mihaly Csikszentmihalyi studied people who love what they do. He found that people are happiest when a task is hard — but not too hard. You forget the time. You forget yourself. He called this <span class="g" data-d="the feeling of being so focused on something that you forget the time">flow</span>. Think about the last time this happened to you.</p>
+<p class="src">Sources: Sonja Lyubomirsky, <i>The How of Happiness</i>, Chapter 4 &middot; the Greater Good Science Center at UC Berkeley &middot; Mihaly Csikszentmihalyi, <i>Flow</i>.</p>
+</div>
+
+<!-- ============ 3. COMPREHENSION ============ -->
+<h2 class="sec"><span class="n">3</span>Did you get it?</h2>
+
+<div class="q" translate="no" data-tap="1">
+  <span class="tag review">Review</span>
+  <div class="qt">What did Lyubomirsky ask people to write every week?</div>
+  <textarea data-k="c1"></textarea>
+</div>
+<div class="q" translate="no" data-tap="1">
+  <span class="tag review">Review</span>
+  <div class="qt">Which group became happier — the one-time-a-week group, or the three-times-a-week group?</div>
+  <textarea data-k="c2"></textarea>
+</div>
+<div class="q" translate="no" data-tap="1">
+  <span class="tag infer">Infer</span>
+  <div class="qt">Why do you think doing it <i>more</i> made it stop working?</div>
+  <div class="hint">Think about something you used to love. Did doing it every day change it?</div>
+  <textarea data-k="c3"></textarea>
+</div>
+<div class="q" translate="no" data-tap="1">
+  <span class="tag lang">Language</span>
+  <div class="qt">Explain <b>hedonic adaptation</b> in your own words. Use an example from your own life.</div>
+  <div class="hint">Try: "Hedonic adaptation means _______. For example, when I got _______, at first I _______, but now _______."</div>
+  <textarea data-k="c4"></textarea>
+</div>
+<div class="q" translate="no" data-tap="1">
+  <span class="tag connect">Connect</span>
+  <div class="qt">Describe a time you were in <b>flow</b> — so focused that you forgot the time. What were you doing?</div>
+  <textarea data-k="c5"></textarea>
+</div>
+
+<!-- ============ 4. VOCABULARY ============ -->
+<h2 class="sec"><span class="n">4</span>Words for this unit</h2>
+<p class="secsub" translate="yes" data-dir="twelvewordschoos" data-en="Twelve words. Choose a language in the green bar and they will translate.">Twelve words. Choose a language in the green bar and they will translate.<span class="dirtr"></span></p>
+
+<div class="vgrid" id="vgrid"></div>
+
+<h3>Practice 1 — Match the picture</h3>
+<p class="secsub" translate="yes" data-dir="choosethewordtha" data-en="Choose the word that matches each picture.">Choose the word that matches each picture.<span class="dirtr"></span></p>
+<div id="matchbox"></div>
+<button class="btn ghost noprint" id="btn-check1" style="margin-top:12px">Check my answers</button>
+<span id="score1" style="margin-left:10px;font-weight:800"></span>
+
+<h3>Practice 2 — Finish the sentence</h3>
+<div class="wordbank" id="bank2"></div>
+<div id="fibbox"></div>
+<button class="btn ghost noprint" id="btn-check2" style="margin-top:12px">Check my answers</button>
+<span id="score2" style="margin-left:10px;font-weight:800"></span>
+
+<h3>Practice 3 — Write your own</h3>
+<div class="q" translate="no" data-tap="1">
+  <div class="qt">Choose <b>three</b> words from the list. Write one true sentence about your life with each one.</div>
+  <div class="hint">Example: <i>Every night I close my eyes and remember one good thing.</i></div>
+  <textarea data-k="v1" style="min-height:44px" placeholder="1."></textarea>
+  <textarea data-k="v2" style="min-height:44px;margin-top:8px" placeholder="2."></textarea>
+  <textarea data-k="v3" style="min-height:44px;margin-top:8px" placeholder="3."></textarea>
+</div>
+
+<!-- ============ 5. BREATHING ============ -->
+<h2 class="sec"><span class="n">5</span>Mindful breathing</h2>
+<p class="secsub" translate="yes" data-dir="fiveslowbreathsf" data-en="Five slow breaths. Four seconds in, four seconds out. You can keep your eyes open.">Five slow breaths. Four seconds in, four seconds out. You can keep your eyes open.<span class="dirtr"></span></p>
+
+<div class="breathe-box noprint">
+  <div id="circle">Ready</div>
+  <div id="breathe-msg">Sit comfortably. Put both feet on the floor.</div>
+  <button id="btn-breathe">Start</button>
+</div>
+
+<div class="q" translate="no" data-tap="1">
+  <span class="tag connect">Connect</span>
+  <div class="qt">How does your body feel now, compared to one minute ago?</div>
+  <textarea data-k="b1"></textarea>
+</div>
+<div class="q" translate="no" data-tap="1">
+  <span class="tag connect">Connect</span>
+  <div class="qt">Name one real moment in your week when slow breathing could help you.</div>
+  <div class="hint">Before a test. After an argument. On the bus. When you cannot sleep.</div>
+  <textarea data-k="b2"></textarea>
+</div>
+
+<!-- ============ 6. JOURNAL ============ -->
+<h2 class="sec"><span class="n">6</span>Your gratitude journal</h2>
+<p class="secsub" translate="yes" data-dir="oneentryperweekf" data-en="One entry per week for the rest of the semester. Not more — you read why.">One entry per week for the rest of the semester. Not more — you read why.<span class="dirtr"></span></p>
+
+<div class="jbox">
+  <h3>This week I am grateful for&hellip;</h3>
+  <div class="jrow">
+    <div>
+      <label for="j-date">Date</label>
+      <input type="date" id="j-date">
+    </div>
+    <div style="flex:1;min-width:180px">
+      <label for="j-mode">This week I will&hellip;</label>
+      <select id="j-mode" style="width:100%">
+        <option>write my list</option>
+        <option>write a letter to one person</option>
+        <option>draw or take a photo</option>
+        <option>tell someone out loud, then write what happened</option>
+        <option>thank someone I have never thanked</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="jline"><span class="num">1</span><input type="text" class="jl"></div>
+  <div class="jline"><span class="num">2</span><input type="text" class="jl"></div>
+  <div class="jline"><span class="num">3</span><input type="text" class="jl"></div>
+  <div class="jline"><span class="num">4</span><input type="text" class="jl"></div>
+  <div class="jline"><span class="num">5</span><input type="text" class="jl"></div>
+
+  <label style="font-weight:700;font-size:14px;display:block;margin:14px 0 5px">Choose one from your list. Why does it matter to you? Be specific.</label>
+  <textarea id="j-why" placeholder="I am grateful for ___ because ___."></textarea>
+
+  <button class="btn noprint" id="btn-save-entry" style="margin-top:14px">Save this week's entry</button>
+  <span id="entry-msg" style="margin-left:10px;font-weight:700;color:var(--pine)"></span>
+</div>
+
+<h3>My entries</h3>
+<div id="entries"><div class="empty">No entries yet. Your first one goes above.</div></div>
+
+<!-- ============ 7. CLOSING ============ -->
+<h2 class="sec"><span class="n">7</span>Before you go</h2>
+<div class="q" translate="no" data-tap="1">
+  <div class="qt">Right now, how happy do you feel?</div>
+  <div class="rate" id="rate-after" data-k="rateAfter">
+    <button data-v="1"><span class="em">😞</span>1</button>
+    <button data-v="2"><span class="em">🙁</span>2</button>
+    <button data-v="3"><span class="em">😐</span>3</button>
+    <button data-v="4"><span class="em">🙂</span>4</button>
+    <button data-v="5"><span class="em">😄</span>5</button>
+  </div>
+  <div id="delta" style="margin-top:10px;font-weight:700;color:var(--pine)"></div>
+</div>
+<div class="q" translate="no" data-tap="1">
+  <span class="tag infer">Infer</span>
+  <div class="qt">Do you think this will actually work for you? Say yes or no, and say why.</div>
+  <div class="hint">You are allowed to say no. Just explain your thinking.</div>
+  <textarea data-k="close1"></textarea>
+</div>
+
+<footer>Mr. Toby &middot; Galileo Academy of Science and Technology</footer>
+</div>
+
+<div id="tip"></div>
+
+<script>
+/* =========================================================
+   CONFIG
+   ========================================================= */
+var SUPA_URL = 'https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var TABLE = 'gratitude_work';
+var SECTION = 'main';
+var PROXY = 'https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
+var LS = 'gratitude_v1';
+
+/* =========================================================
+   VOCABULARY
+   ========================================================= */
+var ICON = {};
+ICON.write = '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M42 10l12 12-26 26-14 2 2-14z"/><path d="M38 14l12 12"/><path d="M8 58h48"/></svg>';
+ICON.journal = '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M14 8h34a4 4 0 014 4v40a4 4 0 01-4 4H14z"/><path d="M14 8a4 4 0 00-4 4v40a4 4 0 004 4"/><path d="M24 20h20M24 30h20M24 40h12"/></svg>';
+ICON.smile = '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="32" cy="32" r="24"/><circle cx="24" cy="26" r="2.5" fill="currentColor" stroke="none"/><circle cx="40" cy="26" r="2.5" fill="currentColor" stroke="none"/><path d="M21 39c3 5 7.5 7 11 7s8-2 11-7"/></svg>';
+ICON.breathe = '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="32" cy="32" r="9"/><path d="M32 14a18 18 0 0118 18M32 50a18 18 0 01-18-18"/><path d="M32 4a28 28 0 0128 28M32 60A28 28 0 014 32" opacity=".45"/></svg>';
+ICON.closeeyes = '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="32" cy="32" r="24"/><path d="M18 26c3 4 6 6 8 6s5-2 8-6" transform="translate(-4)"/><path d="M34 26c3 4 6 6 8 6s5-2 8-6" transform="translate(-4)"/><path d="M22 42h20"/></svg>';
+ICON.notice = '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 34s11-16 28-16 28 16 28 16-11 16-28 16S4 34 4 34z"/><circle cx="32" cy="34" r="7"/><path d="M32 8v-4M13 14l-3-3M51 14l3-3"/></svg>';
+ICON.calm = '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22h34M6 32h48M6 42h28"/><circle cx="50" cy="22" r="4"/><circle cx="42" cy="42" r="4"/></svg>';
+ICON.grateful = '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M32 24c-4-6-14-5-14 3 0 7 14 15 14 15s14-8 14-15c0-8-10-9-14-3z"/><path d="M10 42c0 8 10 14 22 14s22-6 22-14"/></svg>';
+ICON.thank = '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 14h48v30H26L14 54V44H8z"/><path d="M32 24c-2-3-8-3-8 2 0 4 8 8 8 8s8-4 8-8c0-5-6-5-8-2z"/></svg>';
+ICON.kind = '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 40l10-8 10 4h10"/><path d="M60 40l-10-8-10 4"/><path d="M32 12c-3-4-10-3-10 3 0 5 10 11 10 11s10-6 10-11c0-6-7-7-10-3z"/></svg>';
+ICON.remember = '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M40 54H24v-8c-7-4-11-11-11-18C13 17 22 9 33 9s20 8 20 19c0 7-4 13-11 17z"/><path d="M26 54h14M28 60h10"/><path d="M33 38v-8"/></svg>';
+ICON.relax = '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="32" cy="18" r="7"/><path d="M32 25v14"/><path d="M18 46c4-7 9-7 14-7s10 0 14 7"/><path d="M12 52h40"/></svg>';
+
+var VOCAB = [
+  {k:'write',       w:'write',           d:'put words on paper',                        ic:'write'},
+  {k:'journal',     w:'journal',         d:'a private notebook you write in',           ic:'journal'},
+  {k:'smile',       w:'smile',           d:'make your mouth happy',                     ic:'smile'},
+  {k:'breathe',     w:'breathe',         d:'take air in and let it out',                ic:'breathe'},
+  {k:'closeeyes',   w:'close your eyes', d:'shut your eyes so you cannot see',          ic:'closeeyes'},
+  {k:'notice',      w:'notice',          d:'see or feel something for the first time',  ic:'notice'},
+  {k:'calm',        w:'calm',            d:'quiet and not worried',                     ic:'calm'},
+  {k:'grateful',    w:'grateful',        d:'thankful for something good',               ic:'grateful'},
+  {k:'thank',       w:'thank',           d:'tell someone you are grateful',             ic:'thank'},
+  {k:'kind',        w:'kind',            d:'good and gentle to other people',           ic:'kind'},
+  {k:'remember',    w:'remember',        d:'keep something in your mind',               ic:'remember'},
+  {k:'relax',       w:'relax',           d:'let your body stop being tight',            ic:'relax'}
+];
+
+/* picture match items (8 of the 12) */
+var MATCH = ['breathe','journal','smile','closeeyes','notice','grateful','write','relax'];
+
+/* fill in the blank */
+var FIB = [
+  {s:'Before a test, I ___ slowly five times.',                 a:'breathe'},
+  {s:'Every Sunday I ___ five good things in my notebook.',     a:'write'},
+  {s:'My teacher was ___ to me when I was new at this school.', a:'kind'},
+  {s:'I ___ my mother for cooking dinner every night.',         a:'thank'},
+  {s:'I ___ that the sky was very orange this morning.',        a:'notice'},
+  {s:'I am ___ for my little brother, even when he is loud.',   a:'grateful'},
+  {s:'After school I ___ on the sofa for twenty minutes.',      a:'relax'},
+  {s:'I always ___ my grandmother on her birthday.',            a:'remember'}
+];
+
+/* =========================================================
+   STATE
+   ========================================================= */
+var student = null;
+var data = {answers:{}, entries:[]};
+var saveTimer = null;
+
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+/* =========================================================
+   BUILD VOCAB UI
+   ========================================================= */
+function buildVocab(){
+  var g = '';
+  for(var i=0;i<VOCAB.length;i++){
+    var v = VOCAB[i];
+    g += '<div class="vcard"><div>' + ICON[v.ic] + '</div>';
+    g += '<div class="w">' + esc(v.w) + '</div>';
+    g += '<div class="d">' + esc(v.d) + '</div>';
+    g += '<div class="tr" id="vtr-' + v.k + '"></div></div>';
+  }
+  $('vgrid').innerHTML = g;
+
+  var opts = '<option value="">choose a word</option>';
+  var sorted = VOCAB.slice().sort(function(a,b){ return a.w < b.w ? -1 : 1; });
+  for(var j=0;j<sorted.length;j++){ opts += '<option value="' + sorted[j].k + '">' + esc(sorted[j].w) + '</option>'; }
+
+  var m = '';
+  for(var n=0;n<MATCH.length;n++){
+    var vv = byKey(MATCH[n]);
+    m += '<div class="matchrow">' + ICON[vv.ic];
+    m += '<select data-k="m' + n + '" data-ans="' + vv.k + '">' + opts + '</select>';
+    m += '<span class="mk" id="mk' + n + '"></span></div>';
+  }
+  $('matchbox').innerHTML = m;
+
+  var bank = '';
+  for(var b=0;b<sorted.length;b++){ bank += '<span>' + esc(sorted[b].w) + '</span>'; }
+  $('bank2').innerHTML = bank;
+
+  var f = '';
+  for(var p=0;p<FIB.length;p++){
+    var parts = FIB[p].s.split('___');
+    f += '<div class="fib"><div class="s">' + (p+1) + '. ' + esc(parts[0]);
+    f += '<select data-k="f' + p + '" data-ans="' + FIB[p].a + '">' + opts + '</select>';
+    f += esc(parts[1]) + ' <span class="mk" id="fk' + p + '"></span></div></div>';
+  }
+  $('fibbox').innerHTML = f;
+}
+function byKey(k){ for(var i=0;i<VOCAB.length;i++){ if(VOCAB[i].k===k) return VOCAB[i]; } return null; }
+
+function checkSet(prefix, count, markPrefix, out){
+  var right = 0;
+  for(var i=0;i<count;i++){
+    var sel = document.querySelector('[data-k="' + prefix + i + '"]');
+    var mark = $(markPrefix + i);
+    if(!sel) continue;
+    if(sel.value === ''){ mark.textContent = ''; continue; }
+    if(sel.value === sel.getAttribute('data-ans')){ mark.textContent = '✓'; mark.style.color = '#2a8a5a'; right++; }
+    else { mark.textContent = '✗'; mark.style.color = '#b34545'; }
+  }
+  $(out).textContent = right + ' / ' + count;
+}
+
+/* =========================================================
+   TRANSLATION (Apps Script proxy)
+   ========================================================= */
+var transCache = {};
+function translate(word, meaning, lang){
+  var key = word + '|' + lang;
+  if(transCache[key]) return Promise.resolve(transCache[key]);
+  var url = PROXY + '?action=translate&mode=' + (String(word||'').trim().split(/\s+/).length<=3?'word':((meaning)?'':'sentence')) + '&idiom=' + encodeURIComponent(word) +
+            '&meaning=' + encodeURIComponent(meaning) + '&lang=' + encodeURIComponent(lang);
+  return fetch(url).then(function(r){ return r.json(); }).then(function(d){
+    if(!d || !d.ok || !d.translation) return null;
+    transCache[key] = d.translation;
+    return d.translation;
+  }).catch(function(){ return null; });
+}
+
+function translateVocabCards(){
+  var lang = $('lang').value;
+  for(var i=0;i<VOCAB.length;i++){
+    (function(v){
+      var el = $('vtr-' + v.k);
+      if(!el) return;
+      if(!lang){ el.textContent = ''; return; }
+      el.textContent = '…';
+      translate(v.w, v.d, lang).then(function(t){
+        el.textContent = t ? (t.equiv || '') : '';
+      });
+    })(VOCAB[i]);
+  }
+}
+
+/* glossary tooltip */
+var tipEl;
+function showTip(span, ev){
+  var word = span.textContent;
+  var def = span.getAttribute('data-d') || '';
+  var lang = $('lang').value;
+  var html = '<div class="w">' + esc(word) + '</div><div>' + esc(def) + '</div>';
+  if(lang) html += '<div class="tr load" id="tip-tr">translating…</div>';
+  tipEl.innerHTML = html;
+  tipEl.style.display = 'block';
+  var r = span.getBoundingClientRect();
+  var top = r.bottom + window.scrollY + 8;
+  var left = r.left + window.scrollX;
+  if(left + 300 > window.innerWidth) left = Math.max(10, window.innerWidth - 305);
+  tipEl.style.top = top + 'px';
+  tipEl.style.left = left + 'px';
+  if(lang){
+    translate(word, def, lang).then(function(t){
+      var box = $('tip-tr');
+      if(!box) return;
+      box.classList.remove('load');
+      if(!t){ box.textContent = 'Translation not available.'; return; }
+      var txt = t.equiv || '';
+      if(t.meaning) txt += ' — ' + t.meaning;
+      box.textContent = txt;
+    });
+  }
+}
+
+/* =========================================================
+   BREATHING
+   ========================================================= */
+var breathing = false;
+function runBreath(){
+  if(breathing) return;
+  breathing = true;
+  var c = $('circle'), msg = $('breathe-msg'), btn = $('btn-breathe');
+  btn.disabled = true; btn.textContent = 'Breathing…';
+  var n = 0;
+  msg.textContent = 'Sit tall. Let your shoulders drop.';
+  function cycle(){
+    if(n >= 5){
+      c.classList.remove('inhale'); c.textContent = 'Done';
+      msg.textContent = 'Notice how you feel. Then answer the questions below.';
+      btn.disabled = false; btn.textContent = 'Again'; breathing = false; return;
+    }
+    n++;
+    c.classList.add('inhale'); c.textContent = 'In';
+    msg.textContent = 'Breath ' + n + ' of 5 — breathe in slowly';
+    setTimeout(function(){
+      c.classList.remove('inhale'); c.textContent = 'Out';
+      msg.textContent = 'Breath ' + n + ' of 5 — let it all out';
+      setTimeout(cycle, 4200);
+    }, 4200);
+  }
+  setTimeout(cycle, 900);
+}
+
+/* =========================================================
+   JOURNAL
+   ========================================================= */
+function renderEntries(){
+  var box = $('entries');
+  if(!data.entries.length){ box.innerHTML = '<div class="empty">No entries yet. Your first one goes above.</div>'; return; }
+  var sorted = data.entries.slice().sort(function(a,b){ return a.date < b.date ? 1 : -1; });
+  var h = '';
+  for(var i=0;i<sorted.length;i++){
+    var e = sorted[i];
+    h += '<div class="entry"><div class="meta"><span>' + esc(prettyDate(e.date)) + ' &middot; ' + esc(e.mode || '') + '</span>';
+    h += '<button class="del noprint" data-id="' + esc(e.id) + '">delete</button></div><ol>';
+    for(var j=0;j<e.items.length;j++){ if(e.items[j]) h += '<li>' + esc(e.items[j]) + '</li>'; }
+    h += '</ol>';
+    if(e.why) h += '<div class="why">' + esc(e.why) + '</div>';
+    h += '</div>';
+  }
+  box.innerHTML = h;
+  var dels = box.querySelectorAll('.del');
+  for(var d=0;d<dels.length;d++){
+    dels[d].addEventListener('click', function(){
+      var id = this.getAttribute('data-id');
+      if(!confirm('Delete this entry?')) return;
+      data.entries = data.entries.filter(function(x){ return x.id !== id; });
+      renderEntries(); queueSave();
+    });
+  }
+}
+function prettyDate(iso){
+  if(!iso) return '';
+  var p = iso.split('-');
+  if(p.length !== 3) return iso;
+  var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return months[parseInt(p[1],10)-1] + ' ' + parseInt(p[2],10) + ', ' + p[0];
+}
+function saveEntry(){
+  var lines = document.querySelectorAll('.jl');
+  var items = [];
+  for(var i=0;i<lines.length;i++){ if(lines[i].value.trim()) items.push(lines[i].value.trim()); }
+  if(!items.length){ $('entry-msg').textContent = 'Write at least one thing first.'; return; }
+  data.entries.push({
+    id: String(Date.now()),
+    date: $('j-date').value || new Date().toISOString().slice(0,10),
+    mode: $('j-mode').value,
+    items: items,
+    why: $('j-why').value.trim()
+  });
+  for(var c=0;c<lines.length;c++){ lines[c].value = ''; }
+  $('j-why').value = '';
+  $('entry-msg').textContent = 'Saved.';
+  setTimeout(function(){ $('entry-msg').textContent = ''; }, 2500);
+  renderEntries(); queueSave();
+}
+
+/* =========================================================
+   COLLECT / RESTORE
+   ========================================================= */
+function collect(){
+  var out = {};
+  var fields = document.querySelectorAll('[data-k]');
+  for(var i=0;i<fields.length;i++){
+    var el = fields[i];
+    if(el.classList.contains('rate')) continue;
+    out[el.getAttribute('data-k')] = el.value;
+  }
+  out.rateBefore = data.answers.rateBefore || '';
+  out.rateAfter = data.answers.rateAfter || '';
+  return out;
+}
+function restore(){
+  var fields = document.querySelectorAll('[data-k]');
+  for(var i=0;i<fields.length;i++){
+    var el = fields[i];
+    if(el.classList.contains('rate')) continue;
+    var k = el.getAttribute('data-k');
+    if(data.answers[k] !== undefined) el.value = data.answers[k];
+  }
+  setRate('rate-before', data.answers.rateBefore);
+  setRate('rate-after', data.answers.rateAfter);
+  showDelta();
+  renderEntries();
+}
+function setRate(id, v){
+  var box = $(id); if(!box) return;
+  var btns = box.querySelectorAll('button');
+  for(var i=0;i<btns.length;i++){
+    if(btns[i].getAttribute('data-v') === String(v)) btns[i].classList.add('on');
+    else btns[i].classList.remove('on');
+  }
+}
+function showDelta(){
+  var a = parseInt(data.answers.rateBefore,10), b = parseInt(data.answers.rateAfter,10);
+  if(!a || !b){ $('delta').textContent = ''; return; }
+  var d = b - a;
+  if(d > 0) $('delta').textContent = 'You went up ' + d + ' point' + (d>1?'s':'') + '.';
+  else if(d < 0) $('delta').textContent = 'You went down ' + Math.abs(d) + '. That is useful information too.';
+  else $('delta').textContent = 'No change. That happens.';
+}
+
+/* =========================================================
+   SUPABASE SAVE
+   ========================================================= */
+function setDot(cls, txt){
+  $('dot').className = 'dot ' + (cls || '');
+  $('savetxt').textContent = txt || '';
+}
+function queueSave(){
+  data.answers = collect();
+  try { localStorage.setItem(LS, JSON.stringify(data)); } catch(e){}
+  setDot('saving','saving…');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(push, 2500);
+}
+function push(submitted){
+  if(!student) return;
+  var row = {
+    email: student.email,
+    name: student.name,
+    period: student.period,
+    section: SECTION,
+    payload: { answers: collect(), entries: data.entries },
+    updated_at: new Date().toISOString()
+  };
+  if(submitted) row.submitted = true;
+  return fetch(SUPA_URL + '/rest/v1/' + TABLE + '?on_conflict=email,section', {
+    method:'POST',
+    headers:{
+      'apikey': SUPA_KEY,
+      'Authorization': 'Bearer ' + SUPA_KEY,
+      'Content-Type':'application/json',
+      'Prefer':'resolution=merge-duplicates,return=minimal'
+    },
+    body: JSON.stringify([row])
+  }).then(function(r){
+    if(r.ok){
+      var t = new Date();
+      setDot('ok','saved ' + t.getHours() + ':' + String(t.getMinutes()).padStart(2,'0'));
+    } else {
+      r.text().then(function(x){ console.error('save failed', r.status, x); });
+      setDot('err','not saved');
+    }
+  }).catch(function(e){ console.error(e); setDot('err','offline'); });
+}
+function load(){
+  var url = SUPA_URL + '/rest/v1/' + TABLE + '?email=eq.' + encodeURIComponent(student.email) +
+            '&section=eq.' + SECTION + '&select=payload';
+  return fetch(url, { headers:{ 'apikey':SUPA_KEY, 'Authorization':'Bearer ' + SUPA_KEY } })
+    .then(function(r){ return r.json(); })
+    .then(function(rows){
+      if(rows && rows.length && rows[0].payload){
+        data.answers = rows[0].payload.answers || {};
+        data.entries = rows[0].payload.entries || [];
+      }
+    }).catch(function(){});
+}
+
+/* =========================================================
+   SIGN IN
+   ========================================================= */
+function signIn(){
+  var raw=cleanMail($('si-email').value);
+  var name=$('si-name').value.trim();
+  var per=$('si-period').value;
+  if(!validMail(raw)){$('signin-err').textContent='Please use your school email — it ends with @s.sfusd.edu';return;}
+  if(name.length<3){$('signin-err').textContent='Type your first and last name.';return;}
+  if(!per){$('signin-err').textContent='Choose your period.';return;}
+  $('signin-err').textContent='';
+  var canon=canonMail(raw);
+  recordAlias(raw, canon);
+  seedStudent(name, canon, per);
+  student={email:canon,name:name,period:per};
+  try{
+    localStorage.setItem('grat_student',JSON.stringify(student));
+    localStorage.setItem('gal_student_email', canon);
+  }catch(e){}
+  start();
+}
+function start(){
+  $('signin').style.display = 'none';
+  $('who').textContent = student.name + ' · P' + student.period;
+  $('ph-name').textContent = student.name;
+  $('ph-period').textContent = student.period;
+  try {
+    var cached = localStorage.getItem(LS);
+    if(cached){ var c = JSON.parse(cached); data.answers = c.answers || {}; data.entries = c.entries || []; }
+  } catch(e){}
+  restore();
+  load().then(function(){ restore(); setDot('ok','loaded'); });
+}
+
+/* =========================================================
+   INIT
+   ========================================================= */
+document.addEventListener('DOMContentLoaded', function(){
+  tipEl = $('tip');
+  buildVocab();
+  $('j-date').value = new Date().toISOString().slice(0,10);
+
+  $('si-go').addEventListener('click', signIn);
+  $('si-email').addEventListener('keydown', function(e){ if(e.key==='Enter') $('si-name').focus(); });
+  $('si-name').addEventListener('keydown', function(e){ if(e.key==='Enter') signIn(); });
+
+  var saved = localStorage.getItem('grat_student');
+  if(saved){ try { student = JSON.parse(saved); start(); } catch(e){} }
+
+  $('who').addEventListener('click', function(){
+    if(!confirm('Sign out? The next student can sign in on this device.')) return;
+    localStorage.removeItem('grat_student'); localStorage.removeItem(LS);
+    location.reload();
+  });
+
+  document.addEventListener('input', function(e){
+    if(e.target.matches('textarea, input[type=text], select')) queueSave();
+  });
+
+  document.addEventListener('click', function(e){
+    var g = e.target.closest('.g');
+    if(g && g.hasAttribute('data-d')){ showTip(g, e); return; }
+    if(!e.target.closest('#tip')) tipEl.style.display = 'none';
+  });
+
+  var rateBoxes = document.querySelectorAll('.rate');
+  for(var i=0;i<rateBoxes.length;i++){
+    rateBoxes[i].addEventListener('click', function(e){
+      var b = e.target.closest('button'); if(!b) return;
+      var k = this.getAttribute('data-k');
+      data.answers[k] = b.getAttribute('data-v');
+      setRate(this.id, b.getAttribute('data-v'));
+      showDelta(); queueSave();
+    });
+  }
+
+  $('lang').addEventListener('change', function(){
+    translateVocabCards();
+    tipEl.style.display = 'none';
+  });
+
+  $('btn-check1').addEventListener('click', function(){ checkSet('m', MATCH.length, 'mk', 'score1'); });
+  $('btn-check2').addEventListener('click', function(){ checkSet('f', FIB.length, 'fk', 'score2'); });
+  $('btn-breathe').addEventListener('click', runBreath);
+  $('btn-save-entry').addEventListener('click', saveEntry);
+
+  $('btn-print').addEventListener('click', function(){ growTextareas(); window.print(); });
+  $('btn-blank').addEventListener('click', function(){
+    document.body.classList.add('blank');
+    window.print();
+    setTimeout(function(){ document.body.classList.remove('blank'); }, 600);
+  });
+  $('btn-turnin').addEventListener('click', function(){
+    if(!confirm('Turn in your work? You can still keep writing after this.')) return;
+    push(true);
+    $('btn-turnin').textContent = 'Turned in ✓';
+  });
+
+  window.addEventListener('beforeunload', function(){
+    if(!student) return;
+    try {
+      var row = { email:student.email, name:student.name, period:student.period, section:SECTION,
+                  payload:{answers:collect(), entries:data.entries}, updated_at:new Date().toISOString() };
+      navigator.sendBeacon(
+        SUPA_URL + '/rest/v1/' + TABLE + '?on_conflict=email,section&apikey=' + SUPA_KEY,
+        new Blob([JSON.stringify([row])], {type:'application/json'})
+      );
+    } catch(e){}
+  });
+});
+
+function growTextareas(){
+  var t = document.querySelectorAll('textarea');
+  for(var i=0;i<t.length;i++){ t[i].style.height = 'auto'; t[i].style.height = (t[i].scrollHeight + 6) + 'px'; }
+}
+</script>
+<script src="/readings/track.js"></script>
+
+<script>
+/* ============ Galileo standard: identity, directions, tap words, canary ============ */
+(function(){
+  /* some pages in this family define SLUG, some do not */
+  var PAGE_SLUG=(typeof SLUG!=='undefined'&&SLUG)?SLUG:'gratitude';
+  var CANON_DOMAIN='@s.sfusd.edu', ROSTER=[];
+  var PROXY='https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
+  function ME_(){ return (typeof student!=='undefined'&&student&&student.email)?student:null; }
+  window.cleanMail=function(x){ return String(x||'').trim().toLowerCase(); };
+  window.localPart=function(e){ return cleanMail(e).split('@')[0]; };
+  window.validMail=function(e){ return /^[^@\s]+@(s\.)?sfusd\.edu$/.test(cleanMail(e)); };
+  window.canonMail=function(raw){
+    var lp=localPart(raw), i;
+    for(i=0;i<ROSTER.length;i++){ if(localPart(ROSTER[i].email)===lp) return cleanMail(ROSTER[i].email); }
+    return lp+CANON_DOMAIN;
+  };
+  function head(pref){
+    var h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};
+    if(pref) h['Prefer']=pref; return h;
+  }
+  window.recordAlias=function(alias, canon){
+    if(!alias||alias===canon) return;
+    fetch(SUPA_URL+'/rest/v1/student_aliases?on_conflict=alias_email',{
+      method:'POST', headers:head('resolution=merge-duplicates,return=minimal'),
+      body:JSON.stringify([{alias_email:alias, email:canon}])}).catch(function(){});
+  };
+  window.seedStudent=function(name,email,period){
+    fetch(SUPA_URL+'/rest/v1/students?on_conflict=email',{
+      method:'POST', headers:head('resolution=ignore-duplicates,return=minimal'),
+      body:JSON.stringify([{email:email, name:name, period:period}])}).catch(function(){});
+  };
+  fetch(SUPA_URL+'/rest/v1/students?select=name,email,period&order=name',{headers:head()})
+    .then(function(r){ return r.ok?r.json():[]; })
+    .then(function(rows){ ROSTER=rows||[]; }).catch(function(){});
+
+  /* prefill from a sign-in anywhere else on the site */
+  try{
+    var saved=JSON.parse(localStorage.getItem('grat_student')||'null');
+    if(saved&&saved.email){
+      if(document.getElementById('si-name')) document.getElementById('si-name').value=saved.name||'';
+      if(document.getElementById('si-email')) document.getElementById('si-email').value=saved.email;
+      if(saved.period&&document.getElementById('si-period')) document.getElementById('si-period').value=String(saved.period);
+    } else {
+      var g=localStorage.getItem('gal_student_email');
+      if(g&&document.getElementById('si-email')) document.getElementById('si-email').value=g;
+    }
+  }catch(e){}
+
+  /* ---------- translate through the proxy ---------- */
+  var tcache={};
+  function tr(text, lang){
+    var key=text+'|'+lang;
+    if(tcache[key]) return Promise.resolve(tcache[key]);
+    var url=PROXY+'?action=translate&mode='+(String(text||'').trim().split(/\s+/).length<=3?'word':'sentence')+'&idiom='+encodeURIComponent(text)+'&meaning=&lang='+encodeURIComponent(lang);
+    return fetch(url).then(function(r){return r.json();}).then(function(d){
+      if(!d||!d.ok||!d.translation) return null;
+      tcache[key]=d.translation; return d.translation;
+    }).catch(function(){return null;});
+  }
+
+  /* ---------- directions in the student's language ---------- */
+  var DIR_ON=false, SENT={};
+  try{ DIR_ON=localStorage.getItem('song_dir')==='1'; }catch(e){}
+  function logReveal(k, lang){
+    if(!ME_()) return;
+    var sig=k+'|'+lang; if(SENT[sig]) return; SENT[sig]=true;
+    fetch(SUPA_URL+'/rest/v1/instruction_reveals',{
+      method:'POST', headers:head('return=minimal'),
+      body:JSON.stringify([{email:ME_().email, set_slug:PAGE_SLUG, activity:k, lang:lang}])}).catch(function(){});
+  }
+  function showDirections(){
+    var lang=document.getElementById('lang').value;
+    var list=document.querySelectorAll('[data-dir]');
+    Array.prototype.forEach.call(list,function(p){
+      var out=p.querySelector('.dirtr');
+      if(!out){ out=document.createElement('span'); out.className='dirtr'; p.appendChild(out); }
+      if(!DIR_ON||!lang){ out.textContent=''; return; }
+      var k=p.getAttribute('data-dir'), en=p.getAttribute('data-en')||'';
+      out.textContent='…';
+      tr(en, lang).then(function(t){
+        out.textContent=t?(t.equiv||t.meaning||''):'';
+        if(out.textContent) logReveal(k, lang);
+      });
+    });
+  }
+  var dirBtn=document.getElementById('btn-dir');
+  if(dirBtn){
+    dirBtn.classList.toggle('on', DIR_ON);
+    dirBtn.addEventListener('click',function(){
+      DIR_ON=!DIR_ON;
+      try{ localStorage.setItem('song_dir', DIR_ON?'1':'0'); }catch(e){}
+      dirBtn.classList.toggle('on', DIR_ON);
+      showDirections();
+    });
+  }
+  var langSel=document.getElementById('lang');
+  if(langSel) langSel.addEventListener('change', function(){ if(DIR_ON) showDirections(); });
+  if(DIR_ON) setTimeout(showDirections, 600);
+
+  /* ---------- tap any word ---------- */
+  var TAP_ON=false;
+  try{ TAP_ON=localStorage.getItem('song_tap')==='1'; }catch(e){}
+  function wrapWords(root){
+    if(root.getAttribute('data-wrapped')) return;
+    root.setAttribute('data-wrapped','1');
+    var walker=document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), nodes=[], n;
+    while((n=walker.nextNode())) if(n.nodeValue.trim()) nodes.push(n);
+    nodes.forEach(function(node){
+      if(node.parentNode.closest('textarea,input,button,select,.wt-tap')) return;
+      var frag=document.createDocumentFragment();
+      node.nodeValue.split(/(\s+)/).forEach(function(piece){
+        if(!piece.trim()){ frag.appendChild(document.createTextNode(piece)); return; }
+        var s=document.createElement('span');
+        s.className='wt-tap'; s.textContent=piece;
+        frag.appendChild(s);
+      });
+      node.parentNode.replaceChild(frag, node);
+    });
+  }
+  function tapTargets(){ return document.querySelectorAll('[data-tap]'); }
+  function setTap(on){
+    TAP_ON=on;
+    try{ localStorage.setItem('song_tap', on?'1':'0'); }catch(e){}
+    document.body.classList.toggle('tap-on', on);
+    var b=document.getElementById('btn-tap');
+    if(b) b.classList.toggle('on', on);
+    if(on) Array.prototype.forEach.call(tapTargets(), wrapWords);
+  }
+  var tapBtn=document.getElementById('btn-tap');
+  if(tapBtn) tapBtn.addEventListener('click', function(){ setTap(!TAP_ON); });
+  document.addEventListener('click', function(ev){
+    if(!TAP_ON) return;
+    var s=ev.target.closest('.wt-tap'); if(!s) return;
+    var lang=document.getElementById('lang').value;
+    if(!lang){ document.getElementById('lang').focus(); return; }
+    var word=(s.textContent||'').replace(/[^A-Za-zÀ-ÿ'’-]/g,'');
+    if(!word) return;
+    var old=s.getAttribute('data-shown');
+    if(old){ s.removeAttribute('data-shown'); var t=s.querySelector('.wt-bub'); if(t) t.remove(); return; }
+    var bub=document.createElement('span'); bub.className='wt-bub'; bub.textContent='…';
+    s.appendChild(bub); s.setAttribute('data-shown','1');
+    tr(word, lang).then(function(t){ bub.textContent=t?(t.equiv||t.meaning||'?'):'?'; });
+  });
+  if(TAP_ON) setTimeout(function(){ setTap(true); }, 400);
+
+  /* ---------- quiet browser-translation canary ---------- */
+  var CANARY='the quick brown fox jumps over the lazy dog', TR_SENT='';
+  function detectTranslation(){
+    var c=document.getElementById('canary');
+    var got=c?(c.textContent||'').trim().toLowerCase():'';
+    var cls=document.documentElement.className||'';
+    var drift=(c&&got!==CANARY)?got:'';
+    if(!drift&&!/translated|notranslate-off/.test(cls)) return null;
+    return {observed:drift, html_lang:document.documentElement.lang||'', html_class:cls};
+  }
+  function checkTranslation(){
+    var d=detectTranslation();
+    if(!d||!ME_()) return;
+    var sig=d.observed+'|'+d.html_lang;
+    if(sig===TR_SENT) return;
+    TR_SENT=sig;
+    fetch(SUPA_URL+'/rest/v1/page_translation?on_conflict=email,set_slug',{
+      method:'POST', headers:head('resolution=merge-duplicates,return=minimal'),
+      body:JSON.stringify([{email:ME_().email, set_slug:PAGE_SLUG, translated:true,
+        observed:d.observed, html_lang:d.html_lang, html_class:d.html_class,
+        updated_at:new Date().toISOString()}])}).catch(function(){});
+  }
+  window.checkTranslation=checkTranslation;
+  setInterval(checkTranslation, 20000);
+  setTimeout(checkTranslation, 4000);
+})();
+</script>
+<script>
+/* ── Choose the language at sign-in ───────────────────────────────
+   The page already has a language picker, but it sits past the gate,
+   so students reach the activity with nothing chosen and the first
+   word they tap says "choose your language". This mirrors that picker
+   into the sign-in screen and keeps the two in step. Remembers the
+   choice across pages via gal_lang. */
+(function(){
+  var GATE = /gate|login|log-in|sign-?in|signin|overlay|welcome|start-?screen/i;
+  function realPicker(){
+    var sels = document.querySelectorAll('select');
+    for (var i = 0; i < sels.length; i++){
+      var s = sels[i];
+      var id = (s.id || '') + ' ' + (s.className || '') + ' ' + (s.getAttribute('aria-label') || '');
+      if (/lang/i.test(id) && s.options.length > 2 && s.id !== 'gate-lang') return s;
+    }
+    return null;
+  }
+  function gateBox(real){
+    var nodes = document.querySelectorAll('[id],[class]');
+    for (var i = 0; i < nodes.length; i++){
+      var n = nodes[i];
+      var ident = (n.id || '') + ' ' + (typeof n.className === 'string' ? n.className : '');
+      if (!GATE.test(ident)) continue;
+      if (real && n.contains(real)) continue;            /* that is the bar, not the gate */
+      if (n.querySelector('input, select, button')) return n;
+    }
+    return null;
+  }
+  function build(){
+    var real = realPicker();
+    if (!real) return;
+    var box = gateBox(real);
+    if (!box || box.querySelector('#gate-lang')) return;
+
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'margin:10px 0;text-align:left';
+    var lab = document.createElement('label');
+    lab.setAttribute('for', 'gate-lang');
+    lab.textContent = 'Your language';
+    lab.style.cssText = 'display:block;font-weight:700;font-size:13px;margin-bottom:4px';
+    var sel = document.createElement('select');
+    sel.id = 'gate-lang';
+    sel.style.cssText = 'width:100%;font:inherit;padding:9px 10px;border:1px solid #c9c2b2;border-radius:9px';
+    sel.innerHTML = real.innerHTML;
+
+    var saved = '';
+    try { saved = localStorage.getItem('gal_lang') || ''; } catch(e){}
+    if (saved) {
+      sel.value = saved;
+      if (sel.value === saved) { real.value = saved; fire(real); }
+    }
+
+    sel.addEventListener('change', function(){
+      real.value = sel.value;
+      try { localStorage.setItem('gal_lang', sel.value); } catch(e){}
+      fire(real);
+    });
+    real.addEventListener('change', function(){
+      if (sel.value !== real.value) sel.value = real.value;
+      try { localStorage.setItem('gal_lang', real.value); } catch(e){}
+    });
+
+    wrap.appendChild(lab); wrap.appendChild(sel);
+    var btn = box.querySelector('button');
+    if (btn && btn.parentNode) btn.parentNode.insertBefore(wrap, btn);
+    else box.appendChild(wrap);
+  }
+  function fire(el){
+    try { el.dispatchEvent(new Event('change', { bubbles: true })); } catch(e){
+      var ev = document.createEvent('HTMLEvents'); ev.initEvent('change', true, false); el.dispatchEvent(ev);
+    }
+    if (typeof el.onchange === 'function') { try { el.onchange(); } catch(e){} }
+  }
+  /* some pages fill their picker from an external script, so keep trying
+     for a few seconds until there is something worth cloning */
+  var tries = 0;
+  function attempt(){
+    build();
+    if (!document.getElementById('gate-lang') && ++tries < 10) setTimeout(attempt, 600);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', attempt);
+  else attempt();
+})();
+</script>
+</body>
+</html>
