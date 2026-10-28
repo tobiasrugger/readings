@@ -3958,6 +3958,17 @@ function galPullRows(){
     return [{ payload: m }];
   });
 }
+/* T-180: the server-down notice is a big red bar at the top of the screen, not only the small note in the header */
+function galBar(text){
+  var b = document.getElementById("t180bar");
+  if(!text){ if(b) b.remove(); return; }
+  if(!b){
+    b = document.createElement("div"); b.id = "t180bar"; b.setAttribute("role", "alert");
+    b.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:99999;background:#b3261e;color:#fff;font:800 17px/1.35 Nunito,sans-serif;padding:12px 16px;border-bottom:3px solid #5a0f0b;box-shadow:0 3px 10px rgba(0,0,0,.35);text-align:center";
+    document.body.appendChild(b);
+  }
+  b.textContent = "\u26a0 " + text;
+}
 function galLoadThenSave(){
   GAL_LOADED = false;
   setStatus("wait", "Loading your work\u2026");
@@ -3965,6 +3976,7 @@ function galLoadThenSave(){
     GAL_LOADED = true; GAL_TRY = 0;
     try{ localStorage.setItem(LKEY + "_owner", student.email); }catch(e){}
     setStatus("ok", "Ready");
+    galBar("");
     /* re-run the part counters and unlocks with the restored answers */
     var t = document.querySelector("textarea[data-id]");
     if(t) t.dispatchEvent(new Event("input", { bubbles: true }));
@@ -3972,6 +3984,7 @@ function galLoadThenSave(){
   }).catch(function(){
     var wait = [3, 6, 12, 20, 30][Math.min(GAL_TRY, 4)]; GAL_TRY++;
     setStatus("bad", "Can\u2019t reach the server \u2014 your answers stay on this computer. Trying again in " + wait + " s\u2026");
+    galBar("Can\u2019t reach the server \u2014 your answers stay on this computer. Trying again in " + wait + " s\u2026");
     setTimeout(galLoadThenSave, wait * 1000);
   });
 }
