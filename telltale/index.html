@@ -2225,7 +2225,7 @@ function collectPayload(){
   var boxes = document.querySelectorAll("[data-qid]");
   for(var i = 0; i < boxes.length; i++){
     var b = boxes[i];
-    if(b.classList.contains("hard-only") && curMode === "easy") continue;
+    var galHid = b.classList.contains("hard-only") && curMode === "easy";
     var ta = b.querySelector("textarea");
     if(!ta) continue;
     var tagEl = b.querySelector(".tag");
@@ -2237,6 +2237,7 @@ function collectPayload(){
       q: qEl ? (qEl.innerText || qEl.textContent) : "",
       a: val
     });
+    if(galHid){ if(!val) out.questions.pop(); else out.questions[out.questions.length - 1].h = 1; continue; }
     total++; if(val) answered++;
   }
   out.meta.answered = answered;
@@ -2254,6 +2255,7 @@ var saving = false, pending = false, saveTimer = null;
 function pushRow(markSubmitted, done){
   reportProgress();
   if(!student) return;
+  if(!GAL_LOADED){ if(done) done(false); return; }
   if(saving){ pending = true; return; }
   saving = true;
   setStatus("wait", "Saving\u2026");
@@ -2309,7 +2311,7 @@ function queueSave(){
 }
 
 window.addEventListener("beforeunload", function(){
-  if(!student || !saveTimer) return;
+  if(!student || !saveTimer || !GAL_LOADED) return;
   clearTimeout(saveTimer);
   var pay = collectPayload();
   try{
@@ -2327,12 +2329,79 @@ window.addEventListener("beforeunload", function(){
 });
 
 /* ---------- pull any work saved from another device ---------- */
+
+/* ===== T-166 (Oct 28): load before save — a page never saves until it has read this
+   student's saved work. Reads both email spellings (@sfusd.edu / @s.sfusd.edu) and, on the
+   Landlady pages, all three Landlady links; fills only empty boxes; then saves under
+   @sfusd.edu. A different student on the same computer starts clean. ===== */
+var GAL_LOADED = false, GAL_TRY = 0;
+var GAL_FAMILY = (['telltale']);
+function galLp(e){ return String(e||"").trim().toLowerCase().split("@")[0]; }
+function galPullRows(){
+  var lp = galLp(student.email), fam = GAL_FAMILY.map(encodeURIComponent).join(",");
+  var url = SUPA_URL + "/rest/v1/" + TABLE + "?select=email,guide_key,payload,updated_at" +
+            "&email=in.(" + encodeURIComponent(lp + "@sfusd.edu") + "," + encodeURIComponent(lp + "@s.sfusd.edu") + ")" +
+            "&guide_key=in.(" + fam + ")&order=updated_at.desc";
+  return fetch(url, { headers: headers() }).then(function(r){
+    if(!r.ok) throw new Error("load " + r.status);
+    return r.json();
+  }).then(function(rows){
+    rows = (rows || []).filter(function(x){ return x && x.payload; });
+    if(!rows.length) return [];
+    /* this page's own rows first, newest first; then the other links */
+    rows.sort(function(a, b){
+      var oa = a.guide_key === GUIDE_KEY ? 0 : 1, ob = b.guide_key === GUIDE_KEY ? 0 : 1;
+      if(oa !== ob) return oa - ob;
+      return String(b.updated_at || "").localeCompare(String(a.updated_at || ""));
+    });
+    var m = { questions: [] }, seen = {}, i, j;
+    for(i = 0; i < rows.length; i++){
+      var qs = rows[i].payload.questions || [];
+      for(j = 0; j < qs.length; j++){
+        if(!qs[j] || !qs[j].id || seen[qs[j].id] || !String(qs[j].a || "").trim()) continue;
+        seen[qs[j].id] = 1; m.questions.push({ id: qs[j].id, a: qs[j].a });
+      }
+    }
+    ["notes", "highlights", "mc_misses", "vocab_check", "vocab_mini"].forEach(function(k){
+      for(var r = 0; r < rows.length; r++){
+        var v = rows[r].payload[k];
+        if(v && (typeof v !== "object" || Object.keys(v).length)){ m[k] = v; return; }
+      }
+    });
+    return [{ payload: m }];
+  });
+}
+function galLoadThenSave(){
+  GAL_LOADED = false;
+  setStatus("wait", "Loading your work\u2026");
+  pullRow().then(function(){
+    GAL_LOADED = true; GAL_TRY = 0;
+    try{ localStorage.setItem(LKEY + "_owner", student.email); }catch(e){}
+    setStatus("ok", "Ready");
+    /* re-run the part counters and unlocks with the restored answers */
+    var t = document.querySelector("textarea[data-id]");
+    if(t) t.dispatchEvent(new Event("input", { bubbles: true }));
+    pushRow(false);
+  }).catch(function(){
+    var wait = [3, 6, 12, 20, 30][Math.min(GAL_TRY, 4)]; GAL_TRY++;
+    setStatus("bad", "Can\u2019t reach the server \u2014 your answers stay on this computer. Trying again in " + wait + " s\u2026");
+    setTimeout(galLoadThenSave, wait * 1000);
+  });
+}
+/* a different student signing in on this computer: clear the last student's copy, then start clean */
+function galOwnerChanged(newEmail){
+  var prev = "";
+  try{ prev = localStorage.getItem(LKEY + "_owner") || ((JSON.parse(localStorage.getItem(STU_KEY) || "null") || {}).email) || ""; }catch(e){}
+  if(!prev || galLp(prev) === galLp(newEmail)) return false;
+  try{
+    var kill = [], k;
+    for(k = 0; k < localStorage.length; k++){ var key = localStorage.key(k); if(key && key.indexOf(LKEY) === 0 && !/_lang$|_mode$/.test(key)) kill.push(key); }
+    kill.forEach(function(x){ localStorage.removeItem(x); });
+  }catch(e){}
+  return true;
+}
 function pullRow(){
-  var url = SUPA_URL + "/rest/v1/" + TABLE +
-            "?select=payload&email=eq." + encodeURIComponent(student.email) +
-            "&guide_key=eq." + encodeURIComponent(GUIDE_KEY);
-  fetch(url, { headers: headers() })
-    .then(function(r){ return r.ok ? r.json() : []; })
+  return galPullRows()
     .then(function(data){
       if(!data || !data.length || !data[0].payload) return;
       var qs = data[0].payload.questions || [];
@@ -2347,7 +2416,7 @@ function pullRow(){
       saveLocal();
       restoreChoices();
     })
-    .catch(function(){});
+    ;
 }
 
 /* ============================================================
@@ -2357,8 +2426,7 @@ function signedIn(){
   $("gate").style.display = "none";
   $("who").textContent = student.name + " \u00b7 P" + student.period;
   setStatus("ok", "Ready");
-  pullRow();
-  pushRow(false);
+  galLoadThenSave();
 }
 
 $("gGo").addEventListener("click", function(){
@@ -2380,6 +2448,10 @@ $("gGo").addEventListener("click", function(){
   var rawMail = email; email = llCanon(email);
   llAlias(rawMail, email); llSeed(name, email, per);
   try{ localStorage.setItem("gal_student_email", email); }catch(e){}
+  if(galOwnerChanged(email)){
+    try{ localStorage.setItem(STU_KEY, JSON.stringify({ email: email, name: name, period: per })); localStorage.setItem(LKEY + "_owner", email); sessionStorage.setItem("gal_resign", "1"); }catch(e){}
+    location.reload(); return;
+  }
   student = { email: email, name: name, period: per };
   try{ localStorage.setItem(STU_KEY, JSON.stringify(student)); }catch(e){}
   signedIn();
@@ -2901,7 +2973,7 @@ showScore();
 (function(){
   /* some pages in this family define SLUG, some do not */
   var PAGE_SLUG=(typeof SLUG!=='undefined'&&SLUG)?SLUG:'telltale';
-  var CANON_DOMAIN='@s.sfusd.edu', ROSTER=[];
+  var CANON_DOMAIN='@sfusd.edu', ROSTER=[];
   /* some pages in this repo never defined these */
   var SUPA_URL=(typeof window.SUPA_URL!=='undefined')?window.SUPA_URL:'https://lhmwtfyceilgndpygivj.supabase.co';
   var SUPA_KEY=(typeof window.SUPA_KEY!=='undefined')?window.SUPA_KEY:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
@@ -2910,10 +2982,12 @@ showScore();
   window.cleanMail=function(x){ return String(x||'').trim().toLowerCase(); };
   window.localPart=function(e){ return cleanMail(e).split('@')[0]; };
   window.validMail=function(e){ return /^[^@\s]+@(s\.)?sfusd\.edu$/.test(cleanMail(e)); };
-  window.canonMail=function(raw){
+  window.canonMail=function(raw){ return localPart(raw)+CANON_DOMAIN; };
+  /* T-166: the answer-shuffle seed is the spelling the page used before, so choices don't jump */
+  window.llSeedMail=function(raw){
     var lp=localPart(raw), i;
     for(i=0;i<ROSTER.length;i++){ if(localPart(ROSTER[i].email)===lp) return cleanMail(ROSTER[i].email); }
-    return lp+CANON_DOMAIN;
+    return lp+'@s.sfusd.edu';
   };
   function head(pref){
     var h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};
@@ -3723,6 +3797,27 @@ showScore();
   }
   window.addEventListener("hashchange",go);
   window.addEventListener("load",function(){ setTimeout(go,350); });
+})();
+</script>
+
+<script>
+/* T-166: after a clean restart for a new student, sign them straight back in */
+(function(){
+  var go = null; try{ go = sessionStorage.getItem("gal_resign"); sessionStorage.removeItem("gal_resign"); }catch(e){}
+  if(go !== "1") return;
+  setTimeout(function(){
+    try{
+      var me = JSON.parse(localStorage.getItem(STU_KEY) || "null");
+      if(me && me.email){
+        document.getElementById("gEmail").value = me.email;
+        document.getElementById("gName").value = me.name || "";
+        document.getElementById("gPeriod").value = me.period || "";
+      }
+      var gl = localStorage.getItem("vocab_lang") || localStorage.getItem("gal_lang");
+      var sel = document.getElementById("gLang"); if(sel && gl && !sel.value) sel.value = gl;
+    }catch(e){}
+    var b = document.getElementById("gGo"); if(b) b.click();
+  }, 300);
 })();
 </script>
 </body>
