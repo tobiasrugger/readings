@@ -94,7 +94,7 @@ window.DASHBOARDS = [
 {url:'launch-plus/dashboard.html',      name:'Launch Plus',                   course:'101', group:'Unit', note:'Every lesson and its six parts, plus the Record step.'},
 {url:'basics/dashboard.html',           name:'Daily Basics',                  course:'101', group:'Unit'},
 {url:'basics/print/',                   name:'Daily Basics \u2014 print & project', course:'101', group:'Unit', note:'Make a paper do-now sheet (12\u201340 questions, answer key) or put the whole set on the board. Same questions as the tap-through page.'},
-{url:'teachme/dashboard.html',          name:'Teach Mr. Toby \u2014 check their words + my practice', course:'101', group:'Vocabulary', note:'Every word students taught you, with how to say it in English letters and what it means back in English; tap \u2714 / \u2248 / \u2717. Then practise five a day in My practice, with their voices.'},
+{url:'teachme/dashboard.html',          name:'Teach Mr. Toby \u2014 check their words, my practice, Quiz Mr. Toby', course:'101', group:'Vocabulary', note:'Every word students taught you, with how to say it in English letters and what it means back in English; tap \u2714 / \u2248 / \u2717. Practise five a day in My practice, with their voices. Quiz Mr. Toby = projector mode: the class judges you. Set picker at the top: Unit 1 or Lesson 1\u20135 (?set=u1-l3).'},
 {url:'donow/dashboard.html',            name:'Do Now \u2014 all',             course:'both', group:'Unit'},
 {url:'donow/dog-01/dashboard.html',     name:'Do Now: The Dog at the Bus Stop',course:'both', group:'Unit'},
 {url:'donow/0918/dashboard.html',       name:'Do Now: Sept 18',               course:'both', group:'Unit'},

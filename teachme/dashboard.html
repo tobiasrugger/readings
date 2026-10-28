@@ -55,22 +55,70 @@ th{background:#efe6cf}
 #gate .box{width:320px}
 input{font-family:inherit;font-size:17px;padding:7px 10px;border:2px solid var(--ink);border-radius:10px;width:100%}
 .legend span{margin-right:10px}
+/* ---------- Quiz Mr. Toby (projector) ---------- */
+#setSel{font-family:inherit;font-size:15px;font-weight:800;border:2px solid var(--ink);border-radius:10px;padding:5px 8px;background:#fff}
+.qsetup .chips button{font-size:17px}
+#stage{position:fixed;inset:0;z-index:40;background:#fdf6e3;display:none;flex-direction:column;overflow:auto}
+#stage.on{display:flex}
+#stage .sbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:10px 18px;border-bottom:3px solid var(--ink);background:#fff}
+#stage .sbar .tit{font-size:24px;font-weight:900;flex:1}
+.score{display:flex;gap:10px}
+.score .side{border:3px solid var(--ink);border-radius:14px;padding:4px 14px;font-weight:900;font-size:22px;box-shadow:3px 3px 0 var(--ink);text-align:center;min-width:120px}
+.score .toby{background:#bfe8cf}.score .cls{background:#ffe6a8}
+.score .side b{display:block;font-size:34px;line-height:1}
+.qcard{flex:1;display:flex;gap:26px;align-items:center;justify-content:center;padding:18px 26px;flex-wrap:wrap}
+.qpic{width:min(42vw,520px);border:4px solid var(--ink);border-radius:18px;overflow:hidden;background:#fff;box-shadow:6px 6px 0 var(--ink)}
+.qpic svg{display:block;width:100%;height:auto}
+.qtext{flex:1;min-width:300px;max-width:640px}
+.qword{font-size:clamp(46px,7vw,92px);font-weight:900;line-height:1.05}
+.qsense{font-size:clamp(18px,2.2vw,26px);color:var(--muted);font-weight:800;margin:4px 0 10px}
+.qsent{font-size:clamp(20px,2.6vw,32px);font-weight:800;background:#fff6d8;border:3px dashed #c9a24a;border-radius:12px;padding:6px 14px;display:inline-block}
+.qsent .hl{background:#ffd45c;border-radius:6px;padding:0 4px}
+.qprompt{font-size:clamp(20px,2.4vw,30px);font-weight:900;margin:14px 0 6px;color:var(--blue)}
+.qbtns{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.qbtns button{border:3px solid var(--ink);border-radius:14px;padding:12px 20px;font-size:clamp(18px,2vw,24px);font-weight:900;background:#fff;box-shadow:4px 4px 0 var(--ink)}
+.qbtns .ok{background:var(--green);color:#fff}.qbtns .again{background:#ffd45c}.qbtns .show{background:#e6dcff}.qbtns .next{background:var(--blue);color:#fff}
+.qbtns button:disabled{opacity:.45}
+.qtries{font-weight:900;font-size:20px;margin-top:8px;min-height:28px}
+.qquip{border:3px solid var(--ink);border-radius:14px;background:#fff;padding:8px 14px;font-size:clamp(17px,2vw,22px);font-weight:800;margin-top:10px;display:flex;gap:10px;align-items:center}
+.qquip .qwho{font-weight:900;font-size:clamp(18px,2.1vw,24px);color:#fff;background:var(--purple);border-radius:999px;padding:2px 12px}
+.qans{border:4px solid var(--green);background:#eef8f1;border-radius:16px;padding:10px 16px;margin-top:14px}
+.qans .f{font-size:clamp(34px,5vw,64px);font-weight:900;line-height:1.1}
+.qans .r{font-size:clamp(22px,3vw,36px);font-weight:900;color:var(--purple)}
+.qans .row{margin:4px 0 8px}
+.qans .gs{color:var(--blue);font-weight:800;font-size:clamp(16px,1.8vw,22px)}
+.qkeys{font-size:13px;color:var(--muted);font-weight:800;padding:4px 18px 10px}
+.qend{max-width:760px;margin:30px auto;text-align:center}
+.qend .big{font-size:clamp(40px,6vw,70px);font-weight:900}
+.qend table{margin-top:10px}
+.pop{position:fixed;width:10px;height:10px;border-radius:2px;pointer-events:none;z-index:60;animation:pop 1.2s ease-out forwards}
+@keyframes pop{to{transform:translate(var(--dx),var(--dy)) rotate(540deg);opacity:0}}
 @media(max-width:700px){.form{grid-template-columns:1fr}.wpic{width:120px}}
 </style>
 </head>
 <body>
 <div id="gate"><div class="box"><h2>Teach Mr. Toby</h2><p>Teacher password</p><input id="pw" type="password"><p><button class="btn go" id="pwgo">Open</button></p></div></div>
 <div id="top"><a class="all" href="/readings/dashboards/">&#8592; All dashboards</a><h1>Teach Mr. Toby</h1>
- <div class="tabs"><button data-t="check" class="on">Check their words</button><button data-t="learn">My practice</button><button data-t="students">Students</button></div></div>
+ <select id="setSel" aria-label="Word set"></select>
+ <div class="tabs"><button data-t="check" class="on">Check their words</button><button data-t="learn">My practice</button><button data-t="quiz">&#127908; Quiz Mr. Toby</button><button data-t="students">Students</button></div></div>
+<div id="stage" translate="no"></div>
 <div class="wrap"><div id="msg"></div><main id="main">Loading…</main></div>
 
 <script src="/readings/teachme/words.js"></script>
+<script src="/readings/teachme/lp-sets.js"></script>
 <script>
 (function(){
 var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
 var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
 var BUCKET='fluency-recordings', PASSWORD='galileo2026';
-var TM=window.TM, SET=(new URLSearchParams(location.search).get('set'))||'u1', WORDS=TM.SETS[SET].words;
+var TM=window.TM, SET=(new URLSearchParams(location.search).get('set'))||'u1';
+if(!TM.SETS[SET]) SET='u1';
+var WORDS=TM.SETS[SET].words;
+/* set picker: every set in words.js + lp-sets.js */
+(function(){var sel=document.getElementById('setSel'), order=(TM.SET_ORDER||Object.keys(TM.SETS)).filter(function(k){return TM.SETS[k];});
+ order.forEach(function(k){var o=document.createElement('option');o.value=k;o.textContent=TM.SETS[k].title||k;if(k===SET)o.selected=true;sel.appendChild(o);});
+ sel.onchange=function(){var u=new URL(location.href);u.searchParams.set('set',sel.value);location.href=u.toString();};
+ document.querySelector('#top h1').textContent='Teach Mr. Toby \u00b7 '+(TM.SETS[SET].short||SET);})();
 function $(id){return document.getElementById(id);}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 function H(x){var h={apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY,'Content-Type':'application/json'};for(var k in x)h[k]=x[k];return h;}
@@ -108,7 +156,7 @@ function saveLex(row){row.updated_at=new Date().toISOString();LEX[lexKey(row.wor
  .then(function(r){if(!r.ok)throw new Error(r.status);}).catch(function(){$('msg').innerHTML='<div class="note">A save didn\u2019t go through. Reload and try again.</div>';});}
 
 document.querySelectorAll('.tabs button').forEach(function(b){b.onclick=function(){TAB=b.getAttribute('data-t');document.querySelectorAll('.tabs button').forEach(function(x){x.classList.toggle('on',x===b);});render();};});
-function render(){if(TAB==='check')renderCheck();else if(TAB==='learn')renderLearn();else renderStudents();}
+function render(){if(TAB==='check')renderCheck();else if(TAB==='learn')renderLearn();else if(TAB==='quiz')renderQuiz();else renderStudents();}
 
 /* ---------- which language a student's word is in ---------- */
 function langOf(r){var d=(r.dialect||(r.answers||{}).dialect||'');if((r.lang==='Mandarin'||r.lang==='Cantonese')&&(d==='Mandarin'||d==='Cantonese'))return d;
@@ -256,6 +304,94 @@ function drawCard(){var S=SESSION, el=$('cardArea');if(!el)return;
  var sa=$('showA');if(sa)sa.onclick=function(){S.show=true;drawCard();};
  var k=$('knew');if(k)k.onclick=function(){var p=c.p;p.box=Math.min((p.box||0)+1,5);p.due=addDays([0,1,3,7,14,30][p.box]);p.seen=(p.seen||0)+1;S.right++;saveLex(p);S.i++;S.show=false;drawCard();};
  var n=$('notyet');if(n)n.onclick=function(){var p=c.p;p.box=0;p.due=today();p.seen=(p.seen||0)+1;saveLex(p);S.cards.push(c);S.i++;S.show=false;drawCard();};}
+
+/* ======================= QUIZ MR. TOBY (projector) =======================
+   A big card shows the picture + English word. Toby says it in a language;
+   the class taps ✔ or "Try again", or plays a student's voice. Then reveal the
+   word + romanization. Tally: Mr. Toby vs the class (a word the class had to
+   reveal is the class's point). Results also move the card in My practice. */
+var QLANG='', QN=12, QZ=null;
+var QUIPS=[['Linh','Almost! Say it slower, Mr. Toby.'],['Mateo','Close! Listen to a student first.'],['Amira','Hmm\u2026 not yet. Try again!'],['Jun','The tone is different. One more time!'],['Paolo','So close! You can do it, Mr. Toby.'],['Linh','We heard a different word. Again?'],['Mateo','Use your mouth like the student does!']];
+var WINS=[['Amira','Yes! Mr. Toby got it!'],['Jun','Perfect tone!'],['Paolo','Nice one, Mr. Toby!'],['Linh','Wow, that was right!'],['Mateo','Great! Like a real speaker!']];
+function quizLangs(){var out=[];TM.LANG_ORDER.slice(0,7).concat(['Taishanese']).forEach(function(l){if(deck(l).length)out.push(l);});
+ WORK.forEach(function(r){var L=langOf(r);if(out.indexOf(L)<0&&deck(L).length)out.push(L);});return out;}
+function renderQuiz(){var langs=quizLangs();if(!QLANG||langs.indexOf(QLANG)<0)QLANG=langs[0]||'Mandarin';
+ var D=deck(QLANG);
+ var h='<div class="box qsetup"><div class="wpic">'+TM.ART[WORDS[0].art]+'</div><h2>&#127908; Quiz Mr. Toby</h2>'+
+  '<p><b>Put this on the projector.</b> A big card shows the picture and the English word. You say it in the language. The class decides: <b>&#10004; He got it</b> or <b>&#128257; Try again</b>. Stuck? Play a student\u2019s voice, then try again. <b>Show the answer</b> reveals the word and how to say it in English letters \u2014 and gives the class the point.</p>'+
+  '<p>Set: <b>'+esc(TM.SETS[SET].title||SET)+'</b> (change it at the top).</p>'+
+  '<div class="chips">Language: '+langs.map(function(l){return '<button data-ql="'+esc(l)+'" class="'+(l===QLANG?'on':'')+'">'+esc(l)+'</button>';}).join('')+'</div>'+
+  '<div class="chips">Cards: '+[5,8,12].map(function(n){return '<button data-qn="'+n+'" class="'+(QN===n?'on':'')+'">'+n+'</button>';}).join('')+'</div>'+
+  '<p>'+D.length+' words in '+esc(QLANG)+'. Each one you get counts as \u201cI knew it\u201d in <b>My practice</b>; each one the class has to show you goes back to box 1.</p>'+
+  '<button class="btn go" id="qGo">Start the quiz \u2192</button></div>'+
+  '<div class="help"><b>Keys while it\u2019s on screen:</b> Y or Enter = \u2714 got it \u00b7 N = try again \u00b7 V = a student\u2019s voice \u00b7 C = computer voice \u00b7 Space = show the answer \u00b7 \u2192 = next \u00b7 F = full screen \u00b7 Esc = close.</div>';
+ $('main').innerHTML=h;
+ $('main').querySelectorAll('[data-ql]').forEach(function(b){b.onclick=function(){QLANG=b.getAttribute('data-ql');renderQuiz();};});
+ $('main').querySelectorAll('[data-qn]').forEach(function(b){b.onclick=function(){QN=+b.getAttribute('data-qn');renderQuiz();};});
+ $('qGo').onclick=function(){if(!D.length)return;
+  /* shuffle, but never the same word twice in a row across a restart */
+  QZ={lang:QLANG,cards:shuffle(D.slice()).slice(0,QN),i:0,toby:0,cls:0,tries:0,shown:false,got:false,vi:0,log:[]};
+  $('stage').classList.add('on');drawQ();};}
+function hlSent(w){var s=esc(w.sent), h=esc(w.hl);var i=s.indexOf(h);return i<0?s:s.slice(0,i)+'<span class="hl">'+h+'</span>'+s.slice(i+h.length);}
+function drawQ(){var Q=QZ, st=$('stage');if(!Q)return;
+ var bar='<div class="sbar"><div class="tit">&#127908; Quiz Mr. Toby \u00b7 '+esc(Q.lang)+'</div>'+
+  '<div class="score"><div class="side toby">Mr. Toby<b>'+Q.toby+'</b></div><div class="side cls">The class<b>'+Q.cls+'</b></div></div>'+
+  '<div style="font-weight:900;font-size:20px">'+Math.min(Q.i+1,Q.cards.length)+' / '+Q.cards.length+'</div>'+
+  '<button class="btn" id="qFull">\u26f6 Full screen</button><button class="btn" id="qClose">\u2715 Close</button></div>';
+ if(Q.i>=Q.cards.length){
+  var rows=Q.log.map(function(x){return '<tr><td>'+esc(x.en)+'</td><td dir="auto" style="font-size:20px;font-weight:900">'+esc(x.form)+'</td><td class="rom">'+esc(x.rom)+'</td><td>'+(x.got?'\u2714 Mr. Toby'+(x.tries?' (try '+(x.tries+1)+')':''):'\ud83e\udd81 class')+'</td></tr>';}).join('');
+  st.innerHTML=bar+'<div class="qend box"><div class="big">Mr. Toby '+Q.toby+' \u2014 Class '+Q.cls+'</div><p style="font-size:22px;font-weight:800">'+(Q.toby>Q.cls?'Mr. Toby wins this round!':(Q.toby===Q.cls?'A tie!':'The class wins! Teach him again tomorrow.'))+'</p>'+
+   '<table><tr><th>Word</th><th>'+esc(Q.lang)+'</th><th>Say it</th><th>Point</th></tr>'+rows+'</table><p><button class="btn go" id="qAgain">Play again</button> <button class="btn" id="qClose2">Close</button></p></div>';
+  wireQbar();$('qAgain').onclick=function(){QZ=null;$('stage').classList.remove('on');renderQuiz();$('qGo').click();};$('qClose2').onclick=closeQ;burst(innerWidth/2,innerHeight/3);return;}
+ var c=Q.cards[Q.i], w=c.w, vs=voicesFor(w,Q.lang,'');
+ var h=bar+'<div class="qcard"><div class="qpic">'+TM.ART[w.art]+'</div><div class="qtext">'+
+  '<div class="qword">'+esc(w.en)+'</div><div class="qsense">'+esc(w.sense)+'</div><div class="qsent">'+hlSent(w)+'</div>';
+ if(!Q.shown){
+  h+='<div class="qprompt">Mr. Toby, say it in '+esc(Q.lang)+'!</div>'+
+   '<div class="qbtns"><button class="ok" id="qOk">\u2714 He got it!</button><button class="again" id="qNo">\ud83d\udd01 Try again</button>'+
+   '<button id="qV"'+(vs.length?'':' disabled')+'>\u25b6 A student\u2019s voice'+(vs.length?' ('+vs.length+')':'')+'</button><button id="qC">\ud83d\udd0a Computer</button>'+
+   '<button class="show" id="qShow">\ud83d\udc40 Show the answer</button></div>'+
+   '<div class="qtries">'+(Q.tries?'Tries: '+'\u25cf'.repeat(Q.tries+1):'')+'</div>'+(Q.quip?'<div class="qquip"><span class="qwho">'+esc(Q.quip[0])+':</span> '+esc(Q.quip[1])+'</div>':'');
+ }else{
+  h+='<div class="qans">'+(Q.got?'<div style="font-weight:900;color:var(--green);font-size:22px">\u2714 Mr. Toby got it'+(Q.tries?' on try '+(Q.tries+1):' first try')+'!</div>':'<div style="font-weight:900;color:#8a5a10;font-size:22px">\ud83e\udd81 The class gets the point.</div>')+
+   c.forms.slice(0,3).map(function(f){var rom=f.rom||(LEX[lexKey(w.id,Q.lang,norm(f.form))]||{}).rom||'';var fv=voicesFor(w,Q.lang,f.form);
+    return '<div class="row"><span class="f" dir="auto">'+esc(f.form)+'</span> <span class="r">'+esc(rom)+'</span>'+(f.syn?' <span class="auto a-syn">other way</span>':'')+
+     '<div><button class="play" data-sp="'+esc(f.form)+'">\ud83d\udd0a computer</button>'+fv.slice(0,4).map(function(v){return '<button class="play" data-p="'+esc(v.audio)+'">\u25b6 '+esc(v.name)+'</button>';}).join('')+'</div></div>';}).join('')+
+   '<div class="gs" id="qGs"></div></div>'+(Q.quip?'<div class="qquip"><span class="qwho">'+esc(Q.quip[0])+':</span> '+esc(Q.quip[1])+'</div>':'')+
+   '<div class="qbtns"><button class="next" id="qNext">Next \u2192</button></div>';}
+ h+='</div></div><div class="qkeys">Y/Enter \u2714 \u00b7 N try again \u00b7 V student voice \u00b7 C computer \u00b7 Space show \u00b7 \u2192 next \u00b7 F full screen \u00b7 Esc close</div>';
+ st.innerHTML=h;wireQbar();
+ var b;
+ if(b=$('qOk'))b.onclick=function(e){qGot(e);};
+ if(b=$('qNo'))b.onclick=function(){Q.tries++;Q.quip=QUIPS[(Q.tries+Q.i)%QUIPS.length];drawQ();};
+ if(b=$('qV'))b.onclick=function(){if(!vs.length)return;playPath(vs[Q.vi%vs.length].audio);Q.vi++;};
+ if(b=$('qC'))b.onclick=function(){speakIn(c.forms[0].form,Q.lang);};
+ if(b=$('qShow'))b.onclick=function(){qReveal(false);};
+ if(b=$('qNext'))b.onclick=function(){Q.i++;Q.tries=0;Q.shown=false;Q.got=false;Q.vi=0;Q.quip=null;drawQ();};
+ st.querySelectorAll('[data-sp]').forEach(function(x){x.onclick=function(){speakIn(x.getAttribute('data-sp'),Q.lang);};});
+ st.querySelectorAll('[data-p]').forEach(function(x){x.onclick=function(){playPath(x.getAttribute('data-p'));};});
+ var gs=$('qGs');if(gs)sentTr(w,Q.lang).then(function(s){if(s&&s.tr&&$('qGs'))$('qGs').innerHTML='Google, the sentence: '+esc(s.tr)+(s.tgtRom?' <span class="rom">'+esc(s.tgtRom)+'</span>':'');});}
+function qGot(e){var Q=QZ;if(!Q||Q.shown)return;Q.got=true;Q.toby++;Q.quip=WINS[Q.i%WINS.length];
+ var r=e&&e.target?e.target.getBoundingClientRect():{left:innerWidth/2,top:innerHeight/2,width:0};burst(r.left+r.width/2,r.top);qReveal(true);}
+function qReveal(got){var Q=QZ;if(!Q||Q.shown)return;var c=Q.cards[Q.i];Q.shown=true;
+ if(!got){Q.cls++;Q.quip=['Amira','Here it is! Say it with us.'];}
+ Q.log.push({en:c.w.en,form:c.forms[0].form,rom:c.forms[0].rom||(LEX[lexKey(c.w.id,Q.lang,norm(c.forms[0].form))]||{}).rom||'',got:got,tries:Q.tries});
+ /* feed My practice: first-try get = knew it; shown = back to box 0 */
+ var p=c.p;p.seen=(p.seen||0)+1;
+ if(got&&!Q.tries){p.box=Math.min((p.box||0)+1,5);p.due=addDays([0,1,3,7,14,30][p.box]);}
+ else if(!got){p.box=0;p.due=today();}
+ saveLex(p);drawQ();}
+function wireQbar(){var f=$('qFull');if(f)f.onclick=function(){var s=$('stage');if(document.fullscreenElement)document.exitFullscreen();else if(s.requestFullscreen)s.requestFullscreen();};
+ var c=$('qClose');if(c)c.onclick=closeQ;}
+function closeQ(){if(document.fullscreenElement)document.exitFullscreen();$('stage').classList.remove('on');$('stage').innerHTML='';QZ=null;renderQuiz();}
+document.addEventListener('keydown',function(e){if(!QZ||!$('stage').classList.contains('on'))return;var k=e.key, b=null;
+ if(k==='Escape'){closeQ();return;}
+ if(k==='f'||k==='F'){$('qFull')&&$('qFull').click();return;}
+ if(!QZ.shown){if(k==='y'||k==='Y'||k==='Enter')b=$('qOk');else if(k==='n'||k==='N')b=$('qNo');else if(k==='v'||k==='V')b=$('qV');else if(k==='c'||k==='C')b=$('qC');else if(k===' ')b=$('qShow');}
+ else if(k==='ArrowRight'||k===' '||k==='Enter')b=$('qNext');
+ if(b&&!b.disabled){e.preventDefault();b.click();}});
+function burst(x,y){var cols=['#2e8b57','#e8a33d','#2f6db5','#c0392b','#7a4fb5'];for(var i=0;i<26;i++){var d=document.createElement('div');d.className='pop';var a=Math.random()*Math.PI*2, r=80+Math.random()*120;
+ d.style.left=x+'px';d.style.top=y+'px';d.style.background=cols[i%5];d.style.setProperty('--dx',Math.cos(a)*r+'px');d.style.setProperty('--dy',Math.sin(a)*r+'px');(document.fullscreenElement||document.body).appendChild(d);setTimeout(function(e){e.remove();}.bind(null,d),1300);}}
 
 /* ======================= STUDENTS ======================= */
 function renderStudents(){var rows=WORK.slice().sort(function(a,b){return (a.period+'').localeCompare(b.period+'')||(a.student_name||'').localeCompare(b.student_name||'');});
