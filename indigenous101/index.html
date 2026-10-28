@@ -2,6 +2,56 @@
 <html lang="en" translate="no">
 <head>
 <meta charset="UTF-8">
+<script>window.__T168cfg = {"lkey": "indig101_v1", "stu": "indigenous_student", "keys": ["indig101_v1", "indig101_v1_ck", "indig101_v1_country", "indig101_v1_vq"]};</script>
+<script>/* T-168 (Oct 28 2026) — LOAD BEFORE SAVE. Nothing is saved to the server until this student's
+   saved work has loaded (both email spellings, fullest row wins, empty boxes filled from it).
+   If the load fails: red bar, nothing saved, retry. A different student on the same computer
+   gets a clean page (the last student's local copy is cleared), then signs straight back in. */
+(function(){
+  var C = window.__T168cfg || {}, G = window.__T168 = { loaded:false, got:false };
+  function lp(e){ return String(e||"").trim().toLowerCase().split("@")[0]; }
+  var prevStu = ""; try{ prevStu = (JSON.parse(localStorage.getItem(C.stu)||"null")||{}).email || ""; }catch(e){}
+  G.both = function(email){ var l = lp(email);
+    return "(" + [l + "@sfusd.edu", l + "@s.sfusd.edu"].map(function(x){ return encodeURIComponent('"' + x + '"'); }).join(",") + ")"; };
+  G.res = function(r){ if(!r.ok) throw new Error("load " + r.status);
+    return r.json().then(function(rows){ G.got = true; rows = rows || [];
+      rows.sort(function(a,b){ return ((+b.answered||0) - (+a.answered||0)) || String(b.updated_at||"").localeCompare(String(a.updated_at||"")); });
+      return rows; }); };
+  function bar(on){ var b = document.getElementById("t168bar");
+    if(!on){ if(b) b.remove(); return; }
+    if(!b){ b = document.createElement("div"); b.id = "t168bar"; b.setAttribute("role","alert");
+      b.style.cssText = "position:fixed;left:0;right:0;top:0;z-index:99999;background:#b3261e;color:#fff;font:700 16px/1.4 Nunito,system-ui,sans-serif;padding:10px 14px;text-align:center;border-bottom:3px solid #5c0f0a";
+      b.innerHTML = "\u26a0\ufe0f Can\u2019t reach the server. Your answers are kept on this computer. Trying again\u2026 <button type=\"button\" style=\"margin-left:8px;font:inherit;background:#fff;color:#b3261e;border:2px solid #5c0f0a;border-radius:8px;padding:2px 10px;cursor:pointer\">Try again</button>";
+      b.querySelector("button").onclick = function(){ clearTimeout(G.t); G.pull(); };
+      document.body.appendChild(b); } }
+  var wait = 3000;
+  G.done = function(){ if(G.loaded) return; G.loaded = true; bar(false); wait = 3000;
+    try{ localStorage.setItem(C.lkey + "_who", G.email); }catch(e){}
+    if(G.push) G.push(false); };
+  G.fail = function(err){
+    if(G.got){ console.error("T-168: loaded, but applying saved work failed", err); G.done(); return; }
+    console.warn("T-168 load failed", err); bar(true);
+    try{ if(G.status) G.status("bad", "Not saved yet \u2014 can\u2019t reach the server"); }catch(e){}
+    clearTimeout(G.t); G.t = setTimeout(function(){ G.pull(); }, wait); wait = Math.min(wait * 2, 30000); };
+  function mine(email){
+    var who = ""; try{ who = localStorage.getItem(C.lkey + "_who") || ""; }catch(e){}
+    var has = false; try{ has = !!localStorage.getItem(C.lkey); }catch(e){}
+    var owner = who || prevStu;
+    if(!has || (owner && lp(owner) === lp(email))) return true;
+    /* someone else's work is on this computer: clear it, come back signed in */
+    try{ (C.keys||[]).forEach(function(k){ localStorage.removeItem(k); });
+         localStorage.setItem(C.lkey + "_who", email); sessionStorage.setItem("t168_go", "1"); }catch(e){}
+    location.reload(); return false; }
+  /* called at sign-in, in place of the old load-and-save-at-once */
+  G.start = function(email, pull, push, status){
+    G.email = email; G.pull = pull; G.push = push; G.status = status;
+    if(!mine(email)) return; G.pull(); };
+  /* after the clean-up reload, sign the student straight back in */
+  G.resume = function(go){ var f = null; try{ f = sessionStorage.getItem("t168_go"); sessionStorage.removeItem("t168_go"); }catch(e){}
+    if(f) setTimeout(go, 400); };
+})();
+</script>
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="google" content="notranslate">
 <title>Indigenous Peoples’ Day · ELD 101</title>
@@ -982,16 +1032,16 @@ function collectPayload(){
 var saving = false, pending = false, saveTimer = null;
 function rowFor(pay, sub){ var r = { email:student.email, student_name:student.name, period:student.period, guide_key:GUIDE_KEY, mode:"101", lang:curLang, payload:pay, answered:pay.meta.answered, total:pay.meta.total, updated_at:new Date().toISOString() }; if(sub){ r.submitted = true; r.submitted_at = r.updated_at; } return r; }
 function pushRow(sub, done){
-  if(!student) return; if(saving){ pending = true; return; } saving = true; setStatus("wait", "Saving…");
+  if(!student) return; if(!__T168.loaded){ if(done) done(false); return; } if(saving){ pending = true; return; } saving = true; setStatus("wait", "Saving…");
   fetch(SUPA_URL + "/rest/v1/" + TABLE + "?on_conflict=email,guide_key", { method:"POST", headers:headers({ Prefer:"resolution=merge-duplicates,return=minimal" }), body:JSON.stringify([rowFor(collectPayload(), sub)]) })
   .then(function(res){ saving = false; if(res.ok){ setStatus("ok", "Saved " + timeNow()); if(done) done(true); } else { setStatus("bad", "Not saved — check internet"); if(done) done(false); } if(pending){ pending = false; pushRow(false); } })
   .catch(function(){ saving = false; setStatus("bad", "Not saved — check internet"); if(done) done(false); if(pending){ pending = false; pushRow(false); } });
 }
-function queueSave(){ if(!student) return; setStatus("wait", "Saving…"); clearTimeout(saveTimer); saveTimer = setTimeout(function(){ pushRow(false); }, 2500); }
-window.addEventListener("beforeunload", function(){ if(!student || !saveTimer) return; clearTimeout(saveTimer); try{ fetch(SUPA_URL + "/rest/v1/" + TABLE + "?on_conflict=email,guide_key", { method:"POST", keepalive:true, headers:headers({ Prefer:"resolution=merge-duplicates,return=minimal" }), body:JSON.stringify([rowFor(collectPayload(), false)]) }); }catch(e){} });
+function queueSave(){ if(!student || !__T168.loaded) return; setStatus("wait", "Saving…"); clearTimeout(saveTimer); saveTimer = setTimeout(function(){ pushRow(false); }, 2500); }
+window.addEventListener("beforeunload", function(){ if(!student || !saveTimer || !__T168.loaded) return; clearTimeout(saveTimer); try{ fetch(SUPA_URL + "/rest/v1/" + TABLE + "?on_conflict=email,guide_key", { method:"POST", keepalive:true, headers:headers({ Prefer:"resolution=merge-duplicates,return=minimal" }), body:JSON.stringify([rowFor(collectPayload(), false)]) }); }catch(e){} });
 function pullRow(){
-  fetch(SUPA_URL + "/rest/v1/" + TABLE + "?select=payload,grade,feedback,submitted&email=eq." + encodeURIComponent(student.email) + "&guide_key=eq." + GUIDE_KEY, { headers:headers() })
-  .then(function(r){ return r.ok ? r.json() : []; }).then(function(data){
+  fetch(SUPA_URL + "/rest/v1/" + TABLE + "?select=answered,updated_at,payload,grade,feedback,submitted&email=in." + __T168.both(student.email) + "&guide_key=eq." + GUIDE_KEY, { headers:headers() })
+  .then(__T168.res).then(function(data){
     if(!data || !data.length) return; var rec = data[0], p = rec.payload || {};
     if(p.fields){ for(var id in p.fields){ var el = document.querySelector('[data-id="' + id + '"]'); if(el && !(el.value || "").trim()) setField(id, p.fields[id]); } saveLocal(); }
     if(p.vocab_check && !VQ){ VQ = p.vocab_check; showScore(); }
@@ -999,7 +1049,7 @@ function pullRow(){
     if(p.country && !$("myCountry").value) $("myCountry").value = p.country;
     if(rec.grade || rec.feedback) $("feedback-content").innerHTML = '<div class="fb-box">' + (rec.grade ? '<div class="fb-grade">' + esc(rec.grade) + '</div>' : '') + '<div class="fb-text">' + esc(rec.feedback || "") + '</div></div>';
     if(rec.submitted) $("turnIn").textContent = "Turned in ✓";
-  }).catch(function(){});
+  }).then(__T168.done).catch(__T168.fail);
 }
 function turnIn(){
   if(!student) return; var msg = $("subMsg"), pay = collectPayload();
@@ -1044,7 +1094,7 @@ function finishSignIn(first, last, email, per, lang){
   setLang(lang);
   $("gate").style.display = "none"; $("student-app").classList.remove("hidden");
   $("who").textContent = name + " · P" + per; $("student-greeting").textContent = "Hi, " + first + "!"; setStatus("ok", "Ready");
-  pullRow(); pushRow(false);
+  __T168.start(student.email, pullRow, pushRow, setStatus);
 }
 $("gGo").addEventListener("click", function(){
   var first = $("gFirst").value.trim(), last = $("gLast").value.trim(), email = $("gEmail").value.trim().toLowerCase(), per = $("gPeriod").value, gl = $("gLang").value, err = $("gErr");
@@ -1241,5 +1291,6 @@ window.GAL_META = { title:'Indigenous Peoples’ Day (ELD 101)', unit:'Holidays'
 <script src="/readings/say/sets.js"></script>
 <script src="/readings/say/say.js"></script>
 <script src="/readings/track.js"></script>
+<script>/* T-168 */ __T168.resume(function(){ if(!student){ var b = document.getElementById("gGo"); if(b) b.click(); } });</script>
 </body>
 </html>

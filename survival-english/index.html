@@ -1092,9 +1092,11 @@ function payload(turned){
   };
 }
 
+var SE_LOADED=false, SE_WAIT=3000, SE_T=null;  /* T-168: load before save */
 function save(turned){
   if(!ME.email)return;
   try{localStorage.setItem(LS,JSON.stringify({me:ME,ans:ANS}))}catch(e){}
+  if(!SE_LOADED){ if(turned)alert('Still connecting to the server. Your work is saved on this computer. Press Turn in again in a moment.'); return; }
   setDot('busy');
   fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email',{
     method:'POST',
@@ -1114,16 +1116,34 @@ function save(turned){
   }).catch(function(){setDot('bad');if(turned)alert('No internet. Your work is saved on this device. Press Turn in again later.')});
 }
 
+function seBar(on){ var b=document.getElementById('t168bar');
+  if(!on){ if(b) b.remove(); return; }
+  if(!b){ b=document.createElement('div'); b.id='t168bar'; b.setAttribute('role','alert');
+    b.style.cssText='position:fixed;left:0;right:0;top:0;z-index:99999;background:#b3261e;color:#fff;font:700 16px/1.4 Nunito,system-ui,sans-serif;padding:10px 14px;text-align:center;border-bottom:3px solid #5c0f0a';
+    b.innerHTML='\u26a0\ufe0f Can\u2019t reach the server. Your answers are kept on this computer. Trying again\u2026 <button type="button" style="margin-left:8px;font:inherit;background:#fff;color:#b3261e;border:2px solid #5c0f0a;border-radius:8px;padding:2px 10px;cursor:pointer">Try again</button>';
+    b.querySelector('button').onclick=function(){ clearTimeout(SE_T); loadRemote(); };
+    document.body.appendChild(b); } }
 function loadRemote(){
-  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?email=eq.'+encodeURIComponent(ME.email.toLowerCase())+'&select=answers,level',{
+  var lp=ME.email.toLowerCase().split('@')[0];
+  var both='('+[lp+'@sfusd.edu',lp+'@s.sfusd.edu'].map(function(x){return encodeURIComponent('"'+x+'"')}).join(',')+')';
+  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?email=in.'+both+'&select=answers,level,updated_at',{
     headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}
-  }).then(function(r){return r.json()}).then(function(j){
-    if(j&&j[0]&&j[0].answers&&Object.keys(j[0].answers).length>Object.keys(ANS).length){
-      ANS=j[0].answers;
-      if(j[0].level)setLevel(j[0].level);
-      restore();updateProgress();setDot('ok');
+  }).then(function(r){ if(!r.ok) throw new Error('load '+r.status); return r.json(); }).then(function(j){
+    j=(j||[]).sort(function(x,y){ return Object.keys(y.answers||{}).length-Object.keys(x.answers||{}).length; });
+    var got=false;
+    if(j[0]&&j[0].answers){
+      for(var k in j[0].answers){ var v=j[0].answers[k];
+        if(v!=null&&v!==''&&(ANS[k]==null||ANS[k]==='')){ ANS[k]=v; got=true; } }
+      if(j[0].level&&!Object.keys(ANS).length)setLevel(j[0].level);
     }
-  }).catch(function(){});
+    SE_LOADED=true; SE_WAIT=3000; seBar(false);
+    if(got){ restore(); updateProgress(); }
+    setDot('ok'); save();
+  }).catch(function(e){
+    if(SE_LOADED) return;
+    console.warn('T-168 load failed',e); seBar(true); setDot('bad');
+    clearTimeout(SE_T); SE_T=setTimeout(loadRemote,SE_WAIT); SE_WAIT=Math.min(SE_WAIT*2,30000);
+  });
 }
 
 /* ---------- level ---------- */
@@ -1183,12 +1203,17 @@ $('#gbtn').onclick=function(){
   recordAlias(raw, canon);
   seedStudent(n, canon, p);
   try{ localStorage.setItem('gal_student_email', canon); }catch(e){}
+  var prev=String(ME.email||'').toLowerCase().split('@')[0];
   ME.name=n;ME.email=canon;ME.lang=l;ME.period=p;
+  if(prev&&prev!==canon.split('@')[0]&&Object.keys(ANS).length){
+    /* T-168: the last student's answers are on this computer: start clean, come back signed in */
+    try{localStorage.setItem(LS,JSON.stringify({me:ME,ans:{}}))}catch(e){}
+    location.reload(); return;
+  }
   $('#who').textContent=n.split(' ')[0];
   setDot('ok');
   $('#gate').style.display='none';
   loadRemote();
-  save();
 };
 $('#gmail').addEventListener('keydown',function(e){if(e.key==='Enter')$('#gbtn').click()});
 

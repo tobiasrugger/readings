@@ -2,6 +2,56 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<script>window.__T168cfg = {"lkey": "omelas_v2_omelas", "stu": "omelas_student", "keys": ["omelas_v2_omelas", "omelas_v2_omelas_notes", "omelas_v2_omelas_vq"]};</script>
+<script>/* T-168 (Oct 28 2026) — LOAD BEFORE SAVE. Nothing is saved to the server until this student's
+   saved work has loaded (both email spellings, fullest row wins, empty boxes filled from it).
+   If the load fails: red bar, nothing saved, retry. A different student on the same computer
+   gets a clean page (the last student's local copy is cleared), then signs straight back in. */
+(function(){
+  var C = window.__T168cfg || {}, G = window.__T168 = { loaded:false, got:false };
+  function lp(e){ return String(e||"").trim().toLowerCase().split("@")[0]; }
+  var prevStu = ""; try{ prevStu = (JSON.parse(localStorage.getItem(C.stu)||"null")||{}).email || ""; }catch(e){}
+  G.both = function(email){ var l = lp(email);
+    return "(" + [l + "@sfusd.edu", l + "@s.sfusd.edu"].map(function(x){ return encodeURIComponent('"' + x + '"'); }).join(",") + ")"; };
+  G.res = function(r){ if(!r.ok) throw new Error("load " + r.status);
+    return r.json().then(function(rows){ G.got = true; rows = rows || [];
+      rows.sort(function(a,b){ return ((+b.answered||0) - (+a.answered||0)) || String(b.updated_at||"").localeCompare(String(a.updated_at||"")); });
+      return rows; }); };
+  function bar(on){ var b = document.getElementById("t168bar");
+    if(!on){ if(b) b.remove(); return; }
+    if(!b){ b = document.createElement("div"); b.id = "t168bar"; b.setAttribute("role","alert");
+      b.style.cssText = "position:fixed;left:0;right:0;top:0;z-index:99999;background:#b3261e;color:#fff;font:700 16px/1.4 Nunito,system-ui,sans-serif;padding:10px 14px;text-align:center;border-bottom:3px solid #5c0f0a";
+      b.innerHTML = "\u26a0\ufe0f Can\u2019t reach the server. Your answers are kept on this computer. Trying again\u2026 <button type=\"button\" style=\"margin-left:8px;font:inherit;background:#fff;color:#b3261e;border:2px solid #5c0f0a;border-radius:8px;padding:2px 10px;cursor:pointer\">Try again</button>";
+      b.querySelector("button").onclick = function(){ clearTimeout(G.t); G.pull(); };
+      document.body.appendChild(b); } }
+  var wait = 3000;
+  G.done = function(){ if(G.loaded) return; G.loaded = true; bar(false); wait = 3000;
+    try{ localStorage.setItem(C.lkey + "_who", G.email); }catch(e){}
+    if(G.push) G.push(false); };
+  G.fail = function(err){
+    if(G.got){ console.error("T-168: loaded, but applying saved work failed", err); G.done(); return; }
+    console.warn("T-168 load failed", err); bar(true);
+    try{ if(G.status) G.status("bad", "Not saved yet \u2014 can\u2019t reach the server"); }catch(e){}
+    clearTimeout(G.t); G.t = setTimeout(function(){ G.pull(); }, wait); wait = Math.min(wait * 2, 30000); };
+  function mine(email){
+    var who = ""; try{ who = localStorage.getItem(C.lkey + "_who") || ""; }catch(e){}
+    var has = false; try{ has = !!localStorage.getItem(C.lkey); }catch(e){}
+    var owner = who || prevStu;
+    if(!has || (owner && lp(owner) === lp(email))) return true;
+    /* someone else's work is on this computer: clear it, come back signed in */
+    try{ (C.keys||[]).forEach(function(k){ localStorage.removeItem(k); });
+         localStorage.setItem(C.lkey + "_who", email); sessionStorage.setItem("t168_go", "1"); }catch(e){}
+    location.reload(); return false; }
+  /* called at sign-in, in place of the old load-and-save-at-once */
+  G.start = function(email, pull, push, status){
+    G.email = email; G.pull = pull; G.push = push; G.status = status;
+    if(!mine(email)) return; G.pull(); };
+  /* after the clean-up reload, sign the student straight back in */
+  G.resume = function(go){ var f = null; try{ f = sessionStorage.getItem("t168_go"); sessionStorage.removeItem("t168_go"); }catch(e){}
+    if(f) setTimeout(go, 400); };
+})();
+</script>
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The Ones Who Walk Away from Omelas · Reading Packet</title>
 <style>
@@ -1410,7 +1460,7 @@ function collectPayload(){
 var saving = false, pending = false, saveTimer = null;
 
 function pushRow(markSubmitted, done){
-  if(!student) return;
+  if(!student) return; if(!__T168.loaded){ if(done) done(false); return; }
   if(saving){ pending = true; return; }
   saving = true;
   setStatus("wait", "Saving\u2026");
@@ -1458,14 +1508,14 @@ function pushRow(markSubmitted, done){
 }
 
 function queueSave(){
-  if(!student) return;
+  if(!student || !__T168.loaded) return;
   setStatus("wait", "Saving\u2026");
   clearTimeout(saveTimer);
   saveTimer = setTimeout(function(){ pushRow(false); }, 2500);
 }
 
 window.addEventListener("beforeunload", function(){
-  if(!student || !saveTimer) return;
+  if(!student || !saveTimer || !__T168.loaded) return;
   clearTimeout(saveTimer);
   var pay = collectPayload();
   try{
@@ -1485,10 +1535,10 @@ window.addEventListener("beforeunload", function(){
 /* ---------- pull work saved from another device, and any feedback ---------- */
 function pullRow(){
   var url = SUPA_URL + "/rest/v1/" + TABLE +
-            "?select=payload,grade,feedback,submitted&email=eq." + encodeURIComponent(student.email) +
+            "?select=answered,updated_at,payload,grade,feedback,submitted&email=in." + __T168.both(student.email) +
             "&guide_key=eq." + encodeURIComponent(GUIDE_KEY);
   fetch(url, { headers: headers() })
-    .then(function(r){ return r.ok ? r.json() : []; })
+    .then(__T168.res)
     .then(function(data){
       if(!data || !data.length) return;
       var rec = data[0];
@@ -1507,7 +1557,7 @@ function pullRow(){
       }
       if(rec.submitted) $("turnIn").textContent = "Turned in \u2713";
     })
-    .catch(function(){});
+    .then(__T168.done).catch(__T168.fail);
 }
 
 /* ============================================================
@@ -1518,8 +1568,7 @@ function signedIn(){
   var sa = $("student-app"); if(sa) sa.classList.remove("hidden");
   $("who").textContent = student.name + " \u00b7 P" + student.period;
   setStatus("ok", "Ready");
-  pullRow();
-  pushRow(false);
+  __T168.start(student.email, pullRow, pushRow, setStatus);
 }
 
 function doLogout(){
@@ -2279,5 +2328,6 @@ showScore();
 })();
 </script>
 <script src="/readings/track.js"></script>
+<script>/* T-168 */ __T168.resume(function(){ if(!student){ var b = document.getElementById("gGo"); if(b) b.click(); } });</script>
 </body>
 </html>
