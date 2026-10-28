@@ -282,6 +282,7 @@ window.ATLAS_BOOK = [
  files:['vocab/vocab.js'], own:'std',
  what:'Picture word cards with sound and translation, then practice games. Colors, foods, animals, drinks, sports, school subjects, five sets of action verbs, how I look, strengths, personality traits, and My Words.',
  notes:[
+  ['Oct 28','T-190','Loads first on all 22 word sets and the Vocabulary hub: saveguard.js is now the first line in each page\u2019s head (a copy of each page before the change is in its _phases folder). Both email spellings, no save until the student\u2019s work has loaded, a red bar if the server can\u2019t be reached, and a blank Chromebook can\u2019t wipe real answers. Check the Loads first column at https://tobiasrugger.github.io/readings/audit/check.html (password galileo2026).'],
   ['Oct 26','T-126','vocab/assign.html now opens with a big green \u201c\u2192 Use the NEW Assign page\u201d signpost to https://tobiasrugger.github.io/readings/assign/ (pw galileo2026), above everything including the password box. (Note restored by T-129: an earlier zip\u2019s book.js had dropped it.)'],
   ['Oct 22','T-89','Saves under the canonical @sfusd.edu email; old rows carried forward.'],
   ['Oct 22','T-88','Load-guard: never saves before the student\u2019s work has loaded.'],
