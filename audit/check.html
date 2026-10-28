@@ -101,12 +101,20 @@ code{background:var(--pine-soft);padding:1px 5px;border-radius:5px;font-size:.92
     <table>
       <thead><tr>
         <th>Page</th><th>Login</th><th>Languages</th><th>At sign-in</th><th>Period</th>
-        <th>Protect</th><th>Tap words</th><th>Canary</th><th>Tracker</th><th>Saving</th>
+        <th>Protect</th><th>Tap words</th><th>Canary</th><th>Tracker</th><th>Saving</th><th>Loads first</th><th>Robot</th>
       </tr></thead>
       <tbody id="body"></tbody>
     </table>
   </div>
 
+  <p class="legend" style="margin-bottom:10px">
+    <b>Loads first</b> = the page reads the student's saved work before it writes any
+    (saveguard.js, or the story pages' own guard). <b>Robot</b> = the last run of
+    readings/robot/robot.py, which drives a real browser through three situations:
+    a fresh Chromebook with work saved under the other email spelling, the server down,
+    and a shared Chromebook. It can't drive recording pages, and a page it has never
+    visited shows N/A rather than a pass.
+  </p>
   <p class="legend">
     <span class="chip ok">&#10003;</span> meets the standard &nbsp;
     <span class="chip warn">~</span> partly &nbsp;
@@ -123,7 +131,7 @@ code{background:var(--pine-soft);padding:1px 5px;border-radius:5px;font-size:.92
    if a rule changes, change it here and in audit.py together.
    ──────────────────────────────────────────────────────────────── */
 
-var COLS = ['login','lang','gate','period','trans','tap','canary','track','supa'];
+var COLS = ['login','lang','gate','period','trans','tap','canary','track','supa','save','robot'];
 var MARK = {ok:'\u2713', warn:'~', bad:'\u2717', na:'N/A'};
 
 var LANG_NAMES = {es:'Spanish','zh-CN':'Chinese','zh-TW':'Chinese',yue:'Chinese',zh:'Chinese',
@@ -298,7 +306,30 @@ function checkText(path, t){
   else if (t.indexOf('localStorage') >= 0) r.supa = ['warn','localStorage only'];
   else r.supa = ['bad','no saving'];
 
-  if (r.kind !== 'student') { r.track = ['na','n/a']; r.gate = ['na','n/a']; }
+  /* load before save: saveguard.js, or the inline guard the story pages use */
+  var guarded = /src\s*=\s*["'][^"']*saveguard\.js["']/i.test(t);
+  var inline  = t.indexOf('GAL_LOADED') >= 0;
+  var writes  = t.indexOf('supabase.co') >= 0 || t.indexOf('/rest/v1/') >= 0;
+  if (guarded)      r.save = ['ok','saveguard.js'];
+  else if (inline)  r.save = ['ok','loads before it saves'];
+  else if (writes)  r.save = ['bad','saves with no guard'];
+  else              r.save = ['na','nothing to save'];
+
+  /* what the robot found last time it drove this page */
+  var rb = ROBOT[path];
+  if (!rb) r.robot = ['na','not tested yet'];
+  else {
+    var v = rb.verdict || '', bad = ['t1','t2','t3'].filter(function(k){
+      return rb[k] && rb[k].pass === false; });
+    if (v === 'PASS') r.robot = ['ok','passed 1, 2 and 3'];
+    else if (v === 'FAIL') r.robot = ['bad', bad.length ? 'fails ' + bad.join(', ') : 'failed'];
+    else r.robot = ['warn', String(v)];
+  }
+
+  if (r.kind !== 'student') {
+    r.track = ['na','n/a']; r.gate = ['na','n/a'];
+    r.save = ['na','n/a']; r.robot = ['na','n/a'];
+  }
   return r;
 }
 
@@ -342,7 +373,7 @@ document.getElementById('goOne').addEventListener('click', function(){
   if (!/^https?:/i.test(u)) u = '/' + v.replace(/^\/+/, '');
   if (/\/$/.test(u)) u += 'index.html';
   out.innerHTML = '<p class="count">Fetching\u2026</p>';
-  fetchWithScripts(u).then(function(t){
+  loadRobot().then(function(){ return fetchWithScripts(u); }).then(function(t){
     var path = u.replace(/^\/[^/]+\//, '');
     var r = checkText(path, t);
     var h = '<p class="count">' + u + ' \u00b7 ' + Math.round(t.length/1024) + ' KB \u00b7 read as a <b>' + r.kind + '</b> page</p>';
@@ -358,11 +389,39 @@ document.getElementById('goOne').addEventListener('click', function(){
 });
 function label(c){
   return {login:'Login', lang:'Languages', gate:'At sign-in', period:'Period', trans:'Protect',
-          tap:'Tap words', canary:'Canary', track:'Tracker', supa:'Saving'}[c];
+          tap:'Tap words', canary:'Canary', track:'Tracker', supa:'Saving',
+          save:'Loads first', robot:'Robot'}[c];
 }
 
 /* ---------- everything ---------- */
-var SAVED = null, FRESH = [], driftOnly = false;
+var SAVED = null, FRESH = [], driftOnly = false, ROBOT = {}, ROBOT_RUN = '';
+
+/* The robot is a Python script that drives real pages; it can't run here.
+   What it CAN do is leave its results in the repo, so this page reads the
+   newest run and shows each page's verdict beside the live checks. */
+function loadRobot(){
+  return fetchPage('/readings/robot/results-index.json')
+    .then(function(t){ return JSON.parse(t); })
+    .catch(function(){ return ['results-tap-oct28.json']; })
+    .then(function(files){
+      var jobs = files.map(function(f){
+        return fetchPage('/readings/robot/' + f)
+          .then(function(t){ return {f:f, rows:JSON.parse(t)}; })
+          .catch(function(){ return null; });
+      });
+      return Promise.all(jobs);
+    })
+    .then(function(sets){
+      sets.filter(Boolean).forEach(function(s){
+        ROBOT_RUN = s.f;
+        s.rows.forEach(function(row){
+          var p = row.page || '';
+          if (p.indexOf('readings/') === 0) p = p.slice(9);
+          ROBOT[p] = row;
+        });
+      });
+    });
+}
 
 function loadSaved(){
   if (SAVED) return Promise.resolve(SAVED);
@@ -377,7 +436,7 @@ document.getElementById('goAll').addEventListener('click', function(){
   var btn = this; btn.disabled = true;
   var bar = document.getElementById('bar'), count = document.getElementById('count');
   count.textContent = 'reading the saved grid\u2026';
-  loadSaved().then(function(rows){
+  loadRobot().then(loadSaved).then(function(rows){
     var queue = rows.slice(), total = queue.length, done = 0;
     FRESH = [];
     document.getElementById('tablewrap').hidden = false;

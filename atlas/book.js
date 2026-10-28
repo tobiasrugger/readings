@@ -131,7 +131,8 @@ window.ATLAS_BOOK = [
 
 {id:'audit', ring:0, kind:'teacher', course:'both', name:'Feature audit + conformance checker', home:'audit/', match:['audit/','check.html'], own:'audit',
  what:'Which pages meet the student-page standard, and a checker that re-reads every page live and shows what drifted.',
- notes:[['Oct 22','T-05','Conformance Checker live at audit/check.html.']]},
+ notes:[['Oct 22','T-05','Conformance Checker live at audit/check.html.'],
+        ['Oct 28','T-184','Robot save test folded in: two new columns on both the grid and the checker. \u201cLoads first\u201d says whether a page reads the student\u2019s saved work before writing any (saveguard.js, or the story pages\u2019 own guard) \u2014 109 student pages still don\u2019t. \u201cRobot\u201d shows the last readings/robot/robot.py verdict per page, read from robot/results-index.json. Archived _phases copies no longer counted as pages.']]},
 
 {id:'roadmap', ring:0, kind:'teacher', course:'both', name:'Build roadmap', home:'roadmap/', match:['roadmap/'], own:'gb',
  what:'What is built, in progress and still to do, as cards.'},
