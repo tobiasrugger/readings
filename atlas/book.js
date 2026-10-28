@@ -206,7 +206,8 @@ window.ATLAS_BOOK = [
 
 {id:'news', ring:2, kind:'activity', course:'both', name:'This Week\u2019s Reading (news)', home:'news/', match:['news/'],
  what:'A weekly news article with levels, translations and questions; students\u2019 level is remembered.',
- notes:[['Oct 27','T-154','An article with no ---RECORD--- part still gets a Read aloud passage (first 120+ words of the B reading), here and in the Fluency Tracker. https://tobiasrugger.github.io/readings/news/']]},
+ notes:[['Oct 27','T-154','An article with no ---RECORD--- part still gets a Read aloud passage (first 120+ words of the B reading), here and in the Fluency Tracker. https://tobiasrugger.github.io/readings/news/'],
+  ['Oct 28','T-170','Save safety: the page now loads saveguard.js first. A fresh Chromebook shows the student\u2019s saved answers (either email spelling) and never saves over them; if the server can\u2019t be reached a red bar shows and nothing saves; on a shared Chromebook the next student gets a clean sign-in. Robot save test: PASS on all three. Copy of the old page at news/_phases/phase-1-before-saveguard.html. https://tobiasrugger.github.io/readings/news/']]},
 
 {id:'storycheck', ring:2, kind:'activity', course:'101', name:'Story Check (Story Reel tests: read aloud, words, listening, grammar, extras)', home:'reel-test/ep02/', match:['reel-test/'], files:['reel-test/ep02/content.js'],
  what:'A self-contained check on a Story Reel episode. Part 1 for everyone: read 10 sentences aloud (recorded, the computer suggests a score, Mr. Toby decides), 12 word matches (pictures + home language), letters, dictation, listen-and-answer, story questions, fix the sentence, grammar. Part 2 after Turn in: order the places, summary, describe and compare characters (Venn), retell aloud, your backpack. ?mode=test = one try, no hints; plain URL = practice with hints.',
