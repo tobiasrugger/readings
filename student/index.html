@@ -867,6 +867,9 @@ async function load(email){
   } else DATA.student=stu[0];
   DATA.facts=facts||[]; DATA.acts=acts||[]; DATA.atts=atts||[]; DATA.skills=mergeSkills(skills||[]); DATA.res=res||[]; DATA.alias={};
   (aliases||[]).forEach(function(a){DATA.alias[a.alias]=a.code;}); DATA.work=work||[];
+  /* T-175: Launch Plus lessons score FIRST-TRY answers, so a finished lesson can sit at 89% for ever.
+     Finish This uses how many items are DONE for those lessons instead. Read-only. */
+  try{ DATA.lp=(await sb('launch_plus?email='+both+'&select=slug,score,max_score,turned_in,payload'))||[]; }catch(e){ DATA.lp=[]; }
   DATA.status=(await sb('student_skill_status?lp=eq.'+encodeURIComponent(lp.toLowerCase())+'&select=skill,latest_pct,rounds,star_round'))||[];
 
   document.getElementById('signin').classList.add('hide');
@@ -945,7 +948,8 @@ async function loadReading(email){
      sessionStorage gal_last_done  = '1' if they turned it in / finished (std.js)
    sessionStorage only holds where the student came from in this tab — never their work. */
 function markHome(){ if(READ_ONLY)return; try{ sessionStorage.setItem('gal_home','/readings/student/'); }catch(e){} }
-function samePath(a,b){ function n(x){return String(x||'').split('?')[0].split('#')[0].replace(/index\.html$/,'').replace(/\/+$/,'');} return n(a)===n(b); }
+/* T-175: activity links can be absolute (https://tobiasrugger.github.io/readings/…) while std.js records a bare path — compare paths only */
+function samePath(a,b){ function n(x){return String(x||'').replace(/^https?:\/\/[^\/]+/i,'').split('?')[0].split('#')[0].replace(/index\.html$/,'').replace(/\/+$/,'');} return n(a)===n(b); }
 function welcomeBack(){
   if(READ_ONLY)return;
   var last='',title='',done=false;
@@ -1649,6 +1653,17 @@ function slugLink(slug){
   for(var i=0;i<tries.length;i++)for(var j=0;j<c.length;j++)if(c[j].p===tries[i])return {url:c[j].p,title:c[j].t.replace(/\s*\((locked)\)/,'')};
   return {url:slug&&slug!=='home'?'/readings/'+slug+'/':'',title:prettySlug(slug.split('/').pop())};
 }
+/* T-175: % of a Launch Plus lesson's items the student has finished (any try), or null when it isn't one */
+function lpDone(slug){
+  if(!/^launch-plus\//.test(slug))return null;
+  var best=null;
+  (DATA.lp||[]).forEach(function(r){
+    if(r.slug!==slug||!(r.max_score>0))return;
+    var A=(r.payload&&r.payload.A)||{}, n=0; Object.keys(A).forEach(function(k){ if(A[k]&&A[k].done)n++; });
+    var p=Math.min(100,Math.round(100*n/r.max_score)); if(best==null||p>best)best=p;
+  });
+  return best;
+}
 function renderFinish(){
   var card=document.getElementById('finishCard'), body=document.getElementById('finBody');
   if(!card)return;
@@ -1659,6 +1674,12 @@ function renderFinish(){
     var l=by[slug], best=null;
     l.forEach(function(a){ if(a.max_score>0 && a.score!=null){ var p=Math.round(100*a.score/a.max_score); if(best==null||p>best)best=p; } });
     if(best==null||best>=FINISH_AT)return;
+    /* T-175: a Launch Plus lesson counts by items DONE, not first-try score (a miss can't be won back) */
+    var lpc=lpDone(slug);
+    if(lpc!=null){ if(lpc>=100)return; best=lpc; }
+    /* T-175: turned in again and the score didn't move -> nothing left to earn here; stop asking */
+    else if(l.length>1){ var sc=l.filter(function(a){return a.max_score>0&&a.score!=null;}).map(function(a){return a.score/a.max_score;});
+      if(sc.length>1 && sc[sc.length-1]<=Math.max.apply(null,sc.slice(0,-1)))return; }
     var act=titleOf[slug]||{};
     var sl=slugLink(slug);
     rows.push({slug:slug,pct:best,title:act.title||sl.title,unit:act.unit||'',url:act.url||sl.url});
