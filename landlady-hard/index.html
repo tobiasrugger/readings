@@ -3224,21 +3224,25 @@ function applyLang(){
     cells[i].textContent = txt;
     if(!txt && curLang !== "none" && GLOSS[k] && window.llTranslate){
       (function(cell, key){
-        llTranslate(GLOSS[key].d || key, curLang, function(tx){
+        var L = curLang;   /* T-182: keep the answer under the language it was asked in */
+        llTranslate(GLOSS[key].d || key, L, function(tx){
           if(!tx) return;
-          GLOSS[key].t[curLang] = tx;
-          if(cell.getAttribute("data-vk") === key) cell.textContent = tx;
+          GLOSS[key].t[L] = tx;
+          if(curLang === L && cell.getAttribute("data-vk") === key) cell.textContent = tx;
         });
       })(cells[i], k);
     }
     if(RTL[curLang]) cells[i].classList.add("rtl"); else cells[i].classList.remove("rtl");
   }
+  /* T-182: an open practice question and the margin words follow the new language too */
+  try{ if(window.GAL_practRelang) GAL_practRelang(); }catch(e){}
+  try{ lastPaint = ""; paintWords(); }catch(e){}
   hideTip();
 }
 
 $("lang").addEventListener("change", function(){
   curLang = this.value;
-  try{ localStorage.setItem(LKEY + "_lang", curLang); localStorage.setItem("gal_lang", curLang); }catch(e){}
+  try{ localStorage.setItem(LKEY + "_lang", curLang); localStorage.setItem("gal_lang", curLang); localStorage.setItem("vocab_lang", curLang); }catch(e){}   /* T-182: vocab_lang too, so a re-sign-in keeps the new language */
   applyLang();
   queueSave();
 });
@@ -3271,10 +3275,12 @@ function showWord(el){
     /* the six hand-written languages stay as they are; the rest come from the proxy */
     h += '<div class="t' + (RTL[curLang] ? " rtl" : "") + '" id="tipTr">\u2026</div>';
     if(window.llTranslate){
-      llTranslate(g.d || k, curLang, function(tx){
+      var L = curLang;   /* T-182 */
+      llTranslate(g.d || k, L, function(tx){
+        if(tx){ g.t[L] = tx; }
+        if(curLang !== L) return;
         var box = document.getElementById("tipTr");
         if(box) box.textContent = tx || "";
-        if(tx){ g.t[curLang] = tx; }
       });
     }
   }
@@ -3878,10 +3884,11 @@ function paintWords(){
     /* words with no stored translation yet are fetched once, then cached */
     if(!tr && curLang !== "none" && window.llTranslate){
       (function(key){
-        llTranslate(GLOSS[key].d || key, curLang, function(tx){
+        var L = curLang;   /* T-182 */
+        llTranslate(GLOSS[key].d || key, L, function(tx){
           if(!tx) return;
-          GLOSS[key].t[curLang] = tx;
-          lastPaint = ""; paintWords();
+          GLOSS[key].t[L] = tx;
+          if(curLang === L){ lastPaint = ""; paintWords(); }
         });
       })(k);
     }
@@ -4816,6 +4823,7 @@ function savePract(){ try{ localStorage.setItem(LKEY + "_pract", JSON.stringify(
       '<div class="pq-def" translate="no">' + esc(g.d) + '</div>' +
       (tr ? '<div class="pq-tr' + (RTL[curLang] ? " rtl" : "") + '" translate="no">' + esc(tr) + '</div>' : '') +
       '<div class="pq-opts" translate="no">' + h + '</div><div class="pq-fb" translate="yes"></div>';
+    relangOne(inst);
     qbox.querySelector(".px").addEventListener("click", function(){ closePract(inst.set); });
     qbox.querySelector(".pq-look").addEventListener("click", function(){ focusSet(inst); shimmer(); });
     qbox.querySelector(".pq-opts").addEventListener("click", function(e){
@@ -4842,6 +4850,32 @@ function savePract(){ try{ localStorage.setItem(LKEY + "_pract", JSON.stringify(
       setTimeout(function(){ if(INST[inst.set.n]){ inst.i++; ask(inst); } }, 750);
     });
   }
+  /* T-182: the translation line under an open question follows the toolbar language */
+  function relangOne(inst){
+    if(!inst || !INST[inst.set.n] || inst.i >= inst.items.length) return;
+    var qbox = inst.box, k = inst.items[inst.i], g = GLOSS[k], L = curLang;
+    if(!g) return;
+    function put(txt){
+      var line = qbox.querySelector(".pq-tr");
+      if(!txt){ if(line) line.parentNode.removeChild(line); return; }
+      if(!line){
+        var def = qbox.querySelector(".pq-def"); if(!def) return;
+        line = document.createElement("div"); def.parentNode.insertBefore(line, def.nextSibling);
+      }
+      line.className = "pq-tr" + (RTL[L] ? " rtl" : ""); line.setAttribute("translate", "no");
+      line.textContent = txt;
+    }
+    if(L === "none"){ put(""); return; }
+    g.t = g.t || {};
+    if(g.t[L]){ put(g.t[L]); return; }
+    put("");
+    if(window.llTranslate) llTranslate(g.d || k, L, function(tx){
+      if(!tx) return;
+      g.t[L] = tx;
+      if(curLang === L && INST[inst.set.n] === inst && inst.items[inst.i] === k) put(tx);
+    });
+  }
+  window.GAL_practRelang = function(){ for(var z in INST){ if(INST[z]) relangOne(INST[z]); } };
   function finish(inst){
     var set = inst.set, qbox = inst.box;
     PRACT["s" + set.n] = { score: inst.score, total: inst.items.length, missed: Object.keys(inst.missed), at: new Date().toISOString() };
@@ -5456,7 +5490,7 @@ function savePract(){ try{ localStorage.setItem(LKEY + "_pract", JSON.stringify(
         out.textContent='';
         if(!window.llTranslate) return;
         window.llTranslate(word, lang, function(t){
-          if(t){ out.textContent=t; out.setAttribute('data-done', word+'|'+lang); }
+          var s2=document.getElementById('lang'); if(t && (!s2 || s2.value===lang)){ out.textContent=t; out.setAttribute('data-done', word+'|'+lang); }  /* T-182 */
         });
         out.className='vtr' + (/^(ar|ur)$/.test(lang) ? ' rtl' : '');
       })(outs[i]);
