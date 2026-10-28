@@ -193,7 +193,8 @@ window.ATLAS_BOOK = [
 
 {id:'topic', ring:1, kind:'engine', course:'101', name:'Topic Sentences', home:'topic-sentence/', match:['topic-sentence/'], own:'lp',
  what:'Pick the best topic sentence, numbered sets (?set=N) that go with each Launch Plus lesson.',
- notes:[['Oct 26','T-118','Tap words is on from the start \u2014 no yellow dashed outline, no ? cursor; tap any word to translate. Buttons and tap-to-fix words keep working; a word with no translation shows in grey instead of \u201c(not found)\u201d.']]},
+ notes:[['Oct 28','T-187','Oct 28 · T-187 · saveguard.js added as the first line in <head> so the page reads the student\'s saved work before it writes any; the copy students saw is kept in _phases/. All 6 interviews.'],
+        ['Oct 26','T-118','Tap words is on from the start \u2014 no yellow dashed outline, no ? cursor; tap any word to translate. Buttons and tap-to-fix words keep working; a word with no translation shows in grey instead of \u201c(not found)\u201d.']]},
 
 {id:'revise', ring:1, kind:'engine', course:'101', name:'Fix the Paragraph', home:'revise/', match:['revise/'],
  what:'A revision and editing ladder for beginners: find and fix the errors in a short paragraph.',
@@ -293,7 +294,9 @@ window.ATLAS_BOOK = [
  what:'Six lessons: C and G, Magic E, letter teams, bossy R, vowel teams, heart words.'},
 
 {id:'easy-true', ring:3, kind:'activity', course:'101', name:'Very Easy True Stories', home:'easy-true/', match:['easy-true/'], files:['easy-true/vets-practice.js','easy-true/vets_shared.js'],
- what:'Short true stories, each with seven practice modules: words first, listen, say, spell, grammar, where are the spaces, practice.', notes:[['Oct 28','T-183','Load before save (saveguard.js) on all 30 practice modules (vocab, listen, speak, grammar, write × stories 1–6): saved work comes back under either email spelling, nothing saves while the server can\'t be reached (red bar). Robot: grammar, listen, write pass all three tests. https://tobiasrugger.github.io/readings/easy-true/'],['Oct 28','T-170','Load before save (saveguard.js) on the six spelling pages. https://tobiasrugger.github.io/readings/easy-true/']]},
+ what:'Short true stories, each with seven practice modules: words first, listen, say, spell, grammar, where are the spaces, practice.', notes:[['Oct 28','T-187','Oct 28 · T-187 · saveguard.js added as the first line in <head> so the page reads the student\'s saved work before it writes any; the copy students saw is kept in _phases/. All 6 lessons.'],
+        ['Oct 28','T-187','Oct 28 · T-187 · saveguard.js added as the first line in <head> so the page reads the student\'s saved work before it writes any; the copy students saw is kept in _phases/. All 14 stories.'],
+        ['Oct 28','T-183','Load before save (saveguard.js) on all 30 practice modules (vocab, listen, speak, grammar, write × stories 1–6): saved work comes back under either email spelling, nothing saves while the server can\'t be reached (red bar). Robot: grammar, listen, write pass all three tests. https://tobiasrugger.github.io/readings/easy-true/'],['Oct 28','T-170','Load before save (saveguard.js) on the six spelling pages. https://tobiasrugger.github.io/readings/easy-true/']]},
 
 {id:'brothers', ring:3, kind:'activity', course:'101', name:'Brothers in Arms', home:'brothers-in-arms/', match:['brothers-in-arms/'], own:'bia',
  what:'A read-aloud novel in 8 chapters for newcomers and SIFE students, pictures by Thi Bui: listen with highlighted words, tap to translate, check, play, make it, say it. Easier and Harder.',

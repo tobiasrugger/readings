@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Magic E &middot; Mr. Toby</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --teal:#1e6468; --teal-dk:#134649; --teal-dp:#0c3133; --teal-lt:#e2f0f0; --teal-mid:#6aa7a9;
+  --paper:#eef4f3; --card:#fff; --field:#f5f9f9;
+  --ink:#1d2b2c; --muted:#56686a; --line:#cfe0df; --line-dk:#a9c6c5;
+  --gold:#e3a92b; --gold-bg:#fff1bf; --gold-dk:#8a5a00;
+  --green:#1f7a4d; --green-bg:#e0f2e8; --red:#b5304a; --red-bg:#fbe4e9;
+  --r:14px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:Nunito,system-ui,sans-serif;font-size:17px;line-height:1.5}
+.hide{display:none!important}
+button{font:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+
+.top{background:var(--teal-dk);color:#fff;border-bottom:4px solid var(--teal-dp)}
+.top .in{max-width:980px;margin:0 auto;padding:12px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.top h1{margin:0;font-size:1.35rem;font-weight:900}
+.top .grow{flex:1;min-width:170px}
+.top select{font:inherit;font-size:.9rem;padding:7px 10px;border-radius:10px;border:2px solid rgba(255,255,255,.5);background:rgba(255,255,255,.12);color:#fff}
+.top select option{color:var(--ink)}
+.top a{color:#fff;font-weight:800;font-size:.88rem}
+.prog{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.prog span{font-size:.78rem;font-weight:800;border:1.5px solid rgba(255,255,255,.4);border-radius:999px;padding:1px 9px;opacity:.85}
+.prog span.done{background:var(--gold);border-color:var(--gold);color:var(--teal-dp);opacity:1}
+.wrap{max-width:980px;margin:0 auto;padding:16px 16px 70px}
+
+.card{background:var(--card);border:1.5px solid var(--line);border-radius:var(--r);padding:20px;margin-bottom:16px;box-shadow:0 2px 0 var(--line)}
+.btn{background:var(--teal);color:#fff;border:0;border-bottom:3px solid var(--teal-dp);border-radius:11px;padding:11px 18px;font-weight:800;text-decoration:none;display:inline-block}
+.btn:hover{background:var(--teal-dk)}
+.btn:active{transform:translateY(2px);border-bottom-width:1px}
+.btn.ghost{background:#fff;color:var(--teal-dk);border:2px solid var(--teal);border-bottom-width:3px}
+.btn.sm{padding:6px 12px;font-size:.88rem;border-radius:9px}
+.btn:disabled{opacity:.45;cursor:default}
+label{display:block;font-weight:800;font-size:.9rem;color:var(--teal-dk);margin:0 0 5px}
+.gate input,.gate select{font:inherit;padding:11px 12px;border:2px solid var(--line-dk);border-radius:11px;width:100%;background:var(--field)}
+.field{margin-bottom:14px}
+.err{color:var(--red);font-weight:800}
+.note{color:var(--muted);font-size:.92rem}
+.row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;align-items:center}
+
+/* instructions with a translate button */
+.lead{font-weight:700;color:var(--teal-dk);margin:0 0 14px}
+.lrev{margin-left:8px;background:none;border:0;color:var(--teal);font-weight:800;text-decoration:underline;font-size:.88rem;padding:0}
+.ltr{display:block;color:var(--muted);font-weight:700;margin-top:4px}
+
+nav.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+nav.tabs button{background:#fff;border:2px solid var(--line-dk);border-radius:11px;padding:8px 14px;font-weight:800;color:var(--teal-dk)}
+nav.tabs button[aria-selected="true"]{background:var(--teal);border-color:var(--teal-dp);color:#fff}
+.pane{display:none}.pane.on{display:block}
+
+/* the letter the rule is about, and the letter that decides it */
+.rl{background:var(--gold-bg);color:var(--gold-dk);border-radius:4px;padding:0 1px;box-shadow:inset 0 -3px 0 var(--gold)}
+.nx{text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:4px;text-decoration-color:var(--teal-mid)}
+
+/* ---- learn ---- */
+.rules{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:720px){.rules{grid-template-columns:1fr}}
+.rule{border:2px solid var(--line);border-radius:var(--r);padding:16px;background:var(--field)}
+.rule h2{margin:0 0 10px;font-size:2.4rem;line-height:1;color:var(--teal-dk)}
+.way{background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
+.way .eq{font-size:1.15rem;font-weight:900;margin-bottom:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.snd{display:inline-flex;align-items:center;gap:6px;background:var(--teal);color:#fff;border-radius:999px;padding:3px 12px;font-size:1rem}
+.words{display:flex;flex-wrap:wrap;gap:6px}
+.wbtn{background:#fff;border:2px solid var(--line-dk);border-radius:10px;padding:5px 10px;font-weight:800;font-size:1.05rem}
+.wbtn:hover{border-color:var(--teal)}
+.wbtn .e{margin-right:4px}
+.breakers{border:2px dashed #d58aa0;background:#fff5f8;border-radius:12px;padding:10px 12px}
+.breakers b{color:var(--red)}
+.trbox{background:#fff;border-radius:10px;padding:8px 10px;margin-top:8px;font-weight:700;color:var(--muted)}
+.l1{background:var(--gold-bg);border:2px solid var(--gold);border-radius:12px;padding:12px 14px;margin-top:16px}
+.l1 h3{margin:0 0 6px;font-size:1rem;color:var(--gold-dk)}
+.trick{font-size:1.1rem;font-weight:800;text-align:center;margin:0 0 14px;color:var(--teal-dk)}
+
+/* ---- sort ---- */
+.sortwrap{max-width:640px;margin:0 auto;text-align:center}
+.count{font-weight:800;color:var(--muted);font-size:.88rem;margin-bottom:8px}
+.dock{min-height:150px;display:grid;place-items:center;margin-bottom:10px}
+.scard{width:170px;min-height:120px;border-radius:16px;background:#fff;border:3px solid var(--teal);box-shadow:0 5px 0 var(--teal-dk);
+  display:grid;place-items:center;padding:10px;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;position:relative;z-index:5}
+.scard.drag{cursor:grabbing;box-shadow:0 12px 20px rgba(0,0,0,.2)}
+.scard .play{font-size:2.6rem;line-height:1}
+.scard .sub{font-size:.8rem;font-weight:800;color:var(--muted)}
+.scard .rev{font-size:1.5rem;font-weight:900}
+.scard .rev .e{display:block;font-size:2.4rem;line-height:1.1}
+.bins{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.bin{border:3px dashed var(--line-dk);border-radius:16px;background:var(--field);min-height:190px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.bin.over{border-color:var(--gold);background:var(--gold-bg)}
+.bin .lab{display:flex;align-items:center;gap:8px;font-weight:900;font-size:1.3rem;color:var(--teal-dk)}
+.bin .lab .k{font-size:2rem}
+.bin .pile{display:flex;flex-wrap:wrap;gap:5px;justify-content:center}
+.bin .pile span{background:#fff;border:1.5px solid var(--line-dk);border-radius:8px;padding:2px 8px;font-weight:800;font-size:.9rem}
+.bin .pile span.miss{border-color:var(--red);color:var(--red)}
+.bin .pile span.heart::after{content:' \2764\FE0F';font-size:.75rem}
+.bin button.pick{margin-top:auto}
+.fb{min-height:1.6em;font-weight:900;margin:10px 0}
+.fb.ok{color:var(--green)} .fb.no{color:var(--red)}
+.why{font-weight:800;font-size:1.05rem;color:var(--teal-dk);min-height:1.5em}
+
+/* ---- look first / say ---- */
+.stage{max-width:560px;margin:0 auto;text-align:center}
+.bigword{font-size:3rem;font-weight:900;letter-spacing:.02em;margin:8px 0 14px;color:var(--ink)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.opt{background:#fff;border:3px solid var(--line-dk);border-radius:14px;padding:12px;font-weight:900;font-size:1.25rem;display:flex;align-items:center;justify-content:center;gap:8px}
+.opt:hover{border-color:var(--teal)}
+.opt.ok{background:var(--green-bg);border-color:var(--green)}
+.opt.no{background:var(--red-bg);border-color:var(--red)}
+.pic{font-size:4rem;line-height:1.1}
+.rec{background:var(--red);border-bottom-color:#7d1f31}
+.rec.on{animation:pulse 1s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 8px rgba(181,48,74,.25)}}
+.heard{font-weight:800;color:var(--muted);min-height:1.4em;margin-top:8px}
+
+/* ---- spell boxes (same look as My Words) ---- */
+.lbwrap{position:relative;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:14px auto;padding:6px;cursor:text}
+.lbox{width:44px;height:54px;border:2px solid var(--line-dk);border-radius:9px;background:#fff;display:grid;place-items:center;font-size:1.6rem;font-weight:900}
+.lbox.cur{border-color:var(--gold);box-shadow:0 0 0 3px rgba(227,169,43,.35)}
+.lbox.ok{background:var(--green-bg);border-color:var(--green);color:var(--green)}
+.lbox.bad{background:var(--red-bg);border-color:var(--red);color:var(--red)}
+.lbox.snd{background:var(--gold-bg);border-color:#d99a00;color:var(--gold-dk)}
+.lbin{position:absolute;inset:0;width:100%;height:100%;opacity:0;font-size:16px;border:0;padding:0}
+.hintline{background:var(--gold-bg);border:2px solid var(--gold);border-radius:12px;padding:10px 12px;font-weight:800;color:var(--gold-dk);margin-top:10px}
+.done-card{text-align:center}
+.done-card .big{font-size:2rem;font-weight:900;color:var(--teal-dk)}
+@media(max-width:560px){.lbox{width:36px;height:46px;font-size:1.3rem}.bigword{font-size:2.3rem}.scard{width:150px}}
+/* magic e: the silent e glows */
+.me{color:#b36b00;font-style:italic;text-shadow:0 0 6px rgba(227,169,43,.55)}
+.pairs{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.pair{display:flex;align-items:center;justify-content:center;gap:8px;background:#fff;border:2px solid var(--line-dk);border-radius:12px;padding:8px;font-weight:900;font-size:1.15rem}
+.pair:hover{border-color:var(--teal)}
+.pair .arrow{color:var(--gold-dk);font-size:.9rem}
+.vtable{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.vrow{background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:10px}
+.vrow h3{margin:0 0 6px;font-size:1.3rem;color:var(--teal-dk)}
+.shorts{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:6px 0 4px}
+.plus{font-size:1.4rem;padding:14px 22px;background:var(--gold);color:var(--teal-dp);border-bottom-color:#a87400}
+.plus:hover{background:#f0b938}
+.grow-e{display:inline-block;animation:pop .5s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop{from{transform:scale(0) rotate(-40deg);opacity:0}to{transform:none;opacity:1}}
+.pics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.pics button{font-size:3rem;background:#fff;border:3px solid var(--line-dk);border-radius:14px;padding:10px}
+.pics button.ok{background:var(--green-bg);border-color:var(--green)}
+.pics button.no{background:var(--red-bg);border-color:var(--red)}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="in">
+    <div class="grow">
+      <h1>Magic E</h1>
+      <div class="prog" id="prog" translate="no"></div>
+    </div>
+    <select id="lang" aria-label="My language"></select>
+    <a href="/readings/student/">My Page</a>
+    <a href="#" id="notMe" class="hide">Not me</a>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="card gate hide" id="gate" style="max-width:480px;margin:20px auto">
+    <h2 style="margin-top:0;color:var(--teal-dk)">Sign in</h2>
+    <div class="field"><label for="gName">Name</label><input id="gName" autocomplete="name"></div>
+    <div class="field"><label for="gMail">School email</label><input id="gMail" placeholder="name@s.sfusd.edu" autocapitalize="off" spellcheck="false"></div>
+    <div class="field"><label for="gPer">Period</label>
+      <select id="gPer"><option value="">Choose</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select></div>
+    <button class="btn" id="gBtn">Start</button>
+    <p class="err" id="gErr"></p>
+  </div>
+
+  <div id="app" class="hide">
+    <nav class="tabs" id="tabs" role="tablist"></nav>
+
+    <!-- LEARN -->
+    <section class="pane card" id="p-learn">
+      <p class="trick" translate="yes" data-k="trick" data-en="A silent e at the end of a word makes the vowel say its name.">A silent e at the end of a word makes the vowel say its name.</p>
+
+      <div class="rule" style="margin-bottom:16px" translate="no">
+        <div class="way"><div class="eq"><span class="snd">Short vowels</span> <span style="font-weight:700;font-size:.95rem">one vowel, no e at the end</span></div>
+          <div class="shorts" id="shorts"></div></div>
+        <div class="way"><div class="eq"><span class="snd">Long vowels</span> <span style="font-weight:700;font-size:.95rem">the vowel says its name: A, E, I, O, U</span></div>
+          <div class="pairs" id="pairs"></div></div>
+        <button class="btn ghost sm" id="ruleTrBtn">Show in my language</button>
+        <div class="trbox hide" id="ruleTr"></div>
+      </div>
+
+      <div class="vtable" id="vtable" translate="no"></div>
+
+      <div class="breakers" style="margin-top:16px" translate="no"><b>&#10084;&#65039; Heart words.</b> These words have an e at the end, but the vowel does NOT say its name. Learn them by heart:
+        <div class="words" id="hearts" style="margin-top:6px"></div></div>
+
+      <div class="l1 hide" id="l1"><h3 id="l1h">For you</h3><p id="l1t" style="margin:0"></p>
+        <button class="btn ghost sm" id="l1Btn" style="margin-top:8px">Show in my language</button><div class="trbox hide" id="l1Tr"></div></div>
+    </section>
+
+    <!-- HEAR IT: sort short / long -->
+    <section class="pane card" id="p-sort">
+      <p class="lead" translate="yes" data-k="sort" data-en="Listen. Does the vowel say its name? Drag the word to the right box. Or tap the box.">Listen. Does the vowel say its name? Drag the word to the right box. Or tap the box.</p>
+      <div class="sortwrap" id="sortBox" translate="no"></div>
+    </section>
+
+    <!-- ADD THE E -->
+    <section class="pane card" id="p-adde">
+      <p class="lead" translate="yes" data-k="adde" data-en="Read the word. Add magic e. Which picture is the new word?">Read the word. Add magic e. Which picture is the new word?</p>
+      <div class="stage" id="addStage" translate="no"></div>
+    </section>
+
+    <!-- LOOK FIRST -->
+    <section class="pane card" id="p-look">
+      <p class="lead" translate="yes" data-k="look" data-en="Read first. Is there a silent e at the end? Choose short or long. Then listen.">Read first. Is there a silent e at the end? Choose short or long. Then listen.</p>
+      <div class="stage" id="lookStage" translate="no"></div>
+    </section>
+
+    <!-- SAY -->
+    <section class="pane card" id="p-say">
+      <p class="lead" translate="yes" data-k="say" data-en="Listen. Press Record and say the word. Short or long: make the vowel clear.">Listen. Press Record and say the word. Short or long: make the vowel clear.</p>
+      <div class="stage" id="sayStage" translate="no"></div>
+    </section>
+
+    <!-- SPELL -->
+    <section class="pane card" id="p-spell">
+      <p class="lead" translate="yes" data-k="spell" data-en="Listen and type the word. Green is right. Yellow is the right sound, but a different spelling. Red is wrong.">Listen and type the word. Green is right. Yellow is the right sound, but a different spelling. Red is wrong.</p>
+      <div class="stage" id="spellStage" translate="no"></div>
+    </section>
+  </div>
+</div>
+
+<script src="/readings/vocab/mywords/words.js"></script>
+<script src="/readings/phonics/phonics.js"></script>
+<script>
+(function(){
+var esc = MW.esc, RULE = 'magic-e', SLUG = 'phonics-magic-e';
+function $(id){ return document.getElementById(id); }
+function shuffle(a){ a = a.slice(); for (var i = a.length - 1; i > 0; i--){ var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+function speak(t, slow){ MW.speak(t, slow); }
+
+/* ================= WORDS ================= */
+var PAIRS = [['cap','\ud83e\udde2','cape','\ud83e\uddb8'],['kit','\ud83e\uddf0','kite','\ud83e\ude81'],['pin','\ud83d\udccc','pine','\ud83c\udf32'],
+  ['cub','\ud83d\udc3b','cube','\ud83e\uddca'],['not','\ud83d\udeab','note','\ud83d\udcdd'],['can','\ud83e\udd6b','cane','\ud83e\uddaf'],
+  ['tap','\ud83d\udeb0','tape','\ud83d\udcfc'],['cut','\u2702\ufe0f','cute','\ud83e\udd70'],['plan','\ud83d\uddfa\ufe0f','plane','\u2708\ufe0f'],
+  ['fin','\ud83e\udd88','fine','\ud83d\udc4d']];
+var SHORT = [['cat','\ud83d\udc08'],['hat','\ud83c\udfa9'],['pig','\ud83d\udc16'],['fish','\ud83d\udc1f'],['dog','\ud83d\udc15'],['box','\ud83d\udce6'],
+  ['bus','\ud83d\ude8c'],['cup','\u2615'],['bed','\ud83d\udecf\ufe0f'],['ten','\ud83d\udd1f'],['sun','\u2600\ufe0f'],['pin','\ud83d\udccc']];
+var LONG = [['cake','\ud83c\udf82'],['game','\ud83c\udfae'],['snake','\ud83d\udc0d'],['plane','\u2708\ufe0f'],['kite','\ud83e\ude81'],['bike','\ud83d\udeb2'],
+  ['five','5\ufe0f\u20e3'],['smile','\ud83d\ude0a'],['home','\ud83c\udfe0'],['nose','\ud83d\udc43'],['rose','\ud83c\udf39'],['bone','\ud83e\uddb4'],
+  ['cube','\ud83e\uddca'],['cute','\ud83e\udd70'],['whale','\ud83d\udc0b'],['globe','\ud83c\udf0d']];
+var VROWS = [['a_e','a',[['cake','\ud83c\udf82'],['game','\ud83c\udfae'],['face','\ud83d\ude42'],['snake','\ud83d\udc0d']]],
+  ['i_e','i',[['bike','\ud83d\udeb2'],['kite','\ud83e\ude81'],['five','5\ufe0f\u20e3'],['smile','\ud83d\ude0a']]],
+  ['o_e','o',[['home','\ud83c\udfe0'],['nose','\ud83d\udc43'],['rose','\ud83c\udf39'],['bone','\ud83e\uddb4']]],
+  ['u_e','u',[['cute','\ud83e\udd70'],['cube','\ud83e\uddca'],['huge',''],['use','']]],
+  ['e_e','e',[['these',''],['Pete',''],['theme','']]]];
+var HEARTS = ['have','give','live','love','come','some','done','one','gone','are'];
+/* for reading: no pictures, so they have to use the rule */
+var LOOK = [['mat','s'],['mate','l'],['rid','s'],['ride','l'],['hop','s'],['hope','l'],['tub','s'],['tube','l'],['bit','s'],['bite','l'],
+  ['pal','s'],['pale','l'],['fat','s'],['fate','l'],['slim','s'],['slime','l'],['cod','s'],['code','l'],['glob','s'],['globe','l'],
+  ['dim','s'],['dime','l'],['rob','s'],['robe','l']];
+var SAYW = [['cap','\ud83e\udde2'],['cape','\ud83e\uddb8'],['kit','\ud83e\uddf0'],['kite','\ud83e\ude81'],['pin','\ud83d\udccc'],['pine','\ud83c\udf32'],
+  ['cub','\ud83d\udc3b'],['cube','\ud83e\uddca'],['cut','\u2702\ufe0f'],['cute','\ud83e\udd70'],['not','\ud83d\udeab'],['note','\ud83d\udcdd']];
+var SPELL_LONG = ['cake','bike','home','nose','five','cute','game','kite','bone','plane','smile','rose'];
+var SPELL_SHORT = ['cat','pig','dog','bus','hat'];
+function emojiOf(w){
+  var all = [].concat(SHORT, LONG, SAYW), i;
+  for (i = 0; i < all.length; i++) if (all[i][0] === w) return all[i][1];
+  for (i = 0; i < PAIRS.length; i++){ if (PAIRS[i][0] === w) return PAIRS[i][1]; if (PAIRS[i][2] === w) return PAIRS[i][3]; }
+  return '';
+}
+/* show the vowel, and make the silent e glow */
+function mark(word){
+  var v = PH.magicVowel(word);
+  if (v < 0){
+    var j = word.search(/[aeiou]/i); if (j < 0) return esc(word);
+    return esc(word.slice(0, j)) + '<span class="rl">' + esc(word.charAt(j)) + '</span>' + esc(word.slice(j + 1));
+  }
+  var e = word.length - 1;
+  return esc(word.slice(0, v)) + '<span class="rl">' + esc(word.charAt(v)) + '</span>' + esc(word.slice(v + 1, e)) + '<span class="me">e</span>';
+}
+function isLong(w){ return PH.magicVowel(w) > -1; }
+function whyLine(w){
+  var v = PH.magicVowel(w);
+  if (v > -1){ var L = w.charAt(v); return L + '_e \u2192 the ' + L + ' says its name (' + PH.VOWEL[L].name + ')'; }
+  var j = w.search(/[aeiou]/i);
+  return 'one vowel, no e at the end \u2192 short ' + w.charAt(j);
+}
+var BIN = { s:{ label:'Short vowel', key:'cat', e:'\ud83d\udc08' }, l:{ label:'Long vowel: says its name', key:'cake', e:'\ud83c\udf82' } };
+
+/* ================= STATE / SAVE ================= */
+var ME = { email:'', name:'', period:'' }, LANG = MW.getLang('');
+var SC = {}, WORK = { rounds:{} };
+function save(){
+  if (!ME.email) return;
+  PH.sb('phonics_work?on_conflict=email,rule', { method:'POST', prefer:'resolution=merge-duplicates,return=minimal',
+    body:[{ email:ME.email, rule:RULE, name:ME.name || null, period:ME.period || null, scores:SC, work:WORK, updated_at:new Date().toISOString() }] });
+}
+function score(part, pct){
+  WORK.rounds[part] = (WORK.rounds[part] || 0) + 1;
+  SC[part] = Math.max(SC[part] || 0, pct);
+  drawProg(); save();
+}
+function drawProg(){
+  var R = PH.RULES[RULE];
+  $('prog').innerHTML = ['sort','adde','look','say','spell'].map(function(p){
+    var d = (SC[p] || 0) >= 80;
+    return '<span class="' + (d ? 'done' : '') + '">' + (d ? '\u2713 ' : '') + R.partNames[p] + (SC[p] != null ? ' ' + SC[p] + '%' : '') + '</span>';
+  }).join('');
+}
+
+/* ================= LANGUAGE ================= */
+$('lang').innerHTML = MW.langOptions(LANG);
+$('lang').addEventListener('change', function(){ LANG = this.value; MW.setLang(LANG); drawLeads(); drawL1(); });
+function trInto(el, text){
+  el.classList.remove('hide'); el.textContent = '\u2026';
+  if (MW.RTL[LANG]) el.setAttribute('dir', 'rtl'); else el.removeAttribute('dir');
+  MW.translate(text, LANG).then(function(t){ el.textContent = t || '(translation unavailable)'; });
+}
+function drawLeads(){
+  Array.prototype.forEach.call(document.querySelectorAll('[data-k][data-en]'), function(p){
+    var en = p.getAttribute('data-en');
+    p.textContent = en;
+    if (!LANG) return;
+    var b = document.createElement('button'); b.className = 'lrev'; b.textContent = 'Translate';
+    b.onclick = function(){
+      b.remove(); var s = document.createElement('span'); s.className = 'ltr'; p.appendChild(s); trInto(s, en);
+      if (ME.email) PH.sb('instruction_reveals', { method:'POST', prefer:'return=minimal',
+        body:[{ email:ME.email, set_slug:SLUG, activity:p.getAttribute('data-k'), lang:LANG }] });
+    };
+    p.appendChild(b);
+  });
+}
+var RULE_TEXT = 'A short vowel is quick: cat, pig, dog. A long vowel says its name: A, E, I, O, U. When a word ends with one vowel, one consonant, and a silent e, the e makes no sound. It makes the vowel say its name. cap becomes cape. kit becomes kite. Some words break this rule: have, give, come, some, love.';
+$('ruleTrBtn').onclick = function(){ if (!LANG){ alert('Choose your language at the top first.'); return; } trInto($('ruleTr'), RULE_TEXT); };
+function drawL1(){
+  var note = PH.l1Note(RULE, LANG);
+  $('l1').classList.toggle('hide', !note);
+  $('l1t').textContent = note || '';
+  $('l1Tr').classList.add('hide');
+  var name = (MW.LANGS.filter(function(l){ return l[0] === LANG; })[0] || [,''])[1];
+  $('l1h').textContent = 'For ' + name + ' speakers';
+}
+$('l1Btn').onclick = function(){ trInto($('l1Tr'), $('l1t').textContent); };
+
+/* ================= SIGN IN ================= */
+var EMAIL_RE = /^[^@\s]+@(s\.)?sfusd\.edu$/;
+function canonicalEmail(typed){
+  var lp = typed.split('@')[0], a = lp + '@s.sfusd.edu', b = lp + '@sfusd.edu';
+  return PH.sb('students?select=email&email=in.(' + encodeURIComponent('"' + a + '","' + b + '"') + ')').then(function(rows){
+    if (rows && rows.length) return rows.some(function(r){ return r.email === a; }) ? a : rows[0].email;
+    return a;
+  });
+}
+$('gBtn').onclick = function(){
+  var name = $('gName').value.trim(), typed = $('gMail').value.trim().toLowerCase(), per = $('gPer').value, btn = this;
+  if (!name){ $('gErr').textContent = 'Write your name.'; return; }
+  if (!EMAIL_RE.test(typed)){ $('gErr').textContent = 'Use your school email. It ends with @s.sfusd.edu'; return; }
+  if (!per){ $('gErr').textContent = 'Choose your period.'; return; }
+  btn.disabled = true;
+  canonicalEmail(typed).then(function(email){
+    ME = { email:email, name:name, period:per };
+    try { localStorage.setItem('gal_student_email', email); localStorage.setItem('gal_student_name', name); localStorage.setItem('gal_student_period', per); } catch(e){}
+    PH.sb('students?on_conflict=email', { method:'POST', prefer:'resolution=ignore-duplicates,return=minimal', body:[{ email:email, name:name, period:per }] });
+    if (typed !== email) PH.sb('student_aliases?on_conflict=alias_email', { method:'POST', prefer:'resolution=ignore-duplicates,return=minimal', body:[{ alias_email:typed, email:email }] });
+    $('gate').classList.add('hide'); start();
+  }).finally(function(){ btn.disabled = false; });
+};
+$('notMe').onclick = function(e){ e.preventDefault(); try { localStorage.removeItem('gal_student_email'); } catch(err){} location.reload(); };
+
+/* ================= TABS ================= */
+var PANES = [['p-learn','Learn'],['p-sort','Hear it'],['p-adde','Add the e'],['p-look','Look first'],['p-say','Say it'],['p-spell','Spell']];
+(function(){
+  var nav = $('tabs');
+  PANES.forEach(function(p, i){
+    var b = document.createElement('button');
+    b.textContent = p[1]; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', i ? 'false' : 'true');
+    b.onclick = function(){
+      PANES.forEach(function(q){ $(q[0]).classList.remove('on'); });
+      Array.prototype.forEach.call(nav.children, function(c){ c.setAttribute('aria-selected', 'false'); });
+      $(p[0]).classList.add('on'); b.setAttribute('aria-selected', 'true');
+      if (p[0] === 'p-sort' && SORT.play) SORT.play();
+    };
+    nav.appendChild(b);
+  });
+  $('p-learn').classList.add('on');
+})();
+document.addEventListener('click', function(e){
+  var b = e.target.closest('[data-say]'); if (!b) return;
+  speak(b.getAttribute('data-say'), !!b.getAttribute('data-slow'));
+});
+
+function start(){
+  $('notMe').classList.remove('hide'); $('app').classList.remove('hide');
+  PH.sb('phonics_work?email=eq.' + encodeURIComponent(ME.email) + '&rule=eq.' + RULE + '&select=scores,work').then(function(rows){
+    if (rows && rows[0]){ SC = rows[0].scores || {}; WORK = rows[0].work || { rounds:{} }; if (!WORK.rounds) WORK.rounds = {}; }
+    drawProg();
+  });
+  if (!LANG) PH.sb('students?email=eq.' + encodeURIComponent(ME.email) + '&select=home_language').then(function(r){
+    if (r && r[0] && r[0].home_language){ LANG = MW.langFromHome(r[0].home_language); $('lang').value = LANG; drawLeads(); drawL1(); }
+  });
+  drawProg(); drawLeads(); drawL1(); buildLearn(); buildSort(); buildAdd(); buildLook(); buildSay(); buildSpell();
+}
+
+/* ================= LEARN ================= */
+function wb(w, e){ return '<button class="wbtn" data-say="' + esc(w) + '">' + (e ? '<span class="e">' + e + '</span>' : '') + mark(w) + '</button>'; }
+function buildLearn(){
+  $('shorts').innerHTML = [['a','cat'],['e','bed'],['i','pig'],['o','dog'],['u','sun']].map(function(x){
+    return '<button class="wbtn" data-say="' + x[1] + '"><span class="e">' + emojiOf(x[1]) + '</span>' + mark(x[1]) + '</button>'; }).join('');
+  $('pairs').innerHTML = PAIRS.slice(0, 6).map(function(p){
+    return '<button class="pair" data-say="' + p[0] + ', ' + p[2] + '"><span>' + p[1] + '</span><b>' + mark(p[0])
+      + '</b><span class="arrow">+ e \u2192</span><b>' + mark(p[2]) + '</b><span>' + p[3] + '</span></button>';
+  }).join('');
+  $('vtable').innerHTML = VROWS.map(function(r){
+    var L = r[1];
+    return '<div class="vrow"><h3>' + L + '<span style="color:var(--muted)">_</span><span class="me">e</span> <button class="btn ghost sm" data-say="' + esc(r[2][0][0]) + '">' + PH.VOWEL[L].name + '</button></h3>'
+      + '<div class="words">' + r[2].map(function(x){ return wb(x[0], x[1]); }).join('') + '</div></div>';
+  }).join('');
+  $('hearts').innerHTML = HEARTS.map(function(w){ return '<button class="wbtn" data-say="' + w + '">' + esc(w) + '</button>'; }).join('');
+}
+
+/* ================= HEAR IT (sort by ear; drag or tap) ================= */
+var SORT = {};
+function buildSort(){
+  var box = $('sortBox');
+  var items = shuffle(shuffle(SHORT).slice(0, 6).map(function(x){ return { w:x[0], e:x[1], s:'s' }; })
+    .concat(shuffle(LONG).slice(0, 6).map(function(x){ return { w:x[0], e:x[1], s:'l' }; })));
+  var I = 0, right = 0, busy = false;
+  function bin(s){
+    return '<div class="bin" data-s="' + s + '"><div class="lab"><span class="k">' + BIN[s].e + '</span><span style="font-size:1rem">' + BIN[s].label + '</span>'
+      + ' <button class="btn ghost sm" data-say="' + BIN[s].key + '">' + BIN[s].key + '</button></div>'
+      + '<div class="pile"></div><button class="btn sm pick">This one</button></div>';
+  }
+  box.innerHTML = '<div class="count" id="sCnt"></div><div class="dock" id="sDock"></div><div class="why" id="sWhy"></div><div class="fb" id="sFb"></div>'
+    + '<div class="bins">' + bin('s') + bin('l') + '</div>';
+  Array.prototype.forEach.call(box.querySelectorAll('.bin'), function(b){ b.querySelector('.pick').onclick = function(){ drop(b.getAttribute('data-s')); }; });
+  function card(){
+    if (I >= items.length) return finish();
+    busy = false;
+    $('sCnt').textContent = (I + 1) + ' of ' + items.length; $('sWhy').textContent = ''; $('sFb').textContent = '';
+    $('sDock').innerHTML = '<div class="scard" id="sCard" role="button" tabindex="0" aria-label="Play the word"><div><div class="play">\ud83d\udd0a</div><div class="sub">Tap to hear again</div></div></div>';
+    drag($('sCard')); play();
+  }
+  function play(){ var it = items[I]; if (it && !busy && $('p-sort').classList.contains('on')) setTimeout(function(){ speak(it.w); }, 200); }
+  function drop(s){
+    if (busy || I >= items.length) return; busy = true;
+    var it = items[I], ok = s === it.s; if (ok) right++;
+    var c = $('sCard'); c.style.transform = '';
+    c.innerHTML = '<div class="rev"><span class="e">' + it.e + '</span>' + mark(it.w) + '</div>';
+    $('sWhy').textContent = whyLine(it.w);
+    $('sFb').className = 'fb ' + (ok ? 'ok' : 'no');
+    $('sFb').textContent = ok ? 'Yes!' : 'Listen: ' + it.w + (it.s === 'l' ? ' has a long vowel.' : ' has a short vowel.');
+    speak(it.w, !ok);
+    var chip = document.createElement('span'); chip.textContent = it.w; if (!ok) chip.className = 'miss';
+    box.querySelector('.bin[data-s="' + it.s + '"] .pile').appendChild(chip);
+    setTimeout(function(){ I++; card(); }, ok ? 1500 : 2600);
+  }
+  function finish(){
+    var pct = Math.round(100 * right / items.length); score('sort', pct);
+    $('sDock').innerHTML = '<div class="done-card"><div class="big">' + right + ' of ' + items.length + '</div><p>'
+      + (pct >= 80 ? 'Great listening!' : 'Keep practicing. Try again with new words.') + '</p><button class="btn" id="sAgain">Sort new words</button></div>';
+    $('sWhy').textContent = ''; $('sFb').textContent = '';
+    $('sAgain').onclick = function(){ buildSort(); SORT.play(); };
+  }
+  function drag(el){
+    var sx, sy, moved, over = null;
+    el.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); speak(items[I].w); } });
+    el.addEventListener('pointerdown', function(e){ if (busy) return; sx = e.clientX; sy = e.clientY; moved = false; el.setPointerCapture(e.pointerId); el.classList.add('drag'); });
+    el.addEventListener('pointermove', function(e){
+      if (sx == null) return;
+      var dx = e.clientX - sx, dy = e.clientY - sy;
+      if (Math.abs(dx) + Math.abs(dy) > 6) moved = true;
+      el.style.transform = 'translate(' + dx + 'px,' + dy + 'px) rotate(' + (dx / 30) + 'deg)';
+      el.style.visibility = 'hidden';
+      var under = document.elementFromPoint(e.clientX, e.clientY);
+      el.style.visibility = '';
+      var b = under && under.closest ? under.closest('.bin') : null;
+      if (over && over !== b) over.classList.remove('over');
+      over = b; if (b) b.classList.add('over');
+    });
+    el.addEventListener('pointerup', function(){
+      el.classList.remove('drag');
+      if (over){ over.classList.remove('over'); var s = over.getAttribute('data-s'); over = null; sx = null; drop(s); return; }
+      el.style.transform = ''; sx = null; if (!moved) speak(items[I].w);
+    });
+  }
+  SORT.play = play;
+  card();
+}
+
+/* ================= ADD THE E ================= */
+var AD = [], AD_I = 0, AD_R = 0;
+function buildAdd(){ AD = shuffle(PAIRS); AD_I = 0; AD_R = 0; drawAdd(); }
+function drawAdd(){
+  var st = $('addStage');
+  if (AD_I >= AD.length){
+    var pct = Math.round(100 * AD_R / AD.length); score('adde', pct);
+    st.innerHTML = '<div class="done-card"><div class="big">' + AD_R + ' of ' + AD.length + '</div><p>' + (pct >= 80 ? 'Magic!' : 'Try again: listen to the vowel change.') + '</p><button class="btn" id="adAgain">Do it again</button></div>';
+    $('adAgain').onclick = buildAdd; return;
+  }
+  var p = AD[AD_I], first = true;
+  st.innerHTML = '<div class="count">' + (AD_I + 1) + ' of ' + AD.length + '</div><div class="pic">' + p[1] + '</div>'
+    + '<div class="bigword" id="adWord">' + mark(p[0]) + '</div>'
+    + '<div class="row"><button class="btn ghost sm" data-say="' + p[0] + '">Hear ' + esc(p[0]) + '</button></div>'
+    + '<div class="row" style="margin-top:12px"><button class="btn plus" id="adPlus">+ magic e \u2728</button></div>'
+    + '<div id="adAsk"></div><div class="why" id="adWhy" style="margin-top:10px"></div><div class="fb" id="adFb"></div>';
+  setTimeout(function(){ speak(p[0]); }, 250);
+  $('adPlus').onclick = function(){
+    this.remove();
+    $('adWord').innerHTML = mark(p[0]) + '<span class="me grow-e">e</span>';
+    var others = shuffle(PAIRS.filter(function(x){ return x[2] !== p[2]; }))[0];
+    var opts = shuffle([[p[3], 'ok'], [p[1], 'no'], [others[3], 'no']]);
+    $('adAsk').innerHTML = '<p style="font-weight:800;margin:14px 0 0">What is the new word?</p><div class="pics">'
+      + opts.map(function(o){ return '<button data-r="' + o[1] + '">' + o[0] + '</button>'; }).join('') + '</div>';
+    Array.prototype.forEach.call($('adAsk').querySelectorAll('button'), function(b){
+      b.onclick = function(){
+        var ok = b.getAttribute('data-r') === 'ok';
+        b.classList.add(ok ? 'ok' : 'no');
+        if (first && ok) AD_R++; first = false;
+        if (ok){
+          $('adWord').innerHTML = mark(p[2]);
+          $('adWhy').textContent = p[0] + ' \u2192 ' + p[2] + ': ' + whyLine(p[2]);
+          $('adFb').className = 'fb ok'; $('adFb').textContent = 'Yes! ' + p[2];
+          speak(p[0] + '... ' + p[2]);
+          setTimeout(function(){ AD_I++; drawAdd(); }, 2300);
+        } else { $('adFb').className = 'fb no'; $('adFb').textContent = 'Read it again. The vowel says its name now.'; speak(p[2], true); }
+      };
+    });
+  };
+}
+
+/* ================= LOOK FIRST ================= */
+var LK = [], LK_I = 0, LK_R = 0;
+function buildLook(){ LK = shuffle(LOOK).slice(0, 12); LK_I = 0; LK_R = 0; drawLook(); }
+function drawLook(){
+  var st = $('lookStage');
+  if (LK_I >= LK.length){
+    var pct = Math.round(100 * LK_R / LK.length); score('look', pct);
+    st.innerHTML = '<div class="done-card"><div class="big">' + LK_R + ' of ' + LK.length + '</div><p>' + (pct >= 80 ? 'You can read the rule!' : 'Look at the end of the word. Is there an e? Try again.') + '</p><button class="btn" id="lkAgain">New words</button></div>';
+    $('lkAgain').onclick = buildLook; return;
+  }
+  var it = LK[LK_I], w = it[0];
+  st.innerHTML = '<div class="count">' + (LK_I + 1) + ' of ' + LK.length + '</div><div class="bigword">' + mark(w) + '</div>'
+    + '<div class="two">' + ['s','l'].map(function(s){ return '<button class="opt" data-s="' + s + '"><span>' + BIN[s].e + '</span>' + (s === 's' ? 'Short' : 'Long: says its name') + '</button>'; }).join('') + '</div>'
+    + '<div class="why" id="lkWhy" style="margin-top:12px"></div><div class="fb" id="lkFb"></div>';
+  var first = true;
+  Array.prototype.forEach.call(st.querySelectorAll('.opt'), function(b){
+    b.onclick = function(){
+      var ok = b.getAttribute('data-s') === it[1];
+      b.classList.add(ok ? 'ok' : 'no'); if (first && ok) LK_R++; first = false;
+      $('lkWhy').textContent = whyLine(w);
+      if (ok){ $('lkFb').className = 'fb ok'; $('lkFb').textContent = 'Listen: ' + w; speak(w); setTimeout(function(){ LK_I++; drawLook(); }, 1700); }
+      else { $('lkFb').className = 'fb no'; $('lkFb').textContent = 'Look at the end of the word.'; }
+    };
+  });
+}
+
+/* ================= SAY IT ================= */
+var SY = [], SY_I = 0, SY_R = 0, SY_TRIED = {}, MEDIA = null, CH = [], SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+function buildSay(){ SY = SAYW.slice(); SY_I = 0; SY_R = 0; SY_TRIED = {}; drawSay(); }
+function drawSay(){
+  var st = $('sayStage');
+  if (SY_I >= SY.length){
+    if (SR) score('say', Math.round(100 * SY_R / SY.length));
+    st.innerHTML = '<div class="done-card"><div class="big">Done!</div>' + (SR ? '<p>' + SY_R + ' of ' + SY.length + ' words heard clearly.</p>' : '')
+      + '<button class="btn" id="syAgain">Say them again</button></div>';
+    $('syAgain').onclick = buildSay; return;
+  }
+  var it = SY[SY_I], w = it[0];
+  st.innerHTML = '<div class="count">' + (SY_I + 1) + ' of ' + SY.length + '</div><div class="pic">' + it[1] + '</div>'
+    + '<div class="bigword">' + mark(w) + '</div><div class="why">' + whyLine(w) + '</div>'
+    + '<div class="row" style="margin:10px 0"><button class="btn sm" data-say="' + esc(w) + '">Hear it</button><button class="btn ghost sm" data-say="' + esc(w) + '" data-slow="1">Slow</button></div>'
+    + '<div class="row"><button class="btn rec" id="syRec">Record</button><button class="btn ghost hide" id="syMine">My voice</button></div>'
+    + '<div class="heard" id="syHeard"></div>'
+    + '<div class="row" style="margin-top:12px"><button class="btn ghost sm" id="syNext">Next word</button></div>';
+  $('syNext').onclick = function(){ SY_I++; drawSay(); };
+  $('syRec').onclick = function(){ record(w); };
+}
+function record(w){
+  var btn = $('syRec');
+  if (MEDIA && MEDIA.state === 'recording'){ MEDIA.stop(); return; }
+  if (!navigator.mediaDevices || !window.MediaRecorder){ $('syHeard').textContent = 'This computer cannot record. Say it out loud, then tap Next word.'; return; }
+  navigator.mediaDevices.getUserMedia({ audio:true }).then(function(stream){
+    CH = []; MEDIA = new MediaRecorder(stream);
+    MEDIA.ondataavailable = function(e){ if (e.data.size) CH.push(e.data); };
+    MEDIA.onstop = function(){
+      stream.getTracks().forEach(function(t){ t.stop(); });
+      btn.classList.remove('on'); btn.textContent = 'Record again';
+      var url = URL.createObjectURL(new Blob(CH, { type:MEDIA.mimeType || 'audio/webm' }));
+      var m = $('syMine'); m.classList.remove('hide'); m.onclick = function(){ new Audio(url).play(); };
+    };
+    MEDIA.start(); btn.classList.add('on'); btn.textContent = 'Stop'; $('syHeard').textContent = 'Listening\u2026';
+    if (SR) try {
+      var r = new SR(); r.lang = 'en-US'; r.maxAlternatives = 5;
+      r.onresult = function(ev){
+        var alts = [], i; for (i = 0; i < ev.results[0].length; i++) alts.push(MW.norm(ev.results[0][i].transcript));
+        var ok = alts.some(function(a){ return (' ' + a + ' ').indexOf(' ' + w + ' ') > -1; });
+        $('syHeard').innerHTML = ok ? '<span style="color:var(--green)">I heard: ' + esc(w) + '. Clear!</span>' : 'I heard: <b>' + esc(alts[0] || '?') + '</b>. Listen and try again.';
+        if (ok && !SY_TRIED[w]) SY_R++;
+        SY_TRIED[w] = 1;
+        if (MEDIA && MEDIA.state === 'recording') MEDIA.stop();
+      };
+      r.onnomatch = function(){ $('syHeard').textContent = 'I did not hear it. Try again.'; };
+      r.start();
+    } catch(e){}
+    setTimeout(function(){ if (MEDIA && MEDIA.state === 'recording') MEDIA.stop(); }, 5000);
+  }).catch(function(){ $('syHeard').textContent = 'Allow the microphone. Or say it out loud.'; });
+}
+
+/* ================= SPELL (boxes; yellow = right sound; nudge when the e is missing) ================= */
+var SP = [], SP_I = 0, SP_R = 0;
+function buildSpell(){ SP = shuffle(shuffle(SPELL_LONG).slice(0, 8).concat(shuffle(SPELL_SHORT).slice(0, 2))); SP_I = 0; SP_R = 0; drawSpell(); }
+function drawSpell(){
+  var st = $('spellStage');
+  if (SP_I >= SP.length){
+    var pct = Math.round(100 * SP_R / SP.length); score('spell', pct);
+    st.innerHTML = '<div class="done-card"><div class="big">' + SP_R + ' of ' + SP.length + '</div><p>right the first time</p><button class="btn" id="spAgain">Spell new words</button></div>';
+    $('spAgain').onclick = buildSpell; return;
+  }
+  var T = SP[SP_I], wrong = 0, done = false, prev = 0, idle = null, nudged = false;
+  var boxes = ''; for (var i = 0; i < T.length; i++) boxes += '<span class="lbox" data-i="' + i + '"></span>';
+  st.innerHTML = '<div class="count">' + (SP_I + 1) + ' of ' + SP.length + '</div><div class="pic">' + emojiOf(T) + '</div>'
+    + '<div class="row"><button class="btn sm" data-say="' + esc(T) + '">Hear it</button><button class="btn ghost sm" data-say="' + esc(T) + '" data-slow="1">Slow</button></div>'
+    + '<label class="lbwrap" id="spLb">' + boxes + '<input class="lbin" id="spIn" maxlength="' + T.length + '" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Type the word"></label>'
+    + '<div class="fb" id="spFb"></div><div id="spHint"></div>';
+  var inp = $('spIn'); inp.focus(); setTimeout(function(){ speak(T); }, 250);
+  function draw(){
+    var v = inp.value, m = PH.analyze(T, v);
+    Array.prototype.forEach.call($('spLb').querySelectorAll('.lbox'), function(b){
+      var i = +b.getAttribute('data-i'); b.className = 'lbox';
+      if (!v[i]){ b.textContent = ''; if (i === v.length && !done) b.classList.add('cur'); return; }
+      b.textContent = v[i].toLowerCase() === T[i].toLowerCase() ? T[i] : v[i];
+      b.classList.add(m[i] === 'ok' ? 'ok' : m[i] === 'sound' ? 'snd' : 'bad');
+    });
+  }
+  function hint(info, typed){
+    var X = PH.explain(info);
+    $('spHint').innerHTML = '<div class="hintline">' + esc(X.head) + ' ' + esc(X.body) + '</div>';
+    PH.logHit(ME.email, info, T, typed, 'phonics-spell');
+  }
+  inp.addEventListener('input', function(){
+    if (done) return;
+    var v = inp.value;
+    if (v.length > prev){
+      var i = v.length - 1;
+      if (PH.analyze(T, v)[i] !== 'ok'){
+        wrong++;
+        var info = PH.lastInfo(T, v);
+        if (info) hint(info, v);
+        else { $('spFb').className = 'fb no'; $('spFb').textContent = 'Letter ' + (i + 1) + ' is not right.'; }
+      } else $('spFb').textContent = '';
+    }
+    prev = v.length; draw();
+    clearTimeout(idle);
+    idle = setTimeout(function(){
+      if (done || nudged) return;
+      var mi = PH.missingE(T, inp.value);
+      if (mi){ nudged = true; wrong++; hint(mi, inp.value); }
+    }, 2500);
+    if (v.toLowerCase() === T.toLowerCase()){
+      done = true; inp.disabled = true; clearTimeout(idle); if (!wrong) SP_R++; draw();
+      $('spFb').className = 'fb ok'; $('spFb').textContent = 'Yes! ' + T; speak(T);
+      setTimeout(function(){ SP_I++; drawSpell(); }, 1400);
+    }
+  });
+  draw();
+}
+
+/* ================= quiet browser-translation check ================= */
+var TR_SENT = '';
+function checkTranslation(){
+  if (!ME.email) return;
+  var btns = document.querySelectorAll('nav.tabs button'), observed = '', i;
+  for (i = 0; i < btns.length && i < PANES.length; i++){
+    var got = (btns[i].textContent || '').trim();
+    if (got && got !== PANES[i][1]){ observed = got; break; }
+  }
+  var cls = document.documentElement.className || '';
+  if (!observed && !/translated/.test(cls)) return;
+  var sig = observed + '|' + document.documentElement.lang;
+  if (sig === TR_SENT) return; TR_SENT = sig;
+  PH.sb('page_translation?on_conflict=email,set_slug', { method:'POST', prefer:'resolution=merge-duplicates,return=minimal',
+    body:[{ email:ME.email, set_slug:SLUG, translated:true, observed:observed, html_lang:document.documentElement.lang || '',
+            html_class:cls, updated_at:new Date().toISOString() }] });
+}
+setInterval(checkTranslation, 20000); setTimeout(checkTranslation, 4000);
+
+/* sign-in check runs last, after everything above exists */
+try { ME.email = localStorage.getItem('gal_student_email') || ''; ME.name = localStorage.getItem('gal_student_name') || ''; ME.period = localStorage.getItem('gal_student_period') || ''; } catch(e){}
+var qe = new URLSearchParams(location.search).get('email'); if (qe) ME.email = qe.toLowerCase();
+if (ME.email) start(); else { $('gate').classList.remove('hide'); $('gName').value = ME.name; }
+})();
+</script>
+<script src="/readings/track.js"></script>
+<script>
+/* ── Choose the language at sign-in ───────────────────────────────
+   The page already has a language picker, but it sits past the gate,
+   so students reach the activity with nothing chosen and the first
+   word they tap says "choose your language". This mirrors that picker
+   into the sign-in screen and keeps the two in step. Remembers the
+   choice across pages via gal_lang. */
+(function(){
+  var GATE = /gate|login|log-in|sign-?in|signin|overlay|welcome|start-?screen/i;
+  function realPicker(){
+    var sels = document.querySelectorAll('select');
+    for (var i = 0; i < sels.length; i++){
+      var s = sels[i];
+      var id = (s.id || '') + ' ' + (s.className || '') + ' ' + (s.getAttribute('aria-label') || '');
+      if (/lang/i.test(id) && s.options.length > 2 && s.id !== 'gate-lang') return s;
+    }
+    return null;
+  }
+  function gateBox(real){
+    var nodes = document.querySelectorAll('[id],[class]');
+    for (var i = 0; i < nodes.length; i++){
+      var n = nodes[i];
+      var ident = (n.id || '') + ' ' + (typeof n.className === 'string' ? n.className : '');
+      if (!GATE.test(ident)) continue;
+      if (real && n.contains(real)) continue;            /* that is the bar, not the gate */
+      if (n.querySelector('input, select, button')) return n;
+    }
+    return null;
+  }
+  function build(){
+    var real = realPicker();
+    if (!real) return;
+    var box = gateBox(real);
+    if (!box || box.querySelector('#gate-lang')) return;
+
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'margin:10px 0;text-align:left';
+    var lab = document.createElement('label');
+    lab.setAttribute('for', 'gate-lang');
+    lab.textContent = 'Your language';
+    lab.style.cssText = 'display:block;font-weight:700;font-size:13px;margin-bottom:4px';
+    var sel = document.createElement('select');
+    sel.id = 'gate-lang';
+    sel.style.cssText = 'width:100%;font:inherit;padding:9px 10px;border:1px solid #c9c2b2;border-radius:9px';
+    sel.innerHTML = real.innerHTML;
+
+    var saved = '';
+    try { saved = localStorage.getItem('gal_lang') || ''; } catch(e){}
+    if (saved) {
+      sel.value = saved;
+      if (sel.value === saved) { real.value = saved; fire(real); }
+    }
+
+    sel.addEventListener('change', function(){
+      real.value = sel.value;
+      try { localStorage.setItem('gal_lang', sel.value); } catch(e){}
+      fire(real);
+    });
+    real.addEventListener('change', function(){
+      if (sel.value !== real.value) sel.value = real.value;
+      try { localStorage.setItem('gal_lang', real.value); } catch(e){}
+    });
+
+    wrap.appendChild(lab); wrap.appendChild(sel);
+    var btn = box.querySelector('button');
+    if (btn && btn.parentNode) btn.parentNode.insertBefore(wrap, btn);
+    else box.appendChild(wrap);
+  }
+  function fire(el){
+    try { el.dispatchEvent(new Event('change', { bubbles: true })); } catch(e){
+      var ev = document.createEvent('HTMLEvents'); ev.initEvent('change', true, false); el.dispatchEvent(ev);
+    }
+    if (typeof el.onchange === 'function') { try { el.onchange(); } catch(e){} }
+  }
+  /* some pages fill their picker from an external script, so keep trying
+     for a few seconds until there is something worth cloning */
+  var tries = 0;
+  function attempt(){
+    build();
+    if (!document.getElementById('gate-lang') && ++tries < 10) setTimeout(attempt, 600);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', attempt);
+  else attempt();
+})();
+</script>
+</body>
+</html>
