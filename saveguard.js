@@ -122,10 +122,16 @@
   }
 
   /* ---------- who is signed in; a new student on this computer gets a clean page ---------- */
-  function identify(email) {
+  function identify(email, write) {
+    if (SG.reloading) return false;            /* a clean-up reload is on its way: nothing leaves this page now */
     if (!isStu(email)) return true;
     var l = lp(email);
     if (SG.who === l) return true;
+    /* the page signed one student in, and now saves as another (the last student was signed in by itself,
+       and the next one typed their own email): whatever is on screen is the last student's, so nothing is
+       saved; this page's copy is cleared and the page reloads clean with the new email in the box. */
+    if (SG.who && write) { switchTo(email); return false; }
+    if (SG.who) return true;                   /* reading someone else's row changes nothing */
     var owner = ''; try { owner = LS.getItem('__sg_owner') || ''; } catch (e) {}
     var hadOther = false;
     if (owner && owner !== l) Object.keys(mine).forEach(function (k) { try { if (LS.getItem(k) != null) hadOther = true; } catch (e) {} });
@@ -136,6 +142,14 @@
       SG.reloading = true; location.reload(); return false;
     }
     SG.who = l; return true;
+  }
+  function switchTo(email) {
+    SG.reloading = true;
+    var gone = idKeys(SG.who).concat(Object.keys(mine));
+    gone.forEach(function (k) { try { LS.removeItem(k); } catch (e) {} });
+    try { si.call(LS, '__sg_owner', lp(email)); si.call(LS, '__sg_owner_at', String(Date.now())); } catch (e) {}
+    try { SS.setItem('__sg_fresh', String(email).trim().toLowerCase()); SS.setItem('__sg_clear', JSON.stringify(gone)); } catch (e) {}
+    location.reload();
   }
   /* after the clean-up reload: put the email back in the box and ask for one tap */
   function fresh() {
@@ -270,7 +284,7 @@
       var em = first.email || first.student_email || '';
       if (!em && method === 'PATCH') { var pm = /[?&](email|student_email)=(eq|ilike)\.([^&]+)/.exec(url); if (pm) { col = pm[1]; em = decodeURIComponent(pm[3]).replace(/^"|"$/g, ''); } }
       if (!isStu(em)) return realFetch(input, init);
-      if (!identify(em)) return new Promise(function () {});
+      if (!identify(em, true)) return new Promise(function () {});
       try { var t = JSON.parse(LS.getItem('__sg_t:' + PATH) || '[]'); if (t.indexOf(table) < 0) { t.push(table); Storage.prototype.setItem.call(LS, '__sg_t:' + PATH, JSON.stringify(t)); } } catch (e) {}
       var key2 = table + '|' + lp(em);
       var slot = held[key2] || (held[key2] = { waiters: [] });

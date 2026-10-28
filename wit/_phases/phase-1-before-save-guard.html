@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="google" content="notranslate">
+<title>Sentence Work · Mr. Toby</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--pine:#1b4332;--pine2:#2d6a4f;--moss:#40916c;--sage:#95d5b2;--paper:#f4f5f2;--card:#fff;
+  --ink:#1f2421;--muted:#5c6b62;--line:#dfe4dd;--gold:#d4a017;--rust:#b5451b;--sky:#e8f3ee;--yellow:#fff1bf;--plum:#5a4a8a}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:'Nunito',system-ui,sans-serif;background:var(--paper);color:var(--ink);font-size:17px;line-height:1.6}
+#bar{position:sticky;top:0;z-index:60;background:var(--pine);color:#fff;padding:8px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;box-shadow:0 2px 10px rgba(0,0,0,.18)}
+#bar .brand{font-weight:800;font-size:1.02rem;margin-right:auto}
+#bar .brand small{display:block;font-weight:600;font-size:.7rem;opacity:.78}
+#bar button,#bar select{font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer;background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:6px 11px}
+#bar button:hover{background:rgba(255,255,255,.26)}
+#bar button.on{background:var(--gold);border-color:var(--gold);color:#3d2c00}
+#bar select option{color:#000}
+#lvl{display:inline-flex;border:1px solid rgba(255,255,255,.3);border-radius:8px;overflow:hidden}
+#lvl button{border:none;border-radius:0;background:transparent}
+#lvl button.on{background:#fff;color:var(--pine)}
+#saveDot{width:10px;height:10px;border-radius:50%;background:#7d8a83;display:inline-block;margin-right:4px;vertical-align:middle}
+#saveDot.on{background:var(--sage)} #saveDot.busy{background:var(--gold)} #saveDot.err{background:#e07a5f}
+#whoami{font-size:.78rem;opacity:.85;font-weight:700}
+main{max-width:780px;margin:0 auto;padding:18px 14px 90px}
+section.act{display:none} section.act.show{display:block}
+h1{font-size:1.6rem;line-height:1.25;margin:.2em 0 .2em}
+h2{font-size:1.25rem;margin:.2em 0 .4em;color:var(--pine)}
+.lede{color:var(--muted);margin:.3em 0 1em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:14px 0}
+.dir{margin:.45em 0}
+.dirtr{display:block;color:var(--pine2);font-weight:700;margin-top:2px}
+.dirtr:empty{display:none}
+.btn{font-family:inherit;font-size:.92rem;font-weight:800;cursor:pointer;border-radius:9px;padding:9px 16px;border:none;background:var(--pine2);color:#fff;margin:4px 6px 4px 0}
+.btn:hover{background:var(--pine)}
+.btn.ghost{background:#fff;color:var(--pine2);border:2px solid var(--pine2)}
+.btn:focus-visible,.chip:focus-visible,.wd:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.steps{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px}
+.stepb{border:1px solid var(--line);background:#fff;border-radius:20px;padding:4px 12px;font-family:inherit;font-weight:800;font-size:.8rem;color:var(--muted);cursor:pointer}
+.stepb.cur{background:var(--pine2);color:#fff;border-color:var(--pine2)}
+.stepb.ok{background:#d8f0e2;color:var(--pine);border-color:var(--moss)}
+.q{margin:14px 0 6px;font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}
+.chip{font-family:inherit;font-size:1rem;font-weight:700;padding:7px 15px;border-radius:20px;border:2px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;text-align:left}
+.chip:hover{border-color:var(--moss)}
+.chip.right{background:#d8f0e2;border-color:var(--moss);color:var(--pine)}
+.chip.wrong{background:#fbeae5;border-color:#e07a5f;color:#8a2f10}
+.chip.dim{opacity:.5;pointer-events:none}
+.chip.sel{background:var(--yellow);border-color:var(--gold)}
+.why{font-size:.95rem;color:#3c4a42;margin:6px 0 2px;line-height:1.55;padding:7px 12px;border-radius:9px;background:#f6f8f5}
+.why.good{background:#e9f6ee} .why.miss{background:#fdf0c4}
+.why:empty{display:none}
+.spk{border:1.5px solid var(--line);background:#fff;border-radius:50%;width:30px;height:30px;font-size:.95rem;cursor:pointer;flex:none;line-height:1;vertical-align:middle;margin-left:6px}
+.spk:active{background:var(--pine2);color:#fff}
+/* sort */
+.bins{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:10px 0}
+@media(min-width:640px){.bins{grid-template-columns:repeat(4,1fr)}}
+.bin{border:2px dashed var(--line);border-radius:12px;padding:8px 10px;min-height:96px;cursor:pointer;background:#fff}
+.bin:hover,.bin.hot{border-color:var(--moss);background:var(--sky)}
+.bin h4{margin:0 0 6px;font-size:.92rem;color:var(--pine)}
+.bin h4 small{display:block;font-weight:600;color:var(--muted);font-size:.74rem}
+.bin .in{font-size:.9rem;padding:4px 8px;border-radius:7px;margin:3px 0;background:#d8f0e2;color:var(--pine);font-weight:700}
+.deck{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.srt{font-family:inherit;font-size:1.02rem;font-weight:700;padding:8px 14px;border-radius:10px;border:2px solid var(--line);background:#fff;cursor:pointer}
+.srt.sel{background:var(--yellow);border-color:var(--gold)}
+.srt.oops{background:#fbeae5;animation:shake .3s}
+@keyframes shake{25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+/* scramble */
+.line{min-height:52px;border-bottom:3px solid var(--rust);padding:6px 4px;font-size:1.2rem;display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0 10px}
+.line .put{background:#d8f0e2;border-radius:8px;padding:2px 9px;font-weight:800;color:var(--pine)}
+.wd{font-family:inherit;font-size:1.05rem;font-weight:700;padding:7px 14px;border-radius:10px;border:2px solid var(--line);background:#fff;cursor:pointer}
+.wd.used{opacity:.3;pointer-events:none}
+.wd.oops{background:#fbeae5;animation:shake .3s}
+.wd.mark{background:var(--sky);border-color:var(--moss)}
+/* fragment */
+.frag{font-size:1.2rem;font-weight:700;padding:8px 12px;background:#f6f8f5;border-radius:9px;display:inline-block;margin:2px 0 6px}
+.sf{display:inline-flex;gap:8px;margin-left:10px;vertical-align:middle}
+/* writing */
+.pic{font-size:3rem;line-height:1.1;margin:0 0 6px;text-align:center}
+.pic small{display:block;font-size:.85rem;color:var(--muted);font-weight:700}
+.wrow{display:grid;grid-template-columns:120px 1fr;gap:8px 12px;align-items:start;margin:8px 0}
+@media(max-width:520px){.wrow{grid-template-columns:1fr}}
+.wrow label{font-weight:800;color:var(--pine2);padding-top:9px}
+.wrow label small{display:block;font-weight:600;color:var(--muted);font-size:.74rem;line-height:1.3}
+input.w,textarea{width:100%;font:inherit;font-size:1.05rem;padding:9px 11px;border:2px solid var(--line);border-radius:10px;line-height:1.5;background:#fff;color:var(--ink)}
+textarea{min-height:90px;resize:vertical}
+input.w:focus,textarea:focus{border-color:var(--moss);outline:none}
+.hint{font-size:.86rem;color:var(--muted);margin:2px 0 0;min-height:1.2em}
+.hint.ok{color:var(--pine);font-weight:800}
+.stem{font-size:1.1rem;font-weight:800;color:var(--ink);padding-top:9px}
+.gloss{display:flex;gap:14px;flex-wrap:wrap;font-size:.92rem;margin:4px 0 8px}
+.gloss b{color:var(--pine2)}
+.kernel{font-size:1.3rem;font-weight:800;margin:4px 0}
+.qs{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 8px}
+.qs span{background:var(--yellow);border-radius:14px;padding:2px 10px;font-weight:800;font-size:.85rem;color:#5c4400}
+.boring{font-size:1.08rem;line-height:1.9;background:#f6f8f5;border-radius:10px;padding:10px 14px}
+.tools{font-size:.9rem;color:var(--muted);margin:6px 0 8px}
+.tools b{color:var(--pine2)}
+.checks{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.88rem;color:var(--muted);margin:6px 0}
+.checks span.ok{color:var(--pine);font-weight:800}
+.model{margin-top:8px}
+.model summary{cursor:pointer;font-weight:800;color:var(--pine2)}
+.big{font-size:2rem;font-weight:800;color:var(--pine)}
+.sumrow{padding:8px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between}
+.sumrow:last-child{border-bottom:none}
+#wtip{position:fixed;z-index:210;background:#1b4332;color:#fff;border-radius:10px;padding:9px 14px;box-shadow:0 6px 22px rgba(0,0,0,.3);display:none;max-width:280px;font-size:.95rem;line-height:1.45}
+#wtip.show{display:block}
+#wtipW{display:block;font-weight:800;font-size:.8rem;opacity:.72}
+#wtipT{font-weight:700;font-size:1.06rem}
+#canary{position:absolute;left:-9999px;top:-9999px;height:1px;overflow:hidden}
+#namewrap{position:fixed;inset:0;z-index:200;background:rgba(27,67,50,.94);display:none;align-items:center;justify-content:center;padding:20px}
+#namewrap.show{display:flex}
+#namebox{background:#fff;border-radius:16px;padding:26px;max-width:380px;width:100%;max-height:96vh;overflow:auto}
+#namebox h2{margin:0 0 6px;color:var(--pine);text-align:center}
+#namebox p{margin:0 0 14px;font-size:.9rem;color:var(--muted);text-align:center}
+#namebox label{display:block;font-size:.8rem;font-weight:800;color:var(--moss);margin:0 0 4px}
+#namebox input,#namebox select{font-family:inherit;font-size:1.04rem;padding:10px 12px;width:100%;border:2px solid var(--line);border-radius:10px;margin-bottom:12px;background:#fff;color:var(--ink)}
+#namebox .or{text-align:center;font-size:.8rem;color:var(--muted);font-weight:700;margin:-4px 0 10px}
+#nameErr{color:var(--rust);font-size:.86rem;font-weight:700;min-height:1.1em}
+@media(prefers-reduced-motion:reduce){.srt.oops,.wd.oops{animation:none}}
+@media print{#bar,#namewrap,.btn,.steps{display:none !important} section.act{display:block !important}}
+</style>
+<script>
+window.GAL_META={title:'Sentence Work',unit:'WIT',skills:['SENT.TYPE','SENT.ORDER','SENT.FRAG','CONJ.BBS','SENT.EXPAND','REVISE']};
+</script>
+<script src="items.js"></script>
+</head>
+<body>
+<div id="canary" aria-hidden="true">the quick brown fox jumps over the lazy dog</div>
+<div id="bar">
+  <div class="brand">Sentence Work<small>sort · scramble · sentence or fragment? · types · because, but, so · pop it · revise</small></div>
+  <span id="lvl"><button id="lvl101" onclick="setLevel('101')">ELD 101</button><button id="lvl103" onclick="setLevel('103')">ELD 103</button></span>
+  <span id="whoami"></span>
+  <button onclick="askName()"><span id="saveDot"></span>Name</button>
+  <select id="lang" onchange="setLang(this.value)" aria-label="Your language">
+    <option value="">Language…</option>
+    <option value="Spanish">Español</option><option value="Chinese (Simplified)">中文</option><option value="Arabic">العربية</option>
+    <option value="Vietnamese">Tiếng Việt</option><option value="Thai">ไทย</option><option value="Nepali">नेपाली</option><option value="Russian">Русский</option><option value="Urdu">اردو</option>
+    <option value="Tagalog">Tagalog</option><option value="French">Français</option><option value="Korean">한국어</option>
+    <option value="Hindi">हिन्दी</option><option value="Somali">Soomaali</option>
+  </select>
+  <button id="dirBtn" onclick="toggleDir()">Directions</button>
+  <button id="wtBtn" onclick="toggleWT()">Tap words</button>
+  <button onclick="turnIn()">Turn in</button>
+</div>
+<main>
+<div class="steps" id="steps"></div>
+
+<section class="act" id="a0">
+  <h1>Sentence Work</h1>
+  <p class="lede" id="lede"></p>
+  <div class="card">
+    <p class="dir" data-dir="d1" data-en="Seven short activities about sentences. Do them in order. A sentence has a subject and a verb. It starts with a capital letter and ends with a period, a question mark, or an exclamation point.">Seven short activities about sentences. Do them in order. A sentence has a <b>subject</b> and a <b>verb</b>. It starts with a capital letter and ends with a period, a question mark, or an exclamation point.</p>
+    <p class="dir" data-dir="d2" data-en="The first try is your score. If you are wrong, you can try again.">The <b>first try</b> is your score. If you are wrong, you can try again.</p>
+  </div>
+  <button class="btn" onclick="go(1)">Start</button>
+</section>
+
+<section class="act" id="a1">
+  <h2>1 · Sentence sort</h2>
+  <p class="dir" data-dir="s1" data-en="Tap a sentence. Then tap the box where it belongs. Look at the end mark and the first word.">Tap a sentence. Then tap the box where it belongs. Look at the <b>end mark</b> and the <b>first word</b>.</p>
+  <div translate="no">
+  <div class="deck" id="sortDeck"></div>
+  <div class="bins" id="sortBins"></div>
+  </div>
+  <div class="why" id="sortWhy"></div>
+  <button class="btn" onclick="go(2)">Next</button>
+</section>
+
+<section class="act" id="a2">
+  <h2>2 · Sentence scramble</h2>
+  <p class="dir" data-dir="c1" data-en="Tap the words in the right order. Tap the end mark last. Capital letters are a clue.">Tap the words in the right order. Tap the end mark last. Capital letters are a clue.</p>
+  <div id="scrItems" translate="no"></div>
+  <button class="btn" onclick="go(3)">Next</button>
+</section>
+
+<section class="act" id="a3">
+  <h2>3 · Sentence or fragment?</h2>
+  <p class="dir" data-dir="f1" data-en="Is it a sentence (S) or a fragment (F)? A fragment is missing a subject or a verb. If it is a fragment, tap the repair.">Is it a sentence (<b>S</b>) or a fragment (<b>F</b>)? A fragment is missing a subject or a verb. If it is a fragment, tap the repair.</p>
+  <div id="fragItems" translate="no"></div>
+  <button class="btn" onclick="go(4)">Next</button>
+</section>
+
+<section class="act" id="a4">
+  <h2>4 · Sentence types</h2>
+  <p class="dir" data-dir="t1" data-en="Look at the picture. Write one statement, one question, one command, and one exclamation.">Look at the picture. Write one <b>statement</b>, one <b>question</b>, one <b>command</b>, and one <b>exclamation</b>.</p>
+  <div class="card" id="typesCard"></div>
+  <button class="btn" onclick="go(5)">Next</button>
+</section>
+
+<section class="act" id="a5">
+  <h2>5 · Because, but, so</h2>
+  <p class="dir" data-dir="b1" data-en="Because gives a reason. But shows a contrast. So shows a result. First choose the word that fits. Then finish the three sentences.">
+    <b>Because</b> gives a reason. <b>But</b> shows a contrast. <b>So</b> shows a result. First choose the word that fits. Then finish the three sentences.</p>
+  <div class="gloss" id="gloss" translate="no"></div>
+  <div id="bbsItems" translate="no"></div>
+  <div class="card" id="bbsWrite"></div>
+  <button class="btn" onclick="go(6)">Next</button>
+</section>
+
+<section class="act" id="a6">
+  <h2>6 · Make it pop</h2>
+  <p class="dir" data-dir="e1" data-en="A kernel is a short, boring sentence. Pop it! Answer the questions inside your new sentence. Keep the kernel words.">A <b>kernel</b> is a short, boring sentence. Pop it! 🍿 Answer the questions <i>inside</i> your new sentence. Keep the kernel words.</p>
+  <div id="expItems"></div>
+  <button class="btn" onclick="go(7)">Next</button>
+</section>
+
+<section class="act" id="a7">
+  <h2>7 · Parallel revision</h2>
+  <p class="dir" data-dir="r1" data-en="Rewrite the boring paragraph so it is better, but keep the same meaning. Combine sentences. Use names instead of he and she. Add details.">Rewrite the boring paragraph so it is <b>better</b>, but keep the <b>same meaning</b>. Combine sentences. Use names instead of <i>he</i> and <i>she</i>. Add details.</p>
+  <div id="revItems"></div>
+  <button class="btn" onclick="go(8)">Finish</button>
+</section>
+
+<section class="act" id="a8">
+  <h2>Done</h2>
+  <div class="card" style="text-align:center">
+    <div style="color:var(--muted);font-size:.9rem">Correct on the first try</div>
+    <div class="big" id="finScore">0 / 0</div>
+  </div>
+  <div class="card" id="finList"></div>
+  <button class="btn" onclick="turnIn()">Turn in</button>
+  <button class="btn ghost" onclick="go(1)">Look again</button>
+</section>
+</main>
+
+<div id="namewrap">
+  <div id="namebox">
+    <h2>Sign in</h2>
+    <p>Use your school email so your work shows up on your own student page.</p>
+    <label for="rosterSel">Find your name</label>
+    <select id="rosterSel" onchange="pickRoster()"><option value="">— choose your name —</option></select>
+    <div class="or">or type it in</div>
+    <label for="firstIn">First name</label>
+    <input id="firstIn" autocomplete="given-name" placeholder="First name">
+    <label for="lastIn">Last name</label>
+    <input id="lastIn" autocomplete="family-name" placeholder="Last name">
+    <label for="emailIn">School email</label>
+    <input id="emailIn" type="email" inputmode="email" autocapitalize="off" spellcheck="false" placeholder="name@s.sfusd.edu" onkeydown="if(event.key==='Enter')saveName()">
+    <label for="periodIn">Class period</label>
+    <select id="periodIn"><option value="">— choose —</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select>
+    <label for="langIn">Your language · Tu idioma · 你的语言 · لغتك</label>
+    <select id="langIn"><option value="">— choose your language —</option></select>
+    <button class="btn" style="width:100%" onclick="saveName()">Start</button>
+    <div id="nameErr"></div>
+  </div>
+</div>
+<div id="wtip"><span id="wtipW"></span><span id="wtipT"></span></div>
+
+<script>
+/* ===================== CONFIG ===================== */
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var TABLE='wit';
+var PROXY='https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
+var QS=new URLSearchParams(location.search);
+var LEVEL=(QS.get('level')==='103')?'103':'101';
+var LESSON=QS.get('lesson')||'';
+var UNIT='wit-'+LEVEL,SLUG='wit/'+LEVEL+(LESSON?'/'+LESSON:'');
+var ST={name:'',email:'',period:'',act:0,A:{},F:{},W:{},turnedIn:null,browserTranslated:false};
+var ITEMS={},SORT_SEL=null,SCR={};
+function $(i){return document.getElementById(i);}
+function clean(s){return String(s||'').trim().toLowerCase();}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function seed(str){var h=2166136261;for(var i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619);}return function(){h+=0x6D2B79F5;var t=Math.imul(h^h>>>15,1|h);t=t+Math.imul(t^t>>>7,61|t)^t;return ((t^t>>>14)>>>0)/4294967296;};}
+var RND=Math.random;
+function sh(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(RND()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+function pool(list){var l=list.filter(function(x){return x.lvl===LEVEL;});if(!LESSON)return sh(l);return sh(l.filter(function(x){return x.t===LESSON;})).concat(sh(l.filter(function(x){return x.t!==LESSON;})));}
+function state(id){if(!ST.A[id])ST.A[id]={tries:0,first:null,done:false};return ST.A[id];}
+
+/* ===================== BUILD TODAY'S SET ===================== */
+function buildItems(){
+ RND=seed((ST.email||'anon')+'|'+UNIT+'|'+LESSON);
+ var sortAll=pool(WIT.sort),bins=['statement','question','command','exclamation'],cards=[];
+ bins.forEach(function(k){cards=cards.concat(sortAll.filter(function(x){return x.k===k;}).slice(0,2));});
+ ITEMS.sort=sh(cards).map(function(c,i){return {id:'s'+i,s:c.s,k:c.k};});
+ ITEMS.scramble=pool(WIT.scramble).slice(0,6).map(function(c,i){return {id:'c'+i,s:c.s};});
+ var fr=pool(WIT.fragment),fs=fr.filter(function(x){return x.k==='S';}).slice(0,4),ff=fr.filter(function(x){return x.k==='F';}).slice(0,4);
+ ITEMS.fragment=sh(fs.concat(ff)).map(function(c,i){return {id:'f'+i,s:c.s,k:c.k,fix:c.fix,wrong:c.wrong||[]};});
+ ITEMS.types=pool(WIT.types)[0];
+ ITEMS.bbs=pool(WIT.bbs_choose).slice(0,6).map(function(c,i){return {id:'b'+i,s:c.s,a:c.a};});
+ ITEMS.stem=pool(WIT.bbs_write)[0];
+ ITEMS.expand=pool(WIT.expand).slice(0,2);
+ ITEMS.revise=pool(WIT.revise)[0];
+ ITEMS.scored=ITEMS.sort.concat(ITEMS.scramble,ITEMS.fragment,ITEMS.bbs);
+}
+function firstTry(){return ITEMS.scored.filter(function(x){return state(x.id).done&&state(x.id).first;}).length;}
+function groupScore(list){return list.filter(function(x){return state(x.id).done&&state(x.id).first;}).length+' / '+list.length;}
+function allDone(list){return list.every(function(x){return state(x.id).done;});}
+
+/* ===================== 1 · SORT ===================== */
+var BIN_INFO={statement:['Statement','tells something · ends with .'],question:['Question','asks something · ends with ?'],command:['Command','tells someone to do something · starts with a verb'],exclamation:['Exclamation','strong feeling · ends with !']};
+function renderSort(){
+ var left=ITEMS.sort.filter(function(c){return !state(c.id).done;});
+ $('sortDeck').innerHTML=left.length?left.map(function(c){return '<button class="srt'+(SORT_SEL===c.id?' sel':'')+'" id="srt_'+c.id+'" onclick="sortPick(\''+c.id+'\')">'+esc(c.s)+'</button>';}).join(''):'<div class="why good">All sorted. 🎉</div>';
+ $('sortBins').innerHTML=Object.keys(BIN_INFO).map(function(k){var ins=ITEMS.sort.filter(function(c){return state(c.id).done&&c.k===k;});
+  return '<div class="bin'+(SORT_SEL?' hot':'')+'" onclick="sortDrop(\''+k+'\')"><h4>'+BIN_INFO[k][0]+'<small>'+BIN_INFO[k][1]+'</small></h4>'+ins.map(function(c){return '<div class="in">'+esc(c.s)+'</div>';}).join('')+'</div>';}).join('');
+ drawSteps();
+}
+function sortPick(id){SORT_SEL=(SORT_SEL===id)?null:id;renderSort();}
+function sortDrop(k){if(!SORT_SEL)return;var c=ITEMS.sort.filter(function(x){return x.id===SORT_SEL;})[0],st=state(c.id);st.tries++;
+ if(c.k===k){st.done=true;if(st.first===null)st.first=(st.tries===1);SORT_SEL=null;$('sortWhy').className='why good';$('sortWhy').innerHTML='<b>'+esc(c.s)+'</b> is a '+k+'. '+BIN_INFO[k][1]+'.';}
+ else{if(st.first===null)st.first=false;var b=$('srt_'+c.id);if(b){b.classList.add('oops');setTimeout(function(){b.classList.remove('oops');},350);}$('sortWhy').className='why miss';$('sortWhy').innerHTML='Not a '+k+'. Look at the end mark of <b>'+esc(c.s)+'</b> and try another box.';}
+ save();renderSort();
+}
+
+/* ===================== 2 · SCRAMBLE ===================== */
+function tokens(s){var m=s.match(/[.?!]$/);var end=m?m[0]:'.';var words=s.replace(/[.?!]$/,'').split(/\s+/);return {words:words,end:end};}
+function renderScr(){
+ $('scrItems').innerHTML=ITEMS.scramble.map(function(it){var st=state(it.id),t=tokens(it.s),sc=SCR[it.id];
+  if(!sc){var order=sh(t.words.map(function(w,i){return i;}));sc=SCR[it.id]={order:order,pos:0,end:false,badge:0};if(st.done){sc.pos=t.words.length;sc.end=true;}}
+  var h='<div class="card" id="c_'+it.id+'"><div class="line">';
+  for(var i=0;i<sc.pos;i++)h+='<span class="put">'+esc(t.words[i])+'</span>';if(sc.end)h+='<span class="put">'+t.end+'</span>';if(!sc.pos&&!sc.end)h+='<span style="color:var(--muted);font-size:.9rem">tap the first word…</span>';
+  h+='</div><div class="chips">';
+  if(!st.done){sc.order.forEach(function(idx){h+='<button class="wd'+(idx<sc.pos?' used':'')+'" id="w_'+it.id+'_'+idx+'" onclick="scrTap(\''+it.id+'\','+idx+')">'+esc(t.words[idx])+'</button>';});
+   h+='<button class="wd'+(sc.end?' used':'')+'" id="w_'+it.id+'_end" onclick="scrTap(\''+it.id+'\',-1)" style="border-color:var(--rust)">'+t.end+'</button>';}
+  else h+='<button class="spk" onclick="speak(\''+esc(it.s).replace(/'/g,'\\\'')+'\')" title="Listen">🔊</button>';
+  h+='</div><div class="why'+(st.done?(st.first?' good':' miss'):'')+'">'+(st.done?(st.first?'Right the first time.':'Done. Read it aloud once more.'):'')+'</div></div>';return h;}).join('');
+ drawSteps();
+}
+function scrTap(id,idx){var it=ITEMS.scramble.filter(function(x){return x.id===id;})[0],st=state(id),t=tokens(it.s),sc=SCR[id];if(st.done)return;
+ var ok=(idx===-1)?(sc.pos===t.words.length&&!sc.end):(idx===sc.pos);
+ if(ok){if(idx===-1)sc.end=true;else sc.pos++;if(sc.pos===t.words.length&&sc.end){st.done=true;st.tries++;if(st.first===null)st.first=true;save();if(allDone(ITEMS.scramble))speak(it.s);}}
+ else{if(st.first===null)st.first=false;st.tries++;var b=$('w_'+id+'_'+(idx===-1?'end':idx));if(b){b.classList.add('oops');setTimeout(function(){b.classList.remove('oops');},350);}
+  var next=sc.pos<t.words.length?$('w_'+id+'_'+sc.pos):$('w_'+id+'_end');if(next)next.classList.add('mark');save();return;}
+ renderScr();
+}
+
+/* ===================== 3 · FRAGMENT ===================== */
+function renderFrag(){
+ $('fragItems').innerHTML=ITEMS.fragment.map(function(it){var st=state(it.id);st.step=st.step||0;/* 0 = choose S/F, 1 = choose repair (fragments), 2 = done */
+  var h='<div class="card" id="c_'+it.id+'"><span class="frag">'+esc(it.s)+'</span><span class="sf">';
+  ['S','F'].forEach(function(k){var cls='chip';if(st.step>0||st.done){cls+=(k===it.k?' right':' dim');}else if(st.wrongs&&st.wrongs.indexOf(k)>=0)cls+=' wrong dim';h+='<button class="'+cls+'" onclick="fragPick(\''+it.id+'\',\''+k+'\')">'+k+'</button>';});
+  h+='</span>';
+  if(st.step===1&&!st.done){var opts=st.opts;if(!opts){opts=st.opts=sh([it.fix].concat(it.wrong));}h+='<div class="q">Which repair makes it a sentence?</div><div class="chips">'+opts.map(function(o){var cls='chip';if(st.rw&&st.rw.indexOf(o)>=0)cls+=' wrong dim';return '<button class="'+cls+'" onclick="fragFix(\''+it.id+'\',\''+esc(o).replace(/'/g,'\\\'')+'\')">'+esc(o)+'</button>';}).join('')+'</div>';}
+  h+='<div class="why'+(st.done?(st.first?' good':' miss'):'')+'">'+(st.done?('<b>'+esc(it.fix)+'</b>'+(it.k==='S'?' — subject + verb, capital letter, end mark.':' — now it has a subject and a verb.')+' <button class="spk" onclick="speak(\''+esc(it.fix).replace(/'/g,'\\\'')+'\')">🔊</button>'):'')+'</div></div>';return h;}).join('');
+ drawSteps();
+}
+function fragPick(id,k){var it=ITEMS.fragment.filter(function(x){return x.id===id;})[0],st=state(id);if(st.done||st.step>0)return;st.tries++;
+ if(k===it.k){if(st.first===null)st.first=(st.tries===1);if(it.k==='S'){st.done=true;st.step=2;}else st.step=1;}
+ else{st.wrongs=st.wrongs||[];st.wrongs.push(k);if(st.first===null)st.first=false;}
+ save();renderFrag();}
+function fragFix(id,o){var it=ITEMS.fragment.filter(function(x){return x.id===id;})[0],st=state(id);if(st.done)return;
+ if(o===it.fix){st.done=true;st.step=2;}else{st.rw=st.rw||[];st.rw.push(o);st.first=false;}
+ save();renderFrag();}
+
+/* ===================== 4 · TYPES ===================== */
+var TYPE_ROWS=[['statement','Statement','tells · ends with .'],['question','Question','asks · ends with ?'],['command','Command','starts with a verb · ends with .'],['exclamation','Exclamation','feeling · ends with !']];
+function renderTypes(){var t=ITEMS.types;
+ $('typesCard').innerHTML='<div class="pic" translate="no">'+t.pic+'<small>'+esc(t.alt)+'</small></div>'+TYPE_ROWS.map(function(r){var k='ty_'+r[0];
+  return '<div class="wrow"><label for="'+k+'">'+r[1]+'<small>'+r[2]+'</small></label><div><input class="w" id="'+k+'" value="'+esc(ST.F[k]||'')+'" oninput="typeIn(\''+k+'\',\''+r[0]+'\')" placeholder="Write a '+r[0]+'…"><div class="hint" id="h_'+k+'"></div></div></div>';}).join('')+
+  '<details class="model"><summary>See examples</summary><div class="why" style="margin-top:6px">'+TYPE_ROWS.map(function(r){return '<div><b>'+r[1]+':</b> '+esc(t.model[r[0]])+'</div>';}).join('')+'</div></details>';
+ TYPE_ROWS.forEach(function(r){typeCheck('ty_'+r[0],r[0]);});
+}
+function typeIn(k,kind){ST.F[k]=$(k).value;typeCheck(k,kind);save();}
+function typeCheck(k,kind){var v=(ST.F[k]||'').trim(),h=$('h_'+k);if(!h)return;if(!v){h.textContent='';h.className='hint';return;}
+ var want={statement:'.',question:'?',command:'.',exclamation:'!'}[kind],end=v.slice(-1),cap=/^[A-Z]/.test(v),words=v.split(/\s+/).length;
+ var msgs=[];if(!cap)msgs.push('Start with a capital letter.');if(end!==want&&!(kind==='command'&&end==='!'))msgs.push('End with '+want);if(words<3)msgs.push('Add more words.');
+ if(kind==='question'&&!/^(what|who|where|when|why|how|is|are|do|does|did|can|will|was|were|have|has)\b/i.test(v))msgs.push('Questions often start with what, who, where, when, why, how, is, are, do…');
+ h.textContent=msgs.length?msgs.join(' '):'✓ Looks like a '+kind+'.';h.className='hint'+(msgs.length?'':' ok');}
+
+/* ===================== 5 · BECAUSE, BUT, SO ===================== */
+function renderBBS(){
+ var lg=lang(),G=WIT.bbs_gloss;$('gloss').innerHTML=['because','but','so'].map(function(w){var tr=lg&&G[w][lg]?G[w][lg]:'';return '<span><b>'+w+'</b>'+(tr?' = '+esc(tr):'')+'</span>';}).join('');
+ $('bbsItems').innerHTML=ITEMS.bbs.map(function(it){var st=state(it.id);
+  var h='<div class="card" id="c_'+it.id+'"><div class="q">'+esc(it.s).replace('___','<span style="display:inline-block;min-width:90px;border-bottom:2px solid var(--rust)">&nbsp;</span>')+'</div><div class="chips">';
+  ['because','but','so'].forEach(function(o){var cls='chip';if(st.done){cls+=(o===it.a?' right':' dim');}else if(st.wrongs&&st.wrongs.indexOf(o)>=0)cls+=' wrong dim';h+='<button class="'+cls+'" onclick="bbsPick(\''+it.id+'\',\''+o+'\')">'+o+'</button>';});
+  var why={because:'a reason',but:'a contrast — the opposite of what you expect',so:'a result'}[it.a];
+  h+='</div><div class="why'+(st.done?(st.first?' good':' miss'):'')+'">'+(st.done?('<b>'+it.a+'</b> — '+why+'.'):'')+'</div></div>';return h;}).join('');
+ var s=ITEMS.stem;$('bbsWrite').innerHTML='<div class="q">Now you. Finish all three:</div>'+['because','but','so'].map(function(w){var k='bbs_'+w;var lead=esc(s.stem)+(w==='because'?' because':', '+w);
+  return '<div class="wrow"><div class="stem" translate="no">'+lead+'</div><div><input class="w" id="'+k+'" value="'+esc(ST.F[k]||'')+'" oninput="bbsIn(\''+k+'\')" placeholder="…"><div class="hint" id="h_'+k+'"></div></div></div>';}).join('');
+ ['because','but','so'].forEach(function(w){bbsCheck('bbs_'+w);});drawSteps();
+}
+function bbsPick(id,o){var it=ITEMS.bbs.filter(function(x){return x.id===id;})[0],st=state(id);if(st.done)return;st.tries++;
+ if(o===it.a){st.done=true;if(st.first===null)st.first=(st.tries===1);}else{st.wrongs=st.wrongs||[];st.wrongs.push(o);if(st.first===null)st.first=false;}
+ save();renderBBS();}
+function bbsIn(k){ST.F[k]=$(k).value;bbsCheck(k);save();}
+function bbsCheck(k){var v=(ST.F[k]||'').trim(),h=$('h_'+k);if(!h)return;if(!v){h.textContent='';h.className='hint';return;}var m=[];
+ if(/^(because|but|so)\b/i.test(v))m.push('The word is already there — start with what comes after it.');if(v.split(/\s+/).length<3)m.push('Say a little more.');if(!/[.?!]$/.test(v))m.push('End with a period.');
+ h.textContent=m.length?m.join(' '):'✓';h.className='hint'+(m.length?'':' ok');}
+
+/* ===================== 6 · EXPAND ===================== */
+function renderExp(){
+ $('expItems').innerHTML=ITEMS.expand.map(function(e,i){var k='ex'+i;
+  return '<div class="card"><div class="kernel" translate="no">'+esc(e.k)+' <button class="spk" onclick="speak(\''+esc(e.k).replace(/'/g,'\\\'')+'\')">🔊</button></div><div class="qs">'+e.qs.map(function(q){return '<span>'+q+'</span>';}).join('')+'</div>'+
+   '<textarea id="'+k+'" oninput="expIn(\''+k+'\','+i+')" placeholder="Rewrite the kernel with the answers inside…">'+esc(ST.F[k]||'')+'</textarea><div class="checks" id="h_'+k+'"></div>'+
+   '<details class="model"><summary>See one way to pop it</summary><div class="why" style="margin-top:6px">'+esc(e.model)+'</div></details></div>';}).join('');
+ ITEMS.expand.forEach(function(e,i){expCheck('ex'+i,i);});
+}
+function expIn(k,i){ST.F[k]=$(k).value;expCheck(k,i);save();}
+function expCheck(k,i){var e=ITEMS.expand[i],v=(ST.F[k]||'').trim(),h=$('h_'+k);if(!h)return;if(!v){h.innerHTML='';return;}
+ var kw=e.k.replace(/[.?!]/g,'').toLowerCase().split(/\s+/),low=v.toLowerCase();
+ var keep=kw.every(function(w){return low.indexOf(w.replace(/s$/,''))>=0;}),longer=v.split(/\s+/).length>=kw.length+e.qs.length+1,cap=/^[A-Z]/.test(v)&&/[.?!]$/.test(v);
+ h.innerHTML='<span class="'+(keep?'ok':'')+'">'+(keep?'✓':'○')+' kernel words kept</span><span class="'+(longer?'ok':'')+'">'+(longer?'✓':'○')+' at least '+(kw.length+e.qs.length+1)+' words</span><span class="'+(cap?'ok':'')+'">'+(cap?'✓':'○')+' capital + end mark</span>';}
+
+/* ===================== 7 · REVISE ===================== */
+function renderRev(){var r=ITEMS.revise,k='rv0';
+ $('revItems').innerHTML='<div class="card"><div class="q">'+esc(r.title)+' — the boring version</div><div class="boring" translate="no">'+esc(r.boring)+'</div>'+
+  '<div class="tools"><b>Combine:</b> and, but, or, so &nbsp;·&nbsp; <b>Join:</b> because, when, while, although, after, before, if &nbsp;·&nbsp; <b>Names:</b> '+esc(r.names.join(', '))+' &nbsp;·&nbsp; <b>Ask:</b> who, what, when, where, why, how</div>'+
+  '<textarea id="'+k+'" style="min-height:140px" oninput="revIn(\''+k+'\')" placeholder="Write the better version here…">'+esc(ST.F[k]||'')+'</textarea><div class="checks" id="h_'+k+'"></div>'+
+  '<details class="model"><summary>See one better version</summary><div class="why" style="margin-top:6px">'+esc(r.model)+'</div></details></div>';
+ revCheck(k);}
+function revIn(k){ST.F[k]=$(k).value;revCheck(k);save();}
+function revCheck(k){var r=ITEMS.revise,v=(ST.F[k]||'').trim(),h=$('h_'+k);if(!h)return;if(!v){h.innerHTML='';return;}
+ var n0=r.boring.split(/[.?!]+\s*/).filter(Boolean).length,n1=v.split(/[.?!]+\s*/).filter(Boolean).length,low=' '+v.toLowerCase()+' ';
+ var fewer=n1<n0&&n1>0,coord=/\b(and|but|or|so)\b/.test(low),sub=/\b(because|since|although|even though|when|while|after|before|during|if)\b/.test(low);
+ var names=r.names.filter(function(n){return low.indexOf(n.toLowerCase())>=0;}).length>=Math.min(2,r.names.length),longer=v.split(/\s+/).length>=r.boring.split(/\s+/).length*0.7;
+ function c(ok,t){return '<span class="'+(ok?'ok':'')+'">'+(ok?'✓':'○')+' '+t+'</span>';}
+ h.innerHTML=c(fewer,'fewer sentences ('+n1+' of '+n0+')')+c(coord,'and / but / or / so')+c(sub,'because / when / although…')+c(names,'uses the names')+c(longer,'keeps the whole meaning');}
+
+/* ===================== NAV / SUMMARY ===================== */
+var STEPS=[[1,'Sort'],[2,'Scramble'],[3,'S or F?'],[4,'Types'],[5,'Because'],[6,'Pop'],[7,'Revise'],[8,'Done']];
+function partDone(p){if(p===1)return allDone(ITEMS.sort);if(p===2)return allDone(ITEMS.scramble);if(p===3)return allDone(ITEMS.fragment);
+ if(p===4)return TYPE_ROWS.every(function(r){return (ST.F['ty_'+r[0]]||'').trim();});if(p===5)return allDone(ITEMS.bbs)&&['because','but','so'].every(function(w){return (ST.F['bbs_'+w]||'').trim();});
+ if(p===6)return ITEMS.expand.every(function(e,i){return (ST.F['ex'+i]||'').trim();});if(p===7)return !!(ST.F.rv0||'').trim();return false;}
+function drawSteps(){$('steps').innerHTML=STEPS.map(function(s){return '<button class="stepb'+(ST.act===s[0]?' cur':(partDone(s[0])?' ok':''))+'" onclick="go('+s[0]+')">'+s[1]+'</button>';}).join('');}
+function go(n){ST.act=n;document.querySelectorAll('section.act').forEach(function(s){s.classList.remove('show');});$('a'+n).classList.add('show');
+ if(n===1)renderSort();if(n===2)renderScr();if(n===3)renderFrag();if(n===4)renderTypes();if(n===5)renderBBS();if(n===6)renderExp();if(n===7)renderRev();if(n===8)finish();
+ drawSteps();save();window.scrollTo(0,0);if(DIR_ON)showDirections();}
+function finish(){$('finScore').textContent=firstTry()+' / '+ITEMS.scored.length;
+ $('finList').innerHTML=[['Sentence sort',ITEMS.sort],['Scramble',ITEMS.scramble],['Sentence or fragment?',ITEMS.fragment],['Because, but, so',ITEMS.bbs]].map(function(r){return '<div class="sumrow"><span>'+r[0]+'</span><b>'+groupScore(r[1])+'</b></div>';}).join('')+
+  [[4,'Sentence types'],[6,'Make it pop'],[7,'Parallel revision']].map(function(r){return '<div class="sumrow"><span>'+r[1]+'</span><b>'+(partDone(r[0])?'written':'not yet')+'</b></div>';}).join('');
+ if(ITEMS.scored.every(function(x){return state(x.id).done;})&&!ST.turnedIn){ST.turnedIn=new Date().toISOString();}save();push(true);}
+function setLevel(l){if(l===LEVEL)return;LEVEL=l;UNIT='wit-'+LEVEL;SLUG='wit/'+LEVEL+(LESSON?'/'+LESSON:'');ST.A={};ST.F={};ST.W={};ST.turnedIn=null;SCR={};SORT_SEL=null;
+ $('lvl101').classList.toggle('on',l==='101');$('lvl103').classList.toggle('on',l==='103');$('lede').textContent=(l==='101'?'ELD 101':'ELD 103')+(LESSON?' · '+LESSON:'');
+ try{var u=new URL(location.href);u.searchParams.set('level',l);history.replaceState(null,'',u);}catch(e){}
+ buildItems();if(ST.email)loadRemote(function(){go(1);});else go(1);}
+
+/* ===================== SAVE (Supabase only — no local copies of student work) ===================== */
+var dirty=false,pushing=false,pushSeq=0;
+function compose(){ST.W={w0:TYPE_ROWS.map(function(r){return (ST.F['ty_'+r[0]]||'').trim()?r[1]+': '+ST.F['ty_'+r[0]].trim():'';}).filter(Boolean).join('\n'),
+ w1:['because','but','so'].map(function(w){var v=(ST.F['bbs_'+w]||'').trim();return v?ITEMS.stem.stem+(w==='because'?' because ':', '+w+' ')+v:'';}).filter(Boolean).join('\n'),
+ w2:[ITEMS.expand.map(function(e,i){var v=(ST.F['ex'+i]||'').trim();return v?'Pop: '+v:'';}).filter(Boolean).join('\n'),(ST.F.rv0||'').trim()?'Revision: '+ST.F.rv0.trim():''].filter(Boolean).join('\n')};}
+function save(){dirty=true;}
+function dot(c){var d=$('saveDot');if(d)d.className=c;}
+function push(force){
+ if(!ST.email)return;if(!dirty&&!force)return;if(pushing)return;
+ pushing=true;dot('busy');var mySeq=++pushSeq;compose();
+ setTimeout(function(){if(pushing&&mySeq===pushSeq){pushing=false;dirty=true;dot('err');}},15000);
+ var snap=JSON.parse(JSON.stringify(ST));dirty=false;
+ var body=[{email:ST.email,name:ST.name,period:ST.period,unit:UNIT,slug:SLUG,level:LEVEL,lesson:LESSON||null,
+  score:firstTry(),max_score:ITEMS.scored.length,turned_in:!!ST.turnedIn,writing:ST.W,payload:snap,updated_at:new Date().toISOString()}];
+ fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email,unit',{method:'POST',keepalive:true,
+  headers:hdr('resolution=merge-duplicates,return=minimal'),body:JSON.stringify(body)}).then(function(r){pushing=false;if(r.ok){dot('on');}else{dirty=true;dot('err');}})
+ .catch(function(){pushing=false;dirty=true;dot('err');});
+}
+function loadRemote(cb){
+ fetch(SUPA_URL+'/rest/v1/'+TABLE+'?select=payload,turned_in&email=eq.'+encodeURIComponent(ST.email)+'&unit=eq.'+encodeURIComponent(UNIT),{headers:hdr()})
+ .then(function(r){return r.ok?r.json():[];}).then(function(rows){var p=rows&&rows[0]&&rows[0].payload;if(p){ST.A=p.A||{};ST.F=p.F||{};ST.turnedIn=p.turnedIn||null;ST.act=p.act||0;}cb();}).catch(function(){cb();});
+}
+function turnIn(){
+ if(!ST.email){askName();return;}
+ var left=[1,2,3,4,5,6,7].filter(function(p){return !partDone(p);});
+ if(left.length&&!confirm('You still have '+left.length+' part'+(left.length===1?'':'s')+' to finish. Turn in anyway?')){go(left[0]);return;}
+ ST.turnedIn=new Date().toISOString();save();push(true);alert('Turned in. Thank you!');
+}
+
+/* ===================== SPEECH ===================== */
+function speak(t){try{var s=t.replace(/\bI\b/g,'eye');var u=new SpeechSynthesisUtterance(s);u.lang='en-US';u.rate=0.9;speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){}}
+
+/* ===================== SIGN IN ===================== */
+var rosterLoaded=false,ROSTER=[];
+function hdr(p){var h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};if(p)h['Prefer']=p;return h;}
+function lastEmail(){try{return localStorage.getItem('gal_student_email')||'';}catch(e){return '';}}
+function askName(){var li=$('langIn');if(li.options.length<2){Array.prototype.slice.call($('lang').options,1).forEach(function(o){li.appendChild(o.cloneNode(true));});}
+ var parts=(ST.name||'').split(' ');$('firstIn').value=parts.shift()||'';$('lastIn').value=parts.join(' ');$('emailIn').value=ST.email||lastEmail()||'';$('periodIn').value=ST.period||'';li.value=lang()||'';$('nameErr').textContent='';$('namewrap').classList.add('show');loadRoster();}
+function loadRoster(){
+ if(rosterLoaded)return;rosterLoaded=true;
+ fetch(SUPA_URL+'/rest/v1/students?select=email,first_name,last_name&order=last_name.asc',{headers:hdr()})
+ .then(function(r){return r.ok?r.json():[];})
+ .then(function(list){ROSTER=list||[];var sel=$('rosterSel');
+  if(!ROSTER.length){sel.style.display='none';var lb=document.querySelector('#namebox label');if(lb)lb.style.display='none';var or=document.querySelector('#namebox .or');if(or)or.style.display='none';return;}
+  ROSTER.forEach(function(s){var o=document.createElement('option');o.value=s.email;o.textContent=((s.first_name||'')+' '+(s.last_name||'')).trim()||s.email;o.setAttribute('data-f',s.first_name||'');o.setAttribute('data-l',s.last_name||'');sel.appendChild(o);});})
+ .catch(function(){});
+}
+function pickRoster(){var sel=$('rosterSel');if(!sel.value)return;var o=sel.options[sel.selectedIndex];$('emailIn').value=sel.value;$('firstIn').value=o.getAttribute('data-f')||'';$('lastIn').value=o.getAttribute('data-l')||'';$('nameErr').textContent='';}
+function localPart(e){return clean(e).split('@')[0];}
+function canonEmail(raw){var lp=localPart(raw);for(var i=0;i<ROSTER.length;i++){if(localPart(ROSTER[i].email)===lp)return clean(ROSTER[i].email);}return lp+'@s.sfusd.edu';}
+function recordAlias(a,c){if(!a||a===c)return;fetch(SUPA_URL+'/rest/v1/student_aliases?on_conflict=alias_email',{method:'POST',headers:hdr('resolution=merge-duplicates,return=minimal'),body:JSON.stringify([{alias_email:a,email:c}])}).catch(function(){});}
+function seedRoster(email,first,last,period){fetch(SUPA_URL+'/rest/v1/students?on_conflict=email',{method:'POST',headers:hdr('resolution=ignore-duplicates,return=minimal'),body:JSON.stringify([{email:email,first_name:first,last_name:last,period:period}])}).catch(function(){});}
+function saveName(){
+ var err=$('nameErr'),f=$('firstIn').value.trim().replace(/\s+/g,' '),l=$('lastIn').value.trim().replace(/\s+/g,' '),e=clean($('emailIn').value),pd=$('periodIn').value;
+ if(f.length<2||l.length<2){err.textContent='Please type your first name AND your last name.';return;}
+ if(!/^[^@\s]+@(s\.)?sfusd\.edu$/.test(e)){err.textContent='Please use your school email. It ends with @s.sfusd.edu';return;}
+ if(!pd){err.textContent='Please choose your class period.';return;}
+ var lg=$('langIn').value;if(!lg){err.textContent='Please choose your language.';return;}
+ $('lang').value=lg;setLang(lg);
+ var canon=canonEmail(e);recordAlias(e,canon);ST.name=f+' '+l;ST.email=canon;ST.period=pd;
+ $('whoami').textContent=ST.name+' \u00b7 P'+pd;$('namewrap').classList.remove('show');
+ try{localStorage.setItem('gal_student_email',canon);}catch(x){}
+ seedRoster(canon,f,l,pd);buildItems();loadRemote(function(){save();push(true);go(ST.act||0);});
+}
+
+/* ===================== DIRECTIONS IN MY LANGUAGE ===================== */
+var DIR_ON=false,SENT={},tcache={};
+function lang(){return $('lang').value;}
+function tr(text,lg,cb){var k=text+'|'+lg;if(tcache[k]){cb(tcache[k]);return;}
+ fetch(PROXY+'?action=translate&mode='+(String(text||'').trim().split(/\s+/).length<=3?'word':'sentence')+'&idiom='+encodeURIComponent(text)+'&meaning=&lang='+encodeURIComponent(lg)).then(function(r){return r.json();})
+ .then(function(d){var t=d&&d.translation?(d.translation.equiv||d.translation.meaning||(typeof d.translation==='string'?d.translation:'')):'';if(t)tcache[k]=t;cb(t||'');}).catch(function(){cb('');});}
+function logReveal(k,lg){if(!ST.email)return;var sig=k+'|'+lg;if(SENT[sig])return;SENT[sig]=true;
+ fetch(SUPA_URL+'/rest/v1/instruction_reveals',{method:'POST',headers:hdr('return=minimal'),body:JSON.stringify([{email:ST.email,set_slug:SLUG,activity:k,lang:lg}])}).catch(function(){});}
+function showDirections(){var lg=lang();
+ document.querySelectorAll('[data-dir]').forEach(function(p){var out=p.querySelector('.dirtr');if(!out){out=document.createElement('span');out.className='dirtr';out.setAttribute('translate','no');p.appendChild(out);}
+  if(!DIR_ON||!lg){out.textContent='';return;}if(!p.closest('section.act.show'))return;var k=p.getAttribute('data-dir');if(out.textContent&&out.textContent!=='\u2026')return;out.textContent='\u2026';tr(p.getAttribute('data-en'),lg,function(t){out.textContent=t;if(t)logReveal(k,lg);});});}
+function toggleDir(){if(!DIR_ON&&!lang()){alert('First choose your language in the green bar.');$('lang').focus();return;}DIR_ON=!DIR_ON;$('dirBtn').classList.toggle('on',DIR_ON);showDirections();}
+function setLang(v){try{localStorage.setItem('eld103_lang',v);localStorage.setItem('vocab_lang',v);}catch(e){}DIR_ON=!!v;$('dirBtn').classList.toggle('on',DIR_ON);tcache={};document.querySelectorAll('.dirtr').forEach(function(o){o.textContent='';});showDirections();if(ST.act===5)renderBBS();if(!v&&WT)toggleWT();}
+function savedLang(){try{return localStorage.getItem('eld103_lang')||localStorage.getItem('vocab_lang')||'';}catch(e){return '';}}
+
+/* ===================== TAP WORDS ===================== */
+var WT=true; /* Tap words is ON from the start: no outline, no ? cursor, just tap a word */
+(function(){function wtOn(){if(!WT)return;document.body.classList.add('wt');var b=document.getElementById('wtBtn');if(b)b.classList.add('on');}if(document.body)wtOn();else document.addEventListener('DOMContentLoaded',wtOn);})();
+function toggleWT(){if(!WT&&!lang()){alert('First choose your language in the green bar, then turn on Tap words.');return;}WT=!WT;document.body.classList.toggle('wt',WT);$('wtBtn').classList.toggle('on',WT);hideTip();}
+function hideTip(){$('wtip').classList.remove('show');}
+function galWtSkip(t){if(!t||!t.closest)return false;if(t.closest('button,input,select,textarea,label,a,[role="button"],[contenteditable],[onclick],[draggable="true"],#sayMount'))return true;for(var e=t;e&&e!==document.body;e=e.parentElement){if(typeof e.onclick==='function')return true;}try{if(getComputedStyle(t).cursor==='pointer')return true;}catch(x){}return false;}
+document.addEventListener('click',function(ev){if(!WT)return;if(galWtSkip(ev.target))return;var host=ev.target.closest&&(ev.target.closest('[translate="no"]')||ev.target.closest('.dir'));if(!host)return;if(ev.target.closest('input,textarea'))return;
+ ev.preventDefault();ev.stopPropagation();var w=pickWord(ev);if(w)showWord(w,ev.clientX,ev.clientY);},true);
+function pickWord(ev){var t=ev.target,txt=(t.textContent||'').trim();if(txt&&txt.split(/\s+/).length===1)return txt.replace(/^[^\w']+|[^\w']+$/g,'');
+ var r=null;if(document.caretRangeFromPoint)r=document.caretRangeFromPoint(ev.clientX,ev.clientY);else if(document.caretPositionFromPoint){var cp=document.caretPositionFromPoint(ev.clientX,ev.clientY);if(cp){r=document.createRange();r.setStart(cp.offsetNode,cp.offset);}}
+ if(!r||!r.startContainer||r.startContainer.nodeType!==3)return '';var s=r.startContainer.textContent,i=r.startOffset,a=i,b=i;
+ while(a>0&&/[\w']/.test(s.charAt(a-1)))a--;while(b<s.length&&/[\w']/.test(s.charAt(b)))b++;return s.slice(a,b);}
+function showWord(word,x,y){var tip=$('wtip');$('wtipW').textContent=word;$('wtipT').textContent='\u2026';tip.classList.add('show');
+ var w=tip.offsetWidth||220,h=tip.offsetHeight||60;tip.style.left=Math.max(8,Math.min(x-w/2,window.innerWidth-w-8))+'px';tip.style.top=(y-h-14<8?y+18:y-h-14)+'px';
+ tr(word,lang(),function(t){(function(e){e.textContent='';var b=document.createElement('b');b.style.textDecoration='underline';if(!t)b.style.color='#6b7280';b.textContent=t||word;e.appendChild(b);})($('wtipT'));});}
+document.addEventListener('scroll',hideTip,true);
+
+/* ===================== BROWSER-TRANSLATION CANARY ===================== */
+var CANARY='the quick brown fox jumps over the lazy dog',SENT_T='';
+function checkCanary(){var c=$('canary'),got=c?(c.textContent||'').trim().toLowerCase():'';var cls=document.documentElement.className||'';var drift=(c&&got!==CANARY)?got:'';
+ if(!drift&&!/translated/.test(cls))return;if(!ST.browserTranslated){ST.browserTranslated=true;save();}if(!ST.email)return;
+ var sig=drift+'|'+(document.documentElement.lang||'');if(sig===SENT_T)return;SENT_T=sig;
+ fetch(SUPA_URL+'/rest/v1/page_translation?on_conflict=email,set_slug',{method:'POST',headers:hdr('resolution=merge-duplicates,return=minimal'),
+  body:JSON.stringify([{email:ST.email,set_slug:SLUG,translated:true,observed:drift,html_lang:document.documentElement.lang||'',html_class:cls,updated_at:new Date().toISOString()}])}).catch(function(){});}
+
+/* ===================== BOOT ===================== */
+function boot(){
+ $('lvl'+LEVEL).classList.add('on');$('lede').textContent=(LEVEL==='101'?'ELD 101':'ELD 103')+(LESSON?' · '+LESSON:'');
+ buildItems();
+ var L=savedLang();if(L){$('lang').value=L;DIR_ON=true;$('dirBtn').classList.add('on');}
+ go(0);dot('on');
+ askName();
+ setTimeout(checkCanary,2500);setInterval(checkCanary,20000);
+ setInterval(function(){push(false);},20000);
+ document.addEventListener('visibilitychange',function(){if(document.hidden)push(false);});
+ window.addEventListener('pagehide',function(){push(false);});
+}
+document.addEventListener('DOMContentLoaded',boot);
+</script>
+<script src="/readings/track.js"></script>
+</body>
+</html>

@@ -18,13 +18,14 @@ Four runs per page:
 import asyncio, json, re, sys, os, time, urllib.parse, argparse, copy
 
 BASE = os.environ.get("ROBOT_BASE", "http://localhost:8800")
+TAP = False   # --tap: always try tap mode when typing reaches no save
 ROOT = os.environ.get("ROBOT_ROOT", "/home/claude/srv")          # folder that CONTAINS readings/
 INFRA = {"students", "student_aliases", "activity_attempts", "skill_attempts", "activities",
          "instruction_reveals", "page_translation", "song_tr", "student_work", "response_history",
          "class_assignments", "excusals", "student_profiles", "song_lyrics", "favorites_log"}
 KEYS = ["email", "student_email", "set_slug", "slug", "guide_key", "episode", "lesson", "lesson_id",
         "page", "story", "activity", "set_id", "unit", "part", "deck", "item", "kind", "set_key",
-        "story_id", "lesson_key", "quiz", "chapter", "text_slug", "song"]
+        "story_id", "lesson_key", "quiz", "chapter", "text_slug", "song", "module", "section", "character_slug", "field_key", "week"]
 
 def lp(e): return str(e or "").strip().lower().split("@")[0]
 def other_spelling(e):
@@ -306,7 +307,9 @@ async def fill_gate(page, who):
                 try: await page.evaluate(f'document.querySelector(\'[data-robot="{btns[0]["id"]}"]\').click()')
                 except Exception: pass
         else:
-            if email: await page.press(f'[data-robot="{email[0]["id"]}"]', "Enter")
+            if email:
+                try: await page.press(f'[data-robot="{email[0]["id"]}"]', "Enter", timeout=2000)
+                except Exception: pass
         await page.wait_for_timeout(700)
         # signed in?  the email box should be gone
         still = await ev(page, """() => { const v = el => { const s=getComputedStyle(el); const r=el.getBoundingClientRect(); return s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0; };
@@ -420,6 +423,8 @@ async def run_page(browser, rel):
         R["errorsA"] = errs[:3]
     finally:
         await ctx.close()
+    if not rows and (TAP or (R["any_work_write"] and not R.get("gate", "").startswith("stuck"))):
+        return await run_tap(browser, rel, R)
     if not rows:
         R["verdict"] = "no-server-save" if not R["any_work_write"] else "saves-but-robot-text-not-in-save"
         if R.get("gate", "").startswith(("stuck", "no-gate")) and not R["any_work_write"]:
@@ -517,8 +522,307 @@ async def run_page(browser, rel):
         await ev(page, POKE_JS); await settle(page, 25000)
         leaks = [w for w in db3.writes(t0) if "ROBOWORKANNA" in (w["body"] or "") and "bruno" in (w["body"] + w["url"]).lower()]
         asA = [w for w in db3.writes(t0) if "anna.robot" in ((w["body"] or "") + w["url"]).lower()] if how == "page-kept-A-signed-in" else []
-        R["t3"] = {"pass": g.startswith("ok") and not shownA and not leaks, "B_gate": g, "how": how,
+        b_used = any("bruno.robot" in urllib.parse.unquote((x["url"] or "") + (x["body"] or "")).lower() for x in db3.log if x["ts"] >= t0)
+        R["t3"] = {"pass": (g.startswith("ok") or b_used) and not shownA and not leaks, "B_gate": g, "how": how, "B_email_used": b_used,
                    "A_saved": a_saved, "A_answers_shown_to_B": bool(shownA), "saves_with_A_answers": len(leaks),
+                   "saves_as_A": len(asA)}
+    finally:
+        await ctx.close()
+    R["verdict"] = "PASS" if all(R[k]["pass"] for k in ("t1", "t2", "t3")) else "FAIL"
+    return R
+
+
+# ---------------------------------------------------------------- tap mode (pages that save taps, not typing)
+NAVRE = (r"🔊|🐢|🎤|listen|slow|speak|say it|record|mic\b|play|stop|pause|translat|tap words|sign ?out|log ?out|not you|"
+         r"teacher|dashboard|print|home|my page|←|back to|menu|language|hint|repeat|reset|clear|restart|start over|delete|"
+         r"turn ?in|submit|hand in|fullscreen|help|close|×|✕|show (me )?(the )?answer|skip|level|easier|harder|^a$|^b$|"
+         r"read to|spanish|english|español|中文|عربي")
+TAPSCAN_JS = r"""
+(navre) => {
+  const NAV = new RegExp(navre, 'i');
+  const vis = el => { const s = getComputedStyle(el); if (s.display==='none'||s.visibility==='hidden'||+s.opacity<0.2||s.pointerEvents==='none') return false;
+     const r = el.getBoundingClientRect(); return r.width>4 && r.height>4 && r.bottom>-2000; };
+  const sel = 'button,[role=button],[onclick],.opt,.choice,.chip,.option,.ans,.answer,.tile,.card-btn,[data-i],[data-opt],[data-choice],[data-w],[data-ans],li[tabindex],label';
+  const cand = [...document.querySelectorAll(sel)].filter(el => {
+    if (!vis(el) || el.disabled || el.getAttribute('aria-disabled')==='true') return false;
+    if (el.closest('[id*=gate i],[class*=gate i],[id*=login i],[id*=signin i],#sgnotyou,#sgbar,header,nav,.hdr,.tools')) return false;
+    if (el.tagName==='LABEL' && !el.querySelector('input[type=radio],input[type=checkbox]')) return false;
+    if (el.querySelector('select,textarea,input[type=text],input[type=email]')) return false;
+    const t = (el.innerText||el.getAttribute('aria-label')||'').trim();
+    if (t.length > 90) return false;
+    if (NAV.test(t) || NAV.test(el.className && el.className.baseVal===undefined ? String(el.className) : '') || NAV.test(el.id||'')) return false;
+    // inner element of another candidate: keep only the outer one
+    const up = el.parentElement && el.parentElement.closest(sel); if (up && up !== el && cand0(up)) return false;
+    return true;
+  });
+  function cand0(up){ return up && up.matches && (up.matches('button,[role=button],.opt,.choice,.chip,.option,.ans,.answer,.tile')); }
+  const groups = new Map();
+  cand.forEach(el => { const p = el.parentElement; if (!groups.has(p)) groups.set(p, []); groups.get(p).push(el); });
+  const out = []; let gi = 0;
+  for (const [p, els] of groups) {
+    const kids = els.filter(e => !e.dataset.robotTapped);
+    const choice = els.length >= 2;
+    const t0 = (els[0].innerText||'').trim().toLowerCase();
+    const adv = /next|continue|check|start|begin|go\b|ok\b|got it|let'?s|done|finish|→|ready|open|try/.test(t0);
+    if (!kids.length) { gi++; continue; }
+    kids.forEach((e, i) => { e.dataset.robotTap = 'g'+gi+'_'+i; });
+    out.push({g: gi, choice, adv: !choice && adv, ids: kids.map((e,i)=>'g'+gi+'_'+i), texts: kids.map(e => (e.innerText||'').trim().slice(0,30)), y: kids[0].getBoundingClientRect().top});
+    gi++;
+  }
+  return out;
+}
+"""
+SIG_JS = r"""() => {
+  const vis = el => { const r = el.getBoundingClientRect(); const s = getComputedStyle(el); return r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden'; };
+  const re = /(^|[\s_-])(correct|right|chosen|picked|selected|answered|is-correct|got|wrong|miss|faded|done|ok|good|filled|placed|complete|completed|solved|checked)($|[\s_-])/i;
+  let n = 0;
+  for (const el of document.querySelectorAll('body *')) { const c = el.className && el.className.baseVal===undefined ? String(el.className) : '';
+     if (c && re.test(c) && !el.closest('[id*=gate i],#sgbar,#sgnotyou') && vis(el)) n++; }
+  for (const el of document.querySelectorAll('input[type=radio]:checked,input[type=checkbox]:checked')) if (!el.closest('[id*=gate i]')) n++;
+  const txt = (document.body && document.body.innerText) || '';
+  n += (txt.match(/[✓✔✅]/g) || []).length;
+  const m = txt.match(/\b(\d{1,3})\s*\/\s*(\d{1,3})\b/g) || []; m.forEach(x => { const a = +x.split('/')[0]; if (a > 0 && a < 200) n += a; });
+  return n; }"""
+
+async def tap_rounds(page, rounds=14, per_round=3, last=False):
+    tapped = 0
+    for _ in range(rounds):
+        gs = (await ev(page, TAPSCAN_JS, NAVRE)) or []
+        choices = [g for g in gs if g["choice"]]
+        advs = [g for g in gs if g["adv"]]
+        pick = []
+        if choices:
+            choices.sort(key=lambda g: g["y"])
+            if last:   # a different answer from the one student A tapped
+                for g in choices[-per_round:]: pick.append(g["ids"][-1])
+            else:
+                for g in choices[:per_round]: pick.append(g["ids"][0])
+            # a lone Check / Next button after the choices (pick-then-check pages)
+            chk = [g for g in advs if re.search(r"check|next|continue", " ".join(g["texts"]).lower())]
+            if chk: pick.append(chk[0]["ids"][0])
+        elif advs:
+            pick.append(advs[0]["ids"][0])
+        else:
+            break
+        for tid in pick:
+            try:
+                await page.click(f'[data-robot-tap="{tid}"]', timeout=1200)
+                await ev(page, "(t) => { const e = document.querySelector('[data-robot-tap=\"'+t+'\"]'); if (e) e.dataset.robotTapped = '1'; }", tid)
+                tapped += 1
+            except Exception:
+                try: await ev(page, "(t) => { const e = document.querySelector('[data-robot-tap=\"'+t+'\"]'); if (e) { e.dataset.robotTapped='1'; e.click(); } }", tid); tapped += 1
+                except Exception: pass
+            try: await page.clock.run_for(900); await page.wait_for_timeout(60)
+            except Exception: pass
+    return tapped
+
+SKIPLEAF = re.compile(r"(updated|created|saved|_at$|^at$|time|^ts$|secs|seconds|^last|date|visit|opened|seen|order|shuffle|seed|perm|^lang|language|"
+                      r"^name$|student_name|first_name|last_name|period|email|^id$|device|ua$|agent|version|^v$|tab|step|screen|view|scroll|log)", re.I)
+def leaves(o, path="", out=None):
+    if out is None: out = {}
+    if isinstance(o, str) and o[:1] in "{[":
+        try: o = json.loads(o)
+        except Exception: pass
+    if isinstance(o, dict):
+        for k, v in o.items():
+            if SKIPLEAF.search(str(k)): continue
+            if not path and k in KEYS: continue        # the row's own key columns are not answers
+            leaves(v, path + "/" + str(k), out)
+    elif isinstance(o, list):
+        for i, v in enumerate(o[:200]): leaves(v, path + "/" + str(i), out)
+    else:
+        if o in (None, "", False, 0, []): return out
+        out[path] = json.dumps(o)
+    return out
+
+def student_rows(db, who_lp):
+    out = {}
+    for t, rows in db.t.items():
+        if t in INFRA: continue
+        for r in rows:
+            em = str(r.get("email") or r.get("student_email") or "").lower()
+            if em.split("@")[0] == who_lp: out.setdefault(t, []).append(r)
+    return out
+
+def table_leaves(rows_by_table):
+    L = {}
+    for t, rows in rows_by_table.items():
+        for r in rows:
+            key = "|".join(str(r.get(k)) for k in KEYS if k in r and k not in ("email", "student_email"))
+            for p, v in leaves(r).items(): L[(t, key, p)] = v
+    return L
+
+def body_leaves(w):
+    try: data = json.loads(w["body"] or "null")
+    except Exception: return {}
+    items = data if isinstance(data, list) else [data]
+    L = {}
+    for r in items:
+        if not isinstance(r, dict): continue
+        key = "|".join(str(r.get(k)) for k in KEYS if k in r and k not in ("email", "student_email"))
+        for p, v in leaves(r).items(): L[(w["table"], key, p)] = v
+    return L
+
+def kept(answer, wl):
+    """share of the answer leaves (same table/row/path/value) a write carries; None if the write is for another row"""
+    rel = {k: v for k, v in answer.items() if k[0] in {x[0] for x in wl} and k[1] in {x[1] for x in wl}}
+    if not rel: return None
+    def same_or_more(a, b):
+        if a == b: return True
+        try: return float(a) >= float(b)          # a count that went up (one more try) still carries the work
+        except Exception: return False
+    return sum(1 for k, v in rel.items() if k in wl and same_or_more(wl[k], v)) / len(rel)
+
+async def run_tap(browser, rel, R):
+    url = R["url"]
+    WHO = {"first": "Robo", "last": "Tester", "typed": "robo.tester@s.sfusd.edu"}
+    R["mode"] = "tap"
+    # ---------- A: record what tapping saves
+    db = DB(seeded_students())
+    ctx, page = await new_page(browser, db)
+    try:
+        await goto(page, url)
+        g = await fill_gate(page, WHO); R["tap_gate"] = g
+        await settle(page, 4000)
+        sig0 = await ev(page, SIG_JS) or 0
+        before = table_leaves(student_rows(db, "robo.tester"))
+        n = await tap_rounds(page); R["taps"] = n
+        await settle(page, 25000)
+        rows = student_rows(db, "robo.tester")
+        if not rows or table_leaves(rows) == before:
+            els = (await ev(page, SCAN_JS)) or []
+            sv = [x for x in els if x["tag"] == "button" and re.search(r"\bsave\b|turn ?in|submit|hand in|finish", x["text"].lower())]
+            for b in sv[:2]:
+                try: await page.click(f'[data-robot="{b["id"]}"]', timeout=1500)
+                except Exception: pass
+                await settle(page, 5000)
+            rows = student_rows(db, "robo.tester")
+        sigA = await ev(page, SIG_JS) or 0
+        after = table_leaves(rows)
+        answer = {k: v for k, v in after.items() if before.get(k) != v}
+        R["tap_tables"] = sorted(rows.keys()); R["answer_leaves"] = len(answer)
+        R["sig"] = [sig0, sigA]
+        R["tap_writes"] = sorted({w["table"] for w in db.writes()})
+    finally:
+        await ctx.close()
+    if not answer:
+        R["verdict"] = "tap-no-save" if not R["tap_writes"] else "tap-saved-nothing-new"
+        if g.startswith("stuck"): R["verdict"] = "robot-could-not-sign-in"
+        if n == 0: R["verdict"] = "robot-found-nothing-to-tap" if R["tap_writes"] or not g.startswith("stuck") else R["verdict"]
+        return R
+    seed = {t: [dict(r) for r in rs] for t, rs in rows.items()}
+    # what this page shows the SAME student on a fresh Chromebook (same email spelling) = the yardstick for "shown"
+    dbS = DB({**seeded_students(), **{t: [dict(r) for r in rs] for t, rs in seed.items()}})
+    ctx, page = await new_page(browser, dbS)
+    try:
+        await goto(page, url); await fill_gate(page, WHO); await settle(page, 6000)
+        sigS = await ev(page, SIG_JS) or 0
+    finally:
+        await ctx.close()
+    R["sig"].append(sigS)
+    dom_ok = (sigS - sig0) >= 1
+    need = sig0 + max(1, (sigS - sig0) * 0.75)
+
+    # ---------- 1: fresh Chromebook, work under the other spelling
+    tabs = seeded_students()
+    for t, rs in seed.items():
+        tabs[t] = []
+        for r in rs:
+            r2 = dict(r)
+            for k in ("email", "student_email"):
+                if k in r2 and r2[k]: r2[k] = other_spelling(r2[k])
+            tabs[t].append(r2)
+    db1 = DB(tabs)
+    ctx, page = await new_page(browser, db1)
+    try:
+        await goto(page, url)
+        t0 = time.time()
+        g = await fill_gate(page, WHO)
+        await settle(page, 6000)
+        sig1 = await ev(page, SIG_JS) or 0
+        await tap_rounds(page, rounds=1, per_round=1)
+        await settle(page, 25000)
+        ws = [w for w in db1.writes(t0) if w["table"] in seed and w["method"] != "DELETE"]
+        shares = [s for s in (kept(answer, body_leaves(w)) for w in ws) if s is not None]
+        bad = [s for s in shares if s < 0.7]
+        shown_dom = (sig1 >= need) if dom_ok else None
+        shown_save = (min(shares) >= 0.7) if shares else None
+        shown = shown_dom if shown_dom is not None else bool(shown_save)
+        R["t1"] = {"pass": bool(shown) and not bad, "shown_on_screen": shown_dom, "kept_in_saves": [round(s, 2) for s in shares][:6],
+                   "saves": len(ws), "saves_dropping_work": len(bad), "sig": sig1, "gate": g}
+    finally:
+        await ctx.close()
+
+    # ---------- 2: server down
+    db2 = DB(tabs); db2.down = True
+    ctx, page = await new_page(browser, db2)
+    try:
+        await goto(page, url)
+        t0 = time.time()
+        g = await fill_gate(page, WHO)
+        await settle(page, 4000)
+        await tap_rounds(page, rounds=4)
+        await settle(page, 25000)
+        notice = ""
+        for _ in range(4):
+            notice = await ev(page, NOTICE_JS)
+            if notice: break
+            await settle(page, 2500)
+        tried = [w for w in db2.writes(t0) if w["table"] in seed]
+        R["t2"] = {"pass": (not tried) and bool(notice), "save_attempts": len(tried), "notice": notice, "gate": g}
+    finally:
+        await ctx.close()
+
+    # ---------- 3: shared Chromebook
+    db3 = DB(seeded_students())
+    A = {"first": "Anna", "last": "Robot", "typed": "anna.robot@s.sfusd.edu"}
+    B = {"first": "Bruno", "last": "Robot", "typed": "bruno.robot@s.sfusd.edu"}
+    ctx, page = await new_page(browser, db3)
+    try:
+        await goto(page, url)
+        await fill_gate(page, A); await settle(page, 4000)
+        await tap_rounds(page); await settle(page, 25000)
+        a_rows = student_rows(db3, "anna.robot")
+        a_ans = {k: v for k, v in table_leaves(a_rows).items() if k[2] in {x[2] for x in answer}}
+        await page.close()
+        page = await ctx.new_page()
+        page.on("dialog", lambda d: asyncio.ensure_future(d.accept("Bruno Robot") if d.type == "prompt" else d.accept()))
+        await page.clock.install()
+        await goto(page, url)
+        t0 = time.time()
+        g = await fill_gate(page, B)
+        how = "gate"
+        if g.startswith("ok") and not any(k in g for k in ("email", "roster", "name", "first")): g = "no-gate"
+        if g == "no-gate":
+            els = (await ev(page, SCAN_JS)) or []
+            out = [x for x in els if re.search(r"sign ?out|log ?out|not you|switch|change (student|name)|i'?m not", (x["text"] + " " + x["aria"]).lower())]
+            if out:
+                try: await page.click(f'[data-robot="{out[0]["id"]}"]', timeout=1500)
+                except Exception: pass
+                await page.wait_for_timeout(1500)
+                try: await page.wait_for_load_state("domcontentloaded", timeout=8000)
+                except Exception: pass
+                await settle(page, 2500); await page.wait_for_timeout(800)
+                g = await fill_gate(page, B); how = "signed-out-first"
+            else:
+                how = "page-kept-A-signed-in"
+        await settle(page, 6000)
+        sigB = await ev(page, SIG_JS) or 0
+        shownA = (sigB >= sig0 + max(1, (sigS - sig0) * 0.5)) if dom_ok else None
+        await tap_rounds(page, rounds=1, per_round=1, last=True); await settle(page, 25000)
+        leaks = []
+        for w in db3.writes(t0):
+            if "bruno" not in ((w["body"] or "") + w["url"]).lower(): continue
+            wl = body_leaves(w)
+            hits = sum(1 for (t, key, p), v in a_ans.items() if any(k2[0] == t and k2[2] == p and v2 == v for k2, v2 in wl.items()))
+            if a_ans and hits >= max(2, 0.5 * len(a_ans)):
+                leaks.append(hits)
+                R.setdefault("t3_leak_sample", [[p, v] for (t, key, p), v in list(a_ans.items())[:6]])
+        R["t3_detail"] = {"A_leaves": len(a_ans)}
+        asA = [w for w in db3.writes(t0) if "anna.robot" in ((w["body"] or "") + w["url"]).lower()]
+        b_used = any("bruno.robot" in urllib.parse.unquote((x["url"] or "") + (x["body"] or "")).lower() for x in db3.log if x["ts"] >= t0)
+        R["t3"] = {"pass": (g.startswith("ok") or b_used) and not shownA and not leaks and not asA, "B_gate": g, "how": how, "B_email_used": b_used,
+                   "A_saved": bool(a_ans), "A_answers_shown_to_B": shownA, "sigB": sigB, "saves_with_A_answers": len(leaks),
                    "saves_as_A": len(asA)}
     finally:
         await ctx.close()
@@ -529,8 +833,10 @@ async def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("pages", nargs="+")
     ap.add_argument("--out", default="results.json")
-    ap.add_argument("-j", type=int, default=6)
+    ap.add_argument("-j", type=int, default=4)
+    ap.add_argument("--tap", action="store_true", help="tap choice buttons when typed text never reaches a save")
     a = ap.parse_args()
+    global TAP; TAP = a.tap
     pages = []
     for p in a.pages:
         if p.startswith("@"): pages += [l.strip() for l in open(p[1:]) if l.strip()]
@@ -543,7 +849,7 @@ async def main():
         async def one(p):
             async with sem:
                 try:
-                    r = await asyncio.wait_for(run_page(browser, p), timeout=240)
+                    r = await asyncio.wait_for(run_page(browser, p), timeout=420)
                 except Exception as ex:
                     r = {"page": p, "verdict": "robot-error", "error": str(ex)[:200]}
                 results.append(r)

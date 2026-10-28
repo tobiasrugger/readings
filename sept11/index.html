@@ -1126,8 +1126,43 @@ function signedIn(){
   if(nameField && !nameField.value) nameField.value = student.name;
   if(perField && !perField.value) perField.value = student.period;
   save();
-  setStatus("ok", "Ready");
-  pushRow(false);
+  setStatus("wait", "Loading your saved work\u2026");
+  pullRow(function(){ setStatus("ok", "Ready"); pushRow(false); });
+}
+
+/* T-170 (Oct 28): put the student's saved work back on the screen from the server before the first save.
+   Fills only empty boxes, so nothing typed on this computer is lost. saveguard.js reads both email
+   spellings and keeps retrying (red bar) if the server can't be reached. */
+function pullRow(next){
+  var u = SUPA_URL + "/rest/v1/" + TABLE + "?select=payload,updated_at&email=eq." + encodeURIComponent(student.email) +
+          "&guide_key=eq." + encodeURIComponent(GUIDE_KEY);
+  fetch(u, { headers: headers({}) }).then(function(r){ return r.ok ? r.json() : []; }).then(function(rows){
+    var best = null;
+    (rows || []).forEach(function(r){ var p = r && r.payload; if (typeof p === "string") { try { p = JSON.parse(p); } catch(e){ p = null; } }
+      if (p && (!best || ((p.meta||{}).answered||0) > ((best.meta||{}).answered||0))) best = p; });
+    if (best) putBack(best);
+    next();
+  }).catch(function(){ next(); });
+}
+function putBack(p){
+  var n = 0;
+  function fillVal(el, v){ if (!el || v == null || v === "" || el.value) return; el.value = v; n++; }
+  (p.questions || []).forEach(function(q){ if (q && q.id) fillVal(document.querySelector('textarea[data-id="' + q.id + '"]'), q.a); });
+  var tfRows = document.querySelectorAll("table.tf tr");
+  (p.tf || []).forEach(function(t, i){
+    var cells = tfRows[i + 1] ? tfRows[i + 1].querySelectorAll("td") : []; if (cells.length < 3 || !t) return;
+    var T = cells[1].querySelector("input"), F = cells[2].querySelector("input");
+    if (!T || !F || T.checked || F.checked) return;
+    if (t.a === "T" || t.a === "both") { T.checked = true; n++; }
+    if (t.a === "F" || t.a === "both") { F.checked = true; n++; }
+  });
+  var ord = document.querySelectorAll("ol.order li input");
+  (p.order || []).forEach(function(o, i){ if (o) fillVal(ord[i], o.a); });
+  var cz = document.querySelectorAll("p.cloze input");
+  (p.cloze || []).forEach(function(c, i){ if (c) fillVal(cz[i], c.a); });
+  var d = document.querySelector('[data-id="date"]'); if (p.meta) fillVal(d, p.meta.date_field);
+  if (n) { save(); autogrowAll(); }
+  return n;
 }
 
 document.getElementById("gGo").addEventListener("click", function(){

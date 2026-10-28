@@ -17,3 +17,15 @@ Verdicts: PASS, FAIL, no-server-save (never saves to the server), saves-but-robo
 (tap-only pages: the robot types, the page saves taps), robot-could-not-sign-in.
 Proof it works: the unfixed Omelas (git show bf44542:omelas/index.html) fails all three; live Omelas passes all three.
 Fix pattern for a failing page: `<script src="/readings/saveguard.js"></script>` at the top of <head>.
+
+## Tap mode (T-183, Oct 28)
+    python3 readings/robot/robot.py @pages.txt --out results.json -j 4 --tap
+When typed text never reaches a save, the robot taps answer choices instead (first option of each choice group,
+plus a lone Check/Next after them) and compares the saved fields ("answer leaves": every saved value that changed,
+minus the row's own key columns and timestamps). "Shown" is measured against what the page shows the SAME student
+on a fresh Chromebook (counted ✓, right/done classes, "n / m" scores). Test 3: student B taps a different option,
+and a save under B that carries half or more of A's answer values is a leak.
+Extra verdicts: tap-no-save, tap-saved-nothing-new (taps changed nothing saved — read the code instead),
+robot-found-nothing-to-tap.
+Running it in this sandbox: bash calls stop at 300 s, so start the http server and the robot in one detached
+script (setsid nohup … &) and poll the log. Keep -j at 4 or lower; higher makes it flaky.

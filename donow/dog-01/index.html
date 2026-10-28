@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="/readings/saveguard.js"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Do Now · The Dog at the Bus Stop</title>
@@ -545,11 +546,14 @@ function publishScore(){
 function save(){
  dirty=true;publishScore();
  clearTimeout(saveT);saveT=setTimeout(function(){
-  try{localStorage.setItem(key(),JSON.stringify(ST));localStorage.setItem(LAST_KEY,key());}catch(e){}
+  ST.savedAt=Date.now();try{localStorage.setItem(key(),JSON.stringify(ST));localStorage.setItem(LAST_KEY,key());}catch(e){}
   dot(dirty?'busy':'on');},400);
 }
 function load(){
- try{var k=localStorage.getItem(LAST_KEY);if(!k)return;var d=JSON.parse(localStorage.getItem(k));if(d)ST=Object.assign(ST,d);}catch(e){}
+ /* T-170: the last student on this computer is put back only within one class period (70 min) */
+ try{var k=localStorage.getItem(LAST_KEY);if(!k)return;var d=JSON.parse(localStorage.getItem(k));
+  if(d&&d.email&&!(d.savedAt&&Date.now()-d.savedAt<70*60*1000))return;
+  if(d)ST=Object.assign(ST,d);}catch(e){}
  Object.keys(ST.B).forEach(function(k){ST.B[k].bad=false;});
 }
 function clean(s){return String(s||'').trim().toLowerCase();}
@@ -627,8 +631,23 @@ function saveName(){
  ST.name=n;ST.email=canon;ST.period=pd;
  $('whoami').textContent=n+' \u00b7 P'+pd;$('namewrap').classList.remove('show');
  try{localStorage.setItem('gal_student_email',canon);}catch(x){}
- seedRoster(canon,n,pd);save();push(true);
+ seedRoster(canon,n,pd);save();
+ pullServer(function(){push(true);});
  if(ST.act)go(ST.act);
+}
+/* T-170 (Oct 28): bring this student's saved work back from the server (both email spellings, via saveguard.js)
+   before the first save; answers already on this computer are kept, missing ones are filled in. */
+function pullServer(next){
+ if(!ST.email){if(next)next();return;}
+ fetch(SUPA_URL+'/rest/v1/'+TABLE+'?select=payload&email=eq.'+encodeURIComponent(ST.email)+'&unit=eq.'+encodeURIComponent(UNIT),{headers:hdr()})
+ .then(function(r){return r.ok?r.json():[];}).then(function(rows){
+  var got=0;(rows||[]).forEach(function(row){var p=row&&row.payload;if(typeof p==='string'){try{p=JSON.parse(p);}catch(e){p=null;}}
+   if(!p||!p.B)return;Object.keys(p.B).forEach(function(k){var mine=ST.B[k],srv=p.B[k];
+    if(srv&&(!mine||(!settled(mine)&&settled(srv))||(!mine.tries&&srv.tries))){ST.B[k]=srv;got++;}});
+   if(p.turnedIn&&!ST.turnedIn)ST.turnedIn=p.turnedIn;if(!ST.act&&p.act)ST.act=p.act;if(!ST.panel&&p.panel)ST.panel=p.panel;});
+  if(got){Object.keys(ST.B).forEach(function(k){ST.B[k].bad=false;});buildBank();SEL=firstOpen(ST.panel||0);go(ST.act||0);save();}
+  if(next)next();
+ })['catch'](function(){if(next)next();});
 }
 
 /* ===================== DIRECTIONS IN MY LANGUAGE ===================== */
@@ -723,7 +742,7 @@ function boot(){
  SEL=firstOpen(ST.panel||0);
  go(ST.act||0);
  dot('on');
- if(!ST.email)askName();
+ if(!ST.email)askName();else pullServer();
  setTimeout(checkCanary,2500);setInterval(checkCanary,20000);
  setInterval(function(){push(false);},20000);
  document.addEventListener('visibilitychange',function(){if(document.hidden)push(false);});
