@@ -1653,6 +1653,8 @@ function slugLink(slug){
   for(var i=0;i<tries.length;i++)for(var j=0;j<c.length;j++)if(c[j].p===tries[i])return {url:c[j].p,title:c[j].t.replace(/\s*\((locked)\)/,'')};
   return {url:slug&&slug!=='home'?'/readings/'+slug+'/':'',title:prettySlug(slug.split('/').pop())};
 }
+/* T-176: pre/post word checks measure what a student knows; a low score is information, not unfinished work */
+function isDataCheck(slug){ return /^vocab\/pre(test|\/|$)/.test(String(slug||'')); }
 /* T-175: % of a Launch Plus lesson's items the student has finished (any try), or null when it isn't one */
 function lpDone(slug){
   if(!/^launch-plus\//.test(slug))return null;
@@ -1675,6 +1677,8 @@ function renderFinish(){
     l.forEach(function(a){ if(a.max_score>0 && a.score!=null){ var p=Math.round(100*a.score/a.max_score); if(best==null||p>best)best=p; } });
     if(best==null||best>=FINISH_AT)return;
     /* T-175: a Launch Plus lesson counts by items DONE, not first-try score (a miss can't be won back) */
+    /* T-176: word checks (vocab/pre…, the post-checks too) are DATA for Mr. Toby, not work to redo — never in Finish This */
+    if(isDataCheck(slug))return;
     var lpc=lpDone(slug);
     if(lpc!=null){ if(lpc>=100)return; best=lpc; }
     /* T-175: turned in again and the score didn't move -> nothing left to earn here; stop asking */
