@@ -1082,6 +1082,8 @@ body.pqshim #rail::after{ animation:pqshim 1.6s ease-in-out 2; }
 .ch.miss::after{ content:" \2717"; text-decoration:none; display:inline-block; margin-left:.25rem; }
 .ch.sel.good::after{ content:" \2713"; display:inline-block; margin-left:.25rem; }
 .mcfb{ margin:.55rem 0 .1rem; font-weight:600; color:#a32d2d; font-size:.92rem; }
+.mcfb.ok{ color:#3f6b2e; }
+.mcbox[data-opinion] .ch.sel{ background:#5f7a4e; border-color:#5f7a4e; color:#f4efe4; }
 .ch.sel.good ~ .mcfb, .mcfb:empty{ }
 /* Look first: picture buttons, one box for both questions */
 .lookbox .vocab-card{ grid-template-columns:96px minmax(0,1fr); }
@@ -1776,17 +1778,17 @@ body.pqshim #rail::after{ animation:pqshim 1.6s ease-in-out 2; }
 </svg>
 <figcaption class="artcap" translate="yes" data-en="The landlady in her sitting room, with her tea, her little dog and her parrot." data-dir="artcozy">The landlady in her sitting room, with her tea, her little dog and her parrot.</figcaption>
 </figure>
-<div class="qbox mcbox predict" data-qid="pre4"
+<div class="qbox mcbox predict" data-qid="pre4" data-opinion="1"
      data-hard="Look at the picture. Does this room look cozy, or does it look creepy?" data-easy="Look at the picture. Is this room cozy or creepy?"
      data-ph-hard="" data-ph-easy="">
   <span class="tag predict">LOOK FIRST</span>
   <p class="qtext"></p>
   <div class="choices">
-    <button type="button" class="ch">Cozy</button>
-    <button type="button" class="ch">Creepy</button>
-    <button type="button" class="ch" data-right="1">Both at the same time</button>
+    <button type="button" class="ch" data-fb="Good guess! Now think for a moment: could something here be secretly creepy, or hidden? What might it be?">Cozy</button>
+    <button type="button" class="ch" data-fb="Good guess! What makes it feel creepy? And look again: is anything here cozy, too?">Creepy</button>
+    <button type="button" class="ch" data-fb="Good thinking! What looks cozy here? And what might be secretly creepy, or hidden?">Both at the same time</button>
   </div>
-  <div class="why" data-why="Most readers say both. The fire, the tea and the armchair are cozy. But look again: two cups are poured when only one person is sitting there, the little dog has not moved, and the parrot is making no sound. Watch for that feeling in the story."></div>
+  <div class="why" data-why=""></div>
   <textarea data-id="pre4" class="mcval" tabindex="-1" aria-hidden="true"></textarea>
   <div class="ansprint" translate="no"></div>
 </div>
@@ -3684,7 +3686,6 @@ var MCX = {};
 try{ MCX = JSON.parse(localStorage.getItem(LKEY + "_mcx") || "{}") || {}; }catch(e){ MCX = {}; }
 function saveMCX(){ try{ localStorage.setItem(LKEY + "_mcx", JSON.stringify(MCX)); }catch(e){} }
 var MC_HINT = {
-  pre4: "Look again at the table. How many cups? Is the dog moving? Is the parrot making a sound?",
   s1: "Billy asked for a cheap hotel. The porter answers with a place to sleep.",
   s2: "None of these words starts a sentence. Which words always start with a capital letter?",
   s4: "Why would someone ask for very little money? Think about what she really wants from Billy.",
@@ -3698,22 +3699,35 @@ var MC_HINT = {
   d3: "Billy is not afraid yet. At a hotel, what does \u201cstill here\u201d usually mean?"
 };
 function mcPaintMisses(box){
-  var qid = box.getAttribute("data-qid"), miss = MCX[qid] || [], all = box.querySelectorAll(".ch"), i;
+  var qid = box.getAttribute("data-qid"), miss = box.hasAttribute("data-opinion") ? [] : (MCX[qid] || []), all = box.querySelectorAll(".ch"), i;
   for(i = 0; i < all.length; i++){
     var on = miss.indexOf(all[i].textContent.trim()) > -1;
     all[i].classList.toggle("miss", on);
     if(on) all[i].setAttribute("aria-disabled", "true"); else all[i].removeAttribute("aria-disabled");
   }
 }
-function mcFb(box, txt){
+function mcFb(box, txt, ok){
   var fb = box.querySelector(".mcfb");
   if(!fb){ fb = document.createElement("div"); fb.className = "mcfb"; fb.setAttribute("translate", "yes");
     var ch = box.querySelector(".choices"); ch.parentNode.insertBefore(fb, ch.nextSibling); }
   fb.textContent = txt || ""; fb.style.display = txt ? "" : "none";
+  fb.classList.toggle("ok", !!ok);
 }
 function markChoice(box, btn, announce){
   var hasRight = !!box.querySelector(".ch[data-right]"), isRight = !!btn.getAttribute("data-right");
   var all = box.querySelectorAll(".ch"), why = box.querySelector(".why"), qid = box.getAttribute("data-qid"), i;
+  if(box.hasAttribute("data-opinion")){
+    /* opinion question: every answer is a good answer. Green note, a thinking question, no red cross. */
+    for(i = 0; i < all.length; i++) all[i].classList.remove("sel", "good", "miss");
+    btn.classList.add("sel", "good");
+    if(why){ why.textContent = ""; why.className = "why"; }
+    mcFb(box, btn.getAttribute("data-fb") || "Good guess!", true);
+    if(announce){
+      var ta0 = box.querySelector("textarea");
+      if(ta0){ ta0.value = btn.textContent.trim(); saveLocal(); queueSave(); }
+    }
+    return;
+  }
   if(hasRight && !isRight){
     /* a miss: no answer shown, no moving on. The miss stays marked with a red cross. */
     var t = btn.textContent.trim();
