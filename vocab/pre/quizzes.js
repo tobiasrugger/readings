@@ -363,7 +363,7 @@ window.QUIZZES = [
       { e:'😬', w:'nervous',     opts:['proud','cold','funny'] },
       { e:'😕', w:'confused',    opts:['proud','hungry','ready'] },
       { e:'😳', w:'embarrassed', opts:['excited','strong','busy'] },
-      { e:'😌', w:'proud',       opts:['nervous','hungry','lost'] },
+      { e:'🏅😊', w:'proud',       opts:['nervous','hungry','lost'] },
       { e:'😴', w:'tired',       opts:['hungry','angry','afraid'] },
       { e:'🤩', w:'excited',     opts:['tired','sad','quiet'] }
     ]
@@ -800,12 +800,12 @@ window.QUIZZES = [
       { e:'🧑‍🏫',            w:'teacher',      opts:['student','principal','coach'] },
       { e:'🧑‍🎓',            w:'student',      opts:['teacher','librarian','nurse'] },
       { e:'👩‍⚕️',           w:'nurse',        opts:['teacher','coach','custodian'] },
-      { icon:'principal',    w:'principal',    opts:['student','custodian','bus driver'] },
+      { e:'🧑‍💼🏫', w:'principal',    opts:['student','custodian','bus driver'] },
       { icon:'coach',        w:'coach',        opts:['nurse','librarian','custodian'] },
       { e:'🧹🪣', w:'custodian',    opts:['coach','teacher','student'] },
       { icon:'food_service', w:'food service', opts:['librarian','nurse','coach'] },
       { icon:'librarian',    w:'librarian',    opts:['food service','custodian','coach'] },
-      { icon:'bus_driver',   w:'bus driver',   opts:['coach','principal','nurse'] },
+      { e:'🚌👨‍✈️', w:'bus driver',   opts:['coach','principal','nurse'] },
       { e:'🧑‍🍳',            w:'cook',         opts:['nurse','teacher','student'] }
     ]
   },
@@ -819,11 +819,11 @@ window.QUIZZES = [
       { e:'🍳',           w:'breakfast', opts:['lunch','dinner','snack'] },
       { e:'🍱',           w:'lunch',     opts:['breakfast','dinner','snack'] },
       { e:'🍽️',           w:'eat',       opts:['drink','cook','wait'] },
-      { icon:'wait',      w:'wait',      opts:['sit','eat','leave'] },
+      { e:'🧍⏳', w:'wait',      opts:['sit','eat','leave'] },
       { icon:'take',      w:'take',      opts:['give','drop','wash'] },
       { icon:'choose',    w:'choose',    opts:['count','carry','clean'] },
-      { icon:'sit',       w:'sit',       opts:['stand','walk','run'] },
-      { icon:'clean_up',  w:'clean up',  opts:['sit down','line up','eat'] },
+      { e:'🪑', w:'sit',       opts:['stand','walk','run'] },
+      { e:'🧽✨',  w:'clean up',  opts:['sit down','line up','eat'] },
       { e:'🗑️',           w:'trash',     opts:['table','tray','sink'] },
       { e:'🥤',           w:'drink',     opts:['eat','wash','cook'] }
     ]
@@ -844,7 +844,7 @@ window.QUIZZES = [
       { e:'🎨', w:'color',     opts:['shape','size','number'] },
       { e:'🖍️', w:'draw',      opts:['read','count','sing'] },
       { e:'💼', w:'work',      opts:['play','rest','travel'] },
-      { e:'🚪', w:'leave',     opts:['arrive','wait','sit'] }
+      { e:'👋🚪', w:'leave',     opts:['arrive','wait','sit'] }
     ]
   }
 ,
@@ -856,11 +856,11 @@ window.QUIZZES = [
     group: 'Harder words',
     emoji: '🧠',
     items: [
-      { icon:'go',          w:'go',          opts:['stop','stay','sit'] },
+      { e:'🚶➡️', w:'go',          opts:['stop','stay','sit'] },
       { e:'📖🧠', w:'learn',       opts:['forget','sleep','shout'] },
-      { icon:'study',       w:'study',       opts:['play','cook','swim'] },
-      { icon:'understand',  w:'understand',  opts:['forget','ask','wait'] },
-      { icon:'practice',    w:'practice',    opts:['forget','shout','cook'] },
+      { e:'📚✏️', w:'study',       opts:['play','cook','swim'] },
+      { e:'💡🙂', w:'understand',  opts:['forget','ask','wait'] },
+      { e:'✍️🔁', w:'practice',    opts:['forget','shout','cook'] },
       { icon:'solve',       w:'solve',       opts:['spell','draw','sing'] },
       { icon:'try',         w:'try',         opts:['watch','sleep','cook'] },
       { icon:'subject',     w:'subject',     opts:['store','park','job'] },
@@ -898,13 +898,13 @@ window.QUIZZES = [
     emoji: '💪',
     items: [
       { icon:'honest',        w:'honest',        opts:['funny','tired','hungry'] },
-      { icon:'responsible',   w:'responsible',   opts:['late','lazy','loud'] },
-      { icon:'kind',          w:'kind',          opts:['angry','busy','loud'] },
-      { icon:'helpful',       w:'helpful',       opts:['shy','sleepy','angry'] },
-      { icon:'imaginative',   w:'imaginative',   opts:['sleepy','hungry','late'] },
+      { e:'📋✅', w:'responsible',   opts:['late','lazy','loud'] },
+      { e:'🤗', w:'kind',          opts:['angry','busy','loud'] },
+      { e:'🙋🛟', w:'helpful',       opts:['shy','sleepy','angry'] },
+      { e:'💭🦄', w:'imaginative',   opts:['sleepy','hungry','late'] },
       { icon:'collaborative', w:'collaborative', opts:['quiet','hungry','early'] },
       { e:'🎨', w:'creative',      opts:['strong','late','cold'] },
-      { icon:'studious',      w:'studious',      opts:['athletic','hungry','noisy'] },
+      { e:'🤓📚', w:'studious',      opts:['athletic','hungry','noisy'] },
       { e:'🔍',               w:'curious',       opts:['sleepy','hungry','calm'] },
       { e:'🦁',               w:'brave',         opts:['shy','sleepy','sad'] }
     ]
@@ -917,16 +917,16 @@ window.QUIZZES = [
     group: 'Describing people',
     emoji: '🧗',
     items: [
-      { icon:'confident',   w:'confident',   opts:['nervous','shy','quiet'] },
-      { icon:'patient',     w:'patient',     opts:['fast','angry','busy'] },
-      { icon:'optimistic',  w:'optimistic',  opts:['pessimistic','angry','bored'] },
-      { icon:'pessimistic', w:'pessimistic', opts:['optimistic','excited','proud'] },
-      { icon:'introvert',   w:'introvert',   opts:['extrovert','athletic','funny'] },
-      { icon:'extrovert',   w:'extrovert',   opts:['introvert','quiet','shy'] },
-      { icon:'stubborn',    w:'stubborn',    opts:['helpful','friendly','gentle'] },
-      { icon:'determined',  w:'determined',  opts:['lazy','tired','confused'] },
+      { e:'😎💪', w:'confident',   opts:['nervous','shy','quiet'] },
+      { e:'⏳🌱', w:'patient',     opts:['fast','angry','busy'] },
+      { e:'😊🌈', w:'optimistic',  opts:['pessimistic','angry','bored'] },
+      { e:'😞🌧️', w:'pessimistic', opts:['optimistic','excited','proud'] },
+      { e:'🎧📖', w:'introvert',   opts:['extrovert','athletic','funny'] },
+      { e:'🗣️🎉', w:'extrovert',   opts:['introvert','quiet','shy'] },
+      { e:'🙅', w:'stubborn',    opts:['helpful','friendly','gentle'] },
+      { e:'🧗🏔️', w:'determined',  opts:['lazy','tired','confused'] },
       { icon:'reliable',    w:'reliable',    opts:['late','careless','rude'] },
-      { icon:'ambitious',   w:'ambitious',   opts:['lazy','sleepy','calm'] }
+      { e:'🏆🚀', w:'ambitious',   opts:['lazy','sleepy','calm'] }
     ]
   },
 
@@ -938,13 +938,13 @@ window.QUIZZES = [
     emoji: '💙',
     items: [
       { icon:'humble',    w:'humble',    opts:['proud','loud','selfish'] },
-      { icon:'sensitive', w:'sensitive', opts:['tough','angry','bored'] },
+      { e:'🥺', w:'sensitive', opts:['tough','angry','bored'] },
       { e:'🎁',           w:'generous',  opts:['selfish','quiet','busy'] },
       { icon:'honest',    w:'honest',    opts:['shy','lazy','strange'] },
-      { icon:'patient',   w:'patient',   opts:['nervous','loud','hungry'] },
+      { e:'⏳🌱', w:'patient',   opts:['nervous','loud','hungry'] },
       { icon:'reliable',  w:'reliable',  opts:['funny','sleepy','messy'] },
-      { icon:'confident', w:'confident', opts:['afraid','tired','sad'] },
-      { icon:'determined',w:'determined',opts:['bored','weak','quiet'] },
+      { e:'😎💪', w:'confident', opts:['afraid','tired','sad'] },
+      { e:'🧗🏔️', w:'determined',opts:['bored','weak','quiet'] },
       { e:'🤝',           w:'friendly',  opts:['mean','shy','serious'] },
       { e:'🤣',           w:'funny',     opts:['serious','strict','tired'] }
     ]
