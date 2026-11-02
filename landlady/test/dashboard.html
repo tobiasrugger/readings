@@ -46,8 +46,8 @@ tr.stu{cursor:pointer}tr.stu:hover{background:#fdf0d0}
  <a class="alld" id="gal04-back" href="/readings/dashboards/">← All dashboards</a>
  <div class="box">
   <h1>📝 The Landlady · Test</h1>
-  <p class="small">44 points: A words 18 (closed book) · B order 6 · C questions 8 · D cozy or warning 8 · E writing 4 (you score it here). <a href="/readings/landlady/test/preview.html" style="font-weight:900">👀 Preview every question on one page</a> · Student page: <a href="/readings/landlady/test/" target="_blank">readings/landlady/test/</a> · add <b>?mode=hard</b> or <b>?mode=easy</b> to force a level for a new start. Tap a student to see answers and score Part E.</p>
-  <div class="bar"><select id="per"><option value="">All periods</option></select><input id="q" placeholder="Search name"><button type="button" id="reload">Reload</button><span id="stat" class="small"></span></div>
+  <p class="small">44 points: A words 18 (closed book) · B order 6 · C questions 8 · D cozy or warning 8 · E writing 4 (you score it here). <a href="/readings/landlady/test/preview.html" style="font-weight:900">👀 Preview every question on one page</a> · <a href="/readings/landlady/test/?practice=1" target="_blank" style="font-weight:900">🧩 Practice version (hints on)</a> · Student page: <a href="/readings/landlady/test/" target="_blank">readings/landlady/test/</a> · add <b>?mode=hard</b> or <b>?mode=easy</b> to force a level for a new start. Tap a student to see answers and score Part E.</p>
+  <div class="bar"><select id="view"><option value="test">The real test</option><option value="practice">The practice test (hints on)</option></select><select id="per"><option value="">All periods</option></select><input id="q" placeholder="Search name"><button type="button" id="reload">Reload</button><span id="stat" class="small"></span></div>
  </div>
  <div class="box"><div class="grid" id="sum"></div></div>
  <div class="box tbl"><table><thead><tr><th>Student</th><th>P</th><th>Level</th><th>Status</th><th>A /18</th><th>B /6</th><th>C /8</th><th>D /8</th><th>E /4</th><th>Total</th><th>0–4</th><th>Left page</th><th>🌐</th><th>Updated</th></tr></thead><tbody id="rows"></tbody></table></div>
@@ -59,6 +59,8 @@ tr.stu{cursor:pointer}tr.stu:hover{background:#fdf0d0}
 var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
 var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
 var TABLE='landlady_responses', GUIDE_KEY='landlady_test', SLUG='landlady/test';
+/* T-212: the same dashboard shows the practice version (?practice=1) — its own row and gradebook item */
+function setView(v){ GUIDE_KEY=v==='practice'?'landlady_test_practice':'landlady_test'; SLUG=v==='practice'?'landlady/test-practice':'landlady/test'; }
 function $(id){return document.getElementById(id);}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 function H(p){var h={apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY,'Content-Type':'application/json'};if(p)h.Prefer=p;return h;}
@@ -66,9 +68,11 @@ function lp(e){return String(e||'').trim().toLowerCase().split('@')[0];}
 var ALL=[], OPEN={};
 $('pw').addEventListener('submit',function(e){e.preventDefault();if($('pwi').value==='galileo2026'){$('gate').style.display='none';try{sessionStorage.setItem('llt_t','1');}catch(x){}load();}else $('pwe').textContent='Not right.';});
 try{if(sessionStorage.getItem('llt_t')==='1'){$('gate').style.display='none';load();}}catch(x){}
-$('reload').onclick=load; $('per').onchange=draw; $('q').oninput=draw;
+$('reload').onclick=load; $('view').onchange=function(){ setView(this.value); OPEN={}; load(); }; $('per').onchange=draw; $('q').oninput=draw;
 
 function scoreOf(p){
+  if(p.practice&&p.score){ var Ep=(typeof p.eScore==='number')?p.eScore:null; var t=p.score.auto+(Ep||0);
+    return {A:p.score.A,B:p.score.B,C:p.score.C,D:p.score.D,E:Ep,total:t,max:40+(Ep==null?0:4)}; }
   var a=p.ans||{}, A=0,B=0,C=0,D=0;
   ITEMS.A1.concat(ITEMS.A2).forEach(function(it){if(a[it.id]===0)A++;});
   var ord=a.b||[]; ITEMS.B.events.forEach(function(e,i){if(ord[i]===e.id)B++;});
@@ -112,7 +116,7 @@ function draw(){
        '<td>'+s.A+'</td><td>'+s.B+'</td><td>'+s.C+'</td><td>'+s.D+'</td><td>'+(s.E==null?(r.submitted?'<span class="flag">score it</span>':'—'):s.E)+'</td>'+
        '<td><b>'+s.total+'</b>/'+s.max+'</td><td><span class="pill '+(pct>=75?'ok':pct>=60?'mid':'no')+'">'+band(pct)+'</span></td>'+
        '<td>'+(((p.leaves||0)+(p.fsExits||0))?'<span class="flag">'+(p.leaves||0)+'× tab, '+(p.fsExits||0)+'× full screen · '+Math.round(p.away||0)+' s</span>':'—')+'</td>'+
-       '<td>'+(trn||'—')+'</td><td class="small">'+new Date(r.updated_at).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+'</td></tr>';
+       '<td>'+(trn||'—')+(p.practice?'<div class="small">'+Object.keys(p.miss||{}).reduce(function(a,k){return a+(p.miss[k]||0);},0)+' misses</div>':'')+'</td><td class="small">'+new Date(r.updated_at).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+'</td></tr>';
     if(OPEN[k]) h+='<tr class="det"><td colspan="14">'+detail(r)+'</td></tr>';
   });
   $('rows').innerHTML=h||'<tr><td colspan="14">Nobody yet.</td></tr>';
@@ -170,7 +174,7 @@ function drawItems(list){
   function row(label,ok,n,worst){var pct=Math.round(100*ok/n);
     h+='<div class="item"><b>'+esc(label)+'</b><span>'+pct+'%</span><span><span class="barw" style="display:inline-block;width:160px;vertical-align:middle"><i style="width:'+pct+'%"></i></span> '+(worst?'<span class="small">most common wrong: '+esc(worst)+'</span>':'')+'</span></div>';}
   ITEMS.A1.concat(ITEMS.A2).concat(ITEMS.C).forEach(function(it){
-    var ok=0,n=0,wr={}; list.forEach(function(r){var v=((r.payload||{}).ans||{})[it.id]; if(v==null)return; n++; if(v===0)ok++; else wr[v]=(wr[v]||0)+1;});
+    var ok=0,n=0,wr={}; list.forEach(function(r){var v=((r.payload||{}).ans||{})[it.id]; if(v==null)return; n++; if(v===0&&!((r.payload||{}).miss||{})[it.id])ok++; else if(v!==0) wr[v]=(wr[v]||0)+1; else { var ww=(((r.payload||{}).wrong||{})[it.id]||[])[0]; if(ww!=null) wr[ww]=(wr[ww]||0)+1; } });
     if(!n)return; var w=Object.keys(wr).sort(function(a,b){return wr[b]-wr[a];})[0];
     row(it.id,ok,n,w!=null?optText(it,+w)+' ('+wr[w]+')':'');
   });

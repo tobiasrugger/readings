@@ -12,6 +12,9 @@
      on the twelve words. Directions are translated; question stems in Parts B–E have a 🌐 button
      (each use is counted for the dashboard). Load-before-save is inline (GAL_LOADED), like T-166. -->
 <script>window.__T168 = true; window.GAL_NO_LISTEN = true;
+/* T-212: ?practice=1 = practice version (hints, try again, no lock). Own row + own gradebook item. */
+window.PRACTICE = /[?&]practice(=|&|$)/.test(location.search);
+if(window.PRACTICE) window.GAL_SLUG_KEEP = 'landlady/test-practice';
 window.GAL_META = { title:'The Landlady: Test', unit:'The Landlady', skills:['vocabulary','reading-comprehension','inference','sequencing','writing'] };</script>
 <style>
 :root{--parch:#f3ead6;--paper:#fffaf0;--ink:#2b2418;--line:#3a3020;--ox:#8b1a1a;--brass:#b9792a;--night:#1d2236;--muted:#6b5d45;--sel:#1f4d7a;--cz:#c8892a;--cr:#5b2a6e;
@@ -72,6 +75,22 @@ main{max-width:1000px;margin:0 auto;padding:20px 16px 120px}
 .dots button.cur{outline:3px solid var(--ox)}
 .pic{float:right;width:min(46%,340px);margin:0 0 10px 16px}
 .pgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.opt.bad{border-color:#b3261e;background:#fdecea;opacity:.8}
+.opt.bad .rad{border-color:#b3261e;background:#fff}
+.opt.bad .rad::after{content:"✗";color:#b3261e;font-weight:900;display:block;text-align:center;line-height:18px}
+.opt.good{border-color:#2f6b2f;background:#e2f2e6;box-shadow:0 0 0 2px #2f6b2f inset}
+.opt.good .rad{border-color:#2f6b2f;background:#2f6b2f}
+.opt.good .rad::after{content:"✓";color:#fff;font-weight:900;display:block;text-align:center;line-height:18px}
+.opt.lockd{cursor:default}
+.hint{grid-column:1/-1;margin:8px 0 2px;padding:8px 12px;border:2px solid #b9792a;background:#fff6dc;border-radius:12px;font-weight:800;color:#5a3c10}
+.hint .tr{display:block;color:var(--sel);unicode-bidi:plaintext}
+.hint.ok{border-color:#2f6b2f;background:#e2f2e6;color:#1d5e2a}
+.two button.bad{border-color:#b3261e;background:#fdecea;color:#b3261e}
+.two button.bad::before{content:"✗ "}
+.slot.good{border-color:#2f6b2f;background:#e2f2e6}
+.slot.good .n{background:#2f6b2f}
+.ev.lockd{cursor:default;border-color:#2f6b2f}
+.pbadge{background:#f6d58a;color:#3a2a0a;border:2px solid #f3ead6;border-radius:999px;padding:.1rem .7rem;font-weight:900;font-size:.9rem;font-family:Nunito,sans-serif}
 .pcell{border:2px solid var(--line);border-radius:14px;padding:10px;background:#fff;position:relative}
 .pcell svg{width:100%;height:auto;display:block;border:2px solid var(--line);border-radius:10px;margin-bottom:8px;max-height:200px}
 .pcell .opts{gap:6px}
@@ -236,7 +255,7 @@ textarea.wr{width:100%;min-height:230px;border:2px solid var(--line);border-radi
 var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
 var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
 var PROXY='https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
-var TABLE='landlady_responses', GUIDE_KEY='landlady_test';
+var TABLE='landlady_responses', GUIDE_KEY=window.PRACTICE?'landlady_test_practice':'landlady_test';
 var LANGS=[['es','Español'],['zh-CN','中文 (普通话)'],['yue','廣東話 (Cantonese)'],['ar','العربية'],['vi','Tiếng Việt'],['th','ไทย'],['ne','नेपाली'],
   ['ary','الدارجة (Darija)'],['ru','Русский'],['ur','اردو'],['tl','Tagalog'],['fr','Français'],['ko','한국어'],['hi','हिन्दी'],['so','Soomaali']];
 
@@ -266,6 +285,23 @@ var INTRO_PIC='<svg viewBox="0 0 330 230" role="img" aria-label="A school desk s
 '</svg>';
 document.getElementById('introPic').innerHTML=INTRO_PIC;
 
+/* ---------- T-212: the practice version's own words ---------- */
+if(window.PRACTICE){
+  document.title='The Landlady · Practice test';
+  document.querySelector('.bar h1').innerHTML='The Landlady · Practice test <span class="pbadge">Hints on</span>';
+  function setDir(el,t){ el.setAttribute('data-dir',t); var en=el.querySelector('.en'); if(en) en.textContent=t; var tr=el.querySelector('.tr'); if(tr){ tr.textContent=''; tr.removeAttribute('data-l'); } }
+  var ds=document.querySelectorAll('#scrIntro .dir[data-dir]');
+  setDir(ds[0],'This is practice for the test. If you choose a wrong answer, you get a hint. Try again until you get it right.');
+  setDir(ds[1],'Use your paper story any time. The hints tell you which paragraph to read.');
+  setDir(ds[2],'Your score counts the answers you get right on the first try. Mr. Toby can see where you needed hints.');
+  document.querySelector('#scrIntro h2').textContent='Practice test';
+  $('btnStart').textContent='Start practicing';
+  document.querySelector('#scrDone h2').textContent='You finished the practice test.';
+  setDir(document.querySelector('#scrDone .dir[data-dir]'),'Good work. The real test has the same kinds of questions, with no hints.');
+  document.querySelector('#ovHand h3').textContent='Finished practicing?';
+  setDir(document.querySelector('#ovHand .dir[data-dir]'),'When you say yes, Mr. Toby sees your practice score.');
+}
+
 /* ---------- language dropdown (inside the sign-in box) ---------- */
 (function(){var o='<option value="">Choose</option>'; LANGS.forEach(function(L){o+='<option value="'+L[0]+'">'+L[1]+'</option>';}); $('lang').innerHTML=o;
   try{var v=localStorage.getItem('vocab_lang'); if(v) $('lang').value=v;}catch(e){}})();
@@ -288,7 +324,7 @@ function tr(text, cb){
   once().catch(once).then(function(d){var x=d&&d.translation; var v=(x&&typeof x==='object')?(x.equiv||x.meaning||''):(x||''); TRC[k]=v; cb(v);}).catch(function(){cb('');});
 }
 function trDirs(root){
-  [].forEach.call((root||document).querySelectorAll('.dir[data-dir]'),function(el){
+  [].forEach.call((root||document).querySelectorAll('.dir[data-dir], .hint[data-dir]'),function(el){
     var slot=el.querySelector('.tr'); if(!slot||slot.getAttribute('data-l')===S.lang) return;
     slot.setAttribute('data-l',S.lang); slot.textContent=S.lang?'…':'';
     tr(el.getAttribute('data-dir'),function(v){ slot.textContent=v; });
@@ -299,7 +335,8 @@ function trDirs(root){
    STATE + LOAD BEFORE SAVE
    =================================================================== */
 function freshState(){ return {email:'',first:'',last:'',name:'',period:'',lang:'',mode:'easy',perm:{},order0:[],ans:{},aLocked:false,
-       leaves:0,away:0,fsExits:0,tr:{},startedAt:'',submitted:false,eScore:null,screen:0,events:null,dOrder:null}; }
+       leaves:0,away:0,fsExits:0,tr:{},startedAt:'',submitted:false,eScore:null,screen:0,events:null,dOrder:null,
+       miss:{},wrong:{},bok:[],bfirst:null}; }
 var S=freshState();
 var GAL_LOADED=false, dirty=false, saving=false;
 var SCREENS=[];   /* built from ITEMS */
@@ -350,7 +387,7 @@ $('btnSign').onclick=function(){
   /* LOAD FIRST: the student, this test's row (both spellings), and the story rows (for Easier/Harder) */
   Promise.all([
     sb('students?select=email&email='+both),
-    sb(TABLE+'?select=email,guide_key,mode,payload,submitted,updated_at&email='+both+'&guide_key=in.(landlady_test,landlady,landlady_easy,landlady_hard)&order=updated_at.desc')
+    sb(TABLE+'?select=email,guide_key,mode,payload,submitted,updated_at&email='+both+'&guide_key=in.('+GUIDE_KEY+',landlady,landlady_easy,landlady_hard)&order=updated_at.desc')
   ]).then(function(r){
     var known=(r[0]||[]).map(function(x){return x.email;});
     S.email=known.indexOf(l+'@sfusd.edu')>=0?l+'@sfusd.edu':(known[0]||l+'@sfusd.edu');
@@ -364,6 +401,7 @@ $('btnSign').onclick=function(){
       var p=row.payload; S.mode=p.mode||'easy'; S.perm=p.perm; S.order0=p.order0||makeOrder(); S.ans=p.ans||{}; S.aLocked=!!p.aLocked;
       S.leaves=p.leaves||0; S.away=p.away||0; S.fsExits=p.fsExits||0; S.tr=p.tr||{}; S.startedAt=p.startedAt||''; S.eScore=p.eScore;
       S.events=p.events||null; S.dOrder=p.dOrder||null; S.screen=p.screen||0; S.submitted=!!row.submitted;
+      S.miss=p.miss||{}; S.wrong=p.wrong||{}; S.bok=p.bok||[]; S.bfirst=(p.bfirst==null?null:p.bfirst);
     } else {
       var sm=story.length&&story[0].mode?String(story[0].mode).toLowerCase():'';
       S.mode=(qm==='hard'||qm==='easy')?qm:(sm.indexOf('hard')>=0?'hard':'easy');
@@ -389,11 +427,13 @@ function orderA1(){
 
 /* ---------- scoring ---------- */
 function score(){
-  var A=0,B=0,C=0,D=0;
-  ITEMS.A1.concat(ITEMS.A2).forEach(function(it){ if(S.ans[it.id]===0) A++; });
-  var ord=S.ans.b||[]; ITEMS.B.events.forEach(function(e,i){ if(ord[i]===e.id) B++; });
-  ITEMS.C.forEach(function(it){ if(S.ans[it.id]===0) C++; });
-  ITEMS.D.clues.forEach(function(c){ if(S.ans[c.id]===c.ans) D++; });
+  var A=0,B=0,C=0,D=0, P=window.PRACTICE;
+  function ok(id,good){ return good && !(P && S.miss[id]); }   /* practice: first try only */
+  ITEMS.A1.concat(ITEMS.A2).forEach(function(it){ if(ok(it.id,S.ans[it.id]===0)) A++; });
+  var ord=S.ans.b||[];
+  if(P) B=S.bfirst||0; else ITEMS.B.events.forEach(function(e,i){ if(ord[i]===e.id) B++; });
+  ITEMS.C.forEach(function(it){ if(ok(it.id,S.ans[it.id]===0)) C++; });
+  ITEMS.D.clues.forEach(function(c){ if(ok(c.id,S.ans[c.id]===c.ans)) D++; });
   return {A:A,B:B,C:C,D:D,auto:A+B+C+D,autoMax:ITEMS.A1.length+ITEMS.A2.length+ITEMS.B.events.length+ITEMS.C.length+ITEMS.D.clues.length};
 }
 function answered(){
@@ -412,7 +452,8 @@ function payload(){
   window.GAL_SCORE=sc.auto+(typeof S.eScore==='number'?S.eScore:0);
   window.GAL_MAX=sc.autoMax+(typeof S.eScore==='number'?4:0);
   return {mode:S.mode,perm:S.perm,order0:S.order0,events:S.events,dOrder:S.dOrder,ans:S.ans,aLocked:S.aLocked,leaves:S.leaves,away:Math.round(S.away),
-    fsExits:S.fsExits,tr:S.tr,startedAt:S.startedAt,screen:S.screen,score:sc,eScore:S.eScore,lang:S.lang,at:new Date().toISOString()};
+    fsExits:S.fsExits,tr:S.tr,startedAt:S.startedAt,screen:S.screen,score:sc,eScore:S.eScore,lang:S.lang,at:new Date().toISOString(),
+    practice:!!window.PRACTICE,miss:S.miss,wrong:S.wrong,bok:S.bok,bfirst:S.bfirst};
 }
 function save(extra){
   if(!GAL_LOADED){ return Promise.resolve(false); }
@@ -438,7 +479,7 @@ function partStart(p){for(var i=0;i<SCREENS.length;i++) if(SCREENS[i].part===p) 
 function drawTabs(){
   var h='', a=answered();
   ['A','B','C','D','E'].forEach(function(p){
-    var cur=SCREENS[S.screen].part===p, locked=(p==='A'&&S.aLocked)||(p!=='A'&&!S.aLocked);
+    var cur=SCREENS[S.screen].part===p, locked=!window.PRACTICE&&((p==='A'&&S.aLocked)||(p!=='A'&&!S.aLocked));
     h+='<button class="tab'+(cur?' on':'')+(locked?' locked':'')+'" data-p="'+p+'">'+PART_NAMES[p]+(locked&&p==='A'?' 🔒':'')+'</button>';
   });
   $('tabs').innerHTML=h;
@@ -449,6 +490,7 @@ function L(o){ return (o&&typeof o==='object')?(o[S.mode]||o.easy||o.hard):o; }
 
 function go(i){
   if(i<0||i>=SCREENS.length) return;
+  if(window.PRACTICE){ S.screen=i; dirty=true; draw(); return; }
   if(S.aLocked && i<A_END) i=A_END;
   if(!S.aLocked && i>=A_END){ $('ovTurnOver').classList.remove('hidden'); trDirs($('ovTurnOver')); return; }
   S.screen=i; dirty=true; draw();
@@ -493,7 +535,7 @@ function draw(){
   }
   $('item').innerHTML=h;
   trDirs($('item'));
-  $('btnBack').disabled=(S.screen===0)||(S.aLocked&&S.screen===A_END);
+  $('btnBack').disabled=(S.screen===0)||(!window.PRACTICE&&S.aLocked&&S.screen===A_END);
   $('btnNext').textContent=S.screen===SCREENS.length-1?'Hand in…':'Next →';
   drawTabs();
   if(sc.kind==='write'){ var ta=$('wr'); ta.oninput=function(){S.ans.e=ta.value; $('wc').textContent=wc(ta.value)+' words'; touch();}; }
@@ -504,10 +546,22 @@ function scene(i){ var f=window.LL_FIGS&&LL_FIGS[i]; return f?'<div class="scene
 function dirBlock(d){ if(!d) return ''; var t=L(d); return '<p class="dir" data-dir="'+esc(t)+'"><span class="en">'+esc(t)+'</span><span class="tr"></span></p>'; }
 function opts(it, isWord, row){
   var p=S.perm[it.id]||it.opts.map(function(_,i){return i;}), h='<div class="opts'+(row?' row':'')+'" role="radiogroup">';
+  var P=window.PRACTICE, done=P&&S.ans[it.id]===0, bad=(P&&S.wrong[it.id])||[];
   p.forEach(function(i){ var o=L(it.opts[i]), sel=S.ans[it.id]===i;
-    h+='<button class="opt'+(sel?' sel':'')+'" role="radio" aria-checked="'+sel+'" data-id="'+esc(it.id)+'" data-i="'+i+'" translate="no"><span class="rad"></span><span class="t">'+esc(o)+'</span>'+
+    var cls=P?(done&&i===0?' good':(bad.indexOf(i)>=0?' bad':'')):(sel?' sel':'');
+    h+='<button class="opt'+cls+(done?' lockd':'')+'" role="radio" aria-checked="'+sel+'" data-id="'+esc(it.id)+'" data-i="'+i+'" translate="no"><span class="rad"></span><span class="t">'+esc(o)+'</span>'+
        '<span class="spk" data-say="'+esc(o)+'" role="button" aria-label="Hear it">🔊</span></button>'; });
-  return h+'</div>';
+  return h+'</div>'+(P?hintHTML(it):'');
+}
+/* practice hints: 1st miss = meaning / ¶ to read; 2nd miss = a stronger nudge. Never the answer. */
+function hintHTML(it){
+  var m=S.miss[it.id]||0, done=S.ans[it.id]===0;
+  if(done) return '<div class="hint ok">✓ '+(m?'Got it. Nice fix.':'Right on the first try!')+'</div>';
+  if(!m) return '';
+  var t='';
+  if(it.w){ t=m===1?'Hint: the word that fits means “'+DEFS[it.w]+'”.':'Hint: the word that fits means “'+DEFS[it.w]+'”. It starts with “'+it.w.charAt(0)+'”.'; }
+  else if(HINTS[it.id]){ var x=HINTS[it.id]; t=m===1?'Hint: read ¶'+x.p+' on your paper story.':'Hint: read ¶'+x.p+' again. '+x.t; }
+  return '<div class="hint" data-dir="'+esc(t)+'"><span class="en">'+esc(t)+'</span><span class="tr"></span><button class="spk" data-say="'+esc(t)+'">🔊</button></div>';
 }
 function wc(t){return String(t||'').trim().split(/\s+/).filter(Boolean).length;}
 
@@ -519,15 +573,24 @@ function orderHTML(){
   var h='<p class="stem">Put these events in the order they happen in the story. <button class="glob" data-tr="b">🌐</button><span class="qtr" id="qtr_b"></span></p><div class="order"><div>'+scene(1);
   S.events.forEach(function(id){ if(used[id]) return;
     h+='<div class="ev'+(PICK===id?' pick':'')+'" draggable="true" data-ev="'+id+'" translate="no"><span class="t">'+esc(evText(id))+'</span><span class="spk" data-say="'+esc(evText(id))+'" role="button">🔊</span></div>'; });
-  if(Object.keys(used).length===ITEMS.B.events.length) h+='<p class="dir">All six are placed. Tap one to move it.</p>';
+  var P=window.PRACTICE, allOk=P&&ITEMS.B.events.every(function(e,i){return S.bok[i];});
+  if(P&&allOk) h+='<div class="hint ok">✓ All six are in the right order.'+(S.miss.b?' Nice fix.':' First try!')+'</div>';
+  else if(Object.keys(used).length===ITEMS.B.events.length) h+=P?'<button class="btn go" id="btnCheckB">Check my order</button>':'<p class="dir">All six are placed. Tap one to move it.</p>';
+  if(P&&!allOk&&S.miss.b){
+    var t=S.miss.b===1?'Hint: the green ones are right. Find the others on your paper story: a smaller ¶ number comes first.':
+      'Hint: '+S.events.filter(function(id){return !used[id];}).map(function(id){return '“'+evText(id)+'” is in '+HINTS[id].part;}).join(' · ');
+    h+='<div class="hint" data-dir="'+esc(t)+'"><span class="en">'+esc(t)+'</span><span class="tr"></span></div>';
+  }
   h+='</div><div>';
   for(var i=0;i<ITEMS.B.events.length;i++){ var id=ord[i];
-    h+='<div class="slot'+(id?' full':'')+(PICK&&!id?' target':'')+'" data-slot="'+i+'"><span class="n">'+(i+1)+'</span>'+
-      (id?'<div class="ev'+(PICK===id?' pick':'')+'" draggable="true" data-ev="'+id+'" translate="no"><span class="t">'+esc(evText(id))+'</span></div>':'')+'</div>'; }
+    var lk=window.PRACTICE&&S.bok[i];
+    h+='<div class="slot'+(id?' full':'')+(lk?' good':'')+(PICK&&!id?' target':'')+'" data-slot="'+i+'"><span class="n">'+(lk?'✓':(i+1))+'</span>'+
+      (id?'<div class="ev'+(PICK===id?' pick':'')+(lk?' lockd':'')+'" draggable="'+(lk?'false':'true')+'" data-ev="'+id+'" translate="no"><span class="t">'+esc(evText(id))+'</span></div>':'')+'</div>'; }
   return h+'</div></div>';
 }
 function placeEvent(id, slot){
   var ord=(S.ans.b||[]).slice(); while(ord.length<ITEMS.B.events.length) ord.push(null);
+  if(window.PRACTICE){ var fi=ord.indexOf(id); if((fi>=0&&S.bok[fi])||(slot!=null&&S.bok[slot])){ PICK=null; draw(); return; } }
   var from=ord.indexOf(id);
   if(slot==null){ if(from>=0) ord[from]=null; }
   else { var there=ord[slot]; ord[slot]=id; if(from>=0&&from!==slot) ord[from]=there||null; }
@@ -538,8 +601,14 @@ function placeEvent(id, slot){
 function sortHTML(){
   var h='<div class="key"><div>'+SUN+'<span>☀ Seems cozy</span></div><div>'+EYE+'<span>✦ A warning</span></div></div>';
   S.dOrder.forEach(function(id){ var c=ITEMS.D.clues.filter(function(x){return x.id===id;})[0], v=S.ans[id];
+    var P=window.PRACTICE, w=(P&&S.wrong[id])||[], m=(P&&S.miss[id])||0, dn=P&&v===c.ans;
+    function bc(k){ return P?(dn&&v===k?' sel':(w.indexOf(k)>=0&&!dn?' bad':'')):(v===k?' sel':''); }
+    var ht='';
+    if(P&&dn) ht='<div class="hint ok">✓ '+(m?'Got it.':'First try!')+'</div>';
+    else if(P&&m){ var t=m===1?'Hint: read ¶'+HINTS[id].p+'. Would Billy feel welcome here, or should this worry him?':'Hint: read ¶'+HINTS[id].p+' again, and the sentences around it. What might this clue really mean?';
+      ht='<div class="hint" data-dir="'+esc(t)+'"><span class="en">'+esc(t)+'</span><span class="tr"></span></div>'; }
     h+='<div class="clue"><span class="t" translate="no">'+esc(L(c.t))+' <button class="spk" data-say="'+esc(L(c.t))+'">🔊</button></span><span class="two">'+
-       '<button class="cz'+(v==='cz'?' sel':'')+'" data-cl="'+id+'" data-v="cz">☀ Cozy</button><button class="cr'+(v==='cr'?' sel':'')+'" data-cl="'+id+'" data-v="cr">✦ Warning</button></span></div>'; });
+       '<button class="cz'+bc('cz')+'" data-cl="'+id+'" data-v="cz">☀ Cozy</button><button class="cr'+bc('cr')+'" data-cl="'+id+'" data-v="cr">✦ Warning</button></span>'+ht+'</div>'; });
   return h;
 }
 var SUN='<svg viewBox="0 0 64 48"><rect width="64" height="48" rx="8" fill="#5a3c24"/><rect x="8" y="10" width="48" height="34" rx="4" fill="#3a2414"/><path d="M20 44 q4 -18 12 -24 q8 6 12 24z" fill="#f2a33a"/><path d="M26 44 q3 -11 6 -15 q4 4 6 15z" fill="#ffd36b"/><rect x="4" y="4" width="56" height="6" rx="2" fill="#8a6238"/></svg>';
@@ -549,10 +618,25 @@ var EYE='<svg viewBox="0 0 64 48"><rect width="64" height="48" rx="8" fill="#2a2
 function writeHTML(){
   var it=ITEMS.E, q=L(it.q);
   var h='<p class="stem" translate="no">'+esc(q)+' <button class="spk" data-say="'+esc(q)+'">🔊</button><button class="glob" data-tr="e">🌐</button><span class="qtr" id="qtr_e"></span></p>';
-  if(S.mode==='easy') h+='<div class="frame" translate="no">'+it.frame.map(esc).join('<br>')+'</div>';
+  if(S.mode==='easy'||window.PRACTICE) h+='<div class="frame" translate="no">'+it.frame.map(esc).join('<br>')+'</div>';
   h+='<textarea class="wr" id="wr" translate="no" spellcheck="false" placeholder="Write here.">'+esc(S.ans.e||'')+'</textarea><div class="wc" id="wc">'+wc(S.ans.e)+' words</div>';
   h+='<div class="dir" style="margin-top:.6rem" data-dir="'+esc(it.rubric)+'"><span class="en">'+esc(it.rubric)+'</span><span class="tr"></span></div>';
   return h;
+}
+
+/* practice: redraw without jumping to the top */
+function keepScroll(){ var y=window.scrollY; draw(); window.scrollTo(0,y); }
+var CHEERS=['Yes!','That\u2019s it.','Nice.','Right!','Good eye.'];
+function cheer(){ /* a quiet spoken "yes", no sound if speech is off */ try{ say(CHEERS[Math.floor(Math.random()*CHEERS.length)],1); }catch(e){} }
+
+/* ---------- Part B practice: check the order, keep the right ones, send the rest back ---------- */
+function checkOrder(){
+  var ord=(S.ans.b||[]).slice(), first=(S.bfirst==null), right=0, wrongAny=false;
+  ITEMS.B.events.forEach(function(ev,i){ if(ord[i]===ev.id){ S.bok[i]=true; right++; } else if(ord[i]){ ord[i]=null; wrongAny=true; } });
+  if(first) S.bfirst=right;
+  if(wrongAny) S.miss.b=(S.miss.b||0)+1;
+  S.ans.b=ord; PICK=null; touch(); keepScroll();
+  if(!wrongAny) cheer();
 }
 
 /* ---------- clicks on the item ---------- */
@@ -563,9 +647,20 @@ $('item').addEventListener('click',function(e){
     S.tr[id]=(S.tr[id]||0)+1; touch(); slot.textContent='…';
     var sc=SCREENS[S.screen], text=sc.kind==='mc'?L(sc.it.q):(sc.kind==='order'?'Put these events in the order they happen in the story.':L(ITEMS.E.q));
     tr(text,function(v){ slot.textContent=v||'(no translation)'; }); return; }
-  var o=e.target.closest('.opt'); if(o){ S.ans[o.getAttribute('data-id')]=+o.getAttribute('data-i'); touch(); draw(); return; }
-  var cl=e.target.closest('[data-cl]'); if(cl){ S.ans[cl.getAttribute('data-cl')]=cl.getAttribute('data-v'); touch(); draw(); return; }
-  var ev=e.target.closest('.ev'); if(ev){ var id=ev.getAttribute('data-ev'); PICK=(PICK===id)?null:id; draw(); return; }
+  var o=e.target.closest('.opt'); if(o){ var oid=o.getAttribute('data-id'), oi=+o.getAttribute('data-i');
+    if(window.PRACTICE){ if(S.ans[oid]===0) return;
+      if(oi===0){ S.ans[oid]=0; cheer(); }
+      else { S.wrong[oid]=S.wrong[oid]||[]; if(S.wrong[oid].indexOf(oi)<0) S.wrong[oid].push(oi); S.miss[oid]=(S.miss[oid]||0)+1; }
+      touch(); keepScroll(); return; }
+    S.ans[oid]=oi; touch(); draw(); return; }
+  var ck=e.target.closest('#btnCheckB'); if(ck){ checkOrder(); return; }
+  var cl=e.target.closest('[data-cl]'); if(cl){ var cid=cl.getAttribute('data-cl'), cv=cl.getAttribute('data-v');
+    if(window.PRACTICE){ var c=ITEMS.D.clues.filter(function(x){return x.id===cid;})[0]; if(S.ans[cid]===c.ans) return;
+      if(cv===c.ans){ S.ans[cid]=cv; cheer(); }
+      else { S.wrong[cid]=[cv]; S.miss[cid]=(S.miss[cid]||0)+1; }
+      touch(); keepScroll(); return; }
+    S.ans[cid]=cv; touch(); draw(); return; }
+  var ev=e.target.closest('.ev'); if(ev){ if(ev.classList.contains('lockd')) return; var id=ev.getAttribute('data-ev'); PICK=(PICK===id)?null:id; keepScroll(); return; }
   var sl=e.target.closest('.slot'); if(sl&&PICK){ placeEvent(PICK,+sl.getAttribute('data-slot')); return; }
 });
 $('item').addEventListener('dragstart',function(e){ var ev=e.target.closest('.ev'); if(ev){ e.dataTransfer.setData('text/plain',ev.getAttribute('data-ev')); } });
@@ -579,8 +674,9 @@ $('btnGoB').onclick=function(){ $('ovTurnOver').classList.add('hidden'); S.aLock
 
 /* ---------- start (full screen) ---------- */
 $('btnStart').onclick=function(){
-  var el=document.documentElement; try{ if(el.requestFullscreen) el.requestFullscreen().catch(function(){}); }catch(e){}
+  var el=document.documentElement; if(!window.PRACTICE){ try{ if(el.requestFullscreen) el.requestFullscreen().catch(function(){}); }catch(e){} }
   S.screen=Math.min(S.screen||0,SCREENS.length-1);
+  if(window.PRACTICE){ show('scrTest'); draw(); save(); return; }
   show('scrTest'); if(S.aLocked&&S.screen<A_END) S.screen=A_END; if(!S.aLocked&&S.screen>=A_END) S.screen=0; draw(); save();
 };
 
@@ -613,11 +709,12 @@ $('btnHandYes').onclick=function(){
 /* ---------- leaving the page / full screen ---------- */
 var awayAt=0;
 document.addEventListener('visibilitychange',function(){
-  if($('scrTest').classList.contains('hidden')) return;
+  if(window.PRACTICE||$('scrTest').classList.contains('hidden')) return;
   if(document.hidden){ awayAt=Date.now(); }
   else if(awayAt){ S.leaves++; S.away+=(Date.now()-awayAt)/1000; awayAt=0; touch(); save(); $('ovLeft').classList.remove('hidden'); trDirs($('ovLeft')); }
 });
 document.addEventListener('fullscreenchange',function(){
+  if(window.PRACTICE) return;
   if(document.fullscreenElement||$('scrTest').classList.contains('hidden')||S.submitted) return;
   S.fsExits++; touch(); $('ovLeft').classList.remove('hidden'); trDirs($('ovLeft'));
 });
@@ -626,7 +723,7 @@ $('btnBackIn').onclick=function(){ $('ovLeft').classList.add('hidden'); try{ doc
 /* ---------- browser translation canary ---------- */
 var CANARY=$('canary').textContent;
 setInterval(function(){ if($('canary').textContent!==CANARY || document.documentElement.className.indexOf('translated')>=0){
-  if(!$('scrTest').classList.contains('hidden')) $('ovTrans').classList.remove('hidden'); } }, 1500);
+  if(!window.PRACTICE && !$('scrTest').classList.contains('hidden')) $('ovTrans').classList.remove('hidden'); } }, 1500);
 $('btnTransOk').onclick=function(){ $('ovTrans').classList.add('hidden'); };
 document.addEventListener('contextmenu',function(e){ if(!$('scrTest').classList.contains('hidden')) e.preventDefault(); });
 

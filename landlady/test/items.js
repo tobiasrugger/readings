@@ -120,3 +120,33 @@ var E_RUBRIC = [
   [1,'A prediction only, or clues that are not in the story'],
   [0,'Blank or off topic']
 ];
+
+/* ---- T-212: hints for the PRACTICE version (landlady/test/?practice=1) ----
+   ¶ numbers are the paper story's (landlady/table/handout.html) and the Reader's.
+   The real test never shows these. */
+var DEFS = {
+  'porter':'a worker at a train station who carries bags',
+  'compulsion':'a strong pull to do something that you cannot control',
+  'peculiar':'strange or odd, not what you expected',
+  'neglect':'when nobody takes care of a thing, so it falls apart',
+  'preserved':'kept from rotting, using chemicals',
+  'briskly':'moving quickly, like a busy person in a hurry',
+  'lodgings':"a room in someone's house that you pay to sleep in",
+  'dachshund':'a small dog with a long body and short legs',
+  'head office':'the main office of a company, where the bosses work',
+  'big shots':'the important, powerful people in a company',
+  'swanky':'expensive and fancy-looking',
+  'nest':'a home, and also the place where an animal waits'
+};
+var HINTS = {
+  c1:{p:'4',  t:'What did Mr Greenslade tell Billy to do after he found lodgings?'},
+  c2:{p:'11', t:'What does Billy say a pub would have in the evenings?'},
+  c3:{p:'17', t:'Compare the price with what Billy was willing to pay.'},
+  c4:{p:'19', t:'If other guests were staying, what would you see in the hall?'},
+  c5:{p:'31', t:'Billy says: "Maybe it was in the …"'},
+  c6:{p:'41', t:'Think about the parrot and the dog. What did she do to them?'},
+  c7:{p:'48', t:'What has a smell like bitter almonds? Is it safe to drink?'},
+  c8:{p:'21 and 27', t:'Look at all the warning clues. Does a harmless person do these things?'},
+  d1:{p:'9'}, d2:{p:'10'}, d3:{p:'15'}, d4:{p:'24'}, d5:{p:'19'}, d6:{p:'33'}, d7:{p:'41'}, d8:{p:'48'},
+  b1:{part:'Part One'}, b2:{part:'Part One'}, b3:{part:'Part One'}, b4:{part:'Part Three'}, b5:{part:'Part Four'}, b6:{part:'Part Four'}
+};
