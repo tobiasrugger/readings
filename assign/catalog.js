@@ -856,6 +856,13 @@ window.CATALOG=[
 "g": "More: Launch Plus (ELD 101)"
 },
 {
+"p": "/readings/wordgame/landlady/",
+"t": "The Landlady: Table Word Game",
+"d": "2–5 players: guess the story word from its picture, then use it in a sentence; the table decides if it makes sense.",
+"m": "",
+"g": "Short stories"
+},
+{
 "p": "/readings/launch-plus/weekend/game.html",
 "t": "Last Weekend: Word Game",
 "d": "2–5 players type answers in 4 rounds: what is happening, use it in a sentence, past tense, past tense in a sentence.",
