@@ -50,6 +50,7 @@ h2.grp{font-size:20px;margin:6px 0 10px;font-weight:900}
 .btn:disabled{opacity:.45;cursor:default}
 .btn.rec{background:#c0392b}
 .btn.rec.on{animation:pulse 1s infinite}
+.btn.rec.alt{background:#fff;color:var(--ink);box-shadow:0 2px 0 var(--ink)}
 /* section */
 .sechead{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px}
 .sechead h2{margin:0;font-size:22px}
@@ -466,11 +467,20 @@ function save(turnIn){
   var row={email:ME.email,test_key:TEST_KEY,episode:'ep02',mode:MODE,student_name:ME.name,period:ME.period,lang:ME.lang,work:S,scores:totals(),updated_at:new Date().toISOString()};
   if(turnIn) row.turned_in=true;
   return fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email,test_key',{method:'POST',headers:H({Prefer:'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify([row])})
-  .then(function(r){ SAVING=false; if(!r.ok) return r.text().then(function(t){throw new Error(r.status+' '+t.slice(0,120));}); $('saved').textContent='\u2713 Saved'; })
+  .then(function(r){ SAVING=false; if(DIRTY){ clearTimeout(SOON); SOON=setTimeout(function(){ if(DIRTY) save(); },300); } if(!r.ok) return r.text().then(function(t){throw new Error(r.status+' '+t.slice(0,120));}); $('saved').textContent='\u2713 Saved'; })
   .catch(function(e){ SAVING=false; DIRTY=true; $('saved').textContent='Not saved'; showNet('Your last answers did not save ('+esc(e.message)+'). Keep working \u2014 it will try again.'); });
 }
-function touch(){ DIRTY=true; setGal(); }
+/* T-198: save soon after every change (1.5 s after the last tap, so a burst of taps or typing is one save),
+   plus the 20 s safety net below, plus a last-chance save when the tab closes. */
+var SOON=null;
+function touch(){ DIRTY=true; setGal(); clearTimeout(SOON); SOON=setTimeout(function(){ if(DIRTY) save(); },1500); }
 setInterval(function(){ if(DIRTY) save(); },20000);
+window.addEventListener('pagehide',function(){
+  if(!DIRTY||!LOADED||!ME.email) return;
+  try{ setGal(); var body=JSON.stringify([{email:ME.email,test_key:TEST_KEY,episode:'ep02',mode:MODE,student_name:ME.name,period:ME.period,lang:ME.lang,work:S,scores:totals(),updated_at:new Date().toISOString()}]);
+    if(body.length<60000) fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email,test_key',{method:'POST',keepalive:true,headers:H({Prefer:'resolution=merge-duplicates,return=minimal'}),body:body});
+  }catch(e){}
+});
 document.addEventListener('visibilitychange',function(){ if(document.hidden&&ME.email){ S.log.leaves=(S.log.leaves||0)+1; S.log.lastLeave=new Date().toISOString(); touch(); save(); } });
 setInterval(function(){ var h=document.documentElement; if(/translated-(ltr|rtl)/.test(h.className)&&!S.log._tr){ S.log._tr=1; S.log.translated=(S.log.translated||0)+1; touch(); } if(!/translated-(ltr|rtl)/.test(h.className)) S.log._tr=0; },3000);
 
@@ -553,7 +563,7 @@ function isDone(o){ return o.type==='read'?!!(S.read[o.it.id]&&S.read[o.it.id].d
 function openSec(k){
   var sec=SECTIONS.filter(function(s){return s.k===k;})[0]; CUR={k:k,items:itemsOf(k),ext:false};
   $('menu').classList.add('hide'); $('sec').classList.remove('hide');
-  $('secTitle').textContent=sec.t; setDir($('secDir'),(k==='read'&&PRACTICE)?'Read each sentence out loud. Tap Record, read, then tap Stop. After you record, you can listen and try again.':sec.dir); dirTranslate($('sec'));
+  $('secTitle').textContent=sec.t; setDir($('secDir'),(k==='read'&&PRACTICE)?'Read each sentence out loud one time. Tap Record, read, then tap Stop. One good try is enough. Mr. Toby will listen.':sec.dir); dirTranslate($('sec'));
   var i=S.pos[k]||0; var firstOpen=CUR.items.findIndex(function(o){return !isDone(o);}); if(firstOpen>=0&&(i>=CUR.items.length||isDone(CUR.items[i]))) i=firstOpen;
   if(k==='words'&&ME.lang) prefetchWords();
   showItem(Math.min(i,CUR.items.length-1)); window.scrollTo(0,0);
@@ -755,11 +765,12 @@ function rRead(o,box){
   var it=o.it, r=S.read[it.id]||{tries:0};
   var sc=it.custom||(EP&&EP.scenes[it.scene]);
   var words=it.t.split(' ');
-  var marked=(PRACTICE&&r.done&&r.heard&&r.missed)?words.map(function(w,i){return r.missed.indexOf(i)>=0?'<span class="miss">'+esc(w)+'</span>':esc(w);}).join(' '):esc(it.t);
-  var redo=PRACTICE?true:(r.done&&!r.heard&&r.tries<2);
+  var marked=esc(it.t);  /* T-197: no orange 'missed' words for students; the dashboard still shows them to Mr. Toby */
+  var MAXT=3, heardOk=!SR||!!r.heard;
+  var redo=PRACTICE?(!r.done||!heardOk||r.tries<MAXT):(r.done&&!r.heard&&r.tries<2);
   box.innerHTML='<div class="pic">'+(sc?scenePic(sc):'')+'</div>'+(it.isNew?'<p class="dir" translate="no">'+tapWords('A new sentence. You did not practice this one.')+'</p>':'')+
     '<div class="big" translate="no" data-no-listen>'+marked+'</div>'+
-    '<div><button class="btn rec" id="recBtn"'+((r.done&&!redo)?' disabled':'')+'>\u25cf '+(r.done?'Record again':'Record')+'</button> <span id="live" class="heard"></span></div>'+
+    '<div>'+((r.done&&!redo)?'':'<button class="btn rec'+((PRACTICE&&r.done&&heardOk)?' alt':'')+'" id="recBtn"'+((PRACTICE&&r.done&&heardOk)?' style="font-size:15px;padding:6px 12px;color:#2b2233"':'')+'>\u25cf '+(r.done?((PRACTICE&&heardOk)?'Record again (only if you want)':'Record again'):'Record')+'</button>')+' <span id="live" class="heard"></span></div>'+
     '<div id="fb">'+readFb(it,r)+'</div>'+navRow(o);
   $('recBtn').onclick=function(){
     var b=$('recBtn');
@@ -772,10 +783,10 @@ function readFb(it,r){
   if(!r.done) return '';
   var h='';
   if(PRACTICE){
-    if(!SR) h+='<p class="dir">Recorded. This browser cannot listen, so Mr. Toby will listen to your recording.</p>';
-    else if(!r.heard) h+=quip('I could not hear you. Read a little louder, close to the microphone.');
-    else if(!r.missed.length) h+='<div class="good">\u2713 The computer understood every word.</div>';
-    else h+='<div class="hint">'+headPic('linh')+'<div>The computer did not catch the <span class="miss">orange</span> words. It is not always right. Listen, then try again. '+hearBtn(it.t)+' '+hearBtn(it.t,true).replace('\ud83d\udd0a','\ud83d\udc22')+'</div></div>';
+    /* T-197: one good try is enough. No "the computer missed these words" — speech recognition is often wrong,
+       and students were re-recording again and again. Mr. Toby listens on the dashboard. */
+    if(SR&&!r.heard) h+=quip('I could not hear you. Read a little louder, close to the microphone.');
+    else h+='<div class="good">\u2713 Recorded! One good try is enough. Tap Next.</div><p class="dir" translate="no">'+tapWords('Mr. Toby will listen to your recording.')+' <span class="wc">Want to hear the sentence?</span> '+hearBtn(it.t)+'</p>'+(r.tries>=3?'<p class="wc">That is enough tries for this sentence. Great work!</p>':'');
   } else {
     h+=(SR&&!r.heard&&r.tries<2)?'<p class="dir">I could not hear you. You can record one more time.</p>':'<div class="good" style="color:#2b2233">\u2713 Recorded.</div>';
   }
