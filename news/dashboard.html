@@ -248,10 +248,12 @@ function parts(person,slug){
     prod:(a.produce||'').trim().length>5, talk:talk, runs:runs.length,
     bestWcpm:runs.reduce(function(m,r){return Math.max(m,+r.wcpm||0);},0),
     level:(w&&w.level)||'', turned:a._turnedIn||'', updated:(w&&w.updated_at)||''};
-  // how many chart cells this student was supposed to fill (half the hidden cells)
+  // Find It (T-207): every chart cell is the student's own; a cell counts once it is FOUND (saved only when right)
   var gaps=0;
   A.talk.rows.forEach(function(row){row.forEach(function(c){if(/^[AB]:/.test(c))gaps++;});});
-  var talkTarget=Math.max(1,Math.round(gaps/2));
+  var talkTarget=Math.max(1,gaps);
+  var ft=a._ft||{}; o.fiMiss=Object.keys(ft).reduce(function(n,k){return n+(+ft[k].m||0);},0);
+  o.fiChoice=Object.keys(ft).filter(function(k){return ft[k].via==='choice';}).length;
   o.talkTarget=talkTarget;
   var gTot=cTot+(A.gram.produce?1:0), gDone=cDone+(o.prod?1:0);
   o.gDone=gDone;o.gTot=gTot;
@@ -290,7 +292,7 @@ function draw(){
     '<div class="stat"><b>'+withRec+'</b><span>sent a recording</span></div>'+
     '<div class="stat"><b>'+(wpms.length?wpms[Math.floor(wpms.length/2)]:'—')+'</b><span>median wcpm</span></div>';
   var h='<tr><th data-s="name">Student</th><th data-s="period">Per.</th><th>Level</th><th>Questions</th><th>Grammar</th>'+
-        '<th>Your turn</th><th>Talk chart</th><th data-s="wpm">Recording</th><th data-s="score">Score</th><th>Turned in</th><th data-s="updated">Last active</th></tr>';
+        '<th>Your turn</th><th>Find It</th><th data-s="wpm">Recording</th><th data-s="score">Score</th><th>Turned in</th><th data-s="updated">Last active</th></tr>';
   if(!rs.length) h+='<tr><td colspan="11" class="empty">No work yet for this article.</td></tr>';
   rs.forEach(function(r){
     var p=parts(r,slug)||{};
@@ -304,7 +306,7 @@ function draw(){
       '<td>'+pill(p.qDone||0,p.qTot||0)+'</td>'+
       '<td>'+pill(p.cRight||0,p.cTot||0)+'</td>'+
       '<td>'+(p.prod?'<span class="pill g">done</span>':'<span class="pill r">no</span>')+'</td>'+
-      '<td>'+(p.talk?'<span class="pill g">'+p.talk+' cells</span>':'<span class="pill r">empty</span>')+'</td>'+
+      '<td>'+pill(p.talk||0,p.talkTarget||0)+(p.fiMiss?' <span class="muted" title="misses before finding">\u2717'+p.fiMiss+'</span>':'')+'</td>'+
       '<td>'+(p.runs?'<b>'+p.bestWcpm+'</b> wcpm <span class="muted">\u00d7'+p.runs+'</span>':'<span class="pill n">none</span>')+'</td>'+
       '<td title="'+esc(tip(p,r.name||''))+'">'+breakdown(p)+'<span class="eq">=</span>'+
         '<span class="pill '+cellClass(p.score||0)+'" style="font-size:15px">'+(p.score||0)+'</span></td>'+
@@ -328,10 +330,12 @@ function detail(person,slug){
   if(A.gram.produce) h+='<h4>Your turn</h4><div class="qa"><div class="q">'+esc(plain(A.gram.produce))+'</div><div class="a">'+ans(a.produce)+'</div></div>';
   var tk=Object.keys(a).filter(function(k){return /^t\d/.test(k)&&(a[k]||'').trim();});
   if(tk.length){
-    h+='<h4>Talk chart — what they got from their partner</h4>';
+    h+='<h4>Find It \u2014 answers found'+((a._ft&&Object.keys(a._ft).length)?'':' (older partner chart)')+'</h4>';
     tk.forEach(function(k){
       var m=k.match(/^t(\d+)_(\d+)$/),row=(A.talk.rows[+m[1]]||[]),col=A.talk.cols[+m[2]]||'';
-      h+='<div class="qa"><span class="q">'+esc(row[0]||'')+' \u00b7 '+esc(col)+':</span> '+esc(a[k])+'</div>';
+      var f=(a._ft||{})[k]||{};
+      h+='<div class="qa"><span class="q">'+esc(row[0]||'')+' \u00b7 '+esc(col)+':</span> '+esc(a[k])+
+         (f.m?' <span class="muted">(\u2717'+f.m+(f.misses?': '+esc(f.misses.join(' | ')):'')+(f.via==='choice'?'; chose from 3':'')+')</span>':'')+'</div>';
     });
   }
   h+='<h4>Recordings</h4>';
@@ -382,7 +386,7 @@ function tip(p,name){
   var L=[];
   L.push((p.pQ?'\u2713':'\u2717')+' Questions: '+p.qDone+' of '+p.qTot+' answered');
   L.push((p.pG?'\u2713':'\u2717')+' Grammar + your turn: '+p.gDone+' of '+p.gTot+' done');
-  L.push((p.pT?'\u2713':'\u2717')+' Talk chart: '+p.talk+' of '+p.talkTarget+' cells filled');
+  L.push((p.pT?'\u2713':'\u2717')+' Find It: '+p.talk+' of '+p.talkTarget+' found'+(p.fiMiss?' ('+p.fiMiss+' misses, '+p.fiChoice+' by choosing)':''));
   L.push((p.pR?'\u2713':'\u2717')+' Recording: '+(p.runs?(p.runs+' sent, best '+p.bestWcpm+' wcpm'):'none sent'));
   L.push('Score '+p.score+' of 4');
   return (name?name+'\n':'')+L.join('\n');
@@ -421,7 +425,7 @@ function matrix(){
     h+='<td class="tot">'+tot+'/'+(ARTS.length*4)+'</td><td></td></tr>';
   });
   $('mtx').innerHTML=h;
-  $('legend').innerHTML='Each cell reads <b>questions + grammar + talk chart + recording = score</b>. '+
+  $('legend').innerHTML='Each cell reads <b>questions + grammar + Find It + recording = score</b>. '+
     'A part earns its point when at least half of it is done. &nbsp; '+
     '<b>4</b> = all four \u00b7 <b>3</b> = mostly \u00b7 <b>2</b> = somewhat \u00b7 <b>1</b> = partly \u00b7 <b>0</b> = not done.';
 }
@@ -438,13 +442,13 @@ $('gb').onclick=function(){
   which.forEach(function(a){
     var slug='news/'+a.slug, A=DOCS[a.slug];
     acts.push({slug:slug,title:a.title||a.slug,unit:"This Week's Reading",url:location.origin+'/readings/news/?a='+a.slug,
-      skills:['reading-comprehension','grammar','speaking','fluency'],sort_order:500,max_score:4});
+      skills:['reading-comprehension','grammar','fluency'],sort_order:500,max_score:4});
     ppl.forEach(function(r){
       var p=parts(r,a.slug); if(!p||!p.any) return;
       var w=r.work[a.slug], ans=(w&&w.answers)||{};
       attempts.push({email:r.email,slug:slug,score:p.score,max_score:4,
         detail:{source:'dashboard',parts:4,pQ:p.pQ,pG:p.pG,pT:p.pT,pR:p.pR,turned_in:!!p.turned},completed_at:now});
-      [['reading-comprehension',p.qDone,p.qTot],['grammar',p.cRight,p.cTot],['speaking',Math.min(p.talk,p.talkTarget),p.talkTarget],['fluency',p.pR,1]]
+      [['reading-comprehension',p.qDone+Math.min(p.talk,p.talkTarget),p.qTot+(A.talk.rows.length?p.talkTarget:0)],['grammar',p.cRight,p.cTot],['fluency',p.pR,1]]
         .forEach(function(x){ if(x[2]>0) skills.push({email:r.email,slug:slug,skill:x[0],n:x[1],d:x[2],completed_at:now}); });
       if((ans.produce||'').trim()) work.push({email:r.email,slug:slug,label:'Your turn',text:ans.produce.trim().slice(0,2000),pinned:true,sort_order:0,updated_at:now});
       var lq=A.qs.length?ans['q'+(A.qs.length-1)]:''; if((lq||'').trim()) work.push({email:r.email,slug:slug,label:'Question '+A.qs.length,text:lq.trim().slice(0,2000),pinned:false,sort_order:1,updated_at:now});
@@ -482,7 +486,7 @@ $('csv').onclick=function(){
     });
   } else {
     var slug=$('art').value,A=DOCS[slug]||{qs:[]};
-    var head=['name','email','period','level','score_0_4','questions_done','grammar_right','your_turn','talk_cells','recordings','best_wcpm','turned_in','last_active'];
+    var head=['name','email','period','level','score_0_4','questions_done','grammar_right','your_turn','find_it_found','recordings','best_wcpm','turned_in','last_active'];
     A.qs.forEach(function(_,i){head.push('Q'+(i+1));});
     head.push('your_turn_text');
     lines.push(head);

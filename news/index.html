@@ -84,6 +84,17 @@
   .badge{display:inline-block;font-size:13px;font-weight:800;border-radius:99px;padding:2px 10px;margin-left:6px;vertical-align:middle}
   .badge.done{background:#dcfce7;color:#166534;border:1.5px solid #166534}
   .badge.started{background:#fef3c7;color:#92400e;border:1.5px solid #92400e}
+  .fi h3{display:flex;align-items:center;gap:8px}
+  .fiq{margin:10px 0 4px}
+  .fiq label{display:block;font-weight:700;font-size:14px;color:#3d4a42;margin-bottom:4px}
+  .firow{display:flex;gap:8px}
+  .firow input{flex:1;min-width:0;font-family:inherit;font-size:16px;padding:8px 10px;border:2px solid #9aa39c;border-radius:9px;background:#fffdf5}
+  .firow input.ok{border-color:var(--ok);background:#eefaf1}
+  .fifb{min-height:22px;margin-top:5px;font-size:15px;font-weight:700}
+  .fifb .x{color:var(--no)} .fifb .v{color:var(--ok)}
+  .fich{display:flex;flex-wrap:wrap;gap:7px;margin-top:6px}
+  .fich button{font-family:inherit;font-size:15px;padding:7px 11px;border:2px solid #2b3a33;border-radius:9px;background:#fff;cursor:pointer;text-align:left}
+  .fich button.gone{opacity:.3;pointer-events:none;text-decoration:line-through}
   .credit{background:#fff8e6;border:2px solid #b7791f;border-radius:12px;padding:12px 14px;font-weight:700;margin:0 0 14px}
   .card h3{margin:0 0 8px;font-size:17px}
   label.q{display:block;font-weight:700;margin:18px 0 6px}
@@ -149,7 +160,7 @@
 <div class="tabs" id="tabs">
   <button data-p="read" class="sel">Read</button>
   <button data-p="grammar">Grammar</button>
-  <button data-p="talk">Talk</button>
+  <button data-p="talk">Find It</button>
   <button data-p="record">Record</button>
   <button data-p="project" id="tabProject" style="display:none">Project</button>
   <button data-p="teacher">Teacher</button>
@@ -170,11 +181,7 @@
 </section>
 
 <section class="pane" id="p-talk">
-  <div class="note" id="talkIntro" data-xl="Sit with a partner. One of you is A, one is B. You each know different things. Ask each other questions until your chart is full. Do not show your screen.">Sit with a partner. One of you is <b>A</b>, one is <b>B</b>. You each know different things. Ask each other questions until your chart is full. Do not show your screen.</div>
-  <div class="roles">
-    <button id="roleA">I am Partner A</button>
-    <button id="roleB">I am Partner B</button>
-  </div>
+  <div class="note" id="talkIntro" data-xl="Find each answer in the article and type it. Press Check. If you are stuck, you will get a hint.">&#128269; Find each answer in the article and type it. Press <b>Check</b>. If you are stuck, you will get a hint.</div>
   <div id="talkBody"></div>
 </section>
 
@@ -518,6 +525,75 @@ $('lvl').addEventListener('change',function(){
   render();
 });
 
+/* ---------- Find It (T-207) ---------- */
+var FI_STOP={the:1,and:1,but:1,for:1,are:1,was:1,were:1,they:1,them:1,their:1,this:1,that:1,with:1,from:1,into:1,its:1,has:1,have:1,had:1,not:1,did:1,does:1,can:1,all:1,his:1,her:1,she:1,him:1,you:1,our:1,who:1,what:1,very:1,also:1,just:1,than:1,then:1,when:1,where:1,will:1,would:1,about:1,there:1,these:1,those:1,been:1,some:1,more:1,less:1,like:1,near:1,now:1,today:1,how:1,much:1,many:1,over:1,only:1,out:1,get:1,got:1};
+var FI_NUM={zero:'0',one:'1',two:'2',three:'3',four:'4',five:'5',six:'6',seven:'7',eight:'8',nine:'9',ten:'10',eleven:'11',twelve:'12',twenty:'20',hundred:'100',thousand:'1000',half:'0.5'};
+function fiWords(x){return plain(String(x||'')).toLowerCase().replace(/(\d),(?=\d{3})/g,'$1').replace(/[^a-z0-9\s]/g,' ').split(/\s+/)
+  .map(function(w){return FI_NUM[w]||w;}).filter(function(w){return w&&(/\d/.test(w)||(w.length>=3&&!FI_STOP[w]));});}
+function fiKey(k){var m=k.match(/^t(\d+)_(\d+)$/),c=(A.talk.rows[+m[1]]||[])[+m[2]]||'';return c.replace(/^[AB]:\s*/,'');}
+function fiMatch(ans,key){
+  var kw=fiWords(key),aw=fiWords(ans); if(!kw.length) return String(ans).trim().length>1;
+  var nums=kw.filter(function(w){return /\d/.test(w);});
+  if(nums.some(function(n){return aw.indexOf(n)<0;})) return false;
+  var hit=kw.filter(function(k){return aw.some(function(a){return a===k||(k.length>=4&&a.length>=4&&a.slice(0,4)===k.slice(0,4));});}).length;
+  return hit>=Math.max(1,Math.ceil(kw.length/3));
+}
+function fiPara(key){
+  var kw=fiWords(key),best=-1,bi=0;
+  A.read.forEach(function(p,i){var pw=fiWords(p),n=kw.filter(function(k){return pw.some(function(a){return a===k||(k.length>=4&&a.slice(0,4)===k.slice(0,4));});}).length;if(n>best){best=n;bi=i;}});
+  return bi+1;
+}
+function fiState(k){ANS._ft=ANS._ft||{};return ANS._ft[k]=ANS._ft[k]||{m:0};}
+function fiSave(){dirty=true;setDot('');localStorage.setItem(lsKey(),JSON.stringify(ANS));galUpdate();}
+function fiChoices(k){
+  if(ANS._fo&&ANS._fo[k]) return ANS._fo[k];
+  var right=fiKey(k),pool=[];
+  A.talk.rows.forEach(function(row){row.forEach(function(c){var m=c.match(/^[AB]:\s*(.*)$/);if(m&&m[1]!==right&&pool.indexOf(m[1])<0)pool.push(m[1]);});});
+  pool.sort(function(){return Math.random()-.5;});
+  var ch=[right].concat(pool.slice(0,2));
+  for(var i=ch.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),x=ch[i];ch[i]=ch[j];ch[j]=x;}
+  ANS._fo=ANS._fo||{};ANS._fo[k]=ch;return ch;
+}
+function fiDraw(k){
+  var st=(ANS._ft||{})[k]||{m:0},inp=document.querySelector('.fiin[data-fk="'+k+'"]'),fb=$('fb_'+k),fc=$('fc_'+k),btn=document.querySelector('.fichk[data-fk="'+k+'"]');
+  if(!inp) return;
+  if(ANS[k]){
+    inp.value=ANS[k];inp.readOnly=true;inp.classList.add('ok');if(btn)btn.style.display='none';
+    fb.innerHTML=(st.m?'<span class="x">\u2717</span> ':'')+'<span class="v">\u2713 Found it!</span>';fc.innerHTML='';return;
+  }
+  if(!st.m){fb.innerHTML='';fc.innerHTML='';return;}
+  var para=fiPara(fiKey(k));
+  fb.innerHTML='<span class="x">\u2717</span> Not yet. Look again in <b>paragraph '+para+'</b>.'+(st.m>=2?' Or choose one:':'');
+  if(st.m>=2){
+    var gone=st.gone||[];
+    fc.innerHTML=fiChoices(k).map(function(c,i){return '<button data-fk="'+k+'" data-ci="'+i+'"'+(gone.indexOf(i)>=0?' class="gone"':'')+'>'+esc(c)+'</button>';}).join('');
+  } else fc.innerHTML='';
+}
+function paintFind(){
+  A.talk.rows.forEach(function(row,ri){row.forEach(function(c,ci){if(/^[AB]:/.test(c))fiDraw('t'+ri+'_'+ci);});});
+}
+$('talkBody').addEventListener('click',function(e){
+  var b=e.target.closest('.fichk');
+  if(b){
+    var k=b.dataset.fk,inp=document.querySelector('.fiin[data-fk="'+k+'"]'),v=(inp.value||'').trim();
+    if(!v){$('fb_'+k).innerHTML='Type an answer first.';return;}
+    var st=fiState(k);
+    if(fiMatch(v,fiKey(k))){ANS[k]=v;st.via='typed';}
+    else{st.m++;st.misses=(st.misses||[]).concat([v]).slice(-5);}
+    fiSave();fiDraw(k);return;
+  }
+  var c=e.target.closest('.fich button');
+  if(c){
+    var k2=c.dataset.fk,i=+c.dataset.ci,ch=fiChoices(k2),st2=fiState(k2);
+    if(ch[i]===fiKey(k2)){ANS[k2]=ch[i];st2.via='choice';}
+    else{st2.m++;st2.gone=(st2.gone||[]).concat([i]);}
+    fiSave();fiDraw(k2);
+  }
+});
+$('talkBody').addEventListener('keydown',function(e){
+  if(e.key==='Enter'&&e.target.classList.contains('fiin')){var b=document.querySelector('.fichk[data-fk="'+e.target.dataset.fk+'"]');if(b)b.click();}
+});
+
 /* ---------- render ---------- */
 function render(){
   applyLevel(LEVEL);
@@ -590,30 +666,24 @@ function render(){
   }
   $('gramBody').innerHTML=g;
 
-  /* TALK */
+  /* FIND IT (T-207): the old partner chart, now solo. Every A:/B: cell is a blank the student finds in the article. */
   var t='';
-  if(A.talk.cols.length){
-    t+='<table><tr>';
-    A.talk.cols.forEach(function(c){t+='<th>'+esc(c)+'</th>';});
-    t+='</tr>';
-    A.talk.rows.forEach(function(row,ri){
-      t+='<tr>';
-      row.forEach(function(cell,ci){
-        var own=cell.match(/^([AB]):\s*(.*)$/);
-        if(!own){t+='<td class="have"><b>'+esc(cell)+'</b></td>';return;}
-        if(own[1]===ROLE) t+='<td class="have">'+esc(own[2])+'</td>';
-        else t+='<td><input data-k="t'+ri+'_'+ci+'" placeholder="ask your partner"></td>';
-      });
-      t+='</tr>';
+  A.talk.rows.forEach(function(row,ri){
+    var head=/^[AB]:/.test(row[0])?(A.talk.cols[0]||''):row[0];
+    t+='<div class="card fi"><div data-xl="'+esc(head).replace(/"/g,'&quot;')+'"><h3>'+esc(head)+' <button class="spk" data-raw="'+esc(head).replace(/"/g,'&quot;')+'">&#128266;</button></h3></div>';
+    row.forEach(function(cell,ci){
+      var own=cell.match(/^([AB]):\s*(.*)$/);
+      if(ci===0&&!own) return;
+      var lab=A.talk.cols[ci]||'';
+      if(!own){t+='<div class="fiq"><label>'+esc(lab)+'</label><div>'+esc(cell)+'</div></div>';return;}
+      var k='t'+ri+'_'+ci;
+      t+='<div class="fiq"><label>'+esc(lab)+'</label>'+
+         '<div class="firow"><input class="fiin" data-k="_fd_'+k+'" data-fk="'+k+'" lang="en" placeholder="Type what you find"><button class="btn solid fichk" data-fk="'+k+'">Check</button></div>'+
+         '<div class="fifb" id="fb_'+k+'"></div><div class="fich" id="fc_'+k+'"></div></div>';
     });
-    t+='</table>';
-  }
-  if(A.talk.frames.length){
-    t+='<div class="card" style="margin-top:16px"><h3>Sentences you can use</h3><ul class="frames">';
-    A.talk.frames.forEach(function(f){t+='<li>'+esc(f)+' <button class="spk" data-raw="'+esc(f).replace(/"/g,'&quot;')+'">&#128266;</button></li>';});
-    t+='</ul></div>';
-  }
-  $('talkBody').innerHTML=ROLE?t:'<p class="muted">Choose A or B above to see your half of the chart.</p>';
+    t+='</div>';
+  });
+  $('talkBody').innerHTML=A.talk.rows.length?t:'<p class="muted">This article has no Find It chart.</p>';
 
   /* RECORD — hands off to the fluency tracker so everything lands in one growth chart */
   var RECTXT=recordOf(A);
@@ -632,6 +702,7 @@ function render(){
   renderProject();
   restore();
   wireInputs();
+  paintFind();
   dualTranslate();
 }
 function renderProject(){
@@ -711,8 +782,6 @@ $('tabs').addEventListener('click',function(e){
   window.scrollTo(0,0);
 });
 
-$('roleA').onclick=function(){ROLE='A';this.classList.add('sel');$('roleB').classList.remove('sel');render();};
-$('roleB').onclick=function(){ROLE='B';this.classList.add('sel');$('roleA').classList.remove('sel');render();};
 
 function wireInputs(){
   [].forEach.call(document.querySelectorAll('[data-k]'),function(el){
@@ -1107,7 +1176,7 @@ function loadTracker(){
   if(TRACK_LOADED||!A) return; TRACK_LOADED=true;
   window.GAL_SLUG_KEEP='news/'+A.meta.SLUG;
   window.GAL_META={title:A.meta.TITLE||A.meta.SLUG, unit:"This Week's Reading",
-    skills:['reading-comprehension','grammar','speaking','fluency'], sort_order:500};
+    skills:['reading-comprehension','grammar','fluency'], sort_order:500};
   galUpdate();
   var sc=document.createElement('script'); sc.src='/readings/track.js'; document.body.appendChild(sc);
 }
@@ -1119,7 +1188,7 @@ function galParts(){
   A.gram.practice.forEach(function(p,i){ if(p.a.indexOf((a['c'+i]||'').trim().toLowerCase())>=0) cRight++; });
   var prod=(a.produce||'').trim().length>5;
   var gaps=0; A.talk.rows.forEach(function(row){row.forEach(function(c){if(/^[AB]:/.test(c))gaps++;});});
-  var talkTarget=Math.max(1,Math.round(gaps/2));
+  var talkTarget=Math.max(1,gaps);   /* Find It (T-207): every cell is the student's; half found = the point */
   var talk=Object.keys(a).filter(function(k){return /^t\d/.test(k)&&(a[k]||'').trim();}).length;
   var gTot=cTot+(A.gram.produce?1:0), gDone=cDone+(prod?1:0);
   var pQ=(qTot&&qDone/qTot>=0.5)?1:0, pG=(gTot&&gDone/gTot>=0.5)?1:0, pT=(talk/talkTarget>=0.5)?1:0, pR=HAS_REC?1:0;
@@ -1130,9 +1199,8 @@ function galUpdate(){
   var p=galParts(); if(!p) return;
   window.GAL_SCORE=p.score; window.GAL_MAX=4;
   window.GAL_SKILLS={
-    'reading-comprehension':{n:p.qDone,d:p.qTot},
+    'reading-comprehension':{n:p.qDone+Math.min(p.talk,p.talkTarget),d:p.qTot+(A.talk.rows.length?p.talkTarget:0)},
     'grammar':{n:p.cRight,d:p.cTot},
-    'speaking':{n:Math.min(p.talk,p.talkTarget),d:p.talkTarget},
     'fluency':{n:p.pR,d:1}
   };
   var hs=[];
