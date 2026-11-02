@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="/readings/saveguard.js"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Story Check 2: The Backpack</title>
@@ -451,6 +452,11 @@ function extScores(){
 function setGal(){ var t=totals(); window.GAL_SCORE=t.total; window.GAL_MAX=t.max; window.GAL_COMPLETION={done:SECTIONS.filter(function(s){var x=secScore(s.k);return x.done>=x.total;}).length,total:SECTIONS.length}; }
 
 /* ======================= SAVE / LOAD ======================= */
+/* T-201: saveguard.js (first line in <head>) reads this student's row under BOTH email spellings and shows a red bar
+   if the server can't be reached. Saves go out as a Blob on purpose: saveguard matches saved rows by a fixed list of
+   key columns that does not include test_key, so it would fill the practice row from the test row (same episode).
+   This page already loads before it saves (LOADED gate), so its own save path is the guard for writes. */
+function jbody(o){ return new Blob([JSON.stringify(o)],{type:'application/json'}); }
 function showNet(msg){ var n=$('netErr'); if(!msg){n.classList.add('hide');return;} n.innerHTML=msg; n.classList.remove('hide'); }
 function load(){
   return fetch(SUPA_URL+'/rest/v1/'+TABLE+'?select=work,turned_in&email=eq.'+encodeURIComponent(ME.email)+'&test_key=eq.'+TEST_KEY,{headers:H()})
@@ -466,7 +472,7 @@ function save(turnIn){
   SAVING=true; DIRTY=false; setGal(); $('saved').textContent='Saving\u2026';
   var row={email:ME.email,test_key:TEST_KEY,episode:'ep02',mode:MODE,student_name:ME.name,period:ME.period,lang:ME.lang,work:S,scores:totals(),updated_at:new Date().toISOString()};
   if(turnIn) row.turned_in=true;
-  return fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email,test_key',{method:'POST',headers:H({Prefer:'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify([row])})
+  return fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email,test_key',{method:'POST',headers:H({Prefer:'resolution=merge-duplicates,return=minimal'}),body:jbody([row])})
   .then(function(r){ SAVING=false; if(DIRTY){ clearTimeout(SOON); SOON=setTimeout(function(){ if(DIRTY) save(); },300); } if(!r.ok) return r.text().then(function(t){throw new Error(r.status+' '+t.slice(0,120));}); $('saved').textContent='\u2713 Saved'; })
   .catch(function(e){ SAVING=false; DIRTY=true; $('saved').textContent='Not saved'; showNet('Your last answers did not save ('+esc(e.message)+'). Keep working \u2014 it will try again.'); });
 }
@@ -478,7 +484,7 @@ setInterval(function(){ if(DIRTY) save(); },20000);
 window.addEventListener('pagehide',function(){
   if(!DIRTY||!LOADED||!ME.email) return;
   try{ setGal(); var body=JSON.stringify([{email:ME.email,test_key:TEST_KEY,episode:'ep02',mode:MODE,student_name:ME.name,period:ME.period,lang:ME.lang,work:S,scores:totals(),updated_at:new Date().toISOString()}]);
-    if(body.length<60000) fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email,test_key',{method:'POST',keepalive:true,headers:H({Prefer:'resolution=merge-duplicates,return=minimal'}),body:body});
+    if(body.length<60000) fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email,test_key',{method:'POST',keepalive:true,headers:H({Prefer:'resolution=merge-duplicates,return=minimal'}),body:new Blob([body],{type:'application/json'})});
   }catch(e){}
 });
 document.addEventListener('visibilitychange',function(){ if(document.hidden&&ME.email){ S.log.leaves=(S.log.leaves||0)+1; S.log.lastLeave=new Date().toISOString(); touch(); save(); } });
