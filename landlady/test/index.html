@@ -40,7 +40,9 @@ button{font:inherit;cursor:pointer}
 .qtr{display:block;color:var(--sel);font-weight:800;margin-top:.3rem;unicode-bidi:plaintext}
 .scenepic{float:right;width:min(40%,330px);margin:0 0 10px 16px}
 .scenepic svg{width:100%;height:auto;display:block;border:2px solid var(--line);border-radius:12px}
-.order .scenepic{float:none;width:100%;margin:0 0 12px}
+.order .scenepic{float:none;width:100%;max-width:240px;margin:12px auto 0;opacity:.95}   /* T-220: small, under the events */
+.given{flex:none;background:#2f6b2f;color:#fff;border-radius:999px;padding:.05rem .55rem;font-size:.8rem;font-weight:900}
+.evhead{font-weight:900;color:var(--ox);margin:0 0 8px;font-size:1.05rem}
 
 /* top bar */
 .bar{background:var(--night);color:#f3ead6;border-bottom:3px solid var(--line);position:sticky;top:0;z-index:20}
@@ -408,6 +410,7 @@ $('btnSign').onclick=function(){
       S.order0=makeOrder(); orderA1(); S.perm=makePerms(); S.startedAt=new Date().toISOString();   /* perms follow the order on screen */
     }
     if(!S.events) S.events=shuffle(ITEMS.B.events.map(function(e){return e.id;}));
+    giveFirst();
     if(!S.dOrder) S.dOrder=shuffle(ITEMS.D.clues.map(function(c){return c.id;}));
     orderA1();
     $('whoName').textContent=S.name+' · Period '+S.period;
@@ -524,7 +527,7 @@ function draw(){
     h+='<p class="stem" translate="no">'+esc(st)+' <button class="spk" data-say="'+esc(st)+'" aria-label="Hear it">🔊</button></p>'+opts(it,true);
   } else if(sc.kind==='mc'){
     var q=L(it.q);
-    h+=scene(2);
+    h+=picForC(it.id);
     h+='<p class="stem" translate="no">'+esc(q)+' <button class="spk" data-say="'+esc(q)+'">🔊</button><button class="glob" data-tr="'+esc(it.id)+'">🌐</button><span class="qtr" id="qtr_'+it.id+'"></span></p>'+opts(it,false);
   } else if(sc.kind==='order'){
     h+=orderHTML();
@@ -541,6 +544,11 @@ function draw(){
   if(sc.kind==='write'){ var ta=$('wr'); ta.oninput=function(){S.ans.e=ta.value; $('wc').textContent=wc(ta.value)+' words'; touch();}; }
   window.scrollTo(0,0);
 }
+/* T-223: Part C gets one picture per question, from the part of the story it asks about.
+   Where a story scene could hint the answer (c7 tea tray shows the stuffed pets), a plain drawing is used instead. */
+var C_PIC={c1:1,c2:2,c3:3,c4:'coat',c5:5,c6:'clock',c7:'tea',c8:4};   /* c1 not the map: it labels Head Office */
+var C_DRAW={clock:'<svg viewBox="0 0 330 230" role="img" aria-label="A tall old grandfather clock standing against striped wallpaper in a dim hallway, its pendulum hanging still."><rect width="330" height="230" fill="#4f4030"/><g fill="#5c4a36"><rect x="0" y="0" width="22" height="160"/><rect x="44" y="0" width="22" height="160"/><rect x="88" y="0" width="22" height="160"/><rect x="220" y="0" width="22" height="160"/><rect x="264" y="0" width="22" height="160"/><rect x="308" y="0" width="22" height="160"/></g><rect x="0" y="160" width="330" height="70" fill="#3a2a18"/><rect x="0" y="156" width="330" height="6" fill="#2b1c0e"/><g stroke="#2b1c0e" stroke-width="2"><path d="M0 190 h330"/><path d="M80 160 v30M190 160 v30M280 160 v30M30 190 v40M140 190 v40M240 190 v40"/></g><path d="M126 22 q39 -20 78 0 v14 h-78z" fill="#5a3418" stroke="#1e1208" stroke-width="2"/><rect x="128" y="34" width="74" height="70" fill="#6b3e1c" stroke="#1e1208" stroke-width="2"/><circle cx="165" cy="69" r="27" fill="#efe4c8" stroke="#c8892a" stroke-width="4"/><g stroke="#2b2418" stroke-width="2"><path d="M165 45 v4M165 89 v4M141 69 h4M185 69 h4"/></g><g fill="#2b2418" font-family="Georgia,serif" font-size="8" text-anchor="middle"><text x="165" y="56">XII</text><text x="165" y="88">VI</text><text x="152" y="72">IX</text><text x="179" y="72">III</text></g><path d="M165 69 l-1 -15 l2 0z" fill="#2b2418"/><path d="M165 69 l11 6" stroke="#2b2418" stroke-width="2.5" stroke-linecap="round"/><circle cx="165" cy="69" r="2.5" fill="#2b2418"/><rect x="136" y="104" width="58" height="96" fill="#5a3418" stroke="#1e1208" stroke-width="2"/><rect x="146" y="112" width="38" height="70" fill="#2a1a0c" stroke="#c8892a" stroke-width="1.5"/><path d="M165 114 v46" stroke="#c8a24a" stroke-width="2"/><circle cx="165" cy="164" r="9" fill="#c8a24a" stroke="#8a6a2a" stroke-width="2"/><path d="M150 178 h30" stroke="#3a2a18" stroke-width="2"/><rect x="128" y="200" width="74" height="10" fill="#4a2a12" stroke="#1e1208" stroke-width="2"/><g fill="#e8d6a8" opacity=".12"><ellipse cx="165" cy="60" rx="60" ry="40"/></g><rect x="0" y="0" width="330" height="230" fill="none" stroke="#2b2418" stroke-width="2"/></svg>',coat:'<svg viewBox="0 0 330 230" role="img" aria-label="A dim front hall with wallpaper, a tall wooden coat stand with empty hooks, an umbrella stand with nothing in it, and a mirror on the wall."><defs><linearGradient id="ch-wall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6b5a3e"/><stop offset="1" stop-color="#4a3c27"/></linearGradient></defs><rect width="330" height="230" fill="url(#ch-wall)"/><g opacity=".22" fill="#e8d6a8"><path d="M20 20 q8 10 0 20 q-8 10 0 20 q8 10 0 20 q-8 10 0 20 q8 10 0 20 q-8 10 0 20"/><path d="M70 20 q8 10 0 20 q-8 10 0 20 q8 10 0 20 q-8 10 0 20 q8 10 0 20 q-8 10 0 20"/><path d="M260 20 q8 10 0 20 q-8 10 0 20 q8 10 0 20 q-8 10 0 20 q8 10 0 20 q-8 10 0 20"/><path d="M310 20 q8 10 0 20 q-8 10 0 20 q8 10 0 20 q-8 10 0 20 q8 10 0 20 q-8 10 0 20"/></g><rect x="0" y="150" width="330" height="10" fill="#3a2a18"/><rect x="0" y="160" width="330" height="70" fill="#5a3c22"/><g stroke="#4a3018" stroke-width="2"><path d="M0 180 h330M0 205 h330"/><path d="M60 160 v20M150 180 v25M240 160 v20M100 205 v25M200 205 v25M290 205 v25"/></g><rect x="210" y="34" width="70" height="88" rx="35" fill="#8a6a3a" stroke="#3a2a18" stroke-width="3"/><rect x="218" y="42" width="54" height="72" rx="27" fill="#9fb3b8" opacity=".55"/><path d="M232 56 l14 -6 M226 76 l26 -12" stroke="#fff" stroke-width="2" opacity=".5"/><g fill="#6b4a26" stroke="#2b1c0e" stroke-width="2"><rect x="112" y="40" width="8" height="150" rx="3"/><path d="M90 192 h52 l-6 8 h-40z"/><path d="M116 52 q-22 0 -26 14 M116 52 q22 0 26 14 M116 70 q-18 2 -22 12 M116 70 q18 2 22 12" fill="none" stroke-width="4" stroke="#6b4a26"/><circle cx="116" cy="38" r="7"/></g><g fill="#c8892a"><circle cx="90" cy="67" r="3"/><circle cx="142" cy="67" r="3"/><circle cx="94" cy="83" r="3"/><circle cx="138" cy="83" r="3"/></g><g><path d="M166 150 v-36 a16 6 0 0 1 32 0 v36z" fill="#3e4a52" stroke="#1d2236" stroke-width="2"/><ellipse cx="182" cy="114" rx="16" ry="6" fill="#2a3238"/></g><rect x="0" y="0" width="330" height="230" fill="none" stroke="#2b2418" stroke-width="2"/></svg>',tea:'<svg viewBox="0 0 330 230" role="img" aria-label="A single china teacup on a saucer with a teaspoon, on a lace doily on a dark wooden table, with steam rising."><defs><radialGradient id="tc-glow" cx=".5" cy=".4" r=".7"><stop offset="0" stop-color="#7a5a34"/><stop offset="1" stop-color="#3a2614"/></radialGradient><linearGradient id="tc-tea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b56a2a"/><stop offset="1" stop-color="#7a3e12"/></linearGradient></defs><rect width="330" height="230" fill="url(#tc-glow)"/><rect x="0" y="150" width="330" height="80" fill="#4a2c16"/><g stroke="#3a2010" stroke-width="2" opacity=".7"><path d="M0 170 q80 -6 165 0 t165 0"/><path d="M0 200 q90 6 165 0 t165 2"/></g><g fill="#efe7d5" opacity=".9"><ellipse cx="165" cy="176" rx="96" ry="22"/></g><g fill="none" stroke="#c9bb9c" stroke-width="1.5" opacity=".9"><ellipse cx="165" cy="176" rx="86" ry="18"/><ellipse cx="165" cy="176" rx="72" ry="14"/><path d="M85 176 q8 -6 16 0 q8 6 16 0 q8 -6 16 0 q8 6 16 0 q8 -6 16 0 q8 6 16 0 q8 -6 16 0 q8 6 16 0 q8 -6 16 0 q8 6 16 0"/></g><ellipse cx="165" cy="168" rx="62" ry="12" fill="#f7f2e6" stroke="#8a7a5a" stroke-width="2"/><path d="M120 120 h90 q-4 44 -45 46 q-41 -2 -45 -46z" fill="#fbf8f0" stroke="#8a7a5a" stroke-width="2"/><ellipse cx="165" cy="120" rx="45" ry="9" fill="url(#tc-tea)" stroke="#8a7a5a" stroke-width="2"/><path d="M208 128 q24 0 20 18 q-4 14 -24 10" fill="none" stroke="#fbf8f0" stroke-width="7"/><path d="M208 128 q24 0 20 18 q-4 14 -24 10" fill="none" stroke="#8a7a5a" stroke-width="2"/><g fill="none" stroke="#3f6fa8" stroke-width="2"><path d="M132 140 q10 8 20 0 q10 -8 20 0 q10 8 20 0"/></g><g fill="#c8a24a"><path d="M100 170 l60 -14 l3 4 l-60 14z"/><ellipse cx="95" cy="172" rx="8" ry="4"/></g><g fill="none" stroke="#f3ead6" stroke-width="3" stroke-linecap="round" opacity=".7"><path d="M150 108 q-10 -14 2 -26 q12 -12 0 -26"/><path d="M170 106 q10 -16 -2 -30 q-12 -14 2 -28"/><path d="M188 108 q-8 -12 2 -22"/></g><rect x="0" y="0" width="330" height="230" fill="none" stroke="#2b2418" stroke-width="2"/></svg>'};
+function picForC(id){ var k=C_PIC[id]; if(k==null) return scene(2); if(typeof k==='string') return '<div class="scenepic">'+C_DRAW[k]+'</div>'; return scene(k); }
 /* a scene from the story's own world (never one that answers the question on screen) */
 function scene(i){ var f=window.LL_FIGS&&LL_FIGS[i]; return f?'<div class="scenepic">'+f.svg+'</div>':''; }
 function dirBlock(d){ if(!d) return ''; var t=L(d); return '<p class="dir" data-dir="'+esc(t)+'"><span class="en">'+esc(t)+'</span><span class="tr"></span></p>'; }
@@ -570,7 +578,7 @@ var PICK=null;
 function evText(id){ var e=ITEMS.B.events.filter(function(x){return x.id===id;})[0]; return e?L(e.t):''; }
 function orderHTML(){
   var ord=S.ans.b||[], used={}; ord.forEach(function(x){ if(x) used[x]=1; });
-  var h='<p class="stem">Put these events in the order they happen in the story. <button class="glob" data-tr="b">🌐</button><span class="qtr" id="qtr_b"></span></p><div class="order"><div>'+scene(1);
+  var h='<p class="stem">Put these events in the order they happen in the story. <button class="glob" data-tr="b">🌐</button><span class="qtr" id="qtr_b"></span></p><div class="order"><div><div class="evhead">The events · tap one, then tap a number →</div>';
   S.events.forEach(function(id){ if(used[id]) return;
     h+='<div class="ev'+(PICK===id?' pick':'')+'" draggable="true" data-ev="'+id+'" translate="no"><span class="t">'+esc(evText(id))+'</span><span class="spk" data-say="'+esc(evText(id))+'" role="button">🔊</span></div>'; });
   var P=window.PRACTICE, allOk=P&&ITEMS.B.events.every(function(e,i){return S.bok[i];});
@@ -581,15 +589,24 @@ function orderHTML(){
       'Hint: '+S.events.filter(function(id){return !used[id];}).map(function(id){return '“'+evText(id)+'” is in '+HINTS[id].part;}).join(' · ');
     h+='<div class="hint" data-dir="'+esc(t)+'"><span class="en">'+esc(t)+'</span><span class="tr"></span></div>';
   }
-  h+='</div><div>';
+  h+=scene(1)+'</div><div><div class="evhead">Story order · number 1 is done for you</div>';
   for(var i=0;i<ITEMS.B.events.length;i++){ var id=ord[i];
-    var lk=window.PRACTICE&&S.bok[i];
-    h+='<div class="slot'+(id?' full':'')+(lk?' good':'')+(PICK&&!id?' target':'')+'" data-slot="'+i+'"><span class="n">'+(lk?'✓':(i+1))+'</span>'+
-      (id?'<div class="ev'+(PICK===id?' pick':'')+(lk?' lockd':'')+'" draggable="'+(lk?'false':'true')+'" data-ev="'+id+'" translate="no"><span class="t">'+esc(evText(id))+'</span></div>':'')+'</div>'; }
+    var lk=(i===0)||(window.PRACTICE&&S.bok[i]);
+    h+='<div class="slot'+(id?' full':'')+(lk?' good':'')+(PICK&&!id?' target':'')+'" data-slot="'+i+'"><span class="n">'+(i===0?'1':(lk?'✓':(i+1)))+'</span>'+
+      (id?'<div class="ev'+(PICK===id?' pick':'')+(lk?' lockd':'')+'" draggable="'+(lk?'false':'true')+'" data-ev="'+id+'" translate="no"><span class="t">'+esc(evText(id))+'</span>'+(i===0?'<span class="given">example ✓</span>':'')+'</div>':'')+'</div>'; }
   return h+'</div></div>';
+}
+/* T-221: the first event sits in slot 1 from the start, as a worked model */
+var GIVEN=ITEMS.B.events[0].id;
+function giveFirst(){
+  var ord=(S.ans.b||[]).slice(); while(ord.length<ITEMS.B.events.length) ord.push(null);
+  var at=ord.indexOf(GIVEN); if(at>0) ord[at]=null;
+  if(ord[0]&&ord[0]!==GIVEN){ /* someone else was in slot 1: send it back */ ord[0]=null; }
+  ord[0]=GIVEN; S.ans.b=ord; S.bok=S.bok||[]; S.bok[0]=true;
 }
 function placeEvent(id, slot){
   var ord=(S.ans.b||[]).slice(); while(ord.length<ITEMS.B.events.length) ord.push(null);
+  if(id===GIVEN||slot===0){ PICK=null; draw(); return; }
   if(window.PRACTICE){ var fi=ord.indexOf(id); if((fi>=0&&S.bok[fi])||(slot!=null&&S.bok[slot])){ PICK=null; draw(); return; } }
   var from=ord.indexOf(id);
   if(slot==null){ if(from>=0) ord[from]=null; }
