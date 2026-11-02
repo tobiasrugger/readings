@@ -36,6 +36,7 @@ window.DASHBOARDS = [
 {url:'landlady/test/preview.html',      name:'The Landlady: Test preview (all questions)', course:'103', group:'Reading', note:'Every test question on one page, Easier/Harder, answers shown or hidden, printable. Nothing saves.'},
 {url:'landlady/table/dashboard.html',   name:'The Landlady: Read it together', course:'103', group:'Reading', note:'Table read-aloud on one Chromebook: turns read, recordings to play, each student\u2019s turn length, and the one-time Fill translations button.'},
 {url:'landlady/table/handout.html',     name:'The Landlady: paper story (print)', course:'103', group:'Reading', note:'Printable story with \u00b61\u2013\u00b652 numbers that match the Reader, room to write translations, the 12 words with pictures, table-talk questions.'},
+{url:'wordgame/landlady/solo/dashboard.html', name:'The Landlady: 12 words (solo)', course:'103', group:'Reading', note:'Each student alone: picture → type the word, then a sentence with each word. Read the sentences here.'},
 {url:'telltale/dashboard.html',         name:'The Tell-Tale Heart',           course:'103', group:'Reading'},
 {url:'monkeyspaw/dashboard.html',       name:'The Monkey\u2019s Paw',         course:'103', group:'Reading'},
 {url:'omelas/dashboard.html',           name:'Omelas',                        course:'103', group:'Reading'},

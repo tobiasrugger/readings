@@ -114,13 +114,6 @@ window.CATALOG=[
 "g": "Short stories"
 },
 {
-"p": "/readings/landlady/test/?practice=1",
-"t": "The Landlady: Practice test",
-"d": "The same kinds of questions as the test, with hints: a wrong answer gets a hint and a try again. Paper story allowed the whole time.",
-"m": "ELD 103 · practice · hints · Easier/Harder",
-"g": "Short stories"
-},
-{
 "p": "/readings/omelas/",
 "t": "The Ones Who Walk Away from Omelas",
 "d": "Le Guin. 221 glossed words, SVG figures, Easier/Harder wording on every question, feedback tab.",
@@ -882,6 +875,13 @@ window.CATALOG=[
 "d": "What did you do this weekend?",
 "m": "",
 "g": "More: Launch Plus (ELD 101)"
+},
+{
+"p": "/readings/wordgame/landlady/solo/",
+"t": "The Landlady: 12 words (solo)",
+"d": "Each student alone: see the picture, type the word; then use each word in a sentence. Saves to the gradebook.",
+"m": "ELD 103 · 24 points",
+"g": "Short stories"
 },
 {
 "p": "/readings/wordgame/landlady/",
