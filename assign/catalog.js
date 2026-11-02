@@ -856,9 +856,16 @@ window.CATALOG=[
 "g": "More: Launch Plus (ELD 101)"
 },
 {
+"p": "/readings/launch-plus/weekend/game.html",
+"t": "Last Weekend: Word Game",
+"d": "2–5 players type answers in 4 rounds: what is happening, use it in a sentence, past tense, past tense in a sentence.",
+"m": "",
+"g": "More: Launch Plus (ELD 101)"
+},
+{
 "p": "/readings/launch-plus/weekend/board.html",
-"t": "Last Weekend: Board Game",
-"d": "Last Weekend: Board Game",
+"t": "Last Weekend: Board Game (old version)",
+"d": "The saved board-game version: roll, land, say it in the past.",
 "m": "",
 "g": "More: Launch Plus (ELD 101)"
 },
