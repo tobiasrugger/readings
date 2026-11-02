@@ -21,6 +21,7 @@ window.DASHBOARDS = [
 {url:'teacher/',                name:'Class data',                   course:'both', group:'Data', note:'Skill bars and activity history per student.'},
 {url:'reports/',                name:'Class report',                 course:'both', group:'Data'},
 {url:'assign/',                 name:'Push an activity',             course:'both', group:'Data', note:'Send one activity to a period or a student.'},
+{url:'shelves/',                name:'Shelves \u2014 Lab, Trying, Ready', course:'both', group:'Data', note:'Every page on one of three shelves. When it\u2019s urgent, look only at Ready. Things to watch the first time you use a page sit on its card.'},
 {url:'roadmap/',                name:'Build roadmap',                course:'both', group:'Data', note:'What is built, in progress, still to do.'},
 {url:'audit/',                  name:'Feature audit',                course:'both', group:'Data', note:'Which pages meet the student-page standard.'},
 {url:'audit/check.html',        name:'Conformance checker',          course:'both', group:'Data', note:'Re-checks every page live and shows what drifted since the saved grid.'},
