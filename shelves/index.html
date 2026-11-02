@@ -29,7 +29,7 @@ a.back{background:#fff;color:var(--pine);font-weight:900;text-decoration:none;bo
 #err{display:none;background:#fde3df;border:2px solid var(--rust);color:#7a1d12;border-radius:10px;padding:10px 14px;font-weight:800;margin-bottom:12px}
 .how{background:#fff;border:2px solid var(--ink);box-shadow:0 3px 0 rgba(0,0,0,.12);border-radius:12px;padding:10px 14px;margin-bottom:14px;font-size:.92rem;line-height:1.5}
 .cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:start}
-@media (max-width:900px){.cols{grid-template-columns:1fr}}
+@media (max-width:900px){.cols{grid-template-columns:1fr}.col.ready{order:1}.col.try{order:2}.col.lab{order:3}}
 .col{background:#fff;border:2px solid var(--ink);border-radius:14px;box-shadow:0 4px 0 rgba(0,0,0,.15);overflow:hidden}
 .col>.head{display:flex;gap:10px;align-items:center;padding:10px 12px;border-bottom:2px solid var(--ink)}
 .col>.head svg{flex:0 0 auto}
@@ -69,6 +69,19 @@ button.tag{cursor:pointer;font-family:inherit}
 .moves button:disabled{opacity:.4;cursor:not-allowed}
 .when{font-size:.7rem;color:var(--muted)}
 .flash{animation:fl 1.2s ease}
+details.retired{margin-top:16px;background:#fff;border:2px solid var(--ink);border-radius:14px;box-shadow:0 4px 0 rgba(0,0,0,.15);overflow:hidden}
+details.retired>summary{cursor:pointer;list-style:none;display:flex;gap:12px;align-items:center;padding:10px 14px;background:#eceae6}
+details.retired>summary::-webkit-details-marker{display:none}
+details.retired>summary h2{margin:0;font-size:1.1rem;color:#5b5348}
+details.retired>summary p{margin:2px 0 0;font-size:.8rem;color:var(--muted)}
+details.retired>summary .n{margin-left:auto;font-weight:900;font-size:1.3rem;color:#5b5348}
+details.retired>summary .open{font-size:.8rem;font-weight:900;color:#5b5348;border:2px solid #5b5348;border-radius:8px;padding:3px 9px;background:#fff}
+details.retired[open]>summary{border-bottom:2px solid var(--ink)}
+details.retired>summary svg{flex:0 0 auto}details.retired>summary .open{white-space:nowrap}
+details.retired[open]>summary .open:after{content:"Close \25B4"} details.retired:not([open])>summary .open:after{content:"Open \25BE"}
+#bret{padding:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px}
+.card.ret{background:#f7f6f3;opacity:.92}
+.moves button.toRet{background:#fff;border-color:#8a8174;color:#5b5348;margin-left:auto}
 @keyframes fl{0%{background:#fff7c2}100%{background:#fff}}
 footer{color:var(--muted);font-size:.78rem;text-align:center;padding:18px;line-height:1.6}
 </style>
@@ -91,7 +104,7 @@ footer{color:var(--muted);font-size:.78rem;text-align:center;padding:18px;line-h
 
   <div id="app" style="display:none">
     <div id="err"></div>
-    <div class="how">Every page starts in <b style="color:var(--lab)">🧪 Lab</b>. Used it with a class? Move it to <b style="color:var(--try)">🔧 Trying</b>. It worked and you'd hand it to a sub? <b style="color:var(--ready)">✅ Ready</b>. Purple boxes are things to watch for the first time you use that page — not homework.</div>
+    <div class="how">Every page starts in <b style="color:var(--lab)">🧪 Lab</b>. Used it with a class? Move it to <b style="color:var(--try)">🔧 Trying</b>. It worked and you'd hand it to a sub? <b style="color:var(--ready)">✅ Ready</b>. Done with an old version? <b style="color:#5b5348">📦 Retire</b> puts it away at the bottom. Purple boxes are things to watch for the first time you use that page — not homework.</div>
     <div class="bar">
       <input id="q" placeholder="Search — a story, a lesson, a page…" autocomplete="off">
       <button data-c="" class="on">All</button>
@@ -146,6 +159,22 @@ footer{color:var(--muted);font-size:.78rem;text-align:center;padding:18px;line-h
         <div class="body" id="bready"></div>
       </section>
     </div>
+    <details class="retired" id="retbox">
+      <summary>
+        <svg width="54" height="54" viewBox="0 0 60 60" aria-hidden="true">
+          <path d="M8 24l22-9 22 9v24l-22 9-22-9z" fill="#c9a26b" stroke="#16241f" stroke-width="2"/>
+          <path d="M8 24l22 9 22-9" fill="none" stroke="#16241f" stroke-width="2"/><path d="M30 33v24" stroke="#16241f" stroke-width="2"/>
+          <path d="M8 24l22 9 22-9-22-9z" fill="#dbb985" stroke="#16241f" stroke-width="2"/>
+          <path d="M19 19.5l22 9M41 19.5l-22 9" stroke="#a9834e" stroke-width="3"/>
+          <path d="M12 38l14 6M12 43l10 4" stroke="#a9834e" stroke-width="1.6" stroke-linecap="round"/>
+          <rect x="36" y="38" width="12" height="7" rx="1" fill="#fff" stroke="#16241f" stroke-width="1.3" transform="rotate(-20 42 41)"/>
+          <path d="M38 41l7-2.5" stroke="#8a8174" stroke-width="1.2" transform="rotate(-20 42 41)"/>
+        </svg>
+        <div><h2>📦 Retired</h2><p>Old versions and pages you're done with. Out of the way, never deleted.</p></div>
+        <span class="n" id="nret">0</span><span class="open"></span>
+      </summary>
+      <div id="bret"></div>
+    </details>
   </div>
 </div>
 <footer id="foot"></footer>
@@ -194,6 +223,12 @@ function guessCourse(p,g){
   return 'both';
 }
 
+/* Start in Retired until Toby moves them (no server row yet = this default). */
+var DEFAULT_SHELF={
+ '/readings/launch-plus/weekend/board.html':'retired',
+ '/readings/landlady-easy/':'retired',
+ '/readings/landlady-hard/':'retired'
+};
 var STATE={}, LOADED=false, COURSE='', Q='', SHOW_T=true, OPEN={};
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 
@@ -212,7 +247,7 @@ function items(){
   return out;
 }
 function href(it){ return it.ext?it.p:'..'+it.p.replace(/^\/readings/,''); }
-function shelfOf(it){ return (STATE[it.p]&&STATE[it.p].shelf)||'lab'; }
+function shelfOf(it){ return (STATE[it.p]&&STATE[it.p].shelf)||DEFAULT_SHELF[it.p]||'lab'; }
 function courseOf(it){ return (STATE[it.p]&&STATE[it.p].course)||it.course; }
 
 function card(it){
@@ -224,12 +259,14 @@ function card(it){
   if(s==='lab') mv='<button class="toTry" data-to="trying"'+dis+'>Tried it \u25b6</button><button class="toReady" data-to="ready"'+dis+'>\u2705 Ready</button>';
   if(s==='trying') mv='<button class="toLab" data-to="lab"'+dis+'>\u25c0 Lab</button><button class="toReady" data-to="ready"'+dis+'>It works \u2705</button>';
   if(s==='ready') mv='<button class="toTry" data-to="trying"'+dis+'>\u25c0 Back to Trying</button>';
+  if(s==='retired') mv='<button class="toLab" data-to="lab"'+dis+'>\u21a9 Back to Lab</button>';
+  else mv+='<button class="toRet" data-to="retired"'+dis+' title="Put it away (never deleted)">\ud83d\udce6 Retire</button>';
   var w=STATE[it.p]&&STATE[it.p].updated_at?'<span class="when">moved '+new Date(STATE[it.p].updated_at).toLocaleDateString()+'</span>':'';
-  return '<div class="card" data-p="'+esc(it.p)+'"><a class="t" target="_blank" rel="noopener" href="'+esc(href(it))+'">'+esc(it.t)+'</a>'+
+  return '<div class="card'+(s==='retired'?' ret':'')+'" data-p="'+esc(it.p)+'"><a class="t" target="_blank" rel="noopener" href="'+esc(href(it))+'">'+esc(it.t)+'</a>'+
     '<div class="meta"><button class="tag '+cl+'" data-course title="Tap to change course">'+lab+'</button>'+
     (it.teach?'<span class="tag teach">teacher</span>':'')+
-    (s!=='lab'?'<span class="tag">'+esc(it.g)+'</span>':'')+w+'</div>'+
-    (ck?'<div class="check"><b>'+(s==='lab'?'\ud83e\uddea Watch for':'Was')+' '+ck.c+':</b> '+esc(ck.n)+'</div>':'')+
+    (s!=='lab'&&s!=='retired'?'<span class="tag">'+esc(it.g)+'</span>':'')+w+'</div>'+
+    (ck&&s!=='retired'?'<div class="check"><b>'+(s==='lab'?'\ud83e\uddea Watch for':'Was')+' '+ck.c+':</b> '+esc(ck.n)+'</div>':'')+
     '<div class="moves">'+mv+'</div></div>';
 }
 
@@ -240,11 +277,15 @@ function render(){
     if(Q){var h=(it.t+' '+it.p+' '+it.g+' '+(CHECKS[it.p]?CHECKS[it.p].c+' '+CHECKS[it.p].n:'')).toLowerCase(); if(h.indexOf(Q)<0) return false;}
     return true;
   });
-  var by={lab:[],trying:[],ready:[]};
+  var by={lab:[],trying:[],ready:[],retired:[]};
   all.forEach(function(it){by[shelfOf(it)].push(it);});
   document.getElementById('nlab').textContent=by.lab.length;
   document.getElementById('ntry').textContent=by.trying.length;
   document.getElementById('nready').textContent=by.ready.length;
+  document.getElementById('nret').textContent=by.retired.length;
+  var R_=by.retired.sort(function(a,b){return a.o-b.o;});
+  document.getElementById('bret').innerHTML=R_.length?R_.map(card).join(''):'<div class="empty">Nothing retired. Tap \ud83d\udce6 Retire on any card you\u2019re done with \u2014 an old version, a page another one replaced.</div>';
+  if(Q && R_.length) document.getElementById('retbox').open=true;
   ['trying','ready'].forEach(function(s){
     var L=by[s].sort(function(a,b){return a.g<b.g?-1:a.g>b.g?1:a.o-b.o;});
     document.getElementById(s==='trying'?'btry':'bready').innerHTML=L.length?L.map(card).join(''):
@@ -273,7 +314,7 @@ function load(){
 function save(p,patch,el){
   if(!LOADED) return;
   var before=STATE[p]?JSON.parse(JSON.stringify(STATE[p])):null;
-  var row={path:p,shelf:(STATE[p]&&STATE[p].shelf)||'lab',course:(STATE[p]&&STATE[p].course)||null,updated_at:new Date().toISOString()};
+  var row={path:p,shelf:(STATE[p]&&STATE[p].shelf)||DEFAULT_SHELF[p]||'lab',course:(STATE[p]&&STATE[p].course)||null,updated_at:new Date().toISOString()};
   for(var k in patch)row[k]=patch[k];
   STATE[p]=row; render();
   var c=document.querySelector('.card[data-p="'+CSS.escape(p)+'"]'); if(c)c.classList.add('flash');
