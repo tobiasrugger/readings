@@ -7,6 +7,7 @@
 <meta name="google" content="notranslate">
 <title>This Week's Reading — Mr. Toby</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="art.js"></script>
 <style>
   :root{
     --pine:#1d4d3f;
@@ -64,7 +65,26 @@
   img.prev{display:none;max-width:100%;max-height:220px;border-radius:9px;border:1px solid var(--rule)}
   .crnote{font-size:14px;color:#5b6159;background:#eef3ef;border-left:3px solid var(--pine);padding:8px 12px;border-radius:0 8px 8px 0;margin:0 0 16px}
   .hl{background:#dbeafe;border-radius:3px;padding:0 2px;box-shadow:inset 0 -2px 0 var(--gram)}
-  .card{background:#fff;border:1px solid var(--rule);border-radius:12px;padding:16px;margin:0 0 16px}
+  .card{background:#fff;border:2px solid #2b3a33;border-radius:12px;padding:16px;margin:0 0 16px;box-shadow:0 3px 0 rgba(20,53,40,.18),0 6px 16px rgba(0,0,0,.06);display:flow-root}
+  .hero{margin:0 0 16px;border:2px solid #2b3a33;border-radius:12px;overflow:hidden;box-shadow:0 3px 0 rgba(20,53,40,.18)}
+  .hero svg{display:block;width:100%;height:auto}
+  .pic{float:right;width:min(42%,230px);margin:4px 0 10px 14px;border:2px solid #2b3a33;border-radius:10px;overflow:hidden;background:#fff;box-shadow:0 2px 0 rgba(20,53,40,.18)}
+  .pic svg{display:block;width:100%;height:auto}
+  .pic figcaption{font-size:13px;font-weight:700;color:#3d4a42;padding:5px 8px;border-top:2px solid #2b3a33;background:#f6f4ec}
+  .readwrap{display:flow-root}
+  .setbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 14px;font-size:14px;font-weight:700}
+  .setbar a{color:var(--pine)}
+  .picks{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-top:6px}
+  .pick{display:block;text-decoration:none;color:inherit;background:#fff;border:2px solid #2b3a33;border-radius:14px;overflow:hidden;box-shadow:0 4px 0 rgba(20,53,40,.22);transition:transform .12s}
+  .pick:hover{transform:translateY(-3px)}
+  .pick svg{display:block;width:100%;height:auto;border-bottom:2px solid #2b3a33}
+  .pick .pb{padding:12px 14px}
+  .pick h3{margin:0 0 4px;font-size:19px}
+  .pick .go{display:inline-block;margin-top:10px;background:var(--pine);color:#fff;font-weight:800;border-radius:9px;padding:8px 14px}
+  .badge{display:inline-block;font-size:13px;font-weight:800;border-radius:99px;padding:2px 10px;margin-left:6px;vertical-align:middle}
+  .badge.done{background:#dcfce7;color:#166534;border:1.5px solid #166534}
+  .badge.started{background:#fef3c7;color:#92400e;border:1.5px solid #92400e}
+  .credit{background:#fff8e6;border:2px solid #b7791f;border-radius:12px;padding:12px 14px;font-weight:700;margin:0 0 14px}
   .card h3{margin:0 0 8px;font-size:17px}
   label.q{display:block;font-weight:700;margin:18px 0 6px}
   textarea,input.txt{width:100%;font-family:inherit;font-size:16px;padding:9px 11px;border:1px solid var(--rule);border-radius:9px;background:#fff}
@@ -91,7 +111,7 @@
   .big{font-size:15px;padding:12px 20px;border-radius:10px;background:var(--pine);color:#fff;border:0;font-family:inherit;font-weight:800;cursor:pointer}
   .big.stop{background:#b91c1c}
   .clock{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums}
-  .passage{font-size:19px;line-height:1.85;background:#fff;border:1px solid var(--rule);border-left:5px solid var(--pine);border-radius:10px;padding:16px}
+  .passage{font-size:19px;line-height:1.85;background:#fff;border:2px solid #2b3a33;border-left:5px solid var(--pine);border-radius:10px;padding:16px}
   .muted{color:#7a8075;font-size:14px}
   .note{background:#fff8e6;border:1px solid #f0dfae;border-radius:10px;padding:12px;font-size:15px}
   @media print{.bar,.tabs,.spk,.pop,.big,.btn{display:none!important}.pane{display:block!important}main{max-width:none}}
@@ -141,6 +161,7 @@
   <div id="readBody"><p class="muted">Loading this week's article…</p></div>
   <div id="mediaBox"></div>
   <div id="qBox"></div>
+  <div id="setBox"></div>
   <div id="archBox"></div>
 </section>
 
@@ -511,8 +532,16 @@ function render(){
   h+='<p class="src">'+esc(m.SOURCE||'Written for our class by Mr. Toby.')+'</p>';
   if(A.read.join(' ').indexOf('{{')>=0)
     h+='<div class="crnote">Tap &#127760; to see a paragraph in your language. The marked parts stay in English \u2014 read those slowly. You can still tap the orange words.</div>';
+  var ART=(window.NEWS_ART||{})[m.SLUG]||null, PICAT={};
+  if(m.SET) h='<div class="setbar" id="setTop"></div>'+h;
+  if(ART&&ART.hero) h+='<figure class="hero" style="margin:0 0 16px">'+ART.hero+'</figure>';
+  if(ART&&ART.pics){var nP=A.read.length,low=A.read.map(function(x){return plain(x).toLowerCase();});ART.pics.forEach(function(pc){
+    var at=-1;(pc.near||[]).some(function(w){for(var k=0;k<nP;k++){if(!PICAT[k]&&low[k].indexOf(w.toLowerCase())>=0){at=k;return true;}}return false;});
+    if(at<0){at=Math.max(0,Math.min(nP-1,Math.round((pc.at||0)*(nP-1))));while(PICAT[at]&&at<nP-1)at++;}
+    PICAT[at]=pc;});}
   A.read.forEach(function(p,i){
-    h+='<div class="parwrap"><div style="flex:1"><p class="par">'+rich(p)+'</p><div class="xl" id="xl'+i+'" style="display:none"></div></div>'+
+    var pc=PICAT[i], fig=pc?'<figure class="pic">'+pc.svg+(pc.cap?'<figcaption data-xl="'+esc(pc.cap).replace(/"/g,'&quot;')+'">'+esc(pc.cap)+'</figcaption>':'')+'</figure>':'';
+    h+='<div class="parwrap"><div style="flex:1" class="readwrap">'+fig+'<p class="par">'+rich(p)+'</p><div class="xl" id="xl'+i+'" style="display:none"></div></div>'+
        '<div style="display:flex;flex-direction:column;gap:4px">'+
        '<button class="spk" data-i="'+i+'" data-s="0" title="Listen">&#128266;</button>'+
        '<button class="spk" data-i="'+i+'" data-s="1" title="Listen slowly">&#128034;</button>'+
@@ -530,6 +559,8 @@ function render(){
   });
   q+='</div>';
   $('qBox').innerHTML=A.qs.length?q:'';
+  showArticleTabs(true);
+  drawSetBox();
   archive();
 
   /* GRAMMAR */
@@ -783,6 +814,8 @@ $('gGo').onclick=function(){
   chip();
   fetchOverride(); checkRecording();
   if(A){ANS={};render();}
+  else if(PICK) drawPicker();
+  if(SETROWS) loadSetStatus();
   dirty=true;
 };
 function fetchOverride(){
@@ -1124,13 +1157,91 @@ document.addEventListener('visibilitychange',function(){if(!document.hidden)chec
 
 function boot(){
   var want=new URLSearchParams(location.search).get('a');
-  var url=SUPA_URL+'/rest/v1/news_articles?select=doc&published=is.true&order=week_of.desc,updated_at.desc&limit=1';
-  if(want) url=SUPA_URL+'/rest/v1/news_articles?select=doc&slug=eq.'+encodeURIComponent(want)+'&limit=1';
+  var url=SUPA_URL+'/rest/v1/news_articles?select=doc,week_of&published=is.true&order=week_of.desc,updated_at.desc&limit=1';
+  if(want) url=SUPA_URL+'/rest/v1/news_articles?select=doc,week_of&slug=eq.'+encodeURIComponent(want)+'&limit=1';
   fetch(url,{headers:H}).then(function(r){return r.json();}).then(function(rows){
-    if(rows&&rows.length&&rows[0].doc){A=parseDoc(rows[0].doc);render();}
-    else {A=parseDoc(SEED);render();}
+    if(rows&&rows.length&&rows[0].doc){
+      var d=parseDoc(rows[0].doc);
+      if(d.meta.SET){
+        /* a story set: the other stories of the same set, published (T-205) */
+        return fetchSet(d.meta.SET).then(function(set){
+          SETROWS=set;
+          if(!want&&set.length>1){PICK=true;drawPicker();loadSetStatus();return;}
+          A=d;render();loadTracker();checkRecording();loadSetStatus();
+        });
+      }
+      A=d;render();
+    } else {A=parseDoc(SEED);render();}
     loadTracker(); checkRecording();
-  }).catch(function(){A=parseDoc(SEED);render();loadTracker();});
+  }).catch(function(){ if(!A&&!PICK){A=parseDoc(SEED);render();loadTracker();} });
+}
+
+/* ---------- story sets (T-205): several articles in one week; read 1, or 2-3 for extra credit ---------- */
+var SETROWS=null, PICK=false, SETSTATUS={};
+function fetchSet(set){
+  var q=SUPA_URL+'/rest/v1/news_articles?select=slug,title,doc,week_of&published=is.true&doc=ilike.'+encodeURIComponent('*SET: '+set+'*')+'&order=updated_at.asc';
+  return fetch(q,{headers:H}).then(function(r){return r.json();}).then(function(rows){
+    return (rows||[]).map(function(r){var d=parseDoc(r.doc||'');return {slug:r.slug,title:d.meta.TITLE||r.title||r.slug,dek:d.meta.DEK||'',set:d.meta.SET,setTitle:d.meta.SET_TITLE||''};})
+      .filter(function(r){return r.set===set;});
+  }).catch(function(){return [];});
+}
+function bothEmails(e){e=canon(e||'');return [e,e.replace(/@sfusd\.edu$/,'@s.sfusd.edu')];}
+function loadSetStatus(){
+  if(!SETROWS||!ME.email) return;
+  var em=bothEmails(ME.email).map(function(x){return '"'+x+'"';}).join(','),
+      sl=SETROWS.map(function(r){return '"'+r.slug+'"';}).join(',');
+  fetch(SUPA_URL+'/rest/v1/news_work?select=slug,answers&email=in.('+encodeURIComponent(em)+')&slug=in.('+encodeURIComponent(sl)+')',{headers:H})
+  .then(function(r){return r.json();}).then(function(rows){
+    SETSTATUS={};
+    (rows||[]).forEach(function(w){
+      var a=w.answers||{}, n=Object.keys(a).filter(function(k){return k[0]!=='_'&&String(a[k]||'').trim();}).length;
+      var st=a._turnedIn?'done':(n?'started':'');
+      if(st==='done'||!SETSTATUS[w.slug]) SETSTATUS[w.slug]=st;
+    });
+    if(PICK) drawPicker(); else drawSetBox();
+  }).catch(function(){});
+}
+function badge(slug){
+  var st=SETSTATUS[slug];
+  return st==='done'?'<span class="badge done">\u2713 turned in</span>':st==='started'?'<span class="badge started">started</span>':'';
+}
+function showArticleTabs(on){
+  [].forEach.call($('tabs').children,function(b){ if(b.dataset.p!=='read'&&b.dataset.p!=='teacher'&&b.id!=='tabProject') b.style.display=on?'':'none'; });
+  $('turnIn').style.display=on?'':'none';
+}
+function setTitleOf(){return (SETROWS&&SETROWS[0]&&SETROWS[0].setTitle)||'This week\u2019s stories';}
+function drawPicker(){
+  showArticleTabs(false);
+  $('barTitle').textContent=setTitleOf();
+  document.title=setTitleOf()+' \u2014 Mr. Toby';
+  var nDone=SETROWS.filter(function(r){return SETSTATUS[r.slug]==='done';}).length;
+  var h='<h2>'+esc(setTitleOf())+'</h2>'+
+    '<div class="credit" data-xl="Pick one story and read it. Read two or three stories for extra credit.">Pick <b>one</b> story and read it. Read <b>two or three</b> for extra credit. &#11088;</div>'+
+    (ME.email&&nDone?'<p style="font-weight:800;color:#166534;margin:0 0 10px">You have finished '+nDone+' of '+SETROWS.length+'.</p>':'')+
+    '<div class="picks">';
+  SETROWS.forEach(function(r){
+    var art=(window.NEWS_ART||{})[r.slug];
+    h+='<a class="pick" href="?a='+encodeURIComponent(r.slug)+'">'+(art&&art.hero?art.hero:'')+
+       '<div class="pb"><h3>'+esc(r.title)+badge(r.slug)+'</h3><div class="muted" style="font-size:15px;color:#4b5249">'+esc(r.dek)+'</div>'+
+       '<span class="go">Read this story \u2192</span></div></a>';
+  });
+  $('readBody').innerHTML=h+'</div>';
+  $('mediaBox').innerHTML=''; $('qBox').innerHTML=''; $('setBox').innerHTML=''; $('archBox').innerHTML='';
+  dualTranslate();
+}
+function drawSetBox(){
+  if(!A||!A.meta.SET||!SETROWS||SETROWS.length<2){ if($('setBox'))$('setBox').innerHTML=''; if($('setTop'))$('setTop').innerHTML=''; return; }
+  var others=SETROWS.filter(function(r){return r.slug!==A.meta.SLUG;});
+  var top=$('setTop');
+  if(top) top.innerHTML='<a href="./">\u2190 All '+SETROWS.length+' stories</a><span class="muted">\u00b7 '+esc(setTitleOf())+'</span>';
+  var h='<div class="card"><h3>Read another story for extra credit &#11088;</h3>'+
+        '<p class="muted" data-xl="Each story has its own questions, grammar, talk chart and recording.">Each story has its own questions, grammar, talk chart and recording.</p><div class="picks">';
+  others.forEach(function(r){
+    var art=(window.NEWS_ART||{})[r.slug];
+    h+='<a class="pick" href="?a='+encodeURIComponent(r.slug)+'">'+(art&&art.hero?art.hero:'')+
+       '<div class="pb"><h3>'+esc(r.title)+badge(r.slug)+'</h3><span class="go">Read this story \u2192</span></div></a>';
+  });
+  $('setBox').innerHTML=h+'</div></div>';
 }
 
 /* Seed article — shows if Supabase is empty or unreachable, so the page is never blank. */
