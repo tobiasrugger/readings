@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>window.SG_TABLES=['voices_work'];</script>
+<script src="/readings/saveguard.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Who Answers Whom? Homelessness</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Source+Serif+4:ital,wght@0,500;1,500&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#26313f;--bg:#efe9dd;--paper:#fff;--good:#1f7a45;--bad:#b3261e;--accent:#3f6b8a;--muted:#5a6470}
+*{box-sizing:border-box}
+body{margin:0;font-family:Nunito,system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:18px;line-height:1.5}
+button{font-family:inherit}
+.muted{color:var(--muted);font-weight:600}
+/* gate */
+#gate{position:fixed;inset:0;background:#2c3a4d;display:flex;align-items:center;justify-content:center;z-index:50;padding:16px;overflow:auto}
+#gate form{background:#fff;border:3px solid var(--ink);box-shadow:6px 6px 0 #111;border-radius:16px;padding:22px;max-width:440px;width:100%}
+#gate h1{margin:0 0 4px;font-size:26px}
+#gate label{display:block;font-weight:800;margin-top:10px;font-size:16px}
+#gate input,#gate select{width:100%;font:inherit;font-size:17px;padding:9px 11px;border:2px solid var(--ink);border-radius:10px;background:#fff;color:#111}
+#gate button{margin-top:16px;width:100%;font-size:19px;font-weight:900;padding:12px;border-radius:12px;border:2px solid var(--ink);background:#1f7a45;color:#fff;cursor:pointer;box-shadow:3px 3px 0 var(--ink)}
+#gmsg{color:var(--bad);font-weight:800;min-height:22px;margin-top:8px}
+.gpic{border:2px solid var(--ink);border-radius:10px;overflow:hidden;margin-bottom:10px}
+/* top bar */
+#top{position:sticky;top:0;z-index:20;background:#fff;border-bottom:3px solid var(--ink);box-shadow:0 3px 0 rgba(0,0,0,.12);padding:8px 12px}
+.trow{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.trow h1{font-size:19px;margin:0;font-weight:900;flex:1;min-width:180px}
+#who,#saved{font-size:14px;font-weight:700;color:var(--muted)}
+#langSel{font:inherit;font-size:15px;padding:5px 8px;border:2px solid var(--ink);border-radius:9px;background:#fff;color:#111}
+#chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.chip{border:2px solid var(--ink);background:#f6f2e8;border-radius:999px;padding:5px 12px;font-weight:800;font-size:15px;cursor:pointer;color:var(--ink)}
+.chip small{font-weight:900;margin-left:2px}
+.chip.on{background:var(--ink);color:#fff}
+.chip.full{background:#d7efdc;border-color:var(--good)}.chip.full.on{background:var(--good);color:#fff}
+.chip.next{animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(217,164,65,.8)}50%{box-shadow:0 0 0 7px rgba(217,164,65,0)}}
+.pwrap{height:12px;border:2px solid var(--ink);border-radius:8px;background:#fff;margin-top:8px;overflow:hidden;position:relative}
+#pbar{height:100%;background:linear-gradient(90deg,#3f8a5a,#5fae6a);width:0;transition:width .3s}
+#ptxt{font-size:12px;font-weight:800}
+#srvbar{display:none;background:#b3261e;color:#fff;font-weight:900;padding:10px 14px;text-align:center;border-bottom:3px solid #6b120d}
+main{max-width:980px;margin:0 auto;padding:14px 12px 80px}
+/* boxes */
+.box{display:flow-root;background:var(--paper);border:2px solid var(--ink);box-shadow:4px 4px 0 var(--ink);border-radius:14px;padding:14px 16px;margin:0 0 18px}
+.box h2{margin:2px 0 8px;font-size:24px;font-weight:900}
+.box h3{margin:2px 0 8px;font-size:20px;font-weight:900}
+.panel{border:2px solid var(--ink);box-shadow:4px 4px 0 var(--ink);border-radius:14px;overflow:hidden;margin-bottom:18px;background:#fff;line-height:0}
+.panel svg{width:100%;height:auto;display:block}
+.pic{float:right;width:min(42%,320px);margin:0 0 10px 14px;border:2px solid var(--ink);border-radius:10px;overflow:hidden;background:#fff;line-height:0}
+.pic.sm{width:min(34%,220px)}.pic.xs{width:min(30%,150px)}
+.pic svg{width:100%;height:auto;display:block}
+.dir{background:#fff7dc;border:2px solid #8a6a1f;border-radius:10px;padding:7px 10px;margin:6px 0 10px;font-weight:700;font-size:16px}
+.dtr{font-weight:600;color:#5b4a14;margin-top:3px;font-size:16px}
+.read{font-size:19px;line-height:1.65;margin:8px 0}
+.say{border:2px solid var(--ink);background:#fff;border-radius:8px;cursor:pointer;font-size:15px;padding:1px 5px;vertical-align:middle;line-height:1.2}
+.say.sm{font-size:13px}
+.w{border-bottom:3px dotted #c4702b;cursor:pointer;font-weight:700}
+.w.kw{color:#9a4a12}
+.pn{display:inline-block;min-width:24px;height:24px;border:2px solid var(--ink);border-radius:50%;text-align:center;font-size:13px;font-weight:900;line-height:20px;margin-right:6px;background:#f6f2e8}
+/* options */
+.opts{display:grid;gap:8px;margin:8px 0}
+.opt{text-align:left;border:2px solid var(--ink);background:#fff;border-radius:11px;padding:10px 12px;font-size:17px;font-weight:700;cursor:pointer;color:var(--ink);box-shadow:2px 2px 0 var(--ink)}
+.opt:hover:not([disabled]){background:#fff7dc}
+.opt.ok{background:#d7efdc;border-color:var(--good);color:#0f4d2a}
+.opt.no{background:#fbe1de;border-color:var(--bad);color:#7a1a14;opacity:.8}
+.opt .mk{float:right;font-size:20px}
+.fb{min-height:6px;font-weight:800}
+.good{color:var(--good)}
+.lionq{display:inline-block;background:#fff3e0;border:2px solid #b0701f;border-radius:10px;padding:4px 10px;margin-top:4px}
+.hint{margin-top:6px;background:#eef5ff;border:2px solid #2c5f9e;border-radius:10px;padding:6px 10px;font-weight:700}
+.think{color:#4a3a8a}
+.big{border:2px solid var(--ink);background:#1f7a45;color:#fff;font-weight:900;font-size:18px;border-radius:12px;padding:10px 18px;cursor:pointer;box-shadow:3px 3px 0 var(--ink)}
+.sm2{border:2px solid var(--ink);background:#fff;font-weight:800;font-size:16px;border-radius:10px;padding:8px 14px;cursor:pointer}
+.foot{text-align:right;margin:4px 0 20px}
+.qnav{display:flex;justify-content:space-between;gap:10px;margin:10px 0 18px;flex-wrap:wrap}
+.qnav .big{margin-left:auto}
+/* words */
+.wgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;margin-bottom:18px}
+.wcard{margin:0;padding:10px}
+.wpic{border:2px solid var(--ink);border-radius:9px;overflow:hidden;line-height:0;margin-bottom:8px}.wpic svg{width:100%;height:auto}
+.wword{font-size:23px}
+.wtr{min-height:22px;margin:4px 0}
+.eq{text-decoration:underline;font-size:18px}.eq.grey{color:#777}.trm{color:#555;font-size:15px}
+.wsent{font-size:16px;color:#333}
+.qpic{width:min(320px,100%);border:2px solid var(--ink);border-radius:10px;overflow:hidden;line-height:0;margin:6px 0}.qpic svg{width:100%;height:auto}
+.dots{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px}
+.dot{width:32px;height:32px;border-radius:50%;border:2px solid var(--ink);background:#fff;font-weight:900;cursor:pointer}
+.dot.d{background:#d7efdc;border-color:var(--good)}.dot.cur{outline:3px solid #d9a441}
+/* voices */
+.mapwrap{border:2px solid var(--ink);border-radius:10px;background:#f8f6f0;overflow-x:auto}
+.tmap{width:100%;min-width:560px;height:auto;display:block}
+.lvl{display:inline-flex;border:2px solid var(--ink);border-radius:11px;overflow:hidden;margin-top:10px}
+.lvl button{border:0;background:#fff;font-weight:900;font-size:16px;padding:7px 14px;cursor:pointer}
+.lvl button.on{background:var(--ink);color:#fff}
+.vhead{margin-bottom:6px}
+.vk{display:inline-block;color:#fff;font-weight:900;font-size:13px;border-radius:7px;padding:2px 8px;margin-bottom:4px}
+.vn{font-size:24px}
+.vm{color:var(--muted);font-weight:700;font-size:15px}
+.vans{font-weight:800;margin-top:4px}
+.vtitle{font-family:'Source Serif 4',serif;font-style:italic;font-size:18px;margin-top:4px}
+.inside .mini{display:flow-root;border:2px solid var(--ink);border-radius:11px;padding:8px 10px;margin:8px 0;background:#fbfaf6}
+.inside .mini p{margin:4px 0 0}
+blockquote{font-family:'Source Serif 4',Georgia,serif;font-size:22px;line-height:1.45;margin:8px 0;padding:10px 14px;border-left:6px solid var(--ink);background:#f6f2e8;border-radius:0 10px 10px 0}
+.ctx{margin:6px 0;font-weight:700}
+.qq{margin:10px 0 4px}
+/* sides */
+.idea{position:relative;padding-left:58px}
+.inum{position:absolute;left:12px;top:14px;width:34px;height:34px;border-radius:50%;background:var(--ink);color:#fff;font-weight:900;text-align:center;line-height:34px}
+.itext{font-size:20px;font-weight:800;margin:4px 0}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px}
+.thumb{color:var(--ink);border:3px solid var(--c);background:#fff;border-radius:11px;padding:4px;cursor:pointer;position:relative;text-align:center}
+.thumb .tp{display:block;line-height:0;border-radius:7px;overflow:hidden}.thumb svg{width:100%;height:auto}
+.thumb .tn{display:block;font-weight:800;font-size:14px;margin-top:3px}
+.thumb[disabled]{color:var(--ink);cursor:default}.thumb.ok{background:#d7efdc;outline:3px solid var(--good)}.thumb.no{opacity:.55;background:#fbe1de}
+.thumb .mk{position:absolute;top:4px;right:6px;font-size:22px;background:#fff;border-radius:50%;width:28px;height:28px;line-height:28px;border:2px solid var(--ink)}
+.thumb.ok .mk{color:var(--good)}.thumb.no .mk{color:var(--bad)}
+.ops{display:flex;gap:8px;flex-wrap:wrap}
+.opb{border:2px solid var(--ink);background:#fff;border-radius:11px;padding:8px 12px;font-weight:800;font-size:16px;cursor:pointer}
+.opb.on{background:#e7defa;border-color:#4a3a8a}
+select#favsel,.frame select{font:inherit;font-size:16px;padding:8px;border:2px solid var(--ink);border-radius:10px;max-width:100%;background:#fff;color:#111}
+textarea{width:100%;font:inherit;font-size:17px;padding:10px;border:2px solid var(--ink);border-radius:10px;resize:vertical;min-height:58px}
+.lab{display:block;font-weight:800;margin:10px 0 4px}
+.count{font-weight:800;margin-top:6px}
+details.help{margin-top:8px;border:2px dashed #8a6a1f;border-radius:10px;padding:6px 10px;background:#fffdf4}
+details.help summary{cursor:pointer;font-weight:800}
+.paper{background:#fffdf6;border:2px solid var(--ink);border-radius:8px;padding:16px 18px;font-family:'Source Serif 4',Georgia,serif;font-size:19px;line-height:1.6;margin:8px 0 12px}
+.paper .re{font-style:italic;color:#444}.paper .sig{margin-bottom:0}
+/* pop */
+#pop{display:none;position:absolute;z-index:40;background:#fff;border:3px solid var(--ink);box-shadow:5px 5px 0 var(--ink);border-radius:13px;padding:10px 12px;width:min(320px,92vw)}
+#pop .x{position:absolute;right:6px;top:6px;border:2px solid var(--ink);background:#fff;border-radius:8px;cursor:pointer;font-weight:900}
+#pop .ppic{border:2px solid var(--ink);border-radius:9px;overflow:hidden;line-height:0;margin:18px 0 6px}#pop .ppic svg{width:100%;height:auto}
+#pop .pw b{font-size:21px}
+.ptr{margin-top:6px}
+#fw{display:none;position:fixed;inset:0;pointer-events:none;z-index:60}
+#fw i{position:absolute;width:9px;height:9px;border-radius:50%;animation:fly 1.6s ease-out forwards}
+@keyframes fly{to{transform:translate(var(--dx),var(--dy));opacity:0}}
+ul.tlist{display:none;list-style:none;padding:0;margin:8px 0 0}ul.tlist li{margin:6px 0}ul.tlist .tnode{width:100%;text-align:left;border:3px solid;border-radius:10px;background:#fff;padding:6px 10px;font-size:16px;cursor:pointer;color:var(--ink)}
+#canary{position:absolute;left:-9999px}
+@media (max-width:620px){.mapwrap .tmap{display:none}.mapwrap{border:0;background:none}#chips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}.chip{white-space:nowrap}ul.tlist{display:block}.trow h1{font-size:16px}body{font-size:17px}.pic{width:46%}.pic.sm{width:40%}.box{padding:12px}.box h2{font-size:21px}.read{font-size:18px}.idea{padding-left:14px}.inum{position:static;margin-bottom:6px}blockquote{font-size:19px}}
+</style>
+</head>
+<body>
+<span id="canary" aria-hidden="true">Reading</span>
+<div id="gate">
+ <form id="gform" autocomplete="on">
+  <div class="gpic" id="gpic"></div>
+  <h1>Who answers whom?</h1>
+  <div class="muted">Homelessness: six voices and your letter back</div>
+  <label for="gfirst">First name</label><input id="gfirst" autocomplete="given-name">
+  <label for="glast">Last name</label><input id="glast" autocomplete="family-name">
+  <label for="gemail">School email</label><input id="gemail" type="email" placeholder="name@s.sfusd.edu" autocomplete="email">
+  <label for="gper">Period</label><select id="gper"><option value="">Choose…</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select>
+  <label for="galStdLang">Your language / Tu idioma / 你的语言 / لغتك</label><select id="galStdLang" translate="no"></select>
+  <button type="submit" id="gstart">Start</button>
+  <div id="gmsg"></div>
+ </form>
+</div>
+<div id="app" style="display:none">
+ <div id="top">
+  <div class="trow"><h1>Who answers whom? · Homelessness</h1><span id="who"></span><span id="saved"></span><select id="langSel" translate="no" aria-label="Language"></select></div>
+  <div id="chips"></div>
+  <div class="trow" style="gap:8px"><div class="pwrap" style="flex:1"><div id="pbar"></div></div><span id="ptxt"></span></div>
+ </div>
+ <div id="srvbar" role="alert"></div>
+ <main id="screen"></main>
+</div>
+<div id="pop" translate="no"></div>
+<div id="fw"></div>
+<script>
+/* ===== ART: original layered flat SVG, muted palette. No words in pictures that answer a question. ===== */
+var INK='#26313f';
+function S(w,h,body,label){return '<svg viewBox="0 0 '+w+' '+h+'" role="img" aria-label="'+(label||'')+'" xmlns="http://www.w3.org/2000/svg">'+body+'</svg>';}
+function sky(w,h,a,b){return '<defs><linearGradient id="sk'+a.slice(1)+b.slice(1)+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+a+'"/><stop offset="1" stop-color="'+b+'"/></linearGradient></defs><rect width="'+w+'" height="'+h+'" fill="url(#sk'+a.slice(1)+b.slice(1)+')"/>';}
+function mountains(w,y,c1,c2){return '<path d="M0 '+y+' L'+(w*.12)+' '+(y-38)+' L'+(w*.2)+' '+(y-22)+' L'+(w*.34)+' '+(y-58)+' L'+(w*.46)+' '+(y-30)+' L'+(w*.6)+' '+(y-64)+' L'+(w*.74)+' '+(y-26)+' L'+(w*.88)+' '+(y-48)+' L'+w+' '+(y-20)+' L'+w+' '+(y+10)+' L0 '+(y+10)+'Z" fill="'+c1+'"/>'
+ +'<path d="M'+(w*.34)+' '+(y-58)+' L'+(w*.31)+' '+(y-46)+' L'+(w*.335)+' '+(y-48)+' L'+(w*.355)+' '+(y-44)+' L'+(w*.37)+' '+(y-50)+'Z M'+(w*.6)+' '+(y-64)+' L'+(w*.565)+' '+(y-50)+' L'+(w*.59)+' '+(y-52)+' L'+(w*.61)+' '+(y-47)+' L'+(w*.635)+' '+(y-54)+'Z M'+(w*.88)+' '+(y-48)+' L'+(w*.86)+' '+(y-40)+' L'+(w*.885)+' '+(y-41)+' L'+(w*.9)+' '+(y-38)+'Z" fill="'+c2+'"/>';}
+function grain(x,y,w,h,c,n){var s='',r=7;for(var i=0;i<n;i++){r=(r*9301+49297)%233280;var px=x+(r/233280)*w;r=(r*9301+49297)%233280;var py=y+(r/233280)*h;s+='<circle cx="'+px.toFixed(1)+'" cy="'+py.toFixed(1)+'" r="'+(0.6+(i%3)*0.4)+'" fill="'+c+'"/>';}return s;}
+function tinyHouse(x,y,wall,trim,door,n){
+ return '<g transform="translate('+x+' '+y+')">'
+ +'<rect x="0" y="22" width="70" height="56" fill="'+wall+'" stroke="'+INK+'" stroke-width="1.5"/>'
+ +'<path d="M-6 24 L35 0 L76 24 Z" fill="'+trim+'" stroke="'+INK+'" stroke-width="1.5"/>'
+ +'<path d="M2 30 H68 M2 40 H68 M2 50 H68 M2 60 H68 M2 70 H68" stroke="#000" stroke-opacity=".08"/>'
+ +'<rect x="8" y="40" width="20" height="38" fill="'+door+'" stroke="'+INK+'" stroke-width="1.3"/><circle cx="24" cy="60" r="1.6" fill="#e7c76a"/>'
+ +'<rect x="11" y="44" width="14" height="9" fill="#cfe3ef" stroke="'+INK+'" stroke-width=".8"/>'
+ +'<rect x="38" y="36" width="22" height="18" fill="#cfe3ef" stroke="'+INK+'" stroke-width="1.3"/><path d="M49 36 V54 M38 45 H60" stroke="'+INK+'" stroke-width=".9"/>'
+ +'<rect x="31" y="36" width="6" height="18" fill="#b9733f" stroke="'+INK+'" stroke-width=".8"/><path d="M32 38 L36 52" stroke="#7a4a26" stroke-width=".8"/>'
+ +'<rect x="-4" y="78" width="40" height="5" fill="#9aa3ad" stroke="'+INK+'" stroke-width="1"/>'
+ +'<path d="M36 78 h10 v5 h-10 M40 83 v6 h12 v-6" fill="#b98a55" stroke="'+INK+'" stroke-width="1"/>'
+ +'<rect x="52" y="64" width="9" height="9" fill="#2f3a46"/><text x="56.5" y="71" font-size="6" fill="#fff" text-anchor="middle" font-family="Nunito,sans-serif">'+n+'</text>'
+ +'</g>';}
+var ART={};
+/* ---- opening scene: a village of tiny homes under the mountains (lion hidden on a roof) ---- */
+ART.scene=function(){return S(640,250,
+ sky(640,250,'#b9d3e3','#eef3ef')
+ +'<circle cx="560" cy="44" r="20" fill="#f5dc95"/><circle cx="560" cy="44" r="28" fill="#f5dc95" opacity=".25"/>'
+ +'<path d="M70 50 q12 -10 26 0 q14 -8 22 4 h-48z M300 34 q10 -8 22 0 q12 -6 18 4 h-40z" fill="#fff" opacity=".85"/>'
+ +mountains(640,128,'#8ea2b3','#f4f7fa')
+ +'<rect x="20" y="70" width="110" height="80" fill="#a9adb2" stroke="'+INK+'" stroke-width="1.4"/>'
+ +(function(){var s='';for(var r=0;r<3;r++)for(var c=0;c<5;c++)s+='<rect x="'+(28+c*20)+'" y="'+(78+r*22)+'" width="12" height="14" fill="'+((r+c)%3?'#d8e3ea':'#f1d48c')+'" stroke="'+INK+'" stroke-width=".7"/>';return s;})()
+ +'<rect x="520" y="62" width="110" height="88" fill="#bfb6a6" stroke="'+INK+'" stroke-width="1.4"/>'
+ +(function(){var s='';for(var r=0;r<3;r++)for(var c=0;c<4;c++)s+='<rect x="'+(530+c*25)+'" y="'+(70+r*25)+'" width="14" height="16" fill="'+((r*c)%2?'#f1d48c':'#d8e3ea')+'" stroke="'+INK+'" stroke-width=".7"/>';return s;})()
+ +'<rect x="0" y="150" width="640" height="100" fill="#c9bfae"/>'+grain(0,152,640,96,'#9c907c',260)
+ +tinyHouse(60,92,'#7a8f6e','#4b5a63','#efe6d4','38')
+ +tinyHouse(190,96,'#9b4f3e','#3f4a55','#f6efe2','39')
+ +tinyHouse(330,94,'#3f6b8a','#2f3a46','#f7f2e6','40')
+ +tinyHouse(462,98,'#c9a24a','#4b5a63','#efe6d4','41')
+ +'<g><rect x="300" y="60" width="5" height="120" fill="#3a434d"/><path d="M302 62 q14 -14 34 -6" stroke="#3a434d" stroke-width="4" fill="none"/><rect x="326" y="54" width="22" height="7" rx="3" fill="#3a434d"/><rect x="329" y="60" width="16" height="2" fill="#f6e7a5"/><circle cx="300" cy="96" r="5" fill="#dfe5ea" stroke="'+INK+'"/><circle cx="300" cy="96" r="2" fill="#26313f"/></g>'
+ +'<g transform="translate(250 150)"><path d="M0 0 h20 v-14 a10 10 0 0 0 -20 0z" fill="#c8a27a" stroke="'+INK+'"/><path d="M2 -2 v-12 M6 -2 v-15 M10 -2 v-16 M14 -2 v-15 M18 -2 v-12" stroke="#8b6a47" stroke-width=".8"/><path d="M2 0 l-2 10 M18 0 l2 10" stroke="#8b6a47" stroke-width="1.5"/></g>'
+  +'<g transform="translate(170 120)"><rect x="-3" y="10" width="6" height="34" fill="#6b4a33"/><circle cx="0" cy="4" r="16" fill="#5f8a4f"/><circle cx="-9" cy="12" r="11" fill="#6f9a58"/><circle cx="9" cy="12" r="11" fill="#55803f"/><circle cx="-4" cy="0" r="3" fill="#7fae6a"/></g><g transform="translate(455 120)"><rect x="-3" y="10" width="6" height="34" fill="#6b4a33"/><circle cx="0" cy="4" r="16" fill="#5f8a4f"/><circle cx="-9" cy="12" r="11" fill="#6f9a58"/><circle cx="9" cy="12" r="11" fill="#55803f"/><circle cx="-4" cy="0" r="3" fill="#7fae6a"/></g><g transform="translate(610 120)"><rect x="-3" y="10" width="6" height="34" fill="#6b4a33"/><circle cx="0" cy="4" r="16" fill="#5f8a4f"/><circle cx="-9" cy="12" r="11" fill="#6f9a58"/><circle cx="9" cy="12" r="11" fill="#55803f"/><circle cx="-4" cy="0" r="3" fill="#7fae6a"/></g><g transform="translate(560 182)" stroke="#26313f" stroke-width="2" fill="none"><circle cx="0" cy="12" r="10"/><circle cx="36" cy="12" r="10"/><path d="M0 12 L12 -4 L30 -4 L36 12 M12 -4 L18 12 L30 -4 M8 -10 h8 M30 -4 l-3 -6 h7" stroke="#9b4f3e"/></g><g transform="translate(140 196)"><rect x="0" y="0" width="54" height="5" fill="#8a6446" stroke="#26313f"/><rect x="0" y="-10" width="54" height="5" fill="#8a6446" stroke="#26313f"/><path d="M4 5 v12 M50 5 v12" stroke="#26313f" stroke-width="3"/></g>'
+ +'<g id="lion" class="lionegg" transform="translate(377 88) scale(.62)" style="cursor:pointer"><circle cx="8" cy="8" r="8" fill="#c9862f"/><circle cx="8" cy="9" r="5" fill="#f0c36a"/><circle cx="6" cy="8" r=".9" fill="#26313f"/><circle cx="10" cy="8" r=".9" fill="#26313f"/><path d="M7 11 q1 1 2 0" stroke="#26313f" stroke-width=".7" fill="none"/><path d="M15 12 q6 2 5 -4" stroke="#c9862f" stroke-width="1.6" fill="none"/></g>'
+ ,'A village of small houses with porches in front of mountains');};
+
+/* ---- word pictures 200x160 ---- */
+ART.encampment=function(){return S(200,160, sky(200,160,'#cfd8de','#e9e4da')
+ +'<rect x="0" y="22" width="200" height="22" fill="#8d949b" stroke="'+INK+'" stroke-width="1.5"/><path d="M0 30 H200" stroke="#6f767d"/><rect x="18" y="44" width="16" height="78" fill="#9aa1a8" stroke="'+INK+'" stroke-width="1.4"/><rect x="166" y="44" width="16" height="78" fill="#9aa1a8" stroke="'+INK+'" stroke-width="1.4"/><path d="M22 60 l6 8 l-3 9 M172 70 l5 6" stroke="#5d646b" stroke-width=".8" fill="none"/>'
+ +'<rect x="0" y="120" width="200" height="40" fill="#b9b2a4"/><path d="M10 132 l20 4 l14 -3 M90 140 l18 6 l10 -4 M150 130 l14 5" stroke="#857d70" fill="none"/>'+grain(0,122,200,36,'#968d7d',60)
+ +'<path d="M40 122 L66 82 L92 122 Z" fill="#3f7a8c" stroke="'+INK+'" stroke-width="1.4"/><path d="M66 82 L66 122" stroke="'+INK+'"/><path d="M60 122 L66 98 L72 122Z" fill="#244a56"/><path d="M40 122 L30 128 M92 122 L102 128 M66 82 L52 74" stroke="#555" stroke-width=".8"/>'
+ +'<path d="M96 122 L118 90 L144 122 Z" fill="#b3743e" stroke="'+INK+'" stroke-width="1.4"/><path d="M106 122 L118 104 L130 122Z" fill="#7a4c27"/><path d="M118 90 L132 84" stroke="#555" stroke-width=".8"/>'
+ +'<path d="M120 100 q24 -14 48 -2 l4 24 h-48z" fill="#5b7f52" stroke="'+INK+'" stroke-width="1.3" opacity=".95"/><path d="M128 104 q10 -4 20 2" stroke="#3e5a38" fill="none"/>'
+ +'<g transform="translate(150 104)"><path d="M0 0 h26 l-4 14 h-18z" fill="none" stroke="#4c5560" stroke-width="1.6"/><path d="M2 4 h22 M3 8 h20" stroke="#4c5560" stroke-width=".8"/><circle cx="6" cy="18" r="2.4" fill="#26313f"/><circle cx="20" cy="18" r="2.4" fill="#26313f"/><path d="M-4 -4 l4 4" stroke="#4c5560" stroke-width="1.6"/><rect x="4" y="-6" width="9" height="7" fill="#d7c08f" stroke="'+INK+'" stroke-width=".7"/></g>'
+ +'<rect x="20" y="114" width="16" height="10" fill="#6b5b8a" stroke="'+INK+'" stroke-width=".8"/>','Tents under a highway bridge');};
+ART.shelter=function(){return S(200,160, sky(200,160,'#7f8fa3','#b8c3cf')
+ +(function(){var s='';for(var i=0;i<26;i++){var x=(i*37)%200,y=(i*53)%120;s+='<path d="M'+x+' '+y+' l-3 8" stroke="#dfe7ef" stroke-width="1"/>';}return s;})()
+ +'<rect x="34" y="34" width="132" height="98" fill="#c5b49a" stroke="'+INK+'" stroke-width="1.6"/><path d="M28 36 H172 L160 22 H40Z" fill="#6c4f3d" stroke="'+INK+'" stroke-width="1.4"/>'
+ +'<rect x="46" y="46" width="70" height="44" fill="#f1d48c" stroke="'+INK+'" stroke-width="1.4"/>'
+ +'<g stroke="'+INK+'" stroke-width=".9"><rect x="52" y="58" width="24" height="5" fill="#7a8fb0"/><rect x="52" y="74" width="24" height="5" fill="#a2655a"/><path d="M52 56 V84 M76 56 V84"/><rect x="84" y="58" width="24" height="5" fill="#6f9a72"/><rect x="84" y="74" width="24" height="5" fill="#7a8fb0"/><path d="M84 56 V84 M108 56 V84"/></g>'
+ +'<circle cx="60" cy="56" r="2.6" fill="#7b5a44"/><circle cx="96" cy="72" r="2.6" fill="#3e2c22"/>'
+ +'<rect x="126" y="80" width="28" height="52" fill="#5d4636" stroke="'+INK+'" stroke-width="1.4"/><rect x="129" y="84" width="22" height="20" fill="#f1d48c"/><path d="M118 80 h44 l-4 -8 h-36z" fill="#3f4a55"/>'
+ +'<rect x="0" y="132" width="200" height="28" fill="#8e8a82"/><ellipse cx="60" cy="146" rx="22" ry="3" fill="#a9b6c4" opacity=".6"/>'
+ +'<g transform="translate(140 104)"><circle cx="0" cy="0" r="5" fill="#8a5a3c"/><path d="M-6 6 h12 v22 h-12z" fill="#4c6a8a"/><path d="M-6 28 v8 M6 28 v8" stroke="#26313f" stroke-width="3"/><path d="M-12 -2 q12 -14 24 0" fill="#c94a3d" stroke="'+INK+'" stroke-width=".8"/><path d="M0 -2 v10" stroke="#26313f"/></g>','A warm building with bunk beds in the window on a rainy night');};
+ART.unsheltered=function(){return S(200,160, sky(200,160,'#1f2b44','#3d4d6a')
+ +'<circle cx="160" cy="30" r="12" fill="#f1e6b8"/><circle cx="166" cy="26" r="12" fill="#2a3858"/>'
+ +'<path d="M20 20 l1 2 M60 36 l1 2 M110 14 l1 2 M130 44 l1 2" stroke="#fff"/>'
+ +'<rect x="0" y="118" width="200" height="42" fill="#5a5d63"/>'+grain(0,120,200,38,'#46494e',40)
+ +'<rect x="34" y="20" width="5" height="98" fill="#2f353d"/><path d="M36 22 q16 -8 30 0" stroke="#2f353d" stroke-width="4" fill="none"/><path d="M60 20 h14 l-4 6 h-6z" fill="#2f353d"/><path d="M58 26 L44 118 L104 118 L76 26Z" fill="#f4e3a1" opacity=".22"/>'
+ +'<rect x="70" y="92" width="96" height="6" fill="#7a5a3c" stroke="'+INK+'"/><rect x="70" y="80" width="96" height="5" fill="#7a5a3c" stroke="'+INK+'"/><path d="M76 98 v20 M160 98 v20" stroke="'+INK+'" stroke-width="3"/>'
+ +'<path d="M78 92 q30 -18 70 -6 q8 3 10 6 z" fill="#6c7f9c" stroke="'+INK+'" stroke-width="1.2"/><path d="M92 86 q20 -6 40 0 M100 90 q20 -6 40 -2" stroke="#56688a" fill="none"/><circle cx="150" cy="84" r="5" fill="#9a6b4b"/><path d="M146 80 q4 -6 9 -2" fill="#3a2a20"/>'
+ +'<rect x="96" y="104" width="22" height="14" rx="3" fill="#8a7a52" stroke="'+INK+'"/><path d="M100 104 q7 -6 14 0" stroke="'+INK+'" fill="none"/>','A person sleeping on a bench outside at night');};
+ART.eviction=function(){return S(200,160,'<rect width="200" height="160" fill="#e3dccd"/>'
+ +'<rect x="0" y="128" width="200" height="32" fill="#a58a69"/><path d="M0 134 H200 M0 146 H200" stroke="#8c7356"/>'
+ +'<rect x="62" y="18" width="70" height="112" fill="#7a5640" stroke="'+INK+'" stroke-width="1.6"/><rect x="70" y="26" width="54" height="40" fill="#8d6650" stroke="#5b3f2f"/><rect x="70" y="72" width="54" height="50" fill="#8d6650" stroke="#5b3f2f"/><circle cx="122" cy="80" r="3" fill="#d4b35a"/>'
+ +'<rect x="82" y="34" width="32" height="40" fill="#fbfaf5" stroke="'+INK+'" stroke-width="1" transform="rotate(-4 98 54)"/><g transform="rotate(-4 98 54)" stroke="#6b6b6b" stroke-width="1.2"><path d="M86 42 h24 M86 47 h22 M86 52 h24 M86 57 h16"/></g><rect x="96" y="60" width="14" height="9" fill="none" stroke="#c0392b" stroke-width="1.6" transform="rotate(-14 103 64)"/><rect x="92" y="31" width="10" height="5" fill="#d9c27a" opacity=".85" transform="rotate(-4 97 33)"/>'
+ +'<g stroke="'+INK+'" stroke-width="1.2"><rect x="10" y="100" width="40" height="30" fill="#c9a26e"/><path d="M10 108 h40 M30 100 v8" stroke="#8a6a3e"/><rect x="16" y="76" width="30" height="24" fill="#d3b07d"/><path d="M16 82 h30" stroke="#8a6a3e"/><rect x="148" y="98" width="42" height="32" fill="#c9a26e"/><path d="M148 106 h42" stroke="#8a6a3e"/></g>'
+ +'<path d="M24 76 l-6 -14 h20 z" fill="#efe2b6" stroke="'+INK+'"/><path d="M28 62 v-8" stroke="'+INK+'" stroke-width="1.5"/>'
+ +'<path d="M160 98 v-18 q8 -12 16 0 v18" fill="#e6d6b8" stroke="'+INK+'"/><path d="M164 86 h8" stroke="#8a6a3e"/>','A paper taped to an apartment door, boxes packed outside');};
+ART.prevention=function(){return S(200,160, sky(200,160,'#9aa8b8','#d7dde3')
+ +(function(){var s='';for(var i=0;i<34;i++){var x=(i*29)%200,y=(i*41)%130;if(x>48&&x<152&&y>30)continue;s+='<path d="M'+x+' '+y+' l-3 9" stroke="#5f7da0" stroke-width="1.4"/>';}return s;})()
+ +'<rect x="0" y="134" width="200" height="26" fill="#7d9a6a"/>'
+ +'<path d="M40 58 q60 -56 120 0 z" fill="#c9504a" stroke="'+INK+'" stroke-width="1.5"/><path d="M40 58 q15 -10 30 0 q15 -10 30 0 q15 -10 30 0 q15 -10 30 0" fill="#c9504a" stroke="'+INK+'" stroke-width="1.2"/><path d="M100 30 v-8" stroke="'+INK+'" stroke-width="2"/><path d="M70 58 q30 -40 30 -28 M130 58 q-30 -40 -30 -28" stroke="#9a3a35" fill="none"/>'
+ +'<path d="M100 58 V70" stroke="'+INK+'" stroke-width="2.5"/>'
+ +'<rect x="70" y="92" width="60" height="42" fill="#e9d9b6" stroke="'+INK+'" stroke-width="1.5"/><path d="M64 94 L100 70 L136 94Z" fill="#6c5a4a" stroke="'+INK+'" stroke-width="1.5"/><rect x="92" y="108" width="16" height="26" fill="#3f6b8a" stroke="'+INK+'"/><rect x="76" y="100" width="12" height="10" fill="#f1d48c" stroke="'+INK+'"/><rect x="112" y="100" width="12" height="10" fill="#f1d48c" stroke="'+INK+'"/>'
+ +'<path d="M84 100 v10 M76 105 h12 M118 100 v10 M112 105 h12" stroke="'+INK+'" stroke-width=".6"/>'
+ +'<path d="M44 60 q-4 8 0 12 M156 60 q4 8 0 12" stroke="#5f7da0" stroke-width="1.4" fill="none"/>','An umbrella keeping the rain off a house');};
+ART.enforcement=function(){return S(200,160, sky(200,160,'#cdd9e2','#ece8df')
+ +'<rect x="0" y="118" width="200" height="42" fill="#a8a196"/>'+grain(0,120,200,38,'#8f877b',40)
+ +'<g transform="translate(6 86)"><rect x="0" y="12" width="78" height="22" rx="5" fill="#f4f4f2" stroke="'+INK+'" stroke-width="1.4"/><path d="M14 12 l8 -12 h34 l8 12" fill="#26313f" stroke="'+INK+'"/><path d="M24 2 h14 v9 h-18z M42 2 h12 l6 9 h-18z" fill="#b7cbd8"/><rect x="0" y="20" width="78" height="5" fill="#2c4f86"/><rect x="28" y="-4" width="10" height="4" fill="#c0392b"/><rect x="38" y="-4" width="10" height="4" fill="#2c6fd1"/><circle cx="16" cy="34" r="6" fill="#26313f"/><circle cx="62" cy="34" r="6" fill="#26313f"/></g>'
+ +'<path d="M130 120 L156 84 L182 120 Z" fill="#7a8f4e" stroke="'+INK+'" stroke-width="1.4"/><path d="M148 120 L156 100 L164 120Z" fill="#4d5c30"/>'
+ +'<g transform="translate(104 78)"><circle cx="0" cy="0" r="6" fill="#b07a55"/><path d="M-7 -3 h14 v-4 h-14z" fill="#1d2b44"/><path d="M-6 -7 h12 l-2 -3 h-8z" fill="#1d2b44"/><path d="M-8 7 h16 v24 h-16z" fill="#23365a" stroke="'+INK+'" stroke-width=".8"/><circle cx="-3" cy="12" r="1.6" fill="#e3c15a"/><path d="M-8 31 v10 M8 31 v10" stroke="#1d2b44" stroke-width="4"/><path d="M8 12 l12 6" stroke="#23365a" stroke-width="4"/><rect x="16" y="14" width="10" height="13" fill="#f2efe6" stroke="'+INK+'" stroke-width=".8"/><path d="M18 18 h6 M18 21 h6" stroke="#777" stroke-width=".6"/></g>'
+ +'<g transform="translate(86 86)"><circle cx="0" cy="0" r="5.5" fill="#6b4a33"/><path d="M-5 -3 q5 -7 10 0" fill="#2a1d14"/><path d="M-7 6 h14 v22 h-14z" fill="#b0603e" stroke="'+INK+'" stroke-width=".8"/><rect x="-10" y="10" width="8" height="10" fill="#e6dccb" stroke="'+INK+'" stroke-width=".6"/><path d="M-7 28 v8 M7 28 v8" stroke="#3b3b3b" stroke-width="4"/></g>','A police car, an officer and a helper talking near a tent');};
+ART.affordable=function(){return S(200,160,'<rect width="200" height="160" fill="#f1ece2"/><rect x="99" y="8" width="2" height="144" fill="#c9bfae"/>'
+ +'<g transform="translate(16 26)"><path d="M0 18 L24 0 H60 V36 H24Z" fill="#fbe7a1" stroke="'+INK+'" stroke-width="1.4"/><circle cx="16" cy="18" r="4" fill="#f1ece2" stroke="'+INK+'"/><text x="40" y="24" font-size="15" font-weight="800" text-anchor="middle" fill="#2f6b3a" font-family="Nunito,sans-serif">$</text></g>'
+ +'<g transform="translate(18 82)"><rect x="0" y="10" width="62" height="40" rx="6" fill="#8a5a3c" stroke="'+INK+'" stroke-width="1.4"/><rect x="6" y="0" width="44" height="16" fill="#7fb07a" stroke="'+INK+'"/><rect x="10" y="4" width="44" height="14" fill="#8fc08a" stroke="'+INK+'"/><circle cx="32" cy="11" r="4" fill="none" stroke="#3f6a3a"/><path d="M0 22 h62" stroke="#6b432b"/><circle cx="52" cy="30" r="3" fill="#d4b35a"/></g>'
+ +'<g transform="translate(110 20)"><path d="M0 22 L28 0 H84 V44 H28Z" fill="#f2b7a6" stroke="'+INK+'" stroke-width="1.4"/><circle cx="18" cy="22" r="4.5" fill="#f1ece2" stroke="'+INK+'"/><text x="56" y="29" font-size="15" font-weight="800" text-anchor="middle" fill="#8a2a22" font-family="Nunito,sans-serif">$$$$</text></g>'
+ +'<g transform="translate(116 86)"><rect x="0" y="10" width="62" height="40" rx="6" fill="#8a5a3c" stroke="'+INK+'" stroke-width="1.4"/><path d="M0 22 h62" stroke="#6b432b"/><path d="M14 10 q4 -10 8 0 M40 10 q4 -8 6 0" stroke="#a88a6a" fill="none"/><path d="M24 34 q8 -6 16 0" stroke="#6b432b" fill="none"/></g>'
+ +'<g stroke="#c0392b" stroke-width="7" stroke-linecap="round"><path d="M128 40 L184 124 M184 40 L128 124"/></g>','A small price with money left over, and a huge price with an empty wallet crossed out');};
+ART.subsidy=function(){return S(200,160,'<rect width="200" height="160" fill="#eef0ea"/>'
+ +'<g transform="translate(60 18)"><rect x="0" y="0" width="80" height="100" fill="#fff" stroke="'+INK+'" stroke-width="1.5"/><path d="M10 14 h44 M10 24 h60 M10 34 h52" stroke="#9aa1a8" stroke-width="2"/><rect x="10" y="50" width="60" height="16" fill="#f3efe4" stroke="'+INK+'"/><rect x="10" y="50" width="38" height="16" fill="#7fa6c9"/><rect x="48" y="50" width="22" height="16" fill="#e2b45a"/><path d="M10 80 h30" stroke="#9aa1a8" stroke-width="2"/><text x="66" y="86" font-size="11" font-weight="800" text-anchor="end" fill="'+INK+'" font-family="Nunito,sans-serif">$</text></g>'
+ +'<g transform="translate(6 70)"><path d="M0 18 L22 6 L44 18Z" fill="#c8ccd2" stroke="'+INK+'"/><rect x="4" y="18" width="36" height="24" fill="#e4e6ea" stroke="'+INK+'"/><path d="M10 20 v20 M18 20 v20 M26 20 v20 M34 20 v20" stroke="#9aa1a8" stroke-width="2"/><rect x="0" y="42" width="44" height="5" fill="#c8ccd2" stroke="'+INK+'"/></g>'
+ +'<path d="M50 96 q14 -24 30 -32" stroke="#4f7fa9" stroke-width="3" fill="none" marker-end="url(#ah1)"/><defs><marker id="ah1" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8Z" fill="#4f7fa9"/></marker><marker id="ah2" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8Z" fill="#c4902f"/></marker></defs>'
+ +'<g transform="translate(166 86)"><circle cx="0" cy="0" r="7" fill="#9a6b4b"/><path d="M-6 -4 q6 -8 12 0" fill="#2a1d14"/><path d="M-9 8 h18 v28 h-18z" fill="#5f8a6e" stroke="'+INK+'" stroke-width=".8"/><path d="M-9 36 v12 M9 36 v12" stroke="#33404d" stroke-width="5"/><circle cx="-14" cy="18" r="4" fill="#e2b45a" stroke="'+INK+'"/></g>'
+ +'<path d="M152 104 q-8 -20 -12 -34" stroke="#c4902f" stroke-width="3" fill="none" marker-end="url(#ah2)"/>'
+ +'<g fill="#e2b45a" stroke="'+INK+'" stroke-width=".8"><ellipse cx="22" cy="132" rx="10" ry="3.5"/><ellipse cx="22" cy="128" rx="10" ry="3.5"/><ellipse cx="22" cy="124" rx="10" ry="3.5"/><ellipse cx="22" cy="120" rx="10" ry="3.5"/><ellipse cx="178" cy="136" rx="10" ry="3.5"/><ellipse cx="178" cy="132" rx="10" ry="3.5"/></g>','A government building pays most of a bill and a person pays the rest');};
+ART.budget=function(){return S(200,160,'<rect width="200" height="160" fill="#d9c7a6"/><path d="M0 120 H200" stroke="#bfa984"/>'
+ +'<g transform="rotate(-3 90 80)"><rect x="24" y="22" width="126" height="104" fill="#fbf8ef" stroke="'+INK+'" stroke-width="1.5"/><path d="M87 22 V126" stroke="#c8c0ad" stroke-width="2"/><path d="M34 38 h44 M34 48 h40 M34 58 h44 M34 68 h36 M34 78 h44 M34 88 h30" stroke="#9aa1a8" stroke-width="1.6"/><path d="M70 38 h6 M68 48 h8 M70 58 h6 M66 68 h10" stroke="#5a6470" stroke-width="2"/>'
+ +'<circle cx="118" cy="62" r="22" fill="#7fa6c9" stroke="'+INK+'"/><path d="M118 62 V40 A22 22 0 0 1 139 68 Z" fill="#c9504a" stroke="'+INK+'"/><path d="M118 62 L139 68 A22 22 0 0 1 104 79 Z" fill="#e2b45a" stroke="'+INK+'"/><path d="M98 100 h40 M98 108 h30" stroke="#9aa1a8" stroke-width="1.6"/></g>'
+ +'<g transform="translate(150 96)"><rect x="0" y="0" width="34" height="46" rx="4" fill="#4b5563" stroke="'+INK+'" stroke-width="1.3"/><rect x="5" y="5" width="24" height="10" fill="#c8e0c0"/>'+(function(){var s='';for(var r=0;r<3;r++)for(var c=0;c<3;c++)s+='<rect x="'+(5+c*9)+'" y="'+(19+r*8)+'" width="6" height="5" fill="#e6e8eb"/>';return s;})()+'</g>'
+ +'<g fill="#e2b45a" stroke="'+INK+'" stroke-width=".8"><ellipse cx="20" cy="140" rx="11" ry="4"/><ellipse cx="20" cy="135" rx="11" ry="4"/><ellipse cx="20" cy="130" rx="11" ry="4"/><ellipse cx="42" cy="142" rx="11" ry="4"/></g>'
+ +'<path d="M148 40 l20 -24 l4 4 l-20 24 z" fill="#e2b45a" stroke="'+INK+'"/><path d="M148 40 l-3 7 l7 -3" fill="#26313f"/>','A notebook with a money plan and a pie chart');};
+ART.privacy=function(){return S(200,160,'<rect width="200" height="160" fill="#efe9dc"/><rect x="99" y="8" width="2" height="144" fill="#c9bfae"/>'
+ +'<g transform="translate(14 30)"><rect x="0" y="40" width="72" height="56" fill="#7a8f6e" stroke="'+INK+'" stroke-width="1.4"/><path d="M-6 42 L36 14 L78 42 Z" fill="#4b5a63" stroke="'+INK+'" stroke-width="1.4"/><rect x="8" y="58" width="20" height="38" fill="#efe6d4" stroke="'+INK+'"/><circle cx="24" cy="78" r="1.6" fill="#b48a2c"/><rect x="22" y="72" width="5" height="9" fill="#888" rx="1"/><rect x="40" y="54" width="22" height="18" fill="#e9c9c2" stroke="'+INK+'"/><path d="M40 54 q6 9 0 18 M62 54 q-6 9 0 18" fill="#c9746a" stroke="'+INK+'" stroke-width=".7"/><rect x="-4" y="96" width="80" height="5" fill="#9aa3ad" stroke="'+INK+'"/></g>'
+ +'<g transform="translate(108 30)"><rect x="0" y="0" width="84" height="100" fill="#dfe3e6" stroke="'+INK+'" stroke-width="1.4"/>'
+ +(function(){var s='';for(var r=0;r<4;r++)for(var c=0;c<3;c++){var x=6+c*27,y=8+r*23;s+='<rect x="'+x+'" y="'+y+'" width="22" height="9" fill="#9aa8b8" stroke="'+INK+'" stroke-width=".6"/><circle cx="'+(x+4)+'" cy="'+(y+3)+'" r="3" fill="'+(['#8a5a3c','#c49a6c','#4a3428','#b07a55'][(r+c)%4])+'"/>';}return s;})()
+ +'</g><g stroke="#c0392b" stroke-width="7" stroke-linecap="round"><path d="M116 40 L184 122 M184 40 L116 122"/></g>','A small house with its door shut, and a big room full of beds crossed out');};
+ART.replicate=function(){return S(200,160,'<rect width="200" height="160" fill="#e8eef0"/><rect x="0" y="126" width="200" height="34" fill="#c9bfae"/>'
+ +'<g transform="translate(10 50)">'+tinyHouseSmall('#3f6b8a','#2f3a46')+'</g><g transform="translate(120 50)">'+tinyHouseSmall('#3f6b8a','#2f3a46')+'</g>'
+ +'<g transform="translate(82 36)"><rect x="0" y="20" width="36" height="22" rx="3" fill="#cfd5db" stroke="'+INK+'" stroke-width="1.3"/><rect x="4" y="12" width="28" height="9" fill="#9aa3ad" stroke="'+INK+'"/><rect x="6" y="40" width="24" height="5" fill="#fff" stroke="'+INK+'"/><circle cx="29" cy="28" r="2" fill="#5fae6a"/></g>'
+ +'<path d="M70 100 q30 -24 56 0" stroke="#c4902f" stroke-width="3" fill="none" stroke-dasharray="5 4"/><path d="M122 94 l6 7 l-9 2z" fill="#c4902f"/>','The same small house twice, with a copy machine between them');};
+function tinyHouseSmall(wall,roof){return '<rect x="0" y="22" width="66" height="54" fill="'+wall+'" stroke="'+INK+'" stroke-width="1.4"/><path d="M-6 24 L33 0 L72 24Z" fill="'+roof+'" stroke="'+INK+'" stroke-width="1.4"/><rect x="8" y="40" width="18" height="36" fill="#f7f2e6" stroke="'+INK+'"/><rect x="36" y="36" width="20" height="16" fill="#cfe3ef" stroke="'+INK+'"/><path d="M46 36 V52 M36 44 H56" stroke="'+INK+'" stroke-width=".8"/><rect x="30" y="36" width="5" height="16" fill="#b9733f" stroke="'+INK+'" stroke-width=".7"/>';}
+ART.crisis=function(){return S(200,160, sky(200,160,'#6c7686','#b9bec6')
+ +'<path d="M30 52 q-2 -26 26 -24 q10 -20 34 -10 q20 -14 38 6 q26 -2 24 24 z" fill="#4a5262" stroke="'+INK+'" stroke-width="1.4"/><path d="M48 42 q14 -6 26 0 M96 36 q14 -6 26 2" stroke="#5d6577" fill="none"/>'
+ +'<path d="M96 52 l-12 22 h10 l-8 22 l22 -30 h-11 l8 -14z" fill="#f4d35e" stroke="'+INK+'" stroke-width="1"/>'
+ +(function(){var s='';for(var i=0;i<18;i++){var x=40+(i*13)%120,y=60+(i*17)%50;s+='<path d="M'+x+' '+y+' l-2 7" stroke="#9fb3c8" stroke-width="1.3"/>';}return s;})()
+ +'<rect x="0" y="130" width="200" height="30" fill="#6e7a62"/>'
+ +'<g transform="translate(70 96)"><circle cx="0" cy="0" r="7" fill="#9a6b4b"/><path d="M-6 -4 q6 -8 12 0" fill="#2a1d14"/><path d="M-10 8 h20 v24 h-20z" fill="#8a6fa6" stroke="'+INK+'" stroke-width=".8"/><path d="M-10 10 l-8 -14 M10 10 l8 -14" stroke="#8a6fa6" stroke-width="4"/><circle cx="-18" cy="-5" r="3" fill="#9a6b4b"/><circle cx="18" cy="-5" r="3" fill="#9a6b4b"/><path d="M-6 32 v12 M6 32 v12" stroke="#33404d" stroke-width="5"/></g>'
+ +'<g transform="translate(138 92)"><path d="M18 0 L36 32 H0Z" fill="#e8b23a" stroke="'+INK+'" stroke-width="1.6"/><rect x="16.5" y="10" width="3" height="12" fill="'+INK+'"/><circle cx="18" cy="26" r="2" fill="'+INK+'"/></g>','A person under a storm cloud with lightning, a warning sign beside them');};
+
+/* ---- voice scenes 320x190 (places and objects, never faces of real people) ---- */
+ART.v_lopez=function(){return S(320,190,'<rect width="320" height="190" fill="#e9e1d1"/>'
+ +'<rect x="170" y="14" width="136" height="96" fill="#bcd5e4" stroke="'+INK+'" stroke-width="2"/>'+'<g clip-path="url(#cl1)"><clipPath id="cl1"><rect x="172" y="16" width="132" height="92"/></clipPath>'+mountains(132,92,'#8ea2b3','#f4f7fa').replace(/<path /g,'<path transform="translate(172 16)" ')+'<rect x="172" y="88" width="132" height="22" fill="#c9bfae"/></g><path d="M238 14 V110 M170 62 H306" stroke="'+INK+'" stroke-width="2"/>'
+ +'<rect x="0" y="120" width="320" height="70" fill="#8a6446"/><path d="M0 120 H320" stroke="'+INK+'" stroke-width="2"/><path d="M0 140 H320 M0 162 H320" stroke="#7a573c"/>'
+ +'<g transform="rotate(-6 80 120)"><rect x="24" y="96" width="120" height="70" fill="#f6f2e8" stroke="'+INK+'" stroke-width="1.4"/><rect x="30" y="102" width="108" height="12" fill="#26313f"/><path d="M30 120 h34 M30 126 h34 M30 132 h34 M30 138 h34 M30 144 h34 M30 150 h30 M70 120 h34 M70 126 h34 M70 132 h34 M110 120 h28 M110 126 h28" stroke="#8b939b" stroke-width="2"/><rect x="70" y="136" width="68" height="24" fill="#7a8f6e"/><path d="M76 160 v-12 l10 -7 l10 7 v12 M100 160 v-12 l10 -7 l10 7 v12" fill="#9b4f3e" stroke="'+INK+'" stroke-width=".7"/></g>'
+ +'<g transform="translate(176 128)"><rect x="0" y="0" width="70" height="46" fill="#f3d27a" stroke="'+INK+'" stroke-width="1.3"/><path d="M0 0 v46" stroke="#c0392b" stroke-width="3"/><path d="M8 10 h54 M8 18 h50 M8 26 h54 M8 34 h40" stroke="#8b7a4a" stroke-width="1.2"/></g>'
+ +'<path d="M252 130 l40 30" stroke="#26313f" stroke-width="5" stroke-linecap="round"/><path d="M292 160 l5 4" stroke="#c9a24a" stroke-width="5" stroke-linecap="round"/>'
+ +'<rect x="40" y="26" width="64" height="48" fill="#fff" stroke="'+INK+'" stroke-width="1.5" transform="rotate(4 72 50)"/><g transform="rotate(4 72 50)"><rect x="44" y="30" width="56" height="34" fill="#c9bfae"/><path d="M50 62 v-14 l8 -6 l8 6 v14 M70 62 v-14 l8 -6 l8 6 v14" fill="#3f6b8a" stroke="'+INK+'" stroke-width=".7"/></g><circle cx="72" cy="24" r="3" fill="#c0392b"/>','A writer\u2019s desk: a newspaper, a notebook, a photo of small houses and a window on the mountains');};
+ART.v_selden=function(){return S(320,190, sky(320,190,'#c9dbe8','#eef1ea')
+ +'<rect x="0" y="92" width="320" height="18" fill="#6f9fc0"/><path d="M0 98 q20 -4 40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0" stroke="#e8f1f6" fill="none"/>'
+ +'<rect x="0" y="110" width="320" height="80" fill="#cbbfa5"/>'
+ +'<g transform="translate(150 30)"><rect x="0" y="0" width="150" height="130" fill="#b9805d" stroke="'+INK+'" stroke-width="1.6"/>'+(function(){var s='';for(var r=0;r<3;r++)for(var c=0;c<4;c++)s+='<rect x="'+(10+c*34)+'" y="'+(10+r*30)+'" width="22" height="20" fill="'+((r+c)%3?'#d8e3ea':'#f1d48c')+'" stroke="'+INK+'" stroke-width=".8"/>';return s;})()+'<rect x="58" y="96" width="34" height="34" fill="#efe6d4" stroke="'+INK+'"/><path d="M58 96 l-12 -6 v40 l12 0" fill="#3f6b8a" stroke="'+INK+'"/><rect x="50" y="130" width="50" height="6" fill="#a2655a" stroke="'+INK+'"/></g>'
+ +'<g transform="translate(20 70)"><rect x="0" y="0" width="92" height="90" fill="#fff" stroke="'+INK+'" stroke-width="1.6"/><rect x="0" y="0" width="92" height="20" fill="#c9504a"/><circle cx="18" cy="-2" r="3" fill="#26313f"/><circle cx="74" cy="-2" r="3" fill="#26313f"/><text x="46" y="68" font-size="40" font-weight="900" text-anchor="middle" fill="#26313f" font-family="Nunito,sans-serif">50</text><text x="46" y="84" font-size="9" font-weight="700" text-anchor="middle" fill="#5a6470" font-family="Nunito,sans-serif">years</text>'
+ +'<path d="M4 4 h84 v4 h-84z" fill="#fff" opacity=".5"/></g>'
+ +'<g transform="translate(118 140)"><circle cx="0" cy="0" r="8" fill="none" stroke="#c4902f" stroke-width="3"/><path d="M8 0 h22 v5 M22 0 v6" stroke="#c4902f" stroke-width="4" fill="none"/></g>','A big calendar with the number 50 beside an apartment building with an open door, a key, and a lake');};
+ART.v_byrne=function(){return S(320,190,'<rect width="320" height="190" fill="#efe4cf"/>'
+ +'<rect x="186" y="12" width="122" height="90" fill="#d0dfe8" stroke="'+INK+'" stroke-width="2"/>'
+ +'<g transform="translate(188 30)">'+(function(){var s='';for(var i=0;i<4;i++){s+='<rect x="'+(i*30)+'" y="'+(10-i%2*6)+'" width="30" height="62" fill="'+['#9b4f3e','#b5653f','#8a4a3a','#a85a44'][i]+'" stroke="'+INK+'" stroke-width=".8"/><rect x="'+(i*30+6)+'" y="'+(20-i%2*6)+'" width="7" height="9" fill="#efe6d4"/><rect x="'+(i*30+17)+'" y="'+(20-i%2*6)+'" width="7" height="9" fill="#efe6d4"/><rect x="'+(i*30+10)+'" y="'+(46-i%2*6)+'" width="10" height="16" fill="#3f4a55"/>';}return s;})()+'</g>'
+ +'<path d="M246 12 V102 M186 56 H308" stroke="'+INK+'" stroke-width="2"/>'
+ +'<rect x="0" y="112" width="320" height="78" fill="#7c9a8a"/><path d="M0 112 H320" stroke="'+INK+'" stroke-width="2"/>'
+ +'<g transform="rotate(-5 70 140)"><rect x="20" y="104" width="100" height="62" fill="#fff" stroke="'+INK+'" stroke-width="1.4"/><path d="M20 104 L70 138 L120 104" fill="none" stroke="'+INK+'"/><rect x="92" y="110" width="20" height="14" fill="#d9c27a" stroke="'+INK+'" stroke-width=".7"/></g>'
+ +'<g transform="rotate(7 175 150)"><rect x="130" y="114" width="88" height="62" fill="#fbfaf5" stroke="'+INK+'" stroke-width="1.4"/><rect x="136" y="120" width="18" height="18" fill="#c94a3d"/><path d="M142 129 h6 M145 126 v6" stroke="#fff" stroke-width="2"/><path d="M160 124 h50 M160 132 h44 M138 146 h70 M138 154 h60" stroke="#9aa1a8" stroke-width="2"/><path d="M174 164 h34" stroke="#c0392b" stroke-width="3"/></g>'
+ +'<g transform="translate(26 18)"><rect x="0" y="0" width="120" height="78" fill="#fff" stroke="'+INK+'" stroke-width="1.5"/><rect x="0" y="0" width="120" height="14" fill="#5a7a9a"/>'+(function(){var s='';for(var r=0;r<4;r++)for(var c=0;c<7;c++){var x=4+c*16.5,y=18+r*14.5;s+='<rect x="'+x+'" y="'+y+'" width="14" height="12" fill="#f3efe6" stroke="#c8c0ad" stroke-width=".6"/>';if(r==2&&c==4)s+='<path d="M'+x+' '+y+' l14 12 M'+(x+14)+' '+y+' l-14 12" stroke="#c0392b" stroke-width="2"/>';}return s;})()+'</g>','A kitchen table with a rent envelope and a doctor\u2019s bill, a calendar with one day crossed, row houses outside');};
+ART.v_peters=function(){return S(320,190, sky(320,190,'#c5d3dc','#ebe7df')
+ +mountains(320,70,'#9eb0bf','#f4f7fa')
+ +'<rect x="0" y="40" width="320" height="26" fill="#8d949b" stroke="'+INK+'" stroke-width="1.5"/><rect x="40" y="66" width="18" height="70" fill="#9aa1a8" stroke="'+INK+'" stroke-width="1.3"/><rect x="262" y="66" width="18" height="70" fill="#9aa1a8" stroke="'+INK+'" stroke-width="1.3"/>'
+ +'<rect x="0" y="136" width="320" height="54" fill="#a39a8b"/><path d="M0 160 H320" stroke="#e8e2d2" stroke-width="3" stroke-dasharray="14 10"/><path d="M0 150 H320" stroke="#5f8a5a" stroke-width="16" opacity=".55"/>'
+ +'<path d="M80 136 L104 104 L128 136Z" fill="#6b8f9f" stroke="'+INK+'" stroke-width="1.3"/><path d="M130 136 L152 108 L176 136Z" fill="#b48a4a" stroke="'+INK+'" stroke-width="1.3"/><path d="M180 136 q22 -26 46 -6 v6z" fill="#7a6a9a" stroke="'+INK+'" stroke-width="1.2"/>'
+ +'<g fill="#d8d2c4" stroke="'+INK+'" stroke-width=".7"><rect x="62" y="128" width="10" height="8"/><path d="M200 132 l8 -4 l4 6z"/><circle cx="238" cy="134" r="3"/><rect x="118" y="130" width="7" height="5" fill="#c9504a"/></g>'
+ +'<g transform="translate(236 140)" stroke="'+INK+'" stroke-width="2" fill="none"><circle cx="0" cy="20" r="11"/><circle cx="40" cy="20" r="11"/><path d="M0 20 L14 2 L32 2 L40 20 M14 2 L20 20 L32 2 M10 -4 h8 M32 2 l-4 -6 h8" stroke="#2f6b8a"/></g>'
+ +'<g transform="translate(290 72)"><rect x="0" y="0" width="4" height="66" fill="#3a434d"/><rect x="-14" y="2" width="32" height="12" fill="#3f7a4a" stroke="'+INK+'"/><path d="M-10 8 h24" stroke="#e8f1e8" stroke-width="2"/></g>','A bike path under a bridge with tents and trash, a bicycle, and mountains behind');};
+ART.v_davis=function(){return S(320,190, sky(320,190,'#e9cfb0','#f3ebe0')
+ +'<rect x="0" y="130" width="320" height="60" fill="#6f98b4"/><path d="M0 140 q20 -4 40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0" stroke="#e8f1f6" fill="none"/>'
+ +'<g stroke="#b9472e" fill="#c4553a"><rect x="40" y="40" width="8" height="92"/><rect x="104" y="40" width="8" height="92"/><path d="M36 54 h16 M100 54 h16 M36 70 h16 M100 70 h16" stroke-width="2"/><path d="M0 108 q44 -64 44 -64 q36 58 64 0 q20 40 44 64" fill="none" stroke-width="3"/><rect x="0" y="108" width="152" height="5"/></g>'
+ +'<path d="M50 44 v62 M60 60 v46 M70 74 v32 M80 82 v24 M90 74 v32 M98 60 v46" stroke="#c4553a" stroke-width="1"/>'
+ +'<g transform="translate(178 0)"><g fill="#8b7d6b" stroke="'+INK+'" stroke-width="1.2"><path d="M20 132 V54 q12 -14 24 0 V132 M28 132 V70 q4 -6 8 0 V132" /><path d="M86 132 V54 q12 -14 24 0 V132"/></g><path d="M94 132 V70 q4 -6 8 0 V132" fill="#f3ebe0"/><path d="M28 132 V70 q4 -6 8 0 V132" fill="#f3ebe0"/>'
+ +'<path d="M-10 112 H142" stroke="#5a5048" stroke-width="5"/><path d="M32 54 L-10 112 M32 54 L74 112 M98 54 L56 112 M98 54 L142 112" stroke="#5a5048" stroke-width="1.2"/><path d="M40 62 L10 112 M40 62 L74 108 M106 62 L76 112 M106 62 L136 112" stroke="#5a5048" stroke-width=".7"/>'
+ +'<g fill="#7a8794"><rect x="118" y="80" width="10" height="32"/><rect x="130" y="70" width="8" height="42"/></g></g>'
+ +'<g transform="translate(152 70)"><circle cx="8" cy="8" r="13" fill="#fff" stroke="'+INK+'" stroke-width="2"/><path d="M1 5 h14 M1 11 h14 M12 1 L4 15" stroke="#c0392b" stroke-width="2.4"/></g>','A red bridge on one side, a stone bridge with cables on the other, and a not-equal sign between them');};
+ART.v_whitehouse=function(){return S(320,190, sky(320,190,'#cbd9e6','#eef1f3')
+ +'<rect x="0" y="150" width="320" height="40" fill="#7f9f6a"/>'
+ +'<g transform="translate(24 46)"><rect x="0" y="40" width="180" height="64" fill="#f6f4ee" stroke="'+INK+'" stroke-width="1.6"/><path d="M60 40 L90 16 L120 40Z" fill="#f6f4ee" stroke="'+INK+'" stroke-width="1.6"/><rect x="56" y="38" width="68" height="6" fill="#e6e2d8" stroke="'+INK+'"/>'+(function(){var s='';for(var i=0;i<5;i++)s+='<rect x="'+(64+i*12)+'" y="46" width="5" height="54" fill="#fff" stroke="'+INK+'" stroke-width=".7"/>';for(var j=0;j<4;j++){s+='<rect x="'+(8+j*12)+'" y="52" width="7" height="12" fill="#b8c7d4" stroke="'+INK+'" stroke-width=".6"/><rect x="'+(130+j*12)+'" y="52" width="7" height="12" fill="#b8c7d4" stroke="'+INK+'" stroke-width=".6"/><rect x="'+(8+j*12)+'" y="76" width="7" height="12" fill="#b8c7d4" stroke="'+INK+'" stroke-width=".6"/><rect x="'+(130+j*12)+'" y="76" width="7" height="12" fill="#b8c7d4" stroke="'+INK+'" stroke-width=".6"/>';}return s;})()
+ +'<path d="M90 16 V-14" stroke="'+INK+'" stroke-width="1.5"/><g><rect x="90" y="-14" width="24" height="14" fill="#fff" stroke="'+INK+'" stroke-width=".6"/><path d="M90 -11 h24 M90 -7 h24 M90 -3 h24" stroke="#c0392b" stroke-width="1.6"/><rect x="90" y="-14" width="10" height="7" fill="#2c4f86"/></g></g>'
+ +'<g transform="translate(212 40) rotate(6)"><rect x="0" y="0" width="86" height="110" fill="#fff" stroke="'+INK+'" stroke-width="1.5"/><path d="M10 14 h50 M10 24 h64 M10 34 h56 M10 50 h64 M10 60 h40 M10 76 h64 M10 86 h50" stroke="#9aa1a8" stroke-width="2"/><path d="M-6 66 h98" stroke="#26313f" stroke-width="1.6" stroke-dasharray="4 3"/></g>'
+ +'<g transform="translate(272 96) rotate(-20)"><circle cx="0" cy="0" r="7" fill="none" stroke="#c0392b" stroke-width="3"/><circle cx="0" cy="18" r="7" fill="none" stroke="#c0392b" stroke-width="3"/><path d="M6 4 L36 14 M6 14 L36 4" stroke="#6b7480" stroke-width="3"/></g>'
+ +'<g fill="#e2b45a" stroke="'+INK+'" stroke-width=".8"><ellipse cx="222" cy="168" rx="11" ry="4"/><ellipse cx="222" cy="163" rx="11" ry="4"/><ellipse cx="246" cy="170" rx="11" ry="4"/></g>','A government building with a flag, and scissors cutting a strip off a long money plan');};
+/* small inside-the-article pictures 160x110 */
+ART.p_mayor=function(){return S(160,110,'<rect width="160" height="110" fill="#e7e1d3"/><rect x="0" y="86" width="160" height="24" fill="#b8a58a"/>'+(function(){var s='';for(var i=0;i<6;i++)s+='<rect x="'+(8+i*24)+'" y="18" width="20" height="68" fill="'+['#5b7f9a','#4f6f88'][i%2]+'" stroke="'+INK+'"/><path d="M'+(12+i*24)+' 26 h12 M'+(12+i*24)+' 30 h12" stroke="#2f4152"/><rect x="'+(22+i*24)+'" y="50" width="3" height="8" fill="#c9cfd5"/>';return s;})()+'<g transform="translate(118 60)"><rect x="0" y="10" width="34" height="18" fill="#8a6446" stroke="'+INK+'"/><circle cx="17" cy="6" r="6" fill="#d4b35a" stroke="'+INK+'"/><rect x="15" y="-2" width="4" height="4" fill="'+INK+'"/></g>','School lockers and a desk bell');};
+ART.p_ortiz=function(){return S(160,110,'<rect width="160" height="110" fill="#dbe6e0"/><g transform="translate(40 14)">'+tinyHouseSmall('#9b4f3e','#3f4a55')+'</g><g transform="translate(57 66)"><rect x="0" y="0" width="7" height="9" rx="1" fill="#555" stroke="'+INK+'" stroke-width=".6"/><path d="M1 0 v-3 a2.5 2.5 0 0 1 5 0 v3" fill="none" stroke="#555" stroke-width="1.2"/></g><rect x="0" y="90" width="160" height="20" fill="#c9bfae"/>','A small house with a lock on the door');};
+ART.p_miller=function(){return S(160,110,'<rect width="160" height="110" fill="#e9e4da"/><rect x="10" y="10" width="70" height="80" fill="#b3a99a" stroke="'+INK+'"/><rect x="22" y="24" width="46" height="34" fill="#d8e3ea" stroke="'+INK+'"/><g transform="translate(38 34)"><rect x="0" y="0" width="16" height="10" fill="#26313f"/><circle cx="16" cy="5" r="4" fill="#26313f"/><circle cx="17" cy="5" r="2" fill="#7fa6c9"/><path d="M6 10 l-6 14 M8 10 v14 M10 10 l6 14" stroke="#26313f"/></g><path d="M60 40 L150 70 L150 96 Z" fill="#f4e3a1" opacity=".35"/><g transform="translate(112 56)">'+'<rect x="0" y="14" width="36" height="30" fill="#7a8f6e" stroke="'+INK+'"/><path d="M-4 16 L18 0 L40 16Z" fill="#4b5a63" stroke="'+INK+'"/></g>','A camera in an apartment window pointed at a small house');};
+ART.p_officer=function(){return S(160,110,'<rect width="160" height="110" fill="#e4e8ec"/><g transform="translate(14 30)"><rect x="0" y="0" width="94" height="50" rx="6" fill="#4f7fa9" stroke="'+INK+'"/><rect x="6" y="8" width="16" height="14" fill="#d8e3ea"/><rect x="26" y="8" width="16" height="14" fill="#d8e3ea"/><rect x="46" y="8" width="16" height="14" fill="#d8e3ea"/><rect x="66" y="8" width="20" height="30" fill="#d8e3ea" stroke="'+INK+'"/><circle cx="18" cy="52" r="7" fill="#26313f"/><circle cx="74" cy="52" r="7" fill="#26313f"/></g><g transform="translate(96 66) rotate(-10)"><rect x="0" y="0" width="54" height="28" fill="#fff6d8" stroke="'+INK+'"/><path d="M38 0 v28" stroke="#888" stroke-dasharray="3 2"/><path d="M6 8 h26 M6 14 h20 M6 20 h24" stroke="#888" stroke-width="1.5"/></g>','A bus and a ticket');};
+ART.write=function(){return S(320,190, sky(320,190,'#cfe0ea','#f3efe6')
+ +'<path d="M0 120 q60 -40 120 -10 q50 -40 110 -4 q50 -30 90 0 V190 H0Z" fill="#9db08a"/><path d="M0 140 q80 -30 160 0 t160 -6 V190 H0Z" fill="#7f9a6e"/>'
+ +(function(){var s='';var xs=[30,46,62,140,156,172,232,248];for(var i=0;i<xs.length;i++)s+='<rect x="'+xs[i]+'" y="'+(112-(i%3)*6)+'" width="14" height="22" fill="'+['#e6d6b8','#c9a8a0','#b8c8d8','#e8d29a'][i%4]+'" stroke="'+INK+'" stroke-width=".8"/><path d="M'+(xs[i]-1)+' '+(112-(i%3)*6)+' l8 -6 l8 6" fill="#6c5a4a" stroke="'+INK+'" stroke-width=".7"/>';return s;})()
+ +'<g transform="translate(96 30) rotate(-6)"><rect x="0" y="0" width="128" height="84" fill="#fff" stroke="'+INK+'" stroke-width="1.8"/><path d="M0 0 L64 46 L128 0" fill="#f6efe0" stroke="'+INK+'" stroke-width="1.5"/><path d="M0 84 L50 42 M128 84 L78 42" stroke="'+INK+'" stroke-width="1"/><rect x="98" y="8" width="20" height="24" fill="#c9504a" stroke="'+INK+'" stroke-width=".8"/><circle cx="108" cy="20" r="6" fill="#f0c36a"/></g>'
+ +'<path d="M240 40 l40 -26 l6 6 l-40 26z" fill="#e2b45a" stroke="'+INK+'"/><path d="M240 40 l-4 9 l9 -3" fill="#26313f"/>','A letter in an envelope above the hills of a city');};
+
+ART.dict=function(){return S(200,160,'<rect width="200" height="160" fill="#e7dfcf"/><rect x="0" y="118" width="200" height="42" fill="#8a6446"/>'
+ +'<path d="M22 40 q38 -14 78 4 v86 q-40 -16 -78 -4z" fill="#fbf8ef" stroke="'+INK+'" stroke-width="1.6"/><path d="M178 40 q-38 -14 -78 4 v86 q40 -16 78 -4z" fill="#fbf8ef" stroke="'+INK+'" stroke-width="1.6"/>'
+ +'<path d="M32 56 h56 M32 66 h50 M32 76 h56 M32 86 h44 M32 96 h56 M32 106 h40 M112 56 h56 M112 66 h48 M112 76 h56" stroke="#9aa1a8" stroke-width="2"/><path d="M32 56 h18 M112 76 h20" stroke="#c4702b" stroke-width="3"/>'
+ +'<g transform="translate(118 84)"><rect x="0" y="0" width="44" height="32" fill="#7fa6c9" stroke="'+INK+'"/><path d="M0 32 L14 14 L24 24 L32 16 L44 32Z" fill="#5f8a4f"/><circle cx="34" cy="8" r="4" fill="#f4d35e"/></g>'
+ +'<g transform="translate(140 30)"><circle cx="0" cy="0" r="16" fill="#d8e9f3" fill-opacity=".55" stroke="'+INK+'" stroke-width="4"/><path d="M11 11 L28 28" stroke="#6b4a33" stroke-width="7" stroke-linecap="round"/></g>','An open dictionary with a picture and a magnifying glass');};
+
+/* ===== DATA (T-202). Everything below is rewritten in plain English except ONE short real line per writer (Decode screen). ===== */
+var SET_SLUG='homelessness';
+var WORDS=[
+ {w:'encampment',d:'a group of tents where people live outside',s:'Police in Denver break up large encampments under bridges.'},
+ {w:'shelter',d:'a building where people with no home can sleep and stay safe for a while',s:'The city turned an old hotel into a shelter with private rooms.'},
+ {w:'unsheltered',d:'sleeping outside, not inside any building',s:'The number of unsheltered people in Denver went down.'},
+ {w:'eviction',d:'when a landlord makes you leave your home, usually because the rent was not paid',s:'Byrne helps families who are facing eviction.'},
+ {w:'prevention',d:'stopping something bad before it happens',s:'Byrne says prevention keeps families in their homes.'},
+ {w:'enforcement',d:'making people follow the law, for example with warnings or tickets',s:'Denver mixes enforcement with help from social workers.'},
+ {w:'affordable',d:'cheap enough that people have the money to pay for it',s:'Selden says cities must build affordable housing.'},
+ {w:'subsidy',d:'money from the government that pays part of a cost',s:'A rent subsidy pays some of the rent, and the family pays the rest.'},
+ {w:'budget',d:'a plan for how to spend money',s:'The president\u2019s budget cuts money for a housing program.'},
+ {w:'privacy',d:'being alone, where other people cannot see or hear you',s:'Each tiny house gives a person privacy.'},
+ {w:'replicate',d:'to copy something and get the same result',s:'Davis says other cities cannot simply replicate Denver.'},
+ {w:'crisis',d:'a time of serious trouble or danger',s:'Fast help can carry a family through a short crisis.'}
+];
+var KEYW={}; WORDS.forEach(function(o){KEYW[o.w]=o;});
+/* extra dotted words in the voices: tap = meaning + translation */
+var GLOSS={
+ 'social workers':'people whose job is to help people find homes, food, doctors and other services',
+ 'tiny house':'a very small house, often with one room','tiny houses':'very small houses, often with one room','tiny home':'a very small house, often with one room','tiny homes':'very small houses, often with one room',
+ 'addiction':'when a person cannot stop using drugs or alcohol','mental illness':'a sickness of the mind, like deep depression',
+ 'determination':'not giving up, even when something is hard','determined':'not giving up, even when something is hard',
+ 'nonprofit':'a group that helps people and does not try to make money','rent':'money you pay every month to live in a home',
+ 'statistics':'numbers that describe facts about many people','intersections':'places where two streets cross',
+ 'credit':'praise for something good you did','military':'the army, navy and air force',
+ 'Congress':'the group of elected people who make the laws of the United States','diversity, equity and inclusion':'programs to help groups who were treated unfairly; the president argues these programs are unfair to others',
+ 'annoyance':'something that bothers people','evict':'to make someone leave their home'
+};
+var VOICES=[
+ {id:'lopez',name:'German Lopez',where:'New York',role:'Writer for The New York Times',date:'Oct 13, 2026',kind:'Opinion essay',answers:'',
+  title:'\u201cWe Know How to Fix Homelessness. Look at Denver.\u201d',
+  idea:'Denver mixes police pressure with real places to go, and other cities should copy it.',
+  side:'Police can push people out of tents \u2014 if the city has a real place for them to go.',
+  easy:['German Lopez writes for The New York Times. He went to Denver, Colorado, to see how the city helps people who live on the street.',
+   'In Denver, police tell people that they cannot camp in tents on the street. Social workers come with the police. They offer people a place to go: a tiny house or a room in an old hotel that the city bought.',
+   'Since 2023, the number of people sleeping outside in Denver went down by about two-thirds. Lopez says other cities should copy Denver.',
+   'He also says some problems are still hard. Rent is expensive. Money from the national government is ending. And many people still on the street have a mental illness or an addiction, so they need more than a roof.'],
+  hard:['German Lopez, a writer on The New York Times editorial board, argues that homelessness is not a mystery. In his view, experts already understand why it happens and what reduces it \u2014 yet many large cities, such as Los Angeles and Seattle, have stopped trying and let tents fill their parks and sidewalks.',
+   'Denver, he says, shows another path. Police officers break up each encampment and warn that people who keep camping can eventually be arrested, while social workers ride along and offer a shelter bed. The crucial piece is that the city first built enough places to send people: a village of tiny homes and a hotel turned into private rooms. Since 2023, the number of unsheltered people has dropped by 64 percent.',
+   'Lopez does not claim the job is finished. Rent is still too high, temporary federal money has run out, and the people who remain outside are more likely to need treatment for mental illness or addiction. Even so, he concludes that a determined leader is the most important ingredient, and he urges other cities to replicate Denver\u2019s plan.']},
+ {id:'selden',name:'Paul Selden',where:'Evanston, Illinois',role:'Has worked on homelessness for 50 years',date:'Nov 1, 2026',kind:'Letter to the editor',answers:'lopez',also:'whitehouse',
+  idea:'A shelter is not a home; cities should build affordable housing.',
+  side:'Moving people into shelters doesn\u2019t end homelessness. People need homes of their own.',
+  easy:['Paul Selden lives in Evanston, Illinois. He has worked to help homeless people for 50 years. He wrote a letter to answer Lopez.',
+   'He says: when you move a person from the street into a shelter, life is better and safer. But that person is still homeless. A shelter is not a home.',
+   'Ending homelessness means a person gets their own place to live and becomes part of the neighborhood again.',
+   'He thinks many people only want the tents to go away. He also says the president\u2019s cuts to housing programs make the problem worse. His answer: build affordable housing.'],
+  hard:['Paul Selden, who has spent half a century working on homelessness, praises Lopez\u2019s essay but says it mixes up two different goals: clearing street camps and actually ending homelessness.',
+   'Moving someone from a sidewalk into a shelter may make their life safer, he writes, but it does not give them a home. The real work \u2014 getting people into housing of their own and back into community life \u2014 is the part he believes few people truly want to take on.',
+   'His guess is that most of the public notices homeless people mostly as an annoyance in public places, so once the tents are gone, everyone stops thinking about the problem. He blames the Trump administration\u2019s attacks on housing programs for making things worse, and argues that the real answer is affordable housing with services attached. A shelter is fine, he says, only as the first step on that road.']},
+ {id:'byrne',name:'Robert Byrne',where:'Philadelphia',role:'Leads Family Promise of Philadelphia, a nonprofit',date:'Nov 1, 2026',kind:'Letter to the editor',answers:'lopez',
+  idea:'Help families keep their homes before they become homeless.',
+  side:'Fast help with rent can stop a family from ever becoming homeless.',
+  easy:['Robert Byrne runs Family Promise of Philadelphia. It is a nonprofit that helps families keep their homes.',
+   'He says Lopez forgot something important: prevention. Stop people from becoming homeless before it happens.',
+   'Every day he talks to families who might lose their apartment. A parent with a low-paid job can fall behind on rent after one doctor\u2019s bill or one lost day of work. Then a late fee makes it worse, and eviction comes closer.',
+   'If families get help fast \u2014 like money for rent for a short time \u2014 many of them never become homeless.'],
+  hard:['Robert Byrne, who directs Family Promise of Philadelphia, a nonprofit focused on keeping families housed, says Lopez left out a basic part of the solution: prevention.',
+   'He hears every day from families facing eviction. For a parent earning minimum wage, a single surprise expense or a missed day of work can mean a short rent payment, and late fees dig the hole deeper.',
+   'Quick help \u2014 short-term rent money and someone to guide them through the system \u2014 lets many families get through a temporary crisis without ever losing their home. Cities, he argues, should help people already on the street and also invest in prevention, so that fewer families ever go through the pain of losing a home.']},
+ {id:'peters',name:'Sara Peters',where:'Denver',role:'Lives in Denver, near the mayor',date:'Nov 1, 2026',kind:'Letter to the editor',answers:'lopez',
+  idea:'The numbers look good, but daily life near the shelters is still hard.',
+  side:'Listen to the neighbors. A short visit and a few numbers don\u2019t tell the whole story.',
+  easy:['Sara Peters lives in Denver, in the same part of the city as the mayor. She says Lopez\u2019s article does not match what she sees.',
+   'When she walks, drives or rides her bike, she sees homeless people at almost every corner and under bridges. Some bike paths don\u2019t feel safe now.',
+   'On Quebec Street, where many shelters are, she sees trash and people in crisis. After one shelter opened, calls to the police went up a lot.',
+   'She voted for the mayor and thinks he means well. But she says a short visit and some statistics can\u2019t show what daily life is like.'],
+  hard:['Sara Peters, who lives in Denver\u2019s Park Hill neighborhood near Mayor Mike Johnston, writes that she barely recognized her own city in Lopez\u2019s description.',
+   'Wherever she walks, drives or bikes, she says, she passes homeless people at intersections and underpasses, and some bike paths no longer feel safe. Quebec Street, home to many of the new shelters, is full of trash and drug equipment, and police calls near one shelter rose by 2,900 percent in the months after it opened.',
+   'She still supports the mayor and believes his intentions are good, but she argues that a reporter\u2019s visit and a page of statistics miss the experience of the people who actually live there.']},
+ {id:'davis',name:'Josh Davis',where:'Brooklyn, New York',role:'Grew up in San Francisco',date:'Nov 1, 2026',kind:'Letter to the editor',answers:'lopez',
+  idea:'Every city is different, so Denver\u2019s plan may not work everywhere.',
+  side:'Learn from Denver, but don\u2019t expect the same plan to work in every city.',
+  easy:['Josh Davis lives in Brooklyn, New York. He grew up in San Francisco.',
+   'He says Denver did a good job, and the mayor should get credit.',
+   'But he says every city is different. Rent is different. The number of homeless people is different. The number of shelter beds is different. And people need different kinds of help.',
+   'So other cities can learn from Denver, but they can\u2019t just replicate it and expect the same result.'],
+  hard:['Josh Davis, a Brooklyn resident who was born and raised in San Francisco, agrees that Denver\u2019s progress deserves celebration and that its mayor deserves real credit.',
+   'But he calls the idea that other cities can simply repeat Denver\u2019s results too simple. Housing costs, the size of each city\u2019s homeless population, the number of shelter beds and the very different needs of homeless people all make one fix for every city unlikely.',
+   'Cities should study Denver\u2019s policies closely, he concludes, but they cannot assume those policies will work the same way somewhere else.']},
+ {id:'whitehouse',name:'The White House budget',where:'Washington, D.C.',role:'President Trump\u2019s spending plan, reported by The New York Times',date:'Apr 3, 2026',kind:'News article',answers:'',
+  idea:'Cut some programs, including a housing grant, and spend more on the military.',
+  side:'The national government should cut programs it believes divide people, and spend more on the military.',
+  easy:['In April 2026, President Trump sent Congress his plan for how the national government should spend money next year. This plan is called a budget.',
+   'He wants to spend more on the military and about 10 percent less on most other programs.',
+   'One cut: $50 million from a program that gave money to states and cities to help them build affordable housing. The White House says this program pushed ideas about diversity, equity and inclusion that divide people.',
+   'People who support the plan say the government should save money and should not pay for programs that treat people differently because of their group. People who disagree, like Paul Selden, say the cut will make homelessness worse. Congress makes the final decision.'],
+  hard:['In April 2026, The New York Times reported on President Trump\u2019s budget for 2027 \u2014 his request to Congress for how federal money should be spent. The reporters described it as a wide effort to cut programs connected to diversity, equity and inclusion, which the president argues are unfair to white Americans.',
+   'To pay for more military spending, the plan asks for a 10 percent cut to most other programs. One target is a $50 million program that gave grants to states and cities to remove barriers to affordable housing; the administration says the program paid for divisive projects.',
+   'Supporters argue that federal money should be spent carefully and should not fund programs they see as dividing Americans by race or identity. Critics, including civil rights groups and the letter writer Paul Selden, say cuts like this hurt the people who most need help. The article notes that Congress controls spending, and presidents\u2019 budgets are rarely passed as written.']}
+];
+var VBY={}; VOICES.forEach(function(v){VBY[v.id]=v;});
+var INSIDE=[
+ {pic:'p_mayor',who:'Mayor Mike Johnston',what:'He compares the city to a school. A good principal cares about every student \u2014 but if one student makes the others feel unsafe, the principal must help that student change, or hold him responsible.'},
+ {pic:'p_ortiz',who:'Valentino Ortiz, who lived in a tiny house',what:'In a big shelter full of beds, he did not feel safe. In his tiny home he had a door that locked, a hot shower and his own kitchen. Privacy kept him safe.'},
+ {pic:'p_miller',who:'Ana Miller, who fights for homeless people\u2019s rights',what:'She says staff at the hotel shelter check people\u2019s rooms too much. She also says some neighbors film the tiny-house village because they don\u2019t want it near them.'},
+ {pic:'p_officer',who:'Officer Michael Nierenberg, Denver police',what:'He woke up a couple in a tent and told them the law. Then he learned they wanted to go home to Texas \u2014 and he found them a bus ticket.'}
+];
+var DECODE=[
+ {id:'d-lopez',v:'lopez',ctx:'Lopez starts his essay with this sentence:',q:'We know both the causes and the cure.',
+  right:'Experts already understand why homelessness happens and how to fix it.',
+  wrong:['Nobody knows how to fix homelessness.','Doctors can cure every homeless person who is sick.','Homelessness is caused by a disease.'],
+  hint:'A \u201ccure\u201d fixes a problem. Lopez is talking about homelessness as the problem.'},
+ {id:'d-selden',v:'selden',ctx:'Selden answers Lopez:',q:'People who are relocated from the streets to shelters are still homeless.',
+  right:'A shelter is better than the street, but it is not a real home.',
+  wrong:['Shelters are worse than living on the street.','Most people in shelters find an apartment fast.','Shelters should send people back to the street.'],
+  hint:'\u201cRelocated\u201d means moved. Moved from where, to where? Are they homeless after?'},
+ {id:'d-byrne',v:'byrne',ctx:'Byrne describes a parent with a low-paid job. The parent may be \u2026',q:'\u2026 one unexpected medical bill or missed shift away from falling behind on rent.',
+  right:'One small problem, like a doctor\u2019s bill or one lost day of work, can make the family unable to pay rent.',
+  wrong:['The family should always pay the doctor first and pay the rent later.','Working one extra shift every week will end homelessness for most families.','Doctors and hospitals in Philadelphia cost too much for most families.'],
+  hint:'\u201cFalling behind on rent\u201d means not paying all the rent on time. What could cause that?'},
+ {id:'d-peters',v:'peters',ctx:'Peters says she voted for the mayor, but \u2026',q:'\u2026 a visit and a set of statistics cannot capture what living here is like.',
+  right:'A short trip and some numbers can\u2019t show what daily life in Denver really feels like.',
+  wrong:['People who visit Denver for a short trip usually love the city.','Numbers and statistics show everything that is true about a city.','People who live in Denver should not vote.'],
+  hint:'\u201cCapture\u201d here means \u201cshow fully.\u201d Who made the visit and wrote the statistics?'},
+ {id:'d-davis',v:'davis',ctx:'Davis ends his letter about Denver\u2019s policies:',q:'\u2026 their effectiveness cannot be assumed independent of local circumstances.',
+  right:'What works in one city might not work in a different city.',
+  wrong:['Denver\u2019s plan will work the same way in every city in the country.','Brooklyn has more homeless people than Denver.','Nobody should study Denver\u2019s plan.'],
+  hint:'\u201cLocal circumstances\u201d = what is true in one place. \u201cCannot be assumed\u201d = you can\u2019t be sure.'},
+ {id:'d-whitehouse',v:'whitehouse',ctx:'The White House says the housing grant program paid for \u2026',q:'\u2026 divisive D.E.I. agendas.',
+  right:'The White House says the program pushed ideas that divide people by race or group.',
+  wrong:['The White House says the program built too many expensive houses in cities.','The White House wants to give the housing program more money next year.','The program was run by the military.'],
+  hint:'\u201cDivisive\u201d comes from \u201cdivide.\u201d D.E.I. = diversity, equity and inclusion.'}
+];
+var QUIPS=['Not that one \u2014 read it again, slowly.','Close! Look at the picture one more time.','Hmm. Check the meaning, then try again.','Almost. Which one fits the WHOLE sentence?','Try again \u2014 you\u2019ve got this.'];
+var THINK=['Who would be happy about your choice? Who would be upset?','What would it cost? Who pays?','Would this work in San Francisco? Why?','What would change on your street in one year?','Which writer would argue with you? What would they say?'];
+var LANGNAME={es:'Spanish','zh-CN':'Mandarin',yue:'Cantonese',ar:'Arabic',vi:'Vietnamese',th:'Thai',ne:'Nepali',ary:'Darija',ru:'Russian',ur:'Urdu',tl:'Tagalog',fr:'French',ko:'Korean',hi:'Hindi',so:'Somali'};
+var LANGOPTS=[['es','Español'],['zh-CN','中文 (普通话)'],['yue','廣東話 (Cantonese)'],['ar','العربية'],['vi','Tiếng Việt'],['th','ไทย'],['ne','नेपाली'],['ary','الدارجة (Darija)'],['ru','Русский'],['ur','اردو'],['tl','Tagalog'],['fr','Français'],['ko','한국어'],['hi','हिन्दी'],['so','Soomaali']];
+
+/* ===== APP ===== */
+var SUPA='https://lhmwtfyceilgndpygivj.supabase.co';
+var KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var HDR={apikey:KEY,Authorization:'Bearer '+KEY,'Content-Type':'application/json'};
+var PROXY='https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
+var TABLE='voices_work';
+var VCOL={lopez:'#3f6b8a',selden:'#9b4f3e',byrne:'#5d7f45',peters:'#a8701f',davis:'#74559a',whitehouse:'#56616e'};
+var GAL_MAX_ITEMS=34; window.GAL_MAX=GAL_MAX_ITEMS; window.GAL_SCORE=0;
+var ME=null, LOADED=false, DIRTY=false, SAVING=false;
+function fresh(){return {lvl:'easy',lang:'',warm:null,w:{},vc:{},dc:{},who:{},op:{},fav:{id:'',because:''},
+  letter:{to:'',mode:'frame',f:{say:'',stance:'',because:'',see:'',should:''},free:'',turned:false,at:''},
+  ord:{},miss:{},screen:'start',vi:0,wq:0,lion:false,browserTr:false};}
+var ST=fresh();
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function wc(s){var m=String(s||'').trim().match(/[A-Za-z\u00C0-\u024F0-9'\u2019-]+/g);return m?m.length:0;}
+function mark(){DIRTY=true;score();chips();}
+
+/* ---------- speech ---------- */
+function speak(t,rate){try{if(!window.speechSynthesis)return;speechSynthesis.cancel();var s=String(t).trim();if(/^I$/.test(s))s='eye';
+  var u=new SpeechSynthesisUtterance(s);u.lang='en-US';u.rate=rate||0.9;var v=speechSynthesis.getVoices().filter(function(x){return /^en-US/.test(x.lang);})[0];if(v)u.voice=v;speechSynthesis.speak(u);}catch(e){}}
+function sp(text,cls){return '<button type="button" class="say '+(cls||'')+'" data-say="'+esc(text)+'" aria-label="Listen">\uD83D\uDD0A</button>';}
+
+/* ---------- translation (store under the language it was ASKED in; paint only if still current) ---------- */
+var TR={};
+function pick(t){var v=String(t||'').trim();if(v[0]!=='{')return null;try{var j=JSON.parse(v),c=j.translation;if(c&&typeof c==='object')return {equiv:String(c.equiv||'').trim(),meaning:String(c.meaning||'').trim()};if(typeof c==='string'&&c.trim())return {equiv:c.trim(),meaning:''};}catch(e){}return null;}
+function tr(text,meaning,mode,cb){var L=ST.lang;if(!L)return;var name=LANGNAME[L]||L;TR[L]=TR[L]||{};var k=mode+'|'+text;
+  if(TR[L][k]){cb(TR[L][k],L);return;}
+  var u=PROXY+'?action=translate&mode='+mode+'&idiom='+encodeURIComponent(text)+'&meaning='+encodeURIComponent(meaning||text)+'&lang='+encodeURIComponent(name);
+  fetch(u).then(function(r){return r.text();}).then(function(t){var o=pick(t);if(!o)return;TR[L][k]=o;cb(o,L);}).catch(function(){});}
+function paintDirs(root){if(!ST.lang)return;[].forEach.call((root||document).querySelectorAll('.dir'),function(el){
+  var en=el.getAttribute('data-en');if(!en)return;var box=el.querySelector('.dtr');if(!box){box=document.createElement('div');box.className='dtr';el.appendChild(box);}
+  if(box.getAttribute('data-l')===ST.lang&&box.textContent)return;box.textContent='\u2026';box.setAttribute('data-l',ST.lang);
+  tr(en,en,'sentence',function(o,L){if(L!==ST.lang)return;box.textContent=o.meaning||o.equiv;box.setAttribute('dir',/^(ar|ary|ur)$/.test(L)?'rtl':'ltr');});});}
+function paintWordTr(root){[].forEach.call((root||document).querySelectorAll('[data-wtr]'),function(el){var w=el.getAttribute('data-wtr');var o=KEYW[w];
+  if(!ST.lang){el.innerHTML='';return;}el.innerHTML='<span class="muted">\u2026</span>';
+  tr(w,o?o.d:(GLOSS[w]||w),'word',function(r,L){if(L!==ST.lang)return;el.innerHTML=trHtml(w,r);});});}
+function trHtml(w,r){return r&&r.equiv?'<b class="eq" translate="no">'+esc(r.equiv)+'</b>'+(r.meaning?' <span class="trm">'+esc(r.meaning)+'</span>':''):'<b class="eq grey" translate="no">'+esc(w)+'</b>';}
+function dir(en,extra){return '<div class="dir'+(extra?' '+extra:'')+'" data-en="'+esc(en)+'">'+sp(en)+' <span class="den">'+esc(en)+'</span></div>';}
+
+/* ---------- dotted words in reading text ---------- */
+var PHRASES=(function(){var a=[];WORDS.forEach(function(o){a.push(o.w);});for(var k in GLOSS)a.push(k);a.sort(function(x,y){return y.length-x.length;});return a;})();
+var PHRASE_RE=new RegExp('\\b('+PHRASES.map(function(p){return p.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}).join('|')+')(s|es)?\\b','gi');
+var LOWER={};PHRASES.forEach(function(p){LOWER[p.toLowerCase()]=p;});
+function dotted(t){return esc(t).replace(PHRASE_RE,function(m,base,suf){var k=LOWER[base.toLowerCase()];if(!k)return m;return '<span class="w'+(KEYW[k]?' kw':'')+'" data-w="'+esc(k)+'">'+m+'</span>';});}
+function openPop(el){var k=el.getAttribute('data-w');var o=KEYW[k];var p=$('pop');
+  p.innerHTML='<button class="x" type="button" aria-label="Close">\u2715</button>'+(o&&ART[k]?'<div class="ppic">'+ART[k]()+'</div>':'')
+   +'<div class="pw"><b translate="no">'+esc(k)+'</b>'+sp(k)+'<span translate="no">: '+esc(o?o.d:GLOSS[k])+'</span></div><div class="ptr" data-wtr="'+esc(k)+'"></div>';
+  p.style.display='block';var r=el.getBoundingClientRect();var top=window.scrollY+r.bottom+8,left=Math.max(8,Math.min(window.scrollX+r.left-20,window.scrollX+document.documentElement.clientWidth-p.offsetWidth-8));
+  p.style.top=top+'px';p.style.left=left+'px';paintWordTr(p);speak(k);}
+
+/* ---------- answer order: shuffled once, stored per student; right answer never in the same slot 4 times running ---------- */
+var GROUP_LAST={};
+function shuffled(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+function orderFor(qid,right,others,group){if(ST.ord[qid])return ST.ord[qid];var g=GROUP_LAST[group]||[];var o,tries=0;
+  do{o=shuffled([right].concat(others));tries++;}while(tries<30&&g.length>=3&&g.slice(-3).every(function(p){return p===o.indexOf(right);}));
+  ST.ord[qid]=o;(GROUP_LAST[group]=GROUP_LAST[group]||[]).push(o.indexOf(right));DIRTY=true;return o;}
+function noteGroup(group,qid,right){(GROUP_LAST[group]=GROUP_LAST[group]||[]).push(ST.ord[qid].indexOf(right));}
+function pickOthers(seed,pool,n){var a=shuffled(pool);return a.slice(0,n);}
+
+/* ---------- multiple choice (ELD 103: red x stays beside the green check; never shows the answer) ---------- */
+function mcHTML(qid,bucket,opts,right,label){var st=bucket[qid]||{};var miss=ST.miss[qid]||[];
+  return '<div class="opts" data-q="'+qid+'">'+opts.map(function(k){var cls=(st.done&&k===right)?' ok':(miss.indexOf(k)>-1?' no':'');
+    return '<button type="button" class="opt'+cls+'" data-k="'+esc(k)+'"'+(cls||st.done?' disabled':'')+'><span translate="no">'+label(k)+'</span>'+(cls===' ok'?' <b class="mk">\u2713</b>':cls===' no'?' <b class="mk">\u2717</b>':'')+'</button>';}).join('')
+   +'</div><div class="fb" data-fb="'+qid+'">'+(st.done?'<span class="good">\u2713 Yes!</span>':(miss.length?hintLine(qid):''))+'</div>';}
+var HINTS={};
+function hintLine(qid){var m=(ST.miss[qid]||[]).length;var h=HINTS[qid]||[];return '<span class="lionq">\uD83E\uDD81 '+esc(QUIPS[(m+qid.length)%QUIPS.length])+'</span>'+(h.length?'<div class="hint">\uD83D\uDCA1 '+esc(h[Math.min(m,h.length)-1])+'</div>':'');}
+function answer(qid,k,bucket,right,after){var st=bucket[qid]=bucket[qid]||{};if(st.done)return;
+  if(k===right){st.done=true;st.first=!(ST.miss[qid]||[]).length;mark();after&&after();return true;}
+  ST.miss[qid]=ST.miss[qid]||[];if(ST.miss[qid].indexOf(k)<0)ST.miss[qid].push(k);mark();after&&after();return false;}
+
+/* ---------- score ---------- */
+function opDone(){return VOICES.every(function(v){return ST.op[v.id];})&&ST.fav.id&&wc(ST.fav.because)>=8;}
+function cnt(b){var n=0;for(var k in b)if(b[k]&&b[k].done)n++;return n;}
+function score(){var s=(ST.warm?1:0)+cnt(ST.w)+cnt(ST.vc)+cnt(ST.dc)+cnt(ST.who)+(opDone()?1:0)+(ST.letter.turned?2:0);
+  window.GAL_SCORE=s;window.GAL_MAX=GAL_MAX_ITEMS;var pct=Math.round(100*s/GAL_MAX_ITEMS);var b=$('pbar');if(b){b.style.width=pct+'%';$('ptxt').textContent=s+' / '+GAL_MAX_ITEMS;}return s;}
+var SCREENS=[['start','Start','\uD83C\uDFE0'],['words','Words','\uD83D\uDCDA'],['voices','The voices','\uD83D\uDDE3\uFE0F'],['decode','Decode','\uD83D\uDD0D'],['sides','Whose idea?','\u2696\uFE0F'],['write','Write back','\u2709\uFE0F']];
+function prog(id){switch(id){case'start':return[ST.warm?1:0,1];case'words':return[cnt(ST.w),12];case'voices':return[cnt(ST.vc),6];case'decode':return[cnt(ST.dc),6];
+  case'sides':return[cnt(ST.who)+(opDone()?1:0),7];case'write':return[ST.letter.turned?1:0,1];}return[0,1];}
+function chips(){var h='',nextSet=false;SCREENS.forEach(function(s){var p=prog(s[0]);var full=p[0]>=p[1];var nx=!full&&!nextSet;if(nx)nextSet=true;
+  h+='<button type="button" class="chip'+(ST.screen===s[0]?' on':'')+(full?' full':'')+(nx?' next':'')+'" data-go="'+s[0]+'"><span>'+s[2]+'</span> '+s[1]+' <small>'+(full?'\u2713':p[0]+'/'+p[1])+'</small></button>';});
+  $('chips').innerHTML=h;}
+
+/* ---------- screens ---------- */
+function go(id){ST.screen=id;mark();render();window.scrollTo(0,0);}
+function render(){chips();score();var m=$('screen');var f={start:rStart,words:rWords,voices:rVoices,decode:rDecode,sides:rSides,write:rWrite}[ST.screen]||rStart;m.innerHTML=f();
+  bindScreen();paintDirs(m);paintWordTr(m);}
+function nextBtn(id,label){return '<div class="foot"><button type="button" class="big" data-go="'+id+'">'+label+' \u2192</button></div>';}
+function pic(name,cls){return '<div class="pic '+(cls||'')+'">'+ART[name]()+'</div>';}
+
+function rStart(){var opts=[['shelters','Open more shelters'],['homes','Build cheap apartments'],['rent','Help families pay rent before they lose their home'],['police','Tell people they cannot camp on the street']];
+  var o=orderFor('warm','shelters',['homes','rent','police'],'warm');
+  return '<div class="panel">'+ART.scene()+'</div>'
+  +'<div class="box">'+pic('v_lopez')+'<h2>'+sp('Who answers whom?')+' Who answers whom?</h2>'
+  +dir('Read this first. Tap any dotted word to hear it and see it in your language.')
+  +'<p translate="no" class="read">'+sp('In October 2026, a writer said that one American city, Denver, found a way to help people who live on the street. Other people did not all agree. They wrote letters to the newspaper to answer him.')+' '+dotted('In October 2026, a writer said that one American city, Denver, found a way to help people who live on the street. Other people did not all agree. They wrote letters to the newspaper to answer him.')+'</p>'
+  +'<p translate="no" class="read">'+sp('You will meet six voices, decode their hardest sentences, decide which ideas you like, and then write your own letter back.')+' '+esc('You will meet six voices, decode their hardest sentences, decide which ideas you like, and then write your own letter back.')+'</p></div>'
+  +'<div class="box warm">'+pic('crisis','sm')+'<h3>Warm-up</h3>'
+  +dir('Imagine you are the mayor of San Francisco. What do you do FIRST? There is no wrong answer.')
+  +'<div class="opts">'+o.map(function(k){var t=opts.filter(function(x){return x[0]===k;})[0][1];return '<button type="button" class="opt warmopt'+(ST.warm===k?' ok':'')+'" data-warm="'+k+'"><span translate="no">'+esc(t)+'</span></button>';}).join('')+'</div>'
+  +'<div class="fb">'+(ST.warm?'<span class="good">Good thinking!</span> <span class="think">\uD83E\uDD14 '+esc(THINK[0])+'</span>':'')+'</div></div>'
+  +nextBtn('words','Learn the words');}
+
+function wordCard(o,i){return '<div class="wcard box">'+'<div class="wpic">'+ART[o.w]()+'</div><div class="wtxt" translate="no"><b class="wword">'+esc(o.w)+'</b>'+sp(o.w)+'<span>: '+esc(o.d)+'</span></div>'
+  +'<div class="wtr" data-wtr="'+esc(o.w)+'"></div><div class="wsent" translate="no">'+sp(o.s,'sm')+' <i>'+esc(o.s)+'</i></div></div>';}
+function rWords(){var h='<div class="box">'+pic('dict','sm')+'<h2>'+sp('Twelve words')+' Twelve words the debate needs</h2>'+dir('Look at each picture. Listen to each word. Then do the check below.')+'</div>';
+  h+='<div class="wgrid">'+WORDS.map(wordCard).join('')+'</div>';
+  var i=Math.min(ST.wq||0,11);var o=WORDS[i];var qid='w-'+o.w;
+  var others=WORDS.filter(function(x){return x.w!==o.w;}).map(function(x){return x.w;});
+  WORDS.forEach(function(x){var q='w-'+x.w;if(!ST.ord[q])orderFor(q,x.w,pickOthers(q,WORDS.filter(function(y){return y.w!==x.w;}).map(function(y){return y.w;}),3),'words');});
+  HINTS[qid]=['It means: '+o.d,'It starts with \u201c'+o.w[0]+'\u201d.'];
+  h+='<div class="box check" id="wcheck"><h3>Word check \u00B7 '+(i+1)+' of 12</h3>'+dir('Which word matches this picture?')
+   +'<div class="dots">'+WORDS.map(function(x,j){var d=ST.w['w-'+x.w];return '<button type="button" class="dot'+(d&&d.done?' d':'')+(j===i?' cur':'')+'" data-wq="'+j+'">'+(j+1)+'</button>';}).join('')+'</div>'
+   +'<div class="qpic">'+ART[o.w]()+'</div>'+mcHTML(qid,ST.w,ST.ord[qid],o.w,function(k){return esc(k);})
+   +'<div class="qnav">'+(i>0?'<button type="button" class="sm2" data-wq="'+(i-1)+'">\u2190 Back</button>':'')+((ST.w[qid]||{}).done&&i<11?'<button type="button" class="big" data-wq="'+(i+1)+'">Next word \u2192</button>':'')+'</div></div>';
+  return h+nextBtn('voices','Meet the voices');}
+
+function threadMap(){var N={whitehouse:[12,30],lopez:[248,96],selden:[500,8],byrne:[500,64],peters:[500,120],davis:[500,176]};
+  var s='<svg viewBox="0 0 716 230" class="tmap" role="img" aria-label="Map of who answers whom"><defs><marker id="arw" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10Z" fill="#26313f"/></marker></defs>';
+  
+  ['selden','byrne','peters','davis'].forEach(function(id){var a=N[id],b=N.lopez;s+='<path d="M'+a[0]+' '+(a[1]+22)+' C 440 '+(a[1]+22)+', 450 '+(b[1]+22)+', '+(b[0]+206)+' '+(b[1]+22)+'" fill="none" stroke="#26313f" stroke-width="2" marker-end="url(#arw)"/>';});
+  s+='<path d="M'+N.lopez[0]+' '+(N.lopez[1]+30)+' C 160 140, 120 120, 110 78" fill="none" stroke="#56616e" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#arw)"/><text x="132" y="150" font-size="12" fill="#56616e" font-family="Nunito,sans-serif">mentions the cuts</text>';
+  s+='<path d="M'+N.selden[0]+' '+(N.selden[1]+14)+' C 330 0, 220 0, 200 30" fill="none" stroke="#9b4f3e" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#arw)"/><text x="300" y="20" font-size="12" fill="#9b4f3e" font-family="Nunito,sans-serif">also answers</text>';
+  VOICES.forEach(function(v){var p=N[v.id];var done=(ST.vc['vc-'+v.id]||{}).done;s+='<g class="tnode" data-voice="'+v.id+'" style="cursor:pointer"><rect x="'+p[0]+'" y="'+p[1]+'" width="206" height="46" rx="9" fill="#fff" stroke="'+VCOL[v.id]+'" stroke-width="3"/><rect x="'+p[0]+'" y="'+p[1]+'" width="10" height="46" rx="4" fill="'+VCOL[v.id]+'"/>'
+   +'<text x="'+(p[0]+18)+'" y="'+(p[1]+19)+'" font-size="14" font-weight="800" fill="#26313f" font-family="Nunito,sans-serif">'+esc(v.name)+(done?' \u2713':'')+'</text><text x="'+(p[0]+18)+'" y="'+(p[1]+37)+'" font-size="11.5" fill="#56616e" font-family="Nunito,sans-serif">'+esc(v.kind+' \u00B7 '+v.date)+'</text></g>';});
+  s+='</svg>';var li='<ul class="tlist">'+VOICES.map(function(v){return '<li><button type="button" class="tnode" data-voice="'+v.id+'" style="border-color:'+VCOL[v.id]+'"><b>'+esc(v.name)+'</b> <small>'+esc(v.date)+'</small><br><span>'+(v.answers?'\u21A9 answers '+esc(VBY[v.answers].name)+(v.also?' + '+esc(VBY[v.also].name):''):(v.id==='lopez'?'\u2605 starts the conversation':'\u2190 Lopez mentions these cuts'))+'</span></button></li>';}).join('')+'</ul>';return s+li;}
+function rVoices(){var i=Math.max(0,Math.min(ST.vi||0,5));var v=VOICES[i];var qid='vc-'+v.id;var paras=ST.lvl==='hard'?v.hard:v.easy;
+  var h='<div class="box"><h2>'+sp('The voices: who answers whom?')+' The voices: who answers whom?</h2>'+dir('Arrows point from the writer to the person they answer. Tap a name to read it.')+'<div class="mapwrap">'+threadMap()+'</div>'
+   +'<div class="lvl" role="group">'+'<button type="button" class="'+(ST.lvl==='easy'?'on':'')+'" data-lvl="easy">Easier</button><button type="button" class="'+(ST.lvl==='hard'?'on':'')+'" data-lvl="hard">Harder</button></div></div>';
+  h+='<div class="box voice" style="border-left:12px solid '+VCOL[v.id]+'">'+pic('v_'+v.id)
+   +'<div class="vhead" translate="no"><span class="vk" style="background:'+VCOL[v.id]+'">'+esc(v.kind)+'</span> <b class="vn">'+esc(v.name)+'</b>'+sp(v.name)+'<div class="vm">'+esc(v.where)+' \u00B7 '+esc(v.role)+' \u00B7 '+esc(v.date)+'</div>'
+   +(v.answers?'<div class="vans">\u21A9 Answers <b>'+esc(VBY[v.answers].name)+'</b>'+(v.also?' and <b>'+esc(VBY[v.also].name)+'</b>':'')+'</div>':'<div class="vans">\u2605 Starts the conversation</div>')+(v.title?'<div class="vtitle">'+esc(v.title)+'</div>':'')+'</div>'
+   +paras.map(function(p,j){return '<p class="read" translate="no"><span class="pn">'+(j+1)+'</span>'+sp(p)+' '+dotted(p)+'</p>';}).join('')+'</div>';
+  if(v.id==='lopez'){h+='<div class="box inside"><h3>'+sp('People inside this article')+' People inside this article</h3>'+dir('Lopez talked to these people in Denver. Read what each one said or did.')
+    +INSIDE.map(function(p){return '<div class="mini">'+pic(p.pic,'xs')+'<b translate="no">'+esc(p.who)+'</b>'+sp(p.who+'. '+p.what)+'<p translate="no">'+dotted(p.what)+'</p></div>';}).join('')+'</div>';}
+  var others=VOICES.filter(function(x){return x.id!==v.id;}).map(function(x){return x.id;});
+  VOICES.forEach(function(x){var q='vc-'+x.id;if(!ST.ord[q])orderFor(q,x.id,pickOthers(q,VOICES.filter(function(y){return y.id!==x.id;}).map(function(y){return y.id;}),3),'voices');});
+  HINTS[qid]=['Read the last paragraph of '+v.name+' again.','Which idea is in more than one paragraph?'];
+  h+='<div class="box check"><h3>'+sp('What is the main idea of '+v.name+'?')+' What is the main idea of '+esc(v.name)+'?</h3>'+dir('Choose the best answer.')
+   +mcHTML(qid,ST.vc,ST.ord[qid],v.id,function(k){return esc(VBY[k].idea);})+'</div>';
+  h+='<div class="qnav">'+(i>0?'<button type="button" class="sm2" data-vi="'+(i-1)+'">\u2190 '+esc(VOICES[i-1].name)+'</button>':'')+(i<5?'<button type="button" class="big" data-vi="'+(i+1)+'">Next: '+esc(VOICES[i+1].name)+' \u2192</button>':'')+'</div>';
+  return h+(i===5?nextBtn('decode','Decode the hard sentences'):'');}
+
+function rDecode(){var h='<div class="box"><h2>'+sp('Decode the hard sentences')+' Decode the hard sentences</h2>'+dir('These are the real words from each writer. Listen, read slowly, then choose the plain sentence that means the same thing.')+'</div>';
+  DECODE.forEach(function(d){var keys=['r','a','b','c'];var lab={r:d.right,a:d.wrong[0],b:d.wrong[1],c:d.wrong[2]};orderFor(d.id,'r',['a','b','c'],'decode');HINTS[d.id]=[d.hint,'Cross out the answers that say something the writer never talks about.'];
+   var v=VBY[d.v];h+='<div class="box dec" style="border-left:12px solid '+VCOL[v.id]+'">'+pic('v_'+v.id,'sm')+'<div class="vk" style="background:'+VCOL[v.id]+'" translate="no">'+esc(v.name)+'</div>'
+    +'<p class="ctx" translate="no">'+sp(d.ctx)+' '+esc(d.ctx)+'</p><blockquote translate="no">'+sp(d.q,'sm')+' \u201C'+esc(d.q)+'\u201D</blockquote>'
+    +'<p class="qq">'+sp('Which plain sentence means the same?')+' <b>Which plain sentence means the same?</b></p>'+mcHTML(d.id,ST.dc,ST.ord[d.id],'r',function(k){return esc(lab[k]);})+'</div>';});
+  return h+nextBtn('sides','Whose idea?');}
+
+function thumbs(attr,sel,qid){var miss=qid?(ST.miss[qid]||[]):[];var done=qid&&(ST.who[qid]||{}).done;
+  return '<div class="thumbs">'+VOICES.map(function(v){var cls=(sel===v.id?' ok':'')+(miss.indexOf(v.id)>-1?' no':'');
+   return '<button type="button" class="thumb'+cls+'" '+attr+'="'+v.id+'"'+((done||miss.indexOf(v.id)>-1)?' disabled':'')+' style="--c:'+VCOL[v.id]+'"><span class="tp">'+ART['v_'+v.id]()+'</span><span class="tn" translate="no">'+esc(v.name)+'</span>'+(cls===' ok'?'<b class="mk">\u2713</b>':cls===' no'?'<b class="mk">\u2717</b>':'')+'</button>';}).join('')+'</div>';}
+function rSides(){if(!ST.ord.sides){ST.ord.sides=shuffled(VOICES.map(function(v){return v.id;}));DIRTY=true;}
+  var h='<div class="box">'+pic('affordable','sm')+'<h2>'+sp('Whose idea is it? And what do you think?')+' Whose idea is it? And what do you think?</h2>'+dir('For each idea, first tap the writer it comes from. Then say what YOU think. Your opinion is never wrong.')+'</div>';
+  ST.ord.sides.forEach(function(id,n){var v=VBY[id];var qid='who-'+id;HINTS[qid]=['Go back to The voices and look at each picture again.','Which writer\u2019s picture fits this idea best?'];
+   var st=ST.who[qid]||{};var op=ST.op[id];
+   h+='<div class="box idea"><div class="inum">'+(n+1)+'</div><p class="itext" translate="no">'+sp(v.side)+' \u201C'+esc(v.side)+'\u201D</p>'
+    +'<p class="qq">'+sp('Whose idea is this?')+' <b>Whose idea is this?</b></p>'+thumbs('data-who',st.done?id:'',qid)+'<div class="fb" data-fb="'+qid+'">'+(st.done?'<span class="good">\u2713 Yes \u2014 '+esc(v.name)+'.</span>':((ST.miss[qid]||[]).length?hintLine(qid):''))+'</div>'
+    +'<p class="qq">'+sp('What do you think?')+' <b>What do you think?</b></p><div class="ops">'
+    +[['yes','\uD83D\uDC4D Convincing'],['maybe','\uD83E\uDD14 Not sure'],['no','\uD83D\uDC4E Not convincing']].map(function(o){return '<button type="button" class="opb'+(op===o[0]?' on':'')+'" data-op="'+id+'" data-v="'+o[0]+'">'+o[1]+'</button>';}).join('')
+    +'</div>'+(op?'<div class="fb"><span class="good">Good thinking!</span> <span class="think">\uD83E\uDD14 '+esc(THINK[(n+1)%THINK.length])+'</span></div>':'')+'</div>';});
+  h+='<div class="box fav">'+pic('replicate','sm')+'<h3>'+sp('Your favorite idea')+' Your favorite idea</h3>'+dir('Choose the idea you like most. Then explain why in at least 8 words.')
+   +'<select id="favsel" translate="no"><option value="">Choose an idea\u2026</option>'+VOICES.map(function(v){return '<option value="'+v.id+'"'+(ST.fav.id===v.id?' selected':'')+'>'+esc(v.side)+'</option>';}).join('')+'</select>'
+   +'<label class="lab">I like this idea because \u2026</label><textarea id="favwhy" rows="3" translate="no">'+esc(ST.fav.because)+'</textarea><div class="count" id="favcount"></div>'
+   +'<details class="help"><summary>Need a starter?</summary><p translate="no">\u2026 it would help people like ___. \u00B7 \u2026 I have seen ___ in my neighborhood. \u00B7 \u2026 it costs less than ___.</p></details></div>';
+  return h+nextBtn('write','Write your letter');}
+
+function letterText(){var L=ST.letter,v=VBY[L.to];if(!v)return '';if(L.mode==='free')return L.free;var f=L.f;
+  var st={agree:'I agree with',disagree:'I disagree with',partly:'I partly agree with'}[f.stance]||'';
+  return [v.name+' says that '+(f.say||'___')+'.',(st?st+' '+(v.id==='whitehouse'?'this plan':(v.name.split(' ').pop()))+' because '+(f.because||'___')+'.':''),'In San Francisco, I see '+(f.see||'___')+'.','So I think cities should '+(f.should||'___')+'.'].filter(Boolean).join(' ');}
+function letterWords(){var L=ST.letter;if(L.mode==='free')return wc(L.free);var f=L.f;return wc([f.say,f.because,f.see,f.should].join(' '))+(L.to?6:0);}
+function rWrite(){var L=ST.letter;var v=VBY[L.to];
+  var h='<div class="box">'+pic('write')+'<h2>'+sp('Write back')+' Write back: your letter to the editor</h2>'+dir('Newspapers print letters from readers. Write one. Answer ONE writer by name. Your letter goes on the class wall.')
+   +'<p class="qq">'+sp('Step 1. Who are you answering?')+' <b>Step 1. Who are you answering?</b></p>'+thumbs('data-to',L.to)+'</div>';
+  if(!v)return h;
+  h+='<div class="box"><p class="qq">'+sp('Step 2. How do you want to write?')+' <b>Step 2. How do you want to write?</b> <span class="muted">(both count the same)</span></p><div class="lvl"><button type="button" class="'+(L.mode==='frame'?'on':'')+'" data-mode="frame">With sentence frames</button><button type="button" class="'+(L.mode==='free'?'on':'')+'" data-mode="free">On my own</button></div>';
+  if(L.mode==='frame'){h+='<div class="frame" translate="no">'
+    +'<label class="lab">'+esc(v.name)+' says that \u2026 <span class="muted">(their idea, in your own words)</span></label><textarea data-f="say" rows="2">'+esc(L.f.say)+'</textarea>'
+    +'<label class="lab">I \u2026</label><select data-f="stance"><option value="">choose\u2026</option><option value="agree"'+(L.f.stance==='agree'?' selected':'')+'>agree</option><option value="disagree"'+(L.f.stance==='disagree'?' selected':'')+'>disagree</option><option value="partly"'+(L.f.stance==='partly'?' selected':'')+'>partly agree</option></select>'
+    +'<label class="lab">\u2026 because \u2026</label><textarea data-f="because" rows="2">'+esc(L.f.because)+'</textarea>'
+    +'<label class="lab">In San Francisco, I see \u2026 <span class="muted">(what you notice in the city \u2014 not your private life)</span></label><textarea data-f="see" rows="2">'+esc(L.f.see)+'</textarea>'
+    +'<label class="lab">So I think cities should \u2026</label><textarea data-f="should" rows="2">'+esc(L.f.should)+'</textarea></div>';}
+  else{h+='<label class="lab">To the Editor:</label><textarea id="freebox" rows="9" translate="no">'+esc(L.free)+'</textarea>'
+    +'<details class="help"><summary>See sentence starters</summary><p translate="no">In \u201c'+esc(v.title||'his essay')+'\u201d \u2026 / '+esc(v.name)+' argues that \u2026 / I agree that \u2026, but \u2026 / One thing '+esc(v.name.split(' ')[0])+' forgets is \u2026 / In San Francisco, \u2026 / For example, \u2026 / That is why cities should \u2026</p></details>';}
+  h+='<div class="count" id="lcount"></div></div>';
+  h+='<div class="box letter"><h3>'+sp('Your letter')+' Your letter</h3><div class="paper" translate="no"><b>To the Editor:</b><p class="re">Re: '+esc(v.name)+(v.title?', '+esc(v.title):'')+'</p><p id="lbody">'+esc(letterText())+'</p><p class="sig">'+esc(ME?ME.first+' '+(ME.last||'').charAt(0)+'.':'')+'<br>Galileo Academy, San Francisco</p></div>'
+   +'<button type="button" class="big" id="turnin">'+(L.turned?'\u2713 On the class wall \u2014 send my changes':'Turn in \u2014 put it on the class wall')+'</button><div class="fb" id="tfb">'+(L.turned?'<span class="good">\u2713 Turned in. Mr. Toby can show it on the projector.</span>':'')+'</div></div>';
+  return h;}
+function countLetter(){var n=letterWords();var c=$('lcount');if(c)c.innerHTML='<b>'+n+'</b> words '+(n>=40?'<span class="good">\u2713 ready to turn in</span>':'\u00B7 at least 40 to turn in');var b=$('lbody');if(b)b.textContent=letterText();}
+
+/* ---------- events ---------- */
+function bindScreen(){countLetter();var fc=$('favcount');if(fc)fc.textContent=wc(ST.fav.because)+' words'+(wc(ST.fav.because)>=8?' \u2713':' \u00B7 at least 8');}
+document.addEventListener('click',function(e){var t=e.target.closest('button,.w,.tnode,#lion');if(!t){var p=$('pop');if(p&&!e.target.closest('#pop'))p.style.display='none';return;}
+  if(t.id==='lion'||t.closest&&t.closest('#lion')){ST.lion=true;mark();boom();return;}
+  if(t.classList.contains('w')){openPop(t);return;}
+  if(t.classList.contains('x')){$('pop').style.display='none';return;}
+  if(t.hasAttribute('data-say')){speak(t.getAttribute('data-say'),t.classList.contains('slow')?0.7:0.9);return;}
+  if(t.classList.contains('tnode')){ST.vi=VOICES.map(function(v){return v.id;}).indexOf(t.getAttribute('data-voice'));mark();render();return;}
+  var a;
+  if((a=t.getAttribute('data-go'))){go(a);return;}
+  if((a=t.getAttribute('data-lvl'))){ST.lvl=a;mark();render();return;}
+  if((a=t.getAttribute('data-warm'))){ST.warm=a;mark();render();return;}
+  if(t.hasAttribute('data-wq')){ST.wq=+t.getAttribute('data-wq');mark();render();var c=$('wcheck');if(c)c.scrollIntoView({block:'start'});return;}
+  if(t.hasAttribute('data-vi')){ST.vi=+t.getAttribute('data-vi');mark();render();window.scrollTo(0,0);return;}
+  if((a=t.getAttribute('data-op'))){ST.op[a]=t.getAttribute('data-v');mark();rerenderKeep();return;}
+  if((a=t.getAttribute('data-who'))){var wid=findWho(t);answer('who-'+wid,a,ST.who,wid);rerenderKeep();return;}
+  if((a=t.getAttribute('data-to'))){ST.letter.to=a;mark();rerenderKeep();return;}
+  if((a=t.getAttribute('data-mode'))){ST.letter.mode=a;mark();rerenderKeep();return;}
+  if(t.id==='turnin'){var n=letterWords();if(n<40){$('tfb').innerHTML='<span class="lionq">\uD83E\uDD81 Almost! Write at least 40 words \u2014 you have '+n+'.</span>';return;}
+    ST.letter.turned=true;ST.letter.at=new Date().toISOString();ST.letter.text=letterText();mark();save(true);rerenderKeep();return;}
+  if(t.classList.contains('opt')&&!t.classList.contains('warmopt')){var box=t.closest('.opts');var q=box.getAttribute('data-q');var k=t.getAttribute('data-k');
+    var bucket=q.indexOf('w-')===0?ST.w:q.indexOf('vc-')===0?ST.vc:ST.dc;var right=q.indexOf('w-')===0?q.slice(2):q.indexOf('vc-')===0?q.slice(3):'r';
+    answer(q,k,bucket,right);rerenderKeep();return;}
+});
+function findWho(t){var idea=t.closest('.idea');var n=[].indexOf.call(document.querySelectorAll('.idea'),idea);return ST.ord.sides[n];}
+function rerenderKeep(){var y=window.scrollY;render();window.scrollTo(0,y);}
+document.addEventListener('input',function(e){var t=e.target;
+  if(t.id==='favwhy'){ST.fav.because=t.value;mark();bindScreen();return;}
+  if(t.getAttribute&&t.getAttribute('data-f')){ST.letter.f[t.getAttribute('data-f')]=t.value;mark();countLetter();return;}
+  if(t.id==='freebox'){ST.letter.free=t.value;mark();countLetter();return;}
+  if(t.tagName==='TEXTAREA'){t.style.height='auto';t.style.height=(t.scrollHeight+4)+'px';}});
+document.addEventListener('change',function(e){var t=e.target;
+  if(t.id==='favsel'){ST.fav.id=t.value;mark();bindScreen();return;}
+  if(t.getAttribute&&t.getAttribute('data-f')==='stance'){ST.letter.f.stance=t.value;mark();countLetter();return;}
+  if(t.id==='langSel'){ST.lang=t.value;try{localStorage.setItem('vocab_lang',t.value);}catch(x){}mark();[].forEach.call(document.querySelectorAll('.dtr'),function(b){b.removeAttribute('data-l');});paintDirs();paintWordTr();return;}});
+function boom(){var f=$('fw');f.innerHTML='';for(var i=0;i<60;i++){var s=document.createElement('i');s.style.left=(40+Math.random()*20)+'%';s.style.top='55%';s.style.background=['#c9862f','#c0392b','#2c6fd1','#5d7f45','#f4d35e'][i%5];
+  s.style.setProperty('--dx',(Math.random()*600-300)+'px');s.style.setProperty('--dy',(-Math.random()*420-60)+'px');f.appendChild(s);}f.style.display='block';setTimeout(function(){f.style.display='none';},1800);}
+
+/* ---------- server: LOAD FIRST, then save ---------- */
+function lp(e){return String(e||'').trim().toLowerCase().split('@')[0];}
+function bar(msg){var b=$('srvbar');if(!msg){b.style.display='none';return;}b.textContent=msg;b.style.display='block';}
+function load(){var list='("'+lp(ME.email)+'@sfusd.edu","'+lp(ME.email)+'@s.sfusd.edu")';
+  return fetch(SUPA+'/rest/v1/'+TABLE+'?select=*&set_slug=eq.'+SET_SLUG+'&email=in.'+encodeURIComponent(list),{headers:HDR})
+  .then(function(r){if(!r.ok)throw new Error('load '+r.status);return r.json();})
+  .then(function(rows){var best=null;(rows||[]).forEach(function(r){if(!best||JSON.stringify(r.answers||{}).length>JSON.stringify(best.answers||{}).length)best=r;});
+    var keepLang=ST.lang;if(best&&best.answers){var d=fresh();for(var k in best.answers)d[k]=best.answers[k];ST=d;}
+    if(keepLang)ST.lang=keepLang;LOADED=true;bar('');$('langSel').value=ST.lang||'';render();})
+  .catch(function(){LOADED=false;bar('\u26A0 Can\u2019t reach the server \u2014 your work is NOT being saved yet. Trying again\u2026');setTimeout(load,5000);});}
+function save(force){if(!LOADED||!ME)return;if(!DIRTY&&!force)return;if(SAVING&&!force)return;SAVING=true;DIRTY=false;score();
+  var row={email:ME.email,set_slug:SET_SLUG,name:ME.first+' '+ME.last,period:String(ME.period),level:ST.lvl,lang:ST.lang,answers:ST,turned_in:!!ST.letter.turned,updated_at:new Date().toISOString()};
+  var done=false;var wd=setTimeout(function(){if(!done)bar('\u26A0 Can\u2019t reach the server \u2014 your last changes are not saved yet. Keep working; it will keep trying.');},8000);
+  fetch(SUPA+'/rest/v1/'+TABLE+'?on_conflict=email,set_slug',{method:'POST',headers:Object.assign({},HDR,{Prefer:'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify(row)})
+  .then(function(r){done=true;clearTimeout(wd);SAVING=false;if(!r.ok){DIRTY=true;bar('\u26A0 Saving failed \u2014 trying again soon.');return;}bar('');$('saved').textContent='\u2713 saved '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});})
+  .catch(function(){done=true;clearTimeout(wd);SAVING=false;DIRTY=true;bar('\u26A0 Can\u2019t reach the server \u2014 your last changes are not saved yet. Keep working; it will keep trying.');});}
+setInterval(function(){save(false);},20000);
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')save(false);});
+
+/* ---------- sign-in ---------- */
+function fillLangs(sel,first){sel.innerHTML='<option value="">'+first+'</option>'+LANGOPTS.map(function(o){return '<option value="'+o[0]+'">'+o[1]+'</option>';}).join('');}
+function startUp(){fillLangs($('galStdLang'),'Choose your language');fillLangs($('langSel'),'\uD83C\uDF10 Language');
+  try{var v=localStorage.getItem('vocab_lang');if(v&&LANGNAME[v])$('galStdLang').value=v;}catch(e){}
+  $('gform').addEventListener('submit',function(e){e.preventDefault();var f=$('gfirst').value.trim(),l=$('glast').value.trim(),em=$('gemail').value.trim().toLowerCase(),p=$('gper').value,lg=$('galStdLang').value;
+    var msg=$('gmsg');if(!f||!l){msg.textContent='Please write your first and last name.';return;}
+    if(!/^[^@\s]+@(s\.)?sfusd\.edu$/.test(em)){msg.textContent='Use your school email: name@s.sfusd.edu';return;}
+    if(!p){msg.textContent='Choose your period.';return;}if(!lg){msg.textContent='Please choose your language.';return;}
+    ME={first:f,last:l,email:lp(em)+'@sfusd.edu',typed:em,period:p};
+    try{localStorage.setItem('gal_student_email',ME.email);localStorage.setItem('gal_student_name',f+' '+l);localStorage.setItem('gal_student_period',p);localStorage.setItem('vocab_lang',lg);}catch(x){}
+    ST.lang=lg;$('langSel').value=lg;$('gate').style.display='none';$('app').style.display='block';$('who').textContent=f+' \u00B7 P'+p;render();load();});
+  try{var n=localStorage.getItem('gal_student_name')||'';var em2=localStorage.getItem('gal_student_email')||'';var pp=localStorage.getItem('gal_student_period')||'';
+    if(n&&!$('gfirst').value){var parts=n.split(' ');$('gfirst').value=parts.shift();$('glast').value=parts.join(' ');}if(em2&&!$('gemail').value)$('gemail').value=em2;if(pp)$('gper').value=pp;}catch(e){}
+  var c=$('canary');try{new MutationObserver(function(){if(c.textContent!=='Reading')ST.browserTr=true;}).observe(c,{childList:true,characterData:true,subtree:true});}catch(e){}}
+document.addEventListener('DOMContentLoaded',startUp);
+
+document.addEventListener('DOMContentLoaded',function(){document.getElementById('gpic').innerHTML=ART.scene().replace('id="lion"','');});
+</script>
+<script src="/readings/track.js"></script>
+</body>
+</html>

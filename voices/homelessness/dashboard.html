@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Who Answers Whom? Homelessness — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&family=Source+Serif+4:ital,wght@0,500;1,500&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#26313f;--good:#1f7a45;--bad:#b3261e}
+*{box-sizing:border-box}body{margin:0;font-family:Nunito,system-ui,sans-serif;background:#efe9dd;color:var(--ink)}
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#fff;border-bottom:3px solid var(--ink);padding:10px 14px;position:sticky;top:0;z-index:5}
+.bar h1{font-size:19px;margin:0;flex:1;min-width:220px}
+.btn{border:2px solid var(--ink);background:#fff;border-radius:10px;padding:6px 12px;font:inherit;font-weight:800;cursor:pointer;text-decoration:none;color:var(--ink);display:inline-block}
+.alld{background:#26313f;color:#fff}
+select{font:inherit;padding:5px 8px;border:2px solid var(--ink);border-radius:9px}
+.gate{max-width:360px;margin:60px auto;background:#fff;border:2px solid var(--ink);box-shadow:4px 4px 0 var(--ink);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:10px}
+.gate input{font:inherit;padding:8px;border:2px solid var(--ink);border-radius:9px}
+main{padding:14px;max-width:1300px;margin:0 auto}
+.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.tabs button{border:2px solid var(--ink);background:#fff;border-radius:999px;padding:6px 14px;font:inherit;font-weight:900;cursor:pointer}
+.tabs button.on{background:var(--ink);color:#fff}
+.box{background:#fff;border:2px solid var(--ink);box-shadow:4px 4px 0 var(--ink);border-radius:14px;padding:12px 14px;margin-bottom:16px;display:flow-root}
+.wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{border:1px solid #c9bfae;padding:5px 7px;text-align:left;vertical-align:top}
+th{background:#f6f2e8;position:sticky;top:0}
+tr.stu{cursor:pointer}tr.stu:hover{background:#fff7dc}
+.full{background:#d7efdc;font-weight:800}.part{background:#fff3d6}.none{color:#999}
+.miss{color:var(--bad);font-weight:800;font-size:12px}
+.wall{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:16px}
+.letter{background:#fffdf6;border:2px solid var(--ink);box-shadow:4px 4px 0 var(--ink);border-radius:10px;padding:16px 18px;font-family:'Source Serif 4',Georgia,serif;font-size:19px;line-height:1.55}
+.letter .re{font-style:italic;color:#555;font-size:16px}.letter .sig{font-weight:700;margin-bottom:0}
+body.proj .letter{font-size:26px}body.proj .wall{grid-template-columns:1fr}
+.obar{display:flex;height:26px;border:2px solid var(--ink);border-radius:8px;overflow:hidden;margin:4px 0 10px;font-weight:900;font-size:13px}
+.obar span{display:flex;align-items:center;justify-content:center;color:#fff;min-width:0}
+.detail{white-space:pre-wrap}
+.muted{color:#5a6470}
+</style>
+</head>
+<body>
+<div class="bar">
+ <a class="btn alld" id="gal04-back" href="/readings/dashboards/">&larr; All dashboards</a>
+ <h1>Who Answers Whom? Homelessness &mdash; Dashboard</h1>
+ <select id="per"><option value="">All periods</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select>
+ <button class="btn" id="reload">Refresh</button>
+ <a class="btn" href="/readings/voices/homelessness/" target="_blank">Student page</a>
+</div>
+<div class="gate" id="gate"><b>Teacher password</b><input type="password" id="pw"><button class="btn" id="go" style="background:#1f7a45;color:#fff">Open</button></div>
+<main id="main" style="display:none">
+ <div class="tabs" id="tabs"><button data-t="stu" class="on">Students</button><button data-t="wall">Class wall</button><button data-t="ops">What the class thinks</button><button data-t="hard">Hardest items</button></div>
+ <section id="t-stu"><div class="box"><div class="muted" id="stats"></div><div class="wrap"><table id="tbl"></table></div></div><div class="box" id="det" style="display:none"></div></section>
+ <section id="t-wall" style="display:none"><div class="box"><label><input type="checkbox" id="proj"> Projector mode (one big letter per row)</label> &nbsp; <span class="muted">Only turned-in letters show. Names are first name + last initial.</span></div><div class="wall" id="wall"></div></section>
+ <section id="t-ops" style="display:none"><div class="box" id="ops"></div></section>
+ <section id="t-hard" style="display:none"><div class="box" id="hard"></div></section>
+</main>
+<script>
+/* ===== DATA (T-202). Everything below is rewritten in plain English except ONE short real line per writer (Decode screen). ===== */
+var SET_SLUG='homelessness';
+var WORDS=[
+ {w:'encampment',d:'a group of tents where people live outside',s:'Police in Denver break up large encampments under bridges.'},
+ {w:'shelter',d:'a building where people with no home can sleep and stay safe for a while',s:'The city turned an old hotel into a shelter with private rooms.'},
+ {w:'unsheltered',d:'sleeping outside, not inside any building',s:'The number of unsheltered people in Denver went down.'},
+ {w:'eviction',d:'when a landlord makes you leave your home, usually because the rent was not paid',s:'Byrne helps families who are facing eviction.'},
+ {w:'prevention',d:'stopping something bad before it happens',s:'Byrne says prevention keeps families in their homes.'},
+ {w:'enforcement',d:'making people follow the law, for example with warnings or tickets',s:'Denver mixes enforcement with help from social workers.'},
+ {w:'affordable',d:'cheap enough that people have the money to pay for it',s:'Selden says cities must build affordable housing.'},
+ {w:'subsidy',d:'money from the government that pays part of a cost',s:'A rent subsidy pays some of the rent, and the family pays the rest.'},
+ {w:'budget',d:'a plan for how to spend money',s:'The president\u2019s budget cuts money for a housing program.'},
+ {w:'privacy',d:'being alone, where other people cannot see or hear you',s:'Each tiny house gives a person privacy.'},
+ {w:'replicate',d:'to copy something and get the same result',s:'Davis says other cities cannot simply replicate Denver.'},
+ {w:'crisis',d:'a time of serious trouble or danger',s:'Fast help can carry a family through a short crisis.'}
+];
+var KEYW={}; WORDS.forEach(function(o){KEYW[o.w]=o;});
+/* extra dotted words in the voices: tap = meaning + translation */
+var GLOSS={
+ 'social workers':'people whose job is to help people find homes, food, doctors and other services',
+ 'tiny house':'a very small house, often with one room','tiny houses':'very small houses, often with one room','tiny home':'a very small house, often with one room','tiny homes':'very small houses, often with one room',
+ 'addiction':'when a person cannot stop using drugs or alcohol','mental illness':'a sickness of the mind, like deep depression',
+ 'determination':'not giving up, even when something is hard','determined':'not giving up, even when something is hard',
+ 'nonprofit':'a group that helps people and does not try to make money','rent':'money you pay every month to live in a home',
+ 'statistics':'numbers that describe facts about many people','intersections':'places where two streets cross',
+ 'credit':'praise for something good you did','military':'the army, navy and air force',
+ 'Congress':'the group of elected people who make the laws of the United States','diversity, equity and inclusion':'programs to help groups who were treated unfairly; the president argues these programs are unfair to others',
+ 'annoyance':'something that bothers people','evict':'to make someone leave their home'
+};
+var VOICES=[
+ {id:'lopez',name:'German Lopez',where:'New York',role:'Writer for The New York Times',date:'Oct 13, 2026',kind:'Opinion essay',answers:'',
+  title:'\u201cWe Know How to Fix Homelessness. Look at Denver.\u201d',
+  idea:'Denver mixes police pressure with real places to go, and other cities should copy it.',
+  side:'Police can push people out of tents \u2014 if the city has a real place for them to go.',
+  easy:['German Lopez writes for The New York Times. He went to Denver, Colorado, to see how the city helps people who live on the street.',
+   'In Denver, police tell people that they cannot camp in tents on the street. Social workers come with the police. They offer people a place to go: a tiny house or a room in an old hotel that the city bought.',
+   'Since 2023, the number of people sleeping outside in Denver went down by about two-thirds. Lopez says other cities should copy Denver.',
+   'He also says some problems are still hard. Rent is expensive. Money from the national government is ending. And many people still on the street have a mental illness or an addiction, so they need more than a roof.'],
+  hard:['German Lopez, a writer on The New York Times editorial board, argues that homelessness is not a mystery. In his view, experts already understand why it happens and what reduces it \u2014 yet many large cities, such as Los Angeles and Seattle, have stopped trying and let tents fill their parks and sidewalks.',
+   'Denver, he says, shows another path. Police officers break up each encampment and warn that people who keep camping can eventually be arrested, while social workers ride along and offer a shelter bed. The crucial piece is that the city first built enough places to send people: a village of tiny homes and a hotel turned into private rooms. Since 2023, the number of unsheltered people has dropped by 64 percent.',
+   'Lopez does not claim the job is finished. Rent is still too high, temporary federal money has run out, and the people who remain outside are more likely to need treatment for mental illness or addiction. Even so, he concludes that a determined leader is the most important ingredient, and he urges other cities to replicate Denver\u2019s plan.']},
+ {id:'selden',name:'Paul Selden',where:'Evanston, Illinois',role:'Has worked on homelessness for 50 years',date:'Nov 1, 2026',kind:'Letter to the editor',answers:'lopez',also:'whitehouse',
+  idea:'A shelter is not a home; cities should build affordable housing.',
+  side:'Moving people into shelters doesn\u2019t end homelessness. People need homes of their own.',
+  easy:['Paul Selden lives in Evanston, Illinois. He has worked to help homeless people for 50 years. He wrote a letter to answer Lopez.',
+   'He says: when you move a person from the street into a shelter, life is better and safer. But that person is still homeless. A shelter is not a home.',
+   'Ending homelessness means a person gets their own place to live and becomes part of the neighborhood again.',
+   'He thinks many people only want the tents to go away. He also says the president\u2019s cuts to housing programs make the problem worse. His answer: build affordable housing.'],
+  hard:['Paul Selden, who has spent half a century working on homelessness, praises Lopez\u2019s essay but says it mixes up two different goals: clearing street camps and actually ending homelessness.',
+   'Moving someone from a sidewalk into a shelter may make their life safer, he writes, but it does not give them a home. The real work \u2014 getting people into housing of their own and back into community life \u2014 is the part he believes few people truly want to take on.',
+   'His guess is that most of the public notices homeless people mostly as an annoyance in public places, so once the tents are gone, everyone stops thinking about the problem. He blames the Trump administration\u2019s attacks on housing programs for making things worse, and argues that the real answer is affordable housing with services attached. A shelter is fine, he says, only as the first step on that road.']},
+ {id:'byrne',name:'Robert Byrne',where:'Philadelphia',role:'Leads Family Promise of Philadelphia, a nonprofit',date:'Nov 1, 2026',kind:'Letter to the editor',answers:'lopez',
+  idea:'Help families keep their homes before they become homeless.',
+  side:'Fast help with rent can stop a family from ever becoming homeless.',
+  easy:['Robert Byrne runs Family Promise of Philadelphia. It is a nonprofit that helps families keep their homes.',
+   'He says Lopez forgot something important: prevention. Stop people from becoming homeless before it happens.',
+   'Every day he talks to families who might lose their apartment. A parent with a low-paid job can fall behind on rent after one doctor\u2019s bill or one lost day of work. Then a late fee makes it worse, and eviction comes closer.',
+   'If families get help fast \u2014 like money for rent for a short time \u2014 many of them never become homeless.'],
+  hard:['Robert Byrne, who directs Family Promise of Philadelphia, a nonprofit focused on keeping families housed, says Lopez left out a basic part of the solution: prevention.',
+   'He hears every day from families facing eviction. For a parent earning minimum wage, a single surprise expense or a missed day of work can mean a short rent payment, and late fees dig the hole deeper.',
+   'Quick help \u2014 short-term rent money and someone to guide them through the system \u2014 lets many families get through a temporary crisis without ever losing their home. Cities, he argues, should help people already on the street and also invest in prevention, so that fewer families ever go through the pain of losing a home.']},
+ {id:'peters',name:'Sara Peters',where:'Denver',role:'Lives in Denver, near the mayor',date:'Nov 1, 2026',kind:'Letter to the editor',answers:'lopez',
+  idea:'The numbers look good, but daily life near the shelters is still hard.',
+  side:'Listen to the neighbors. A short visit and a few numbers don\u2019t tell the whole story.',
+  easy:['Sara Peters lives in Denver, in the same part of the city as the mayor. She says Lopez\u2019s article does not match what she sees.',
+   'When she walks, drives or rides her bike, she sees homeless people at almost every corner and under bridges. Some bike paths don\u2019t feel safe now.',
+   'On Quebec Street, where many shelters are, she sees trash and people in crisis. After one shelter opened, calls to the police went up a lot.',
+   'She voted for the mayor and thinks he means well. But she says a short visit and some statistics can\u2019t show what daily life is like.'],
+  hard:['Sara Peters, who lives in Denver\u2019s Park Hill neighborhood near Mayor Mike Johnston, writes that she barely recognized her own city in Lopez\u2019s description.',
+   'Wherever she walks, drives or bikes, she says, she passes homeless people at intersections and underpasses, and some bike paths no longer feel safe. Quebec Street, home to many of the new shelters, is full of trash and drug equipment, and police calls near one shelter rose by 2,900 percent in the months after it opened.',
+   'She still supports the mayor and believes his intentions are good, but she argues that a reporter\u2019s visit and a page of statistics miss the experience of the people who actually live there.']},
+ {id:'davis',name:'Josh Davis',where:'Brooklyn, New York',role:'Grew up in San Francisco',date:'Nov 1, 2026',kind:'Letter to the editor',answers:'lopez',
+  idea:'Every city is different, so Denver\u2019s plan may not work everywhere.',
+  side:'Learn from Denver, but don\u2019t expect the same plan to work in every city.',
+  easy:['Josh Davis lives in Brooklyn, New York. He grew up in San Francisco.',
+   'He says Denver did a good job, and the mayor should get credit.',
+   'But he says every city is different. Rent is different. The number of homeless people is different. The number of shelter beds is different. And people need different kinds of help.',
+   'So other cities can learn from Denver, but they can\u2019t just replicate it and expect the same result.'],
+  hard:['Josh Davis, a Brooklyn resident who was born and raised in San Francisco, agrees that Denver\u2019s progress deserves celebration and that its mayor deserves real credit.',
+   'But he calls the idea that other cities can simply repeat Denver\u2019s results too simple. Housing costs, the size of each city\u2019s homeless population, the number of shelter beds and the very different needs of homeless people all make one fix for every city unlikely.',
+   'Cities should study Denver\u2019s policies closely, he concludes, but they cannot assume those policies will work the same way somewhere else.']},
+ {id:'whitehouse',name:'The White House budget',where:'Washington, D.C.',role:'President Trump\u2019s spending plan, reported by The New York Times',date:'Apr 3, 2026',kind:'News article',answers:'',
+  idea:'Cut some programs, including a housing grant, and spend more on the military.',
+  side:'The national government should cut programs it believes divide people, and spend more on the military.',
+  easy:['In April 2026, President Trump sent Congress his plan for how the national government should spend money next year. This plan is called a budget.',
+   'He wants to spend more on the military and about 10 percent less on most other programs.',
+   'One cut: $50 million from a program that gave money to states and cities to help them build affordable housing. The White House says this program pushed ideas about diversity, equity and inclusion that divide people.',
+   'People who support the plan say the government should save money and should not pay for programs that treat people differently because of their group. People who disagree, like Paul Selden, say the cut will make homelessness worse. Congress makes the final decision.'],
+  hard:['In April 2026, The New York Times reported on President Trump\u2019s budget for 2027 \u2014 his request to Congress for how federal money should be spent. The reporters described it as a wide effort to cut programs connected to diversity, equity and inclusion, which the president argues are unfair to white Americans.',
+   'To pay for more military spending, the plan asks for a 10 percent cut to most other programs. One target is a $50 million program that gave grants to states and cities to remove barriers to affordable housing; the administration says the program paid for divisive projects.',
+   'Supporters argue that federal money should be spent carefully and should not fund programs they see as dividing Americans by race or identity. Critics, including civil rights groups and the letter writer Paul Selden, say cuts like this hurt the people who most need help. The article notes that Congress controls spending, and presidents\u2019 budgets are rarely passed as written.']}
+];
+var VBY={}; VOICES.forEach(function(v){VBY[v.id]=v;});
+var INSIDE=[
+ {pic:'p_mayor',who:'Mayor Mike Johnston',what:'He compares the city to a school. A good principal cares about every student \u2014 but if one student makes the others feel unsafe, the principal must help that student change, or hold him responsible.'},
+ {pic:'p_ortiz',who:'Valentino Ortiz, who lived in a tiny house',what:'In a big shelter full of beds, he did not feel safe. In his tiny home he had a door that locked, a hot shower and his own kitchen. Privacy kept him safe.'},
+ {pic:'p_miller',who:'Ana Miller, who fights for homeless people\u2019s rights',what:'She says staff at the hotel shelter check people\u2019s rooms too much. She also says some neighbors film the tiny-house village because they don\u2019t want it near them.'},
+ {pic:'p_officer',who:'Officer Michael Nierenberg, Denver police',what:'He woke up a couple in a tent and told them the law. Then he learned they wanted to go home to Texas \u2014 and he found them a bus ticket.'}
+];
+var DECODE=[
+ {id:'d-lopez',v:'lopez',ctx:'Lopez starts his essay with this sentence:',q:'We know both the causes and the cure.',
+  right:'Experts already understand why homelessness happens and how to fix it.',
+  wrong:['Nobody knows how to fix homelessness.','Doctors can cure every homeless person who is sick.','Homelessness is caused by a disease.'],
+  hint:'A \u201ccure\u201d fixes a problem. Lopez is talking about homelessness as the problem.'},
+ {id:'d-selden',v:'selden',ctx:'Selden answers Lopez:',q:'People who are relocated from the streets to shelters are still homeless.',
+  right:'A shelter is better than the street, but it is not a real home.',
+  wrong:['Shelters are worse than living on the street.','Most people in shelters find an apartment fast.','Shelters should send people back to the street.'],
+  hint:'\u201cRelocated\u201d means moved. Moved from where, to where? Are they homeless after?'},
+ {id:'d-byrne',v:'byrne',ctx:'Byrne describes a parent with a low-paid job. The parent may be \u2026',q:'\u2026 one unexpected medical bill or missed shift away from falling behind on rent.',
+  right:'One small problem, like a doctor\u2019s bill or one lost day of work, can make the family unable to pay rent.',
+  wrong:['The family should always pay the doctor first and pay the rent later.','Working one extra shift every week will end homelessness for most families.','Doctors and hospitals in Philadelphia cost too much for most families.'],
+  hint:'\u201cFalling behind on rent\u201d means not paying all the rent on time. What could cause that?'},
+ {id:'d-peters',v:'peters',ctx:'Peters says she voted for the mayor, but \u2026',q:'\u2026 a visit and a set of statistics cannot capture what living here is like.',
+  right:'A short trip and some numbers can\u2019t show what daily life in Denver really feels like.',
+  wrong:['People who visit Denver for a short trip usually love the city.','Numbers and statistics show everything that is true about a city.','People who live in Denver should not vote.'],
+  hint:'\u201cCapture\u201d here means \u201cshow fully.\u201d Who made the visit and wrote the statistics?'},
+ {id:'d-davis',v:'davis',ctx:'Davis ends his letter about Denver\u2019s policies:',q:'\u2026 their effectiveness cannot be assumed independent of local circumstances.',
+  right:'What works in one city might not work in a different city.',
+  wrong:['Denver\u2019s plan will work the same way in every city in the country.','Brooklyn has more homeless people than Denver.','Nobody should study Denver\u2019s plan.'],
+  hint:'\u201cLocal circumstances\u201d = what is true in one place. \u201cCannot be assumed\u201d = you can\u2019t be sure.'},
+ {id:'d-whitehouse',v:'whitehouse',ctx:'The White House says the housing grant program paid for \u2026',q:'\u2026 divisive D.E.I. agendas.',
+  right:'The White House says the program pushed ideas that divide people by race or group.',
+  wrong:['The White House says the program built too many expensive houses in cities.','The White House wants to give the housing program more money next year.','The program was run by the military.'],
+  hint:'\u201cDivisive\u201d comes from \u201cdivide.\u201d D.E.I. = diversity, equity and inclusion.'}
+];
+var QUIPS=['Not that one \u2014 read it again, slowly.','Close! Look at the picture one more time.','Hmm. Check the meaning, then try again.','Almost. Which one fits the WHOLE sentence?','Try again \u2014 you\u2019ve got this.'];
+var THINK=['Who would be happy about your choice? Who would be upset?','What would it cost? Who pays?','Would this work in San Francisco? Why?','What would change on your street in one year?','Which writer would argue with you? What would they say?'];
+var LANGNAME={es:'Spanish','zh-CN':'Mandarin',yue:'Cantonese',ar:'Arabic',vi:'Vietnamese',th:'Thai',ne:'Nepali',ary:'Darija',ru:'Russian',ur:'Urdu',tl:'Tagalog',fr:'French',ko:'Korean',hi:'Hindi',so:'Somali'};
+var LANGOPTS=[['es','Español'],['zh-CN','中文 (普通话)'],['yue','廣東話 (Cantonese)'],['ar','العربية'],['vi','Tiếng Việt'],['th','ไทย'],['ne','नेपाली'],['ary','الدارجة (Darija)'],['ru','Русский'],['ur','اردو'],['tl','Tagalog'],['fr','Français'],['ko','한국어'],['hi','हिन्दी'],['so','Soomaali']];
+
+var SUPA='https://lhmwtfyceilgndpygivj.supabase.co';
+var KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var H={apikey:KEY,Authorization:'Bearer '+KEY};var MAX=34;var ROWS=[];
+function $(i){return document.getElementById(i);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function wc(s){var m=String(s||'').trim().match(/[A-Za-z0-9'\u2019-]+/g);return m?m.length:0;}
+function lp(e){return String(e||'').toLowerCase().split('@')[0];}
+function cnt(b){var n=0;for(var k in (b||{}))if(b[k]&&b[k].done)n++;return n;}
+function opDone(a){return VOICES.every(function(v){return (a.op||{})[v.id];})&&a.fav&&a.fav.id&&wc(a.fav.because)>=8;}
+function score(a){return (a.warm?1:0)+cnt(a.w)+cnt(a.vc)+cnt(a.dc)+cnt(a.who)+(opDone(a)?1:0)+(a.letter&&a.letter.turned?2:0);}
+function band(p){if(window.GAL04)return GAL04.fmt(p);return p>=90?'4':p>=75?'3':p>=60?'2':p>0?'1':'0';}
+function misses(a,pre){var n=0;for(var k in (a.miss||{}))if(k.indexOf(pre)===0)n+=(a.miss[k]||[]).length;return n;}
+function cell(n,m,mi){var c=n>=m?'full':n>0?'part':'none';return '<td class="'+c+'">'+n+'/'+m+(mi?' <span class="miss">'+mi+'\u2717</span>':'')+'</td>';}
+function letterText(a){var L=a.letter||{};return L.text||'';}
+$('go').onclick=function(){if($('pw').value!=='galileo2026'){alert('Wrong password.');return;}$('gate').style.display='none';$('main').style.display='block';load();};
+$('pw').addEventListener('keydown',function(e){if(e.key==='Enter')$('go').click();});
+$('reload').onclick=load;$('per').onchange=draw;
+$('proj').onchange=function(){document.body.classList.toggle('proj',this.checked);};
+[].forEach.call(document.querySelectorAll('#tabs button'),function(b){b.onclick=function(){[].forEach.call(document.querySelectorAll('#tabs button'),function(x){x.classList.toggle('on',x===b);});['stu','wall','ops','hard'].forEach(function(t){$('t-'+t).style.display=t===b.dataset.t?'block':'none';});};});
+function load(){$('stats').textContent='Loading\u2026';fetch(SUPA+'/rest/v1/voices_work?select=*&set_slug=eq.'+SET_SLUG,{headers:H}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();}).then(function(rows){
+  var by={};rows.forEach(function(r){var k=lp(r.email);var a=r.answers||{};r._s=score(a);if(!by[k]||r._s>by[k]._s||(r._s===by[k]._s&&String(r.updated_at)>String(by[k].updated_at)))by[k]=r;});
+  ROWS=Object.keys(by).map(function(k){return by[k];}).sort(function(a,b){return String(a.period).localeCompare(String(b.period))||String(a.name).localeCompare(String(b.name));});draw();})
+ .catch(function(e){$('stats').textContent='Could not load: '+e.message+' (has the voices_work table been created?)';});}
+function rows(){var p=$('per').value;return ROWS.filter(function(r){return !p||String(r.period)===p;});}
+function draw(){var R=rows();var h='<tr><th>Student</th><th>P</th><th>Lang</th><th>Level</th><th>Warm-up</th><th>Words</th><th>Voices</th><th>Decode</th><th>Whose idea</th><th>Opinions</th><th>Letter</th><th>Score</th><th>0\u20134</th><th>Updated</th></tr>';
+  R.forEach(function(r,i){var a=r.answers||{};var L=a.letter||{};var s=r._s;var pct=Math.round(100*s/MAX);
+   h+='<tr class="stu" data-i="'+i+'"><td><b>'+esc(r.name)+'</b><br><span class="muted">'+esc(r.email)+'</span></td><td>'+esc(r.period)+'</td><td>'+esc(r.lang||'')+'</td><td>'+esc(a.lvl||'')+'</td>'
+    +'<td class="'+(a.warm?'full':'none')+'">'+(a.warm?'\u2713':'')+'</td>'+cell(cnt(a.w),12,misses(a,'w-'))+cell(cnt(a.vc),6,misses(a,'vc-'))+cell(cnt(a.dc),6,misses(a,'d-'))+cell(cnt(a.who),6,misses(a,'who-'))
+    +'<td class="'+(opDone(a)?'full':'none')+'">'+(opDone(a)?'\u2713':Object.keys(a.op||{}).length+'/6')+'</td>'
+    +'<td class="'+(L.turned?'full':'none')+'">'+(L.turned?'\u2713 '+wc(letterText(a))+' w':(L.to?'drafting':''))+'</td><td><b>'+s+'</b>/'+MAX+' ('+pct+'%)</td><td><b>'+band(pct)+'</b></td><td class="muted">'+esc(String(r.updated_at||'').slice(5,16).replace('T',' '))+'</td></tr>';});
+  $('tbl').innerHTML=h;var turned=R.filter(function(r){return r.answers&&r.answers.letter&&r.answers.letter.turned;}).length;
+  $('stats').textContent=R.length+' students \u00B7 '+turned+' letters turned in \u00B7 a student signed in with both email spellings shows as one row. Tap a row for details.';
+  [].forEach.call(document.querySelectorAll('tr.stu'),function(tr){tr.onclick=function(){detail(R[+tr.dataset.i]);};});
+  wall(R);ops(R);hard(R);}
+function detail(r){var a=r.answers||{};var d=$('det');var ms=[];for(var k in (a.miss||{}))if((a.miss[k]||[]).length)ms.push(k+': '+a.miss[k].join(', '));
+  d.style.display='block';d.innerHTML='<h3>'+esc(r.name)+' \u00B7 P'+esc(r.period)+'</h3><p><b>Warm-up pick:</b> '+esc(a.warm||'\u2014')+'</p><p><b>Favorite idea:</b> '+esc(a.fav&&a.fav.id?VBY[a.fav.id].name:'\u2014')+' \u2014 '+esc(a.fav?a.fav.because:'')+'</p>'
+   +'<p><b>Opinions:</b> '+VOICES.map(function(v){return esc(v.name)+': '+((a.op||{})[v.id]||'\u2014');}).join(' \u00B7 ')+'</p><p><b>Wrong first picks</b> (kept for you; the student never saw the answer):</p><div class="detail muted">'+esc(ms.join('\n')||'none')+'</div>'
+   +'<p><b>Letter</b> '+(a.letter&&a.letter.to?'to '+esc(VBY[a.letter.to].name):'')+':</p><div class="letter">'+esc(letterText(a)||(a.letter&&a.letter.mode==='free'?a.letter.free:'')||'\u2014')+'</div>'
+   +(a.browserTr?'<p class="miss">Browser translation was switched on during this session.</p>':'');d.scrollIntoView({behavior:'smooth'});}
+function wall(R){var h='';R.forEach(function(r){var a=r.answers||{};var L=a.letter||{};if(!L.turned)return;var v=VBY[L.to]||{};var nm=String(r.name||'').split(' ');
+  h+='<div class="letter"><b>To the Editor:</b><p class="re">Re: '+esc(v.name||'')+'</p><p>'+esc(letterText(a))+'</p><p class="sig">'+esc(nm[0]+' '+(nm[1]||'').charAt(0)+'.')+' \u00B7 Period '+esc(r.period)+'</p></div>';});
+  $('wall').innerHTML=h||'<div class="box">No letters turned in yet for this period.</div>';}
+function ops(R){var h='<h3>What the class thinks</h3><p class="muted">\uD83D\uDC4D convincing \u00B7 \uD83E\uDD14 not sure \u00B7 \uD83D\uDC4E not convincing. Good for a projector discussion: no names.</p>';
+  VOICES.forEach(function(v){var c={yes:0,maybe:0,no:0},fav=0;R.forEach(function(r){var a=r.answers||{};var o=(a.op||{})[v.id];if(o)c[o]++;if(a.fav&&a.fav.id===v.id)fav++;});var t=c.yes+c.maybe+c.no||1;
+   h+='<p><b>'+esc(v.side)+'</b> <span class="muted">('+esc(v.name)+' \u00B7 favorite of '+fav+')</span></p><div class="obar">'+(c.yes?'<span style="width:'+(100*c.yes/t)+'%;background:#1f7a45">\uD83D\uDC4D '+c.yes+'</span>':'')+(c.maybe?'<span style="width:'+(100*c.maybe/t)+'%;background:#a8701f">\uD83E\uDD14 '+c.maybe+'</span>':'')+(c.no?'<span style="width:'+(100*c.no/t)+'%;background:#b3261e">\uD83D\uDC4E '+c.no+'</span>':'')+'</div>';});
+  var w={};R.forEach(function(r){var x=(r.answers||{}).warm;if(x)w[x]=(w[x]||0)+1;});h+='<h3>Warm-up: \u201cYou are the mayor. What do you do first?\u201d</h3><p>'+(['shelters','homes','rent','police'].map(function(k){return k+': <b>'+(w[k]||0)+'</b>';}).join(' \u00B7 '))+'</p>';
+  $('ops').innerHTML=h;}
+function hard(R){var m={};R.forEach(function(r){var a=r.answers||{};for(var k in (a.miss||{})){var n=(a.miss[k]||[]).length;if(n){m[k]=m[k]||{n:0,s:0};m[k].n+=n;m[k].s++;}}});
+  var ks=Object.keys(m).sort(function(a,b){return m[b].s-m[a].s;});
+  $('hard').innerHTML='<h3>Items students missed first</h3><table><tr><th>Item</th><th>Students who missed it first</th><th>Total wrong picks</th></tr>'+ks.map(function(k){return '<tr><td>'+esc(k)+'</td><td>'+m[k].s+'</td><td>'+m[k].n+'</td></tr>';}).join('')+'</table>';}
+</script>
+<script src="/readings/grade04.js" data-slugs="voices/homelessness"></script>
+</body>
+</html>

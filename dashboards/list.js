@@ -29,6 +29,7 @@ window.DASHBOARDS = [
 
 /* ---------- Reading ---------- */
 {url:'news/dashboard.html',             name:'This Week\u2019s Reading',      course:'103', group:'Reading', note:'Weekly news article, per student and per question.'},
+{url:'voices/homelessness/dashboard.html', name:'Who Answers Whom? Homelessness', course:'103', group:'Reading', note:'Op-ed + letters to the editor: progress per student, wrong first picks, the class wall of student letters (projector mode), and what the class thinks of each idea.'},
 {url:'landlady/dashboard.html',         name:'The Landlady',                  course:'103', group:'Reading'},
 {url:'landlady/investigate/dashboard.html', name:'The Landlady: Investigate the tea', course:'103', group:'Reading', note:'Optional detective game: which bottle, which poison, the case report.'},
 {url:'landlady/test/dashboard.html',    name:'The Landlady: Test',            course:'103', group:'Reading', note:'44-point test: 12 words with pictures (closed book), order, questions, cozy or warning, writing. Score Part E here; tab-leaves and 🌐 uses per student; which items were hard.'},
@@ -76,7 +77,6 @@ window.DASHBOARDS = [
 {url:'songs/enjoy-the-silence/dashboard.html', name:'Enjoy the Silence',      course:'101', group:'Speaking'},
 
 /* ---------- Writing ---------- */
-{url:'advice/dashboard.html',           name:'Dear Lion \u2014 advice letters', course:'103', group:'Writing', note:'Each student\u2019s advice, compare and misses; per-question first-try; projector wall sorted by votes.'},
 {url:'write/dashboard.html',            name:'Writing Ladder',                course:'103', group:'Writing', note:'Every rung, every text.'},
 {url:'eld103/dashboard.html',           name:'ELD 103 Writing',               course:'103', group:'Writing'},
 {url:'eld103/ch1-2/dashboard.html',     name:'ELD 103 Ch. 1\u20132',          course:'103', group:'Writing'},

@@ -611,24 +611,17 @@ window.CATALOG=[
 "g": "Every week"
 },
 {
-"p": "/readings/advice/",
-"t": "Dear Lion",
-"d": "A student writes to the Lion with a real problem. Read the letter at your level, write your advice, compare with the Lion, practice the words, and vote on the class wall.",
-"m": "Levels A, B, C · new letter weekly · advice writing",
-"g": "Every week"
-},
-{
-"p": "/readings/advice/kitchen/",
-"t": "Dear Lion: Stuck in the Kitchen",
-"d": "Her family needs her at the restaurant; her teacher wants her in the robotics club. Read, give advice, compare with the Lion, 5 questions, 6 words, class wall.",
-"m": "Levels A, B, C · score out of 44",
-"g": "Every week"
-},
-{
 "p": "/readings/news/",
 "t": "This Week’s Reading",
 "d": "A new article each week. Read, notice the grammar, do the info-gap with a partner, record yourself.",
 "m": "Multi-level · 4 tabs · teacher-published",
+"g": "Every week"
+},
+{
+"p": "/readings/voices/homelessness/",
+"t": "Who Answers Whom? Homelessness",
+"d": "An opinion essay about Denver and the letters that answered it. Learn 12 words, meet six voices, decode their hardest sentences, decide which ideas you like, and write your own letter to the editor.",
+"m": "ELD 103 · 6 screens · Easier/Harder · class wall",
 "g": "Every week"
 },
 {
