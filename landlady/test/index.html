@@ -71,6 +71,19 @@ main{max-width:1000px;margin:0 auto;padding:20px 16px 120px}
 .dots button.ans{background:#d9e6d2}
 .dots button.cur{outline:3px solid var(--ox)}
 .pic{float:right;width:min(46%,340px);margin:0 0 10px 16px}
+.pgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.pcell{border:2px solid var(--line);border-radius:14px;padding:10px;background:#fff;position:relative}
+.pcell svg{width:100%;height:auto;display:block;border:2px solid var(--line);border-radius:10px;margin-bottom:8px;max-height:200px}
+.pcell .opts{gap:6px}
+.pcell .opt{min-height:44px;padding:.45rem .7rem;font-size:1.05rem}
+.pnum{position:absolute;top:14px;left:14px;background:var(--ox);color:#fff;font-weight:900;border-radius:999px;min-width:30px;height:30px;display:grid;place-items:center;z-index:1}
+.pnum.inl{position:static;display:inline-grid;margin-right:8px;vertical-align:middle}
+.bitem{border-bottom:2px dashed #d8cbb0;padding:8px 0 12px}
+.bitem:last-child{border-bottom:0}
+.bitem .stem{font-size:1.15rem}
+.opts.row{grid-template-columns:repeat(4,minmax(0,1fr))}
+.opts.row .opt{min-height:44px;padding:.4rem .6rem;font-size:1.02rem}
+@media (max-width:760px){.pgrid{grid-template-columns:1fr}.opts.row{grid-template-columns:1fr 1fr}}
 .pic svg{width:100%;height:auto;display:block;border:2px solid var(--line);border-radius:12px}
 .stem{font-size:1.35rem;font-weight:800;margin:.2rem 0 .8rem}
 .opts{display:grid;gap:10px}
@@ -293,22 +306,23 @@ var SCREENS=[];   /* built from ITEMS */
 
 function buildScreens(){
   SCREENS=[];
-  ITEMS.A1.forEach(function(it){SCREENS.push({part:'A',kind:'pic',it:it});});
-  ITEMS.A2.forEach(function(it){SCREENS.push({part:'A',kind:'blank',it:it});});
+  /* T-210: Part A on 4 screens — three grids of 4 pictures, then all 6 sentences */
+  for(var g=0;g<ITEMS.A1.length;g+=4) SCREENS.push({part:'A',kind:'picgrid',items:ITEMS.A1.slice(g,g+4),it:{dir:ITEMS.A1[0].dir}});
+  SCREENS.push({part:'A',kind:'blanks',items:ITEMS.A2.slice(),it:{dir:ITEMS.A2[0].dir}});
   SCREENS.push({part:'B',kind:'order',it:ITEMS.B});
   ITEMS.C.forEach(function(it){SCREENS.push({part:'C',kind:'mc',it:it});});
   SCREENS.push({part:'D',kind:'sort',it:ITEMS.D});
   SCREENS.push({part:'E',kind:'write',it:ITEMS.E});
 }
 buildScreens();
-var A_END=ITEMS.A1.length+ITEMS.A2.length;   /* first screen after Part A */
+var A_END=Math.ceil(ITEMS.A1.length/4)+1;   /* first screen after Part A (4 screens) */
 
 /* order of options for every multiple-choice item: shuffled once per student,
    and the right answer never sits in the same slot three times in a row */
 function makePerms(){
   var perm={}, last=-1, run=0;
-  SCREENS.forEach(function(sc){
-    if(sc.kind!=='pic' && sc.kind!=='blank' && sc.kind!=='mc') return;
+  var list=[]; SCREENS.forEach(function(sc){ if(sc.items) list=list.concat(sc.items); else if(sc.kind==='mc') list.push(sc.it); });
+  list.forEach(function(it){ var sc={it:it};
     var n=sc.it.opts.length, p, tries=0;
     do{ p=shuffle(Array.apply(null,{length:n}).map(function(_,i){return i;})); tries++; }
     while(tries<50 && p.indexOf(0)===last && run>=2);
@@ -369,8 +383,8 @@ $('btnSign').onclick=function(){
 };
 function orderA1(){
   var by={}; ITEMS.A1.forEach(function(x){by[x.id]=x;});
-  var a=S.order0.filter(function(id){return by[id];}).map(function(id){return {part:'A',kind:'pic',it:by[id]};});
-  for(var i=0;i<a.length;i++) SCREENS[i]=a[i];
+  var a=S.order0.filter(function(id){return by[id];}).map(function(id){return by[id];});
+  for(var g=0;g*4<a.length;g++) SCREENS[g].items=a.slice(g*4,g*4+4);
 }
 
 /* ---------- scoring ---------- */
@@ -388,6 +402,7 @@ function answered(){
     if(sc.kind==='order'){ t++; if((S.ans.b||[]).filter(Boolean).length===ITEMS.B.events.length) n++; }
     else if(sc.kind==='sort'){ ITEMS.D.clues.forEach(function(c){ t++; if(S.ans[c.id]) n++; }); }
     else if(sc.kind==='write'){ t++; if(String(S.ans.e||'').trim().split(/\s+/).filter(Boolean).length>=5) n++; }
+    else if(sc.items){ sc.items.forEach(function(it){ t++; if(S.ans[it.id]!=null) n++; }); }
     else { t++; if(S.ans[sc.it.id]!=null) n++; }
   });
   return {n:n,t:t};
@@ -442,14 +457,24 @@ function draw(){
   if(window.speechSynthesis) speechSynthesis.cancel();
   var sc=SCREENS[S.screen], it=sc.it, h='';
   var inPart=SCREENS.filter(function(x){return x.part===sc.part;}).length;
-  h+='<div class="itemhead"><span class="pt">Part '+PART_NAMES[sc.part]+'</span><span class="num">'+(inPart>1?'Question '+(S.screen-partStart(sc.part)+1)+' of '+inPart:'')+'</span></div>';
+  h+='<div class="itemhead"><span class="pt">Part '+PART_NAMES[sc.part]+'</span><span class="num">'+(inPart>1?(sc.part==='A'?'Page ':'Question ')+(S.screen-partStart(sc.part)+1)+' of '+inPart:'')+'</span></div>';
   /* dots for the part */
   var ps=partStart(sc.part), d='';
-  for(var j=ps;j<SCREENS.length&&SCREENS[j].part===sc.part;j++){ var s2=SCREENS[j], has=s2.it.id&&S.ans[s2.it.id]!=null;
+  for(var j=ps;j<SCREENS.length&&SCREENS[j].part===sc.part;j++){ var s2=SCREENS[j], has=s2.items?s2.items.every(function(it){return S.ans[it.id]!=null;}):(s2.it.id&&S.ans[s2.it.id]!=null);
     if(SCREENS.filter(function(x){return x.part===sc.part;}).length>1) d+='<button data-go="'+j+'" class="'+(has?'ans':'')+(j===S.screen?' cur':'')+'">'+(j-ps+1)+'</button>'; }
   if(d) h+='<div class="dots">'+d+'</div>';
   h+=dirBlock(it.dir);
-  if(sc.kind==='pic'){
+  if(sc.kind==='picgrid'){
+    var base=SCREENS.indexOf(sc)*4;
+    h+='<p class="stem">Which word goes with each picture?</p><div class="pgrid">';
+    sc.items.forEach(function(x,k){ h+='<div class="pcell"><div class="pnum">'+(base+k+1)+'</div>'+(window.LL_ART&&LL_ART[x.w]?LL_ART[x.w]:'')+opts(x,true)+'</div>'; });
+    h+='</div>';
+  } else if(sc.kind==='blanks'){
+    h+='<div class="blist">';
+    sc.items.forEach(function(x,k){ var st=L(x.s);
+      h+='<div class="bitem"><p class="stem" translate="no"><span class="pnum inl">'+(13+k)+'</span>'+esc(st)+' <button class="spk" data-say="'+esc(st)+'" aria-label="Hear it">🔊</button></p>'+opts(x,true,true)+'</div>'; });
+    h+='</div>';
+  } else if(sc.kind==='pic'){
     h+='<div class="pic">'+(window.LL_ART&&LL_ART[it.w]?LL_ART[it.w]:'')+'</div>';
     h+='<p class="stem">Which word goes with this picture?</p>'+opts(it,true);
   } else if(sc.kind==='blank'){
@@ -477,8 +502,8 @@ function draw(){
 /* a scene from the story's own world (never one that answers the question on screen) */
 function scene(i){ var f=window.LL_FIGS&&LL_FIGS[i]; return f?'<div class="scenepic">'+f.svg+'</div>':''; }
 function dirBlock(d){ if(!d) return ''; var t=L(d); return '<p class="dir" data-dir="'+esc(t)+'"><span class="en">'+esc(t)+'</span><span class="tr"></span></p>'; }
-function opts(it, isWord){
-  var p=S.perm[it.id]||it.opts.map(function(_,i){return i;}), h='<div class="opts" role="radiogroup">';
+function opts(it, isWord, row){
+  var p=S.perm[it.id]||it.opts.map(function(_,i){return i;}), h='<div class="opts'+(row?' row':'')+'" role="radiogroup">';
   p.forEach(function(i){ var o=L(it.opts[i]), sel=S.ans[it.id]===i;
     h+='<button class="opt'+(sel?' sel':'')+'" role="radio" aria-checked="'+sel+'" data-id="'+esc(it.id)+'" data-i="'+i+'" translate="no"><span class="rad"></span><span class="t">'+esc(o)+'</span>'+
        '<span class="spk" data-say="'+esc(o)+'" role="button" aria-label="Hear it">🔊</span></button>'; });
@@ -555,6 +580,7 @@ $('btnGoB').onclick=function(){ $('ovTurnOver').classList.add('hidden'); S.aLock
 /* ---------- start (full screen) ---------- */
 $('btnStart').onclick=function(){
   var el=document.documentElement; try{ if(el.requestFullscreen) el.requestFullscreen().catch(function(){}); }catch(e){}
+  S.screen=Math.min(S.screen||0,SCREENS.length-1);
   show('scrTest'); if(S.aLocked&&S.screen<A_END) S.screen=A_END; if(!S.aLocked&&S.screen>=A_END) S.screen=0; draw(); save();
 };
 
@@ -564,6 +590,7 @@ function openHand(){
     if(sc.kind==='order'){ if((S.ans.b||[]).filter(Boolean).length<ITEMS.B.events.length) miss.push('Part B (order)'); }
     else if(sc.kind==='sort'){ var n=ITEMS.D.clues.filter(function(c){return !S.ans[c.id];}).length; if(n) miss.push('Part D: '+n+' clues'); }
     else if(sc.kind==='write'){ if(wc(S.ans.e)<5) miss.push('Part E (writing)'); }
+    else if(sc.items){ var m=sc.items.filter(function(it){return S.ans[it.id]==null;}).length; if(m) miss.push('Part A, page '+(i+1)+': '+m+' not answered'); }
     else if(S.ans[sc.it.id]==null) miss.push('Part '+sc.part+', number '+(i-partStart(sc.part)+1));
   });
   $('handList').innerHTML=miss.length?'<p><b>Not answered yet:</b></p><ul>'+miss.map(function(m){return '<li>'+esc(m)+'</li>';}).join('')+'</ul>':'<p><b>Every question has an answer.</b></p>';
