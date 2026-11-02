@@ -76,6 +76,7 @@ window.DASHBOARDS = [
 {url:'songs/enjoy-the-silence/dashboard.html', name:'Enjoy the Silence',      course:'101', group:'Speaking'},
 
 /* ---------- Writing ---------- */
+{url:'advice/dashboard.html',           name:'Dear Lion \u2014 advice letters', course:'103', group:'Writing', note:'Each student\u2019s advice, compare and misses; per-question first-try; projector wall sorted by votes.'},
 {url:'write/dashboard.html',            name:'Writing Ladder',                course:'103', group:'Writing', note:'Every rung, every text.'},
 {url:'eld103/dashboard.html',           name:'ELD 103 Writing',               course:'103', group:'Writing'},
 {url:'eld103/ch1-2/dashboard.html',     name:'ELD 103 Ch. 1\u20132',          course:'103', group:'Writing'},
