@@ -14,7 +14,7 @@ var READ=[
  {id:'r10',isNew:true,custom:{bg:'gym',chars:[{id:'paolo',x:560,face:1,expr:'nervous'},{id:'linh',x:900,face:-1,expr:'smile'}]},t:'Paolo cannot find his calculator. Linh helps him look in the gym.'}
 ];
 var WORDS_PIC=[
- {id:'w1',pic:'backpack',a:'backpack',opts:['backpack','notebook','folder','calculator'],hint:'Jun carries his things in it. It is orange.'},
+ {id:'w1',pic:'bigpack',a:'backpack',opts:['backpack','notebook','folder','calculator'],hint:'Jun carries his things in it. It is orange.'},
  {id:'w2',pic:'pencil',a:'pencil',opts:['pencil','pen','book','piano'],hint:'Paolo has ten of these. You write with it.'},
  {id:'w3',pic:'calculator',a:'calculator',opts:['calculator','computer','notebook','folder'],hint:'You use it in math class. It has numbers.'},
  {id:'w4',pic:'piano',a:'piano',opts:['piano','library','calculator','computer'],hint:'It is in the music corner. Jun\u2019s backpack is next to it.'},
