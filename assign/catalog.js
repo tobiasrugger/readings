@@ -100,6 +100,20 @@ window.CATALOG=[
 "g": "Short stories"
 },
 {
+"p": "/readings/landlady/table/",
+"t": "The Landlady: Read it together",
+"d": "One Chromebook per table. Take turns reading aloud in big print; tap any word to hear it and see it in your table's languages. Records each reader for Mr. Toby.",
+"m": "ELD 103 · table read-aloud · 52 paragraphs · up to 5 languages",
+"g": "Short stories"
+},
+{
+"p": "/readings/landlady/test/",
+"t": "The Landlady: Test",
+"d": "The 12 words with pictures (story face down), then order, questions, cozy or warning, and a short writing (story open). One try, no hints.",
+"m": "ELD 103 · test · 44 points · Easier/Harder",
+"g": "Short stories"
+},
+{
 "p": "/readings/omelas/",
 "t": "The Ones Who Walk Away from Omelas",
 "d": "Le Guin. 221 glossed words, SVG figures, Easier/Harder wording on every question, feedback tab.",
