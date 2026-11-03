@@ -52,6 +52,18 @@ input:focus,select:focus{outline:0;border-color:var(--plum);background:#fff;
   box-shadow:0 0 0 4px rgba(90,74,138,.16)}
 label{display:block;font-weight:800;font-size:.9rem;color:var(--plum-dk);margin:0 0 5px}
 .field{margin-bottom:14px}
+/* T-258: name search + one clean list */
+#rosterQ{font-size:1.05rem}
+.rlist{max-height:300px;overflow:auto;margin-top:8px;border:2px solid var(--plum-dk);border-radius:12px;
+  background:#fff;box-shadow:0 3px 0 rgba(43,34,68,.18)}
+.rname{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;text-align:left;
+  padding:11px 14px;border:0;border-bottom:1px solid #ddd8ea;background:#fff;color:var(--ink);
+  font:inherit;font-weight:800;font-size:1rem;cursor:pointer}
+.rname:last-child{border-bottom:0}
+.rname:hover,.rname:focus{background:var(--plum-lt);outline:0}
+.rname.on{background:var(--green);color:#fff}
+.rname small{font-weight:700;opacity:.65;white-space:nowrap}
+.rnone{padding:12px 14px;color:var(--plum-dk);font-weight:700}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 @media(max-width:620px){.grid2{grid-template-columns:1fr}}
 
@@ -491,10 +503,12 @@ th,td{border-bottom:2px solid var(--line-dk)}
     </div>
   </div>
   <h1>My Page</h1>
-  <p class="note">Choose your name. If your name is not there, type your school email.</p>
+  <p class="note">Type your name, then tap it. If your name is not there, type your school email.</p>
   <div class="field">
-    <label>My name</label>
-    <select id="rosterSel"><option value="">&mdash; choose your name &mdash;</option></select>
+    <label for="rosterQ">My name</label>
+    <input id="rosterQ" type="search" placeholder="&#128269; Type your name" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <div id="rosterList" class="rlist" role="listbox" aria-label="Names"></div>
+    <input type="hidden" id="rosterSel" value="">
   </div>
   <div class="field">
     <label>Or type your SFUSD email</label>
@@ -793,13 +807,65 @@ function flagUrl(code,w){return code?`https://flagcdn.com/w${w||40}/${code.toLow
 function years(d){if(!d)return null;const b=new Date(d+'T00:00:00'),n=new Date();let a=n.getFullYear()-b.getFullYear();const m=n.getMonth()-b.getMonth();if(m<0||(m===0&&n.getDate()<b.getDate()))a--;return a;}
 
 /* ---------- sign in ---------- */
+/* T-258: one line per student. Both email spellings and typo/test rows used to show as separate names.
+   Keep only sfusd.edu rows that have a name; one per username (the printed-roster row wins);
+   the same name in the same period under two usernames = one line (roster row wins). */
+var ROSTER=[];
+/* T-258: teacher and test accounts (from Toby's Nov 3 duplicates check). They still sign in by typing the email. */
+var ROSTER_HIDE=['ruggert','zzztestruggert','testoby','donahuea','nortonk1','asdasjd','jima11','shalhetar1'];
+function rNorm(x){ return String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim(); }
+function rName(s){
+  var n=((s.first_name||'')+' '+(s.last_name||'')).trim();
+  if(n)return n;
+  n=String(s.name||'').trim();
+  var m=/^([^,]+),\s*(.+)$/.exec(n); return m?(m[2]+' '+m[1]):n;   /* "Li, Jiahao" -> "Jiahao Li" */
+}
+function buildRoster(rows){
+  var by={};
+  (rows||[]).forEach(function(s){
+    var em=String(s.email||'').toLowerCase().trim();
+    if(!/^[^@\s]+@(s\.)?sfusd\.edu$/.test(em))return;
+    var nm=rName(s); if(!nm||/@/.test(nm))return;
+    var lp=em.split('@')[0];
+    if(ROSTER_HIDE.indexOf(lp)>-1||nm.length<2)return;   /* teacher + test accounts never show to students */
+    var w=(s.roster_order!=null?8:0)+(s.first_name?2:0)+(s.period?1:0);
+    if(!by[lp]||w>by[lp].w) by[lp]={email:lp+'@sfusd.edu',name:nm,period:s.period==null?'':String(s.period),w:w};
+  });
+  var keep={};
+  Object.keys(by).forEach(function(lp){ var r=by[lp], k=rNorm(r.name)+'|'+r.period;
+    if(!keep[k]||r.w>keep[k].w) keep[k]=r; });
+  return Object.keys(keep).map(function(k){return keep[k];})
+    .sort(function(a,b){ return rNorm(a.name)<rNorm(b.name)?-1:rNorm(a.name)>rNorm(b.name)?1:0; });
+}
+function renderRoster(q){
+  var box=document.getElementById('rosterList'); if(!box)return;
+  var want=rNorm(q).split(' ').filter(Boolean), cur=document.getElementById('rosterSel').value;
+  var hits=ROSTER.filter(function(r){ var n=rNorm(r.name);
+    return want.every(function(w){ return n.indexOf(w)>-1; }); });
+  if(!hits.length){ box.innerHTML='<div class="rnone">No name like that. Type your school email below.</div>'; return; }
+  box.innerHTML=hits.map(function(r){
+    return '<button type="button" class="rname'+(r.email===cur?' on':'')+'" data-e="'+esc(r.email)+'">'+
+      '<span>'+esc(r.name)+'</span>'+(r.period?'<small>Period '+esc(r.period)+'</small>':'')+'</button>'; }).join('');
+  [].forEach.call(box.querySelectorAll('.rname'),function(b){
+    b.addEventListener('click',function(){
+      document.getElementById('rosterSel').value=b.getAttribute('data-e');
+      [].forEach.call(box.querySelectorAll('.rname'),function(x){x.classList.toggle('on',x===b);});
+      document.getElementById('siErr').textContent='';
+    });
+    b.addEventListener('dblclick',function(){ signIn(); });
+  });
+}
 (async function boot(){
   const sel=document.getElementById('rosterSel');
-  const roster=await sb('students?select=email,first_name,last_name&order=last_name.asc')||[];
+  const roster=await sb('students?select=email,first_name,last_name,name,period,roster_order')||[];
   /* fill the language picker now so the sign-in box can mirror it (student page standard) */
   try{ buildLangPicker(); }catch(e){}
-  roster.forEach(s=>{const o=document.createElement('option');o.value=s.email;
-    o.textContent=((s.first_name||'')+' '+(s.last_name||'')).trim()||s.email;sel.appendChild(o);});
+  ROSTER=buildRoster(roster); renderRoster('');  /* T-258 */
+  document.getElementById('rosterQ').addEventListener('input',function(){ renderRoster(this.value); });
+  document.getElementById('rosterQ').addEventListener('keydown',function(e){
+    if(e.key!=='Enter')return; e.preventDefault();
+    var b=document.querySelectorAll('#rosterList .rname'); if(b.length===1){ b[0].click(); }
+    if(document.getElementById('rosterSel').value) signIn(); });
   const qs=new URLSearchParams(location.search);
   const remembered=qs.get('email')||localStorage.getItem('gal_student_email');
   /* T-246: opened with ?email= (from /teacher/, the Desk, etc.) = the teacher looking at this student */
