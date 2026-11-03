@@ -544,7 +544,7 @@ function fiPara(key){
   return bi+1;
 }
 function fiState(k){ANS._ft=ANS._ft||{};return ANS._ft[k]=ANS._ft[k]||{m:0};}
-function fiSave(){dirty=true;setDot('');localStorage.setItem(lsKey(),JSON.stringify(ANS));galUpdate();}
+function fiSave(){dirty=true;setDot('');localStorage.setItem(lsKey(),JSON.stringify(ANS));galUpdate();saveSoon();}
 function fiChoices(k){
   if(ANS._fo&&ANS._fo[k]) return ANS._fo[k];
   var right=fiKey(k),pool=[];
@@ -788,7 +788,7 @@ function wireInputs(){
     el.addEventListener('input',function(){
       ANS[el.dataset.k]=el.value; dirty=true; setDot('');
       localStorage.setItem(lsKey(),JSON.stringify(ANS));
-      galUpdate();
+      galUpdate(); saveSoon();
     });
     if(el.classList.contains('cloze')){
       el.addEventListener('blur',function(){
@@ -807,8 +807,17 @@ function pullAnswers(){
   .then(function(r){return r.json();}).then(function(rows){
     if(!rows||!rows.length||!rows[0].answers) return;
     var server=rows[0].answers, local=Object.keys(ANS).filter(function(x){return x[0]!=='_';}).length;
-    if(local) return;                      /* this device already has work; keep it */
-    ANS=server; localStorage.setItem(lsKey(),JSON.stringify(ANS));
+    if(local){                             /* T-242: keep this device's answers, add anything only the server has */
+      var added=0;
+      Object.keys(server).forEach(function(k){
+        var lv=ANS[k];
+        if(lv===undefined||lv===null||lv===''){ANS[k]=server[k];added++;}
+        else if(k==='_ft'||k==='_fo'){Object.keys(server[k]||{}).forEach(function(j){if(!lv[j]){lv[j]=server[k][j];added++;}});}
+      });
+      if(!added) return;
+      dirty=true;
+    } else ANS=server;
+    localStorage.setItem(lsKey(),JSON.stringify(ANS));
     if(rows[0].level&&!LOCKED){LEVEL=rows[0].level;localStorage.setItem('gal_news_level',LEVEL);applyLevel(LEVEL);}
     render();
   }).catch(function(){});
@@ -827,18 +836,31 @@ function restore(){
 }
 
 /* ---------- autosave ---------- */
-setInterval(function(){
+/* T-242 (Nov 3 2026): save as you go — ~0.7 s after every answer, again when the
+   student leaves (pagehide / tab hidden, keepalive), plus the old 2.5 s backup timer. */
+var SAVE_T=null, SAVING=false;
+function saveSoon(){ clearTimeout(SAVE_T); SAVE_T=setTimeout(function(){saveNow(false);},700); }
+function saveNow(leaving){
   if(!dirty||!A) return;
   var em=ME.email;
   if(!em||em.indexOf('@')<0) return;
-  dirty=false;
-  fetch(SUPA_URL+'/rest/v1/news_work?on_conflict=email,slug',{
+  if(SAVING&&!leaving){ saveSoon(); return; }
+  galUpdate();                       /* score is set before every save */
+  dirty=false; SAVING=true;
+  var opts={
     method:'POST',
     headers:Object.assign({},H,{'Prefer':'resolution=merge-duplicates,return=minimal'}),
     body:JSON.stringify({email:em,name:ME.name,period:ME.period,level:LEVEL,slug:A.meta.SLUG,answers:ANS,updated_at:new Date().toISOString()})
-  }).then(function(r){setDot(r.ok?'on':'err'); if(!r.ok) dirty=true; else galLogIfChanged();})
-   .catch(function(){setDot('err');dirty=true;});
-},2500);
+  };
+  if(leaving) opts.keepalive=true;
+  fetch(SUPA_URL+'/rest/v1/news_work?on_conflict=email,slug',opts)
+   .then(function(r){SAVING=false; setDot(r.ok?'on':'err'); if(!r.ok) dirty=true; else galLogIfChanged();})
+   .catch(function(){SAVING=false; setDot('err');dirty=true;});
+}
+setInterval(function(){saveNow(false);},2500);
+window.addEventListener('pagehide',function(){saveNow(true);});
+document.addEventListener('visibilitychange',function(){if(document.hidden)saveNow(true);});
+window.__T242=1;
 
 var LANGS={Spanish:'Español',Cantonese:'廣東話',Mandarin:'普通话',Arabic:'العربية',Darija:'الدارجة',Vietnamese:'Tiếng Việt',Russian:'Русский',Urdu:'اردو',Tagalog:'Tagalog',French:'Français',Korean:'한국어',Hindi:'हिन्दी',Somali:'Soomaali',Nepali:'नेपाली',Thai:'ไทย'};
 function showSignin(){
@@ -1191,13 +1213,19 @@ function galParts(){
   var talkTarget=Math.max(1,gaps);   /* Find It (T-207): every cell is the student's; half found = the point */
   var talk=Object.keys(a).filter(function(k){return /^t\d/.test(k)&&(a[k]||'').trim();}).length;
   var gTot=cTot+(A.gram.produce?1:0), gDone=cDone+(prod?1:0);
-  var pQ=(qTot&&qDone/qTot>=0.5)?1:0, pG=(gTot&&gDone/gTot>=0.5)?1:0, pT=(talk/talkTarget>=0.5)?1:0, pR=HAS_REC?1:0;
+  /* T-242 fair score: each part is worth 5 points; half of a part done = all 5 (as before),
+     less than half earns its share instead of 0. A part the article doesn't have isn't counted. */
+  function pts(done,tot){ if(!tot) return null; return Math.round(5*Math.min(1,done/Math.ceil(tot/2))); }
+  var sQ=pts(qDone,qTot), sG=pts(gDone,gTot), sT=A.talk.rows.length&&gaps?pts(talk,gaps):null, sR=HAS_REC?5:0;
+  var have=[sQ,sG,sT,sR].filter(function(x){return x!==null;});
+  var pQ=sQ===5?1:0, pG=sG===5?1:0, pT=sT===5?1:0, pR=HAS_REC?1:0;
   return {qDone:qDone,qTot:qTot,cRight:cRight,cTot:cTot,gDone:gDone,gTot:gTot,talk:talk,talkTarget:talkTarget,
-          pQ:pQ,pG:pG,pT:pT,pR:pR,score:pQ+pG+pT+pR};
+          pQ:pQ,pG:pG,pT:pT,pR:pR,parts:have.length,
+          score:have.reduce(function(a,b){return a+b;},0), max:5*have.length};
 }
 function galUpdate(){
   var p=galParts(); if(!p) return;
-  window.GAL_SCORE=p.score; window.GAL_MAX=4;
+  window.GAL_SCORE=p.score; window.GAL_MAX=p.max;
   window.GAL_SKILLS={
     'reading-comprehension':{n:p.qDone+Math.min(p.talk,p.talkTarget),d:p.qTot+(A.talk.rows.length?p.talkTarget:0)},
     'grammar':{n:p.cRight,d:p.cTot},
@@ -1208,7 +1236,7 @@ function galUpdate(){
   var lastQ=A.qs.length?ANS['q'+(A.qs.length-1)]:''; if((lastQ||'').trim()) hs.push({label:'Question '+A.qs.length,text:lastQ.trim()});
   if((ANS.p_invent||'').trim()) hs.push({label:'Invented holiday',text:ANS.p_invent.trim(),pin:true});
   window.GAL_HIGHLIGHTS=hs;
-  window.GAL_COMPLETION={done:p.pQ+p.pG+p.pT+p.pR,total:4};
+  window.GAL_COMPLETION={done:p.pQ+p.pG+p.pT+p.pR,total:p.parts};
 }
 function galLogIfChanged(){
   if(!ANS._turnedIn||!window.GAL_logAttempt) return;
@@ -1219,9 +1247,11 @@ function galLogIfChanged(){
 function checkRecording(){
   if(!ME.email||!A) return;
   fetch(SUPA_URL+'/rest/v1/fluency_runs?select=id&email=eq.'+encodeURIComponent(ME.email)+'&passage_slug=eq.'+encodeURIComponent('news-'+A.meta.SLUG)+'&limit=1',{headers:H})
-  .then(function(r){return r.json();}).then(function(rows){var had=HAS_REC;HAS_REC=!!(rows&&rows.length);galUpdate();if(HAS_REC&&!had)galLogIfChanged();}).catch(function(){});
+  .then(function(r){return r.json();}).then(function(rows){var had=HAS_REC;HAS_REC=!!(rows&&rows.length);galUpdate();if(HAS_REC&&!had){galLogIfChanged();dirty=true;saveSoon();}}).catch(function(){});
 }
 document.addEventListener('visibilitychange',function(){if(!document.hidden)checkRecording();});
+window.addEventListener('pageshow',function(){checkRecording();});
+window.addEventListener('focus',function(){checkRecording();});
 
 function boot(){
   var want=new URLSearchParams(location.search).get('a');
