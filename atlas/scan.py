@@ -20,6 +20,11 @@ TEACHER_PATH = re.compile(r'dashboard|teacher|gradebook|roadmap|(^|/)assign/|(^|
 SKIP_DIRS = {'_phases', 'node_modules', '.git', 'mnt'}
 SHARED = {'track.js', 'std.js', 'grade04.js'}
 REGISTRIES = {'assign/catalog.js', 'dashboards/list.js', 'atlas/book.js', 'atlas/scan.js'}  # lists of other pages: read as engines they would fake every layer
+REGISTRY_DIRS = ('assign/catalog/',)  # T-215: the Push catalog is now one file per top-level folder
+
+def is_registry(rel):
+    rel = rel.lstrip('./')
+    return rel in REGISTRIES or rel.startswith(REGISTRY_DIRS)
 
 def read(p):
     try:
@@ -34,8 +39,25 @@ def js_list(path, var):
 # ---- registries ----
 dash_src = read(os.path.join(ROOT, 'dashboards', 'list.js'))
 DASH = re.findall(r"\{url:'([^']+)',\s*name:'((?:[^'\\]|\\.)*)'", dash_src)
-cat_src = read(os.path.join(ROOT, 'assign', 'catalog.js'))
-CATALOG = set(re.findall(r'"p":\s*"([^"]+)"', cat_src))
+def catalog_paths(src):
+    """every "p" in a catalog file. T-215 folder files hold one array inside .push( ... );
+       — read those blocks when they exist, otherwise the whole file (assign/catalog.js)."""
+    blocks = re.findall(r'\.push\(\s*(.*?)\s*\)\s*;', src, re.S) or [src]
+    out = set()
+    for b in blocks:
+        out |= set(re.findall(r'["\']p["\']\s*:\s*["\']([^"\']+)["\']', b))
+    return out
+
+cat_src = read(os.path.join(ROOT, 'assign', 'catalog.js'))   # frozen, still loaded
+CATALOG = catalog_paths(cat_src)
+CAT_DIR = os.path.join(ROOT, 'assign', 'catalog')
+CATALOG_FILES = {'assign/catalog.js': len(CATALOG)}
+if os.path.isdir(CAT_DIR):
+    for fn in sorted(os.listdir(CAT_DIR)):
+        if not fn.endswith('.js') or fn == 'index.js': continue   # index.js only lists the folder files
+        found = catalog_paths(read(os.path.join(CAT_DIR, fn)))
+        CATALOG |= found
+        CATALOG_FILES['assign/catalog/' + fn] = len(found)
 hub_src = read(os.path.join(ROOT, 'index.html'))
 HUB = set(re.findall(r'href="(?:/readings/|\./)?([^"#?:]+)"', hub_src))
 say_src = read(os.path.join(ROOT, 'say', 'sets.js'))
@@ -76,7 +98,7 @@ NOT_TABLES = {'rpc', 'none', 'true', 'false', 'null', 'table', 'html', 'body', '
 def scan_page(rel):
     html = read(os.path.join(ROOT, rel))
     scripts = local_scripts(rel, html)
-    blob = html + '\n'.join(read(os.path.join(ROOT, s)) for s in scripts if s not in REGISTRIES)
+    blob = html + '\n'.join(read(os.path.join(ROOT, s)) for s in scripts if not is_registry(s))
     low = blob.lower()
     t = re.search(r'<title>(.*?)</title>', html, re.I | re.S)
     title = re.sub(r'\s+', ' ', t.group(1)).strip() if t else rel
