@@ -1172,6 +1172,41 @@ window.GAL_META={title:'Very Easy True Stories 12: Returning a Favor',unit:'Very
  window.GAL_SCORE=n+p;window.GAL_MAX=qs.length+ps.length;}catch(e){}}
  g();setInterval(g,3000);document.addEventListener('click',function(){setTimeout(g,60);},true);})();
 </script>
+<script>
+/* T-240 (Nov 3 2026): save after EVERY answer and when the student leaves, not only every 20 s.
+   Students who answered fast and moved on lost everything after the last 20-second save.
+   'completed' is never sent here, so a finished story stays finished. */
+(function(){
+  var URL_='https://lhmwtfyceilgndpygivj.supabase.co/rest/v1/vets_results?on_conflict=email,story';
+  var KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+  var last='', t=null;
+  function V(){ return (typeof VETS!=='undefined')?VETS:window.VETS; }
+  function saveNow(leaving){
+    try{
+      var v=V(); if(!v||!v.state) return;
+      var email=localStorage.getItem('gal_student_email')||''; if(!email) return;
+      var sc=v.state.scored||{}, pr=v.state.predicted||{};
+      var total=Object.keys(sc).length, preds=Object.keys(pr).length; if(!total && !preds) return;
+      var got=Object.keys(sc).filter(function(k){return sc[k].firstAttemptCorrect;}).length;
+      var detail=(typeof buildDetail==='function')?buildDetail():{scored:sc,predicted:pr};
+      var row={email:email,name:localStorage.getItem('gal_student_name')||'',
+        period:parseInt(localStorage.getItem('gal_student_period'))||null,
+        story:(typeof STORY_SLUG!=='undefined'?STORY_SLUG:''),score:got,total:total,predictions:preds,
+        completed_at:new Date().toISOString(),detail:detail};
+      var sig=JSON.stringify([row.score,row.total,row.predictions,detail]); if(sig===last) return; last=sig;
+      fetch(URL_,{method:'POST',keepalive:!!leaving,headers:{apikey:KEY,Authorization:'Bearer '+KEY,'Content-Type':'application/json',
+        Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(row)}).catch(function(){ last=''; });
+    }catch(e){}
+  }
+  document.addEventListener('click',function(e){
+    if(!e.target.closest || !e.target.closest('.choice')) return;
+    clearTimeout(t); t=setTimeout(function(){saveNow(false);},700);
+  },true);
+  window.addEventListener('pagehide',function(){saveNow(true);});
+  document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='hidden') saveNow(true); });
+  window.VETS_saveNow=saveNow;
+})();
+</script>
 <script src="/readings/track.js"></script>
 <script src="vets_l10n.js" data-slug="vets-12"></script>
 <script src="vets-extras.js"></script>
