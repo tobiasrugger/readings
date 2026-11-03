@@ -1138,6 +1138,214 @@
     }, true);
   }
 
+
+  /* ================= T-245 TEACHER VIEW (Nov 3 2026) =================
+     A student page opened with ?view=teacher&email=X shows X's own saved work, READ ONLY:
+       - teacher password once per tab (sessionStorage gal_tv_ok only);
+       - every write to Supabase (POST/PATCH/PUT/DELETE on /rest/v1/ or /storage/v1/, fetch,
+         XMLHttpRequest or sendBeacon) gets a fake 201 and never leaves the browser; GETs go
+         through, so the page loads X's saved work as usual. GAL_NO_AUTOLOG = true and
+         GAL_logAttempt is a no-op, so nothing reaches the gradebook;
+       - X is looked up in students (both spellings), the page's own sign-in box is filled and
+         its Start pressed — the ONE exception to T-167's "no page presses Start by itself";
+       - a yellow bar: "👀 Teacher view: <name> — read only, nothing saves" + Exit;
+       - this browser's own sign-in keys are snapshotted (sessionStorage gal_tv_snap) and put
+         back on Exit and on pagehide, so X is never left signed in on the teacher's laptop. */
+  var TV = (function () {
+    try {
+      var q = new URLSearchParams(location.search);
+      if (q.get('view') !== 'teacher' || !q.get('email')) return null;
+      if (TEACHER_PATH.test(location.pathname)) return null;
+      return { email: String(q.get('email')).trim().toLowerCase() };
+    } catch (e) { return null; }
+  })();
+  var TV_KEYS = /^(gal_student_|vocab_lang$|vocab_me$|[a-z0-9]+_student$|resume_user$)/;
+  function tvSnap() {
+    try {
+      if (sessionStorage.getItem('gal_tv_snap')) return;     /* first teacher-view load in this tab only */
+      var s = {};
+      for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (TV_KEYS.test(k)) s[k] = localStorage.getItem(k); }
+      sessionStorage.setItem('gal_tv_snap', JSON.stringify(s));
+    } catch (e) {}
+  }
+  function tvRestore() {
+    try {
+      var raw = sessionStorage.getItem('gal_tv_snap'); if (raw == null) return;
+      var s = JSON.parse(raw) || {}, kill = [];
+      for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (TV_KEYS.test(k)) kill.push(k); }
+      kill.forEach(function (k) { localStorage.removeItem(k); });
+      Object.keys(s).forEach(function (k) { localStorage.setItem(k, s[k]); });
+    } catch (e) {}
+  }
+  function tvIsWrite(url, method) {
+    method = String(method || 'GET').toUpperCase();
+    return method !== 'GET' && method !== 'HEAD' && /supabase\.co\/(rest|storage)\/v1\//.test(String(url || ''));
+  }
+  var TV_BLOCKED = 0;
+  function tvFake(body) {
+    TV_BLOCKED++; window.GAL_TV_BLOCKED = TV_BLOCKED;
+    var out = '[]';
+    try { var d = JSON.parse(body); out = JSON.stringify(Array.isArray(d) ? d : [d]); } catch (e) {}
+    return new Response(out, { status: 201, headers: { 'Content-Type': 'application/json' } });
+  }
+  function tvLock() {
+    window.GAL_NO_AUTOLOG = true;
+    window.GAL_TEACHER_VIEW = true;
+    try { Object.defineProperty(window, 'GAL_logAttempt', { configurable: true, get: function () { return function () {}; }, set: function () {} }); } catch (e) { window.GAL_logAttempt = function () {}; }
+    var inner = window.fetch;
+    window.fetch = function (input, init) {
+      var url = typeof input === 'string' ? input : (input && input.url) || '';
+      var method = (init && init.method) || (input && input.method) || 'GET';
+      if (tvIsWrite(url, method)) return Promise.resolve(tvFake(init && init.body));
+      return inner.apply(this, arguments);
+    };
+    try {
+      var XO = XMLHttpRequest.prototype.open, XS = XMLHttpRequest.prototype.send;
+      XMLHttpRequest.prototype.open = function (m, u) { this.__tvW = tvIsWrite(u, m); return XO.apply(this, arguments); };
+      XMLHttpRequest.prototype.send = function () {
+        if (!this.__tvW) return XS.apply(this, arguments);
+        TV_BLOCKED++; window.GAL_TV_BLOCKED = TV_BLOCKED;
+        var x = this; setTimeout(function () {
+          try { Object.defineProperty(x, 'readyState', { value: 4 }); Object.defineProperty(x, 'status', { value: 201 }); Object.defineProperty(x, 'responseText', { value: '[]' }); } catch (e) {}
+          try { x.onreadystatechange && x.onreadystatechange(); x.onload && x.onload(); } catch (e) {}
+        }, 0);
+      };
+    } catch (e) {}
+    try {
+      if (navigator.sendBeacon) {
+        var SB = navigator.sendBeacon.bind(navigator);
+        navigator.sendBeacon = function (u, d) { if (tvIsWrite(u, 'POST')) { TV_BLOCKED++; window.GAL_TV_BLOCKED = TV_BLOCKED; return true; } return SB(u, d); };
+      }
+    } catch (e) {}
+  }
+  function tvExitUrl() {
+    var u = new URL(location.href); u.searchParams.delete('view'); u.searchParams.delete('email');
+    return u.toString();
+  }
+  function tvBar(name) {
+    var b = document.getElementById('galTvBar');
+    if (!b) {
+      b = document.createElement('div'); b.id = 'galTvBar'; b.setAttribute('translate', 'no'); b.className = 'notranslate';
+      b.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:2147483645;display:flex;align-items:center;gap:12px;justify-content:center;flex-wrap:wrap;' +
+        'background:#ffe066;color:#2B2233;border-bottom:3px solid #2B2233;box-shadow:0 4px 12px rgba(0,0,0,.25);padding:8px 14px;' +
+        'font:800 17px/1.35 Nunito,system-ui,-apple-system,Segoe UI,Arial,sans-serif';
+      document.body.appendChild(b);
+      document.documentElement.style.scrollPaddingTop = '60px';
+      document.body.style.paddingTop = (parseInt(getComputedStyle(document.body).paddingTop, 10) + 54) + 'px';
+    }
+    b.innerHTML = '<span>\ud83d\udc40 Teacher view: <b class="gal-tv-name"></b> \u2014 read only, nothing saves</span>' +
+      '<button type="button" id="galTvExit" style="font:inherit;font-size:15px;background:#fff;color:#2B2233;border:2px solid #2B2233;border-radius:999px;padding:4px 14px;cursor:pointer">Exit</button>';
+    b.querySelector('.gal-tv-name').textContent = name || TV.email;
+    document.getElementById('galTvExit').onclick = function () {
+      tvRestore();
+      try { sessionStorage.removeItem('gal_tv_snap'); } catch (e) {}
+      var back = /\/readings\/(student|desk)\//.test(document.referrer || '');
+      if (back && history.length > 1) history.back(); else location.href = tvExitUrl();
+    };
+  }
+  function tvPassword(then) {
+    var ok = false; try { ok = sessionStorage.getItem('gal_tv_ok') === '1'; } catch (e) {}
+    if (ok) return then();
+    var o = document.createElement('div'); o.id = 'galTvPw'; o.setAttribute('translate', 'no');
+    o.style.cssText = 'position:fixed;inset:0;z-index:2147483646;background:rgba(43,34,51,.72);display:flex;align-items:center;justify-content:center;font-family:Nunito,system-ui,sans-serif';
+    o.innerHTML = '<div style="background:#fff;border:3px solid #2B2233;border-radius:14px;padding:20px 22px;max-width:360px;width:90%;box-shadow:0 10px 30px rgba(0,0,0,.35)">' +
+      '<div style="font-weight:900;font-size:20px;margin-bottom:6px">\ud83d\udc40 Teacher view</div>' +
+      '<div style="font-size:15px;margin-bottom:10px">Read only \u2014 nothing you do here saves.</div>' +
+      '<input id="galTvPwIn" type="password" placeholder="Teacher password" style="width:100%;box-sizing:border-box;font:inherit;font-size:17px;padding:8px 10px;border:2px solid #2B2233;border-radius:8px">' +
+      '<div style="display:flex;gap:8px;margin-top:10px;align-items:center"><button id="galTvPwGo" type="button" style="font:inherit;font-weight:800;background:#1f6f43;color:#fff;border:0;border-radius:999px;padding:8px 18px;cursor:pointer">Open</button>' +
+      '<span id="galTvPwMsg" style="font-size:14px;color:#8a1c1c"></span></div></div>';
+    document.body.appendChild(o);
+    var inp = document.getElementById('galTvPwIn');
+    function go() {
+      if (inp.value !== 'galileo2026') { document.getElementById('galTvPwMsg').textContent = 'Try again'; inp.value = ''; inp.focus(); return; }
+      try { sessionStorage.setItem('gal_tv_ok', '1'); } catch (e) {}
+      o.remove(); then();
+    }
+    document.getElementById('galTvPwGo').onclick = go;
+    inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') go(); });
+    setTimeout(function () { inp.focus(); }, 50);
+  }
+  function tvLookup() {
+    var lp = TV.email.split('@')[0];
+    var list = '("' + lp + '@sfusd.edu","' + lp + '@s.sfusd.edu")';
+    return fetch(SUPA_URL + '/rest/v1/students?email=in.' + encodeURIComponent(list) + '&select=*',
+      { headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY } })
+      .then(function (r) { return r.ok ? r.json() : []; })
+      .then(function (rows) {
+        var o = { name: '', first: '', last: '', period: '', lang: '' };
+        (rows || []).forEach(function (r) {
+          if (!o.first && r.first_name) o.first = String(r.first_name).trim();
+          if (!o.last && r.last_name) o.last = String(r.last_name).trim();
+          if (!o.name && r.name) o.name = String(r.name).trim();
+          if (!o.period && r.period != null && String(r.period).trim()) o.period = String(r.period).replace(/[^0-9]/g, '');
+          if (!o.lang && r.home_language) o.lang = String(r.home_language).trim();
+        });
+        if (!o.name) o.name = (o.first + ' ' + o.last).trim();
+        if (!o.first && o.name) { var p = o.name.split(/\s+/); o.first = p.shift(); o.last = p.join(' '); }
+        if (!o.name) o.name = lp;
+        return o;
+      }, function () { return { name: lp, first: lp, last: '', period: '', lang: '' }; });
+  }
+  function tvSet(el, v) {
+    if (!el || v == null || v === '') return;
+    if (el.tagName === 'SELECT') {
+      var want = String(v).replace(/[^0-9a-z]/gi, '').toLowerCase();
+      for (var i = 0; i < el.options.length; i++) {
+        var o = el.options[i], t = ((o.value || '') + ' ' + (o.textContent || '')).replace(/[^0-9a-z]/gi, '').toLowerCase();
+        if (o.value && want && (o.value.replace(/[^0-9a-z]/gi, '').toLowerCase() === want || t.indexOf(want) >= 0)) { el.value = o.value; break; }
+      }
+    } else el.value = v;
+    try { el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); } catch (e) {}
+  }
+  function tvFindBox() {
+    var ems = document.querySelectorAll('input[type=email], input[id*=mail i], input[name*=mail i]');
+    for (var i = 0; i < ems.length; i++) if (shown(ems[i])) { var b = ems[i].closest('[data-gal-std]') || boxFor(ems[i]); if (b) return b; }
+    return null;
+  }
+  function tvSignIn(info) {
+    var tries = 0;
+    (function look() {
+      var box = tvFindBox();
+      if (!box) { if (++tries < 60) return setTimeout(look, 300); return; }
+      setTimeout(function () {                       /* let std.js put its language box in first */
+        var els = box.querySelectorAll('input, select');
+        for (var i = 0; i < els.length; i++) {
+          var el = els[i]; if (el.type === 'hidden' || el.type === 'password' || el.id === 'galStdLang') continue;
+          var k = fieldKind(el, box), hay = ((el.id || '') + ' ' + (el.name || '') + ' ' + (el.placeholder || '')).toLowerCase();
+          if (k === 'email') tvSet(el, TV.email);
+          else if (k === 'period') tvSet(el, info.period);
+          else if (k === 'name') {
+            var fo = /first/.test(hay) && !/last|sur/.test(hay), lo = /last|sur/.test(hay) && !/first/.test(hay);   /* "First and last name" = full name */
+            tvSet(el, fo ? info.first : lo ? info.last : info.name);
+          }
+        }
+        var code = codeOf(info.lang, info.lang) || stored() || 'es';
+        var sels = box.querySelectorAll('select');
+        for (var j = 0; j < sels.length; j++) {
+          var s = sels[j]; if (!(s.id === 'galStdLang' || looksLikeLangSelect(s))) continue;
+          for (var n = 0; n < s.options.length; n++) {
+            var op = s.options[n];
+            if (op.value && (codeOf(op.value, op.text) === code || aliases(code).indexOf(norm(op.value)) >= 0)) { s.value = op.value; break; }
+          }
+          try { s.dispatchEvent(new Event('change', { bubbles: true })); } catch (e) {}
+        }
+        store(code);
+        var btn = startButton(box);
+        if (btn) setTimeout(function () { btn.click(); }, 300);
+      }, 700);
+    })();
+  }
+  function tvBoot() {
+    if (!TV) return;
+    var go = function () {
+      tvBar(TV.email);
+      tvLookup().then(function (info) { tvBar(info.name); tvSignIn(info); });
+    };
+    tvPassword(go);
+    window.addEventListener('pagehide', tvRestore);
+  }
+  if (TV) { tvSnap(); tvLock(); }
+
   function scan() {
     addCSS();
     speakerIcons();
@@ -1155,6 +1363,7 @@
     listenBoot();
     myPageBoot();
     pfBoot();
+    tvBoot();
     try { new MutationObserver(soon).observe(document.body, { childList: true, subtree: true }); } catch (e) {}
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);

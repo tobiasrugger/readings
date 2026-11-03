@@ -357,7 +357,10 @@
 
   /* ---------- seed identity from a link like ?email=... ---------- */
   try {
-    var q = new URLSearchParams(location.search).get('email');
+    var qs = new URLSearchParams(location.search);
+    /* T-245: ?view=teacher&email=X is the teacher looking at X's work (read only, std.js) —
+       never adopt X as this browser's student or write their students row */
+    var q = qs.get('view') === 'teacher' ? '' : qs.get('email');
     if (q) noteEmail(q);
     else {
       var saved = localStorage.getItem('gal_student_email');
