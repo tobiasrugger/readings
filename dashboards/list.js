@@ -22,6 +22,7 @@ window.DASHBOARDS = [
 {url:'reports/',                name:'Class report',                 course:'both', group:'Data'},
 {url:'assign/',                 name:'Push an activity',             course:'both', group:'Data', note:'Send one activity to a period or a student.'},
 {url:'shelves/',                name:'Shelves \u2014 Lab, Trying, Ready', course:'both', group:'Data', note:'Every page on one of three shelves. When it\u2019s urgent, look only at Ready. Things to watch the first time you use a page sit on its card.'},
+{url:'year/',                   name:'Year calendar \u2014 the year so far', course:'both', group:'Data', note:'Week by week from Aug 17: what happened in class and what landed on the site, with Digital and Paper links, book pages, shelf badges, students who did it, and Push it. Scope and sequence by strand, the August plan. Print button. Copy without student numbers to share: year/share.html'},
 {url:'roadmap/',                name:'Build roadmap',                course:'both', group:'Data', note:'What is built, in progress, still to do.'},
 {url:'audit/',                  name:'Feature audit',                course:'both', group:'Data', note:'Which pages meet the student-page standard.'},
 {url:'audit/check.html',        name:'Conformance checker',          course:'both', group:'Data', note:'Re-checks every page live and shows what drifted since the saved grid.'},
