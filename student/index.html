@@ -871,7 +871,7 @@ async function load(email){
   const both='in.('+encodeURIComponent(lp+'@s.sfusd.edu')+','+encodeURIComponent(lp+'@sfusd.edu')+')';
 
   const [stu,facts,acts,atts,skills,res,work,checks,practice,phHits,phWork,aliases]=await Promise.all([
-    sb('students?email=eq.'+encodeURIComponent(email)+'&select=*'),
+    sb('students?email='+both+'&select=*'),  /* T-251: the roster row may be under either spelling */
     sb('student_facts?email=eq.'+encodeURIComponent(email)+'&select=key,value'),
     sb('activities?select=*&order=sort_order.asc'),
     sb('activity_attempts?email='+both+'&select=slug,score,max_score,completed_at,detail&order=completed_at.asc'),
@@ -891,7 +891,12 @@ async function load(email){
     if(SELF_SIGNIN)await upsert('students',{email:email},'email');
     DATA.student={email:email};
     NEW_STUDENT=!SELF_SIGNIN;
-  } else DATA.student=stu[0];
+  } else {
+    /* T-251: both spellings can have a row — use the one with the most filled in (roster first, then a language) */
+    stu.sort(function(a,b){ function w(r){ return (r.roster_order!=null?4:0)+(r.home_language?2:0)+((r.first_name||r.name)?1:0); } return w(b)-w(a); });
+    DATA.student=stu[0];
+    if(!DATA.student.home_language){ var hl=stu.filter(function(r){return r.home_language;})[0]; if(hl)DATA.student.home_language=hl.home_language; }
+  }
   DATA.facts=facts||[]; DATA.acts=acts||[]; DATA.atts=atts||[]; DATA.skills=mergeSkills(skills||[]); DATA.res=res||[]; DATA.alias={};
   (aliases||[]).forEach(function(a){DATA.alias[a.alias]=a.code;}); DATA.work=work||[];
   /* T-175: Launch Plus lessons score FIRST-TRY answers, so a finished lesson can sit at 89% for ever.
@@ -1265,7 +1270,16 @@ function normLang(v){
   v=String(v||'').trim();
   if(!v)return 'none';
   if(LANG_FIX[v])return LANG_FIX[v];
-  for(var i=0;i<LANGS.length;i++) if(LANGS[i][0].toLowerCase()===v.toLowerCase())return LANGS[i][0];
+  var lv=v.toLowerCase();
+  if(LANG_FIX[lv])return LANG_FIX[lv];
+  for(var i=0;i<LANGS.length;i++) if(LANGS[i][0].toLowerCase()===lv)return LANGS[i][0];
+  /* T-251: roster spellings like "Chinese", "Chinese (Cantonese)", "Spanish - Guatemala", "Filipino" */
+  if(/cantonese|yue|廣東|广东/.test(lv))return 'Cantonese';
+  if(/mandarin|chinese|中文|普通/.test(lv))return 'Mandarin';
+  if(/darija|moroccan/.test(lv))return 'Darija';
+  if(/filipino|tagalog/.test(lv))return 'Tagalog';
+  if(/espa/.test(lv))return 'Spanish';
+  for(var j=0;j<LANGS.length;j++) if(lv.indexOf(LANGS[j][0].toLowerCase())>=0)return LANGS[j][0];
   return 'none';
 }
 var PROXY='https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
