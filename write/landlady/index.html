@@ -424,7 +424,7 @@ function choice(id,rung,tag,q,opts,a,why,extraHtml){
  h+='</div><div class="why">'+(why||'')+'</div></div>';return h;}
 function pick(id,k,a){var st=state(id);if(st.done)return;st.ans=st.ans||[];
  var box=$('it_'+id),btns=box.querySelectorAll('.opt');
- if(k===a){st.done=true;st.first=st.ans.length===0;st.pts=st.first?1:0;box.classList.add('done');btns.forEach(function(b){b.disabled=true;});}
+ if(k===a){st.done=true;st.first=st.ans.length===0;st.pts=1;/* T-250: solved on any try = 1 */box.classList.add('done');btns.forEach(function(b){b.disabled=true;});}
  if(st.ans.indexOf(k)<0)st.ans.push(k);
  btns.forEach(function(b){var m=b.getAttribute('onclick').match(/,(\d+),/);var kk=+m[1];if(kk===k)b.classList.add(k===a?'right':'wrong');});
  save();}
@@ -444,7 +444,7 @@ function mtap(id,btn){var box=$('it_'+id),st=state(id);if(btn.classList.contains
  if(k1===k2){btn.classList.add('ok');other.classList.add('ok');st.ans.ok.push(k1);}
  else{btn.classList.add('bad');other.classList.add('bad');st.ans.wrong++;setTimeout(function(){btn.classList.remove('bad');other.classList.remove('bad');},600);}
  var it=ITEMS.filter(function(x){return x.id===id;})[0];
- if(st.ans.ok.length===it.max){st.done=true;st.pts=Math.max(0,it.max-st.ans.wrong);st.first=st.ans.wrong===0;}
+ if(st.ans.ok.length===it.max){st.done=true;st.pts=it.max;st.first=st.ans.wrong===0;}/* T-250: all matched = full, misses kept in ans.wrong */
  $('mm_'+id).textContent=mscore(id);save();}
 /* order: tap chip then slot. sents in correct order; extra = distractor */
 function order(id,rung,tag,title,sents,extra){reg(id,rung,tag,sents.length);var st=state(id);st.ans=st.ans||{slots:[],checked:false};
@@ -465,7 +465,7 @@ function ocheck(id){var st=state(id),it=ITEMS.filter(function(x){return x.id===i
  for(var i=0;i<it.max;i++){if(st.ans.slots[i]!=null){filled++;if(st.ans.slots[i]===i)ok++;}}
  if(filled<it.max){alert('Fill every numbered box first.');return;}
  st.ans.checked=true;if(!st.ans.tries)st.ans.tries=0;st.ans.tries++;
- if(st.ans.tries===1){st.pts=ok;st.first=ok===it.max;}
+ st.pts=Math.max(st.pts||0,ok);if(st.ans.tries===1){st.first=ok===it.max;}/* T-250: best try counts */
  if(ok===it.max||st.ans.tries>=2){st.done=true;}
  rerender(id);save();}
 /* tap tokens needing a capital */
@@ -638,7 +638,8 @@ function finish(){var sc=publishScore();$('finScore').textContent=sc.s+' / '+sc.
 /* ===================== SAVE (Supabase only; no student work in the browser) ===================== */
 function dot(c){var d=$('saveDot');d.className='';if(c)d.classList.add(c);}
 var saveT,dirty=false,pushing=false,pushSeq=0,lastLogged=-1;
-function save(){dirty=true;publishScore();pills();drawSteps();clearTimeout(saveT);saveT=setTimeout(function(){dot(dirty?'busy':'on');},300);}
+function save(){dirty=true;publishScore();pills();drawSteps();clearTimeout(saveT);saveT=setTimeout(function(){dot(dirty?'busy':'on');push(false);},700);}/* T-250: save as you go */
+window.__T250=1;
 function clean(s){return String(s||'').trim().toLowerCase();}
 function hdr(p){var h={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};if(p)h['Prefer']=p;return h;}
 function push(force){
@@ -650,7 +651,7 @@ function push(force){
  var body=[{email:ST.email,name:ST.name,period:ST.period,slug:SLUG,text_slug:TEXT,ladder_start:ST.start,
   score:sc.s,max_score:sc.m,turned_in:!!ST.turnedIn,answers:snap,updated_at:new Date().toISOString()}];
  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email,slug',{method:'POST',keepalive:true,headers:hdr('resolution=merge-duplicates,return=minimal'),body:JSON.stringify(body)})
- .then(function(r){pushing=false;if(r.ok){dot(dirty?'busy':'on');if(sc.s!==lastLogged&&window.GAL_logAttempt){lastLogged=sc.s;window.GAL_logAttempt({partial:!ST.turnedIn,table:TABLE});}}else{dirty=true;dot('err');}})
+ .then(function(r){pushing=false;if(r.ok){if(dirty)setTimeout(function(){push(false);},700);dot(dirty?'busy':'on');if(sc.s!==lastLogged&&window.GAL_logAttempt){lastLogged=sc.s;window.GAL_logAttempt({partial:!ST.turnedIn,table:TABLE});}}else{dirty=true;dot('err');}})
  .catch(function(){pushing=false;dirty=true;dot('err');});
 }
 function loadWork(email,cb){
