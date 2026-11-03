@@ -458,7 +458,21 @@ function score(){
   work.score=window.GAL_SCORE; work.max=window.GAL_MAX;
   return window.GAL_SCORE;
 }
-function mark(){ dirty=true; score(); }
+/* T-248 (Nov 3 2026): save as you go — ~0.7 s after every answer, and again when the student leaves. */
+var saveT=null;
+function mark(){ dirty=true; score(); clearTimeout(saveT); saveT=setTimeout(function(){ if(dirty) saveWork(); },700); }
+function leaveSave(){
+  if(!dirty||!me) return;
+  try{ score(); work.lang=lang; work.email_alias=me.alias;
+    var h=headers(); h['Prefer']='resolution=merge-duplicates,return=minimal';
+    fetch(SUPA_URL+'/rest/v1/song_work?on_conflict=email,set_slug',{method:'POST',keepalive:true,headers:h,
+      body:JSON.stringify({email:me.email,set_slug:SONG,name:me.first+' '+me.last,period:String(me.period),level:'ELD101',answers:work,turned_in:!!work.finished,updated_at:new Date().toISOString()})});
+    dirty=false;
+  }catch(e){}
+}
+window.addEventListener('pagehide',leaveSave);
+document.addEventListener('visibilitychange',function(){ if(document.hidden) leaveSave(); });
+window.__T248=1;
 window.GAL_SCORE=0; window.GAL_MAX=LIKE_ITEMS.length+WORDS.length+4+8;
 
 /* ============================================================
@@ -679,7 +693,7 @@ function ltCheck(){
   var x=WORDS[ltOrder[ltI]], v=$('#ltIn').value.trim().toLowerCase(), fb=$('#ltFb');
   if(!v) return;
   if(v===x.w){ fb.textContent='Yes! '+x.w+' — '+x.d; fb.className='fb ok'; work.type[x.w]=true; }
-  else { fb.textContent='Not yet. Listen again.'; fb.className='fb bad'; work.type[x.w]=false; }
+  else { fb.textContent='Not yet. Listen again.'; fb.className='fb bad'; if(work.type[x.w]!==true) work.type[x.w]=false; }
   mark();
 }
 $('#ltCheck').addEventListener('click',ltCheck);
