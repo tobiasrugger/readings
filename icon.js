@@ -5,6 +5,7 @@
  * Loaded by track.js (student pages) and grade04.js (dashboards); teacher pages
  * that load neither carry <script src="/readings/icon.js" data-teacher></script>.
  * Safe to load twice. A page can force one with GAL_ICON('🍎').
+ * A page with its own <link rel="icon"> keeps it — icon.js steps aside (T-234).
  */
 (function () {
   'use strict';
@@ -13,11 +14,19 @@
   var LION = '\uD83E\uDD81', APPLE = '\uD83C\uDF4E', CHART = '\uD83D\uDCCA';
   var current = '';
 
+  /* T-234: a page that ships its OWN favicon keeps it (e.g. the year/ calendar) */
+  function own() { return document.querySelector('link[rel~="icon"]:not([data-gal-icon])'); }
   function set(emoji) {
+    if (own()) {
+      var mine = document.querySelectorAll('link[data-gal-icon]');
+      for (var j = 0; j < mine.length; j++) mine[j].parentNode.removeChild(mine[j]);
+      current = 'own';
+      return;
+    }
     if (!emoji || emoji === current) return;
     try {
       var head = document.head || document.documentElement;
-      var old = document.querySelectorAll('link[rel~="icon"]');
+      var old = document.querySelectorAll('link[data-gal-icon]');
       for (var i = 0; i < old.length; i++) old[i].parentNode.removeChild(old[i]);
       var l = document.createElement('link');
       l.rel = 'icon';
@@ -66,5 +75,6 @@
   window.GAL_ICON = function (emoji) { set(emoji); };
   window.GAL_ICON.auto = auto;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', auto);
+  window.addEventListener('load', auto);
   auto();
 })();
