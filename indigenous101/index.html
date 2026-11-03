@@ -193,9 +193,9 @@ body.easy .act-block{border-left:3px solid #7F77DD;}
 .qopts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:1rem;}
 .qopt{padding:10px;font-size:15px;font-weight:600;border:1.5px solid #ddd;border-radius:10px;background:#fafaf8;cursor:pointer;}
 .qopt.right{border-color:#0F6E56;background:#E1F5EE;color:#0F6E56;}
-.qopt.wrong{border-color:#A32D2D;background:#FAECE7;color:#A32D2D;}
+.qopt.wrong{opacity:.35;border-style:dashed;cursor:default;}
 .qfb{margin-top:.8rem;font-weight:700;min-height:1.3em;text-align:center;}
-.qfb.ok{color:#0F6E56;} .qfb.no{color:#A32D2D;}
+.qfb.ok{color:#0F6E56;} .qfb.no{color:#3d3a5c;}
 .wgo{background:#EEEDFE;border-radius:12px;padding:1rem 1.2rem;margin-bottom:1rem;display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;}
 .wgo p{font-size:13px;color:#534AB7;flex:1 1 220px;}
 .vocab-ref table{width:100%;border-collapse:collapse;font-size:13px;margin-top:.6rem;}
@@ -295,7 +295,7 @@ body:not(.teacher) .gtile .tlinks{display:none;}
 .yn .st{flex:1 1 260px;font-size:15px;}
 .yn button{padding:6px 16px;font-size:13px;border:1.5px solid #ddd;border-radius:999px;background:#fff;cursor:pointer;}
 .yn button.pick{background:#EEEDFE;border-color:#7F77DD;color:#3C3489;}
-.yn button.ok{background:#E1F5EE;border-color:#0F6E56;color:#0F6E56;} .yn button.no{background:#FAECEB;border-color:#A32D2D;color:#A32D2D;}
+.yn button.ok{background:#E1F5EE;border-color:#0F6E56;color:#0F6E56;} .yn button.no{opacity:.45;border-style:dashed;}
 .scorebox{font-size:15px;font-weight:700;color:#0F6E56;margin:.6rem 0 1rem;}
 .cards3{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 @media (max-width:640px){.mini{grid-template-columns:repeat(2,1fr);}.cards3{grid-template-columns:1fr;}}
@@ -318,7 +318,7 @@ body:not(.teacher) .gtile .tlinks{display:none;}
 .caps{display:grid;grid-template-columns:1fr;gap:8px;max-width:620px;margin:0 auto;}
 .cap{padding:11px 14px;font-family:Georgia,serif;font-size:16px;line-height:1.5;border:1.5px solid #ddd;border-radius:10px;background:#fafaf8;cursor:pointer;text-align:left;}
 .cap:hover{border-color:#7F77DD;}
-.cap.right{border-color:#0F6E56;background:#E1F5EE;} .cap.wrong{border-color:#A32D2D;background:#FAECEB;}
+.cap.right{border-color:#0F6E56;background:#E1F5EE;} .cap.wrong{opacity:.35;border-style:dashed;}
 .ordwrap{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
 .slots{list-style:none;margin:0;padding:0;counter-reset:n;}
 .slots li{counter-increment:n;display:flex;align-items:center;gap:10px;margin-bottom:8px;}
@@ -869,15 +869,22 @@ function askQ(){
   var h = ""; pool.forEach(function(p){ h += '<button type="button" class="qopt" data-w="' + esc(p.w) + '">' + esc(p.w) + '</button>'; }); $("qOpts").innerHTML = h;
 }
 $("qOpts").addEventListener("click", function(e){
-  var b = e.target.closest ? e.target.closest(".qopt") : null; if(!b || !Q || b.disabled) return;
+  var b = e.target.closest ? e.target.closest(".qopt") : null; if(!b || !Q || b.disabled || b.id) return;
   var it = Q.items[Q.i], right = b.getAttribute("data-w") === it.w, all = $("qOpts").querySelectorAll(".qopt"), k;
-  for(k = 0; k < all.length; k++){ all[k].disabled = true; if(all[k].getAttribute("data-w") === it.w) all[k].classList.add("right"); }
-  speak(it.w);
-  if(right){ Q.score++; $("qFb").textContent = "Yes — " + it.w + "."; $("qFb").className = "qfb ok"; } else { b.classList.add("wrong"); $("qFb").textContent = "Not quite. It’s " + it.w + "."; $("qFb").className = "qfb no"; }
-  setTimeout(function(){ Q.i++; askQ(); }, right ? 800 : 1600);
+  if(right){
+    for(k = 0; k < all.length; k++) all[k].disabled = true;
+    b.classList.add("right"); speak(it.w); if(!it.missed) Q.score++;
+    $("qFb").textContent = "Yes — " + it.w + " ✓"; $("qFb").className = "qfb ok";
+    setTimeout(function(){ Q.i++; askQ(); }, 900);
+  } else {
+    /* T-232: formative — the wrong word fades, a hint, try again; the answer is never shown */
+    it.missed = true; b.disabled = true; b.classList.add("wrong");
+    var left = 0; for(k = 0; k < all.length; k++) if(!all[k].disabled) left++;
+    $("qFb").textContent = left <= 2 ? ("Hint: it starts with “" + it.w.charAt(0) + "”. Try again.") : "Not that one. Look at the picture again and try again."; $("qFb").className = "qfb no";
+  }
 });
 function endQuiz(){
-  VQ = { score:Q.score, total:Q.items.length, at:new Date().toISOString() }; try{ localStorage.setItem(LKEY + "_vq", JSON.stringify(VQ)); }catch(e){}
+  VQ = { score:Q.score, total:Q.items.length, at:new Date().toISOString() }; setGal(); try{ localStorage.setItem(LKEY + "_vq", JSON.stringify(VQ)); }catch(e){}
   $("qEmo").textContent = Q.score === Q.items.length ? "🎉" : "✔"; $("qDef").textContent = "Done: " + Q.score + " out of " + Q.items.length + "."; $("qTr").textContent = "";
   $("qOpts").innerHTML = '<button type="button" class="qopt" id="qAgain">Check again</button><button type="button" class="qopt" id="qBack">Back to the cards</button>'; $("qFb").textContent = ""; $("qNum").textContent = "";
   showScore(); queueSave(); Q = null;
@@ -1007,7 +1014,9 @@ function ckScore(){
   var m = PANELS.filter(function(k){ return CK.match[k] === true; }).length, o = CK.order === true ? 1 : 0, y = 0; for(var i in CK.yn) if(CK.yn[i].ok) y++;
   return { score:m + o + y, max:5 + 1 + YN.length, match:m, order:o, yn:y };
 }
-function saveCk(){ try{ localStorage.setItem(LKEY + "_ck", JSON.stringify(CK)); }catch(e){} var s = ckScore(); $("checkScore").textContent = "Score: " + s.score + " / " + s.max; window.GAL_SCORE = s.score + (VQ ? VQ.score : 0); window.GAL_MAX = s.max + CARDS.length; queueSave(); }
+/* T-232: one score for the gradebook = Check tab (12) + written answers (3) + word quiz only if taken. */
+function setGal(){ try{ var s = ckScore(), a = 0, t = 0, f = document.querySelectorAll("textarea[data-id]"); for(var i = 0; i < f.length; i++){ t++; if((f[i].value || "").trim()) a++; } window.GAL_SCORE = s.score + a + (VQ ? (+VQ.score || 0) : 0); window.GAL_MAX = s.max + t + (VQ ? (+VQ.total || 0) : 0); }catch(e){} }
+function saveCk(){ try{ localStorage.setItem(LKEY + "_ck", JSON.stringify(CK)); }catch(e){} var s = ckScore(); $("checkScore").textContent = "Score: " + s.score + " / " + s.max; setGal(); queueSave(); }
 
 /* ============================================================
    FIELDS, SAVE, SUPABASE, TURN IN, PRINT
@@ -1027,7 +1036,7 @@ function collectPayload(){
   var out = { fields:{}, questions:[], meta:{} }, answered = 0, total = 0, f = document.querySelectorAll("[data-id]"), i;
   for(i = 0; i < f.length; i++){ var el = f[i], id = el.getAttribute("data-id"), val = (el.value || "").trim(); out.fields[id] = val; if(el.tagName !== "TEXTAREA") continue; var qEl = $("qt-" + id); out.questions.push({ id:id, label:FIELD_LABELS[id] || id, q:qEl ? qEl.textContent.trim() : "", a:val }); total++; if(val) answered++; }
   out.meta.answered = answered; out.meta.total = total; out.meta.lang = curLang; out.meta.version = "101";
-  out.vocab_check = VQ || null; out.check = ckScore(); out.check_detail = CK; out.country = $("myCountry").value;
+  setGal(); out.vocab_check = VQ || null; out.check = ckScore(); out.check_detail = CK; out.country = $("myCountry").value;
   return out;
 }
 var saving = false, pending = false, saveTimer = null;
@@ -1046,7 +1055,7 @@ function pullRow(){
     if(!data || !data.length) return; var rec = data[0], p = rec.payload || {};
     if(p.fields){ for(var id in p.fields){ var el = document.querySelector('[data-id="' + id + '"]'); if(el && !(el.value || "").trim()) setField(id, p.fields[id]); } saveLocal(); }
     if(p.vocab_check && !VQ){ VQ = p.vocab_check; showScore(); }
-    if(p.check_detail && !Object.keys(CK.match).length && !Object.keys(CK.yn).length){ CK = p.check_detail; drawMatch(true); drawOrder(); drawYn(); var s = ckScore(); $("checkScore").textContent = "Score: " + s.score + " / " + s.max; }
+    if(p.check_detail && !Object.keys(CK.match).length && !Object.keys(CK.yn).length){ CK = p.check_detail; drawMatch(true); drawOrder(); drawYn(); var s = ckScore(); $("checkScore").textContent = "Score: " + s.score + " / " + s.max; } setGal();
     if(p.country && !$("myCountry").value) $("myCountry").value = p.country;
     if(rec.grade || rec.feedback) $("feedback-content").innerHTML = '<div class="fb-box">' + (rec.grade ? '<div class="fb-grade">' + esc(rec.grade) + '</div>' : '') + '<div class="fb-text">' + esc(rec.feedback || "") + '</div></div>';
     if(rec.submitted) $("turnIn").textContent = "Turned in ✓";
@@ -1206,7 +1215,7 @@ function buildMap(){ if(!$("sfmap")) return;
 /* ============================================================
    START
    ============================================================ */
-buildPanels(); buildCollage(); buildCards(); buildGallery(); buildCountries(); buildGateLang(); loadLocal(); drawMatch(false); drawOrder(); drawYn(); showScore();
+buildPanels(); buildCollage(); buildCards(); buildGallery(); buildCountries(); buildGateLang(); loadLocal(); drawMatch(false); drawOrder(); drawYn(); showScore(); setGal();
 (function(){ var s = ckScore(); if(s.score) $("checkScore").textContent = "Score: " + s.score + " / " + s.max; })();
 var all = document.querySelectorAll("textarea"); for(var i = 0; i < all.length; i++){ if(all[i].getAttribute("data-ph")) all[i].placeholder = all[i].getAttribute("data-ph"); autogrow(all[i]); updateWc(all[i]); }
 </script>

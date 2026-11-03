@@ -10,6 +10,12 @@
         (this is what finally gives every app the same student ID)
      2. notices turned_in:true      -> reads the score off the page and
         writes a row in `activity_attempts`
+     3. (T-232, Nov 3 2026) also scores on AUTOSAVE: a few seconds after any
+        save of student work it reads the score and, if it is above 0 and has
+        changed, writes an attempt too (at most once a minute). A student who
+        forgets Turn in still gets a grade; the gradebook keeps the best
+        attempt, so this can only raise a grade. Off on teacher pages, or with
+        window.GAL_NO_AUTOLOG = true.
    Nothing else in the page changes. Safe to include twice.
    ===================================================================== */
 (function () {
@@ -243,14 +249,17 @@
   }
 
   /* ---------- log one completed attempt ---------- */
-  function logAttempt(email, extra) {
+  function logAttempt(email, extra, soft, sGiven) {
     email = clean(email);
     if (!email) return;
     var now = Date.now();
-    if (now - lastLog < 8000) return;   // ignore double-clicks
-    lastLog = now;
+    if (!soft) {
+      if (now - lastLog < 8000) return;   // ignore double-clicks
+      lastLog = now;
+    }
 
-    var s = readScore();
+    var s = sGiven || readScore();
+    if (!soft && s) { softKey = email + '|' + s.score + '/' + s.max; softAt = now; }   // autosave won't repeat a turn-in
     var row = {
       email: email,
       slug: SLUG,
@@ -261,7 +270,7 @@
       completed_at: new Date().toISOString()
     };
     registerActivity();
-    logSkills(email, row.completed_at);
+    if (!soft) logSkills(email, row.completed_at);   // skill rows only for a real turn-in
     logHighlights(email, row.completed_at);
     fetch(SUPA_URL + '/rest/v1/activity_attempts', {
       method: 'POST',
@@ -270,6 +279,38 @@
     }).catch(function () {});
   }
   window.GAL_logAttempt = function (extra) { logAttempt(knownEmail, extra); };
+
+  /* ---------- T-232: score on autosave ---------- */
+  var INFRA = /^(students|student_aliases|activity_attempts|skill_attempts|activities|instruction_reveals|page_translation|song_tr|student_work|response_history|class_assignments|excusals|student_profiles|song_lyrics|news_translations|teacher_checks|shelf_status|rpc)$/;
+  var TEACHERISH = /(dashboard|teacher|gradebook|\/desk\/|\/assign\/|\/shelves\/|\/year\/|\/reports\/|\/audit\/|\/atlas\/|preview)/i;
+  var softTimer = null, softKey = '', softAt = 0, softEmail = '';
+  function autologOff() {
+    if (window.GAL_NO_AUTOLOG) return true;
+    if (TEACHERISH.test(location.pathname)) return true;
+    var pw = document.querySelector('input[type=password]');
+    if (pw && !document.querySelector('input[type=email], input[autocomplete=email], input[id*="mail" i]')) return true;
+    return false;
+  }
+  function softLog() {
+    softTimer = null;
+    var email = softEmail || knownEmail;
+    if (!email || autologOff()) return;
+    var s = null;
+    try { s = readScore(); } catch (e) { return; }
+    if (!s || !(s.max > 0) || !(s.score > 0)) return;      // nothing done yet: no row, the cell stays blank
+    var key = email + '|' + s.score + '/' + s.max;
+    if (key === softKey) return;                            // same score as last time: nothing new
+    var wait = 60000 - (Date.now() - softAt);
+    if (wait > 0) { softTimer = setTimeout(softLog, wait + 500); return; }   // once a minute at most; the latest score still goes
+    softKey = key; softAt = Date.now();
+    logAttempt(email, { via: 'autosave' }, true, s);
+  }
+  function softSchedule(email) {
+    if (email) softEmail = clean(email);
+    if (softTimer) clearTimeout(softTimer);
+    softTimer = setTimeout(softLog, 4000);
+  }
+  window.addEventListener('pagehide', function () { if (softTimer) { clearTimeout(softTimer); softAt = 0; softLog(); } });
 
   /* ---------- the hook ---------- */
   var realFetch = window.fetch.bind(window);
@@ -290,6 +331,8 @@
             if (!row || typeof row !== 'object') continue;
             var em = row.email || row.student_email || row.user_email;
             if (em) noteEmail(em, row.name || row.student_name || row.full_name);
+            var tbl = (url.split('/rest/v1/')[1] || '').split('?')[0];
+            if (em && !INFRA.test(tbl)) softSchedule(em);
             if (row.turned_in === true || row.turned_in === 'true') {
               logAttempt(em || knownEmail, { table: (url.split('/rest/v1/')[1] || '').split('?')[0] });
             }
