@@ -802,6 +802,8 @@ function years(d){if(!d)return null;const b=new Date(d+'T00:00:00'),n=new Date()
     o.textContent=((s.first_name||'')+' '+(s.last_name||'')).trim()||s.email;sel.appendChild(o);});
   const qs=new URLSearchParams(location.search);
   const remembered=qs.get('email')||localStorage.getItem('gal_student_email');
+  /* T-246: opened with ?email= (from /teacher/, the Desk, etc.) = the teacher looking at this student */
+  if(qs.get('email')) TV_EMAIL=clean(qs.get('email'));
   if(remembered) load(clean(remembered));
 })();
 
@@ -826,9 +828,34 @@ function signOut(){localStorage.removeItem('gal_student_email');location.href=lo
 function teacherLogin(){
   if(prompt('Teacher password:')!==TEACHER_PW)return;
   const e=clean(prompt('Student email to open:'));
-  if(e){READ_ONLY=true;load(e);}
+  if(e){READ_ONLY=true;TV_EMAIL=e;load(e);}
 }
 let READ_ONLY=false;
+/* ---------- T-246: teacher view links ----------
+   When the teacher is looking at a student's My Page (?email= or the teacher sign-in), every link to an
+   activity carries ?email=<that student>&view=teacher (anchor kept at the end), so the activity opens
+   in teacher view for that student (std.js, T-245). A student's own My Page links are left exactly as they are. */
+var TV_EMAIL='';
+var TV_SKIP=/^\/readings\/(student|teacher|assign|reports|desk|dashboards|gradebook)(\/|$)|dashboard/i;
+function teacherLinks(){
+  if(!TV_EMAIL)return;
+  var pg=document.getElementById('page'); if(!pg)return;
+  [].forEach.call(pg.querySelectorAll('a[href]'),function(a){
+    var h=a.getAttribute('href'); if(!h||h.charAt(0)==='#'||/^(mailto|tel|javascript):/i.test(h))return;
+    var u; try{ u=new URL(h,location.href); }catch(e){ return; }
+    if(u.origin!==location.origin||u.pathname.indexOf('/readings/')!==0||TV_SKIP.test(u.pathname))return;
+    if(u.searchParams.get('view')==='teacher'&&u.searchParams.get('email')===TV_EMAIL)return;
+    u.searchParams.set('email',TV_EMAIL); u.searchParams.set('view','teacher');
+    a.setAttribute('href',u.pathname+u.search+u.hash);
+  });
+}
+(function(){
+  var t=null;
+  function go(){ clearTimeout(t); t=setTimeout(teacherLinks,40); }
+  function start(){ var pg=document.getElementById('page'); if(!pg)return;
+    new MutationObserver(go).observe(pg,{childList:true,subtree:true,attributes:true,attributeFilter:['href']}); go(); }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start); else start();
+})();
 
 /* ---------- load ---------- */
 async function load(email){
