@@ -435,6 +435,7 @@
         } else if (i === ans) {
           b.classList.add('right');
           if (r.right === null) r.right = (r.tries === 1);
+          r.ok = true;   /* T-237: solved (any try) — this is what scores; r.right (first try) stays for the dashboard */
           $('qmsg').textContent = 'Yes!';
           $('qgo').style.display = ''; answeredNow = true;
         } else {
@@ -449,14 +450,27 @@
     if (rec && ln.kind !== 'predict' && rec.right !== null) { /* already answered earlier: allow skipping */ }
   }
   function score() {
-    var r = 0, t = 0;
-    STEPS.forEach(function (s) {
-      if (s.ln.type === 'q' && s.ln.kind === 'check') { t++; var a = state.answers[s.ln.id]; if (a && a.right) r++; }
+    /* T-237 (Nov 3 2026, Toby chose option A): every story question solved counts, on any try
+       (first-try stays in checks_first_try for the dashboard), plus each Your Turn answer written
+       (3+ words). The "After the story" activities are extra credit: they can raise the score up
+       to the maximum, never lower it. */
+    var r = 0, t = 0, solved = 0;
+    STEPS.forEach(function (s, si) {
+      if (s.ln.type === 'q' && s.ln.kind === 'check') {
+        t++; var a = state.answers[s.ln.id];
+        if (a && a.right) r++;
+        /* solved: marked ok (new), right first try, or the student got past it (the story only goes on after a right answer) */
+        if (a && (a.ok || a.right || si < (state.maxPos || 0))) solved++;
+      }
     });
-    var o = { checks_first_try: r, checks_total: t }, k;
+    var ytl = (EP.yourTurn && (EP.yourTurn[state.level] || EP.yourTurn.A)) || {}, np = (ytl.prompts || []).length;
+    var mine = (state.yt && state.yt[state.level]) || [], wrote = 0, j;
+    for (j = 0; j < np; j++) if (String(mine[j] || '').trim().split(/\s+/).filter(Boolean).length >= 3) wrote++;
+    var o = { checks_first_try: r, checks_solved: solved, checks_total: t, yt_written: wrote, yt_total: np }, k;
     var ts = window.REEL_TIERS ? REEL_TIERS.scores() : { pts: 0, max: 0, out: {} };   /* tiers.js (tiers chat) */
     for (k in ts.out) o[k] = ts.out[k];
-    window.GAL_SCORE = r + ts.pts; window.GAL_MAX = t + ts.max;
+    var base = solved + wrote, max = t + np;
+    window.GAL_SCORE = Math.min(max, base + (ts.pts || 0)); window.GAL_MAX = max;
     return o;
   }
 
