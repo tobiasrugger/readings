@@ -532,7 +532,7 @@ var dirty=false;
 function $(s,r){return (r||document).querySelector(s)}
 function $$(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
-function mark(){dirty=true;localStorage.setItem(LSK,JSON.stringify(ST))}
+function mark(){dirty=true;localStorage.setItem(LSK,JSON.stringify(ST));try{u1Gal();}catch(e){}}
 
 /* ===================== data ===================== */
 var POLITE=[
@@ -1095,25 +1095,31 @@ function scoreNow(){
       if((ST.ans['tg'+i+'_'+j]||'')!==wnt) ok=false;
     }
     if(ok)got++;}
-  for(var i=0;i<BADQ.length;i++){tot++;if(!!ST.ans['bad'+i]===!!BADQ[i].a)got++;}
+  var badTried=Object.keys(ST.ans).some(function(k){return /^bad\d/.test(k);});/* T-252: the set counts once the student has started it */
+  for(var i=0;i<BADQ.length;i++){tot++;if(badTried&&!!ST.ans['bad'+i]===!!BADQ[i].a)got++;}
   var cw=0;for(var i=0;i<CAPTEXT.split(' ').length;i++){if(!!ST.caps[i]===(CAPIDX.indexOf(i)>=0))cw++;}
-  tot+=1; if(cw>=CAPTEXT.split(' ').length-4) got+=1;
+  tot+=1; if(Object.keys(ST.caps||{}).some(function(k){return ST.caps[k];})&&cw>=CAPTEXT.split(' ').length-4) got+=1;/* T-252: must have tapped */
   return {got:got,tot:tot};
 }
 function setDot(c){var d=$('#dot');d.className=c||''}
-function save(){
+/* T-252 (Nov 3 2026): real gradebook score — every checked item right (any try) + the free write (20+ words) + the paragraph (25+ words). */
+function u1Gal(){ var s=scoreNow(); var g=s.got+(words(ST.free||'')>=20?1:0)+(words(ST.para||'')>=25?1:0); window.GAL_SCORE=g; window.GAL_MAX=s.tot+2; return s; }
+function save(leaving){
   if(!dirty||!USER.email) return;
   dirty=false;
-  var s=scoreNow();
+  var s=u1Gal();
   var body=[{student_email:USER.email.toLowerCase(),student_name:USER.name,unit:'u1',
     payload:ST,score:s.got,total:s.tot,turned_in:ST.turned,updated_at:new Date().toISOString()}];
   fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=student_email,unit',{
-    method:'POST',headers:hdr('resolution=merge-duplicates,return=minimal'),body:JSON.stringify(body)
+    method:'POST',keepalive:!!leaving,headers:hdr('resolution=merge-duplicates,return=minimal'),body:JSON.stringify(body)
   }).then(function(r){ setDot(r.ok?'on':'err'); if(!r.ok) dirty=true; })
     .catch(function(){ setDot('err'); dirty=true; });
 }
 setInterval(save,2500);
-window.addEventListener('beforeunload',save);
+window.addEventListener('beforeunload',function(){save(true);});
+window.addEventListener('pagehide',function(){save(true);});
+document.addEventListener('visibilitychange',function(){if(document.hidden)save(true);});
+window.__T252=1;
 
 $('#turnin').onclick=function(){
   if(words(ST.para)<25){ $('#tiMsg').textContent='Write a little more first.'; return; }

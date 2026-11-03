@@ -447,6 +447,18 @@ function autosave(){
     body:JSON.stringify({email:S.email, name:S.name, period:S.period, activity:key, unit:UNIT, correct:Q.correct, total:Q.items.length, best:prev.best||0, attempts:prev.attempts||0, turned_in:false, detail:{lang:S.lang, in_progress:Q.i}, updated_at:new Date().toISOString()})}).catch(function(){});
 }
 setInterval(autosave, 20000);
+/* T-252 (Nov 3 2026): save as you go — the quiz in progress is saved ~0.7 s after every answer and when the student leaves. */
+var t252=null;
+function soon252(){ clearTimeout(t252); t252=setTimeout(autosave,700); }
+document.addEventListener('click', soon252, true);
+document.addEventListener('keydown', function(e){ if(e.key==='Enter') soon252(); }, true);
+function leave252(){ if(!S.email || !Q || !Q.items) return; var key=UNIT+'-'+Q.mode, prev=S.scores[key]||{best:0,attempts:0};
+  try{ rawFetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email,activity',{method:'POST',keepalive:true,headers:headers({'Prefer':'resolution=merge-duplicates,return=minimal'}),
+    body:JSON.stringify({email:S.email, name:S.name, period:S.period, activity:key, unit:UNIT, correct:Q.correct, total:Q.items.length, best:prev.best||0, attempts:prev.attempts||0, turned_in:false,
+      detail:{lang:S.lang, in_progress:Q.i, missed:Q.missed.slice(0,20)}, updated_at:new Date().toISOString()})}); }catch(e){} }
+window.addEventListener('pagehide', leave252);
+document.addEventListener('visibilitychange', function(){ if(document.hidden) leave252(); });
+window.__T252=1;
 function loadScores(){
   return fetch(SUPA_URL+'/rest/v1/'+TABLE+'?email=eq.'+encodeURIComponent(S.email)+'&activity=like.'+encodeURIComponent(UNIT+'-%')+'&turned_in=eq.true&select=activity,best,total,correct,attempts',{headers:headers()})
     .then(function(r){ return r.ok?r.json():[]; })

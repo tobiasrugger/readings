@@ -757,7 +757,18 @@ function logCues(){
 }
 
 /* ============ SAVE ============ */
-function mark(){ S.dirty = true; setDot('wait','saving'); }
+function mark(){ S.dirty = true; setDot('wait','saving'); pwGal(); }
+/* T-252 (Nov 3 2026): real gradebook score — each multiple-choice answer right + each "explain" answer with 3+ words. */
+function pwGal(){
+  var d=S.data||{}, got=0, tot=0;
+  try{ collect(); }catch(e){}
+  for (var i=0;i<QS.length;i++){
+    tot++;
+    if (QS[i].kind==='mc'){ if (d['mc_'+QS[i].id]===QS[i].ans) got++; }
+    else if (String(d[QS[i].id]||'').trim().split(/\s+/).filter(Boolean).length>=3) got++;
+  }
+  window.GAL_SCORE=got; window.GAL_MAX=tot;
+}
 function setDot(cls, txt){
   document.getElementById('dot').className = 'dot ' + cls;
   document.getElementById('stat').textContent = txt;
@@ -812,16 +823,16 @@ function scoreOf(d){
   return got + '/' + tot;
 }
 
-function save(){
+function save(leaving){
   if (!S.email || !S.dirty) return;
-  collect();
+  collect(); pwGal();
   var body = [{
     name: S.name, email: S.email, period: S.period,
     data: S.data, level: S.level, score: scoreOf(S.data),
     turned_in: S.turned, updated_at: new Date().toISOString()
   }];
   fetch(SUPA_URL + '/rest/v1/' + TABLE + '?on_conflict=email', {
-    method: 'POST',
+    method: 'POST', keepalive: !!leaving,
     headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates,return=minimal' },
     body: JSON.stringify(body)
   }).then(function(r){
@@ -949,6 +960,10 @@ try {
 loadPoem(); loadMedia();
 document.addEventListener('input', function(ev){ if (ev.target.hasAttribute && ev.target.hasAttribute('data-k')) mark(); });
 setInterval(save, 2500);
+/* T-252: save again when the student leaves */
+window.addEventListener('pagehide', function(){ save(true); });
+document.addEventListener('visibilitychange', function(){ if (document.hidden) save(true); });
+window.__T252=1;
 window.addEventListener('beforeunload', function(){ if (S.dirty) save(); });
 </script>
 <script src="/readings/track.js"></script>
