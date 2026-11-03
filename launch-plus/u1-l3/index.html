@@ -803,7 +803,10 @@ function dot(c){var d=$('saveDot');d.className='';if(c)d.classList.add(c);}
 function key(){return 'lp_'+UNIT+'_'+(ST.email||'guest').toLowerCase().replace(/[^a-z0-9]+/g,'_');}
 var saveT,dirty=false,pushing=false,pushSeq=0;
 function skills(){var o={};ITEMS.forEach(function(it){var st=state(it.id);if(!st.done)return;if(!o[it.tag])o[it.tag]={n:0,d:0};o[it.tag].d++;if(st.first)o[it.tag].n++;});return o;}
-function publishScore(){window.GAL_SCORE=firstTry();window.GAL_MAX=ITEMS.length;window.GAL_SKILLS=skills();}
+/* T-238 (Nov 3 2026): gradebook score = items solved on any try + writing boxes with enough sentences. First-try stays in the launch_plus row (score) for the dashboard. */
+function solvedN(){return ITEMS.filter(function(x){return state(x.id).done;}).length;}
+function writeN(){var n=0;[1,2,4].forEach(function(need,i){var v=((ST.W||{})["w"+i]||"").trim();var s=v.split(/[.!?]+/).filter(function(t){return t.trim().length>1;}).length;if(v&&s>=need)n++;});return n;}
+function publishScore(){window.GAL_SCORE=solvedN()+writeN();window.GAL_MAX=ITEMS.length+3;window.GAL_SKILLS=skills();}
 function save(){
  dirty=true;publishScore();
  clearTimeout(saveT);saveT=setTimeout(function(){
@@ -816,6 +819,7 @@ function push(force){
  if(!ST.email)return;if(!SYNCED){syncFromServer();return;}if(progressOf(ST)<SERVER_P)return;if(!dirty&&!force)return;if(pushing)return;
  pushing=true;dot('busy');var mySeq=++pushSeq;
  setTimeout(function(){if(pushing&&mySeq===pushSeq){pushing=false;dirty=true;dot('err');}},15000);
+ publishScore();
  var snap=JSON.parse(JSON.stringify(ST));dirty=false;
  var body=[{email:ST.email,name:ST.name,period:ST.period,unit:UNIT,slug:SLUG,
   score:firstTry(),max_score:ITEMS.length,turned_in:!!ST.turnedIn,writing:ST.W,payload:snap,updated_at:new Date().toISOString()}];
