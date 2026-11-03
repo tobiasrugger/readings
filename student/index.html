@@ -63,6 +63,12 @@ label{display:block;font-weight:800;font-size:.9rem;color:var(--plum-dk);margin:
 .rname:hover,.rname:focus{background:var(--plum-lt);outline:0}
 .rname.on{background:var(--green);color:#fff}
 .rname small{font-weight:700;opacity:.65;white-space:nowrap}
+/* T-260: username box with a fixed @s.sfusd.edu inside it */
+.emailbox{display:flex;align-items:center;border:2px solid var(--line-dk);border-radius:11px;background:var(--field);cursor:text}
+.emailbox:focus-within{border-color:var(--plum);background:#fff;box-shadow:0 0 0 4px rgba(90,74,138,.16)}
+.emailbox input{border:0;background:transparent;box-shadow:none!important;flex:1 1 auto;min-width:0;padding-right:2px;text-align:right}
+.emailbox input:placeholder-shown{text-align:left}
+.emailsuf{flex:0 0 auto;padding:11px 12px 11px 0;font-weight:800;color:var(--plum-dk);white-space:nowrap;user-select:none}
 .rnone{padding:12px 14px;color:var(--plum-dk);font-weight:700}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 @media(max-width:620px){.grid2{grid-template-columns:1fr}}
@@ -503,7 +509,7 @@ th,td{border-bottom:2px solid var(--line-dk)}
     </div>
   </div>
   <h1>My Page</h1>
-  <p class="note">Type your name, then tap it. If your name is not there, type your school email.</p>
+  <p class="note">Type your name, then tap it. If your name is not there, type your school username.</p>
   <div class="field">
     <label for="rosterQ">My name</label>
     <input id="rosterQ" type="search" placeholder="&#128269; Type your name" autocomplete="off" autocapitalize="off" spellcheck="false">
@@ -511,8 +517,11 @@ th,td{border-bottom:2px solid var(--line-dk)}
     <input type="hidden" id="rosterSel" value="">
   </div>
   <div class="field">
-    <label>Or type your SFUSD email</label>
-    <input id="emailIn" placeholder="name@sfusd.edu" autocapitalize="off" spellcheck="false">
+    <label for="emailIn">Or type your school username</label>
+    <div class="emailbox" onclick="document.getElementById('emailIn').focus()">
+      <input id="emailIn" placeholder="username" autocapitalize="off" autocomplete="off" spellcheck="false" data-email-suffix="@s.sfusd.edu">
+      <span class="emailsuf" aria-hidden="true">@s.sfusd.edu</span>
+    </div>
   </div>
   <button class="btn" onclick="signIn()">Go to my page</button>
   <p id="siErr" class="note" style="color:var(--red);font-weight:800"></p>
@@ -862,6 +871,12 @@ function renderRoster(q){
   try{ buildLangPicker(); }catch(e){}
   ROSTER=buildRoster(roster); renderRoster('');  /* T-258 */
   document.getElementById('rosterQ').addEventListener('input',function(){ renderRoster(this.value); });
+  document.getElementById('emailIn').addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); signIn(); } });
+  /* T-260: a pasted or typed full email keeps only the part before @; Enter signs in */
+  document.getElementById('emailIn').addEventListener('input',function(){
+    var v=this.value, i=v.indexOf('@'); if(i>-1){ this.value=v.slice(0,i); }
+    if(/\s/.test(this.value)) this.value=this.value.replace(/\s+/g,'');
+    if(this.value){ document.getElementById('rosterSel').value=''; [].forEach.call(document.querySelectorAll('#rosterList .rname.on'),function(x){x.classList.remove('on');}); } });
   document.getElementById('rosterQ').addEventListener('keydown',function(e){
     if(e.key!=='Enter')return; e.preventDefault();
     var b=document.querySelectorAll('#rosterList .rname'); if(b.length===1){ b[0].click(); }
@@ -875,9 +890,11 @@ function renderRoster(q){
 
 function signIn(){
   const sel=document.getElementById('rosterSel').value;
-  let email=sel?clean(sel):clean(document.getElementById('emailIn').value);
+  /* T-260: the box holds only the username; @s.sfusd.edu is fixed beside it (saved as @sfusd.edu, as before) */
+  const user=clean(document.getElementById('emailIn').value).split('@')[0].replace(/\s+/g,'');
+  let email=sel?clean(sel):(/^test/i.test(user)?user:(user?user+'@s.sfusd.edu':''));
   const err=document.getElementById('siErr');
-  if(!email){err.textContent='Please choose your name or type your email.';return;}
+  if(!email){err.textContent='Please choose your name or type your username.';return;}
   // "test", "test2", "test rosa" -> a throwaway account on a domain that is
   // not sfusd.edu, so it can never be confused with a real student
   var t=email.match(/^test[\s_-]*([a-z0-9]*)$/i);
