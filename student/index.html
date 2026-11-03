@@ -1320,7 +1320,7 @@ function buildLangPicker(){
 }
 function setLang(v){
   MYLANG=normLang(v);
-  try{localStorage.setItem('vocab_lang',v);localStorage.setItem('gal_lang',v);}catch(e){}
+  if(!TV_EMAIL){ try{localStorage.setItem('vocab_lang',v);localStorage.setItem('gal_lang',v);}catch(e){} }
   translatePage();
 }
 
@@ -1353,8 +1353,10 @@ function translatePage(){
 function renderAll(){
   /* no "English only": a student with a home language on file sees it by default */
   /* the sign-in box's picker (std.js) saves a code like "ar" after this script loaded: read it again first */
-  if(MYLANG==='none'){ try{ MYLANG=normLang(localStorage.getItem('vocab_lang')||localStorage.getItem('gal_lang')); }catch(e){} }
-  if(MYLANG==='none'&&DATA.student&&DATA.student.home_language){
+  /* T-249: the teacher looking at a student sees THAT student's language, never the last one used in this browser */
+  if(TV_EMAIL){ MYLANG=normLang(DATA.student&&DATA.student.home_language)||'none'; }
+  else if(MYLANG==='none'){ try{ MYLANG=normLang(localStorage.getItem('vocab_lang')||localStorage.getItem('gal_lang')); }catch(e){} }
+  if(!TV_EMAIL&&MYLANG==='none'&&DATA.student&&DATA.student.home_language){
     var hl=normLang(DATA.student.home_language);
     if(hl!=='none'){ MYLANG=hl; if(!READ_ONLY){ try{localStorage.setItem('vocab_lang',hl);localStorage.setItem('gal_lang',hl);}catch(e){} } }
   }
@@ -1380,6 +1382,7 @@ var WLANG='';
 function renderWords(){
   var box=document.getElementById('wordsBox');
   if(!window.MW){box.innerHTML='<p class="note">Words could not load. Refresh the page.</p>';return;}
+  if(TV_EMAIL){ WLANG=MW.langFromHome(DATA.student.home_language)||''; }  /* T-249 */
   if(!WLANG){
     /* the page stores language NAMES in vocab_lang (Spanish); My Words uses codes (es) */
     var L=MW.getLang(DATA.student.home_language);
@@ -1458,7 +1461,7 @@ function phonicsHtml(){
       '<a class="btn sm noprint" href="'+R.url+'">'+(o.complete?'Practice again':(o.started?'Keep going':'Start'))+'</a></div>';
   }).join('');
 }
-function wordsLang(L){WLANG=L;MW.setLang(L);wordsTranslate();}
+function wordsLang(L){WLANG=L;if(!TV_EMAIL)MW.setLang(L);wordsTranslate();}
 function wordsTranslate(){
   var els=document.querySelectorAll('[data-wtr]'),words=[];
   Array.prototype.forEach.call(els,function(el){el.textContent=WLANG?'\u2026':'';el.removeAttribute('dir');
