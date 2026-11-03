@@ -26,6 +26,18 @@
   'use strict';
   if (window.GAL04) return;
 
+  /* T-230: every page that loads grade04.js is a teacher page -> 🍎 (📊 on the gradebook) */
+  window.GAL_TEACHER_PAGE = true;
+  try {
+    if (window.GAL_ICON) window.GAL_ICON.auto();
+    else {
+      var icFrom = document.currentScript && document.currentScript.src;
+      var ic = document.createElement('script');
+      ic.src = icFrom ? icFrom.replace(/grade04\.js(\?.*)?$/, 'icon.js') : '/readings/icon.js';
+      (document.head || document.documentElement).appendChild(ic);
+    }
+  } catch (e) {}
+
   var SUPA_URL = 'https://lhmwtfyceilgndpygivj.supabase.co';
   var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
 

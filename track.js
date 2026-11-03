@@ -24,6 +24,16 @@
     (document.head || document.documentElement).appendChild(std);
   } catch (e) {}
 
+  /* T-230: tab icon (🦁 student / 🍎 teacher / 📊 gradebook) */
+  try {
+    if (!window.GAL_ICON) {
+      var icFrom = document.currentScript && document.currentScript.src;
+      var ic = document.createElement('script');
+      ic.src = icFrom ? icFrom.replace(/track\.js(\?.*)?$/, 'icon.js') : '/readings/icon.js';
+      (document.head || document.documentElement).appendChild(ic);
+    }
+  } catch (e) {}
+
   var SUPA_URL = 'https://lhmwtfyceilgndpygivj.supabase.co';
   var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
   function H(extra) {
