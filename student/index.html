@@ -897,7 +897,7 @@ async function load(email){
     DATA.student=stu[0];
     if(!DATA.student.home_language){ var hl=stu.filter(function(r){return r.home_language;})[0]; if(hl)DATA.student.home_language=hl.home_language; }
   }
-  DATA.facts=facts||[]; DATA.acts=acts||[]; DATA.atts=atts||[]; DATA.skills=mergeSkills(skills||[]); DATA.res=res||[]; DATA.alias={};
+  DATA.facts=facts||[]; DATA.acts=(acts||[]).map(function(a){var pu=paramUrl(a.slug); if(pu)a.url=pu; return a;}); /* T-255 */ DATA.atts=atts||[]; DATA.skills=mergeSkills(skills||[]); DATA.res=res||[]; DATA.alias={};
   (aliases||[]).forEach(function(a){DATA.alias[a.alias]=a.code;}); DATA.work=work||[];
   /* T-175: Launch Plus lessons score FIRST-TRY answers, so a finished lesson can sit at 89% for ever.
      Finish This uses how many items are DONE for those lessons instead. Read-only. */
@@ -1066,19 +1066,19 @@ async function classDoing(email,p,pushed){
   var by={};
   tabs.forEach(function(t,i){ (res[i]||[]).forEach(function(r){
     var k=r[t[1]]; if(!k)return; var path;
-    if(t[1]==='guide_key') path='/readings/'+String(k).replace(/_/g,'-')+'/';
+    if(t[1]==='guide_key') path=GUIDE_URL[k]||('/readings/'+String(k).replace(/_/g,'-')+'/'); /* T-255 */
     else if(t[1]==='set_slug') path='/readings/vocab/'+k+'/';
     else path=slugLink(k).url;
     if(!path||/\/(student|teacher|assign|reports|dashboards?|atlas)\//.test(path)||/dashboard/.test(path))return;
     var lp=String(r.email||'').toLowerCase().split('@')[0];
-    var b=by[path]||(by[path]={who:{},last:''}); b.who[lp]=1; if((r[t[2]]||'')>b.last)b.last=r[t[2]];
+    var b=by[path]||(by[path]={who:{},last:'',k:(t[1]==='slug'?k:'')}); b.who[lp]=1; if((r[t[2]]||'')>b.last)b.last=r[t[2]];
   }); });
   var pushedPaths=(pushed||[]).map(function(x){return String(x.href||'').split('?')[0];});
   return Object.keys(by).filter(function(path){
       return Object.keys(by[path].who).length>=need && !pushedPaths.some(function(h){return samePath(h,path);});
     }).sort(function(a,b){ return by[a].last<by[b].last?1:-1; }).slice(0,CLASS_SHOW)
     .map(function(path){ var n=Object.keys(by[path].who).length;
-      return {href:path, title:catTitle(path, slugLink(path.replace(/^\/readings\//,'')).title), cls:true, created_at:'1970-01-01T00:00:00Z',
+      return {href:path, title:by[path].k&&paramUrl(by[path].k)?slugLink(by[path].k).title:catTitle(path, slugLink(path.replace(/^\/readings\//,'')).title), cls:true, created_at:'1970-01-01T00:00:00Z',
               note:n+' classmates started this', n:n}; });
 }
 /* ---------- From Mr. Toby ----------
@@ -1691,8 +1691,29 @@ function toggleAll(){SHOW_ALL=!SHOW_ALL;renderActs();}
 var FINISH_AT=90;
 /* An attempt's slug is its path under /readings/ (track.js). Pages missing from the activities table
    (Brothers in Arms, the new stories) still get a title and a working link: assign catalog first, then the folder. */
+/* T-255: some pages keep one gradebook slug per article/set/mode, but live in ONE folder and pick the
+   article from the URL (news/food -> /readings/news/?a=food). Building /readings/<slug>/ for those gave a 404. */
+function paramUrl(slug){
+  slug=String(slug||'').replace(/^https?:\/\/[^\/]+/,'').replace(/^\/+|\/+$/g,'').replace(/^readings\//,'');
+  var m, e=encodeURIComponent;
+  if((m=/^news\/([^\/?#]+)$/.exec(slug)))return '/readings/news/?a='+e(m[1]);
+  if((m=/^fluency\/([^\/?#]+)$/.exec(slug)))return '/readings/fluency/?p='+e(m[1]);
+  if((m=/^teachme\/([^\/?#]+)$/.exec(slug)))return '/readings/teachme/?set='+e(m[1]);
+  if((m=/^group\/([^\/?#]+)$/.exec(slug)))return '/readings/group/?deck='+e(m[1]);
+  if((m=/^reel-test\/(ep\d+)-(practice|test)$/.exec(slug)))return '/readings/reel-test/'+m[1]+'/'+(m[2]==='test'?'?mode=test':'');
+  if(slug==='landlady/test-practice')return '/readings/landlady/test/?practice=1';
+  if(slug==='eld103-unit1')return '/readings/eld103/unit1/';
+  return '';
+}
+/* T-255: a story guide_key -> its page (landlady_test is landlady/test/, not landlady-test/) */
+var GUIDE_URL={landlady_test:'/readings/landlady/test/',landlady_test_practice:'/readings/landlady/test/?practice=1',
+  landlady_table:'/readings/landlady/table/',landlady_investigate:'/readings/landlady/investigate/',
+  landlady_words_solo:'/readings/wordgame/landlady/solo/',arrival_unit:'/readings/arrival/',
+  monsters_v1:'/readings/monsters/',holidays_v1:'/readings/holidays/'};
 function slugLink(slug){
   slug=String(slug||'').replace(/^\/+|\/+$/g,'');
+  var pu=paramUrl(slug); if(pu){ var pa=((typeof DATA!=='undefined'&&DATA.acts)||[]).filter(function(x){return x.slug===slug;})[0];
+    return {url:pu,title:(pa&&pa.title)||prettySlug(slug.split('/').pop())}; } /* T-255 */
   var c=window.CATALOG||[], tries=['/readings/'+slug+'/','/readings/'+slug+'.html'];
   for(var i=0;i<tries.length;i++)for(var j=0;j<c.length;j++)if(c[j].p===tries[i])return {url:c[j].p,title:c[j].t.replace(/\s*\((locked)\)/,'')};
   return {url:slug&&slug!=='home'?'/readings/'+slug+'/':'',title:prettySlug(slug.split('/').pop())};
