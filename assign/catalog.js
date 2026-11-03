@@ -1,3 +1,6 @@
+/* ⚠ FROZEN (T-215, Nov 2026): don't add pages here any more — use assign/catalog/<folder>.js.
+   This file still loads (and pulls in the folder files) so pages and chats that haven't switched keep working. */
+window.__CATALOG_LEGACY = true;
 /* Built from the live repo 2026-10-22: the cards on the main hub (with their groups and descriptions), then every other student page on disk.
    Rebuild by asking Claude for "refresh the assign catalog". p = path, t = title, d = description, m = card note, g = group. */
 window.CATALOG=[
@@ -2165,3 +2168,6 @@ window.CATALOG=[
 "g": "More: other pages"
 }
 ];
+
+/* T-215: also load the per-folder catalog (assign/catalog/*.js). A folder file wins over an entry above. */
+if (!window.__CATALOG_SPLIT) document.write('<script src="/readings/assign/catalog/index.js"><\/script>');
