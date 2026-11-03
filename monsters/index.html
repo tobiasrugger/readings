@@ -483,15 +483,27 @@ var SCORED = null;
 function writtenIds(){
   var out = [];
   U.screens.forEach(function(s){ s.chunks.forEach(function(c){ (c.items||[]).forEach(function(it){
-    if(it.t === "write") out.push({ id: it.id, s: s.id, min: it.min || 3 });
+    if(it.t === "write") out.push({ id: it.id, s: s.id, min: it.min || 3, lv: c.level || "" });
     if(it.t === "nums") out.push({ id: it.id, s: s.id, min: 1, nums: true });
   }); }); });
   return out;
 }
+/* T-244 (Nov 3 2026) fair score: every item solved on any try = 1; every word said
+   (recording kept or heard, even if the machine did not match it) = 1; every writing box
+   with enough words = 1; a "choose your level" writing screen = 1 when any level is done.
+   first = first-try count, kept for the dashboard. */
+function recDone(r){ return !!(r && (r.ok || r.path || (r.heard && String(r.heard).trim()))); }
+function wDone(x){ return x.nums ? !!(ST.w[x.id] && ST.w[x.id].length) : words(ST.w[x.id]) >= x.min; }
 function score(){
-  var ok = 0, first = 0;
-  SCORED.forEach(function(x){ if(x.rec){ var r = (ST.extra.rec || {})[x.id.slice(4)]; if(r && r.ok){ ok++; if(r.tries <= 1) first++; } return; } var a = ST.ans[x.id]; if(a && a.ok){ ok++; if(a.tries === 0) first++; } });
-  return { score: ok, max: SCORED.length, first: first };
+  var ok = 0, first = 0, max = 0;
+  SCORED.forEach(function(x){ max++; if(x.rec){ var r = (ST.extra.rec || {})[x.id.slice(4)]; if(recDone(r)){ ok++; if(r.ok && r.tries <= 1) first++; } return; } var a = ST.ans[x.id]; if(a && a.ok){ ok++; if(a.tries === 0) first++; } });
+  var lvGroups = {};
+  writtenIds().forEach(function(x){
+    if(x.lv){ lvGroups[x.s] = lvGroups[x.s] || wDone(x); return; }
+    max++; if(wDone(x)) ok++;
+  });
+  Object.keys(lvGroups).forEach(function(k){ max++; if(lvGroups[k]) ok++; });
+  return { score: ok, max: max, first: first };
 }
 function words(t){ if(Array.isArray(t)) return t.length; return (String(t||"").trim().match(/\S+/g) || []).length; }
 function screenProgress(sid){
@@ -499,7 +511,7 @@ function screenProgress(sid){
   SCORED.forEach(function(x){ if(x.s === sid){ tot++; if(!x.rec && ST.ans[x.id] && ST.ans[x.id].ok) done++; } });
   writtenIds().forEach(function(x){ if(x.s === sid){ tot++; if(x.nums ? (ST.w[x.id] && ST.w[x.id].length) : words(ST.w[x.id]) >= x.min) done++; } });
   var scr = U.screens.filter(function(s){ return s.id === sid; })[0];
-  SCORED.forEach(function(x){ if(x.s === sid && x.rec){ var r = (ST.extra.rec || {})[x.id.slice(4)]; if(r && r.ok) done++; } });
+  SCORED.forEach(function(x){ if(x.s === sid && x.rec){ var r = (ST.extra.rec || {})[x.id.slice(4)]; if(recDone(r)) done++; } });
   if(scr && scr.doneWhen && ST.extra[scr.doneWhen]) { tot++; done++; }
   else if(scr && scr.doneWhen){ tot++; }
   if(tot === 0) return { done: ST.seen[sid] ? 1 : 0, tot: 1 };
@@ -527,16 +539,16 @@ function collect(){
              words: Object.keys(ST.w).reduce(function(a,k){ return a + words(ST.w[k]); }, 0) };
   return p;
 }
-function save(submit, cb){
+function save(submit, cb, leaving){
   if(!student || !loaded) { if(cb) cb(false); return; }
-  if(saving){ dirty = true; if(cb) cb(false); return; }
+  if(saving && !leaving){ dirty = true; if(cb) cb(false); return; }
   saving = true; dirty = false; setStatus("Saving…", "wait");
   var pay = collect(), s = publishScore();
   var row = { email: student.email, student_name: student.name, period: student.period, guide_key: U.guide, lang: LANG,
               payload: pay, answered: pay.meta.answered, total: pay.meta.total, score: s.score, max_score: s.max,
               updated_at: new Date().toISOString() };
   if(submit){ row.submitted = true; row.submitted_at = new Date().toISOString(); ST.submitted = true; }
-  fetch(SUPA_URL + "/rest/v1/" + TABLE + "?on_conflict=email,guide_key", { method:"POST", headers: hdr({ "Prefer":"resolution=merge-duplicates,return=minimal" }), body: JSON.stringify([row]) })
+  fetch(SUPA_URL + "/rest/v1/" + TABLE + "?on_conflict=email,guide_key", { method:"POST", keepalive: !!leaving, headers: hdr({ "Prefer":"resolution=merge-duplicates,return=minimal" }), body: JSON.stringify([row]) })
     .then(function(r){
       saving = false;
       if(!r.ok) throw new Error("save " + r.status);
@@ -546,8 +558,12 @@ function save(submit, cb){
       if(dirty) queueSave();
     }).catch(function(){ saving = false; dirty = true; setStatus("Can't reach the server — your work is still here. Trying again…", "bad"); if(cb) cb(false); });
 }
-function queueSave(){ dirty = true; clearTimeout(saveTimer); saveTimer = setTimeout(function(){ save(false); }, 2500); publishScore(); refreshTiles(); }
+function queueSave(){ dirty = true; clearTimeout(saveTimer); saveTimer = setTimeout(function(){ save(false); }, 700); publishScore(); refreshTiles(); }
 setInterval(function(){ if(dirty) save(false); }, 20000);
+/* T-244: save again when the student leaves (keepalive) */
+window.addEventListener("pagehide", function(){ if(dirty){ clearTimeout(saveTimer); save(false, null, true); } });
+document.addEventListener("visibilitychange", function(){ if(document.hidden && dirty){ clearTimeout(saveTimer); save(false, null, true); } });
+window.__T244 = 1;
 
 function altEmail(e){ var lp = e.split("@")[0]; return [lp + "@sfusd.edu", lp + "@s.sfusd.edu"]; }
 function load(cb){
