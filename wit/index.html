@@ -79,6 +79,11 @@ h2{font-size:1.25rem;margin:.2em 0 .4em;color:var(--pine)}
 /* fragment */
 .frag{font-size:1.2rem;font-weight:700;padding:8px 12px;background:#f6f8f5;border-radius:9px;display:inline-block;margin:2px 0 6px}
 .sf{display:inline-flex;gap:8px;margin-left:10px;vertical-align:middle}
+.fragcard{border:2px solid #1b4332;box-shadow:0 3px 0 rgba(27,67,50,.2)}
+.frag{font-size:1.35rem;border:2px solid #1b4332;background:#fff}
+.fragcard .spk{font-size:1rem;border:2px solid #1b4332;background:#e9f6ee;border-radius:50%;width:36px;height:36px;cursor:pointer;vertical-align:middle;margin-left:6px;padding:0}
+.chip.fade{background:#fff;border-color:var(--line);color:var(--muted);text-decoration:line-through}
+.why.try{background:#eef3ff;border:2px solid #9db3e6}
 /* writing */
 .pic{font-size:3rem;line-height:1.1;margin:0 0 6px;text-align:center}
 .pic small{display:block;font-size:.85rem;color:var(--muted);font-weight:700}
@@ -180,7 +185,7 @@ window.GAL_META={title:'Sentence Work',unit:'WIT',skills:['SENT.TYPE','SENT.ORDE
 
 <section class="act" id="a3">
   <h2>3 · Sentence or fragment?</h2>
-  <p class="dir" data-dir="f1" data-en="Is it a sentence (S) or a fragment (F)? A fragment is missing a subject or a verb. If it is a fragment, tap the repair.">Is it a sentence (<b>S</b>) or a fragment (<b>F</b>)? A fragment is missing a subject or a verb. If it is a fragment, tap the repair.</p>
+  <p class="dir" data-dir="f1" data-en="Is it a sentence (S) or a fragment (F)? A sentence needs a who and a verb. A capital letter and a period do not make a sentence. If it is a fragment, tap the repair. If a sentence is missing its capital letter or period, write it right.">Is it a sentence (<b>S</b>) or a fragment (<b>F</b>)? A sentence needs a <b>who</b> and a <b>verb</b>. A capital letter and a period do <b>not</b> make a sentence. If it is a fragment, tap the repair. If a sentence is missing its capital letter or period, write it right.</p>
   <div id="fragItems" translate="no"></div>
   <button class="btn" onclick="go(4)">Next</button>
 </section>
@@ -280,7 +285,7 @@ function buildItems(){
  ITEMS.sort=sh(cards).map(function(c,i){return {id:'s'+i,s:c.s,k:c.k};});
  ITEMS.scramble=pool(WIT.scramble).slice(0,6).map(function(c,i){return {id:'c'+i,s:c.s};});
  var fr=pool(WIT.fragment),fs=fr.filter(function(x){return x.k==='S';}).slice(0,4),ff=fr.filter(function(x){return x.k==='F';}).slice(0,4);
- ITEMS.fragment=sh(fs.concat(ff)).map(function(c,i){return {id:'f'+i,s:c.s,k:c.k,fix:c.fix,wrong:c.wrong||[]};});
+ ITEMS.fragment=sh(fs.concat(ff)).map(function(c,i){return {id:'f'+i,s:c.s,k:c.k,fix:c.fix,wrong:c.wrong||[],miss:c.miss||'',v:c.v||''};});
  ITEMS.types=pool(WIT.types)[0];
  ITEMS.bbs=pool(WIT.bbs_choose).slice(0,6).map(function(c,i){return {id:'b'+i,s:c.s,a:c.a};});
  ITEMS.stem=pool(WIT.bbs_write)[0];
@@ -331,17 +336,35 @@ function scrTap(id,idx){var it=ITEMS.scramble.filter(function(x){return x.id===i
 }
 
 /* ===================== 3 · FRAGMENT ===================== */
+/* T-270: the text is shown EXACTLY as written. Some sentences have no capital letter or no period; some fragments
+   have both. A capital letter and a period do not make a sentence — a who + a verb do. A sentence missing its
+   capital/period gets a second step, "Write it right". Every miss gets a hint (no hint names the verb).
+   ELD 101: a wrong chip fades (no red); ELD 103: red. */
+function fragMarks(s){return {cap:/^[A-Z]/.test(s),per:/[.?!]$/.test(s)};}
+function fragNeedsFix(it){var m=fragMarks(it.s);return it.k==='S'&&!(m.cap&&m.per);}
+function fragRight(it){var f=it.fix,lo=f.charAt(0).toLowerCase()+f.slice(1),np=f.replace(/[.?!]$/,'');var o=[f,np,lo];if(lo===f)o=[f,np,lo.replace(/[.?!]$/,'')];return o.filter(function(x,i,a){return a.indexOf(x)===i;});}
+function fragHint(it,st){var m=fragMarks(it.s),n=(st.wrongs||[]).length,h;
+ if(it.k==='S')h=(!m.cap||!m.per)?'A missing capital letter or period does not make a fragment. Look for a who and a verb.':'Look for a who and a verb. Are they both there?';
+ else if(m.cap&&m.per&&n<2)h='A capital letter and a period do not make a sentence. Is there a who? Is there a verb?';
+ else h=it.miss==='subject'?'There is a verb. But who does it? Look at the start.':it.miss==='idea'?'Read it again. Is the idea finished? Because\u2026 what? Although\u2026 what?':'Look for a verb: an action word, or am / is / are. Is there one?';
+ if(n>1)h+=' Say it out loud: Who? Does what?';return '\ud83d\udca1 '+h;}
+function fragU(it,t){if(!it.v)return esc(t);var i=t.indexOf(it.v);return i<0?esc(t):esc(t.slice(0,i))+'<u>'+esc(it.v)+'</u>'+esc(t.slice(i+it.v.length));}
 function renderFrag(){
- $('fragItems').innerHTML=ITEMS.fragment.map(function(it){var st=state(it.id);st.step=st.step||0;/* 0 = choose S/F, 1 = choose repair (fragments), 2 = done */
-  var h='<div class="card" id="c_'+it.id+'"><span class="frag">'+esc(it.s)+'</span><span class="sf">';
-  ['S','F'].forEach(function(k){var cls='chip';if(st.step>0||st.done){cls+=(k===it.k?' right':' dim');}else if(st.wrongs&&st.wrongs.indexOf(k)>=0)cls+=' wrong dim';h+='<button class="'+cls+'" onclick="fragPick(\''+it.id+'\',\''+k+'\')">'+k+'</button>';});
+ var bad=LEVEL==='103'?' wrong dim':' fade dim';
+ $('fragItems').innerHTML=ITEMS.fragment.map(function(it){var st=state(it.id);st.step=st.step||0;/* 0 = choose S/F, 1 = repair (F) or write it right (S missing marks), 2 = done */
+  var h='<div class="card fragcard" id="c_'+it.id+'"><span class="frag">'+esc(it.s)+'</span><button class="spk" onclick="speak(\''+esc(it.s).replace(/'/g,'\\\'')+'\')" aria-label="Listen">🔊</button><span class="sf">';
+  ['S','F'].forEach(function(k){var cls='chip';if(st.step>0||st.done){cls+=(k===it.k?' right':' dim');}else if(st.wrongs&&st.wrongs.indexOf(k)>=0)cls+=bad;h+='<button class="'+cls+'" onclick="fragPick(\''+it.id+'\',\''+k+'\')">'+k+'</button>';});
   h+='</span>';
-  if(st.step===1&&!st.done){var opts=st.opts;if(!opts){opts=st.opts=sh([it.fix].concat(it.wrong));}h+='<div class="q">Which repair makes it a sentence?</div><div class="chips">'+opts.map(function(o){var cls='chip';if(st.rw&&st.rw.indexOf(o)>=0)cls+=' wrong dim';return '<button class="'+cls+'" onclick="fragFix(\''+it.id+'\',\''+esc(o).replace(/'/g,'\\\'')+'\')">'+esc(o)+'</button>';}).join('')+'</div>';}
-  h+='<div class="why'+(st.done?(st.first?' good':' miss'):'')+'">'+(st.done?('<b>'+esc(it.fix)+'</b>'+(it.k==='S'?' — subject + verb, capital letter, end mark.':' — now it has a subject and a verb.')+' <button class="spk" onclick="speak(\''+esc(it.fix).replace(/'/g,'\\\'')+'\')">🔊</button>'):'')+'</div></div>';return h;}).join('');
+  if(!st.done&&st.step===0&&st.wrongs&&st.wrongs.length)h+='<div class="why try">'+fragHint(it,st)+'</div>';
+  if(st.step===1&&!st.done){var fixS=it.k==='S',opts=st.opts;if(!opts){opts=st.opts=sh(fixS?fragRight(it):[it.fix].concat(it.wrong));}
+   h+='<div class="why good">'+(fixS?'Yes! It has a who and a verb, so it is a sentence.':'Yes! It is a fragment.')+'</div>';
+   h+='<div class="q">'+(fixS?'Write it right. Which one has a capital letter and a period?':'Which repair makes it a sentence?')+'</div><div class="chips">'+opts.map(function(o){var cls='chip';if(st.rw&&st.rw.indexOf(o)>=0)cls+=bad;return '<button class="'+cls+'" onclick="fragFix(\''+it.id+'\',\''+esc(o).replace(/'/g,'\\\'')+'\')">'+esc(o)+'</button>';}).join('')+'</div>';
+   if(st.rw&&st.rw.length)h+='<div class="why try">\ud83d\udca1 '+(fixS?'A sentence starts with a capital letter and ends with a period. Look at the first letter and the last mark.':(it.miss==='idea'?'That one is still a fragment. Find the one where the idea is finished.':'That one is still a fragment. Find the one with a who AND a verb.'))+'</div>';}
+  h+='<div class="why'+(st.done?(st.first?' good':' miss'):'')+'">'+(st.done?('<b>'+fragU(it,it.fix)+'</b>'+(it.k==='S'?' \u2014 a who + a verb, a capital letter, a period.':' \u2014 now it has a who and a verb.')+' <button class="spk" onclick="speak(\''+esc(it.fix).replace(/'/g,'\\\'')+'\')">🔊</button>'):'')+'</div></div>';return h;}).join('');
  drawSteps();
 }
 function fragPick(id,k){var it=ITEMS.fragment.filter(function(x){return x.id===id;})[0],st=state(id);if(st.done||st.step>0)return;st.tries++;
- if(k===it.k){if(st.first===null)st.first=(st.tries===1);if(it.k==='S'){st.done=true;st.step=2;}else st.step=1;}
+ if(k===it.k){if(st.first===null)st.first=(st.tries===1);if(it.k==='S'&&!fragNeedsFix(it)){st.done=true;st.step=2;}else st.step=1;}
  else{st.wrongs=st.wrongs||[];st.wrongs.push(k);if(st.first===null)st.first=false;}
  save();renderFrag();}
 function fragFix(id,o){var it=ITEMS.fragment.filter(function(x){return x.id===id;})[0],st=state(id);if(st.done)return;

@@ -49,6 +49,12 @@ h2{font-size:1.25rem;margin:.2em 0 .4em;color:var(--pine)}
 #srvBar{display:none;background:#b3261e;color:#fff;font-weight:800;padding:10px 14px;border:2px solid #5c0f0a;border-radius:10px;margin:0 0 12px;box-shadow:0 3px 8px rgba(0,0,0,.2)}
 #srvBar.show{display:block}
 .hint{display:block;margin-top:4px}
+.fragq{font-size:1rem;margin-bottom:8px}
+.fragbox{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border:2px solid #1b4332;border-radius:12px;padding:12px 16px;background:#fff;box-shadow:0 3px 0 rgba(27,67,50,.25);font-size:1.45rem;font-weight:800;margin:0 0 6px}
+.spk{font-size:1.1rem;border:2px solid #1b4332;background:#e9f6ee;border-radius:50%;width:38px;height:38px;cursor:pointer;flex:0 0 auto;padding:0}
+.chip.rsn{display:block;width:100%;border-radius:12px;margin:4px 0;font-size:1.02rem}
+.otr{display:block;font-weight:600;font-size:.88rem;color:#4b5563}
+.otr:empty{display:none}
 .chip.dim{opacity:.5;pointer-events:none}
 .why{font-size:.95rem;color:#3c4a42;margin:6px 0 2px;line-height:1.55;padding:7px 12px;border-radius:9px;background:#f6f8f5}
 .why.good{background:#e9f6ee} .why.miss{background:#fdf0c4} .why.try{background:#eef3ff;border:2px solid #9db3e6}
@@ -270,7 +276,9 @@ function buildItems(){
  /* 3 × sentences — from the Sentence Work pool (readings/wit/items.js): sentence or fragment?, because / but / so */
  var sents=[];
  if(window.WIT){var fr=pri(WIT.fragment.filter(function(x){return x.lvl==='101';})),bb=pri(WIT.bbs_choose.filter(function(x){return x.lvl==='101';}));
-  sents=fr.slice(0,2).map(function(f){return {pic:'✏️',q:'\u201c'+f.s+'\u201d is a ___.',o:['sentence','fragment'],a:f.k==='S'?'sentence':'fragment',k:'SENT.FRAG',why:(f.k==='S'?'A sentence: ':'A fragment. Fixed: ')+'<b>'+f.fix+'</b>'};})
+  /* T-270: one sentence + one fragment a day, shown exactly as written (caps/periods vary) */
+  var f1=fr.filter(function(x){return x.k==='S';})[0],f2=fr.filter(function(x){return x.k==='F';})[0];
+  sents=sh([f1,f2].filter(Boolean)).map(fragQ)
    .concat(bb.slice(0,1).map(function(b){return {pic:'🔗',q:b.s,o:['because','but','so'],a:b.a,k:'CONJ.BBS'};}));}
  qs=sh(who.map(function(x){x.k='PRON.SUBJ';return x;})).concat(sh(bes.map(function(x){x.k='SENT.BE';return x;}))).concat(sh(whs.map(function(x){x.k='PLACE';return x;}))).concat(sents);
  qs=sh(qs);
@@ -278,14 +286,52 @@ function buildItems(){
  qs.forEach(function(x,i){var o=sh(x.o),a=o.indexOf(x.a),g=0;
   while(run>=3&&a===lastA&&g<12){o=sh(x.o);a=o.indexOf(x.a);g++;}
   run=(a===lastA)?run+1:1;lastA=a;
-  ITEMS.push({id:'q'+i,part:1,tag:x.k,pic:x.pic,q:x.q,o:o,a:a,why:x.why||x.q.replace('___','<b>'+x.a+'</b>')});});
+  var it={id:'q'+i,part:1,tag:x.k,pic:x.pic,q:x.q,o:o,a:a,why:x.why||x.q.replace('___','<b>'+x.a+'</b>')};
+  if(x.oh){it.oh=o.map(function(t){return x.oh[t]||'';});it.rs=1;}
+  ITEMS.push(it);});
  ST.tags={};ITEMS.forEach(function(it){ST.tags[it.id]=it.tag;});
  ST.items=ITEMS; LESSON=LESSON_;
 }
+/* T-270 · SENTENCE OR FRAGMENT? WHY? — a capital letter and a period do not make a sentence; a who + a verb do.
+   The text is shown exactly as written (wit/items.js fragment pool). The answers are REASONS, so the student
+   practices the rule, not a guess. Each wrong reason has its own hint; no hint names the verb. */
+function fragQ(f){
+ var cap=/^[A-Z]/.test(f.s),per=/[.?!]$/.test(f.s),full=cap&&per;
+ var need=(!cap&&!per)?'a capital letter and a period':(!cap?'a capital letter':'a period');
+ var noM=(!cap&&!per)?'no capital letter and no period':(!cap?'no capital letter':'no period');
+ var R={SV:'Sentence, because it has a who and a verb.',FIX:'Sentence, but it needs '+need+'.',
+  MARKS:'Sentence, because it has a capital letter and a period.',NOMARK:'Fragment, because it has '+noM+'.',
+  NOVERB:'Fragment, because it has no verb.',NOWHO:'Fragment, because it has no who.'};
+ var VERB='Look for a verb: an action word, or am / is / are. Is there one?',NOFIX='Yes, but a capital letter and a period will not fix this one. What else is missing?';
+ var H={},correct,c;
+ H[R.MARKS]='A capital letter and a period do not make a sentence. A sentence needs a who and a verb (an action word, or am / is / are).';
+ if(f.k==='S'){
+  correct=full?R.SV:R.FIX; c=[R.NOVERB,R.NOWHO,full?R.MARKS:R.NOMARK];
+  H[R.NOMARK]='A missing capital letter or period does not make a fragment. Look for a who and a verb.';
+  H[R.NOVERB]='Look again. Find the action word, or am / is / are.';
+  H[R.NOWHO]='Look at the start. Who or what does the action?';
+ }else if(f.miss==='subject'){
+  correct=R.NOWHO; c=[R.NOVERB,full?R.MARKS:R.NOMARK,full?R.SV:R.FIX];
+  H[R.NOVERB]='There IS a verb here. So what is missing? Who does it?';
+  H[R.SV]=H[R.FIX]='There is a verb. But who does it? Look at the start.';
+  H[R.NOMARK]=NOFIX;
+ }else{
+  correct=R.NOVERB; c=full?[R.MARKS,R.SV]:[R.NOMARK,R.SV,R.FIX];
+  H[R.SV]=H[R.FIX]=VERB; H[R.NOMARK]=NOFIX;
+ }
+ var u=function(t){return t.replace(new RegExp('\\b('+f.v.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')\\b'),'<u>$1</u>');};
+ var why=f.k==='S'?(full?'<b>Sentence \u2713</b> It has a who and a verb: <b>'+u(f.s)+'</b>'
+   :'<b>Sentence \u2713</b> It has a who and a verb, so it is a sentence. Written right: <b>'+u(f.fix)+'</b>')
+  :'<b>Fragment \u2713</b> It has no '+(f.miss==='subject'?'who':'verb')+'. Fixed: <b>'+u(f.fix)+'</b>';
+ var oh={};[correct].concat(c).forEach(function(t){oh[t]=H[t]||'';});
+ return {pic:'\u270f\ufe0f',q:'<div class="fragq">Sentence or fragment? Why?</div><div class="fragbox"><span>'+f.s+'</span><button class="spk" onclick="speak(this.previousSibling.textContent)" aria-label="Listen">\ud83d\udd0a</button></div>',
+  o:[correct].concat(c),a:correct,k:'SENT.FRAG',why:why,oh:oh};
+}
+function speak(t){try{var u=new SpeechSynthesisUtterance(String(t).replace(/\bI\b/g,'eye').replace(/^i\b/,'eye'));u.lang='en-US';u.rate=0.85;speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){}}
 var HINTS={'PRON.SUBJ':'Look at the picture. One woman \u2192 She. One man \u2192 He. Two people \u2192 They. A thing \u2192 It.',
  'SENT.BE':'I \u2192 am. He, she, it, one person or thing \u2192 is. You, we, they, two or more \u2192 are.',
  'PLACE':'Read what the person does. Where at school do people do that?',
- 'SENT.FRAG':'A sentence has a who and a verb, and the idea is complete.',
+ 'SENT.FRAG':'Say it out loud. Who? Does what? A sentence needs both. A capital letter and a period do not make a sentence.',
  'CONJ.BBS':'because = the reason \u00b7 but = something different \u00b7 so = what happens next.'};
 var QUIPS=['Linh: Almost! Look again.','Mateo: Hmm, not that one.','Amira: Close! Read it one more time.','Jun: Try another one.','Paolo: Nope, but you can do it!'];
 function art(n){return /^[aeiou]/i.test(n)?'an':'a';}
@@ -296,16 +342,17 @@ function renderItem(it){
  var h='<div class="card" id="c_'+it.id+'">'+(it.pic?'<div class="pic">'+it.pic+'</div>':'')+'<div class="q">'+it.q.replace('___','<span class="blank" style="display:inline-block;min-width:70px;border-bottom:2px solid var(--rust)">&nbsp;</span>')+'</div><div class="chips">';
  it.o.forEach(function(o,k){
   var cls='chip';if(st.done){cls+=(k===it.a?' right':' dim');}else if(st.wrongs&&st.wrongs.indexOf(k)>=0)cls+=' wrong dim';
-  h+='<button class="'+cls+'" onclick="pick(\''+it.id+'\','+k+')">'+o+'</button>';});
+  h+='<button class="'+cls+(it.rs?' rsn':'')+'" onclick="pick(\''+it.id+'\','+k+')">'+o+(it.rs?'<span class="otr" data-en="'+o.replace(/"/g,'&quot;')+'"></span>':'')+'</button>';});
  var miss=!st.done&&st.wrongs&&st.wrongs.length;
- h+='</div><div class="why'+(st.done?(st.first?' good':' miss'):(miss?' try':''))+'" id="w_'+it.id+'">'+(st.done?it.why:(miss?'<b>'+QUIPS[(st.wrongs.length+(+it.id.slice(1)))%QUIPS.length]+'</b><span class="hint">\ud83d\udca1 '+(HINTS[it.tag]||'Read it again slowly.')+'</span>':''))+'</div></div>';
+ h+='</div><div class="why'+(st.done?(st.first?' good':' miss'):(miss?' try':''))+'" id="w_'+it.id+'">'+(st.done?it.why:(miss?'<b>'+QUIPS[(st.wrongs.length+(+it.id.slice(1)))%QUIPS.length]+'</b><span class="hint">\ud83d\udca1 '+((it.oh&&it.oh[st.wrongs[st.wrongs.length-1]])||HINTS[it.tag]||'Read it again slowly.')+'</span>'+(it.oh&&st.wrongs.length>1?'<span class="hint">\ud83d\udca1 '+HINTS[it.tag]+'</span>':''):''))+'</div></div>';
  return h;
 }
 function pick(id,k){var it=ITEMS.filter(function(x){return x.id===id;})[0],st=state(id);if(st.done)return;st.tries++;
  if(k===it.a){st.done=true;if(st.first===null)st.first=(st.tries===1);}else{st.wrongs=st.wrongs||[];st.wrongs.push(k);if(st.first===null)st.first=false;}
- save();var host=document.getElementById('c_'+id);if(host)host.outerHTML=renderItem(it);drawSteps();
+ save();var host=document.getElementById('c_'+id);if(host)host.outerHTML=renderItem(it);drawSteps();fillReasons();
  if(ITEMS.every(function(x){return state(x.id).done;}))setTimeout(function(){go(2);},700);}
-function renderPart(p){$('qItems').innerHTML=ITEMS.filter(function(x){return x.part===p;}).map(renderItem).join('');drawSteps();}
+function fillReasons(){var lg=lang();document.querySelectorAll('.otr').forEach(function(e){if(!lg){e.textContent='';return;}if(e.dataset.done===lg)return;var en=e.getAttribute('data-en');tr(en,lg,function(t){if(lang()===lg&&t){e.textContent=t;e.dataset.done=lg;}});});}
+function renderPart(p){$('qItems').innerHTML=ITEMS.filter(function(x){return x.part===p;}).map(renderItem).join('');drawSteps();fillReasons();}
 function streakInfo(){return DAYS;}
 function markDay(){if(DAYS.indexOf(TODAY)<0)DAYS.push(TODAY);}
 function streak(){var days=streakInfo(),n=0,d=new Date();for(var i=0;i<60;i++){var k=d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);if(days.indexOf(k)>=0)n++;else if(i>0)break;d.setDate(d.getDate()-1);}return n;}
@@ -440,7 +487,7 @@ function showDirections(){var lg=lang();
  document.querySelectorAll('[data-dir]').forEach(function(p){var out=p.querySelector('.dirtr');if(!out){out=document.createElement('span');out.className='dirtr';out.setAttribute('translate','no');p.appendChild(out);}
   if(!DIR_ON||!lg){out.textContent='';return;}var k=p.getAttribute('data-dir');out.textContent='\u2026';tr(p.getAttribute('data-en'),lg,function(t){out.textContent=t;if(t)logReveal(k,lg);});});}
 function toggleDir(){if(!DIR_ON&&!lang()){alert('First choose your language in the green bar.');$('lang').focus();return;}DIR_ON=!DIR_ON;$('dirBtn').classList.toggle('on',DIR_ON);showDirections();}
-function setLang(v){try{localStorage.setItem('eld103_lang',v);localStorage.setItem('vocab_lang',v);}catch(e){}DIR_ON=!!v;$('dirBtn').classList.toggle('on',DIR_ON);showDirections();if(!v&&WT)toggleWT();}
+function setLang(v){setTimeout(fillReasons,0);try{localStorage.setItem('eld103_lang',v);localStorage.setItem('vocab_lang',v);}catch(e){}DIR_ON=!!v;$('dirBtn').classList.toggle('on',DIR_ON);showDirections();if(!v&&WT)toggleWT();}
 function savedLang(){try{return localStorage.getItem('eld103_lang')||localStorage.getItem('vocab_lang')||'';}catch(e){return '';}}
 
 /* ===================== TAP WORDS ===================== */
