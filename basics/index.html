@@ -45,10 +45,13 @@ h2{font-size:1.25rem;margin:.2em 0 .4em;color:var(--pine)}
 .chip{font-family:inherit;font-size:1rem;font-weight:700;padding:7px 15px;border-radius:20px;border:2px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;text-align:left}
 .chip:hover{border-color:var(--moss)}
 .chip.right{background:#d8f0e2;border-color:var(--moss);color:var(--pine)}
-.chip.wrong{background:#fbeae5;border-color:#e07a5f;color:#8a2f10}
+.chip.wrong{background:#fff;border-color:var(--line);color:var(--muted);text-decoration:line-through}
+#srvBar{display:none;background:#b3261e;color:#fff;font-weight:800;padding:10px 14px;border:2px solid #5c0f0a;border-radius:10px;margin:0 0 12px;box-shadow:0 3px 8px rgba(0,0,0,.2)}
+#srvBar.show{display:block}
+.hint{display:block;margin-top:4px}
 .chip.dim{opacity:.5;pointer-events:none}
 .why{font-size:.95rem;color:#3c4a42;margin:6px 0 2px;line-height:1.55;padding:7px 12px;border-radius:9px;background:#f6f8f5}
-.why.good{background:#e9f6ee} .why.miss{background:#fdf0c4}
+.why.good{background:#e9f6ee} .why.miss{background:#fdf0c4} .why.try{background:#eef3ff;border:2px solid #9db3e6}
 .why:empty{display:none}
 .sent{font-size:1.18rem;margin:4px 0}
 .sent u{text-decoration:none;border-bottom:3px solid var(--rust);padding:0 2px;font-weight:800}
@@ -126,6 +129,7 @@ window.GAL_META={title:'Daily Basics',unit:'Basics',skills:['PRON.SUBJ','SENT.BE
   <button onclick="turnIn()">Turn in</button>
 </div>
 <main>
+<div id="srvBar" role="alert" data-dir="srv" data-en="Can't reach the server. Your work is NOT saving. Check the internet, then reload the page.">Can't reach the server. Your work is NOT saving. Check the internet, then reload the page.</div>
 <div class="steps" id="steps"></div>
 <div id="whobar"></div>
 
@@ -142,7 +146,7 @@ window.GAL_META={title:'Daily Basics',unit:'Basics',skills:['PRON.SUBJ','SENT.BE
 
 <section class="act" id="a1">
   <h2>Today</h2>
-  <p class="dir" data-dir="q1" data-en="Tap the word that fits. If you are wrong, try again, but the first try is your score.">Tap the word that fits. If you are wrong, try again, but the <b>first try</b> is your score.</p>
+  <p class="dir" data-dir="q1" data-en="Tap the word that fits. If you are wrong, read the hint and try again.">Tap the word that fits. If you are wrong, read the hint and try again.</p>
   <div id="qItems" translate="no"></div>
   <button class="btn" onclick="go(2)">Finish</button>
 </section>
@@ -150,8 +154,9 @@ window.GAL_META={title:'Daily Basics',unit:'Basics',skills:['PRON.SUBJ','SENT.BE
 <section class="act" id="a2">
   <h2>Done</h2>
   <div class="card" style="text-align:center">
-    <div style="color:var(--muted);font-size:.9rem">Today · correct on the first try</div>
+    <div style="color:var(--muted);font-size:.9rem">Today · questions solved</div>
     <div class="big" id="finScore">0 / 0</div>
+    <div style="color:var(--muted);font-size:.9rem" id="finFirst"></div>
   </div>
   <div class="card" id="finList"></div>
   <button class="btn" onclick="turnIn()">Turn in</button>
@@ -194,7 +199,7 @@ var TODAY=(function(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMon
 var UNIT=TODAY;
 var SLUG='basics/'+UNIT;
 var PROXY='https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
-var LAST_KEY='basics_last_'+UNIT;
+var LAST_KEY='basics_last_'+UNIT; /* __T263 (unused now) */
 
 /* ===================== LESSON DATA (swap this block for a new lesson) ===================== */
 /* POOLS — add to these as lessons go by. Each entry has a tag so a lesson can be focused with ?lesson=TAG; default uses everything. */
@@ -229,7 +234,12 @@ var DATA={
 };
 var LESSON=(new URLSearchParams(location.search).get('lesson')||'');
 
-var ST={name:'',email:'',period:'',act:0,A:{},W:{},turnedIn:null,browserTranslated:false};
+var ST={name:'',email:'',period:'',act:0,A:{},W:{},turnedIn:null,browserTranslated:false,items:null,lesson:null};
+/* T-263: today's work comes from the SERVER (table basics, row email+unit=today). The 12 questions
+   (with their shuffled answers) are saved inside the row, so the same page shows the same questions
+   all day — from My Page, from a lesson link, on another Chromebook. Nothing student-made lives in
+   localStorage any more. LOADED stays false until the row has been read; nothing saves before that. */
+var LOADED=false,ROW_EMAIL='',DAYS=[];
 function $(i){return document.getElementById(i);}
 function clean(s){return String(s||'').trim().toLowerCase();}
 function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
@@ -242,6 +252,8 @@ var RND=Math.random;
 function sh(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(RND()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
 function byTag(list){if(!LESSON)return list;var m=list.filter(function(x){return x.t===LESSON;}),o=list.filter(function(x){return x.t!==LESSON;});return m.concat(o);}
 function buildItems(){
+ if(ST.items&&ST.items.length){ITEMS=ST.items;ST.tags={};ITEMS.forEach(function(it){ST.tags[it.id]=it.tag;});return;}
+ if(ST.lesson==null)ST.lesson=LESSON; var LESSON_=LESSON; LESSON=ST.lesson;
  ITEMS=[];RND=seed((ST.email||'anon')+'|'+TODAY+'|'+LESSON);
  function pri(list){if(!LESSON)return sh(list);return sh(list.filter(function(x){return x.t===LESSON;})).concat(sh(list.filter(function(x){return x.t!==LESSON;})));}
  var ppl=pri(DATA.people),thg=pri(DATA.things),whr=pri(DATA.where),be=sh(DATA.be);
@@ -262,9 +274,20 @@ function buildItems(){
    .concat(bb.slice(0,1).map(function(b){return {pic:'🔗',q:b.s,o:['because','but','so'],a:b.a,k:'CONJ.BBS'};}));}
  qs=sh(who.map(function(x){x.k='PRON.SUBJ';return x;})).concat(sh(bes.map(function(x){x.k='SENT.BE';return x;}))).concat(sh(whs.map(function(x){x.k='PLACE';return x;}))).concat(sents);
  qs=sh(qs);
- qs.forEach(function(x,i){ITEMS.push({id:'q'+i,part:1,tag:x.k,pic:x.pic,q:x.q,o:x.o,a:x.o.indexOf(x.a),why:x.why||x.q.replace('___','<b>'+x.a+'</b>')});});
+ var run=0,lastA=-1;
+ qs.forEach(function(x,i){var o=sh(x.o),a=o.indexOf(x.a),g=0;
+  while(run>=3&&a===lastA&&g<12){o=sh(x.o);a=o.indexOf(x.a);g++;}
+  run=(a===lastA)?run+1:1;lastA=a;
+  ITEMS.push({id:'q'+i,part:1,tag:x.k,pic:x.pic,q:x.q,o:o,a:a,why:x.why||x.q.replace('___','<b>'+x.a+'</b>')});});
  ST.tags={};ITEMS.forEach(function(it){ST.tags[it.id]=it.tag;});
+ ST.items=ITEMS; LESSON=LESSON_;
 }
+var HINTS={'PRON.SUBJ':'Look at the picture. One woman \u2192 She. One man \u2192 He. Two people \u2192 They. A thing \u2192 It.',
+ 'SENT.BE':'I \u2192 am. He, she, it, one person or thing \u2192 is. You, we, they, two or more \u2192 are.',
+ 'PLACE':'Read what the person does. Where at school do people do that?',
+ 'SENT.FRAG':'A sentence has a who and a verb, and the idea is complete.',
+ 'CONJ.BBS':'because = the reason \u00b7 but = something different \u00b7 so = what happens next.'};
+var QUIPS=['Linh: Almost! Look again.','Mateo: Hmm, not that one.','Amira: Close! Read it one more time.','Jun: Try another one.','Paolo: Nope, but you can do it!'];
 function art(n){return /^[aeiou]/i.test(n)?'an':'a';}
 function plural(n){return /y$/.test(n)?n.replace(/y$/,'ies'):/(s|sh|ch|x)$/.test(n)?n+'es':n+'s';}
 function state(id){if(!ST.A[id])ST.A[id]={tries:0,first:null,done:false};return ST.A[id];}
@@ -274,7 +297,8 @@ function renderItem(it){
  it.o.forEach(function(o,k){
   var cls='chip';if(st.done){cls+=(k===it.a?' right':' dim');}else if(st.wrongs&&st.wrongs.indexOf(k)>=0)cls+=' wrong dim';
   h+='<button class="'+cls+'" onclick="pick(\''+it.id+'\','+k+')">'+o+'</button>';});
- h+='</div><div class="why'+(st.done?(st.first?' good':' miss'):'')+'" id="w_'+it.id+'">'+(st.done?it.why:'')+'</div></div>';
+ var miss=!st.done&&st.wrongs&&st.wrongs.length;
+ h+='</div><div class="why'+(st.done?(st.first?' good':' miss'):(miss?' try':''))+'" id="w_'+it.id+'">'+(st.done?it.why:(miss?'<b>'+QUIPS[(st.wrongs.length+(+it.id.slice(1)))%QUIPS.length]+'</b><span class="hint">\ud83d\udca1 '+(HINTS[it.tag]||'Read it again slowly.')+'</span>':''))+'</div></div>';
  return h;
 }
 function pick(id,k){var it=ITEMS.filter(function(x){return x.id===id;})[0],st=state(id);if(st.done)return;st.tries++;
@@ -282,8 +306,8 @@ function pick(id,k){var it=ITEMS.filter(function(x){return x.id===id;})[0],st=st
  save();var host=document.getElementById('c_'+id);if(host)host.outerHTML=renderItem(it);drawSteps();
  if(ITEMS.every(function(x){return state(x.id).done;}))setTimeout(function(){go(2);},700);}
 function renderPart(p){$('qItems').innerHTML=ITEMS.filter(function(x){return x.part===p;}).map(renderItem).join('');drawSteps();}
-function streakInfo(){var days=[];try{days=JSON.parse(localStorage.getItem('basics_days_'+(ST.email||'anon'))||'[]');}catch(e){}return days;}
-function markDay(){var days=streakInfo();if(days.indexOf(TODAY)<0){days.push(TODAY);days=days.slice(-60);try{localStorage.setItem('basics_days_'+(ST.email||'anon'),JSON.stringify(days));}catch(e){}}}
+function streakInfo(){return DAYS;}
+function markDay(){if(DAYS.indexOf(TODAY)<0)DAYS.push(TODAY);}
 function streak(){var days=streakInfo(),n=0,d=new Date();for(var i=0;i<60;i++){var k=d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);if(days.indexOf(k)>=0)n++;else if(i>0)break;d.setDate(d.getDate()-1);}return n;}
 function renderStart(){$('dateLine').textContent=new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});var n=streak(),days=streakInfo().length;$('streak').innerHTML='🔥 <b>'+n+'</b> day'+(n===1?'':'s')+' in a row &nbsp;·&nbsp; '+days+' total';}
 var PARTS=['Start','Today','Done'];
@@ -294,6 +318,7 @@ function drawSteps(){
 }
 function go(n){
  ST.act=n;document.querySelectorAll('section.act').forEach(function(s,i){s.classList.toggle('show',i===n);});
+ if(n>0&&!LOADED){n=0;ST.act=0;document.querySelectorAll('section.act').forEach(function(s,i){s.classList.toggle('show',i===0);});}
  if(n===0)renderStart(); if(n===1)renderPart(1); if(n===2)finish();
  drawSteps();window.scrollTo(0,0);save();if(DIR_ON)showDirections();
 }
@@ -301,19 +326,48 @@ function firstTry(){return ITEMS.filter(function(x){return state(x.id).done&&sta
 function partScore(p){var its=ITEMS.filter(function(x){return x.part===p;});return its.filter(function(x){return state(x.id).done&&state(x.id).first;}).length+' / '+its.length;}
 function tagScore(t){var its=ITEMS.filter(function(x){return x.tag===t;});return its.filter(function(x){return state(x.id).done&&state(x.id).first;}).length+' / '+its.length;}
 function finish(){
- $('finScore').textContent=firstTry()+' / '+ITEMS.length;if(ITEMS.every(function(x){return state(x.id).done;})){markDay();if(!ST.turnedIn){ST.turnedIn=new Date().toISOString();}save();push(true);}
+ $('finScore').textContent=solved()+' / '+ITEMS.length;$('finFirst').textContent='First try: '+firstTry()+' / '+ITEMS.length;if(ITEMS.every(function(x){return state(x.id).done;})){markDay();if(!ST.turnedIn){ST.turnedIn=new Date().toISOString();}save();push(true);}
  $('finList').innerHTML=[['He / She / They / It','PRON.SUBJ'],['am / is / are','SENT.BE'],['Where?','PLACE'],['Sentence or fragment?','SENT.FRAG'],['because / but / so','CONJ.BBS']].map(function(r){return '<div class="sumrow"><span>'+r[0]+'</span><b>'+tagScore(r[1])+'</b></div>';}).join('')+'<div class="sumrow"><span>🔥 Days in a row</span><b>'+streak()+'</b></div>';
 }
-function save(){dirty=true;try{var k='basics_'+UNIT+'_'+(ST.email||'anon').replace(/[^a-z0-9]+/g,'_');localStorage.setItem(k,JSON.stringify(ST));localStorage.setItem(LAST_KEY,k);}catch(e){}}
-function load(){try{var k=localStorage.getItem(LAST_KEY);if(!k)return;var d=JSON.parse(localStorage.getItem(k));if(d)ST=Object.assign(ST,d);}catch(e){}}
+function solved(){return ITEMS.filter(function(x){return state(x.id).done;}).length;}
+/* Fair score (T-238 rule): every question solved on ANY try = 1 point. First try stays in the
+   score column + payload for the dashboard. */
+function setGal(){window.GAL_SCORE=solved();window.GAL_MAX=ITEMS.length||12;}
+var saveT=null;
+function save(){dirty=true;setGal();if(!LOADED)return;clearTimeout(saveT);saveT=setTimeout(function(){push(false);},700);}
+function both(e){var lp=localPart(e);return [lp+'@s.sfusd.edu',lp+'@sfusd.edu'];}
+function srvBar(on){var b=$('srvBar');if(b)b.classList.toggle('show',!!on);}
+/* Read today's row (both spellings) BEFORE anything saves. On failure: red bar, nothing saves. */
+function loadServer(email,then){
+ LOADED=false;ROW_EMAIL='';var em=both(email),inl='in.('+em.map(encodeURIComponent).join(',')+')';
+ var t=setTimeout(function(){fail();},12000),gone=false;
+ function fail(){if(gone)return;gone=true;srvBar(true);dot('err');}
+ Promise.all([
+  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?email='+inl+'&unit=eq.'+UNIT+'&select=email,payload,turned_in,updated_at&order=updated_at.desc',{headers:hdr()}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();}),
+  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?email='+inl+'&turned_in=eq.true&select=unit&order=unit.desc&limit=120',{headers:hdr()}).then(function(r){return r.ok?r.json():[];}).catch(function(){return [];})
+ ]).then(function(res){if(gone)return;clearTimeout(t);gone=true;
+  var rows=res[0]||[],best=null,bn=-1;
+  rows.forEach(function(r){var A=(r.payload&&r.payload.A)||{},n=Object.keys(A).filter(function(k){return A[k]&&A[k].done;}).length;if(n>bn){bn=n;best=r;}});
+  DAYS=[];(res[1]||[]).forEach(function(r){if(r.unit&&DAYS.indexOf(r.unit)<0)DAYS.push(r.unit);});
+  if(best&&best.payload){var d=best.payload;ROW_EMAIL=best.email;
+   ST.A=d.A||{};ST.W=d.W||{};ST.turnedIn=d.turnedIn||(best.turned_in?(best.updated_at||true):null);
+   ST.items=(d.items&&d.items.length)?d.items:null;ST.lesson=(d.lesson!=null)?d.lesson:null;
+   if(typeof d.act==='number')ST.act=d.act;
+   if(ST.turnedIn&&DAYS.indexOf(TODAY)<0)DAYS.push(TODAY);}
+  else{ST.A={};ST.W={};ST.turnedIn=null;ST.items=null;ST.lesson=null;ST.act=0;}
+  LOADED=true;srvBar(false);dot('on');buildItems();setGal();
+  if(!best||!(best.payload&&best.payload.items))dirty=true;   /* store the question set right away */
+  if(then)then();push(false);
+ }).catch(function(){fail();});
+}
 var dirty=false,pushing=false,pushSeq=0;
 function dot(c){var d=$('saveDot');if(d)d.className=c;}
 function push(force){
- if(!ST.email)return;if(!dirty&&!force)return;if(pushing)return;
+ if(!ST.email||!LOADED)return;if(!dirty&&!force)return;if(pushing){if(force)setTimeout(function(){push(true);},800);return;}setGal();
  pushing=true;dot('busy');var mySeq=++pushSeq;
  setTimeout(function(){if(pushing&&mySeq===pushSeq){pushing=false;dirty=true;dot('err');}},15000);
  var snap=JSON.parse(JSON.stringify(ST));dirty=false;
- var body=[{email:ST.email,name:ST.name,period:ST.period,unit:UNIT,slug:SLUG,
+ var body=[{email:ROW_EMAIL||ST.email,name:ST.name,period:ST.period,unit:UNIT,slug:SLUG,
   score:firstTry(),max_score:ITEMS.length,turned_in:!!ST.turnedIn,writing:ST.W,payload:snap,updated_at:new Date().toISOString()}];
  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email,unit',{method:'POST',keepalive:true,
   headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
@@ -364,12 +418,14 @@ function saveName(){
  var lg=$('langIn').value;if(!lg){err.textContent='Please choose your language.';return;}
  $('lang').value=lg;setLang(lg);
  var canon=canonEmail(e);
- try{var mine=localStorage.getItem('basics_'+UNIT+'_'+canon.replace(/[^a-z0-9]+/g,'_'));if(mine&&canon!==ST.email){var d=JSON.parse(mine);if(d)ST=Object.assign(ST,d);}}catch(x){}
  var switched=!!(ST.email&&ST.email!==canon);recordAlias(e,canon);ST.name=n;ST.email=canon;ST.period=pd;
  $('whoami').textContent=n+' \u00b7 P'+pd;$('namewrap').classList.remove('show');
  try{localStorage.setItem('gal_student_email',canon);localStorage.setItem('gal_student_name',n);localStorage.setItem('gal_student_period',pd);localStorage.setItem('gal_student_at',String(Date.now()));}catch(x){}
  showWhoBar();
- if(switched)ST.A={};seedRoster(canon,n,pd);save();push(true);buildItems();go(ST.act||0);
+ seedRoster(canon,n,pd);
+ if(switched||!LOADED){ST.A={};ST.W={};ST.items=null;ST.lesson=null;ST.turnedIn=null;ST.act=0;ITEMS=[];
+  loadServer(canon,function(){go(ST.act||0);});}
+ else{dirty=true;push(true);go(ST.act||0);}
 }
 
 /* ===================== DIRECTIONS IN MY LANGUAGE ===================== */
@@ -414,18 +470,18 @@ function checkCanary(){var c=$('canary'),got=c?(c.textContent||'').trim().toLowe
 
 /* ===================== BOOT ===================== */
 function boot(){
- load();buildItems();
  resumeLogin();
  $('whoami').textContent=ST.name?(ST.name+(ST.period?' \u00b7 P'+ST.period:'')):'';
  showWhoBar();
  var L=savedLang();if(L){$('lang').value=L;DIR_ON=true;$('dirBtn').classList.add('on');}
- go(ST.act||0);dot('on');
+ go(0);
  if(L)showDirections();
  if(!ST.email||!L)askName();
+ else loadServer(ST.email,function(){go(ST.act||0);});
  setTimeout(checkCanary,2500);setInterval(checkCanary,20000);
  setInterval(function(){push(false);},20000);
- document.addEventListener('visibilitychange',function(){if(document.hidden)push(false);});
- window.addEventListener('pagehide',function(){push(false);});
+ document.addEventListener('visibilitychange',function(){if(document.hidden){clearTimeout(saveT);push(false);}});
+ window.addEventListener('pagehide',function(){clearTimeout(saveT);push(false);});
 }
 document.addEventListener('DOMContentLoaded',boot);
 </script>
