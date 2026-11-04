@@ -781,23 +781,45 @@ function rFix(o,box){
   box.innerHTML='<div class="pic">'+picFor('board')+'</div><p class="dir" translate="no">'+tapWords(nE===1?'This sentence has 1 mistake.':'This sentence has 2 mistakes.')+'</p>'+line+
     (a.done?'':'<button class="btn" id="fixGo">Check</button> <button class="btn alt" id="fixReset">Start over</button>')+
     '<div id="fb">'+(PRACTICE&&a.done?'<div class="good">\u2713</div>':(PRACTICE&&a.tries&&!a.done?quip(a.lastHint||it.hint):''))+(!PRACTICE&&a.done?'<div class="good" style="color:#2b2233">Saved.</div>':'')+'</div>'+navRow(o);
-  box.querySelectorAll('.fw[data-wi]').forEach(function(s){ s.onclick=function(){ if(a.done)return; a.editing=+s.getAttribute('data-wi'); rFix(o,box); var inp=$('fixIn'); if(inp){inp.focus();inp.select();} }; });
-  var inp=$('fixIn'); if(inp){ var commit=function(){ if(a.editing==null)return; var v=inp.value.trim().replace(/\s+/g,' '); var i=a.editing; a.editing=null; if(v&&v!==words[i])a.edits[i]=v; else delete a.edits[i]; touch(); rFix(o,box); }; inp.addEventListener('keydown',function(e){if(e.key==='Enter')commit();}); inp.addEventListener('blur',commit); }
-  if($('fixReset')) $('fixReset').onclick=function(){a.edits={};a.editing=null;rFix(o,box);};
+  /* T-265: one click on Check grades. Before, the open box's blur re-drew the screen and ate the click.
+     Now mousedown on a word / Check / Start over keeps focus (preventDefault), and each click reads the box itself. */
+  /* The open box belongs to THIS render (curInp/curIdx); a blur fired while a later render replaces it is ignored. */
+  var curInp=$('fixIn'), curIdx=a.editing;
+  var takeIn=function(){ if(a.editing==null||a.editing!==curIdx||!curInp)return; a.editing=null; var v=curInp.value.trim().replace(/\s+/g,' '); if(v&&norm2(v)!==norm2(words[curIdx]))a.edits[curIdx]=v; else delete a.edits[curIdx]; };
+  var keep=function(el){ if(el) el.addEventListener('mousedown',function(e){e.preventDefault();}); };
+  box.querySelectorAll('.fw[data-wi]').forEach(function(s){ keep(s); s.onclick=function(){ if(a.done)return; takeIn(); a.editing=+s.getAttribute('data-wi'); touch(); rFix(o,box); var inp=$('fixIn'); if(inp){inp.focus();inp.select();} }; });
+  var inp=$('fixIn'); if(inp){ inp.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); takeIn(); touch(); rFix(o,box); } });
+    inp.addEventListener('blur',function(e){ var t=e.relatedTarget; if(t&&(t.id==='fixGo'||t.id==='fixReset'))return; if(a.editing==null||a.editing!==curIdx)return; takeIn(); touch(); rFix(o,box); }); }
+  keep($('fixGo')); keep($('fixReset'));
+  if($('fixReset')) $('fixReset').onclick=function(){a.edits={};a.editing=null;touch();rFix(o,box);};
   if($('fixGo')) $('fixGo').onclick=function(){
-    if(a.editing!=null){ var inp2=$('fixIn'); if(inp2){var v=inp2.value.trim().replace(/\s+/g,' ');if(v&&v!==words[a.editing])a.edits[a.editing]=v;else delete a.edits[a.editing];} a.editing=null; }
-    var fixed=0, used={};
-    it.errs.forEach(function(alts){ var hit=alts.some(function(al){ var e=a.edits[al[0]]; if(e!=null&&al[1].map(norm2).indexOf(norm2(e))>=0){used[al[0]]=1;return true;} return false; }); if(hit)fixed++; });
-    var wrongEdits=Object.keys(a.edits).filter(function(k){return !used[k];}).length;
+    takeIn();
+    var g=fixGrade(it,a.edits), fixed=g.fixed, wrongEdits=g.wrong;
     a.tries++; a.history=(a.history||[]).concat([JSON.stringify(a.edits)]);
     if(PRACTICE){
-      if(fixed===nE&&!wrongEdits){ a.done=true; a.ok=true; if(a.pts==null)a.pts=nE; }
+      if(fixed===nE&&!wrongEdits){ a.done=true; a.ok=true; if(a.tries===1)a.first=true; if(a.pts==null)a.pts=nE; }
       else { if(a.pts==null)a.pts=Math.max(0,fixed-wrongEdits); a.lastHint=wrongEdits?'You changed a word that was right. Tap it and change it back.':(fixed?'Good \u2014 one is fixed. Find the other one.':it.hint); }
-    } else { a.done=true; a.ok=(fixed===nE&&!wrongEdits); a.pts=Math.max(0,fixed-wrongEdits); }
+    } else { a.done=true; a.ok=(fixed===nE&&!wrongEdits); a.pts=a.ok?nE:Math.max(0,fixed-wrongEdits); }
     touch(); rFix(o,box);
   };
   wireNav(); if(isDone(o))enableNext();
 }
+/* T-265: forgiving grade. If the whole sentence comes out correct (the target, or a correct variant listed in
+   the item's ok patterns, e.g. "Paolo had ten pencils."), every error counts as fixed and no edit is "wrong". */
+function fixGrade(it,edits){
+  var words=it.s.split(' '), out=words.slice(), tgt=words.slice(), nE=it.errs.length;
+  Object.keys(edits).forEach(function(k){ out[k]=edits[k]; });
+  it.errs.forEach(function(alts){ var al=alts[0]; tgt[al[0]]=al[1][0]; });
+  var sent=norm2(out.join(' '));
+  if(sent===norm2(tgt.join(' '))||(it.ok||[]).some(function(r){ return new RegExp(r).test(sent); })) return {fixed:nE,wrong:0};
+  var fixed=0, used={};
+  it.errs.forEach(function(alts){ var hit=alts.some(function(al){ var e=edits[al[0]]; if(e!=null&&al[1].map(norm2).indexOf(norm2(e))>=0){used[al[0]]=1;return true;} return false; }); if(hit)fixed++; });
+  /* "wrong" = a change to a word that WAS right. A wrong try on a mistaken word gets the item hint instead. */
+  var errIdx={}; it.errs.forEach(function(alts){ alts.forEach(function(al){ errIdx[al[0]]=1; }); });
+  var wrong=Object.keys(edits).filter(function(k){ return !used[k] && !errIdx[k] && norm2(edits[k])!==norm2(words[k]); }).length;
+  return {fixed:fixed,wrong:wrong};
+}
+window.__T265=1;
 function norm2(s){return String(s).toLowerCase().replace(/[^a-z' ]/g,'').replace(/\s+/g,' ').trim();}
 
 /* ======================= READ ALOUD ======================= */

@@ -93,8 +93,12 @@ function readPts(row){ var w=row.work||{}, t=row.teacher||{}, tr=t.read||{}, p=0
   READ.forEach(function(it){ var r=(w.read||{})[it.id]; if(tr[it.id]!=null){p+=+tr[it.id];return;} var a=readAuto(r); if(r&&r.done&&a==null)pend++; p+=a||0; });
   return {pts:p,max:READ.length*2,pend:pend}; }
 function finalScore(row){ var sc=row.scores||{}, r=readPts(row), tot=r.pts, max=r.max;
-  ['words','listen','story','fix','gram'].forEach(function(k){ if(sc[k]){tot+=sc[k].pts;max+=sc[k].max;} });
+  ['words','listen','story','fix','gram'].forEach(function(k){ var x=(k==='fix')?fixPts(row):sc[k]; if(x){tot+=x.pts;max+=x.max;} });
   return {pts:tot,max:max||1,pct:Math.round(tot/(max||1)*100)}; }
+/* T-265: Fix the sentence is scored from the CURRENT FIX list (f3/f6 retired, f7/f8 added), so old f3/f6 answers are ignored. */
+function fixPts(row){ var w=row.work||{}, ans=w.ans||{}, prac=MODE==='practice', p=0, m=0, dn=0, any=false;
+  FIX.forEach(function(it){ var a=ans[it.id]; m+=it.errs.length; if(a&&a.done){ any=true; dn++; p+=(prac&&a.ok)?it.errs.length:(a.pts||0); } });
+  return (any||(row.scores||{}).fix)?{pts:p,max:m,done:dn,total:FIX.length}:null; }
 function band(p){ return p>=90?4:p>=80?3:p>=65?2:p>=40?1:0; }
 function extVal(row,k){ var t=(row.teacher||{}).ext||{}; if(t[k]!=null) return {v:+t[k],teacher:true}; var e=((row.scores||{}).ext||{})[k]; return e&&e.auto!=null?{v:e.auto,teacher:false}:null; }
 
@@ -118,7 +122,7 @@ function draw(){
   var h='<tr><th style="text-align:left">Student</th><th>P</th>'+cols.map(function(c){return '<th>'+c+'</th>';}).join('')+'<th>Total</th><th>0\u20134</th><th>Extras</th><th>Left page</th><th>Turned in</th><th>Last saved</th></tr>';
   list.forEach(function(r){
     var sc=r.scores||{}, rp=readPts(r), f=finalScore(r), b=band(f.pct);
-    function cell(k){ var x=sc[k]; if(!x) return '<td>\u2014</td>'; return '<td>'+x.pts+'/'+x.max+(x.done<x.total?'<div class="mut">'+x.done+' of '+x.total+' done</div>':'')+'</td>'; }
+    function cell(k){ var x=(k==='fix')?fixPts(r):sc[k]; if(!x) return '<td>\u2014</td>'; return '<td>'+x.pts+'/'+x.max+(x.done<x.total?'<div class="mut">'+x.done+' of '+x.total+' done</div>':'')+'</td>'; }
     var ex=EXTS.map(function(e){var v=extVal(r,e.k);return v?e.k.charAt(0).toUpperCase()+v.v:'';}).filter(Boolean).join(' ');
     var lg=(r.work||{}).log||{};
     h+='<tr data-e="'+esc(canon(r.email))+'"'+(CUR===canon(r.email)?' class="sel"':'')+'><td class="nm">'+esc(r.student_name||r.email)+'</td><td>'+esc(r.period||'')+'</td>'+

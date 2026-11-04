@@ -66,12 +66,13 @@ var STORY=[
 ];
 /* fix: words; errs = list of errors; each error = list of [wordIndex, accepted replacements] (any one fixes it) */
 var FIX=[
- {id:'f1',s:'Paolo have ten pencils.',errs:[[[1,['has']]]],hint:'Look at the verb. Paolo is one person.'},
- {id:'f2',s:'Jun has two pencil.',errs:[[[3,['pencils']]]],hint:'Two is more than one. Look at the last word.'},
- {id:'f3',s:'Students eat lunch in cafeteria.',errs:[[[3,['in the']],[4,['the cafeteria']]]],hint:'Say it like the story: in ___ cafeteria. A small word is missing.'},
- {id:'f4',s:'Jun has a orange backpack.',errs:[[[2,['an']]]],hint:'Orange starts with a vowel sound: a, e, i, o, u.'},
- {id:'f5',s:'Linh and Amira has many book.',errs:[[[3,['have']]],[[5,['books']]]],hint:'Two errors. Linh and Amira are two people. Many means more than one.'},
- {id:'f6',s:'Jun forget his backpack in music corner.',errs:[[[1,['forgot']]],[[4,['in the']],[5,['the music']]]],hint:'Two errors. It already happened (past). And a small word is missing.'}
+ {id:'f1',s:'Paolo have ten pencils.',errs:[[[1,['has']]]],hint:'Look at the verb. Paolo is one person.',ok:['^paolo (has|had) (two|three|four|five|six|seven|eight|nine|ten|many|some|lots of|\\d+) pencils$','^paolo (has|had) (a|one) pencil$']},
+ {id:'f2',s:'Jun has two pencil.',errs:[[[3,['pencils']]]],hint:'Two is more than one. Look at the last word.',ok:['^jun (has|had) (two|three|four|five|six|seven|eight|nine|ten|many|some|lots of|\\d+) pencils$','^jun (has|had) (a|one) pencil$']},
+ /* T-265: f3 + f6 retired (missing-word fix could not be guessed). Never reuse ids f3/f6. f7 + f8 replace them with the same error counts. */
+ {id:'f7',s:'Mateo are hungry at lunch.',errs:[[[1,['is']]]],hint:'Mateo is one person.',ok:['^mateo (is|was) hungry at lunch$','^(they|we) (are|were) hungry at lunch$']},
+ {id:'f4',s:'Jun has a orange backpack.',errs:[[[2,['an']]]],hint:'Orange starts with a vowel sound: a, e, i, o, u.',ok:['^jun (has|had) (an|one|his) orange backpack$','^jun (has|had) (a|one|his) (red|blue|green|black|white|brown|gray|grey|pink|purple|yellow|big|small|new|nice|heavy|light|good|blue and orange) backpack$','^jun (has|had) an (old|ugly|old orange) backpack$']},
+ {id:'f5',s:'Linh and Amira has many book.',errs:[[[3,['have']]],[[5,['books']]]],hint:'Two errors. Linh and Amira are two people. Many means more than one.',ok:['^linh and amira (have|had) (two|three|four|five|six|seven|eight|nine|ten|many|some|lots of|\\d+) books$','^linh and amira (have|had) (a|one) book$']},
+ {id:'f8',s:'Jun forget his backpack in the music corners.',errs:[[[1,['forgot']]],[[7,['corner']]]],hint:'Two errors. It already happened (past). And there is only one music corner.',ok:['^jun forgot (his|the|a|her) backpack in the music corner$']}
 ];
 var GRAM=[
  {id:'g1',q:'Jun ___ an orange backpack.',opts:['has','have','are','am'],a:0,hint:'Jun is one person: he ___.'},
