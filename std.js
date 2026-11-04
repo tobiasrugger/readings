@@ -39,6 +39,12 @@
       Rows: slug "dir" for directions (shared by all pages) and
       "tap:<page>" for words tapped on that page.
 
+  10. Username box (T-228, Nov 3 2026): every student email box becomes a username box
+      with a fixed "@s.sfusd.edu" inside the same border (copy of My Page, T-260). The
+      page's own email input is hidden and always holds username + suffix, so every page
+      reads and saves the email exactly as before. A pasted full email keeps only the part
+      before @; Enter signs in; a stored/prefilled @sfusd.edu (Period 1) keeps that domain.
+
    Pages that already have a language dropdown in their sign-in box are
    left alone (only fixes 3, 4, 5, 6 and 7 apply). Safe to load twice.
    ===================================================================== */
@@ -117,6 +123,10 @@
     st.textContent =
       'select option,select optgroup{color:#2b2233 !important;background-color:#fff !important}' +
       '.gal-std-lang-msg{color:#c0392b;font-weight:800;font-size:.9em;margin:4px 0 0;min-height:1.2em}' +
+      '.gal-un{display:flex !important;align-items:center;box-sizing:border-box;cursor:text}' +
+      '.gal-un:focus-within{box-shadow:0 0 0 3px rgba(90,74,138,.35) !important}' +
+      '.gal-un input{text-align:right !important}.gal-un input:placeholder-shown{text-align:left !important}' +
+      '.gal-un-suf{flex:0 0 auto;white-space:nowrap;user-select:none;-webkit-user-select:none;font-weight:800;color:#4a3f5c}' +
       WHO_CSS + ROSTER_CSS;
     (document.head || document.documentElement).appendChild(st);
   }
@@ -184,7 +194,7 @@
   function lookSource(box, email) {
     var c = box.querySelectorAll('input[type=email], input[type=text], input:not([type]), select');
     for (var i = 0; i < c.length; i++) {
-      if (c[i].id === 'galStdLang' || !shown(c[i])) continue;
+      if (c[i].id === 'galStdLang' || !shown(c[i]) || c[i].getAttribute('data-gal-un')) continue;
       if (c[i].tagName === 'INPUT' || parseFloat(getComputedStyle(c[i]).borderRadius) > 0) return c[i];
     }
     return email;
@@ -230,6 +240,7 @@
   }
   /* which field is which, by id, name, placeholder, type and label */
   function fieldKind(el, box) {
+    if (el.getAttribute && el.getAttribute('data-gal-un-orig')) return '';   /* T-228: hidden behind the username box */
     var hay = [el.id, el.name, el.placeholder, el.getAttribute('aria-label') || ''].join(' ').toLowerCase();
     var lab = box.querySelector('label[for="' + el.id + '"]');
     if (lab) hay += ' ' + (lab.textContent || '').toLowerCase();
@@ -305,7 +316,7 @@
         var els = box.querySelectorAll('input, select'), got = {};
         for (var i = 0; i < els.length; i++) {
           var k = fieldKind(els[i], box);
-          if (k && els[i].value) got[k] = els[i].value.trim();
+          if (k && els[i].value) got[k] = k === 'email' ? emailVal(els[i]) : els[i].value.trim();
         }
         if (got.email) remember(got.name, got.email, got.period);
       }, 60);
@@ -1086,7 +1097,7 @@
     if (!pfStudentBox(box)) return;
     var f = pfFields(box);
     if (!f.email || !pfNeeds(f)) return;
-    var em = String(f.email.value || '').trim();
+    var em = emailVal(f.email);                       /* T-228: username + data-email-suffix */
     if (!PF_EMAIL.test(em) || box.__galPfFor === em) return;
     box.__galPfFor = em;
     pfLookup(em).then(function (info) { pfFill(box, info); });
@@ -1111,7 +1122,7 @@
     function hold(e, btn, box) {
       var f = pfFields(box);
       if (!f.email || !pfNeeds(f)) return false;
-      var em = String(f.email.value || '').trim();
+      var em = emailVal(f.email);
       if (!PF_EMAIL.test(em)) return false;
       e.preventDefault(); e.stopImmediatePropagation();
       var done = false;
@@ -1346,6 +1357,154 @@
   }
   if (TV) { tvSnap(); tvLock(); }
 
+  /* ================= T-228 USERNAME BOX (Nov 3 2026) =================
+     Copy of My Page's T-260 box on every student sign-in std.js handles. The page's own email
+     input stays in the page (hidden, data-gal-un-orig) and always holds username + suffix, so
+     the page reads it, validates it and saves it exactly as before — no grades split.
+       - visible box: the username, then a fixed "@s.sfusd.edu" inside the same border;
+       - a pasted / autofilled / programmatic full email keeps only the part before @; if its
+         domain is @sfusd.edu or @s.sfusd.edu, that domain is kept (Period 1 stays @sfusd.edu);
+       - typing "@" jumps past the fixed part (the domain they go on typing is dropped);
+       - the page setting its own email box (remembered student, teacher view, "Not you?")
+         shows up in the username box;
+       - Enter signs in (presses the box's Start button, unless a <form> submits by itself). */
+  var UN_SUFFIX = '@s.sfusd.edu', UN_N = 0;
+  var VDESC = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+  function emailVal(el) {
+    var v = String((el && el.value) || '').trim();
+    var suf = el && el.getAttribute && el.getAttribute('data-email-suffix');
+    if (v && suf && v.indexOf('@') < 0) v += suf;
+    return v;
+  }
+  function unFire(el) { try { el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); } catch (e) {} }
+  function unEligible(orig) {
+    if (!orig || orig.__galUn || orig.tagName !== 'INPUT') return null;
+    if (orig.type === 'hidden' || orig.type === 'password' || orig.readOnly || orig.disabled) return null;
+    if (orig.hasAttribute('data-email-suffix') || orig.getAttribute('data-gal-un')) return null;   /* My Page has its own */
+    if (TEACHER_PATH.test(location.pathname) || /dashboard|teacher/i.test(location.pathname)) return null;
+    if (!shown(orig)) return null;                                     /* try again once it shows */
+    if (document.activeElement === orig && VDESC.get.call(orig)) return null;   /* mid-typing: wait for focusout */
+    var box = orig.closest('[data-gal-std]') || boxFor(orig);
+    if (!box || box.querySelector('input[type=password]') || !startButton(box)) return null;
+    if (fieldKind(orig, box) !== 'email') return null;
+    return box;
+  }
+  function unWrap(orig, box) {
+    orig.__galUn = true;
+    var hadFocus = document.activeElement === orig;           /* autofocus pages (sept11) */
+    var cs = getComputedStyle(orig), r = orig.getBoundingClientRect(), par = orig.parentElement, pcs = getComputedStyle(par);
+    var room = par.clientWidth - (parseFloat(pcs.paddingLeft) || 0) - (parseFloat(pcs.paddingRight) || 0);
+    var wrap = document.createElement('div');
+    wrap.className = 'gal-un notranslate'; wrap.setAttribute('translate', 'no');
+    var W = wrap.style;
+    ['borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'borderTopStyle', 'borderRightStyle',
+     'borderBottomStyle', 'borderLeftStyle', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor',
+     'borderRadius', 'backgroundColor', 'marginTop', 'marginRight', 'marginBottom', 'marginLeft', 'boxShadow'
+    ].forEach(function (k) { W[k] = cs[k]; });
+    var bw = (parseFloat(cs.borderTopWidth) || 0) + (parseFloat(cs.borderBottomWidth) || 0) + (parseFloat(cs.borderLeftWidth) || 0);
+    if (!bw) { W.border = '2px solid #2b2233'; W.borderRadius = W.borderRadius && W.borderRadius !== '0px' ? W.borderRadius : '10px'; }
+    if (/rgba\(0, 0, 0, 0\)|transparent/.test(cs.backgroundColor)) W.backgroundColor = '#fff';
+    W.width = (Math.abs(r.width - room) < 4 || cs.display === 'block' && /%/.test(orig.style.width || '')) ? '100%' : Math.round(r.width) + 'px';
+    W.maxWidth = '100%';
+    if (r.width < 230 && W.width !== '100%') W.width = '260px';          /* room for the username AND the suffix */
+
+    var inp = document.createElement('input');
+    inp.type = 'text';
+    inp.id = 'galUserEmail' + (++UN_N) + (orig.id ? '_' + orig.id : '');
+    inp.setAttribute('data-gal-un', '1');
+    inp.setAttribute('data-email-suffix', UN_SUFFIX);
+    inp.setAttribute('placeholder', 'username');
+    inp.setAttribute('aria-label', 'School email username');
+    inp.setAttribute('autocomplete', 'off'); inp.setAttribute('autocapitalize', 'off');
+    inp.setAttribute('autocorrect', 'off'); inp.setAttribute('spellcheck', 'false');
+    var I = inp.style;
+    [['border', '0'], ['background', 'transparent'], ['box-shadow', 'none'], ['outline', 'none'], ['margin', '0'],
+     ['width', 'auto'], ['min-width', '0'], ['max-width', 'none'], ['flex', '1 1 auto'], ['height', 'auto'],
+     ['padding-right', '2px'], ['border-radius', '0']
+    ].forEach(function (p) { I.setProperty(p[0], p[1], 'important'); });
+    ['paddingTop', 'paddingBottom', 'paddingLeft', 'fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'color', 'letterSpacing']
+      .forEach(function (k) { I[k] = cs[k]; });
+    var suf = document.createElement('span');
+    suf.className = 'gal-un-suf'; suf.setAttribute('aria-hidden', 'true'); suf.textContent = UN_SUFFIX;
+    suf.style.fontSize = cs.fontSize; suf.style.fontFamily = cs.fontFamily;
+    suf.style.paddingRight = cs.paddingRight; suf.style.paddingTop = cs.paddingTop; suf.style.paddingBottom = cs.paddingBottom;
+    wrap.appendChild(inp); wrap.appendChild(suf);
+    wrap.addEventListener('mousedown', function (e) { if (e.target !== inp) { e.preventDefault(); inp.focus(); } });
+    orig.parentNode.insertBefore(wrap, orig);
+    orig.setAttribute('data-gal-un-orig', '1');
+    orig.style.setProperty('display', 'none', 'important');
+    orig.tabIndex = -1;
+    if (orig.id) { var lab = document.querySelector('label[for="' + orig.id + '"]'); if (lab) lab.htmlFor = inp.id; }
+
+    var syncing = false, lastVal = '', afterAt = false;
+    function setSuffix(sx) { inp.setAttribute('data-email-suffix', sx); suf.textContent = sx; }
+    function clean(v) {
+      v = String(v == null ? '' : v).replace(/\s+/g, '');
+      var i = v.indexOf('@');
+      if (i > -1) {
+        var dom = v.slice(i).toLowerCase();
+        if (dom === '@sfusd.edu' || dom === '@s.sfusd.edu') setSuffix(dom);
+        v = v.slice(0, i);
+      }
+      if (!v) setSuffix(UN_SUFFIX);
+      return v;
+    }
+    function toOrig(fire) {
+      var u = VDESC.get.call(inp).trim(), full = u ? u + inp.getAttribute('data-email-suffix') : '';
+      if (VDESC.get.call(orig) === full) return;
+      syncing = true; try { VDESC.set.call(orig, full); } finally { syncing = false; }
+      if (fire) unFire(orig);
+    }
+    /* anything that sets the username box in code (fill-ins, teacher view, "Not you?") */
+    Object.defineProperty(inp, 'value', { configurable: true,
+      get: function () { return VDESC.get.call(this); },
+      set: function (x) { var v = clean(x); VDESC.set.call(this, v); lastVal = v; afterAt = false; toOrig(true); } });
+    /* the page setting its own (hidden) email box shows in the username box */
+    Object.defineProperty(orig, 'value', { configurable: true,
+      get: function () { return VDESC.get.call(this); },
+      set: function (x) {
+        VDESC.set.call(this, x);
+        if (syncing) return;
+        var v = clean(x);
+        if (VDESC.get.call(inp) !== v) VDESC.set.call(inp, v);
+        lastVal = v; afterAt = false;
+        if (x && String(x).indexOf('@') < 0) { syncing = true; try { VDESC.set.call(this, v ? v + inp.getAttribute('data-email-suffix') : ''); } finally { syncing = false; } }
+      } });
+    inp.addEventListener('input', function (e) {
+      var raw = VDESC.get.call(inp), t = (e && e.inputType) || '';
+      if (afterAt && /^insert/.test(t) && t !== 'insertFromPaste' && raw.length > lastVal.length) {   /* the domain after a typed @ */
+        VDESC.set.call(inp, lastVal); return;
+      }
+      if (/^delete/.test(t)) afterAt = false;
+      var at = raw.indexOf('@'), bare = at > -1 && raw.slice(at).length === 1 && /^insert/.test(t) && t !== 'insertFromPaste';
+      var v = clean(raw);
+      if (v !== raw) VDESC.set.call(inp, v);
+      if (bare && v) afterAt = true;
+      lastVal = v;
+      toOrig(true);
+    });
+    inp.addEventListener('blur', function () { afterAt = false; });
+    inp.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter' || e.defaultPrevented || e.isComposing) return;
+      toOrig(false);
+      if (inp.form) return;                              /* the form submits itself (implicit submission) */
+      var b = startButton(box);
+      if (b) { e.preventDefault(); b.click(); }
+    });
+    /* start from whatever the page (or the browser) already put in its box */
+    var start = VDESC.get.call(orig);
+    if (start) { var v0 = clean(start); VDESC.set.call(inp, v0); lastVal = v0; if (start.indexOf('@') < 0) toOrig(false); }
+    orig.__galUnInput = inp;
+    if (hadFocus) try { inp.focus(); } catch (e) {}
+  }
+  function unScan() {
+    var ems = document.querySelectorAll('input[type=email], input[id*=mail i], input[name*=mail i]');
+    for (var i = 0; i < ems.length; i++) {
+      var box = unEligible(ems[i]);
+      if (box) { try { unWrap(ems[i], box); } catch (e) { try { console.warn('T-228 username box', e); } catch (x) {} } }
+    }
+  }
+
   function scan() {
     addCSS();
     speakerIcons();
@@ -1353,6 +1512,7 @@
     myPageScan();
     var ems = document.querySelectorAll('input[type=email], input[id*=mail i], input[name*=mail i]');
     for (var i = 0; i < ems.length; i++) fixBox(ems[i]);
+    unScan();                                           /* T-228 — after fixBox, so the language box copies the page's own field */
   }
   var pending = null;
   function soon() { if (pending) return; pending = setTimeout(function () { pending = null; scan(); }, 150); }
@@ -1365,6 +1525,9 @@
     pfBoot();
     tvBoot();
     try { new MutationObserver(soon).observe(document.body, { childList: true, subtree: true }); } catch (e) {}
+    /* T-228: a sign-in box revealed by a class change (no new nodes) or left while typing */
+    document.addEventListener('click', soon, true);
+    document.addEventListener('focusout', soon, true);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
