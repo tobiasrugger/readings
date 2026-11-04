@@ -84,6 +84,10 @@ textarea.txt{min-height:140px;font-size:18px}
 .wc{font-size:14px;color:var(--mut);font-weight:800}
 .boxes{font-size:26px;letter-spacing:6px;font-weight:900;margin:6px 0}
 .play{font-size:22px;padding:14px 22px}
+/* T-266 */@keyframes spkpulse{0%,100%{box-shadow:0 0 0 0 rgba(248,152,31,.0)}50%{box-shadow:0 0 0 7px rgba(248,152,31,.45)}}
+.speaking{animation:spkpulse 1s ease-in-out infinite}
+#nosnd{position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:60;width:min(560px,94vw);box-sizing:border-box;background:#fff;border:2px solid var(--ink);border-radius:14px;box-shadow:0 6px 0 rgba(43,34,51,.25);padding:4px 8px}
+#nosnd.hide{display:none}#nosnd .hint{margin:0;align-items:center}
 .big{font-size:30px;font-weight:900;line-height:1.35;margin:6px 0 14px}
 .heard{color:var(--mut);font-size:16px}
 .miss{background:#ffe1b8;border-radius:5px;padding:0 3px}
@@ -332,33 +336,68 @@ function picFor(k){
 }
 
 /* ======================= SPEECH ======================= */
-var VOICE=null;
-function pickVoice(){ if(!window.speechSynthesis) return; var v=speechSynthesis.getVoices().filter(function(x){return /^en/i.test(x.lang);}); VOICE=v.filter(function(x){return x.localService&&/en-US/i.test(x.lang);})[0]||v.filter(function(x){return /en-US/i.test(x.lang);})[0]||v[0]||null; }
+/* T-266: Chrome's speech engine can jam (no sound, no error). Every speak now: resume() first; cancel+resume if an old
+   utterance is stuck; wait for onstart; if it hasn't started after 1.5 s, cancel and retry ONCE with the browser's default
+   voice; if that never starts either, show a friendly "No sound?" line and count it in S.log.nosound. The ▶ Play / 🔊
+   button that asked for the sound pulses while it plays. A test-mode play only counts once the sound really started. */
+var VOICE=null, VOICE_DEFAULT=false;
+var BAD_VOICE=/bad news|bubbles|grandma|grandpa|rocko|albert|bahh|bells|boing|cellos|deranged|good news|hysterical|jester|organ|superstar|trinoids|whisper|wobble|zarvox|junior|ralph|fred|kathy|shelley|reed|sandy|flo|eddy|eloquence/i;
+function pickVoice(){ if(!window.speechSynthesis) return; var all=speechSynthesis.getVoices()||[];
+  var v=all.filter(function(x){return /^en/i.test(x.lang)&&!BAD_VOICE.test(x.name);});
+  var by=function(n){return v.filter(function(x){return x.name.indexOf(n)===0;})[0];};
+  VOICE=by('Google US English')||by('Samantha')||by('Alex')||v.filter(function(x){return /en[-_]US/i.test(x.lang);})[0]||v[0]||null; }
 if(window.speechSynthesis){pickVoice();speechSynthesis.onvoiceschanged=pickVoice;}
-function speak(text,rate){
-  if(!window.speechSynthesis) return;
-  SEQ++; speechSynthesis.cancel();
+var SPK_BTN=null, SPK_ON=null;
+document.addEventListener('click',function(e){ var b=e.target.closest&&e.target.closest('#playIt,#playSlow,.sbtn,[data-say],.lbox'); if(b)SPK_BTN=b; },true);
+function spkOff(b){ if(!b)return; b.classList.remove('speaking'); if(b.getAttribute('data-label')){ b.innerHTML=b.getAttribute('data-label'); b.removeAttribute('data-label'); } }
+function spkUi(on){
+  if(!on){ spkOff(SPK_ON); SPK_ON=null; return; }
+  var b=SPK_BTN; SPK_BTN=null; if(SPK_ON&&SPK_ON!==b)spkOff(SPK_ON); SPK_ON=b; if(!b) return;
+  b.classList.add('speaking'); if((b.id==='playIt'||b.id==='playSlow')&&!b.getAttribute('data-label')){ b.setAttribute('data-label',b.innerHTML); b.innerHTML='\ud83d\udd0a Playing\u2026'; } }
+function synthPrep(){ try{ speechSynthesis.resume(); if(speechSynthesis.speaking||speechSynthesis.pending){ speechSynthesis.cancel(); speechSynthesis.resume(); } }catch(e){} }
+function noSound(){ try{ S.log.nosound=(S.log.nosound||0)+1; touch(); }catch(e){}
+  var n=$('nosnd'); if(!n){ n=document.createElement('div'); n.id='nosnd'; n.setAttribute('role','status'); document.body.appendChild(n); }
+  n.innerHTML='<div class="hint">'+headPic('jun')+'<div><div translate="no"><b>'+tapWords('No sound?')+'</b> '+tapWords('Close Chrome all the way and open it again.')+'</div></div><button class="sbtn" id="nosndX" aria-label="close">\u2715</button></div>';
+  n.classList.remove('hide'); $('nosndX').onclick=function(){ n.classList.add('hide'); }; }
+/* one utterance with the start-watchdog; o: {onstart, onend, my} */
+function sayOne(text,rate,o,retried){
+  synthPrep();
+  var u=new SpeechSynthesisUtterance(text), started=false, ended=false;
+  u.lang='en-US'; if(VOICE&&!VOICE_DEFAULT&&!retried){ try{u.voice=VOICE;}catch(e){} } u.rate=rate;
+  u.onstart=function(){ if(o.my!==SEQ)return; started=true; if(retried)VOICE_DEFAULT=true; var n=$('nosnd'); if(n)n.classList.add('hide'); if(o.onstart)o.onstart(); };
+  var fin=function(){ if(ended)return; ended=true; if(o.onend)o.onend(started); };
+  u.onend=fin; u.onerror=function(){ if(started)fin(); };
+  setTimeout(function(){ if(started||ended||o.my!==SEQ)return; try{speechSynthesis.cancel();}catch(e){}
+    if(!retried){ ended=true; sayOne(text,rate,o,true); } else { ended=true; spkUi(false); noSound(); if(o.onfail)o.onfail(); } },1500);
+  try{ speechSynthesis.speak(u); }catch(e){}
+  return u;
+}
+var SEQ=0;
+function speak(text,rate,opt){
+  if(!window.speechSynthesis) return; opt=opt||{};
+  var my=++SEQ; try{speechSynthesis.cancel();}catch(e){}
   var t=String(text).replace(/(^|[^A-Za-z])I([^A-Za-z]|$)/g,'$1eye$2');
-  var u=new SpeechSynthesisUtterance(t); u.lang='en-US'; if(VOICE)u.voice=VOICE; u.rate=rate||0.85;
-  setTimeout(function(){speechSynthesis.speak(u);},40);
+  var first=true;
+  setTimeout(function(){ if(my!==SEQ)return; spkUi(true);
+    sayOne(t,rate||0.85,{my:my,onstart:function(){ if(first){first=false; if(opt.onstart)opt.onstart();}
+        setTimeout(function(){ if(my===SEQ)spkUi(false); },1500+t.length*110/(rate||0.85)); /* if Chrome drops onend */ },
+      onend:function(){ if(my===SEQ)spkUi(false); }}); },40);
 }
 /* T-257: say a list of letters one at a time with a real pause between them, so O and L don't blur.
    onStep(k) fires as letter k starts (k=-1 when finished). */
-var SEQ=0;
-function speakLetters(list,rate,gap,onStep){
-  if(!window.speechSynthesis) return; speechSynthesis.cancel(); var my=++SEQ, i=0;
+function speakLetters(list,rate,gap,onStep,opt){
+  if(!window.speechSynthesis) return; opt=opt||{}; try{speechSynthesis.cancel();}catch(e){} var my=++SEQ, i=0, first=true;
+  spkUi(true);
   function next(){
     if(my!==SEQ) return;
-    if(i>=list.length){ if(onStep)onStep(-1); return; }
-    var k=i++, u=new SpeechSynthesisUtterance(list[k]), fired=false;
-    u.lang='en-US'; if(VOICE)u.voice=VOICE; u.rate=rate;
-    function after(){ if(fired)return; fired=true; setTimeout(next,gap); }
-    u.onend=after; u.onerror=after; setTimeout(after,2200); /* Chrome sometimes drops onend */
-    if(onStep)onStep(k);
-    try{speechSynthesis.speak(u);}catch(e){after();}
+    if(i>=list.length){ spkUi(false); if(onStep)onStep(-1); return; }
+    var k=i++, done=false;
+    function after(){ if(done)return; done=true; setTimeout(next,gap); }
+    sayOne(list[k],rate,{my:my,onstart:function(){ if(onStep)onStep(k); if(first){first=false; if(opt.onstart)opt.onstart();} setTimeout(after,2200); /* Chrome sometimes drops onend */ },onend:after,onfail:function(){ done=true; if(onStep)onStep(-1); }});
   }
   setTimeout(next,60);
 }
+window.__T266=1;
 
 /* ======================= TRANSLATION ======================= */
 var TRC={};
@@ -718,7 +757,10 @@ function rType(o,box){
     '<button class="btn or play" id="playIt"'+(capped?' disabled':'')+'>\u25b6 Play</button> '+(PRACTICE?'<button class="btn alt" id="playSlow">\ud83d\udc22 Slow</button>':'<span class="wc">'+Math.max(0,3-plays)+' plays left</span>')+
     (isName?nameBoxes(it,a):'<div style="margin-top:14px;clear:both"><input class="txt" id="typeIn" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="'+(len+6)+'" style="max-width:'+(isL?'120px':'340px')+'" value="'+esc(a.val||'')+'"'+(a.done?' disabled':'')+'> <button class="btn" id="typeGo"'+(a.done?' disabled':'')+'>Check</button></div>')+
     boxes+'<div id="fb">'+(PRACTICE&&a.done?'<div class="good">\u2713</div>':(PRACTICE&&a.tries&&!a.done?quip(isL?'Listen again. Type only what you hear.':'Listen again. Count the letters.'):''))+(!PRACTICE&&a.done?'<div class="good" style="color:#2b2233">Saved.</div>':'')+'</div>'+navRow(o);
-  function play(rate){ if(!PRACTICE&&(S.log.plays[it.id]||0)>=3)return; S.log.plays[it.id]=(S.log.plays[it.id]||0)+1; touch(); if(isL){ var slow=rate&&rate<0.6, tk=box.querySelectorAll('.lbox'); speakLetters(it.ear,slow?0.55:0.7,slow?1500:950,function(k){ for(var j=0;j<tk.length;j++)tk[j].classList.toggle('on',j===k); }); } else speak(sayText,rate||0.8); if(!PRACTICE){ var left=3-S.log.plays[it.id]; var wc=box.querySelector('.wc'); if(wc)wc.textContent=Math.max(0,left)+' plays left'; if(left<=0)$('playIt').disabled=true; } }
+  function play(rate){ if(!PRACTICE&&(S.log.plays[it.id]||0)>=3)return;
+    /* T-266: a play is counted only once the sound really starts */
+    var counted=function(){ S.log.plays[it.id]=(S.log.plays[it.id]||0)+1; touch(); if(!PRACTICE){ var left=3-S.log.plays[it.id]; var wc=box.querySelector('.wc'); if(wc)wc.textContent=Math.max(0,left)+' plays left'; if(left<=0&&$('playIt')){ $('playIt').disabled=true; } } };
+    if(isL){ var slow=rate&&rate<0.6, tk=box.querySelectorAll('.lbox'); speakLetters(it.ear,slow?0.55:0.7,slow?1500:950,function(k){ for(var j=0;j<tk.length;j++)tk[j].classList.toggle('on',j===k); },{onstart:counted}); } else speak(sayText,rate||0.8,{onstart:counted}); }
   $('playIt').onclick=function(){play();}; if($('playSlow'))$('playSlow').onclick=function(){play(0.55);};
   $('typeGo').onclick=function(){
     var v=isName?nameVal(box):$('typeIn').value.trim(); if(!v)return; var aa=S.ans[it.id]||(S.ans[it.id]={tries:0});
@@ -746,8 +788,7 @@ function wireNameBoxes(it,a,box){
     inp.addEventListener('click',function(){
       var key=it.id+'#'+k, n=(S.log.plays[key]||0);
       if(!PRACTICE&&n>=3){ inp.classList.add('used'); return; }
-      S.log.plays[key]=n+1; touch();
-      inp.classList.add('on'); speakLetters([it.ear[k]],0.6,0,function(j){ if(j<0)inp.classList.remove('on'); });
+      inp.classList.add('on'); speakLetters([it.ear[k]],0.6,0,function(j){ if(j<0)inp.classList.remove('on'); },{onstart:function(){ S.log.plays[key]=(S.log.plays[key]||0)+1; touch(); }});
     });
     inp.addEventListener('input',function(){ inp.value=inp.value.replace(/[^A-Za-z]/g,'').slice(-1); if(inp.value&&bx[k+1])bx[k+1].focus(); });
     inp.addEventListener('keydown',function(e){
@@ -764,7 +805,8 @@ function rListenMc(o,box){
   box.innerHTML='<div class="pic">'+picFor('ear')+'</div><p class="dir" translate="no">'+tapWords('Listen. Then answer the question.')+'</p>'+
     '<button class="btn or play" id="playIt"'+(capped?' disabled':'')+'>\u25b6 Play</button> '+(PRACTICE?'<button class="btn alt" id="playSlow">\ud83d\udc22 Slow</button>':'<span class="wc">'+Math.max(0,3-plays)+' plays left</span>')+
     '<div class="stem" style="margin-top:14px" translate="no">'+tapWords(it.q)+' '+trBtn(it.q,'trq')+'</div><div class="trline" id="trq"></div>'+mcBlock(o,labels,it.a)+navRow(o);
-  function play(rate){ if(!PRACTICE&&(S.log.plays[it.id]||0)>=3)return; S.log.plays[it.id]=(S.log.plays[it.id]||0)+1; touch(); speak(it.say,rate||0.8); if(!PRACTICE){var left=3-S.log.plays[it.id];var wc=box.querySelector('.wc');if(wc)wc.textContent=Math.max(0,left)+' plays left';if(left<=0)$('playIt').disabled=true;} }
+  function play(rate){ if(!PRACTICE&&(S.log.plays[it.id]||0)>=3)return;
+    speak(it.say,rate||0.8,{onstart:function(){ S.log.plays[it.id]=(S.log.plays[it.id]||0)+1; touch(); if(!PRACTICE){var left=3-S.log.plays[it.id];var wc=box.querySelector('.wc');if(wc)wc.textContent=Math.max(0,left)+' plays left';if(left<=0&&$('playIt'))$('playIt').disabled=true;} }}); }
   $('playIt').onclick=function(){play();}; if($('playSlow'))$('playSlow').onclick=function(){play(0.55);};
   wireMc(o,labels,it.a,box,function(){rListenMc(o,box);}); wireNav(); if(isDone(o))enableNext();
 }
@@ -844,7 +886,7 @@ function startRecording(maxSecs,onLive){
     REC=ctl; return ctl;
   });
 }
-function stopAnyRec(){ if(REC&&REC.on){ REC.stop(function(){}); } REC=null; if(window.speechSynthesis)speechSynthesis.cancel(); }
+function stopAnyRec(){ if(REC&&REC.on){ REC.stop(function(){}); } REC=null; if(window.speechSynthesis){SEQ++;speechSynthesis.cancel();spkUi(false);} }
 function lev(a,b){ if(a===b)return 0; var m=a.length,n=b.length; if(!m)return n; if(!n)return m; var prev=[],cur,i,j; for(j=0;j<=n;j++)prev[j]=j; for(i=1;i<=m;i++){cur=[i];for(j=1;j<=n;j++)cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));prev=cur;} return prev[n]; }
 function sim(a,b){ if(a===b)return true; var L=Math.max(a.length,b.length),tol=L>=8?2:(L>=4?1:0); if(lev(a,b)<=tol)return true; if(a.length>=5&&b.length>=5&&a.slice(0,4)===b.slice(0,4))return true; var nums={one:'1',two:'2',ten:'10'}; if(nums[a]===b||nums[b]===a)return true; return false; }
 function alignText(target,heard){
