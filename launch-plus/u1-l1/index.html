@@ -562,8 +562,17 @@ var REELI=0,REEL_ALL=false,REEL_PLAYING=false,REEL_SEEN={},KEYS=[],SH={busy:fals
 function plain(html){return String(html).replace(/<[^>]+>/g,'');}
 function paragraphHTML(){return DATA.story.map(function(sg){return sg.who==='narrator'?sg.text:'<i>'+CASTN[sg.who].n+':</i> \u201c'+sg.text+'\u201d';}).join(' ');}
 function segWords(sg){ /* split the html into word spans, keeping the yellow vocabulary */
- var out=[],re=/(<b class=v>)([^<]+)(<\/b>)([^\s<]*)|([^\s<]+)/g,m,pos=0,txt=plain(sg.text);
- while((m=re.exec(sg.text))){var w=m[2]?(m[2]+(m[4]||'')):m[5],v=!!m[2];var at=txt.indexOf(w,pos);if(at<0)at=pos;out.push({w:w,v:v,start:at,end:at+w.length});pos=at+w.length;}
+ /* T-271: <b>…</b> and <i>…</i> are one word too, with or without class=v.
+    Before this, a plain <b>She</b> was split into the spans "b>She" and "/b>" and shown to students. */
+ var out=[],re=/<(b|i)((?:\s+[^>]*)?)>([^<]*)<\/\1>([^\s<]*)|([^\s<]+)/g,m,pos=0,txt=plain(sg.text);
+ while((m=re.exec(sg.text))){
+  var inner=m[3],w,v=false;
+  if(inner!==undefined){ w=inner+(m[4]||''); v=/\bclass\s*=\s*["']?v\b/.test(m[2]||''); }
+  else { w=m[5]; }
+  if(!w)continue;
+  var at=txt.indexOf(w,pos);if(at<0)at=pos;
+  out.push({w:w,v:v,start:at,end:at+w.length});pos=at+w.length;
+ }
  return out;
 }
 function viewBoxFor(sg){
