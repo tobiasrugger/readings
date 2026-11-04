@@ -239,6 +239,8 @@ var DATA={
  ]
 };
 var LESSON=(new URLSearchParams(location.search).get('lesson')||'');
+/* T-274: ?focus=frag = a heavier sentence-or-fragment day: 4 of them (2 sentences + 2 fragments) instead of 2, one fewer "who?" and one fewer "where?" — still 12. Only shapes a day's FIRST build (today's set is saved all day). */
+var FOCUS=(new URLSearchParams(location.search).get('focus')||'').toLowerCase();
 
 var ST={name:'',email:'',period:'',act:0,A:{},W:{},turnedIn:null,browserTranslated:false,items:null,lesson:null};
 /* T-263: today's work comes from the SERVER (table basics, row email+unit=today). The 12 questions
@@ -277,9 +279,10 @@ function buildItems(){
  var sents=[];
  if(window.WIT){var fr=pri(WIT.fragment.filter(function(x){return x.lvl==='101';})),bb=pri(WIT.bbs_choose.filter(function(x){return x.lvl==='101';}));
   /* T-270: one sentence + one fragment a day, shown exactly as written (caps/periods vary) */
-  var f1=fr.filter(function(x){return x.k==='S';})[0],f2=fr.filter(function(x){return x.k==='F';})[0];
-  sents=sh([f1,f2].filter(Boolean)).map(fragQ)
+  var nf=/^frag/.test(FOCUS)?2:1,fS=fr.filter(function(x){return x.k==='S';}).slice(0,nf),fF=fr.filter(function(x){return x.k==='F';}).slice(0,nf);
+  sents=sh(fS.concat(fF)).map(fragQ)
    .concat(bb.slice(0,1).map(function(b){return {pic:'🔗',q:b.s,o:['because','but','so'],a:b.a,k:'CONJ.BBS'};}));}
+ if(/^frag/.test(FOCUS)){who=who.slice(1);whs=whs.slice(0,2);}
  qs=sh(who.map(function(x){x.k='PRON.SUBJ';return x;})).concat(sh(bes.map(function(x){x.k='SENT.BE';return x;}))).concat(sh(whs.map(function(x){x.k='PLACE';return x;}))).concat(sents);
  qs=sh(qs);
  var run=0,lastA=-1;
