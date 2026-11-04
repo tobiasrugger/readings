@@ -241,7 +241,7 @@
   /* which field is which, by id, name, placeholder, type and label */
   function fieldKind(el, box) {
     if (el.getAttribute && el.getAttribute('data-gal-un-orig')) return '';   /* T-228: hidden behind the username box */
-    var hay = [el.id, el.name, el.placeholder, el.getAttribute('aria-label') || ''].join(' ').toLowerCase();
+    var hay = [el.id, el.name, el.placeholder, el.getAttribute('aria-label') || '', el.getAttribute('autocomplete') || ''].join(' ').toLowerCase();   /* T-264: given-name / family-name count */
     var lab = box.querySelector('label[for="' + el.id + '"]');
     if (lab) hay += ' ' + (lab.textContent || '').toLowerCase();
     if (el.type === 'email' || /mail/.test(hay)) return 'email';
@@ -257,6 +257,12 @@
     }
     return false;
   }
+  function namePart(el, full) {
+    var hay = ((el.id || '') + ' ' + (el.name || '') + ' ' + (el.placeholder || '') + ' ' + (el.getAttribute('autocomplete') || '')).toLowerCase();
+    var fo = /first|given/.test(hay) && !/last|sur|family/.test(hay), lo = /last|sur|family/.test(hay) && !/first|given/.test(hay);
+    var parts = String(full).trim().split(/\s+/);
+    return fo ? parts[0] : lo ? parts.slice(1).join(' ') : full;
+  }
   function fillFrom(box, s) {
     var els = box.querySelectorAll('input, select'), left = 0, filled = {};
     for (var i = 0; i < els.length; i++) {
@@ -266,6 +272,7 @@
       var kind = fieldKind(el, box);
       if (kind && !el.value) {
         var v = s[kind];
+        if (kind === 'name' && v) v = namePart(el, v);   /* T-264: a First or Last box gets only its half */
         if (v) {
           if (el.tagName === 'SELECT') {
             for (var o = 0; o < el.options.length; o++) {
@@ -316,7 +323,9 @@
         var els = box.querySelectorAll('input, select'), got = {};
         for (var i = 0; i < els.length; i++) {
           var k = fieldKind(els[i], box);
-          if (k && els[i].value) got[k] = k === 'email' ? emailVal(els[i]) : els[i].value.trim();
+          if (!k || !els[i].value) continue;
+          if (k === 'name' && got.name) got.name += ' ' + els[i].value.trim();   /* T-264: First + Last boxes */
+          else got[k] = k === 'email' ? emailVal(els[i]) : els[i].value.trim();
         }
         if (got.email) remember(got.name, got.email, got.period);
       }, 60);
@@ -340,7 +349,7 @@
     for (var i = 0; i < els.length; i++) {
       var k = fieldKind(els[i], box), v = (els[i].value || '').trim().toLowerCase();
       if (!v) continue;
-      if ((k === 'email' && (v === STALE.em || v.split('@')[0] === user)) || (k === 'name' && STALE.nm && v === STALE.nm)) {
+      if ((k === 'email' && (v === STALE.em || v.split('@')[0] === user)) || (k === 'name' && STALE.nm && (v === STALE.nm || v === namePart(els[i], STALE.nm)))) {
         els[i].value = '';
         try { els[i].dispatchEvent(new Event('input', { bubbles: true })); } catch (e) {}
       }
@@ -903,6 +912,7 @@
   }
   function myPageOff() {
     var p = location.pathname;
+    try { if (window.top !== window.self) return true; } catch (e) { return true; }   /* T-264: embedded (say/ inside a lesson) */
     if (/^\/readings\/student(\/|$)/.test(p)) return true;               /* the student page itself */
     if (/^\/readings\/?(index\.html)?$/.test(p)) return true;              /* the hub */
     if (TEACHER_PATH.test(p)) return true;
@@ -1309,7 +1319,7 @@
     try { el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); } catch (e) {}
   }
   function tvFindBox() {
-    var ems = document.querySelectorAll('input[type=email], input[id*=mail i], input[name*=mail i]');
+    var ems = document.querySelectorAll('input[type=email], input[id*=mail i], input[name*=mail i], input[autocomplete=email]');
     for (var i = 0; i < ems.length; i++) if (shown(ems[i])) { var b = ems[i].closest('[data-gal-std]') || boxFor(ems[i]); if (b) return b; }
     return null;
   }
@@ -1322,11 +1332,11 @@
         var els = box.querySelectorAll('input, select');
         for (var i = 0; i < els.length; i++) {
           var el = els[i]; if (el.type === 'hidden' || el.type === 'password' || el.id === 'galStdLang') continue;
-          var k = fieldKind(el, box), hay = ((el.id || '') + ' ' + (el.name || '') + ' ' + (el.placeholder || '')).toLowerCase();
+          var k = fieldKind(el, box), hay = ((el.id || '') + ' ' + (el.name || '') + ' ' + (el.placeholder || '') + ' ' + (el.getAttribute('autocomplete') || '')).toLowerCase();
           if (k === 'email') tvSet(el, TV.email);
           else if (k === 'period') tvSet(el, info.period);
           else if (k === 'name') {
-            var fo = /first/.test(hay) && !/last|sur/.test(hay), lo = /last|sur/.test(hay) && !/first/.test(hay);   /* "First and last name" = full name */
+            var fo = /first|given/.test(hay) && !/last|sur|family/.test(hay), lo = /last|sur|family/.test(hay) && !/first|given/.test(hay);   /* "First and last name" = full name */
             tvSet(el, fo ? info.first : lo ? info.last : info.name);
           }
         }
@@ -1367,7 +1377,9 @@
        - typing "@" jumps past the fixed part (the domain they go on typing is dropped);
        - the page setting its own email box (remembered student, teacher view, "Not you?")
          shows up in the username box;
-       - Enter signs in (presses the box's Start button, unless a <form> submits by itself). */
+       - Enter signs in (presses the box's Start button, unless a <form> submits by itself).
+     T-264 (Nov 4): also finds email boxes known only by autocomplete="email" (eld103/unit1 #ge);
+     say/, eld103/ch3_index and fluency now load std.js in their <head>. */
   var UN_SUFFIX = '@s.sfusd.edu', UN_N = 0;
   var VDESC = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
   function emailVal(el) {
@@ -1489,7 +1501,7 @@
       toOrig(false);
       if (inp.form) return;                              /* the form submits itself (implicit submission) */
       var b = startButton(box);
-      if (b) { e.preventDefault(); b.click(); }
+      if (b) { e.preventDefault(); e.stopPropagation(); b.click(); }   /* T-264: once — a box-level Enter handler would press it again */
     });
     /* start from whatever the page (or the browser) already put in its box */
     var start = VDESC.get.call(orig);
@@ -1498,7 +1510,7 @@
     if (hadFocus) try { inp.focus(); } catch (e) {}
   }
   function unScan() {
-    var ems = document.querySelectorAll('input[type=email], input[id*=mail i], input[name*=mail i]');
+    var ems = document.querySelectorAll('input[type=email], input[id*=mail i], input[name*=mail i], input[autocomplete=email]');
     for (var i = 0; i < ems.length; i++) {
       var box = unEligible(ems[i]);
       if (box) { try { unWrap(ems[i], box); } catch (e) { try { console.warn('T-228 username box', e); } catch (x) {} } }
@@ -1510,7 +1522,7 @@
     speakerIcons();
     pfScan();
     myPageScan();
-    var ems = document.querySelectorAll('input[type=email], input[id*=mail i], input[name*=mail i]');
+    var ems = document.querySelectorAll('input[type=email], input[id*=mail i], input[name*=mail i], input[autocomplete=email]');
     for (var i = 0; i < ems.length; i++) fixBox(ems[i]);
     unScan();                                           /* T-228 — after fixBox, so the language box copies the page's own field */
   }
