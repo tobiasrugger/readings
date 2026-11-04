@@ -52,6 +52,50 @@
   if (window.__GAL_STD__) return;
   window.__GAL_STD__ = true;
 
+  /* T-268: names said right on every page (captions unchanged). The voice gets "Ameera" for
+     "Amira" (the fix used to live only in reel-v2/engine.js SAY_AS). "Ameera" is one letter
+     longer, so a page's onboundary handler gets charIndex mapped back to ITS text, and word
+     highlights don't drift after the name. */
+  (function () {
+    var SAY_AS = { 'Amira': 'Ameera' };
+    var ss = window.speechSynthesis; if (!ss || ss.__galSayAs) return; ss.__galSayAs = 1;
+    var orig = ss.speak, RE = new RegExp('\\b(' + Object.keys(SAY_AS).join('|') + ')\\b', 'g');
+    function swap(text) {
+      var out = '', map = [], last = 0, m, i;
+      RE.lastIndex = 0;
+      while ((m = RE.exec(text))) {
+        for (i = last; i < m.index; i++) map.push(i);
+        out += text.slice(last, m.index);
+        var r = SAY_AS[m[1]];
+        for (i = 0; i < r.length; i++) map.push(m.index + Math.min(i, m[1].length - 1));
+        out += r; last = m.index + m[1].length;
+      }
+      for (i = last; i <= text.length; i++) map.push(i);
+      return { text: out + text.slice(last), map: map };
+    }
+    ss.speak = function (u) {
+      try {
+        if (u && u.text) {
+          var s = swap(u.text);
+          if (s.text !== u.text) {
+            u.text = s.text;
+            var h = u.onboundary;
+            if (typeof h === 'function' && !h.__galMapped) {
+              var w = function (e) {
+                var ci = e.charIndex;
+                return h.call(this, { charIndex: typeof ci === 'number' && s.map[ci] != null ? s.map[ci] : ci,
+                  charLength: e.charLength, name: e.name, elapsedTime: e.elapsedTime, utterance: e.utterance,
+                  type: e.type, target: e.target, currentTarget: e.currentTarget });
+              };
+              w.__galMapped = 1; u.onboundary = w;
+            }
+          }
+        }
+      } catch (e) {}
+      return orig.apply(this, arguments);
+    };
+  })();
+
   /* code, label shown, words that mean this language on other pickers */
   var LANGS = [
     ['es',    'Español',            'es|spanish|español|espanol'],
