@@ -1160,7 +1160,8 @@ async function classDoing(email,p,pushed){
   }); });
   var pushedPaths=(pushed||[]).map(function(x){return String(x.href||'').split('?')[0];});
   return Object.keys(by).filter(function(path){
-      return Object.keys(by[path].who).length>=need && !pushedPaths.some(function(h){return samePath(h,path);});
+      return Object.keys(by[path].who).length>=need && !pushedPaths.some(function(h){return samePath(h,path);})
+        && !otherCourse(path,'',courseOfPeriod(p));  /* T-269 */
     }).sort(function(a,b){ return by[a].last<by[b].last?1:-1; }).slice(0,CLASS_SHOW)
     .map(function(path){ var n=Object.keys(by[path].who).length;
       return {href:path, title:by[path].k&&paramUrl(by[path].k)?slugLink(by[path].k).title:catTitle(path, slugLink(path.replace(/^\/readings\//,'')).title), cls:true, created_at:'1970-01-01T00:00:00Z',
@@ -1181,6 +1182,35 @@ var PUSH_PROGRESS={
   '/readings/brothers-in-arms':{table:'brothers_responses',keys:['brothers-in-arms']}
 };
 function pushPer(v){var m=String(v==null?'':v).match(/[1-7]/);return m?m[0]:'';}
+/* ---------- T-269: keep the other course's pages off a student's page ----------
+   Student's course from the period (1, 4, 6 = ELD 101; 3, 5 = ELD 103; no period = show everything).
+   Page's course: a catalog title ending "— ELD 101" / "· ELD 103" first, else the path/group guess
+   (same as guessCourse() on the Shelves page); anything else counts for both courses.
+   Used by Finish This, "Your class is doing this", the skill tiles' Try this, and pushes to "all".
+   Pushes to the student's own period and "Extra work for you" are Mr. Toby's choice and always stay. */
+var COURSE_OF_PERIOD={'1':'101','4':'101','6':'101','3':'103','5':'103'};
+function courseOfPeriod(p){ return COURSE_OF_PERIOD[pushPer(p)]||''; }
+function stuCourse(){ return courseOfPeriod(DATA.student&&DATA.student.period); }
+function guessCourse(p,g){
+  if(/launch-plus|\/reel|teachme|easy-true|phonics|survival|basics|pronouns|alphabet|eld101/.test(p)) return '101';
+  if(/landlady|telltale|monkeyspaw|omelas|\/write\/|voices|advice|eld103|\/questions\//.test(p)) return '103';
+  if(/Very Easy|Launch Plus|Story Reel/.test(g||'')) return '101';
+  if(/ELD 103|Writing Ladder|Short stories/.test(g||'')) return '103';
+  return 'both';
+}
+function pageCourse(url,title){
+  var path=String(url||'').replace(/^https?:\/\/[^\/]+/i,'').split('#')[0].split('?')[0];
+  if(path&&path.charAt(0)!=='/')path='/readings/'+path.replace(/^\/+/,'');
+  var c=window.CATALOG||[], ent=null, alt=path.replace(/\/?$/,'/');
+  for(var i=0;i<c.length;i++){ var cp=String(c[i].p).split('?')[0]; if(cp===path||cp===alt){ent=c[i];break;} }
+  var t=(ent&&ent.t)||title||'', m=String(t).match(/[\u2014\u2013\-\u00b7|]\s*ELD\s*(101|103)\s*$/i);
+  if(m)return m[1];
+  return guessCourse(path,ent&&ent.g);
+}
+function otherCourse(url,title,sc){
+  sc=sc==null?stuCourse():sc; if(!sc)return false;
+  var pc=pageCourse(url,title); return pc!=='both'&&pc!==sc;
+}
 async function myPeriod(email){
   var p=pushPer(DATA.student&&DATA.student.period); if(p)return p;
   var lp=email.split('@')[0], both='in.('+encodeURIComponent(lp+'@s.sfusd.edu')+','+encodeURIComponent(lp+'@sfusd.edu')+')';
@@ -1199,6 +1229,8 @@ async function loadPushed(email){
     var rows=await sb('class_assignments?area=eq.site&period=in.('+per.map(function(x){return '"'+x+'"';}).join(',')+')'+
       '&or=(expires_at.is.null,expires_at.gt.'+encodeURIComponent(now)+')&order=created_at.desc&select=*');
     rows=rows||[];
+    /* T-269: a push to "all" periods skips the other course's pages; a push to this student's own period always stays */
+    var scP=courseOfPeriod(p); rows=rows.filter(function(r){ return !(String(r.period)==='all'&&otherCourse(r.href,r.title,scP)); });
     var seen={}; rows=rows.filter(function(r){if(seen[r.href])return false;seen[r.href]=1;return true;});
     /* T-135: posts copied from Google Classroom come first, soonest due date first; undated pushes keep their order */
     rows=rows.map(function(r,i){r._i=i;return r;}).sort(function(a,b){
@@ -1836,6 +1868,7 @@ function renderFinish(){
       if(sc.length>1 && sc[sc.length-1]<=Math.max.apply(null,sc.slice(0,-1)))return; }
     var act=titleOf[slug]||{};
     var sl=slugLink(slug);
+    if(otherCourse(act.url||sl.url,act.title||sl.title))return;  /* T-269 */
     rows.push({slug:slug,pct:best,title:act.title||sl.title,unit:act.unit||'',url:act.url||sl.url});
   });
   rows.sort(function(a,b){return b.pct-a.pct;});
@@ -1909,6 +1942,7 @@ function actsForSkill(code){
     var tags=(act.skills||[]).map(canonSkill);
     if(tags.indexOf(code)<0)return;
     var att=doneBy[act.slug];
+    if(!att&&otherCourse(act.url||('/readings/'+act.slug+'/'),act.title))return;  /* T-269: Try this = own course only */
     if(att){
       var best=null;
       att.forEach(function(x){
