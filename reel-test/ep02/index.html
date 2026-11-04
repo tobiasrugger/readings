@@ -137,6 +137,12 @@ textarea.txt{min-height:140px;font-size:18px}
 .ext-tag{display:inline-block;background:var(--pu);color:#fff;border-radius:999px;padding:1px 9px;font-size:13px;font-weight:900;margin-left:6px}
 details.help{border:2px solid var(--ink);border-radius:12px;padding:6px 12px;margin:8px 0;background:#fffdf6}
 details.help summary{font-weight:900;cursor:pointer}
+.dsent{font-size:24px;font-weight:700;line-height:1.6;margin:8px 0 14px;padding:10px 14px;border:2px solid #2b2233;border-radius:12px;background:#fff;box-shadow:0 3px 0 #2b2233;clear:both}
+.dsent .blk{display:inline-block;font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:800;letter-spacing:.06em;white-space:nowrap;color:#2b2233;margin:0 2px}
+.lrow{display:flex;gap:12px;flex-wrap:wrap}.lcell{display:flex;flex-direction:column;align-items:center;cursor:pointer}
+.lbox{width:52px;height:60px;font:inherit;font-size:34px;font-weight:800;text-align:center;text-transform:lowercase;border:none;border-bottom:4px solid #2b2233;border-radius:10px 10px 0 0;background:#fff7ec;box-shadow:inset 0 0 0 2px #e6d6c2;padding:0;cursor:pointer;transition:background .15s,transform .15s}
+.lbox:focus{outline:none;background:#fff;box-shadow:inset 0 0 0 3px #f39a2b}.lbox.on{background:#f39a2b;transform:scale(1.12)}.lbox.used{opacity:.7}.lbox:disabled{background:#eaf6ee;cursor:default}
+.lsp{font-size:13px;margin-top:3px;opacity:.75}
 </style>
 </head>
 <body data-no-listen>
@@ -324,10 +330,27 @@ function pickVoice(){ if(!window.speechSynthesis) return; var v=speechSynthesis.
 if(window.speechSynthesis){pickVoice();speechSynthesis.onvoiceschanged=pickVoice;}
 function speak(text,rate){
   if(!window.speechSynthesis) return;
-  speechSynthesis.cancel();
+  SEQ++; speechSynthesis.cancel();
   var t=String(text).replace(/(^|[^A-Za-z])I([^A-Za-z]|$)/g,'$1eye$2');
   var u=new SpeechSynthesisUtterance(t); u.lang='en-US'; if(VOICE)u.voice=VOICE; u.rate=rate||0.85;
   setTimeout(function(){speechSynthesis.speak(u);},40);
+}
+/* T-257: say a list of letters one at a time with a real pause between them, so O and L don't blur.
+   onStep(k) fires as letter k starts (k=-1 when finished). */
+var SEQ=0;
+function speakLetters(list,rate,gap,onStep){
+  if(!window.speechSynthesis) return; speechSynthesis.cancel(); var my=++SEQ, i=0;
+  function next(){
+    if(my!==SEQ) return;
+    if(i>=list.length){ if(onStep)onStep(-1); return; }
+    var k=i++, u=new SpeechSynthesisUtterance(list[k]), fired=false;
+    u.lang='en-US'; if(VOICE)u.voice=VOICE; u.rate=rate;
+    function after(){ if(fired)return; fired=true; setTimeout(next,gap); }
+    u.onend=after; u.onerror=after; setTimeout(after,2200); /* Chrome sometimes drops onend */
+    if(onStep)onStep(k);
+    try{speechSynthesis.speak(u);}catch(e){after();}
+  }
+  setTimeout(next,60);
 }
 
 /* ======================= TRANSLATION ======================= */
@@ -354,12 +377,25 @@ function dirTranslate(root){
 }
 function setDir(el,en){ el.setAttribute('data-en',en); el.textContent=en; el.setAttribute('translate','no'); }
 /* tappable words for questions and directions */
+/* T-261: tap-to-translate words with their own context (the dictation line passes the sentence with "blank", so the hidden word never reaches the translator) */
+function tapWordsCtx(text,ctx){
+  return String(text).split(/(\s+)/).map(function(p){ if(/^\s+$/.test(p)||!p) return p; if(!/[A-Za-z]/.test(p)) return esc(p); return '<span class="qw" data-ctx="'+esc(ctx)+'">'+esc(p)+'</span>'; }).join('');
+}
+/* T-261: the dictation sentence on screen — every word written except the target, which is one spaced blank per letter.
+   The 🔊 reads it with "blank" (never "underscore"); Play still says the whole sentence. */
+function dictLine(it){
+  var s=it.sent, m=new RegExp('\\b'+it.w.replace(/[^A-Za-z]/g,'')+'\\b','i').exec(s);
+  if(!m) return '';
+  var pre=s.slice(0,m.index), post=s.slice(m.index+m[0].length), ear=(pre+'blank'+post).replace(/\s+/g,' ').trim();
+  var blanks='<span class="blk" aria-label="'+it.w.length+' letters">'+it.w.split('').map(function(){return '_';}).join(' ')+'</span>';
+  return '<p class="dsent" translate="no">'+tapWordsCtx(pre.replace(/\s+$/,''),ear)+(pre?' ':'')+blanks+(/^[A-Za-z]/.test(post.trim())?' ':' ')+tapWordsCtx(post.trim(),ear)+' '+hearBtn(ear)+'</p>';
+}
 function tapWords(text){
   return String(text).split(/(\s+)/).map(function(p){ if(/^\s+$/.test(p)||!p) return p; return '<span class="qw" data-ctx="'+esc(text)+'">'+esc(p)+'</span>'; }).join('');
 }
 document.addEventListener('click',function(e){
   var w=e.target.closest('.qw'); var tip=$('tip');
-  if(!w){ if(!e.target.closest('#tip')) tip.classList.add('hide'); return; }
+  if(!w){ if(!e.target.closest('#tip')||!e.target.closest('[data-say]')) tip.classList.add('hide'); return; } /* T-261: tapping the tip itself closes it too, so it never blocks Play */
   var word=w.textContent.replace(/[^A-Za-z\u2019'-]/g,''); if(!word) return;
   var r=w.getBoundingClientRect();
   tip.style.left=Math.max(6,Math.min(window.scrollX+r.left,window.scrollX+window.innerWidth-290))+'px'; tip.style.top=(window.scrollY+r.bottom+6)+'px';
@@ -665,29 +701,55 @@ function drawLangMc(o,box,useLang){
 }
 /* listening: letters + dictation */
 function rType(o,box){
-  var it=o.it, a=S.ans[it.id]||{tries:0}, isL=o.type==='letter';
+  var it=o.it, a=S.ans[it.id]||{tries:0}, isL=o.type==='letter', isName=isL&&it.kind==='name';
   var sayText=isL?it.say:(it.w+'. '+it.sent+' '+it.w+'.');
   var plays=S.log.plays[it.id]||0, capped=!PRACTICE&&plays>=3;
   var ask=isL?(it.kind==='name'?'Listen. Type the name.':'Listen. Type the letter.'):'Listen. Type the word.';
   var len=isL?(it.kind==='name'?it.n:1):it.w.length;
-  var boxes=''; if(PRACTICE&&a.tries>=1&&!a.done){ var ans=isL?it.a[0]:it.w; boxes='<div class="boxes" translate="no">'+ans.split('').map(function(c,k){return (a.tries>=2&&k===0)?c:'_';}).join(' ')+'</div>'; }
-  box.innerHTML='<div class="pic">'+picFor('ear')+'</div><p class="dir" translate="no">'+tapWords(ask)+'</p>'+
+  var boxes=''; if(PRACTICE&&a.tries>=1&&!a.done&&!isName){ var ans=isL?it.a[0]:it.w; boxes='<div class="boxes" translate="no">'+ans.split('').map(function(c,k){return (a.tries>=2&&k===0)?c:'_';}).join(' ')+'</div>'; }
+  box.innerHTML='<div class="pic">'+picFor('ear')+'</div><p class="dir" translate="no">'+tapWords(ask)+'</p>'+(isL?'':dictLine(it))+
     '<button class="btn or play" id="playIt"'+(capped?' disabled':'')+'>\u25b6 Play</button> '+(PRACTICE?'<button class="btn alt" id="playSlow">\ud83d\udc22 Slow</button>':'<span class="wc">'+Math.max(0,3-plays)+' plays left</span>')+
-    '<div style="margin-top:14px;clear:both"><input class="txt" id="typeIn" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="'+(len+6)+'" style="max-width:'+(isL&&it.kind!=='name'?'120px':'340px')+'" value="'+esc(a.val||'')+'"'+(a.done?' disabled':'')+'> <button class="btn" id="typeGo"'+(a.done?' disabled':'')+'>Check</button></div>'+
+    (isName?nameBoxes(it,a):'<div style="margin-top:14px;clear:both"><input class="txt" id="typeIn" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="'+(len+6)+'" style="max-width:'+(isL?'120px':'340px')+'" value="'+esc(a.val||'')+'"'+(a.done?' disabled':'')+'> <button class="btn" id="typeGo"'+(a.done?' disabled':'')+'>Check</button></div>')+
     boxes+'<div id="fb">'+(PRACTICE&&a.done?'<div class="good">\u2713</div>':(PRACTICE&&a.tries&&!a.done?quip(isL?'Listen again. Type only what you hear.':'Listen again. Count the letters.'):''))+(!PRACTICE&&a.done?'<div class="good" style="color:#2b2233">Saved.</div>':'')+'</div>'+navRow(o);
-  function play(rate){ if(!PRACTICE&&(S.log.plays[it.id]||0)>=3)return; S.log.plays[it.id]=(S.log.plays[it.id]||0)+1; touch(); speak(sayText,rate||(isL?0.7:0.8)); if(!PRACTICE){ var left=3-S.log.plays[it.id]; var wc=box.querySelector('.wc'); if(wc)wc.textContent=Math.max(0,left)+' plays left'; if(left<=0)$('playIt').disabled=true; } }
+  function play(rate){ if(!PRACTICE&&(S.log.plays[it.id]||0)>=3)return; S.log.plays[it.id]=(S.log.plays[it.id]||0)+1; touch(); if(isL){ var slow=rate&&rate<0.6, tk=box.querySelectorAll('.lbox'); speakLetters(it.ear,slow?0.55:0.7,slow?1500:950,function(k){ for(var j=0;j<tk.length;j++)tk[j].classList.toggle('on',j===k); }); } else speak(sayText,rate||0.8); if(!PRACTICE){ var left=3-S.log.plays[it.id]; var wc=box.querySelector('.wc'); if(wc)wc.textContent=Math.max(0,left)+' plays left'; if(left<=0)$('playIt').disabled=true; } }
   $('playIt').onclick=function(){play();}; if($('playSlow'))$('playSlow').onclick=function(){play(0.55);};
   $('typeGo').onclick=function(){
-    var v=$('typeIn').value.trim(); if(!v)return; var aa=S.ans[it.id]||(S.ans[it.id]={tries:0});
+    var v=isName?nameVal(box):$('typeIn').value.trim(); if(!v)return; var aa=S.ans[it.id]||(S.ans[it.id]={tries:0});
     var target=isL?it.a:[it.w]; var good=target.indexOf(norm(v))>=0;
     aa.val=v; aa.tries++; aa.vals=(aa.vals||[]).concat([v]);
     if(PRACTICE){ if(good){aa.done=true;aa.ok=true;if(aa.tries===1)aa.first=true;} }
     else { aa.done=true; aa.ok=good; }
     touch(); rType(o,box);
   };
-  $('typeIn').addEventListener('keydown',function(e){if(e.key==='Enter')$('typeGo').click();});
+  if(isName) wireNameBoxes(it,a,box); else $('typeIn').addEventListener('keydown',function(e){if(e.key==='Enter')$('typeGo').click();});
   wireNav(); if(isDone(o))enableNext();
   if(!a.done&&!(S.log.plays[it.id])) setTimeout(function(){ if(CUR&&CUR.items[CUR.i]===o) { /* wait for a tap: autoplay is blocked on Chromebooks */ } },0);
+}
+/* T-257 v2: a name is typed into one box per letter (a blank line under each, like teeth).
+   Tapping a box says THAT letter alone. Practice: unlimited. Test: each box can be heard 3 times. */
+function nameBoxes(it,a){
+  var v=String(a.val||''), h='<div class="lrow" translate="no">';
+  for(var k=0;k<it.n;k++){ h+='<label class="lcell"><input class="lbox" data-k="'+k+'" maxlength="1" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="letter '+(k+1)+'" value="'+esc(v.charAt(k)||'')+'"'+(a.done?' disabled':'')+(PRACTICE&&!a.done&&a.tries>=2&&k===0?' placeholder="'+esc(it.a[0].charAt(0))+'"':'')+'><span class="lsp">\ud83d\udd0a</span></label>'; }
+  return '<p class="dir" translate="no" style="margin:14px 0 4px;clear:both">'+tapWords('Tap a box to hear that letter.')+'</p>'+h+'</div><div style="margin-top:12px"><button class="btn" id="typeGo"'+(a.done?' disabled':'')+'>Check</button></div>';
+}
+function nameVal(box){ return Array.prototype.map.call(box.querySelectorAll('.lbox'),function(x){return x.value.trim();}).join(''); }
+function wireNameBoxes(it,a,box){
+  var bx=box.querySelectorAll('.lbox');
+  Array.prototype.forEach.call(bx,function(inp,k){
+    inp.addEventListener('click',function(){
+      var key=it.id+'#'+k, n=(S.log.plays[key]||0);
+      if(!PRACTICE&&n>=3){ inp.classList.add('used'); return; }
+      S.log.plays[key]=n+1; touch();
+      inp.classList.add('on'); speakLetters([it.ear[k]],0.6,0,function(j){ if(j<0)inp.classList.remove('on'); });
+    });
+    inp.addEventListener('input',function(){ inp.value=inp.value.replace(/[^A-Za-z]/g,'').slice(-1); if(inp.value&&bx[k+1])bx[k+1].focus(); });
+    inp.addEventListener('keydown',function(e){
+      if(e.key==='Backspace'&&!inp.value&&bx[k-1]){ bx[k-1].focus(); bx[k-1].value=''; e.preventDefault(); }
+      else if(e.key==='ArrowLeft'&&bx[k-1]) bx[k-1].focus();
+      else if(e.key==='ArrowRight'&&bx[k+1]) bx[k+1].focus();
+      else if(e.key==='Enter') $('typeGo').click();
+    });
+  });
 }
 function rListenMc(o,box){
   var it=o.it, labels=it.opts.map(function(t){return '<span translate="no">'+esc(t)+'</span>';});

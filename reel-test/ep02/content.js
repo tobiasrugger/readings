@@ -30,12 +30,16 @@ var WORDS_LANG=[
  {id:'w12',w:'carry',ctx:'I carry my books in my backpack.',def:'hold something and take it with you'}
 ];
 var LETTERS=[
- {id:'l1',say:'G',a:['g'],kind:'letter'},
- {id:'l2',say:'J',a:['j'],kind:'letter'},
- {id:'l3',say:'E',a:['e'],kind:'letter'},
- {id:'l4',say:'Y',a:['y'],kind:'letter'},
- {id:'l5',say:'M. A. T. E. O.',a:['mateo'],kind:'name',n:5},
- {id:'l6',say:'L. eye. N. H.',a:['linh'],kind:'name',n:4}
+ /* T-257: G retired (the voice says it like "she"/"xie"); l1 never reused.
+    say = what the dashboard shows; ear = what the voice says, ONE LETTER PER UTTERANCE with a pause between.
+    O and L get their own items before MATEO because they sound alike. */
+ {id:'l2',say:'J',ear:['J.'],a:['j'],kind:'letter'},
+ {id:'l3',say:'E',ear:['E.'],a:['e'],kind:'letter'},
+ {id:'l4',say:'Y',ear:['Y.'],a:['y'],kind:'letter'},
+ {id:'l7',say:'O',ear:['oh.'],a:['o'],kind:'letter'},
+ {id:'l8',say:'L',ear:['L.'],a:['l'],kind:'letter'},
+ {id:'l5',say:'M-A-T-E-O',ear:['M.','A.','T.','E.','oh.'],a:['mateo'],kind:'name',n:5},
+ {id:'l6',say:'L-I-N-H',ear:['L.','eye.','N.','H.'],a:['linh'],kind:'name',n:4}
 ];
 var DICT=[
  {id:'d1',w:'pencil',sent:'Jun borrows a pencil.'},
