@@ -312,7 +312,14 @@ function pairPic(){ if(!R.placeChar) return ''; return '<svg viewBox="300 160 10
 function myBagPic(){ return svgWrap('<rect width="200" height="160" fill="#e8f1e3"/><g transform="translate(100,150) scale(.62)">'+(R.item?R.item('backpack',0).replace(/translate\([^)]*\)/,'translate(0,0)'):'')+'</g>'+
   '<g transform="translate(36,30) rotate(-20)"><rect width="46" height="10" fill="#f8c33a"/><path d="M46,0 L56,5 L46,10z" fill="#e9c79a"/></g><rect x="140" y="26" width="34" height="44" rx="3" fill="#2f6fbd"/><rect x="144" y="26" width="30" height="44" fill="#fffdf6"/><path d="M148,36 h22 M148,44 h22 M148,52 h22" stroke="#9fc3e8" stroke-width="2"/>'+
   '<text x="100" y="22" text-anchor="middle" font-family="Nunito,Arial" font-weight="900" font-size="16" fill="#2b2233">I have ...</text>'); }
+/* T-262: all five characters together, heights to scale, for "Choose one character" before anyone is chosen */
+function castPic(){ if(!R.placeChar) return ''; var xs={linh:420,mateo:610,amira:800,jun:990,paolo:1180};
+  return '<svg viewBox="260 180 1080 680" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"><rect x="0" y="0" width="1600" height="900" fill="#f3ecdf"/><rect x="0" y="800" width="1600" height="100" fill="#d9c8a8"/><circle cx="800" cy="560" r="380" fill="#ffe3bd" opacity=".6"/>'+
+    CHARS.slice().sort(function(a,b){return xs[a]-xs[b];}).map(function(id){ return R.placeChar(id,xs[id],xs[id]<800?1:-1,{expr:'smile'}); }).join('')+'</svg>'; }
+/* T-262: the chosen character, big (Amira keeps her sketchbook) */
+function chosenPic(id){ return charPic(id,id==='amira'?{expr:'happy',hold:'sketchbook'}:{expr:'happy'}); }
 function picFor(k){
+  if(k==='cast') return castPic();
   if(k==='backpack') return backpackPic();
   if(k==='bigpack') return ART.bigpack();
   if(k==='library'||k==='cafeteria'||k==='gym'||k==='classroom'||k==='corner'||k==='hallway') return bgPic(k);
@@ -927,7 +934,7 @@ function xDescribe(box){
       (x.checked&&(!PRACTICE||x.auto===4)?'':'<button class="btn" id="dGo">Check</button>')+'<div id="fb">'+(x.msg||'')+'</div>';
     if(x.checked){ h+='<p class="dir" translate="no">'+tapWords('Now write 3 sentences about '+name+'. What does '+name+' look like? What is '+name+' like?')+'</p>'+(PRACTICE?'<details class="help"><summary>Sentence starters</summary><p translate="no">'+esc(name)+' has ___. '+esc(name)+' is ___. In the story, '+esc(name)+' ___.</p></details>':'')+'<textarea class="txt" id="dT" translate="no">'+esc(x.text)+'</textarea><div class="wc" id="dC"></div>'; }
   }
-  box.innerHTML='<div class="pic">'+picFor('amira')+'</div>'+h+backRow();
+  box.innerHTML='<div class="pic">'+(x.who?chosenPic(x.who):castPic())+'</div>'+h+backRow(); /* T-262: was always Amira */
   box.querySelectorAll('[data-c]').forEach(function(b){b.onclick=function(){ if(x.checked)return; x.who=b.getAttribute('data-c'); x.bank=null; x.inBox=[]; touch(); xDescribe(box); };});
   box.querySelectorAll('[data-f]').forEach(function(b){b.onclick=function(){ if(x.checked&&(!PRACTICE||x.auto===4))return; var f=b.getAttribute('data-f'),k=x.inBox.indexOf(f); if(k>=0)x.inBox.splice(k,1); else x.inBox.push(f); touch(); xDescribe(box); };});
   if($('dGo')) $('dGo').onclick=function(){ var good=0,bad=0; x.inBox.forEach(function(f){ var fact=FACTS.filter(function(z){return z[0]===f;})[0]; if(fact&&fact[1].indexOf(x.who)>=0)good++; else bad++; }); var auto=Math.max(0,Math.min(4,good-bad)); x.tries++; if(x.first==null)x.first=auto; x.auto=auto; x.checked=true;

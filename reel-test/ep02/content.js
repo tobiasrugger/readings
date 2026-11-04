@@ -108,7 +108,7 @@ var SECTIONS=[
 var EXTS=[
  {k:'order',t:'A. Where did they go?',pic:'map',dir:'Put the places in order. Tap a place, then tap a number.'},
  {k:'summary',t:'B. Write a summary',pic:'notebook',dir:'Write a summary of the story. Use First, Then, Next, and Finally.'},
- {k:'describe',t:'C. Describe a character',pic:'amira',dir:'Choose one character. Tap the sentences that are true about that character. Then write about the character.'},
+ {k:'describe',t:'C. Describe a character',pic:'cast',dir:'Choose one character. Tap the sentences that are true about that character. Then write about the character.'},
  {k:'compare',t:'D. Compare two characters',pic:'pair',dir:'Choose two characters. Put each sentence in the right circle. Then write one sentence with both and but.'},
  {k:'retell',t:'E. Tell the story',pic:'mic',dir:'Tell the story out loud in your own words. You can talk for up to 90 seconds. There is no text to read.'},
  {k:'talk',t:'F. Your backpack',pic:'mybag',dir:'Answer out loud: What is in your backpack? Say two or three sentences. Use I have.'}
