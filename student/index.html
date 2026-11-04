@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" translate="no"><!-- T-267: English always shows; the page adds the home language itself -->
 <head>
+<meta name="google" content="notranslate"><!-- T-267 -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>My Page &middot; Mr. Toby</title>
@@ -200,6 +201,8 @@ ul{margin:0;padding-left:20px} li{margin-bottom:6px;font-weight:700}
 .tr{display:block;font-weight:700;color:var(--muted);font-size:.88em;margin-top:2px;line-height:1.35}
 h2 .tr{font-size:.72em;font-weight:800}
 .skill .tr{font-size:.82em}
+.rowtr{font-size:.78em;font-weight:700;color:var(--muted);margin-top:1px}  /* T-267 */
+.pushrow .pt .rowtr{font-size:.6em;margin-top:2px}
 .actlist{margin-top:10px;padding-top:10px;border-top:1.5px dashed var(--line-dk)}
 .actrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
   padding:6px 0;font-size:.88rem;font-weight:700}
@@ -498,6 +501,8 @@ th,td{border-bottom:2px solid var(--line-dk)}
 </style>
 </head>
 <body>
+<!-- T-267: quiet translation canary (translate="yes" so a forced Chrome Translate still changes it) -->
+<span id="canary" translate="yes" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden">the quick brown fox jumps over the lazy dog</span>
 <div class="wrap">
 
 <!-- ============ SIGN IN ============ -->
@@ -1457,6 +1462,7 @@ function setLang(v){
 
 /* every heading and skill name gets a line underneath in their language */
 function translatePage(){
+  try{ translateRows(); }catch(e){}  /* T-267 */
   var nodes=document.querySelectorAll('#page h2, .skill b, .gbox span, .tag, #page .qname');
   Array.prototype.forEach.call(nodes,function(el){
     var out=el.querySelector(':scope > .tr');
@@ -1480,6 +1486,69 @@ function translatePage(){
     });
   });
 }
+
+/* T-267: activity titles in the green band keep English on top and get a small home-language line under them.
+   Word tiles, "I know" chips and students' own words stay English only. */
+var ROW_TITLES='#pushBox .pushrow .pt, #extraBox .pushrow .pt, #pushDone .pushrow .pt, #finBody .fin .what > b, #growth .ncell:not(.words) .nhead > b';
+function translateRows(){
+  var nodes=document.querySelectorAll(ROW_TITLES);
+  Array.prototype.forEach.call(nodes,function(el){
+    var out=el.querySelector(':scope > .tr');
+    if(!el.hasAttribute('data-en')){
+      var clone=el.cloneNode(true);
+      Array.prototype.forEach.call(clone.querySelectorAll('.tr,.ico,.nexttag,.clstag'),function(k){k.remove();});
+      el.setAttribute('data-en',(clone.textContent||'').trim());
+    }
+    var en=el.getAttribute('data-en')||'';
+    if(!en)return;
+    if(!MYLANG||MYLANG==='none'){ if(out)out.remove(); return; }
+    if(!out){ out=document.createElement('span'); out.className='tr rowtr'; var tag=el.querySelector(':scope > .nexttag'); if(tag)el.insertBefore(out,tag); else el.appendChild(out); }
+    var dir=RTL.test(MYLANG)?'rtl':'ltr'; if(out.getAttribute('dir')!==dir)out.setAttribute('dir',dir);
+    var want=MYLANG+'|'+en; if(out.getAttribute('data-for')===want&&out.textContent&&out.textContent!=='\u2026')return;
+    out.setAttribute('data-for',want);
+    var cached=cacheGet(MYLANG,en);
+    if(cached!==undefined){ if(cached){ if(out.textContent!==cached)out.textContent=cached; } else out.remove(); return; }
+    if(out.textContent!=='\u2026')out.textContent='\u2026';
+    var lang=MYLANG;
+    trOne(en,lang).then(function(t){
+      if(lang!==MYLANG||out.getAttribute('data-for')!==lang+'|'+en)return;
+      if(t){ out.textContent=t; } else { cacheSet(lang,en,''); out.remove(); }
+    });
+  });
+}
+(function(){
+  var t=null;
+  function go(){ clearTimeout(t); t=setTimeout(function(){ try{ translateRows(); }catch(e){} },60); }
+  function start(){ var b=document.getElementById('nextBand'); if(!b)return;
+    new MutationObserver(function(muts){
+      /* ignore our own .tr writes, react to new rows */
+      for(var i=0;i<muts.length;i++){ var tg=muts[i].target; if(!(tg.classList&&tg.classList.contains('tr'))&&!(tg.parentNode&&tg.parentNode.classList&&tg.parentNode.classList.contains('tr'))){ go(); return; } }
+    }).observe(b,{childList:true,subtree:true}); go(); }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start); else start();
+})();
+
+/* T-267: quiet canary — records (once per signature) when a student forces Chrome Translate on My Page. Never in teacher view. */
+var CANARY_TXT='the quick brown fox jumps over the lazy dog', CANARY_SENT='';
+function detectTranslation(){
+  var c=document.getElementById('canary');
+  var got=c?(c.textContent||'').trim().toLowerCase():'';
+  var cls=document.documentElement.className||'';
+  var drift=(c&&got!==CANARY_TXT)?got:'';
+  if(!drift&&!/translated-(ltr|rtl)/.test(cls))return null;
+  return {observed:drift, html_lang:document.documentElement.lang||'', html_class:cls};
+}
+function checkTranslation(){
+  if(TV_EMAIL||READ_ONLY||!ME)return;
+  var d=detectTranslation(); if(!d)return;
+  var sig=d.observed+'|'+d.html_lang+'|'+d.html_class;
+  if(sig===CANARY_SENT)return;
+  CANARY_SENT=sig;
+  upsert('page_translation',[{email:ME,set_slug:'student',translated:true,observed:d.observed,
+    html_lang:d.html_lang,html_class:d.html_class,updated_at:new Date().toISOString()}],'email,set_slug').catch(function(){});
+}
+window.checkTranslation=checkTranslation;
+setTimeout(checkTranslation,4000);
+setInterval(checkTranslation,20000);
 
 function renderAll(){
   /* no "English only": a student with a home language on file sees it by default */
@@ -1836,7 +1905,13 @@ function slugLink(slug){
   return {url:slug&&slug!=='home'?'/readings/'+slug+'/':'',title:prettySlug(slug.split('/').pop())};
 }
 /* T-176: pre/post word checks measure what a student knows; a low score is information, not unfinished work */
-function isDataCheck(slug){ return /^vocab\/pre(test|\/|$)/.test(String(slug||'')); }
+function isDataCheck(slug,act){
+  /* T-267: word pre/post checks are DATA for Mr. Toby — never in Finish This (T-176), whatever slug they were saved under */
+  if(/^vocab\/pre(test|check|[\/?#-]|$)/i.test(String(slug||'')))return true;
+  if(!act)return false;
+  if(/\/vocab\/pre(test)?([\/?#]|$)/i.test(String(act.url||'')))return true;
+  return /\b(pre|post)[\s-]?(check|test|assessment)\b/i.test((act.unit||'')+' '+(act.title||''));
+}
 /* T-175: % of a Launch Plus lesson's items the student has finished (any try), or null when it isn't one */
 function lpDone(slug){
   if(!/^launch-plus\//.test(slug))return null;
@@ -1860,7 +1935,7 @@ function renderFinish(){
     if(best==null||best>=FINISH_AT)return;
     /* T-175: a Launch Plus lesson counts by items DONE, not first-try score (a miss can't be won back) */
     /* T-176: word checks (vocab/pre…, the post-checks too) are DATA for Mr. Toby, not work to redo — never in Finish This */
-    if(isDataCheck(slug))return;
+    if(isDataCheck(slug,titleOf[slug]))return;
     var lpc=lpDone(slug);
     if(lpc!=null){ if(lpc>=100)return; best=lpc; }
     /* T-175: turned in again and the score didn't move -> nothing left to earn here; stop asking */
