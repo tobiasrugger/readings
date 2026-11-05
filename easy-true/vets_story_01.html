@@ -434,12 +434,7 @@ body{
 @media print{.mlfb,.wfb,.wtries,.mlcheck,.wcheck{display:none !important;}}
 
 /* ══ TAP-WORDS MODE ══ */
-body.wt-on [translate="no"]{
-  outline:2px dashed var(--gold);outline-offset:3px;border-radius:6px;
-}
-body.wt-on .wt-tap{
-  outline:2px dotted var(--ocean);outline-offset:3px;border-radius:6px;
-}
+/* T-282: no dashed boxes — every word is simply tappable */
 body.wt-on .w1{cursor:pointer;border-radius:3px;}
 body.wt-on .w1:hover{background:var(--gold-soft);}
 .wt-note{
@@ -621,7 +616,16 @@ body.no-motion .mystery,body.no-motion .qm{animation:none !important;}
 .readout b{color:var(--ink);}
 
 /* ══ TOOLBAR ══ */
-.tools{display:flex;align-items:center;gap:8px;}
+.tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
+@media (max-width:640px){                       /* T-282: phone header */
+  .site-header{flex-wrap:wrap;gap:8px;}
+  .crumb{display:none;}
+  .tools [data-bi="btn.print"],.tools #motion-btn{display:none;}
+  .tools{width:100%;justify-content:space-between;}
+  #lang-pick{flex:1 1 auto;min-width:0;font-size:14px;}
+  .tool-btn{font-size:13px;}
+  html,body{overflow-x:hidden;}
+}
 .tool-btn{
   font-family:'Nunito Sans',sans-serif;font-weight:700;font-size:12px;
   border:2px solid var(--ink);background:var(--card);color:var(--ink);
@@ -1963,10 +1967,11 @@ var VETSX = (function(){
   }
 
   /* Wrap each word once, so a tap has something to land on. */
-  var wrapped = false;
+  /* T-282: re-runnable. It used to run once at load, BEFORE protect() marked the
+     vocabulary page, so page 0 had no tappable words at all. Now protect() runs first
+     and any new text (pages shown later, re-rendered boxes) is wrapped as it appears. */
   function wrapWords(){
-    if(wrapped) return;
-    wrapped = true;
+    try{ protect(); }catch(e){}
     var blocks = document.querySelectorAll('[translate="no"], .wt-tap');
     blocks.forEach(function(block){
       var walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT, {
@@ -1978,6 +1983,7 @@ var VETSX = (function(){
           if(tag === "script" || tag === "style" || tag === "select" ||
              tag === "option" || tag === "textarea" || tag === "input") return NodeFilter.FILTER_REJECT;
           if(p.closest(".gl")) return NodeFilter.FILTER_REJECT;   // curated glossary wins
+          if(p.closest(".bi,.bi-inline,button.tool-btn,#wtip,.wt-note,.canary,#v1gate,.gal-std-who")) return NodeFilter.FILTER_REJECT;   /* T-282: translations, tools, sign-in */
           if(p.classList && p.classList.contains("w1")) return NodeFilter.FILTER_REJECT;
           return NodeFilter.FILTER_ACCEPT;
         }
@@ -2035,10 +2041,25 @@ var VETSX = (function(){
   }
 
   function startWT(){
-    document.body.classList.add("wt-on");
+    setWT(true);
+    /* new or re-rendered text gets wrapped too (debounced; our own wrapping settles in one pass) */
+    var t = null;
+    try{
+      new MutationObserver(function(){
+        if(!WT_ON || t) return;
+        t = setTimeout(function(){ t = null; try{ wrapWords(); }catch(e){} }, 120);
+      }).observe(document.body, {childList:true, subtree:true});
+    }catch(e){}
+  }
+  /* T-282: one switch that sets state, class and label together. vets_l10n.js used to call
+     toggleWT() when the class was not on yet, which flipped WT_ON to false while the yellow
+     note stayed — "Tap words: ON" but taps did nothing. */
+  function setWT(on){
+    WT_ON = !!on;
+    document.body.classList.toggle("wt-on", WT_ON);
     var b = document.getElementById("wt-btn");
-    if(b){ b.textContent = "Tap words: ON"; b.dataset.en = b.textContent; }
-    try{ wrapWords(); }catch(e){}
+    if(b){ b.textContent = WT_ON ? "Tap words: ON" : "Tap words: off"; b.dataset.en = b.textContent; }
+    if(WT_ON){ try{ wrapWords(); }catch(e){} } else hideTip();
   }
   if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", startWT);
   else setTimeout(startWT, 0);
@@ -2048,12 +2069,8 @@ var VETSX = (function(){
       toast("Choose your language at the top first.");
       return;
     }
-    WT_ON = !WT_ON;
-    document.body.classList.toggle("wt-on", WT_ON);
-    var btn = document.getElementById("wt-btn");
-    if(btn){ btn.textContent = WT_ON ? "Tap words: ON" : "Tap words: off";
-             btn.dataset.en = btn.textContent; renderBilingual(); }
-    if(WT_ON) wrapWords(); else hideTip();
+    setWT(!WT_ON);
+    renderBilingual();
   }
 
   /* Capture phase: while tap-words is on, a tap looks the word up
@@ -2352,7 +2369,7 @@ var VETSX = (function(){
     document.title = "Shopping Day · ELD " + LEVEL + " · Very Easy True Stories";
   });
 
-  return { togglePrint:togglePrint, toggleMotion:toggleMotion, toggleWT:toggleWT };
+  return { togglePrint:togglePrint, toggleMotion:toggleMotion, toggleWT:toggleWT, setWT:setWT };
 })();
 </script>
 <script src="vets_l10n.js" data-slug="vets-01"></script>
@@ -2520,14 +2537,16 @@ window.GAL_META={title:'Very Easy True Stories 01: Shopping Day',unit:'Very Easy
     } catch(e){}
 
     /* the address they typed is recorded too, so older rows still match */
-    if (canon(raw) !== raw.trim().toLowerCase()) {
-      fetch(SUPA + '/rest/v1/student_aliases?on_conflict=email', {method:'POST',
-        headers: head('resolution=merge-duplicates,return=minimal'),
-        body: JSON.stringify([{email: raw.trim().toLowerCase(), canonical: email}])}).catch(function(){});
-    }
+    /* T-282: students row first (aliases point at it), then the alias in the table's real
+       columns (alias_email, email) — the old {email, canonical} body was refused every time */
     fetch(SUPA + '/rest/v1/students?on_conflict=email', {method:'POST',
       headers: head('resolution=merge-duplicates,return=minimal'),
-      body: JSON.stringify([{email: email, name: name, period: per}])}).catch(function(){});
+      body: JSON.stringify([{email: email, name: name, period: per}])}).then(function(){
+      if (canon(raw) === raw.trim().toLowerCase()) return;
+      return fetch(SUPA + '/rest/v1/student_aliases?on_conflict=alias_email', {method:'POST',
+        headers: head('resolution=ignore-duplicates,return=minimal'),
+        body: JSON.stringify([{alias_email: raw.trim().toLowerCase(), email: email}])});
+    }).catch(function(){});
 
     /* hand the language to the page's own picker, which works in codes
        and keeps its own key (vets_lang) */

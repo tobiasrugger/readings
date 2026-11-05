@@ -190,7 +190,11 @@ function build(){
 
   if(PAGE_HAS_OWN_TAP){                    /* the page already does this */
     var tb=document.getElementById('vl-tap'); if(tb) tb.remove();
-    try{ if(window.VETSX && !document.body.classList.contains('wt-on')) VETSX.toggleWT(); }catch(e){}
+    /* T-282: SET it on, never toggle — toggling raced the page's own start and turned taps off.
+       Story 1 has its own language picker and two-language directions, so this bar would be a
+       second, competing set of controls on a phone: hide it there. */
+    try{ if(window.VETSX){ if(VETSX.setWT) VETSX.setWT(true); else if(!document.body.classList.contains('wt-on')) VETSX.toggleWT(); } }catch(e){}
+    bar.style.display='none';
   } else if(TAP_ON) setTimeout(function(){ setTap(true); },350);
   if(DIR_ON){ document.getElementById('vl-dir').classList.add('on'); setTimeout(showDirections,600); }
   setInterval(check,20000); setTimeout(check,4000);
