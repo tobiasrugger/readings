@@ -61,7 +61,13 @@ select.per:hover{border-color:var(--edge);background:#fff}
 #chgbody .ln.ticked{opacity:.45}
 #chgbody .ln.ticked .nm{text-decoration:line-through}
 #chgbody .up{color:var(--ok)} #chgbody .down{color:var(--bad)} #chgbody .new{color:var(--gold)}
-#chgbody .copyrow{margin-top:8px;text-align:right}
+#chgbody .clsrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;padding-top:9px;border-top:1px dashed var(--edge)}
+#chgbody .clsrow .btn.cls{padding:5px 11px;font-size:.8rem}
+#chgbody .clsrow .gradeas{font-size:.78rem;color:var(--muted)}
+#chgbody .clsrow .gradeas select{font:inherit;font-size:.78rem;padding:2px 4px;border:1px solid var(--edge);border-radius:6px;background:#fff}
+#chgbody .clsrow .skip{font-size:.74rem;color:var(--bad)}
+#chgbody .clsrow .skip:empty{display:none}
+#chgbody .copyrow{margin-top:6px;text-align:right}
 #chgbody .copyrow button{background:none;border:0;color:var(--muted);font:inherit;font-size:.72rem;text-decoration:underline;cursor:pointer;padding:2px 4px}
 @media print{
   body>*{display:none !important}
@@ -197,16 +203,19 @@ function load(){
   Promise.all([
     getAll('students?select=email,first_name,last_name,period,roster_order,course'),
     getAll('gradebook_best?select=email,slug,unit,title,course,score,max_score,pct,attempts,last_at,completion'),
-    getAll('activities?select=slug,title,unit,course,level,sort_order,url')
+    getAll('activities?select=slug,title,unit,course,level,sort_order,url'),
+    getAll('student_aliases?select=alias_email,email').catch(function(){return [];})
   ]).then(function(r){
-    students={};
+    students={}; SPELLINGS={};
     r[0].forEach(function(s){
       var e=canon(s.email); var cur=students[e]||{email:e};
       // keep the most complete profile across @s.sfusd.edu / @sfusd.edu twins
       ['first_name','last_name','period','roster_order','course'].forEach(function(k){ if(s[k]!=null && s[k]!=='') cur[k]=s[k]; });
       students[e]=cur;
+      noteSpelling(e, s.email);
     });
-    cells=r[1].map(function(c){c.email=canon(c.email);return c;});
+    cells=r[1].map(function(c){noteSpelling(canon(c.email), c.email); c.email=canon(c.email); return c;});
+    (r[3]||[]).forEach(function(a){ noteSpelling(canon(a.email), a.alias_email); noteSpelling(canon(a.email), a.email); });
     cells.forEach(function(c){ if(!students[c.email]) students[c.email]={email:c.email}; });
     activities={}; r[2].forEach(function(a){activities[a.slug]=a;});
     var units={}; cells.forEach(function(c){var u=c.unit||(activities[c.slug]&&activities[c.slug].unit)||'(untagged)';units[u]=1;});
@@ -215,6 +224,21 @@ function load(){
   }).catch(function(e){toast('Load failed: '+e);});
 }
 
+/* Google Classroom matches on the address the student actually signs in with.
+   Several spellings can exist for one student; their Google account is the
+   @s.sfusd.edu one, so prefer that and never hand Classroom the canonical form. */
+var SPELLINGS={};
+function noteSpelling(canonical, raw){
+  raw=String(raw||'').trim().toLowerCase();
+  if(!canonical||!raw||raw.indexOf('@')<0) return;
+  var cur=SPELLINGS[canonical];
+  if(!cur || (raw.indexOf('@s.sfusd.edu')>0 && cur.indexOf('@s.sfusd.edu')<0)) SPELLINGS[canonical]=raw;
+}
+function signInEmail(s){ return SPELLINGS[s.email] || s.email; }
+function firstLast(s){                      // Classroom wants "First Last", not "Last, First"
+  var n=((s.first_name||'')+' '+(s.last_name||'')).trim();
+  return n || studentName(s);
+}
 function studentName(s){
   if(s.last_name||s.first_name) return (s.last_name||'')+(s.last_name&&s.first_name?', ':'')+(s.first_name||'');
   return s.email.split('@')[0];
@@ -538,9 +562,22 @@ function renderChanged(){
             '<span class="prev">'+(x.was==null?'new':x.was+' \u2192')+'</span>'+
             '<span class="mk '+cls+'">'+x.now+'</span></label>';
         }).join('')+
+        '<div class="clsrow noprint">'+
+          '<button class="btn sec cls" data-cls="'+esc(sl)+'">\U0001F4CB Copy for Classroom</button>'+
+          '<button class="btn sec cls" data-clsall="'+esc(sl)+'" title="Everyone in this period who has a mark, not only the changed ones">all students with a mark</button>'+
+          '<label class="gradeas">Grade as: <select class="gradefmt"><option value="4">0\u20134</option><option value="100">percent</option></select></label>'+
+          '<span class="skip" data-skip="'+esc(sl)+'"></span>'+
+        '</div>'+
         '<div class="copyrow noprint"><button data-col="'+esc(sl)+'">copy the whole column</button></div></div>';
     }).join('');
     host.querySelectorAll('[data-col]').forEach(function(b){ b.onclick=function(){ copyColumn(b.dataset.col); }; });
+    host.querySelectorAll('.gradefmt').forEach(function(sel){
+      sel.value=GRADEFMT;
+      sel.onchange=function(){ GRADEFMT=sel.value; try{localStorage.setItem('gb_gradefmt',GRADEFMT);}catch(e){} renderChanged(); };
+    });
+    host.querySelectorAll('[data-cls]').forEach(function(b){ b.onclick=function(){ copyClassroom(b.dataset.cls,false); }; });
+    host.querySelectorAll('[data-clsall]').forEach(function(b){ b.onclick=function(){ copyClassroom(b.dataset.clsall,true); }; });
+    slugs.forEach(function(sl){ showSkipped(sl); });
     /* ticking is just for Toby's eye while typing; it lives in this browser only */
     host.querySelectorAll('[data-tick]').forEach(function(l){
       l.querySelector('input').onchange=function(){
@@ -555,6 +592,49 @@ function renderChanged(){
   done.style.opacity=done.disabled?.5:1;
   document.getElementById('chgall').textContent=FORCE48?'Show since last entered':'Show last 48 hours';
 }
+/* ---------- Copy for Classroom (T-277) ----------
+   Sheet2Classroom takes a tab-separated block pasted from the clipboard and
+   matches each row by email, falling back to the name. One header line, then
+   one line per student in roster order. Students with no period are not on
+   the roster, so they are left out and counted under the button. */
+var GRADEFMT='4';
+try{ GRADEFMT=localStorage.getItem('gb_gradefmt')||'4'; }catch(e){}
+
+function classroomGrade(pct){
+  if(pct==null) pct=100;                       // done, no number = full credit, as everywhere else
+  return GRADEFMT==='4' ? String(band(pct)) : String(Math.round(pct));
+}
+/* who goes in the block: the changed students, or everyone in the period with a mark */
+function classroomRows(slug, everyone){
+  var out=[], skipped=0;
+  var pick = everyone
+    ? view.rows.filter(function(s){ return !!view.byCell[s.email+'|'+slug]; })
+    : ((changedRows().by[slug]||[]).map(function(x){ return x.st; }));
+  pick.forEach(function(s){
+    if(!s.period){ skipped++; return; }        // not on the roster
+    var c=view.byCell[s.email+'|'+slug];
+    out.push({email:signInEmail(s), name:firstLast(s), grade:classroomGrade(c?c.pct:null)});
+  });
+  return {rows:out, skipped:skipped};
+}
+function showSkipped(slug){
+  var el=document.querySelector('[data-skip="'+slug.replace(/"/g,'\\"')+'"]');
+  if(!el) return;
+  var n=classroomRows(slug,false).skipped;
+  el.textContent = n ? n+' not on the roster, left out' : '';
+}
+function copyClassroom(slug, everyone){
+  var r=classroomRows(slug, everyone);
+  if(!r.rows.length){ toast('Nobody to copy for that assignment'); return; }
+  var text=['Email\tName\tGrade'].concat(r.rows.map(function(x){
+    return x.email+'\t'+x.name+'\t'+x.grade;
+  })).join('\n');
+  navigator.clipboard.writeText(text).then(function(){
+    toast('Copied '+r.rows.length+' grades. Open the Classroom assignment \u2192 Sheet2Classroom icon \u2192 paste.'+
+          (r.skipped?' ('+r.skipped+' not on the roster, left out.)':''));
+  }).catch(function(){ toast('Could not reach the clipboard'); });
+}
+
 /* the whole column for that assignment, every student in the period, roster order */
 function copyColumn(slug){
   var nums=view.rows.map(function(s){
