@@ -30,6 +30,46 @@
     (document.head || document.documentElement).appendChild(std);
   } catch (e) {}
 
+  /* ---------------------------------------------------------------
+     T-283: teacher view on pages that resume a sign-in silently.
+
+     27 pages (basics/, launch-plus/u1-l1..l5, the 20 vocab sets, teachme/)
+     remember the last sign-in for 12 hours and skip their sign-in box, so
+     std.js's tvSignIn finds no box to fill and gives up: the yellow bar named
+     the right student while the page loaded whoever used the laptop last, in
+     the laptop's language.
+
+     track.js runs BEFORE the page boots (pages boot on DOMContentLoaded), so
+     here, synchronously, we take std.js's snapshot ourselves and clear those
+     keys. The page then finds nothing to resume, opens its sign-in box, and
+     std.js fills it with the right student and their home language.
+     std.js's restore on Exit and pagehide puts the laptop's own sign-in back:
+     it re-writes every key in the snapshot, so the extra key is covered too.
+     --------------------------------------------------------------- */
+  try {
+    var tvq = new URLSearchParams(location.search);
+    if (tvq.get('view') === 'teacher' && tvq.get('email')) {
+      /* std.js's own key set, plus eld103_lang — Daily Basics reads that one
+         first for its language, so leaving it behind kept the wrong language. */
+      var TV_KEYS = /^(gal_student_|vocab_lang$|vocab_me$|eld103_lang$|[a-z0-9]+_student$|resume_user$)/;
+      /* only the first teacher-view load in this tab snapshots, exactly as std.js does */
+      if (!sessionStorage.getItem('gal_tv_snap')) {
+        var snap = {}, k;
+        for (var ti = 0; ti < localStorage.length; ti++) {
+          k = localStorage.key(ti);
+          if (TV_KEYS.test(k)) snap[k] = localStorage.getItem(k);
+        }
+        sessionStorage.setItem('gal_tv_snap', JSON.stringify(snap));
+      }
+      var drop = [];
+      for (var tj = 0; tj < localStorage.length; tj++) {
+        k = localStorage.key(tj);
+        if (TV_KEYS.test(k)) drop.push(k);
+      }
+      drop.forEach(function (key) { localStorage.removeItem(key); });
+    }
+  } catch (e) {}
+
   /* T-230: tab icon (🦁 student / 🍎 teacher / 📊 gradebook) */
   try {
     if (!window.GAL_ICON) {
