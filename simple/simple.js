@@ -25,6 +25,8 @@
        if it has no entry, the proxy is asked with lang "Simple English";
      - a sentence or a direction: the proxy with lang "Simple English",
        saved in song_tr (slug 'simple-ai', lang 'en-simple');
+     - the proxy gives nothing for a sentence (T-286b): its harder words are shown
+       with short Wiktionary definitions ("flair: a natural skill · ...");
      - nothing comes back: the original English is shown, never a blank.
      - pages that read or write their OWN translation caches (song_tr,
        news_translations) get an empty answer / a quiet "saved", so no other
@@ -265,7 +267,7 @@
   function askProxy(src, meaning, isWord) {
     var u = PROXY + '?action=translate&idiom=' + encodeURIComponent(src) +
             '&meaning=' + encodeURIComponent(meaning || '') + '&lang=' + encodeURIComponent(LLM_LANG);
-    return timed(inner(u).then(function (r) { return r.json(); }), 12000).then(function (d) {
+    return timed(inner(u).then(function (r) { return r.json(); }), 8000).then(function (d) {
       var t = d && d.translation, v = '';
       if (t && typeof t === 'object') v = isWord ? (t.meaning || t.equiv || '') : (t.equiv || t.meaning || '');
       else if (typeof t === 'string') v = t;
@@ -273,6 +275,56 @@
       return v;
     }).catch(function () { return ''; });
   }
+  /* T-286b: when the proxy gives nothing back for a sentence or a direction, show the
+     sentence's harder words with short easy definitions instead, e.g.
+     "entrepreneurs: people who start a business · flair: a natural skill". Same Wiktionary
+     source as single words; common and short words are skipped; names are skipped. */
+  var EASY = ('a an the and or but so if of to in on at by for from with about into over under up down out off ' +
+    'is am are was were be been being do does did done have has had having can could will would shall should may might must ' +
+    'i you he she it we they me him her us them my your his its our their mine yours this that these those there here ' +
+    'what who whom whose which when where why how not no yes very too also just only then than now still yet again ever never ' +
+    'all any some many much more most few less each every other another such same own both either neither ' +
+    'one two three four five six seven eight nine ten first second last next ' +
+    'go goes went gone going come came coming get got make made take took give gave see saw seen look say said tell told ' +
+    'know knew think thought want like need use used find found put keep let help work play read write talk walk run ' +
+    'good bad big small new old long short high low great little right left best better well happy sad nice ' +
+    'day days time year years week man men woman women boy girl people person thing things way home school class ' +
+    'friend friends family mother father teacher student students water food book books room house hand hands ' +
+    'back after before because while until around through again always often sometimes today tomorrow yesterday').split(' ');
+  function hardWords(sentence) {
+    var out = [], seen = {}, toks = String(sentence || '').split(/\s+/);
+    for (var i = 0; i < toks.length; i++) {
+      var raw = toks[i], w = bare(raw);
+      if (!w || w.length < 5 || /[^A-Za-z'-]/.test(w)) continue;
+      if (i > 0 && /^[A-Z]/.test(w)) continue;                       /* a name */
+      var l = w.toLowerCase().replace(/'s$/, '');
+      if (EASY.indexOf(l) >= 0 || seen[l]) continue;
+      seen[l] = 1; out.push(l);
+    }
+    out.sort(function (a, b) { return b.length - a.length; });
+    return out.slice(0, 4);
+  }
+  function shortDef(d) {
+    d = String(d || '').split(' / ')[0].replace(/\s+/g, ' ').trim();
+    if (d.length > 90) { d = d.slice(0, 88); d = d.slice(0, d.lastIndexOf(' ')) + '…'; }
+    return d.replace(/\.$/, '');
+  }
+  function glossSentence(sentence) {
+    var ws = hardWords(sentence);
+    if (!ws.length) return Promise.resolve('');
+    return Promise.all(ws.map(function (w) {
+      return cacheGet(w).then(function (hit) {
+        if (hit) return hit;
+        return wiktDefine(w).then(function (d) { if (d) cachePut(w, d, 'simple-wk'); return d; });
+      }).then(function (d) { return d ? w + ': ' + shortDef(d) : ''; }, function () { return ''; });
+    })).then(function (parts) {
+      /* keep the sentence's own word order */
+      var low = String(sentence).toLowerCase();
+      parts = parts.filter(Boolean).sort(function (a, b) { return low.indexOf(a.split(':')[0]) - low.indexOf(b.split(':')[0]); });
+      return parts.join(' · ');
+    });
+  }
+
   function simpleFor(src, meaning) {
     var key = String(src || '').trim();
     if (!key) return Promise.resolve('');
@@ -281,8 +333,10 @@
     var ck = isWord && w ? w.toLowerCase() : key;
     function ai() {
       return askProxy(key, meaning, isWord).then(function (v) {
-        if (v && v !== key) cachePut(ck, v, 'simple-ai');
-        return v;
+        var same = !v || v.toLowerCase().replace(/\W+/g, '') === key.toLowerCase().replace(/\W+/g, '');
+        if (!same) { cachePut(ck, v, 'simple-ai'); return v; }
+        if (isWord) return '';
+        return glossSentence(key).then(function (g) { if (g) cachePut(ck, g, 'simple-ai'); return g; });
       });
     }
     var p = cacheGet(ck).then(function (hit) {
