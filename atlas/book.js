@@ -65,6 +65,15 @@ window.ATLAS_BOOK = [
         sc:'track.js reads the score (GAL_SCORE, the saved score, or the page\u2019s own score box) on Turn in.',
         mp:'std.js shows \u201c\u2190 My Page\u201d and grows it into \u201c\u2713 Done \u2014 back to My Page\u201d when the student finishes.'},
  notes:[
+  ['Nov 5','T-287','The voice says Mateo’s name right (“Matayo”) on every page; captions unchanged.'],
+  ['Nov 5','T-284','A student who comes back after a break keeps the username and name they type — clicking into another box no longer wipes them. https://tobiasrugger.github.io/readings/easy-true/vets_story_01.html'],
+  ['Nov 5','T-272','Pages update themselves after Mr. Toby pushes a fix — work is saved first, the student stays signed in. https://tobiasrugger.github.io/readings/reel-test/ep02/'],
+  ['Nov 4','T-268','The voice says Amira’s name right (“Ameera”) on every page; captions unchanged; word highlights stay on the right word.'],
+  ['Nov 4','T-264','Username box also on Say, Fluency, ELD 103 Unit 1 + Ch 3. https://tobiasrugger.github.io/readings/fluency/'],
+  ['Nov 3','T-245','Teacher view: add ?view=teacher&email=<student> to any student page, enter the teacher password once, see that student’s saved work read only (yellow bar, nothing saves, Exit restores your sign-in).'],
+  ['Nov 3','T-232','Grades save while students work, not only on Turn in. https://tobiasrugger.github.io/readings/gradebook/ (pw galileo2026)'],
+  ['Nov 3','T-228','Every sign-in email box is a username box with a fixed @s.sfusd.edu; a pasted full email keeps only the username; Enter signs in; Period 1’s @sfusd.edu kept. https://tobiasrugger.github.io/readings/vocab/colors/'],
+  ['Nov 3','T-230','Tab icons (icon.js): 🦁 student pages, 🍎 teacher pages and Teacher tabs, 📊 the gradebook; pages with their own icon keep it.'],
   ['Oct 28','T-167','Shared Chromebooks: no page signs a student in by itself any more. A sign-in from the last 70 minutes (one class period) still fills the box, with a yellow \u201cSigned in as <name> \u00b7 Period N \u2014 Not <name>? Tap here\u201d box, and the student taps Start. After 70 minutes the old name and email are cleared from the box and forgotten on that computer (it used to walk the next student straight into the last one\u2019s work for 12 hours \u2014 how Amira\u2019s Landlady work was lost). Same fix in the vocab practice pages\u2019 own sign-in (vocab.js + 21 pages), which used to auto-sign-in from their own saved copy with no time limit. Try it at https://tobiasrugger.github.io/readings/vocab/colors/.'],
   ['Oct 26','T-136','Sign-in boxes fill in a student\u2019s period and home language from the class list when the name and email come from the browser\u2019s autofill (or a roster pick, or a remembered session) \u2014 Start waits up to 2 seconds for it, never blocks, and never overwrites what the student chose. Seen on https://tobiasrugger.github.io/readings/basics/, https://tobiasrugger.github.io/readings/landlady/ and https://tobiasrugger.github.io/readings/student/.'],
   ['Oct 22','T-109','Reel translate timeout fixed and on-device voices used first (engine.js, speak-core.js, std.js).'],
@@ -86,7 +95,14 @@ window.ATLAS_BOOK = [
 {id:'mypage', ring:0, kind:'platform', course:'both', name:'My Page (the student\u2019s home)', home:'student/', match:['student/'], own:'stu',
  what:'Each student\u2019s own page: one green \u201cDo this next\u201d band (what the teacher assigned \u2192 Finish this \u2192 Then practice), their scores, skills and activity history. Every finished activity comes back here.',
  use:'Students open https://tobiasrugger.github.io/readings/student/ first; from then on every activity shows \u201c\u2190 My Page\u201d.',
- notes:[['Oct 28','T-176','Word checks (pre and post) are data for Mr. Toby: they never show in Finish This, whatever the score. https://tobiasrugger.github.io/readings/student/'],
+ notes:[
+  ['Nov 5','T-290','A pushed “This Week’s Reading” shows ✓ Done once the student turns in any news article after the push. https://tobiasrugger.github.io/readings/student/'],
+  ['Nov 5','T-285','Clicking a student’s name on a teacher page always opens My Page in teacher view (password, yellow bar, Exit), and every activity link from there stays in teacher view; a server hiccup shows a red notice instead of the student sign-in. https://tobiasrugger.github.io/readings/teacher/ (pw galileo2026)'],
+  ['Nov 4','T-267','English always shows (Chrome Translate can’t change it), home language underneath every activity title; a quiet check records when a student tries Chrome Translate.'],
+  ['Nov 4','T-269','ELD 101 students no longer see ELD 103 pages in Finish This, “class is doing this”, Try this or all-period pushes (and the other way round); Mr. Toby’s own-period pushes and extras always show.'],
+  ['Nov 4','T-262','Word checks no longer show as “Your class is doing this”.'],
+  ['Nov 3','T-255','Buttons to news articles and other one-folder pages (Fluency, Teach Mr. Toby, Story Check test, Landlady test) open the right page instead of a 404.'],
+  ['Nov 3','T-246','My Page opened with ?email= sends every activity link into teacher view for that student. https://tobiasrugger.github.io/readings/student/?email=edcruzmontejo%40sfusd.edu'],['Oct 28','T-176','Word checks (pre and post) are data for Mr. Toby: they never show in Finish This, whatever the score. https://tobiasrugger.github.io/readings/student/'],
   ['Oct 28','T-175','Fixed: a finished activity no longer comes back as \u201cNEXT\u201d after the student taps Done (activity links were full web addresses, so My Page didn\u2019t recognise the page they just left). Finish This now counts a Launch Plus lesson by items DONE, not first-try score, so a finished lesson leaves the list; any other activity leaves it once the student turns it in again with no gain. https://tobiasrugger.github.io/readings/student/'],
   ['Oct 27','T-135','Google Classroom posts that link to a readings page now show on My Page like a push (\u201c\u2b50 Most important\u201d) with a small green \u201cfrom Classroom \u00b7 due \u2026\u201d tag, soonest due date first. Copied by a script in Mr. Toby\u2019s own Google account (readings/classroom/Code.gs) every 15 minutes on school days. https://tobiasrugger.github.io/readings/student/'],
   ['Oct 27','T-153','\u201c\u2795 Extra work for you\u201d: work the Teacher\u2019s Desk gives ONE student (class_assignments period \u201cextra\u201d, email = that student) shows in its own blue-bordered box in the green band under Mr. Toby\u2019s pushes, each with its note; when finished it gets a green border and \u2713 and drops to \u201c\u2713 Finished:\u201d. Only that student ever sees it. https://tobiasrugger.github.io/readings/student/'],
@@ -127,6 +143,8 @@ window.ATLAS_BOOK = [
 {id:'assign', ring:0, kind:'teacher', course:'both', name:'Push an activity, class report, class data', home:'assign/', match:['assign/','reports/','teacher/'], files:['assign/catalog.js'], own:'stu',
  what:'Push an activity sends one page to a period or a student (it appears in their green band). The class report and class data show who did what. assign/catalog.js is the list of every student page and is refreshed whenever a hub card changes.',
  notes:[
+  ['Nov 3','T-231','?pick=<page> opens Push with that page chosen. https://tobiasrugger.github.io/readings/assign/?pick=/readings/pronouns/'],
+  ['Nov 2','T-215','The Push catalog is one file per folder (assign/catalog/<folder>.js; old catalog.js frozen but still loads); the Atlas scanner reads the split catalog.'],
   ['Oct 27','T-135','The \u201cLive right now\u201d list also shows rows copied from Google Classroom (source classroom); Clear works on them and the script will not bring a cleared one back. Setup steps: readings/classroom/README.md. https://tobiasrugger.github.io/readings/assign/'],['Oct 22','T-84','Catalog refreshed from the live repo (294 pages).']]},
 
 {id:'audit', ring:0, kind:'teacher', course:'both', name:'Feature audit + conformance checker', home:'audit/', match:['audit/','check.html'], own:'audit',
@@ -139,6 +157,14 @@ window.ATLAS_BOOK = [
 
 {id:'hub', ring:0, kind:'platform', course:'both', name:'The readings hub (student cards)', home:'', match:[''],
  what:'The page of cards students see at https://tobiasrugger.github.io/readings/. Shared file: every chat re-pulls it before changing it.'},
+
+{id:'shelves', ring:0, kind:'teacher', course:'both', name:'Shelves (Lab · Trying · Ready)', home:'shelves/', match:['shelves/'],
+ what:'Every page as a card on one of four shelves: 🧪 Lab (built, not tried), 🔧 Trying (used in class), ✅ Ready, 📦 Retired. Cards carry “Watch for” notes.',
+ notes:[['Nov 2','T-217','Built. https://tobiasrugger.github.io/readings/shelves/ (pw galileo2026)']]},
+
+{id:'year', ring:0, kind:'teacher', course:'both', name:'The year so far (calendar)', home:'year/', match:['year/'],
+ what:'The school year week by week from Aug 17: what each class did.',
+ notes:[['Nov 3','T-224','Built. https://tobiasrugger.github.io/readings/year/ (pw galileo2026) · share copy https://tobiasrugger.github.io/readings/year/share.html']]},
 
 /* ===================== 1 · MAKERS & ENGINES ===================== */
 {id:'group', ring:1, kind:'maker', course:'both', name:'Group Practice + deck maker', home:'group/maker.html', match:['group/','seedfolks/quiz-prep/'], files:['group/engine.js','group/decks/list.js'], own:'lp',
@@ -181,7 +207,8 @@ window.ATLAS_BOOK = [
 
 {id:'wit', ring:1, kind:'engine', course:'both', name:'Sentence Work (WIT item pool)', home:'wit/', match:['wit/'], files:['wit/items.js'],
  what:'Writing-is-Thinking sentence activities for both levels with a level toggle. Its items.js is the shared pool that Daily Basics and the Launch Plus Extras draw from.',
- notes:[['Oct 28','T-183','Load before save (saveguard.js): saved work found under both email spellings, nothing saves over the server when it can\'t be reached. Robot passes all three tests. https://tobiasrugger.github.io/readings/wit/'],['Oct 26','T-118','Tap words is on from the start \u2014 no yellow dashed outline, no ? cursor; tap any word to translate. Buttons and tap-to-fix words keep working; a word with no translation shows in grey instead of \u201c(not found)\u201d.']]},
+ notes:[
+  ['Nov 4','T-270','“Sentence or fragment? Why?” items (see Daily Basics). https://tobiasrugger.github.io/readings/wit/'],['Oct 28','T-183','Load before save (saveguard.js): saved work found under both email spellings, nothing saves over the server when it can\'t be reached. Robot passes all three tests. https://tobiasrugger.github.io/readings/wit/'],['Oct 26','T-118','Tap words is on from the start \u2014 no yellow dashed outline, no ? cursor; tap any word to translate. Buttons and tap-to-fix words keep working; a word with no translation shows in grey instead of \u201c(not found)\u201d.']]},
 
 {id:'shades', ring:1, kind:'engine', course:'101', name:'Shades of Meaning', home:'shades/', match:['shades/'], files:['shades/shades.js'],
  what:'A thesaurus-style word line (tiny \u2192 huge) that any page can switch on with a dictionary/shades toggle. Launch Plus uses it as \u201cBetter word\u201d.',
@@ -206,17 +233,30 @@ window.ATLAS_BOOK = [
 {id:'basics', ring:2, kind:'activity', course:'101', name:'Daily Basics', home:'basics/', match:['basics/'], own:'lp',
  what:'Twelve quick questions a day, seeded per student per day, drawn from every lesson so far. ?lesson=u1-l5 puts that lesson\u2019s items first.',
  use:'Reusable do-now, warm-up, sub plan or filler \u2014 you asked to be reminded of it. Paper version: https://tobiasrugger.github.io/readings/basics/print/',
- notes:[['Oct 26','T-132','The finish screen now sends students back where they came from: the \u201cAll practice pages\u201d button is gone and the line reads \u201cGo back to My Page or to Google Classroom. If you are not sure, ask Mr. Toby.\u201d The green \u201c\u2190 My Page\u201d beside Google Classroom is added by std.js for students who came from https://tobiasrugger.github.io/readings/student/, so it is not hard-coded here. Page: https://tobiasrugger.github.io/readings/basics/'],['Oct 26','T-118','Tap words is on from the start \u2014 no yellow dashed outline, no ? cursor; tap any word to translate. Buttons and tap-to-fix words keep working; a word with no translation shows in grey instead of \u201c(not found)\u201d.'],['Oct 22','T-104','\u201cWhere?\u201d clues rewritten so each is true for exactly one of the eight places (wrong answers come from all eight, not the four shown).']]},
+ notes:[
+  ['Nov 4','T-270','“Sentence or fragment? Why?” — text shown as written; answers are reasons (a capital and a period don’t make a sentence; a who + a verb do).'],
+  ['Nov 4','T-263','Today’s questions and answers stay the same all day (from My Page, any link, any Chromebook); hints on a miss; fair score. https://tobiasrugger.github.io/readings/basics/'],['Oct 26','T-132','The finish screen now sends students back where they came from: the \u201cAll practice pages\u201d button is gone and the line reads \u201cGo back to My Page or to Google Classroom. If you are not sure, ask Mr. Toby.\u201d The green \u201c\u2190 My Page\u201d beside Google Classroom is added by std.js for students who came from https://tobiasrugger.github.io/readings/student/, so it is not hard-coded here. Page: https://tobiasrugger.github.io/readings/basics/'],['Oct 26','T-118','Tap words is on from the start \u2014 no yellow dashed outline, no ? cursor; tap any word to translate. Buttons and tap-to-fix words keep working; a word with no translation shows in grey instead of \u201c(not found)\u201d.'],['Oct 22','T-104','\u201cWhere?\u201d clues rewritten so each is true for exactly one of the eight places (wrong answers come from all eight, not the four shown).']]},
 
 {id:'news', ring:2, kind:'activity', course:'both', name:'This Week\u2019s Reading (news)', home:'news/', match:['news/'],
  what:'A weekly news article with levels, translations and questions; students\u2019 level is remembered.',
- notes:[['Oct 27','T-154','An article with no ---RECORD--- part still gets a Read aloud passage (first 120+ words of the B reading), here and in the Fluency Tracker. https://tobiasrugger.github.io/readings/news/'],
+ notes:[
+  ['Nov 3','T-242','Fair score (each of 4 parts out of 5, partial credit, recording counted even if the student never came back); saves after every answer and on leaving.'],
+  ['Nov 2','T-207','Talk tab is now “Find It” (hint → paragraph number → 3 choices).'],
+  ['Nov 2','T-205','Story sets — “Small Animals, Big Surprises”: pick 1 of 3 science stories, 2–3 = extra credit; drawn pictures; present perfect. https://tobiasrugger.github.io/readings/news/'],['Oct 27','T-154','An article with no ---RECORD--- part still gets a Read aloud passage (first 120+ words of the B reading), here and in the Fluency Tracker. https://tobiasrugger.github.io/readings/news/'],
   ['Oct 28','T-170','Save safety: the page now loads saveguard.js first. A fresh Chromebook shows the student\u2019s saved answers (either email spelling) and never saves over them; if the server can\u2019t be reached a red bar shows and nothing saves; on a shared Chromebook the next student gets a clean sign-in. Robot save test: PASS on all three. Copy of the old page at news/_phases/phase-1-before-saveguard.html. https://tobiasrugger.github.io/readings/news/']]},
 
 {id:'storycheck', ring:2, kind:'activity', course:'101', name:'Story Check (Story Reel tests: read aloud, words, listening, grammar, extras)', home:'reel-test/ep02/', match:['reel-test/'], files:['reel-test/ep02/content.js'],
  what:'A self-contained check on a Story Reel episode. Part 1 for everyone: read 10 sentences aloud (recorded, the computer suggests a score, Mr. Toby decides), 12 word matches (pictures + home language), letters, dictation, listen-and-answer, story questions, fix the sentence, grammar. Part 2 after Turn in: order the places, summary, describe and compare characters (Venn), retell aloud, your backpack. ?mode=test = one try, no hints; plain URL = practice with hints.',
  use:'Ep 2 practice: https://tobiasrugger.github.io/readings/reel-test/ep02/ \u00b7 test: https://tobiasrugger.github.io/readings/reel-test/ep02/?mode=test \u00b7 teacher: https://tobiasrugger.github.io/readings/reel-test/ep02/dashboard.html (pw galileo2026). Table reel_tests (one row per email + test_key); recordings in the fluency-recordings bucket.',
- notes:[['Oct 27','T-155','Put back the T-153 note on My Page (\u201c\u2795 Extra work for you\u201d) that the T-151 push had dropped from this file.'],
+ notes:[
+  ['Nov 4','T-266','Sound recovers itself when Chrome’s voice sticks (▶ shows “🔊 Playing…”; Jun says to close Chrome if still silent; a test play counts only once sound starts).'],
+  ['Nov 4','T-265','Fix the sentence: one click on Check, two new sentences, a different correct fix counts.'],
+  ['Nov 4','T-261','“Hear a word, write it”: sentence with one blank per letter, 🔊 reads it with “blank”.'],
+  ['Nov 3','T-257','Listen letters: no more G; O and L practiced alone first; names spelled one letter at a time, boxes light up.'],
+  ['Nov 3','T-247','Practice counts every item solved on any try and every line read.'],
+  ['Nov 2','T-201','Loads saved work first (both email spellings, red bar if offline); practice and test rows never mix.'],
+  ['Nov 2','T-197','Practice read-aloud: “One good try is enough” (max 3 takes); answers save in seconds.'],
+  ['Nov 2','T-196','Words part: big drawn backpack, no answer words in pictures, 🔊 per tile, no picture on home-language items, answers spread over all four slots. https://tobiasrugger.github.io/readings/reel-test/ep02/'],['Oct 27','T-155','Put back the T-153 note on My Page (\u201c\u2795 Extra work for you\u201d) that the T-151 push had dropped from this file.'],
   ['Oct 27','T-151','Built: https://tobiasrugger.github.io/readings/reel-test/ep02/ (practice) and https://tobiasrugger.github.io/readings/reel-test/ep02/?mode=test (test), with https://tobiasrugger.github.io/readings/reel-test/ep02/dashboard.html (pw galileo2026) to listen to each recording and set your own score. New table reel_tests (SQL in the T-151 message).']]},
 
 {id:'skills', ring:0, kind:'teacher', course:'both', name:'Skill Map (practised vs shown, by skill)', home:'skills/dashboard.html', match:['skills/'], files:['skills/skills.js'],
@@ -246,6 +286,7 @@ window.ATLAS_BOOK = [
 {id:'weekend', ring:2, kind:'activity', course:'101', name:'Weekend talk + board game', home:'launch-plus/weekend/', match:['launch-plus/weekend/'], own:'board',
  what:'\u201cWhat did you do this weekend?\u201d helper, and a dice board game for up to five players with NOW / PAST squares and an Easier/Harder toggle.',
  notes:[
+  ['Nov 2','T-199','New Word Game: 2–5 players, 4 rounds, points; old board game kept. https://tobiasrugger.github.io/readings/launch-plus/weekend/game.html'],
   ['Oct 22','T-99','Temporary Record button inside the card; green Check inside the beige box.'],
   ['Oct 22','T-96','Squares show NOW: I play soccer. / PAST: I p _ _ _ _ _ soccer.'],
   ['Oct 22','T-95','Five players, score, coloured squares, pieces that pile up.'],
@@ -254,6 +295,10 @@ window.ATLAS_BOOK = [
 {id:'groups', ring:2, kind:'teacher', course:'both', name:'Group grades (table groups)', home:'groups/', match:['groups/'],
  what:'Seat the tables, then tap a table and a 0\u20134 while you walk around.',
  notes:[['Oct 19','T-66','Built.']]},
+
+{id:'advice', ring:2, kind:'activity', course:'103', name:'Dear Lion (weekly advice letter)', home:'advice/', match:['advice/'],
+ what:'A weekly ELD 103 advice-column letter at levels A/B/C: students read a letter, write advice, then answer comprehension and word questions. A projector wall shows the class’s advice.',
+ notes:[['Nov 2','T-208','Built. https://tobiasrugger.github.io/readings/advice/ · dashboard https://tobiasrugger.github.io/readings/advice/dashboard.html (pw galileo2026)']]},
 
 /* ===================== 3 · ELD 101 ===================== */
 {id:'launch-plus', ring:3, kind:'activity', course:'101', name:'Launch Plus (Unit 1 lessons)', home:'launch-plus/', match:['launch-plus/'], own:'lp',
@@ -284,6 +329,8 @@ window.ATLAS_BOOK = [
  files:['vocab/vocab.js'], own:'std',
  what:'Picture word cards with sound and translation, then practice games. Colors, foods, animals, drinks, sports, school subjects, five sets of action verbs, how I look, strengths, personality traits, and My Words.',
  notes:[
+  ['Nov 5','T-288','On an iPad or phone the row of activity buttons stays visible under the green bar, and every activity ends with a big green “Next” button. https://tobiasrugger.github.io/readings/vocab/landlady-2/'],
+  ['Nov 5','T-287','My Strengths “Listen and spell” Level 2 will spell long words in parts once the spelling helper is live. https://tobiasrugger.github.io/readings/vocab/strengths/'],
   ['Oct 28','T-190','Loads first on all 22 word sets and the Vocabulary hub: saveguard.js is now the first line in each page\u2019s head (a copy of each page before the change is in its _phases folder). Both email spellings, no save until the student\u2019s work has loaded, a red bar if the server can\u2019t be reached, and a blank Chromebook can\u2019t wipe real answers. Check the Loads first column at https://tobiasrugger.github.io/readings/audit/check.html (password galileo2026).'],
   ['Oct 26','T-126','vocab/assign.html now opens with a big green \u201c\u2192 Use the NEW Assign page\u201d signpost to https://tobiasrugger.github.io/readings/assign/ (pw galileo2026), above everything including the password box. (Note restored by T-129: an earlier zip\u2019s book.js had dropped it.)'],
   ['Oct 22','T-89','Saves under the canonical @sfusd.edu email; old rows carried forward.'],
@@ -297,7 +344,8 @@ window.ATLAS_BOOK = [
  what:'Six lessons: C and G, Magic E, letter teams, bossy R, vowel teams, heart words.'},
 
 {id:'easy-true', ring:3, kind:'activity', course:'101', name:'Very Easy True Stories', home:'easy-true/', match:['easy-true/'], files:['easy-true/vets-practice.js','easy-true/vets_shared.js'],
- what:'Short true stories, each with seven practice modules: words first, listen, say, spell, grammar, where are the spaces, practice.', notes:[['Oct 28','T-187','Oct 28 · T-187 · saveguard.js added as the first line in <head> so the page reads the student\'s saved work before it writes any; the copy students saw is kept in _phases/. All 6 lessons.'],
+ what:'Short true stories, each with seven practice modules: words first, listen, say, spell, grammar, where are the spaces, practice.', notes:[
+  ['Nov 5','T-282','Story 1 on a phone — tap any word to translate (words page too), no dashed boxes, one language picker. https://tobiasrugger.github.io/readings/easy-true/vets_story_01.html'],['Oct 28','T-187','Oct 28 · T-187 · saveguard.js added as the first line in <head> so the page reads the student\'s saved work before it writes any; the copy students saw is kept in _phases/. All 6 lessons.'],
         ['Oct 28','T-187','Oct 28 · T-187 · saveguard.js added as the first line in <head> so the page reads the student\'s saved work before it writes any; the copy students saw is kept in _phases/. All 14 stories.'],
         ['Oct 28','T-183','Load before save (saveguard.js) on all 30 practice modules (vocab, listen, speak, grammar, write × stories 1–6): saved work comes back under either email spelling, nothing saves while the server can\'t be reached (red bar). Robot: grammar, listen, write pass all three tests. https://tobiasrugger.github.io/readings/easy-true/'],['Oct 28','T-170','Load before save (saveguard.js) on the six spelling pages. https://tobiasrugger.github.io/readings/easy-true/']]},
 
@@ -313,7 +361,8 @@ window.ATLAS_BOOK = [
  notes:[['Oct 28','T-170','Load before save (saveguard.js), both pages. https://tobiasrugger.github.io/readings/arrival/'],['Oct 26','T-121','Old copy arrival_dashboard.html now redirects to https://tobiasrugger.github.io/readings/arrival/dashboard.html (password galileo2026).']]},
 {id:'holidays', ring:3, kind:'activity', course:'101', name:'Ghosts, Candy, and Remembering', home:'holidays/', match:['holidays/'], own:'hol',
  what:'Twelve picture screens about Halloween and D\u00eda de los Muertos, Level A and B (check C-14).',
- notes:[['Oct 26','T-119','Every answer can be right: the because-sentence is built from the fear the student picked, and a \u201cWhat did our class choose?\u201d chart shows the class\u2019s picks with \u2190 you. (Note restored by T-120 after a later book.js push dropped it.)'],['Oct 23','T-113','Wrong-answer quips match the screen: story quips only where there is a passage, rule quips only where there is a rule box. \u201cThe ___ cast a spell on the prince and turned him into a frog.\u201d'],['Oct 22','T-82','Rebuilt as 12 picture screens; word bank and voices added (T-92, T-86).']]},
+ notes:[
+  ['Nov 3','T-244','Score counts every word said (not only ones the machine matched) and every writing box; saves after every answer and on leaving. https://tobiasrugger.github.io/readings/holidays/'],['Oct 26','T-119','Every answer can be right: the because-sentence is built from the fear the student picked, and a \u201cWhat did our class choose?\u201d chart shows the class\u2019s picks with \u2190 you. (Note restored by T-120 after a later book.js push dropped it.)'],['Oct 23','T-113','Wrong-answer quips match the screen: story quips only where there is a passage, rule quips only where there is a rule box. \u201cThe ___ cast a spell on the prince and turned him into a frog.\u201d'],['Oct 22','T-82','Rebuilt as 12 picture screens; word bank and voices added (T-92, T-86).']]},
 {id:'survival', ring:3, kind:'activity', course:'101', name:'Survival English', home:'survival-english/', match:['survival-english/'], what:'Getting through the day: unit, test and plans.', notes:[['Oct 28','T-170','Load before save (saveguard.js) added to the main page too; next-student test passes. https://tobiasrugger.github.io/readings/survival-english/'],['Oct 28','T-170','Load before save (saveguard.js) on the unit test. https://tobiasrugger.github.io/readings/survival-english/assessment.html'],
   ['Oct 28','T-168','No more lost work. The page now loads the student\u2019s saved work before it ever saves (it used to save a blank page first on a new Chromebook), reads both email spellings, shows a red bar and saves nothing while the server can\u2019t be reached, and gives the next student on a shared Chromebook a clean page instead of the last student\u2019s answers. Every table is also protected by the keep_old_work safety net (T-169). It also merges answer by answer instead of all-or-nothing. Fixed on https://tobiasrugger.github.io/readings/survival-english/.']]},
 {id:'favorites', ring:3, kind:'activity', course:'101', name:'My Favorite Things', home:'favorites/', match:['favorites/'], what:'Favorites and why, said and written.', notes:[['Oct 28','T-170','Load before save (saveguard.js). https://tobiasrugger.github.io/readings/favorites/']]},
@@ -333,6 +382,9 @@ window.ATLAS_BOOK = [
 {id:'landlady', ring:4, kind:'activity', course:'103', name:'The Landlady', home:'landlady/', match:['landlady/','landlady-easy/','landlady-hard/','vocab/landlady-1/','vocab/landlady-2/','vocab/landlady-3/','vocab/landlady-4/','vocab/landlady-deep/'], files:['vocab/landlady-art.js','vocab/landlady-words.js','landlady/progress.js'], own:'e103',
  what:'The full story set: reading guide with chapters, cozy/creepy signals, highlighting, a side rail of words; vocabulary sets and \u201cInside the words\u201d; the Investigate-the-tea detective game; the Writing Ladder.',
  notes:[
+  ['Nov 3','T-256','Part 1 highlight practice no longer counts — every question gives 10/10 (9/9 Easier), not 10/11.'],
+  ['Nov 2','T-204','Activity bar on all three Landlady pages adds 🎲 Table word game, 12 words on your own, Read it together, Practice test (hints), The Landlady test.'],
+  ['Nov 2','T-203','44-point test https://tobiasrugger.github.io/readings/landlady/test/ (teacher preview preview.html, Part A on 4 pages, hints version ?practice=1) + Read it together https://tobiasrugger.github.io/readings/landlady/table/ + paper story table/handout.html'],
   ['Oct 28','T-193','The six story word sets now load a student\u2019s saved work before they save anything, and show a red bar instead of saving when the server is down: https://tobiasrugger.github.io/readings/vocab/landlady-1/ (and landlady-2, -3, -4), https://tobiasrugger.github.io/readings/vocab/telltale-1/ and https://tobiasrugger.github.io/readings/vocab/monkeyspaw-1/. Old copies are in each set\u2019s _phases folder.'],
   ['Oct 28','T-182','Changing the language in the toolbar now changes everything at once: word taps, the margin words, the word table and an open \u201cPractice\u201d question. A translation still loading in the old language is no longer saved under the new one, and the new language stays after a reload. Same fix on https://tobiasrugger.github.io/readings/landlady/, https://tobiasrugger.github.io/readings/landlady-easy/ and https://tobiasrugger.github.io/readings/landlady-hard/.'],
   ['Oct 28','T-180','When the server can\u2019t be reached, a big red bar now shows across the top of https://tobiasrugger.github.io/readings/landlady/ (before, only the small note in the header said so). Nothing saves until the server answers; the bar goes away when it does.'],
@@ -366,7 +418,8 @@ window.ATLAS_BOOK = [
 {id:'romeo-juliet', ring:4, kind:'activity', course:'103', name:'Romeo and Juliet', home:'romeo-juliet/', match:['romeo-juliet/'], what:'Scene guides, a grammar and language lab, and an assessment center.', notes:[['Oct 28','T-170','Load before save (saveguard.js) on four pages. https://tobiasrugger.github.io/readings/romeo-juliet/']]},
 {id:'sept11', ring:4, kind:'activity', course:'103', name:'September 11, 2001', home:'sept11/', match:['sept11/','sept11-easy/'], notes:[['Oct 28','T-183','Saved work now comes back on screen: after sign-in the page reads the student\'s row and fills the empty boxes before the first save. Robot passes all three tests. https://tobiasrugger.github.io/readings/sept11/'],['Oct 28','T-170','Load before save (saveguard.js): saved work is found under both email spellings, nothing saves until it has loaded, red bar if the server can\'t be reached. https://tobiasrugger.github.io/readings/sept11/']]},
 {id:'psychology', ring:4, kind:'activity', course:'103', name:'Who Am I? Psychology and The Jacket', home:'psychology/', match:['psychology/'], what:'Six readings (Big Five, the Somebody, actual/ideal/ought selves, The Jacket, influence), grammar gym, PEA paragraphs, assessment.', notes:[['Oct 28','T-170','Load before save (saveguard.js) on all ten pages. https://tobiasrugger.github.io/readings/psychology/']]},
-{id:'monsters', ring:4, kind:'activity', course:'103', name:'Monsters as Symbols', home:'monsters/', match:['monsters/'], own:'hol', what:'Twelve picture screens with fear cards and a side panel.', notes:[['Oct 26','T-119','\u201cEvery answer can be right \u2014 choose the ones you can explain\u201d: the because-sentence follows the fear the student picked; class chart of choices; the dashboard shows fear counts. (Note restored by T-120.)'],['Oct 23','T-113','Quips match the screen; quiz Q11 hint no longer points at a missing story.'],['Oct 22','T-93','Fear cards and instant glossary taps.']]},
+{id:'monsters', ring:4, kind:'activity', course:'103', name:'Monsters as Symbols', home:'monsters/', match:['monsters/'], own:'hol', what:'Twelve picture screens with fear cards and a side panel.', notes:[
+  ['Nov 3','T-244','Score counts every word said and every writing box; saves after every answer and on leaving. https://tobiasrugger.github.io/readings/monsters/'],['Oct 26','T-119','\u201cEvery answer can be right \u2014 choose the ones you can explain\u201d: the because-sentence follows the fear the student picked; class chart of choices; the dashboard shows fear counts. (Note restored by T-120.)'],['Oct 23','T-113','Quips match the screen; quiz Q11 hint no longer points at a missing story.'],['Oct 22','T-93','Fear cards and instant glossary taps.']]},
 {id:'four-agreements', ring:4, kind:'activity', course:'103', name:'The Four Agreements', home:'four-agreements/', match:['four-agreements/'],
  notes:[['Oct 28','T-170','Load before save (saveguard.js). https://tobiasrugger.github.io/readings/four-agreements/'],['Oct 26','T-118','Tap words is on from the start \u2014 no yellow dashed outline, no ? cursor; tap any word to translate, while buttons and answer choices keep working.']]},
 {id:'creativity', ring:4, kind:'activity', course:'103', name:'Open Mode (Cleese on creativity)', home:'creativity/', match:['creativity/'], notes:[
@@ -382,5 +435,14 @@ window.ATLAS_BOOK = [
 {id:'gratitude', ring:4, kind:'activity', course:'103', name:'Gratitude', home:'gratitude/', match:['gratitude/','gratitude-letters/'], what:'The science of gratitude, and a poem turned into a letter turned into an email.', notes:[['Oct 28','T-170','Load before save (saveguard.js), both pages. https://tobiasrugger.github.io/readings/gratitude/']]},
 {id:'thoughts', ring:4, kind:'activity', course:'both', name:'Be Careful of Your Thoughts', home:'thoughts-chain/', match:['thoughts/','thoughts-chain/'], notes:[['Oct 28','T-170','Load before save (saveguard.js), both pages. https://tobiasrugger.github.io/readings/thoughts/']]},
 {id:'toolkits', ring:4, kind:'activity', course:'103', name:'English Toolkits', home:'toolkits/', match:['toolkits/'], what:'Pronouns; to be, to have, to do; compare and contrast \u2014 each toolkit with a practice page, plus describing lessons.', notes:[['Oct 28','T-170','Load before save (saveguard.js) on all thirteen pages. https://tobiasrugger.github.io/readings/toolkits/']]},
-{id:'tyma', ring:4, kind:'activity', course:'103', name:'Thank You, Ma\u2019am: Words First', home:'tyma-vocab/', match:['tyma-vocab/'], notes:[['Oct 28','T-170','Load before save (saveguard.js). https://tobiasrugger.github.io/readings/tyma-vocab/']]}
+{id:'tyma', ring:4, kind:'activity', course:'103', name:'Thank You, Ma\u2019am: Words First', home:'tyma-vocab/', match:['tyma-vocab/'], notes:[['Oct 28','T-170','Load before save (saveguard.js). https://tobiasrugger.github.io/readings/tyma-vocab/']]},
+
+{id:'wordgame', ring:4, kind:'activity', course:'103', name:'Landlady word games (table + solo)', home:'wordgame/landlady/', match:['wordgame/'],
+ what:'Guess the word from the picture, use it in a sentence, and the table votes; a solo version for one student.',
+ notes:[['Nov 2','T-216','Solo word game = 24 points. https://tobiasrugger.github.io/readings/wordgame/landlady/solo/'],
+  ['Nov 2','T-200','Built: Landlady Table Word Game. https://tobiasrugger.github.io/readings/wordgame/landlady/']]},
+
+{id:'voices', ring:4, kind:'activity', course:'103', name:'Who Answers Whom? (voices)', home:'voices/homelessness/', match:['voices/'],
+ what:'Short real voices on one topic; students match who answers whom. First topic: homelessness.',
+ notes:[['Nov 2','T-202','Built: Homelessness. https://tobiasrugger.github.io/readings/voices/homelessness/ · dashboard https://tobiasrugger.github.io/readings/voices/homelessness/dashboard.html (pw galileo2026)']]},
 ];
