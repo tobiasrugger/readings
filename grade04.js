@@ -1,4 +1,8 @@
-/* grade04.js — the gradebook's 0–4, on every teacher page.
+/* grade04.js — the gradebook's 0–4.5, on every teacher page.
+ *
+ * THE SCALE (T-302, Toby, Nov 5): 0 = 0–14%, 1 = 15–35, 2 = 36–55, 3 = 56–75,
+ * 4 = 76–94, 4.5 = 95–100; never attempted = blank. Read GAL04.BANDS or call
+ * GAL04.band(pct) — do not keep your own cut points in a dashboard.
  *
  * Why: each dashboard works out its own display from its own table, so the same
  * student could read 82% here, "7/9" there and a green tick somewhere else. This
@@ -41,22 +45,28 @@
   var SUPA_URL = 'https://lhmwtfyceilgndpygivj.supabase.co';
   var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
 
+  /* T-302 (Toby, Nov 5): the scale Synergy uses, which has a 4.5.
+     Each pair is [lowest percent, mark]. Half the work should read as a 2,
+     not a 1 — a student at 54% was showing a 1 under the old 90/75/60 cuts.
+     Never attempted stays blank. This table is THE one: read GAL04.BANDS
+     instead of keeping your own cut points. */
+  var BANDS = [[95, 4.5], [76, 4], [56, 3], [36, 2], [15, 1], [0, 0]];
   function band(pct) {
     if (pct == null || isNaN(pct)) return null;
-    pct = +pct;
-    if (pct >= 90) return 4;
-    if (pct >= 75) return 3;
-    if (pct >= 60) return 2;
-    if (pct > 0)  return 1;
+    pct = Math.round(+pct);
+    for (var i = 0; i < BANDS.length; i++) if (pct >= BANDS[i][0]) return BANDS[i][1];
     return 0;
   }
   function fmt(pct) { var b = band(pct); return b == null ? '\u2014' : String(b); }
 
+  /* 0, 1, 2, 3, 4, then 4.5 stronger than the 4 */
   var COLOR = ['#b23a2c', '#c0531f', '#b5820c', '#4f8a52', '#1F7A4D'];
+  var COLOR45 = '#0d5c3a';
+  function colorFor(b) { return b === 4.5 ? COLOR45 : COLOR[b]; }
   function badge(pct, title) {
     var b = band(pct);
     if (b == null) return '<span class="gal04 gal04-none" title="no attempt yet">\u2014</span>';
-    return '<span class="gal04 gal04-' + b + '" style="background:' + COLOR[b] + '"' +
+    return '<span class="gal04 gal04-' + String(b).replace('.', '-') + '" style="background:' + colorFor(b) + '"' +
            (title ? ' title="' + String(title).replace(/"/g, '&quot;') + '"' : '') + '>' + b + '</span>';
   }
 
@@ -160,7 +170,7 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', backButton);
   else backButton();
 
-  window.GAL04 = { band: band, fmt: fmt, badge: badge, load: load, canon: canon, decorate: schedule, back: backButton };
+  window.GAL04 = { BANDS: BANDS, band: band, fmt: fmt, badge: badge, load: load, canon: canon, decorate: schedule, back: backButton };
 
   var me = document.currentScript,
       slugs = me && me.getAttribute('data-slugs'),
