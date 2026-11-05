@@ -45,15 +45,34 @@ td.avg{font-weight:800;text-align:center;background:#fafcfb}
 tbody tr:hover td,tbody tr:hover th{background:#f3f7f5}
 select.per{border:1px solid transparent;background:transparent;font:inherit;font-size:.78rem;padding:2px}
 select.per:hover{border-color:var(--edge);background:#fff}
-#chgbody .asg{border:2px solid var(--edge);border-radius:10px;padding:10px 12px;margin:0 0 10px}
-#chgbody .asg h4{margin:0 0 6px;font-size:.98rem;display:flex;align-items:center;gap:8px}
-#chgbody .asg h4 .btn{margin-left:auto}
-#chgbody table{width:100%;border-collapse:collapse;font-size:.85rem}
-#chgbody td{border:0;border-bottom:1px solid var(--edge);padding:3px 6px}
-#chgbody tr:last-child td{border-bottom:0}
-#chgbody .was{color:var(--muted)}
-#chgbody .now{font-weight:900}
+#chgdlg{max-width:760px;width:94vw}
+#chgbody{max-height:62vh;overflow:auto}
+#chgbody .asg{border:2px solid var(--ink);border-radius:10px;padding:10px 14px;margin:0 0 12px;break-inside:avoid}
+#chgbody .asg h4{margin:0 0 4px;font-size:1.05rem}
+#chgbody .asg h4 span{font-weight:400;color:var(--muted);font-size:.82rem;margin-left:6px}
+#chgbody .asg .cnt{font-size:.78rem;color:var(--muted);margin:0 0 8px}
+/* one line per student: tick box, name and mark big enough to read while typing */
+#chgbody .ln{display:flex;align-items:center;gap:12px;padding:7px 2px;border-bottom:1px solid var(--edge)}
+#chgbody .ln:last-child{border-bottom:0}
+#chgbody .ln input[type=checkbox]{width:22px;height:22px;flex:none;accent-color:var(--pine);cursor:pointer}
+#chgbody .ln .nm{flex:1;font-size:1.22rem;font-weight:700;line-height:1.2}
+#chgbody .ln .mk{font-size:1.9rem;font-weight:900;min-width:1.3em;text-align:center;line-height:1}
+#chgbody .ln .prev{font-size:.76rem;color:var(--muted);min-width:4.5em;text-align:right}
+#chgbody .ln.ticked{opacity:.45}
+#chgbody .ln.ticked .nm{text-decoration:line-through}
 #chgbody .up{color:var(--ok)} #chgbody .down{color:var(--bad)} #chgbody .new{color:var(--gold)}
+#chgbody .copyrow{margin-top:8px;text-align:right}
+#chgbody .copyrow button{background:none;border:0;color:var(--muted);font:inherit;font-size:.72rem;text-decoration:underline;cursor:pointer;padding:2px 4px}
+@media print{
+  body>*{display:none !important}
+  dialog#chgdlg{display:block !important;position:static;border:0;max-width:none;width:auto;padding:0}
+  #chgdlg .noprint,#chgdlg .row{display:none !important}
+  #chgbody{max-height:none;overflow:visible}
+  #chgbody .ln input[type=checkbox]{-webkit-appearance:none;appearance:none;border:2px solid #000;border-radius:3px}
+  #chgbody .ln.ticked{opacity:1}
+  #chgbody .ln.ticked .nm{text-decoration:none}
+  #chgbody .asg{border-color:#000}
+}
 .toast{position:fixed;bottom:14px;right:14px;background:var(--pine);color:#fff;padding:7px 12px;border-radius:8px;font-size:.78rem;opacity:0;transition:opacity .3s;max-width:420px}
 .toast.on{opacity:1}
 .legend{font-size:.74rem;color:var(--muted);margin:6px 0 0}
@@ -97,15 +116,18 @@ dialog .row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 </div>
 
 <dialog id="chgdlg">
-  <h3>What changed &mdash; marks to type into Synergy</h3>
-  <div id="chgnote" style="color:var(--muted);font-size:.78rem;margin-bottom:8px"></div>
-  <div id="chgbody" style="max-height:60vh;overflow:auto"></div>
-  <div class="row">
+  <div id="chghead">
+    <h3 style="margin:0">What changed &mdash; marks to type into Synergy</h3>
+    <div id="chgnote" style="color:var(--muted);font-size:.78rem;margin-top:3px"></div>
+  </div>
+  <div id="chgbody"></div>
+  <div class="row noprint">
+    <button class="btn" id="chgprint">\U0001F5A8 Print this period</button>
     <button class="btn" id="chgdone">Entered in Synergy \u2713</button>
     <button class="btn sec" id="chgall">Show last 48 hours</button>
     <button class="btn sec" id="chgclose" style="margin-left:auto">Close</button>
   </div>
-  <p style="font-size:.76rem;color:var(--muted);margin:10px 0 0">Press <b>Entered in Synergy \u2713</b> once you have typed these in. Next time this list starts from that moment, so you only ever see what is new.</p>
+  <p class="noprint" style="font-size:.76rem;color:var(--muted);margin:10px 0 0">Tick each line as you type it. Press <b>Entered in Synergy \u2713</b> when the period is done &mdash; next time the list starts from that moment, so you only ever see what is new.</p>
 </dialog>
 
 <dialog id="syndlg">
@@ -434,6 +456,8 @@ document.getElementById('syncopyboth').onclick=function(){var L=synLists();synCo
    The "was" mark is worked out from the attempt history: each student's best
    attempt that existed BEFORE the cutoff, scored by the same rules as now. */
 var ATT=null, ENTERED={};   // attempts cache; period -> ISO time last entered
+var TICKED={};              // slug|email -> typed into Synergy already (this browser, this round)
+try{ TICKED=JSON.parse(localStorage.getItem('gb_ticked')||'{}'); }catch(e){ TICKED={}; }
 
 function chgPct(score,max){                        // same rule as the Synergy export
   if(max>0 && score!=null) return Math.round(100*score/max);
@@ -502,17 +526,28 @@ function renderChanged(){
     host.innerHTML='<p style="color:var(--muted);padding:12px 0">Nothing has changed since then. Synergy is up to date.</p>';
   } else {
     host.innerHTML=slugs.map(function(sl){
-      var a=activities[sl]||{};
-      return '<div class="asg"><h4>'+esc(a.title||sl)+
-        (a.unit?' <span style="font-weight:400;color:var(--muted);font-size:.82rem">'+esc(a.unit)+'</span>':'')+
-        '<button class="btn sec" style="padding:4px 10px;font-size:.78rem" data-col="'+esc(sl)+'">Copy this column</button></h4><table><tbody>'+
-        r.by[sl].map(function(x){
+      var a=activities[sl]||{}, list=r.by[sl];
+      return '<div class="asg"><h4>'+esc(a.title||sl)+(a.unit?'<span>'+esc(a.unit)+'</span>':'')+'</h4>'+
+        '<div class="cnt">'+list.length+' mark'+(list.length===1?'':'s')+' to type \u00b7 Synergy order</div>'+
+        list.map(function(x){
           var cls=x.was==null?'new':(x.now>x.was?'up':'down');
-          return '<tr><td>'+esc(studentName(x.st))+'</td><td class="was">'+(x.was==null?'\u2014':x.was)+
-                 '</td><td style="width:1.6em">\u2192</td><td class="now '+cls+'">'+x.now+'</td></tr>';
-        }).join('')+'</tbody></table></div>';
+          var key=sl+'|'+x.st.email;
+          return '<label class="ln'+(TICKED[key]?' ticked':'')+'" data-tick="'+esc(key)+'">'+
+            '<input type="checkbox"'+(TICKED[key]?' checked':'')+'>'+
+            '<span class="nm">'+esc(studentName(x.st))+'</span>'+
+            '<span class="prev">'+(x.was==null?'new':x.was+' \u2192')+'</span>'+
+            '<span class="mk '+cls+'">'+x.now+'</span></label>';
+        }).join('')+
+        '<div class="copyrow noprint"><button data-col="'+esc(sl)+'">copy the whole column</button></div></div>';
     }).join('');
     host.querySelectorAll('[data-col]').forEach(function(b){ b.onclick=function(){ copyColumn(b.dataset.col); }; });
+    /* ticking is just for Toby's eye while typing; it lives in this browser only */
+    host.querySelectorAll('[data-tick]').forEach(function(l){
+      l.querySelector('input').onchange=function(){
+        TICKED[l.dataset.tick]=this.checked; l.classList.toggle('ticked',this.checked);
+        try{ localStorage.setItem('gb_ticked', JSON.stringify(TICKED)); }catch(e){}
+      };
+    });
   }
   var done=document.getElementById('chgdone');
   done.disabled=!(r.per&&r.per!=='none');
@@ -545,7 +580,9 @@ function markEntered(){
      body:JSON.stringify([{period:per,entered_at:now,updated_at:now}])})
   .then(function(r){
     if(!r.ok) throw 0;
-    ENTERED[per]=now; FORCE48=false; renderChanged();
+    ENTERED[per]=now; FORCE48=false;
+    TICKED={}; try{ localStorage.removeItem('gb_ticked'); }catch(e){}   // fresh round
+    renderChanged();
     toast('Period '+per+' marked as entered. Next time starts from now.');
   }).catch(function(){ toast('Could not save \u2014 is the synergy_marks table created?'); });
 }
@@ -553,6 +590,7 @@ document.getElementById('chg').onclick=openChanged;
 document.getElementById('chgclose').onclick=function(){document.getElementById('chgdlg').close();};
 document.getElementById('chgdone').onclick=markEntered;
 document.getElementById('chgall').onclick=function(){FORCE48=!FORCE48;renderChanged();};
+document.getElementById('chgprint').onclick=function(){ window.print(); };
 
 ['period','course','unit','since','hideempty'].forEach(function(id){document.getElementById(id).addEventListener('change',render);});
 document.getElementById('q').addEventListener('input',render);
