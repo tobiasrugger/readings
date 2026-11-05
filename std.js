@@ -372,6 +372,7 @@
           else got[k] = k === 'email' ? emailVal(els[i]) : els[i].value.trim();
         }
         if (got.email) remember(got.name, got.email, got.period);
+        setTimeout(function () { try { updCheck('signin'); } catch (e) {} }, 1500);   /* T-272 */
       }, 60);
     }, false);
   }
@@ -1561,6 +1562,243 @@
     }
   }
 
+  /* ================= T-272 PAGES UPDATE THEMSELVES (Nov 4 2026) =================
+     Students leave tabs open for days, so a push can leave old code running in class (Xingqi's
+     Story Check kept a retired item until Toby reloaded). std.js remembers what this tab is running
+     and checks the server again after a sign-in, whenever the tab becomes visible, and every 10
+     minutes while it is open:
+       - the page's HTML (its inline scripts are compared with the ones in this tab, so a page served
+         stale from the ~10-minute GitHub Pages cache is caught too) and every /readings/ script it
+         loads (content.js, engine.js, items.js…), fetched cache:'no-store' and hashed;
+       - if anything changed: wait until the student has not typed for 3 s (and no voice, recording
+         or audio is playing); run the page's own save (blur + its pagehide/beforeunload handlers)
+         and wait until every save to the server has come back OK; green bar "Mr. Toby updated this
+         page — loading the new version…" (tap a word to translate it); reload after ~2 s;
+       - after the reload the sign-in box is filled in again ("Signed in as … — Not you?") and the
+         student taps Start (T-167). A save that fails or never answers = NO reload, red bar instead;
+       - never in teacher view, on dashboards or teacher pages. Tests (landlady/test, reel-test
+         ?mode=test, or window.GAL_IS_TEST) get the green bar with a "Reload when you finish" button;
+       - at most one reload per new version per tab (and 3 per tab per hour), so it can never loop.
+     Opt out: window.GAL_NO_UPDATE = true. */
+  var UPD = { base: null, busy: false, waiting: false, lastKey: 0, streams: [], tried: {}, timer: null };
+  function updOff() {
+    return !!TV || TEACHER_PATH.test(location.pathname) || !/^https?:$/.test(location.protocol) || !!window.GAL_NO_UPDATE;
+  }
+  function updIsTest() {
+    if (window.GAL_IS_TEST) return true;
+    if (/\/readings\/landlady\/test\/(index\.html)?$/.test(location.pathname) && !/[?&]practice=1/.test(location.search)) return true;
+    return /\/readings\/reel-test\//.test(location.pathname) && /[?&]mode=test\b/.test(location.search);
+  }
+  function updHash(t) {
+    var h = 5381; t = String(t || '');
+    for (var i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) | 0;
+    return (h >>> 0).toString(36) + '.' + t.length;
+  }
+  function updGet(url, mode) {
+    return fetch(url, { cache: mode || 'no-store', credentials: 'same-origin' })
+      .then(function (r) { return r.ok ? r.text() : null; }).catch(function () { return null; });
+  }
+  function updInline(html) {                    /* the page's inline scripts, from source text */
+    var out = [], re = /<script\b(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi, m;
+    while ((m = re.exec(html))) { var t = m[1].trim(); if (t) out.push(updHash(t)); }
+    return out.join('|');
+  }
+  function updDomInline() {
+    var out = [], ss = document.querySelectorAll('script:not([src])');
+    for (var i = 0; i < ss.length; i++) {
+      if (ss[i].getAttribute('data-gal')) continue;
+      var t = (ss[i].textContent || '').trim(); if (t) out.push(updHash(t));
+    }
+    return out.join('|');
+  }
+  function updScripts() {
+    var out = [], ss = document.querySelectorAll('script[src]');
+    for (var i = 0; i < ss.length && out.length < 12; i++) {
+      try {
+        var u = new URL(ss[i].src, location.href);
+        if (u.origin === location.origin && /^\/readings\//.test(u.pathname) && out.indexOf(u.pathname) < 0) out.push(u.pathname);
+      } catch (e) {}
+    }
+    return out;
+  }
+  function updPageUrl() { return location.pathname; }
+  /* what this tab runs: inline scripts from the DOM; external scripts as the browser cached them */
+  function updBaseline() {
+    var paths = updScripts(), base = { inline: updDomInline(), html: null, js: {} };
+    return Promise.all([updGet(updPageUrl(), 'force-cache').then(function (t) { if (t != null) base.html = updHash(t); })]
+      .concat(paths.map(function (p) {
+        return updGet(p, 'force-cache').then(function (t) { if (t != null) base.js[p] = updHash(t); });
+      }))).then(function () { UPD.base = base; return base; });
+  }
+  /* returns a signature of the server's version when it differs from this tab, else '' */
+  function updCompare() {
+    var b = UPD.base; if (!b) return Promise.resolve('');
+    var paths = Object.keys(b.js), sig = [], changed = false;
+    return Promise.all([updGet(updPageUrl()).then(function (t) {
+      if (t == null) return;
+      var h = updHash(t); sig.push(h);
+      /* the HTML changed if its inline scripts differ from this tab's, or its text differs from the cached copy */
+      var inl = updInline(t);
+      if (inl && b.inline && inl !== b.inline) changed = true;
+      else if (b.html && h !== b.html) changed = true;
+    })].concat(paths.map(function (p) {
+      return updGet(p).then(function (t) {
+        if (t == null) return;
+        var h = updHash(t); sig.push(p + ':' + h);
+        if (b.js[p] && h !== b.js[p]) changed = true;
+      });
+    }))).then(function () { return changed ? sig.join(',') : ''; });
+  }
+  /* every save to Supabase is watched, so the reload only happens once the save is confirmed */
+  var UPDW = window.__UPDW = { pending: 0, fails: 0, oks: 0, lastOk: true };   /* lastOk: the most recent save came back OK */
+  function updIsWrite(url, method) {
+    method = String(method || 'GET').toUpperCase();
+    return method !== 'GET' && method !== 'HEAD' && /supabase\.co\/(rest|storage)\/v1\//.test(String(url || ''));
+  }
+  function updWatchWrites() {
+    if (window.__GAL_UPDW__ || !window.fetch) return; window.__GAL_UPDW__ = true;
+    var inner = window.fetch;
+    window.fetch = function (input, init) {
+      var url = typeof input === 'string' ? input : (input && input.url) || '';
+      var method = (init && init.method) || (input && input.method) || 'GET';
+      var p = inner.apply(this, arguments);
+      if (!updIsWrite(url, method)) return p;
+      UPDW.pending++;
+      return p.then(function (r) { UPDW.pending--; if (r && r.ok) { UPDW.oks++; UPDW.lastOk = true; } else { UPDW.fails++; UPDW.lastOk = false; } return r; },
+        function (e) { UPDW.pending--; UPDW.fails++; UPDW.lastOk = false; throw e; });
+    };
+    try {
+      var XO = XMLHttpRequest.prototype.open, XS = XMLHttpRequest.prototype.send;
+      XMLHttpRequest.prototype.open = function (m, u) { this.__updW = updIsWrite(u, m); return XO.apply(this, arguments); };
+      XMLHttpRequest.prototype.send = function () {
+        if (this.__updW) {
+          var x = this; UPDW.pending++;
+          x.addEventListener('loadend', function () { UPDW.pending--; if (x.status >= 200 && x.status < 300) { UPDW.oks++; UPDW.lastOk = true; } else { UPDW.fails++; UPDW.lastOk = false; } });
+        }
+        return XS.apply(this, arguments);
+      };
+    } catch (e) {}
+  }
+  function updBoot() {
+    if (updOff()) return;
+    updWatchWrites();
+    document.addEventListener('keydown', function () { UPD.lastKey = Date.now(); }, true);
+    document.addEventListener('input', function () { UPD.lastKey = Date.now(); }, true);
+    try {                                              /* a reload never cuts a recording */
+      var md = navigator.mediaDevices;
+      if (md && md.getUserMedia && !md.__galUpd) {
+        var gum = md.getUserMedia.bind(md); md.__galUpd = 1;
+        md.getUserMedia = function () {
+          return gum.apply(null, arguments).then(function (st) { UPD.streams.push(st); if (UPD.streams.length > 20) UPD.streams.shift(); return st; });
+        };
+      }
+    } catch (e) {}
+    try { UPD.tried = JSON.parse(sessionStorage.getItem('gal_upd_tried') || '{}') || {}; } catch (e) { UPD.tried = {}; }
+    updBaseline();
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible') setTimeout(function () { updCheck('return'); }, 800);
+    });
+    window.addEventListener('pageshow', function (e) { if (e.persisted) updCheck('return'); });
+    UPD.timer = setInterval(function () { updCheck('timer'); }, 10 * 60 * 1000);
+    try {
+      if (sessionStorage.getItem('gal_upd_done')) {
+        sessionStorage.removeItem('gal_upd_done');
+        updBar('green', '\u2705 This is the newest version. Your work was saved.', null, 7000);
+      }
+    } catch (e) {}
+    window.__galUpdCheck = updCheck; window.__galUpdCompare = updCompare;   /* for tests */
+  }
+  function updBusyStudent() {
+    var a = document.activeElement;
+    var texty = a && (a.isContentEditable || a.tagName === 'TEXTAREA' ||
+      (a.tagName === 'INPUT' && !/^(button|submit|checkbox|radio|range|color|file|reset|image)$/i.test(a.type || '')));
+    if (texty && Date.now() - UPD.lastKey < 3000) return true;
+    if (window.speechSynthesis && (speechSynthesis.speaking || speechSynthesis.pending)) return true;
+    for (var i = 0; i < UPD.streams.length; i++) {
+      var tr = UPD.streams[i].getTracks ? UPD.streams[i].getTracks() : [];
+      for (var j = 0; j < tr.length; j++) if (tr[j].readyState === 'live') return true;
+    }
+    var ms = document.querySelectorAll('audio, video');
+    for (var k = 0; k < ms.length; k++) if (!ms[k].paused && !ms[k].ended) return true;
+    return false;
+  }
+  function updCheck(why) {
+    if (updOff() || UPD.busy || UPD.waiting || !UPD.base) return;
+    if (document.visibilityState && document.visibilityState !== 'visible') return;
+    UPD.busy = true;
+    updCompare().then(function (sig) {
+      UPD.busy = false;
+      if (!sig || UPD.tried[sig]) return;                 /* nothing new, or already reloaded for this version */
+      var hour = Date.now() - 3600 * 1000, recent = 0;
+      for (var k in UPD.tried) if (UPD.tried[k] > hour) recent++;
+      if (recent >= 3) return;
+      updReady(sig);
+    }, function () { UPD.busy = false; });
+  }
+  function updBar(kind, text, btn, ms) {
+    var b = document.getElementById('galUpdBar');
+    if (!b) {
+      b = document.createElement('div'); b.id = 'galUpdBar';
+      b.setAttribute('translate', 'no'); b.className = 'notranslate';
+      document.body.appendChild(b);
+    }
+    var bg = kind === 'red' ? '#b3261e' : '#1f7a4d';
+    b.style.cssText = 'position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:2147483640;max-width:92vw;' +
+      'background:' + bg + ';color:#fff;border:2px solid #1d1a24;border-radius:14px;box-shadow:0 6px 18px rgba(0,0,0,.3);' +
+      'padding:10px 18px;font:800 18px/1.35 Nunito,system-ui,-apple-system,Segoe UI,Arial,sans-serif;text-align:center;' +
+      'display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap';
+    b.innerHTML = '<span class="gal-upd-t" style="cursor:text"></span>';
+    b.querySelector('.gal-upd-t').textContent = text;
+    if (btn) {
+      var x = document.createElement('button'); x.type = 'button'; x.textContent = btn.label;
+      x.style.cssText = 'font:inherit;font-size:16px;background:#fff;color:#1d1a24;border:2px solid #1d1a24;border-radius:999px;padding:6px 14px;cursor:pointer';
+      x.onclick = btn.go; b.appendChild(x);
+    }
+    if (ms) setTimeout(function () { if (b.parentNode && b.querySelector('.gal-upd-t').textContent === text) b.parentNode.removeChild(b); }, ms);
+  }
+  function updReady(sig) {
+    UPD.waiting = true;
+    if (updIsTest()) {                                     /* a test in progress is never interrupted */
+      updBar('green', 'Mr. Toby updated this page.', { label: 'Reload when you finish', go: function () { updSaveAndReload(sig, true); } });
+      UPD.waiting = false;
+      return;
+    }
+    (function wait() {
+      if (updBusyStudent() || document.visibilityState === 'hidden') return setTimeout(wait, 1000);
+      updSaveAndReload(sig, false);
+    })();
+  }
+  function updSaveAndReload(sig, manual) {
+    UPD.waiting = true;
+    var oks0 = UPDW.oks, fails0 = UPDW.fails;
+    try { var a = document.activeElement; if (a && a.blur && a !== document.body) a.blur(); } catch (e) {}
+    try { if (typeof window.GAL_flushSave === 'function') window.GAL_flushSave(); } catch (e) {}
+    /* the page's own leave-save path (they all save on pagehide / beforeunload) */
+    try { window.dispatchEvent(new Event('beforeunload')); } catch (e) {}
+    try { window.dispatchEvent(new PageTransitionEvent('pagehide', { persisted: false })); } catch (e) {
+      try { window.dispatchEvent(new Event('pagehide')); } catch (e2) {} }
+    var t0 = Date.now();
+    (function settle() {
+      var waited = Date.now() - t0;
+      if ((UPDW.pending > 0 || waited < 700) && waited < 8000) return setTimeout(settle, 200);
+      if (UPDW.pending > 0 || UPDW.fails > fails0 || !UPDW.lastOk) {    /* not confirmed (or the last save failed): never reload over unsaved work */
+        UPD.waiting = false;
+        updBar('red', '\u26a0\ufe0f Can\u2019t reach the server \u2014 your work is not saved yet. Keep this page open.', null, 0);
+        return;
+      }
+      updBar('green', 'Mr. Toby updated this page \u2014 loading the new version\u2026');
+      setTimeout(function () {
+        UPD.tried[sig] = Date.now();
+        try {
+          sessionStorage.setItem('gal_upd_tried', JSON.stringify(UPD.tried));
+          sessionStorage.setItem('gal_upd_done', '1');
+        } catch (e) {}
+        try { if (sess()) remember(null, null, null); } catch (e) {}    /* keep a still-valid sign-in fresh for the refill */
+        location.reload();
+      }, 2000);
+    })();
+  }
+
   function scan() {
     addCSS();
     speakerIcons();
@@ -1580,6 +1818,7 @@
     myPageBoot();
     pfBoot();
     tvBoot();
+    try { updBoot(); } catch (e) {}                  /* T-272 */
     try { new MutationObserver(soon).observe(document.body, { childList: true, subtree: true }); } catch (e) {}
     /* T-228: a sign-in box revealed by a class change (no new nodes) or left while typing */
     document.addEventListener('click', soon, true);
