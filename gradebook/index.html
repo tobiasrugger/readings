@@ -45,6 +45,15 @@ td.avg{font-weight:800;text-align:center;background:#fafcfb}
 tbody tr:hover td,tbody tr:hover th{background:#f3f7f5}
 select.per{border:1px solid transparent;background:transparent;font:inherit;font-size:.78rem;padding:2px}
 select.per:hover{border-color:var(--edge);background:#fff}
+#chgbody .asg{border:2px solid var(--edge);border-radius:10px;padding:10px 12px;margin:0 0 10px}
+#chgbody .asg h4{margin:0 0 6px;font-size:.98rem;display:flex;align-items:center;gap:8px}
+#chgbody .asg h4 .btn{margin-left:auto}
+#chgbody table{width:100%;border-collapse:collapse;font-size:.85rem}
+#chgbody td{border:0;border-bottom:1px solid var(--edge);padding:3px 6px}
+#chgbody tr:last-child td{border-bottom:0}
+#chgbody .was{color:var(--muted)}
+#chgbody .now{font-weight:900}
+#chgbody .up{color:var(--ok)} #chgbody .down{color:var(--bad)} #chgbody .new{color:var(--gold)}
 .toast{position:fixed;bottom:14px;right:14px;background:var(--pine);color:#fff;padding:7px 12px;border-radius:8px;font-size:.78rem;opacity:0;transition:opacity .3s;max-width:420px}
 .toast.on{opacity:1}
 .legend{font-size:.74rem;color:var(--muted);margin:6px 0 0}
@@ -76,6 +85,7 @@ dialog .row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
       <label>Since <select id="since"><option value="14">2 weeks</option><option value="42">6 weeks</option><option value="90" selected>Quarter</option><option value="0">All time</option></select></label>
       <input id="q" placeholder="find student…" style="min-width:160px">
       <label><input type="checkbox" id="hideempty" checked> hide activities nobody in view did</label>
+      <button class="btn" id="chg">What changed</button>
       <button class="btn" id="syn">Synergy export</button>
       <button class="btn sec" id="csv">Download CSV</button>
       <button class="btn sec" id="reload">Reload</button>
@@ -85,6 +95,18 @@ dialog .row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
     <p class="legend">Cell = best attempt as a mark out of 4 (4 = 90%+, 3 = 75–89, 2 = 60–74, 1 = anything started, 0 = nothing right; ✓ = done but the activity reports no number). Press <b>Show percents</b> to switch back. A dotted outline means a completion score: parts done over parts on the page, for activities with no quiz number. Hover a cell for attempts and date. <b>Click an activity header</b> to copy that column for Synergy in roster order. Change a student's period with the dropdown in their row; it saves. Sort order inside a period = roster order if set, else last name.</p>
   </div>
 </div>
+
+<dialog id="chgdlg">
+  <h3>What changed &mdash; marks to type into Synergy</h3>
+  <div id="chgnote" style="color:var(--muted);font-size:.78rem;margin-bottom:8px"></div>
+  <div id="chgbody" style="max-height:60vh;overflow:auto"></div>
+  <div class="row">
+    <button class="btn" id="chgdone">Entered in Synergy \u2713</button>
+    <button class="btn sec" id="chgall">Show last 48 hours</button>
+    <button class="btn sec" id="chgclose" style="margin-left:auto">Close</button>
+  </div>
+  <p style="font-size:.76rem;color:var(--muted);margin:10px 0 0">Press <b>Entered in Synergy \u2713</b> once you have typed these in. Next time this list starts from that moment, so you only ever see what is new.</p>
+</dialog>
 
 <dialog id="syndlg">
   <h3>Synergy export &mdash; one number for every student</h3>
@@ -405,6 +427,132 @@ document.getElementById('syndl').onclick=function(){
 };
 document.getElementById('syncopynames').onclick=function(){synCopy(synLists().names,'names');};
 document.getElementById('syncopyboth').onclick=function(){var L=synLists();synCopy(L.names.map(function(n,i){return n+'\t'+L.nums[i];}),'rows');};
+
+/* ---------- What changed (T-276) ----------
+   Shows only the cells whose 0-4 mark moved since the last time Toby pressed
+   "Entered in Synergy". Was -> now, in roster order, grouped by assignment.
+   The "was" mark is worked out from the attempt history: each student's best
+   attempt that existed BEFORE the cutoff, scored by the same rules as now. */
+var ATT=null, ENTERED={};   // attempts cache; period -> ISO time last entered
+
+function chgPct(score,max){                        // same rule as the Synergy export
+  if(max>0 && score!=null) return Math.round(100*score/max);
+  return 100;                                      // done, no number = full credit
+}
+function chgMark(p){ return p==null?null:band(p); }
+
+function loadAttempts(){
+  if(ATT) return Promise.resolve(ATT);
+  return Promise.all([
+    getAll('activity_attempts?select=email,slug,score,max_score,completed_at&order=completed_at'),
+    getAll('group_grade_attempts?select=email,slug,score,max_score,completed_at').catch(function(){return [];}),
+    getAll('synergy_marks?select=period,entered_at').catch(function(){return [];})
+  ]).then(function(r){
+    ATT=r[0].concat(r[1]||[]).map(function(a){a.email=canon(a.email);return a;});
+    ENTERED={}; (r[2]||[]).forEach(function(m){ENTERED[String(m.period)]=m.entered_at;});
+    return ATT;
+  });
+}
+function cutoffFor(per){
+  var t=ENTERED[String(per)];
+  if(t) return {at:Date.parse(t), saved:true};
+  return {at:Date.now()-48*3600e3, saved:false};   // fallback: the last 48 hours
+}
+/* best mark for one student+slug, counting only attempts at or before `at` (0 = all) */
+function bestBy(list,at){
+  var best=null;
+  for(var i=0;i<list.length;i++){
+    var a=list[i];
+    if(at && Date.parse(a.completed_at)>at) continue;
+    var p=chgPct(a.score,a.max_score);
+    if(best==null||p>best) best=p;
+  }
+  return best;
+}
+function changedRows(){
+  var per=document.getElementById('period').value;
+  var cut=cutoffFor(per);
+  if(FORCE48){cut={at:Date.now()-48*3600e3,saved:false};}
+  var inView={}; view.rows.forEach(function(s,i){inView[s.email]={s:s,i:i};});
+  var by={};                                        // slug -> [{student, was, now}]
+  var grouped={};
+  ATT.forEach(function(a){ if(inView[a.email]) (grouped[a.email+'|'+a.slug]=grouped[a.email+'|'+a.slug]||[]).push(a); });
+  Object.keys(grouped).forEach(function(k){
+    var list=grouped[k], email=k.split('|')[0], slug=k.slice(email.length+1);
+    var now=chgMark(bestBy(list,0)), was=chgMark(bestBy(list,cut.at));
+    if(now==null || now===was) return;              // nothing to type
+    (by[slug]=by[slug]||[]).push({st:inView[email].s, order:inView[email].i, was:was, now:now});
+  });
+  Object.keys(by).forEach(function(sl){ by[sl].sort(function(a,b){return a.order-b.order;}); });
+  return {by:by, cut:cut, per:per};
+}
+var FORCE48=false;
+function renderChanged(){
+  var r=changedRows(), slugs=Object.keys(r.by);
+  slugs.sort(function(x,y){var ax=activities[x]||{},ay=activities[y]||{};
+    return (ax.unit||x).localeCompare(ay.unit||y)||(ax.title||x).localeCompare(ay.title||y);});
+  var when=new Date(r.cut.at).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+  var n=slugs.reduce(function(t,s){return t+r.by[s].length;},0);
+  document.getElementById('chgnote').innerHTML=
+    (r.per&&r.per!=='none'?'<b>Period '+esc(r.per)+'</b>':'<b>All periods</b>')+' \u00b7 '+
+    n+' mark'+(n===1?'':'s')+' changed in '+slugs.length+' assignment'+(slugs.length===1?'':'s')+
+    ' \u00b7 since '+esc(when)+(r.cut.saved?' (last entered)':' (last 48 hours \u2014 nothing entered yet)');
+  var host=document.getElementById('chgbody');
+  if(!slugs.length){
+    host.innerHTML='<p style="color:var(--muted);padding:12px 0">Nothing has changed since then. Synergy is up to date.</p>';
+  } else {
+    host.innerHTML=slugs.map(function(sl){
+      var a=activities[sl]||{};
+      return '<div class="asg"><h4>'+esc(a.title||sl)+
+        (a.unit?' <span style="font-weight:400;color:var(--muted);font-size:.82rem">'+esc(a.unit)+'</span>':'')+
+        '<button class="btn sec" style="padding:4px 10px;font-size:.78rem" data-col="'+esc(sl)+'">Copy this column</button></h4><table><tbody>'+
+        r.by[sl].map(function(x){
+          var cls=x.was==null?'new':(x.now>x.was?'up':'down');
+          return '<tr><td>'+esc(studentName(x.st))+'</td><td class="was">'+(x.was==null?'\u2014':x.was)+
+                 '</td><td style="width:1.6em">\u2192</td><td class="now '+cls+'">'+x.now+'</td></tr>';
+        }).join('')+'</tbody></table></div>';
+    }).join('');
+    host.querySelectorAll('[data-col]').forEach(function(b){ b.onclick=function(){ copyColumn(b.dataset.col); }; });
+  }
+  var done=document.getElementById('chgdone');
+  done.disabled=!(r.per&&r.per!=='none');
+  done.title=done.disabled?'Pick one period first':'';
+  done.style.opacity=done.disabled?.5:1;
+  document.getElementById('chgall').textContent=FORCE48?'Show since last entered':'Show last 48 hours';
+}
+/* the whole column for that assignment, every student in the period, roster order */
+function copyColumn(slug){
+  var nums=view.rows.map(function(s){
+    var c=view.byCell[s.email+'|'+slug];
+    if(!c) return '0';                              // never attempted
+    return String(band(c.pct==null?100:c.pct));
+  });
+  navigator.clipboard.writeText(nums.join('\n')).then(function(){
+    toast('Copied '+nums.length+' marks. Click the first cell in Synergy and paste.');
+  });
+}
+function openChanged(){
+  toast('Reading the history\u2026');
+  loadAttempts().then(function(){ FORCE48=false; renderChanged(); document.getElementById('chgdlg').showModal(); })
+    .catch(function(){ toast('Could not read the attempt history'); });
+}
+function markEntered(){
+  var per=document.getElementById('period').value;
+  if(!per||per==='none') return;
+  var now=new Date().toISOString();
+  fetch(SUPA_URL+'/rest/v1/synergy_marks?on_conflict=period',
+    {method:'POST',headers:H({Prefer:'resolution=merge-duplicates,return=minimal'}),
+     body:JSON.stringify([{period:per,entered_at:now,updated_at:now}])})
+  .then(function(r){
+    if(!r.ok) throw 0;
+    ENTERED[per]=now; FORCE48=false; renderChanged();
+    toast('Period '+per+' marked as entered. Next time starts from now.');
+  }).catch(function(){ toast('Could not save \u2014 is the synergy_marks table created?'); });
+}
+document.getElementById('chg').onclick=openChanged;
+document.getElementById('chgclose').onclick=function(){document.getElementById('chgdlg').close();};
+document.getElementById('chgdone').onclick=markEntered;
+document.getElementById('chgall').onclick=function(){FORCE48=!FORCE48;renderChanged();};
 
 ['period','course','unit','since','hideempty'].forEach(function(id){document.getElementById(id).addEventListener('change',render);});
 document.getElementById('q').addEventListener('input',render);
