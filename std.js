@@ -1834,6 +1834,7 @@
     pfBoot();
     tvBoot();
     try { updBoot(); } catch (e) {}                  /* T-272 */
+    try { var gs = document.createElement('script'); gs.src = '/readings/simple/simple.js'; (document.head || document.documentElement).appendChild(gs); } catch (e) {}   /* T-286 English - simple (T-293) */
     try { new MutationObserver(soon).observe(document.body, { childList: true, subtree: true }); } catch (e) {}
     /* T-228: a sign-in box revealed by a class change (no new nodes) or left while typing */
     document.addEventListener('click', soon, true);
