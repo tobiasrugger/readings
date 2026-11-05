@@ -1326,14 +1326,21 @@ async function loadPushed(email){
       return sb(g.table+'?email='+both+'&guide_key=in.('+g.keys.join(',')+')&select='+guideCols(g.table)).then(function(r){return r&&guideRows(g.table,r);});
     }));
     function attemptSince(r){
-      var path=String(r.href||'').split('?')[0].split('#')[0];
+      var href=String(r.href||'').replace(/^https?:\/\/[^\/]+/i,''), path=href.split('?')[0].split('#')[0];
       var slug=path.replace(/^\/?readings\//,'').replace(/\/index\.html?$/,'').replace(/\.html?$/,'').replace(/\/+$/,'');
       if(!slug)return null;
+      /* T-290: one-folder pages log one slug per item (news/<article>, fluency/<passage>…, see paramUrl).
+         A push of one item (?a=sleep) matches only that slug; a push of the bare folder counts ANY item. */
+      var prefix='', ONE={news:'a',fluency:'p',teachme:'set',group:'deck'};
+      if(ONE.hasOwnProperty(slug)){
+        var item=''; try{ item=new URLSearchParams(href.split('#')[0].split('?')[1]||'').get(ONE[slug])||''; }catch(e){}
+        if(item) slug=slug+'/'+item; else prefix=slug+'/';
+      }
       var daily=DAILY_SLUGS.indexOf(slug)>-1, since=r.created_at?new Date(r.created_at):new Date(0);
       if(daily){var t=new Date();t.setHours(0,0,0,0);if(t>since)since=t;}
       var best=null;
       (DATA.atts||[]).forEach(function(a){
-        if(a.slug!==slug)return; var when=a.completed_at?new Date(a.completed_at):null;
+        var as=String(a.slug||''); if(!(as===slug||(prefix&&as.indexOf(prefix)===0)))return; var when=a.completed_at?new Date(a.completed_at):null;
         if(!when||when<since)return;
         if(!best||(a.score||0)>(best.score||0))best={score:a.score||0,max:a.max_score||0,daily:daily};
       });
