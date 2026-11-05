@@ -57,7 +57,8 @@
      longer, so a page's onboundary handler gets charIndex mapped back to ITS text, and word
      highlights don't drift after the name. */
   (function () {
-    var SAY_AS = { 'Amira': 'Ameera' };
+    /* T-287: Mateo too ("Matayo", same as spell/spell.js from T-273; Toby's pick, Nov 5). */
+    var SAY_AS = { 'Amira': 'Ameera', 'Mateo': 'Matayo' };
     var ss = window.speechSynthesis; if (!ss || ss.__galSayAs) return; ss.__galSayAs = 1;
     var orig = ss.speak, RE = new RegExp('\\b(' + Object.keys(SAY_AS).join('|') + ')\\b', 'g');
     function swap(text) {

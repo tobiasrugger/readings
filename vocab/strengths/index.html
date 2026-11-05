@@ -1405,6 +1405,17 @@ $('grHear').addEventListener('click', function(){
 buildGram();
 
 /* ---------- listen and spell ---------- */
+/* T-287: load the shared spelling helper once; rebuild Level 2 when it arrives. */
+function galHasChunks(a){
+  var S=window.Spell; if(!S || typeof S.chunks!=='function' || !S.CHUNKS) return false;
+  return Array.isArray(S.CHUNKS) ? S.CHUNKS.indexOf(a)>=0 : !!S.CHUNKS[a];
+}
+(function(){
+  if(window.Spell || document.querySelector('script[data-gal-spell]')) return;
+  var sc=document.createElement('script'); sc.src='/readings/spell/spell.js'; sc.setAttribute('data-gal-spell','1');
+  sc.onload=function(){ if(state.spellLevel===2 && typeof buildSpell==='function') buildSpell(); };
+  document.head.appendChild(sc);
+})();
 function buildSpell(){
   var box=$('spBox'); box.innerHTML='';
   var lv = state.spellLevel;
@@ -1431,6 +1442,17 @@ function buildSpell(){
   });
   Array.prototype.forEach.call(box.querySelectorAll('input.sp'), function(inp){
     var a=inp.dataset.a;
+    /* T-287: Level 2, long words are typed in parts (Spell.chunks from /readings/spell/spell.js,
+       T-273). Scoring unchanged: state.spell[a] holds the whole word. If spell.js isn't there,
+       the single box stays. */
+    if(lv===2 && galHasChunks(a)){
+      try{
+        var host=document.createElement('div'); host.className='spchunks'; host.setAttribute('data-a', a);
+        inp.parentNode.replaceChild(host, inp);
+        window.Spell.chunks(host, {word:a, value:state.spell[a]||'', onInput:function(v){ state.spell[a]=v; touch(); }});
+        return;
+      }catch(e){ if(host && host.parentNode) host.parentNode.replaceChild(inp, host); }
+    }
     if(state.spell[a]) inp.value=state.spell[a];
     inp.addEventListener('input', function(){ state.spell[a]=inp.value; touch(); });
   });
