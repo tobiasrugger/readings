@@ -4,6 +4,11 @@
  * 4 = 76–94, 4.5 = 95–100; never attempted = blank. Read GAL04.BANDS or call
  * GAL04.band(pct) — do not keep your own cut points in a dashboard.
  *
+ * ONE STUDENT = ONE USERNAME (T-305): GAL04.key(email) is the part before the
+ * @, lowercased; GAL04.same(a, b) compares two addresses that way, aliases
+ * included. A dashboard that matches students itself should use these instead
+ * of comparing email strings, so one student never splits into two rows.
+ *
  * Why: each dashboard works out its own display from its own table, so the same
  * student could read 82% here, "7/9" there and a green tick somewhere else. This
  * puts the ONE number the gradebook shows — and the one that goes into Synergy —
@@ -70,8 +75,29 @@
            (title ? ' title="' + String(title).replace(/"/g, '&quot;') + '"' : '') + '>' + b + '</span>';
   }
 
-  /* one student's email in the form the gradebook stores it */
-  function canon(e) { return String(e || '').trim().toLowerCase().replace('@s.sfusd.edu', '@sfusd.edu'); }
+  /* T-305 USERNAME IS THE ID. One student = the part before @, lowercased —
+     std.js gives pages the same rule as GAL.key; dashboards don't all load
+     std.js, so the one line lives here too and is exported as GAL04.key.
+     ALIAS folds student_aliases in, so a student whose old address was merged
+     away still gets their badge. Without this a dashboard that happens to
+     print a different spelling silently showed NO badge, which reads as
+     "this student did nothing" rather than as a matching failure. */
+  var ALIAS = {};
+  function key(e) { return String(e == null ? '' : e).trim().toLowerCase().split('@')[0].replace(/\s+/g, ''); }
+  function canon(e) { var k = key(e); return ALIAS[k] || k; }
+  function loadAliases() {
+    return fetch(SUPA_URL + '/rest/v1/student_aliases?select=alias_email,email',
+                 { headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY } })
+      .then(function (r) { return r.ok ? r.json() : []; })
+      .then(function (rows) {
+        (rows || []).forEach(function (a) {
+          var from = key(a.alias_email), to = key(a.email);
+          if (from && to && from !== to) ALIAS[from] = to;
+        });
+        return ALIAS;
+      })
+      .catch(function () { return ALIAS; });   // no aliases is fine; usernames still group
+  }
 
   function load(slugs, prefix) {
     var q = SUPA_URL + '/rest/v1/gradebook_best?select=email,slug,title,pct,attempts,last_at';
@@ -84,7 +110,9 @@
       if (!list.length) return Promise.resolve({});
       q += '&slug=in.(' + list.map(encodeURIComponent).join(',') + ')';
     }
-    return fetch(q, { headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY } })
+    return loadAliases().then(function () {
+      return fetch(q, { headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY } });
+    })
       .then(function (r) { return r.ok ? r.json() : []; })
       .then(function (rows) {
         /* a student may have several of the listed slugs: keep the best, remember how many */
@@ -170,7 +198,7 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', backButton);
   else backButton();
 
-  window.GAL04 = { BANDS: BANDS, band: band, fmt: fmt, badge: badge, load: load, canon: canon, decorate: schedule, back: backButton };
+  window.GAL04 = { BANDS: BANDS, band: band, fmt: fmt, badge: badge, load: load, key: key, same: function (a, b) { var k = canon(a); return !!k && k === canon(b); }, canon: canon, decorate: schedule, back: backButton };
 
   var me = document.currentScript,
       slugs = me && me.getAttribute('data-slugs'),
