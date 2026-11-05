@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html lang="en" translate="no"><!-- T-267: English always shows; the page adds the home language itself -->
 <head>
+<script>/* T-285: My Page opened with ?email=<student> (from /teacher/, the Desk, the gradebook, any dashboard) is ALWAYS
+   the teacher looking at that student. Add view=teacher before anything else runs, so track.js never adopts the
+   student as this laptop's sign-in and std.js opens its read-only teacher view (password, yellow bar, Exit). */
+(function(){try{var u=new URL(location.href);if(u.searchParams.get('email')&&u.searchParams.get('view')!=='teacher'){
+u.searchParams.set('view','teacher');history.replaceState(history.state,'',u.pathname+u.search+u.hash);}}catch(e){}})();</script>
 <meta name="google" content="notranslate"><!-- T-267 -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -533,6 +538,14 @@ th,td{border-bottom:2px solid var(--line-dk)}
   <p class="note" style="margin-top:20px">Teacher? <a href="#" onclick="teacherLogin();return false;">Open teacher view</a></p>
 </div>
 
+<!-- T-285: teacher view never falls back to the student sign-in -->
+<div id="tvLoad" class="card hide" style="border:3px solid #2B2233;box-shadow:0 6px 16px rgba(0,0,0,.18)">
+  <h1 style="margin-top:0">&#128064; Teacher view</h1>
+  <p id="tvLoadMsg" class="note" style="font-size:18px">Opening <b id="tvLoadWho"></b>&hellip;</p>
+  <p id="tvLoadErr" class="note hide" style="color:var(--red);font-weight:800;font-size:18px">&#9888; Can't reach the server, so this student's page did not open. Nothing was saved.</p>
+  <button id="tvRetry" class="btn hide" type="button" onclick="location.reload()">Try again</button>
+</div>
+
 <!-- ============ PAGE ============ -->
 <div id="page" class="hide">
 
@@ -810,7 +823,8 @@ let ME=null, DATA={}, SELF_SIGNIN=false, NEW_STUDENT=false;
 
 /* ---------- helpers ---------- */
 const clean=e=>(e||'').trim().toLowerCase();
-async function sb(path,opt){const r=await fetch(SUPA_URL+'/rest/v1/'+path,Object.assign({headers:H},opt||{}));if(!r.ok){console.error(path,r.status,await r.text());return null;}const t=await r.text();return t?JSON.parse(t):[];}
+var SB_NETFAIL=0; /* T-285: a dropped request used to throw out of load() and leave the sign-in box up */
+async function sb(path,opt){let r;try{r=await fetch(SUPA_URL+'/rest/v1/'+path,Object.assign({headers:H},opt||{}));}catch(e){SB_NETFAIL++;console.error(path,e);return null;}if(!r.ok){console.error(path,r.status,await r.text());return null;}const t=await r.text();return t?JSON.parse(t):[];}
 async function upsert(table,row,conflict){
   return fetch(SUPA_URL+'/rest/v1/'+table+'?on_conflict='+conflict,{method:'POST',
     headers:Object.assign({},H,{Prefer:'resolution=merge-duplicates,return=minimal'}),
@@ -870,6 +884,8 @@ function renderRoster(q){
   });
 }
 (async function boot(){
+  /* T-285: hide the student sign-in before the roster even loads when a student is named in the link */
+  try{ var e0=new URLSearchParams(location.search).get('email'); if(e0) tvShowLoading(clean(e0)); }catch(e){}
   const sel=document.getElementById('rosterSel');
   const roster=await sb('students?select=email,first_name,last_name,name,period,roster_order')||[];
   /* fill the language picker now so the sign-in box can mirror it (student page standard) */
@@ -888,8 +904,9 @@ function renderRoster(q){
     if(document.getElementById('rosterSel').value) signIn(); });
   const qs=new URLSearchParams(location.search);
   const remembered=qs.get('email')||localStorage.getItem('gal_student_email');
-  /* T-246: opened with ?email= (from /teacher/, the Desk, etc.) = the teacher looking at this student */
-  if(qs.get('email')) TV_EMAIL=clean(qs.get('email'));
+  /* T-246: opened with ?email= (from /teacher/, the Desk, etc.) = the teacher looking at this student.
+     T-285: it is READ ONLY, and the student sign-in box never shows for it. */
+  if(qs.get('email')){ TV_EMAIL=clean(qs.get('email')); READ_ONLY=true; tvShowLoading(TV_EMAIL); }
   if(remembered) load(clean(remembered));
 })();
 
@@ -908,6 +925,9 @@ function signIn(){
     err.textContent='Please use your school email that ends with @sfusd.edu';return;}
   else email=email.replace('@s.sfusd.edu','@sfusd.edu');
   err.textContent='';
+  /* T-285: a teacher picking a name (link named a student, teacher password given in this tab, or came from a
+     teacher page) opens that student in teacher view. Never this laptop's sign-in, never a students row. */
+  if(teacherContext()){ openTeacherView(email); return; }
   localStorage.setItem('gal_student_email',email);
   SELF_SIGNIN=true;
   load(email);
@@ -915,8 +935,38 @@ function signIn(){
 function signOut(){localStorage.removeItem('gal_student_email');location.href=location.pathname;}
 function teacherLogin(){
   if(prompt('Teacher password:')!==TEACHER_PW)return;
+  try{ sessionStorage.setItem('gal_tv_ok','1'); }catch(x){}   /* same flag std.js sets: no second password */
   const e=clean(prompt('Student email to open:'));
-  if(e){READ_ONLY=true;TV_EMAIL=e;load(e);}
+  if(e) openTeacherView(e);
+}
+/* ---------- T-285: teacher view helpers ---------- */
+function teacherContext(){
+  try{
+    if(TV_EMAIL||READ_ONLY) return true;
+    if(new URLSearchParams(location.search).get('email')) return true;
+    if(sessionStorage.getItem('gal_tv_ok')==='1') return true;          /* teacher password given in this tab */
+    var r=document.referrer||'';
+    if(/\/readings\/(teacher|desk|gradebook|dashboards|assign|reports)(\/|$)|dashboard/i.test(r.replace(/^https?:\/\/[^\/]+/i,''))) return true;
+  }catch(e){}
+  return false;
+}
+function openTeacherView(email){
+  var u=new URL(location.href);
+  u.search=''; u.hash='';
+  u.searchParams.set('email',email); u.searchParams.set('view','teacher');
+  location.href=u.toString();      /* reload so std.js + track.js start in teacher view (read only, yellow bar, Exit) */
+}
+function tvShowLoading(email){
+  var si=document.getElementById('signin'), tl=document.getElementById('tvLoad');
+  if(si) si.classList.add('hide');
+  if(tl){ tl.classList.remove('hide'); var w=document.getElementById('tvLoadWho'); if(w) w.textContent=email; }
+}
+function tvShowError(){
+  var tl=document.getElementById('tvLoad'); if(!tl)return;
+  tl.classList.remove('hide');
+  document.getElementById('tvLoadMsg').classList.add('hide');
+  document.getElementById('tvLoadErr').classList.remove('hide');
+  document.getElementById('tvRetry').classList.remove('hide');
 }
 let READ_ONLY=false;
 /* ---------- T-246: teacher view links ----------
@@ -947,6 +997,20 @@ function teacherLinks(){
 
 /* ---------- load ---------- */
 async function load(email){
+  /* T-285: if the server can't be reached, never fall back to the student sign-in for a teacher,
+     and never show (or save) a half-loaded page */
+  try{ return await loadInner(email); }
+  catch(e){ console.error('load',e); if(document.getElementById('page').classList.contains('hide')) return loadFailed(); }
+}
+function loadFailed(){
+  ME=null;
+  document.getElementById('page').classList.add('hide');
+  if(TV_EMAIL||READ_ONLY){ document.getElementById('signin').classList.add('hide'); tvShowError(); }
+  else { document.getElementById('signin').classList.remove('hide');
+    var er=document.getElementById('siErr'); if(er) er.textContent="Can't reach the server. Check the Wi-Fi and try again."; }
+}
+async function loadInner(email){
+  SB_NETFAIL=0;
   // follow alias if this email was a typo
   // s.sfusd.edu and sfusd.edu are the same person
   const asked=email;
@@ -972,6 +1036,7 @@ async function load(email){
     window.PH?PH.loadWork(email):null,
     sb('skill_aliases?select=alias,code')
   ]);
+  if(SB_NETFAIL){ return loadFailed(); }  /* T-285: a request was dropped — show nothing half-loaded */
   DATA.checks=checks||[]; DATA.practice=practice||[]; DATA.phHits=phHits||[]; DATA.phWork=phWork||[];
 
   if(!stu||!stu.length){
@@ -993,6 +1058,7 @@ async function load(email){
   DATA.status=(await sb('student_skill_status?lp=eq.'+encodeURIComponent(lp.toLowerCase())+'&select=skill,latest_pct,rounds,star_round'))||[];
 
   document.getElementById('signin').classList.add('hide');
+  document.getElementById('tvLoad').classList.add('hide');   /* T-285 */
   document.getElementById('page').classList.remove('hide');
   renderAll();
   loadSpeaking(email);
@@ -1287,7 +1353,7 @@ async function loadPushed(email){
         var at=attemptSince(r);
         if(at){ line='<div class="pp done">&#10003; Done'+(at.daily?' today':'')+(at.max?' &middot; score '+at.score+' of '+at.max:'')+'</div>'; }
       }
-      var url=r.href+(r.href.indexOf('?')>-1?'&':'?')+'email='+encodeURIComponent(email);
+      var url=r.href+(r.href.indexOf('?')>-1?'&':'?')+'email='+encodeURIComponent(TV_EMAIL||email)+(TV_EMAIL?'&view=teacher':'');  /* T-285 */
       return '<div class="pushrow'+(r.cls?' classrow':'')+(r.extra?' extrarow':'')+'"><div><div class="from">'+(/pp done/.test(line)?'&#10003; Done':r.cls?'&#128101; Your class is doing this':r.extra?'&#10133; Just for you':'&#11088; Most important')+(r.source==='classroom'?' <span class="clstag">from Classroom'+(r.due_at?' &middot; due '+esc(new Date(r.due_at).toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'})):'')+'</span>':'')+'</div><div class="pt">'+esc(r.source==='classroom'?catTitle(String(r.href).split('?')[0],r.title||r.href).replace(/\s+[\u2014\u00b7|].*$/,''):(r.title||r.href))+'</div>'+
         (r.note?'<div class="pn">'+esc(r.note)+'</div>':'')+line+'</div>'+
         '<a class="btn noprint" href="'+esc(url)+'">'+(line.indexOf('Turned in')>-1||line.indexOf('pp done')>-1?'Open &rarr;':started?'Keep going &rarr;':'Start &rarr;')+'</a></div>';
