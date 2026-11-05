@@ -12,12 +12,15 @@
                (tomorow), a bordered tip shows BOTH words with pictures, meanings, translations and a
                sound-spelling strip. Never marks anything wrong; the student decides.
    4. CHUNKS   Spell.chunks(host, {word}) — spell a long word in parts (col · lab · o · ra · tive),
-               one box per letter, a 🔊 per part, then the whole word once. Formative: a miss never
-               shows the letters; hints come from the part's flag. Words: Spell.CHUNKS.
-   Owner: Launch Plus chat (T-273). Other folders call it; they don't edit it — hand changes over. */
+               one box per letter, a 🔊 per part, then the whole word once. Misses 1–2 get the
+               part's hint; the 3rd miss SHOWS that part (T-294). Words: Spell.CHUNKS.
+   5. TYPED    Spell.typed(host, {word}) — any typed answer, one box per letter; 3rd miss shows the
+               word big with 🔊, the student types it once (T-294). Finished after a reveal = full
+               point; onDone gets shown:true for the dashboard only.
+   Owner: spell/ chat https://claude.ai/chat/1604fa1e-7145-4d6a-bb9c-a2b5d1a28999 (T-273, T-294). Other folders call it; they don't edit it — hand changes over. */
 (function () {
   if (window.Spell) return;
-  var S = window.Spell = { version: 'T-273' };
+  var S = window.Spell = { version: 'T-294' };
 
   /* ------------------------------------------------------------ 1. SAY-AS */
   var NAMES = { a:'ay', b:'bee', c:'see', d:'dee', e:'ee', f:'eff', g:'jee', h:'aitch', i:'eye', j:'jay',
@@ -291,7 +294,10 @@
     '.ch-part.ok .ch-letters input{border-bottom-color:#2d6a4f;color:#2d6a4f;background:transparent}.ch-letters input:focus{outline:2px solid #e07a1f}' +
     '.ch-hint{margin-top:3px;font-size:.78rem;font-weight:800;color:#a0521a;max-width:14em}.ch-ok{color:#2d6a4f;font-weight:900}' +
     '.ch-msg{margin-top:8px;min-height:1.3em;font-weight:800}.ch-msg .sp-who{font-weight:900}.ch-whole{margin-top:10px;border-top:2px dashed #cbd2da;padding-top:8px}.ch-hidden .ch-letters input{color:transparent;text-shadow:none}' +
-    '.ch-btns{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap}';
+    '.ch-btns{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap}' +
+    /* T-294 reveal */
+    '.ch-look{display:inline-block;margin:0 0 4px;padding:2px 10px;border:2px dashed #2f6fbd;border-radius:8px;background:#eef4fc}.ch-look b{font-size:1.5rem;letter-spacing:.12em;color:#1c4f8f}' +
+    '.ty-look b{font-size:2rem}.ch-part.shown{border-color:#2f6fbd}.ty-fix{display:inline-block;width:.9em;text-align:center;font-weight:900;font-size:1.15rem;align-self:flex-end}';
   function css() { if (document.getElementById('sp-css')) return; var s = document.createElement('style'); s.id = 'sp-css'; s.textContent = CSS; (document.head || document.documentElement).appendChild(s); }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function spk(text, extra) { return '<button type="button" class="sp-spk" data-say="' + esc(text) + '"' + (extra || '') + ' aria-label="Listen">\ud83d\udd0a</button>'; }
@@ -382,31 +388,49 @@
   };
   S.CHUNKS = CHUNKS;
 
-  /* opts: word, chunks (else CHUNKS[word]), value (a saved answer; equal to word = solved),
-     onInput(value), onDone({first, misses}), onMiss(part) */
+  /* T-294 (Nov 5): REVEAL AFTER 3 MISSES, replacing "never reveal". Misses 1–2 on a part (or on the
+     whole word) get its hint; on the 3rd miss that part's letters (or the whole word) are SHOWN big
+     with 🔊 and "Look, listen, then type it yourself." The student types it once to finish.
+     Score: Toby chose FULL — finished after a reveal = 1 point, same as solved alone. shown:true is
+     passed to onDone for the dashboard only. Nothing turns red (ELD 101); every miss is counted.
+     opts.reveal = misses before the reveal (default 3; 0 = never, for pages Toby names as tests). */
+  var LOOK = 'Look, listen, then type it yourself.';
+
+  /* opts: word, chunks (else CHUNKS[word]), value (a saved answer; equal to word = solved), reveal,
+     onInput(value), onDone({first, misses, shown}), onMiss(part, n, shownNow) */
   S.chunks = function (host, opts) {
     css(); opts = opts || {};
     var word = String(opts.word || '').toLowerCase(), parts = opts.chunks || CHUNKS[word];
     if (!host || !word) return null;
     if (!parts) parts = [{ t: word, say: word, hint: 'It has ' + word.length + ' letters.' }];
-    var ok = parts.map(function () { return false; }), hinted = {}, misses = 0, phase = 1, solved = (String(opts.value || '').toLowerCase() === word);
+    var REV = opts.reveal == null ? 3 : +opts.reveal;
+    var ok = parts.map(function () { return false; }), pm = parts.map(function () { return 0; }), shownPart = {},
+      wm = 0, shownWhole = false, misses = 0, phase = 1, solved = (String(opts.value || '').toLowerCase() === word);
     if (solved) { ok = ok.map(function () { return true; }); phase = 3; }
+    function anyShown() { return shownWhole || Object.keys(shownPart).length > 0; }
     host.classList.add('ch-box');
     function boxes(n, cls, vals) {
       var h = '<div class="ch-letters">'; for (var i = 0; i < n; i++) h += '<input maxlength="1" autocomplete="off" autocapitalize="off" spellcheck="false" class="' + cls + '"' + (vals ? ' value="' + esc(vals[i] || '') + '" readonly' : '') + '>';
       return h + '</div>';
+    }
+    function look(text, sayText, k) {
+      return '<div class="ch-look"><b>' + esc(text) + '</b> <button type="button" class="sp-spk" data-look="' + esc(sayText) + '" aria-label="Listen">\ud83d\udd0a</button></div>';
     }
     function draw() {
       var h = '<div class="ch-top"><button type="button" data-say-word="1">\ud83d\udd0a ' + 'Hear the word</button><button type="button" data-say-word="slow">\ud83d\udc22 Slow</button>' +
         '<span style="font-weight:800;color:#5c6b62">' + parts.length + ' parts</span></div><div class="ch-row' + (phase === 2 ? ' ch-hidden' : '') + '">';
       parts.forEach(function (p, i) {
         if (i) h += '<span class="ch-dot">\u00b7</span>';
-        h += '<div class="ch-part' + (ok[i] ? ' ok' : '') + '" data-i="' + i + '">' + boxes(p.t.length, 'chp', ok[i] ? p.t.split('') : null) +
-          '<button type="button" class="sp-spk" data-part="' + i + '" aria-label="Listen to this part">\ud83d\udd0a</button>' + (ok[i] ? '<span class="ch-ok">\u2713</span>' : '') + '<div class="ch-hint">' + (!ok[i] && hinted[i] ? esc(p.hint || 'Listen to this part again.') : '') + '</div></div>';
+        var sh = !ok[i] && shownPart[i];
+        h += '<div class="ch-part' + (ok[i] ? ' ok' : '') + (sh ? ' shown' : '') + '" data-i="' + i + '">' + (sh ? look(p.t, p.say, i) : '') + boxes(p.t.length, 'chp', ok[i] ? p.t.split('') : null) +
+          '<button type="button" class="sp-spk" data-part="' + i + '" aria-label="Listen to this part">\ud83d\udd0a</button>' + (ok[i] ? '<span class="ch-ok">\u2713</span>' : '') +
+          '<div class="ch-hint">' + (ok[i] ? '' : sh ? LOOK : pm[i] ? esc(p.hint || 'Listen to this part again.') : '') + '</div></div>';
       });
       h += '</div>';
-      if (phase >= 2) h += '<div class="ch-whole"><div style="font-weight:900;margin-bottom:4px">Now the whole word, all together:</div><div class="ch-part' + (phase === 3 ? ' ok' : '') + '" data-whole="1" style="display:inline-block">' +
-        boxes(word.length, 'chw', phase === 3 ? word.split('') : null) + (phase === 3 ? '<span class="ch-ok">\u2713 ' + esc(word) + '</span>' : '') + '<div class="ch-hint"></div></div>' +
+      if (phase >= 2) h += '<div class="ch-whole"><div style="font-weight:900;margin-bottom:4px">Now the whole word, all together:</div><div class="ch-part' + (phase === 3 ? ' ok' : '') + (phase === 2 && shownWhole ? ' shown' : '') + '" data-whole="1" style="display:inline-block">' +
+        (phase === 2 && shownWhole ? look(word, word) : '') +
+        boxes(word.length, 'chw', phase === 3 ? word.split('') : null) + (phase === 3 ? '<span class="ch-ok">\u2713 ' + esc(word) + '</span>' : '') +
+        '<div class="ch-hint">' + (phase === 2 ? (shownWhole ? LOOK : wm ? 'Look at your parts: tap \ud83d\udc40 Peek, then try again.' : '') : '') + '</div></div>' +
         (phase === 2 ? '<div class="ch-btns"><button type="button" data-peek="1">\ud83d\udc40 Peek at your parts</button></div>' : '') + '</div>';
       if (phase < 3) h += '<div class="ch-btns"><button type="button" data-check="1" style="background:#2d6a4f;color:#fff">Check</button></div>';
       h += '<div class="ch-msg"></div>';
@@ -429,26 +453,31 @@
         });
       });
       host.querySelectorAll('[data-part]').forEach(function (b) { b.onclick = function () { var p = parts[+b.getAttribute('data-part')]; say(p.say, 0.7, true); }; });
+      host.querySelectorAll('[data-look]').forEach(function (b) { b.onclick = function () { say(b.getAttribute('data-look'), 0.7, true); }; });
       host.querySelectorAll('[data-say-word]').forEach(function (b) { b.onclick = function () { say(word, b.getAttribute('data-say-word') === 'slow' ? 0.6 : 0.85); }; });
       var pk = host.querySelector('[data-peek]'); if (pk) pk.onclick = function () { var r = host.querySelector('.ch-row'); r.classList.toggle('ch-hidden'); };
       var ck = host.querySelector('[data-check]'); if (ck) ck.onclick = check;
     }
     function check() {
       if (phase === 1) {
-        var any = false;
+        var any = false, newShow = [], vals = {};
         parts.forEach(function (p, i) {
           if (ok[i]) return;
-          var el = host.querySelector('.ch-part[data-i="' + i + '"]'), got = Array.prototype.map.call(el.querySelectorAll('input'), function (x) { return (x.value || '').toLowerCase(); }).join('');
+          var el = host.querySelector('.ch-part[data-i="' + i + '"]'), cur = Array.prototype.map.call(el.querySelectorAll('input'), function (x) { return x.value; }), got = cur.join('').toLowerCase();
+          vals[i] = cur;
           if (got.length < p.t.length) return;
           any = true;
-          if (got === p.t) ok[i] = true;
-          else { misses++; hinted[i] = 1; if (opts.onMiss) try { opts.onMiss(i); } catch (e) {} }
+          if (got === p.t) { ok[i] = true; return; }
+          misses++; pm[i]++;
+          var showNow = REV > 0 && pm[i] >= REV && !shownPart[i];
+          if (showNow) { shownPart[i] = 1; newShow.push(i); vals[i] = []; }
+          if (opts.onMiss) try { opts.onMiss(i, pm[i], showNow); } catch (e) {}
         });
-        var vals = {}; parts.forEach(function (p, i) { if (!ok[i]) vals[i] = Array.prototype.map.call(host.querySelectorAll('.ch-part[data-i="' + i + '"] input'), function (x) { return x.value; }); });
         if (ok.every(Boolean)) { phase = 2; draw(); msg('All the parts are right! Now type the whole word.', true); var f = host.querySelector('input.chw'); if (f) f.focus(); return; }
         draw();
         Object.keys(vals).forEach(function (i) { var ins = host.querySelectorAll('.ch-part[data-i="' + i + '"] input'); vals[i].forEach(function (v, k) { if (ins[k]) ins[k].value = v; }); });
-        Object.keys(hinted).forEach(function (i) { if (ok[i]) return; var el = host.querySelector('.ch-part[data-i="' + i + '"]'); if (el) { el.classList.add('wob'); } });
+        parts.forEach(function (p, i) { if (!ok[i] && pm[i] && newShow.indexOf(i) < 0) { var el = host.querySelector('.ch-part[data-i="' + i + '"]'); if (el) el.classList.add('wob'); } });
+        if (newShow.length) { msg(LOOK, true); var p0 = parts[newShow[0]]; say(p0.say, 0.7, true); var fi = host.querySelector('.ch-part[data-i="' + newShow[0] + '"] input'); if (fi) fi.focus(); return; }
         msg(!any ? 'Fill in the boxes for a part first. Tap \ud83d\udd0a under it to hear it.' : (ok.some(Boolean) ? 'The green parts are right. Listen to the others again.' : 'Not yet. Tap \ud83d\udd0a under a part and listen.'), any);
         return;
       }
@@ -458,16 +487,96 @@
         if (got === word) {
           phase = 3; draw(); msg('Yes! ' + word + '.', true); say(word, 0.85);
           if (opts.onInput) try { opts.onInput(word); } catch (e) {}
-          if (opts.onDone) try { opts.onDone({ first: misses === 0, misses: misses }); } catch (e) {}
+          if (opts.onDone) try { opts.onDone({ first: misses === 0, misses: misses, shown: anyShown() }); } catch (e) {}
         } else {
-          misses++; var w = host.querySelector('[data-whole] .ch-hint'); if (w) w.textContent = 'Look at your parts: tap \ud83d\udc40 Peek, then try again.';
-          var el = host.querySelector('[data-whole]'); el.classList.remove('wob'); void el.offsetWidth; el.classList.add('wob');
-          msg('Close! Check each part against your boxes.', true);
-          if (opts.onMiss) try { opts.onMiss('whole'); } catch (e) {}
+          misses++; wm++;
+          var showNow = REV > 0 && wm >= REV && !shownWhole;
+          if (showNow) { shownWhole = true; draw(); msg(LOOK, true); say(word, 0.7); var f = host.querySelector('input.chw'); if (f) f.focus(); }
+          else {
+            var keep = Array.prototype.map.call(host.querySelectorAll('input.chw'), function (x) { return x.value; });
+            draw(); var ins = host.querySelectorAll('input.chw'); keep.forEach(function (v, k) { if (ins[k]) ins[k].value = v; });
+            var el = host.querySelector('[data-whole]'); el.classList.add('wob');
+            msg('Close! Check each part against your boxes.', true);
+          }
+          if (opts.onMiss) try { opts.onMiss('whole', wm, showNow); } catch (e) {}
         }
       }
     }
     draw();
-    return { get solved() { return phase === 3; }, get misses() { return misses; } };
+    return { get solved() { return phase === 3; }, get misses() { return misses; }, get shown() { return anyShown(); } };
+  };
+
+  /* ------------------------------------------------------------ 5. TYPED (T-294) */
+  /* Any typed answer: one box per letter (spaces and punctuation stay fixed), 🔊, Check.
+     Misses 1–2: the hint (opts.hint: text, or function(n) -> text) and a cast line.
+     3rd miss: the word shown big with 🔊 + "Look, listen, then type it yourself." Typed once = done.
+     opts: word, say (what the voice says; default word), hint, value (saved answer), reveal (default 3),
+           onInput(value), onDone({first, misses, shown}), onMiss(n, shownNow) */
+  S.typed = function (host, opts) {
+    css(); opts = opts || {};
+    var word = String(opts.word || ''), lw = word.toLowerCase(), REV = opts.reveal == null ? 3 : +opts.reveal;
+    if (!host || !word) return null;
+    var misses = 0, shown = false, done = String(opts.value || '').toLowerCase() === lw;
+    host.classList.add('ch-box');
+    function isL(c) { return /[A-Za-z]/.test(c); }
+    function draw(keep) {
+      var h = '<div class="ch-top"><button type="button" data-say-word="1">\ud83d\udd0a Listen</button><button type="button" data-say-word="slow">\ud83d\udc22 Slow</button></div>';
+      if (shown && !done) h += '<div class="ch-look ty-look"><b>' + esc(word) + '</b> <button type="button" class="sp-spk" data-look="1" aria-label="Listen">\ud83d\udd0a</button></div><div class="ch-hint" style="max-width:none;margin-bottom:6px">' + LOOK + '</div>';
+      h += '<div class="ch-part' + (done ? ' ok' : '') + '" style="display:inline-block"><div class="ch-letters">';
+      for (var i = 0; i < word.length; i++) {
+        var c = word.charAt(i);
+        if (!isL(c)) { h += '<span class="ty-fix">' + (c === ' ' ? '&nbsp;' : esc(c)) + '</span>'; continue; }
+        h += '<input maxlength="1" autocomplete="off" autocapitalize="off" spellcheck="false" class="tyi"' + (done ? ' value="' + esc(c.toLowerCase()) + '" readonly' : '') + '>';
+      }
+      h += '</div>' + (done ? '<span class="ch-ok">\u2713 ' + esc(word) + '</span>' : '') + '</div>';
+      if (!done) h += '<div class="ch-btns"><button type="button" data-check="1" style="background:#2d6a4f;color:#fff">Check</button></div>';
+      h += '<div class="ch-msg"></div>';
+      host.innerHTML = h;
+      var ins = host.querySelectorAll('input.tyi');
+      if (keep) keep.forEach(function (v, k) { if (ins[k] && !ins[k].readOnly) ins[k].value = v; });
+      Array.prototype.forEach.call(ins, function (inp, k) {
+        if (inp.readOnly) return;
+        inp.addEventListener('input', function () {
+          inp.value = inp.value.replace(/[^A-Za-z]/g, '').slice(-1).toLowerCase();
+          if (inp.value && ins[k + 1]) ins[k + 1].focus();
+          if (opts.onInput) try { opts.onInput(value()); } catch (e) {}
+        });
+        inp.addEventListener('keydown', function (e) {
+          if (e.key === 'Backspace' && !inp.value && ins[k - 1]) { ins[k - 1].focus(); ins[k - 1].value = ''; e.preventDefault(); }
+          else if (e.key === 'Enter') check();
+        });
+      });
+      host.querySelectorAll('[data-say-word]').forEach(function (b) { b.onclick = function () { say(opts.say || word, b.getAttribute('data-say-word') === 'slow' ? 0.6 : 0.85); }; });
+      var lk = host.querySelector('[data-look]'); if (lk) lk.onclick = function () { say(opts.say || word, 0.7); };
+      var ck = host.querySelector('[data-check]'); if (ck) ck.onclick = check;
+    }
+    function value() {
+      var ins = host.querySelectorAll('input.tyi'), k = 0, out = '';
+      for (var i = 0; i < word.length; i++) { var c = word.charAt(i); if (!isL(c)) { out += c; continue; } out += (ins[k] && ins[k].value) || ''; k++; }
+      return out;
+    }
+    function msg(t, who) { var m = host.querySelector('.ch-msg'); if (!m) return; var c = CAST[(misses + 2) % CAST.length]; m.innerHTML = who ? '<span class="sp-who" style="color:' + c[1] + '">' + c[0] + ':</span> ' + esc(t) : esc(t); }
+    function check() {
+      var got = value();
+      if (got.replace(/[^A-Za-z]/g, '').length < lw.replace(/[^a-z]/g, '').length) { msg('Fill every box, then Check.'); return; }
+      if (got.toLowerCase() === lw) {
+        done = true; draw(); msg('Yes! ' + word + '.', true); say(opts.say || word, 0.85);
+        if (opts.onInput) try { opts.onInput(word); } catch (e) {}
+        if (opts.onDone) try { opts.onDone({ first: misses === 0, misses: misses, shown: shown }); } catch (e) {}
+        return;
+      }
+      misses++;
+      var showNow = REV > 0 && misses >= REV && !shown;
+      if (showNow) { shown = true; draw(); msg(LOOK, true); say(opts.say || word, 0.7); var f = host.querySelector('input.tyi'); if (f) f.focus(); }
+      else {
+        var keep = Array.prototype.map.call(host.querySelectorAll('input.tyi'), function (x) { return x.value; });
+        draw(keep); var el = host.querySelector('.ch-part'); el.classList.add('wob');
+        var hint = typeof opts.hint === 'function' ? opts.hint(misses) : opts.hint;
+        msg(shown ? LOOK : (hint || 'Listen again \ud83d\udd0a and check each letter.'), true);
+      }
+      if (opts.onMiss) try { opts.onMiss(misses, showNow); } catch (e) {}
+    }
+    draw();
+    return { get solved() { return done; }, get misses() { return misses; }, get shown() { return shown; } };
   };
 })();

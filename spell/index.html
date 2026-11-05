@@ -78,13 +78,21 @@ select{font:inherit;border:2px solid var(--ink);border-radius:8px;padding:4px 8p
   <div class="box">
     <div class="pic" id="picChunks"></div>
     <h2>3 · Spelling in parts</h2>
-    <p>For long words: one row of boxes per part, 🔊 under each part, then the whole word once. A miss never shows the letters; a hint appears under that part. Ready for the My Strengths words; a vocabulary page adds it to its “Listen and spell” (handover to that page’s chat).</p>
+    <p>For long words: one row of boxes per part, 🔊 under each part, then the whole word once. Misses 1 and 2 on a part get a hint under it. <b>On the 3rd miss, that part’s letters appear</b> with 🔊 and “Look, listen, then type it yourself.” The same happens on the whole word. A word finished after it was shown still counts the <b>full point</b>; the dashboard just sees “shown”. Ready for the My Strengths words; a vocabulary page adds it to its “Listen and spell” (handover to that page’s chat).</p>
     <div class="row"><label class="chk">Word: <select id="cw"></select></label> <span class="note" id="cwres"></span></div>
     <div id="chunkHost"></div>
   </div>
 
   <div class="box">
-    <h2>4 · The tip pictures</h2>
+    <div class="pic" id="picTyped"></div>
+    <h2>4 · Any typed answer box</h2>
+    <p>One box per letter. Try it: type a <b>wrong</b> word three times. Misses 1 and 2 get a hint; the 3rd miss shows the word big with 🔊. The student types it once to finish, for the full point.</p>
+    <div class="row"><label class="chk">Word: <select id="tw"><option>borrow</option><option>tomorrow</option><option>Wednesday</option><option>Mr. Toby</option></select></label> <span class="note" id="twres"></span></div>
+    <div id="typedHost"></div>
+  </div>
+
+  <div class="box">
+    <h2>5 · The tip pictures</h2>
     <p class="note">All drawn for spell.js. Tell Claude any that should change.</p>
     <div class="gal" id="gal"></div>
   </div>
@@ -108,8 +116,13 @@ var SAMPLES=['Can I barrow a pencil? ','See you tomorow. ','I am sory. ','My bro
 document.getElementById('samples').innerHTML=SAMPLES.map(function(s,i){return '<button class="b" data-s="'+i+'">'+s.trim()+'</button>';}).join('');
 document.getElementById('samples').onclick=function(e){var b=e.target.closest('[data-s]');if(!b)return;demo.value=SAMPLES[+b.getAttribute('data-s')];demo._spRefresh&&demo._spRefresh();};
 var cw=document.getElementById('cw');cw.innerHTML=Object.keys(Spell.CHUNKS).map(function(w){return '<option>'+w+'</option>';}).join('');
-function showChunk(){var h=document.getElementById('chunkHost');document.getElementById('cwres').textContent='';Spell.chunks(h,{word:cw.value,onDone:function(r){document.getElementById('cwres').textContent='Done · misses: '+r.misses;}});}
+function resText(r){return 'Done \u00b7 1 point \u00b7 misses: '+r.misses+(r.shown?' \u00b7 shown: yes (dashboard only)':'');}
+function showChunk(){var h=document.getElementById('chunkHost');document.getElementById('cwres').textContent='';Spell.chunks(h,{word:cw.value,onDone:function(r){document.getElementById('cwres').textContent=resText(r);}});}
 cw.onchange=showChunk;cw.value='collaborative';showChunk();
+var TWH={borrow:'Take it now, give it back later.',tomorrow:'The day after today.',Wednesday:'The day after Tuesday. There is a d you don\u2019t hear.','Mr. Toby':'Your teacher\u2019s name. Listen to each part.'};
+var tw=document.getElementById('tw');function showTyped(){document.getElementById('twres').textContent='';Spell.typed(document.getElementById('typedHost'),{word:tw.value,say:tw.value==='Wednesday'?'Wednesday':tw.value,hint:TWH[tw.value],onDone:function(r){document.getElementById('twres').textContent=resText(r);}});}
+tw.onchange=showTyped;showTyped();
+document.getElementById('picTyped').innerHTML=Spell.PIC.borrow;document.getElementById('picTips').innerHTML=Spell.PIC.barrow;
 document.getElementById('gal').innerHTML=Object.keys(Spell.PIC).map(function(w){return '<div>'+Spell.PIC[w]+w+'</div>';}).join('');
 </script>
 </body>
