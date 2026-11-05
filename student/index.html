@@ -521,7 +521,20 @@ th,td{border-bottom:2px solid var(--line-dk)}
 #gradeCard .gbtn.xtra small{color:#1f5fb3}
 #gradeCard .gall{font-weight:800;color:#1f6f43}
 #gradeCard .gteach{font-size:.85rem;color:#5b5470;border-top:2px dashed #cfc8e6;margin-top:12px;padding-top:8px}
-@media (max-width:520px){#gradeCard .gart{width:96px;margin-left:10px}#gradeCard .gbtn{min-width:0;flex:1 1 100%}}
+/* T-301: one big semester cell, MP1–MP6 small cells underneath */
+#gradeCard .gbig{display:inline-block;border:3px solid var(--plum-dp);border-radius:14px;background:#fff8d6;padding:8px 18px 10px;margin:4px 0 8px;box-shadow:0 4px 0 rgba(43,34,68,.22);text-align:center;min-width:180px}
+#gradeCard .gbig .glab{display:block;font-size:.85rem;font-weight:800;color:#5b5470;text-transform:none}
+#gradeCard .gbig .gletters{border:0;background:none;padding:0;font-size:2.2rem;line-height:1.15}
+#gradeCard .gmps{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin:6px 0 10px;max-width:560px;clear:left}
+#gradeCard .gsem{font-size:.78rem;font-weight:800;color:#5b5470;text-align:center;border-bottom:2px solid #cfc8e6;padding-bottom:2px}
+#gradeCard .gmp{border:2px solid var(--plum-dp);border-radius:9px;background:#fff;text-align:center;padding:3px 2px 4px}
+#gradeCard .gmp small{display:block;font-size:.72rem;font-weight:800;color:#6b6385}
+#gradeCard .gmp b{display:block;font-size:1rem;color:var(--plum-dp)}
+#gradeCard .gmp.now{background:#fff8d6;border-width:3px}
+#gradeCard .gmp.now small::after{content:' \2022 now'}
+#gradeCard .gmp.later{border-style:dashed;border-color:#b9b2cf}
+#gradeCard .gmp.later b{color:#b9b2cf}
+@media (max-width:520px){#gradeCard .gart{width:96px;margin-left:10px}#gradeCard .gbtn{min-width:0;flex:1 1 100%}#gradeCard .gmp b{font-size:.88rem}}
 </style>
 </head>
 <body>
@@ -670,6 +683,8 @@ th,td{border-bottom:2px solid var(--line-dk)}
     </svg>
     <h2><span class="ico">&#128202;</span>My grade right now</h2>
     <p class="gline gtr" id="gLine"></p>
+    <div class="gbig" id="gBig"><span class="glab gtr" id="gBigLab"></span><span class="gletters" id="gBigL"></span></div>
+    <div class="gmps" id="gMps"></div>
     <p class="gnote gtr">Mr. Toby also grades work on paper, so your real grade can be a little different.</p>
     <p class="graise gtr hide" id="gRaise">To raise your grade, do some or all of these:</p>
     <p class="gall hide gtr" id="gAll"></p>
@@ -1353,7 +1368,23 @@ async function myPeriod(email){
    Done with no number = 4. Launch Plus lessons count items done (T-175). Word checks never count (T-176).
    "Extra work for you" never lowers the grade: it only shows as a button while it is not done.
    The letter is a range of two (nearest neighbour), because paper grades are not on the site. */
-var GRADE_SINCE='2026-08-17';   /* first day of the semester; change at the new semester */
+/* T-301: semesters and marking periods. Each semester starts fresh (the big cell); each MP gets its own small cell.
+   END dates are the last school day of each MP — CHECK against Synergy/TeacherVue; MP dates here were estimated
+   from last year's pattern (P1 Sep 26, P2 Oct 31, P3 Dec 19 in 2025-26). Change only this table. */
+var MPS=[
+  {mp:1, sem:'Fall',   from:'2026-08-17', to:'2026-09-25'},
+  {mp:2, sem:'Fall',   from:'2026-09-28', to:'2026-10-30'},
+  {mp:3, sem:'Fall',   from:'2026-11-02', to:'2026-12-18'},
+  {mp:4, sem:'Spring', from:'2027-01-04', to:'2027-02-19'},
+  {mp:5, sem:'Spring', from:'2027-02-22', to:'2027-04-16'},
+  {mp:6, sem:'Spring', from:'2027-04-19', to:'2027-06-02'}
+];
+function mpOf(iso){ var d=String(iso||'').slice(0,10); for(var i=0;i<MPS.length;i++){ if(d>=MPS[i].from&&d<=MPS[i].to) return MPS[i]; } return null; }
+function todayISO(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function curMP(){ var t=todayISO(), m=mpOf(t); if(m)return m;
+  /* between MPs (a holiday): the next one that has not started yet belongs to… the last one that ended */
+  var last=null; MPS.forEach(function(x){ if(x.to<t)last=x; }); return last||MPS[0]; }
+var GRADE_SINCE=MPS[0].from;   /* first day of the school year: every MP cell is filled from here */
 var GRADE_MIN=3;                /* fewer pushes than this = too early, the card stays hidden */
 function g4(p){ if(p==null)return null; return p>=90?4:p>=75?3:p>=60?2:p>=1?1:0; }
 function gSlug(href){
@@ -1385,7 +1416,7 @@ function gRange(v){
   var up=i>0?cut[i-1]:null, down=i<4?cut[i]:null, other;
   if(up==null) other=L[i+1];
   else if(down==null) other=L[i-1];
-  else other=(up-v)<(v-down)?L[i-1]:L[i+1];
+  else other=(up-v)<=(v-down)?L[i-1]:L[i+1];   /* a tie leans up */
   var pair=[me,other].sort(); return pair[0]+' or '+pair[1];
 }
 async function loadGrade(email){
@@ -1412,9 +1443,31 @@ async function loadGrade(email){
       if(isDataCheck(k.slug,{url:r.href,title:r.title}))return;
       var b=gBest(r); if(!b.done)extras.push({r:r});
     });
-    if(items.length<GRADE_MIN){ card.classList.add('hide'); return; }
-    var sum=0; items.forEach(function(it){ sum+=it.m; }); var avg=sum/items.length;
-    document.getElementById('gLine').innerHTML='Right now your grade in this class is about <span class="gletters">'+gRange(avg)+'</span>';
+    if(!items.length){ card.classList.add('hide'); return; }
+    /* T-301: each push belongs to the marking period it was pushed in; the big cell = this semester only */
+    items.forEach(function(it){ it.mp=mpOf(it.r.created_at); });
+    var now=curMP(), semItems=items.filter(function(it){ return it.mp&&it.mp.sem===now.sem; });
+    var avgOf=function(l){ if(!l.length)return null; var t=0; l.forEach(function(it){t+=it.m;}); return t/l.length; };
+    var avg=avgOf(semItems);
+    if(avg==null||semItems.length<GRADE_MIN){
+      /* a new semester with almost nothing pushed yet: say so instead of a grade */
+      document.getElementById('gLine').textContent=now.sem+' semester has just started. Your grade will show here soon.';
+      document.getElementById('gBig').classList.add('hide');
+    } else {
+      document.getElementById('gLine').textContent='Right now your grade in this class is about';
+      document.getElementById('gBigLab').textContent=now.sem+' semester';
+      document.getElementById('gBigL').textContent=gRange(avg);
+      document.getElementById('gBig').classList.remove('hide');
+    }
+    var tday=todayISO(), mph='<div class="gsem" style="grid-column:span 3">Fall</div><div class="gsem" style="grid-column:span 3">Spring</div>';
+    MPS.forEach(function(m){
+      var l=items.filter(function(it){return it.mp===m;}), a=avgOf(l);
+      var later=m.from>tday, isNow=(m===now&&!later);
+      mph+='<div class="gmp'+(isNow?' now':'')+(later?' later':'')+'" title="'+esc(m.from+' to '+m.to+(l.length?' \u00b7 '+l.length+' activities':''))+'"><small>MP'+m.mp+'</small><b>'+(a==null?'\u2014':gRange(a).replace(' or ','/'))+'</b></div>';
+    });
+    document.getElementById('gMps').innerHTML=mph;
+    /* buttons: this semester's work only (earlier semesters are closed) */
+    items=semItems;
     var todo=items.filter(function(it){ return it.m<3; }).sort(function(a,b){ return a.m-b.m||String(b.r.created_at).localeCompare(String(a.r.created_at)); });
     var btn=function(it,kind){
       var r=it.r, title=r.source==='classroom'?catTitle(String(r.href).split('?')[0],r.title||r.href).replace(/\s+[\u2014\u00b7|].*$/,''):(r.title||r.href);
@@ -1426,12 +1479,12 @@ async function loadGrade(email){
     document.getElementById('gBtns').innerHTML=html;
     document.getElementById('gRaise').classList.toggle('hide',!html);
     var all=document.getElementById('gAll');
-    if(!todo.length){ all.textContent='You did everything Mr. Toby gave you. Great work! Ask Mr. Toby for extra work to raise it more.'; all.classList.remove('hide'); }
+    if(!todo.length&&items.length){ all.textContent='You did everything Mr. Toby gave you. Great work! Ask Mr. Toby for extra work to raise it more.'; all.classList.remove('hide'); }
     else all.classList.add('hide');
     var t=document.getElementById('gTeach');
     if(TV_EMAIL||READ_ONLY){
       var done=items.filter(function(it){return it.done;}).length;
-      t.textContent='Teacher view: average '+avg.toFixed(2)+' of 4 over '+items.length+' pushed activities since '+GRADE_SINCE+' ('+done+' done, '+(items.length-done)+' not done). Extras are left out of the average. Letters: A 3.5+, B 2.5+, C 1.5+, D 0.5+.';
+      t.textContent='Teacher view: '+now.sem+' semester average '+(avg==null?'\u2014':avg.toFixed(2))+' of 4 over '+items.length+' pushed activities ('+done+' done, '+(items.length-done)+' not done); now = MP'+now.mp+'. Extras are left out of the average. Letters: A 3.5+, B 2.5+, C 1.5+, D 0.5+. MP dates live in MPS in student/index.html.';
       t.classList.remove('hide');
     } else t.classList.add('hide');
     card.classList.remove('hide');
@@ -1683,7 +1736,7 @@ function setLang(v){
 /* every heading and skill name gets a line underneath in their language */
 function translatePage(){
   try{ translateRows(); }catch(e){}  /* T-267 */
-  var nodes=document.querySelectorAll('#page h2, .skill b, .gbox span, .tag, #page .qname, #gradeCard .gtr:not(.hide)');  /* T-143 */
+  var nodes=document.querySelectorAll('#page h2, .skill b, .gbox span, .tag, #page .qname, #gradeCard p.gtr:not(.hide)');  /* T-143 / T-301: big-cell label stays English */
   Array.prototype.forEach.call(nodes,function(el){
     var out=el.querySelector(':scope > .tr');
     if(!el.hasAttribute('data-en')){
