@@ -45,12 +45,23 @@
       reads and saves the email exactly as before. A pasted full email keeps only the part
       before @; Enter signs in; a stored/prefilled @sfusd.edu (Period 1) keeps that domain.
 
+  11. Practice log (T-148, Nov 5 2026): active minutes, 🔊 taps and translations per student,
+      page and day → practice_log. GAL.key(email) (T-299) = the username, the one student ID.
+
    Pages that already have a language dropdown in their sign-in box are
    left alone (only fixes 3, 4, 5, 6 and 7 apply). Safe to load twice.
    ===================================================================== */
 (function () {
   if (window.__GAL_STD__) return;
   window.__GAL_STD__ = true;
+
+  /* T-299 USERNAME IS THE ID (Nov 5 2026). One student = the part of the email before @, lowercased.
+     "jili81@s.sfusd.edu", "JILI81@sfusd.edu" and "jili81" all give "jili81", so a page or dashboard that
+     matches students by GAL.key never splits one student into two rows. Old rows are NOT rewritten:
+     anything that reads them compares GAL.key(row.email) instead of the email itself. */
+  window.GAL = window.GAL || {};
+  window.GAL.key = function (email) { return String(email == null ? '' : email).trim().toLowerCase().split('@')[0].replace(/\s+/g, ''); };
+  window.GAL.same = function (a, b) { var k = window.GAL.key(a); return !!k && k === window.GAL.key(b); };
 
   /* T-268: names said right on every page (captions unchanged). The voice gets "Ameera" for
      "Amira" (the fix used to live only in reel-v2/engine.js SAY_AS). "Ameera" is one letter
@@ -1878,6 +1889,128 @@
     })();
   }
 
+  /* ================= T-148 PRACTICE LOG (Nov 5 2026) =================
+     Per student, per page, per day: active minutes, 🔊 taps and translations, added up in practice_log
+     through the practice_add RPC (adds to the row, never overwrites). Teacher page:
+     https://tobiasrugger.github.io/readings/practice/dashboard.html (password galileo2026).
+     ACTIVE = the tab is visible AND the student touched, typed, scrolled or moved the mouse in the last
+     60 s; counted in 5 s steps. A 🔊 TAP = sound (speech or a recording) that starts within 1.5 s of a
+     tap/click/key — at most one per tap, so a reel line that plays after Play counts once, and sound the
+     page starts by itself counts zero. A TRANSLATION = a call to the translation proxy within 1.5 s of a
+     tap, at most one per tap (directions translated on page load count zero).
+     Only counted past the sign-in box (no email field showing) with a signed-in student (gal_student_email,
+     70-min session). Off in teacher view, on teacher pages, for robots and test runs (GAL_PRACTICE_TEST
+     turns it on in tests). Sent every 60 s and when the student leaves (keepalive). Never throws. */
+  var PL = { b: {}, act: 0, gest: 0, spoke: -1, trd: -1, real: null, sending: false };
+  function plOff() {
+    try {
+      if (window.GAL_PRACTICE_TEST) return false;
+      if (window.GAL_TEACHER_VIEW || /[?&]view=teacher\b/.test(location.search)) return true;
+      if (navigator.webdriver || /[?&](robot|test|teacher)=/.test(location.search)) return true;
+      if (/\/(robot|audit|dashboards?|gradebook|desk|health|practice|shelves|atlas|year|roadmap|teacher|reports|assign|spell|simple)(\/|\.html|$)/i.test(location.pathname)) return true;
+      if (/dashboard|teacher/i.test(location.pathname)) return true;
+      return !/^https?:$/.test(location.protocol);
+    } catch (e) { return true; }
+  }
+  function plDay() {
+    try { return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' }); }
+    catch (e) { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  }
+  function plPage() {
+    var p = location.pathname.replace(/^\/readings\//, '').replace(/index\.html$/, '').replace(/^\/+|\/+$/g, '') || 'root';
+    var q = [];
+    location.search.replace(/[?&](set|lesson|a|p|deck|q|ep|level)=([^&]*)/g, function (_, k, v) { q.push(k + '=' + decodeURIComponent(v)); return ''; });
+    return (p + (q.length ? '?' + q.join('&') : '')).slice(0, 200);
+  }
+  function plSignInShowing() {
+    try {
+      var els = document.querySelectorAll('.gal-un, input[type=email], input[id*=mail i], input[name*=mail i]');
+      for (var i = 0; i < els.length; i++) if (shown(els[i])) return true;
+    } catch (e) {}
+    return false;
+  }
+  function plWho() {
+    if (plSignInShowing()) return null;
+    var s = sess();
+    if (s && s.email) { PL.tabWho = s.email; return s.email; }
+    /* past the 70-min sign-in window but still the same student in this tab (a long block): keep counting */
+    var raw = ''; try { raw = localStorage.getItem('gal_student_email') || ''; } catch (e) {}
+    return (raw && PL.tabWho && window.GAL.same(raw, PL.tabWho)) ? raw : null;
+  }
+  function plBucket() {
+    var em = plWho(); if (!em) return null;
+    var k = window.GAL.key(em) + '|' + plDay() + '|' + plPage();
+    return PL.b[k] || (PL.b[k] = { who: window.GAL.key(em), email: em.toLowerCase(), day: plDay(), page: plPage(), secs: 0, speaks: 0, trs: 0 });
+  }
+  function plTap() {                                 /* one count per tap, per kind */
+    if (Date.now() - PL.gest > 1500) return null;
+    return PL.gest;
+  }
+  function plSpeak() {
+    try { var g = plTap(); if (g == null || PL.spoke === g) return; var b = plBucket(); if (!b) return; PL.spoke = g; b.speaks++; } catch (e) {}
+  }
+  function plTrans() {
+    try { var g = plTap(); if (g == null || PL.trd === g) return; var b = plBucket(); if (!b) return; PL.trd = g; b.trs++; } catch (e) {}
+  }
+  function plSend(leaving) {
+    try {
+      var keys = Object.keys(PL.b); if (!keys.length) return;
+      keys.forEach(function (k) {
+        var b = PL.b[k]; delete PL.b[k];
+        if (!b.secs && !b.speaks && !b.trs) return;
+        var body = { p_who: b.who, p_email: b.email, p_day: b.day, p_page: b.page, p_secs: b.secs, p_speaks: b.speaks, p_trs: b.trs };
+        var back = function () {                     /* failed: add the counts back for the next try */
+          var c = PL.b[k] || (PL.b[k] = { who: b.who, email: b.email, day: b.day, page: b.page, secs: 0, speaks: 0, trs: 0 });
+          c.secs += b.secs; c.speaks += b.speaks; c.trs += b.trs;
+        };
+        (PL.real || window.fetch).call(window, SUPA_URL + '/rest/v1/rpc/practice_add', { method: 'POST', keepalive: !!leaving,
+          headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+          body: JSON.stringify(body) }).then(function (r) { if (!r.ok && !leaving) back(); }, function () { if (!leaving) back(); });
+      });
+    } catch (e) {}
+  }
+  function plBoot() {
+    if (plOff() || window.__GAL_PL__) return;
+    window.__GAL_PL__ = true;
+    var now = function () { return Date.now(); };
+    var gesture = function () { PL.gest = PL.act = now(); };
+    var stir = function () { PL.act = now(); };
+    ['pointerdown', 'keydown', 'touchstart'].forEach(function (t) { document.addEventListener(t, gesture, { capture: true, passive: true }); });
+    ['scroll', 'mousemove', 'wheel', 'input'].forEach(function (t) { document.addEventListener(t, stir, { capture: true, passive: true }); });
+    PL.act = now();
+    /* sound: speech and recordings */
+    try {
+      var ss = window.speechSynthesis;
+      if (ss && !ss.__galPL) { ss.__galPL = 1; var sp = ss.speak; ss.speak = function () { plSpeak(); return sp.apply(this, arguments); }; }
+    } catch (e) {}
+    try {
+      var MP = window.HTMLMediaElement && HTMLMediaElement.prototype;
+      if (MP && !MP.__galPL) { MP.__galPL = 1; var pl = MP.play; MP.play = function () { plSpeak(); return pl.apply(this, arguments); }; }
+    } catch (e) {}
+    /* translations: the proxy (any page) and the Google fallback the reel uses */
+    try {
+      var real = PL.real = window.fetch;
+      window.fetch = function (input) {
+        try {
+          var u = (typeof input === 'string') ? input : (input && input.url) || '';
+          if ((u.indexOf('script.google.com') >= 0 && u.indexOf('action=translate') >= 0) || u.indexOf('translate.googleapis.com') >= 0) plTrans();
+        } catch (e) {}
+        return real.apply(this, arguments);
+      };
+    } catch (e) {}
+    setInterval(function () {
+      try {
+        if (document.visibilityState !== 'visible' || now() - PL.act > 60000) return;
+        var b = plBucket(); if (b) b.secs += 5;
+      } catch (e) {}
+    }, 5000);
+    setInterval(function () { plSend(false); }, 60000);
+    window.addEventListener('pagehide', function () { plSend(true); });
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') plSend(true); });
+    window.GAL.practiceFlush = function () { plSend(false); };   /* tests */
+    window.GAL.practiceState = function () { return PL.b; };
+  }
+
   function scan() {
     addCSS();
     speakerIcons();
@@ -1899,6 +2032,7 @@
     pfBoot();
     tvBoot();
     try { updBoot(); } catch (e) {}                  /* T-272 */
+    try { plBoot(); } catch (e) {}                   /* T-148 practice log */
     try { var gs = document.createElement('script'); gs.src = '/readings/simple/simple.js'; (document.head || document.documentElement).appendChild(gs); } catch (e) {}   /* T-286 English - simple (T-293) */
     try { new MutationObserver(soon).observe(document.body, { childList: true, subtree: true }); } catch (e) {}
     /* T-228: a sign-in box revealed by a class change (no new nodes) or left while typing */

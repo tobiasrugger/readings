@@ -29,6 +29,7 @@ window.DASHBOARDS = [
 {url:'teacher/mywords.html',    name:'My Words',                     course:'both', group:'Data', note:'The words each student chose to keep.'},
 {url:'simple/dashboard.html',    name:'English - simple \u2014 who sees it', course:'both', group:'Data', note:'Tick students who speak a home language but can\u2019t read it: they get easy English definitions instead of a translation. Or switch it on for everyone (challenge day). Try-a-word box shows what a student would see.'},
 {url:'health/dashboard.html',    name:'Site health \u2014 failed saves', course:'both', group:'Data', note:'Every save a student page tried that the database refused (wrong column, missing table, bad data), grouped by page and table: count, students, first and last seen, the error text. Red banner when something new broke in the last 24 hours.'},
+{url:'practice/dashboard.html',  name:'Practice log \u2014 time, listens, translations', course:'both', group:'Data', note:'Per student, page and day: active minutes (on screen and working), \ud83d\udd0a listens and \ud83c\udf10 translations, counted by std.js on every student page. Period filter, today / 7 / 30 days, by student or by page, students with nothing logged shown grey, CSV.'},
 {url:'diagnostic/report.html',  name:'Grammar checks report',        course:'both', group:'Data'},
 
 /* ---------- Reading ---------- */

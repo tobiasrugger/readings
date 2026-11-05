@@ -467,11 +467,11 @@ function saveNote(msg){
     n.style.cssText='font-weight:800;font-size:13px;color:#b5452f;margin-left:6px'; d.parentNode.insertBefore(n, d.nextSibling); }
   n.textContent=msg||'';
 }
-function save(){
+function save(leaving){
   if(!me.email || !loaded) return;            /* T-88: never save before a successful load */
   $('dot').className='saving';
   fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email,set_slug', {
-    method:'POST',
+    method:'POST', keepalive: !!leaving || document.visibilityState==='hidden',
     headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
     body: JSON.stringify(payload())
   }).then(function(r){
@@ -497,6 +497,7 @@ function load(who){
     loaded=true; loadTries=0; $('dot').className=''; saveNote('');
     if(w){ state = Object.assign(state, w); restore(); }
     else if(!rows.length) dirty=true;           /* new student, or work done while offline: save it */
+    try{ scoreSummary(); }catch(e){}              /* T-300: score set as soon as work loads */
   }).catch(function(){ loadFailed(); });
 }
 function loadFailed(){
@@ -508,7 +509,8 @@ function loadFailed(){
 }
 setInterval(function(){ if(dirty && loaded){ dirty=false; save(); } }, 2500);
 document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='hidden' && dirty && loaded){ dirty=false; save(); } });
-function touch(){ dirty = true; }
+window.addEventListener('pagehide', function(){ if(dirty && loaded){ dirty=false; save(true); } });   /* T-300: save on leaving */
+function touch(){ dirty = true; try{ scoreSummary(); }catch(e){} }   /* T-300 */
 
 $('turnin').addEventListener('click', function(){
   if(!loaded){ alert('The page can\u2019t reach the server yet. Wait a moment, then press Turn in again.'); return; }
@@ -1073,6 +1075,16 @@ function galTodo(q,fb){ q.classList.remove('good','bad','try'); fb.className='fb
 function galMiss(q,fb,msg){ q.classList.remove('good','bad','try'); q.classList.add(GAL_L103?'bad':'try'); fb.className='fb '+(GAL_L103?'bad':'try'); fb.textContent=msg; }
 function galRight(q,fb,missed){ q.classList.remove('bad','try'); q.classList.add('good'); fb.className='fb good';
   if(GAL_L103 && missed) fb.innerHTML='<span class="was">\u2717</span> \u2192 \u2713 Yes!'; else fb.textContent='\u2713 Yes!'; }
+/* T-300: REVEAL AFTER 3 MISSES (Toby, Nov 4). After the 3rd different wrong try the answer is shown with 🔊;
+   the student types it once to finish and still gets the full point. rec.shown is kept for the teacher only. */
+function galReveal(q,fb,lead,ans,rec){
+  rec.shown=true; galMiss(q,fb,lead+' Here it is: ');
+  var b=document.createElement('b'); b.textContent=ans; b.setAttribute('translate','no'); b.style.fontSize='1.1em'; fb.appendChild(b);
+  var s=document.createElement('button'); s.type='button'; s.textContent='\ud83d\udd0a'; s.title='Hear it';
+  s.style.cssText='margin:0 6px;border:2px solid #2B2233;border-radius:999px;background:#fff;cursor:pointer;font-size:15px;padding:1px 8px';
+  s.addEventListener('click',function(e){ e.preventDefault(); e.stopPropagation(); try{ speechSynthesis.cancel(); var u=new SpeechSynthesisUtterance(ans); u.lang='en-US'; u.rate=.85; speechSynthesis.speak(u); }catch(_){} });
+  fb.appendChild(s); var t=document.createElement('span'); t.setAttribute('translate','yes'); t.textContent='Look, listen, then type it yourself.'; fb.appendChild(t);
+}
 /* letters shown, the rest blank: try 2 -> first + last letter; try 3+ -> every other letter too; never all */
 function galPattern(a, n){
   var L=a.length, out=a.split('').map(function(ch,i){
@@ -1192,6 +1204,7 @@ $('czCheck').addEventListener('click', function(){
     if(!got){ galTodo(q,fb); todo++; return; }
     if(got===a.toLowerCase()){ galRight(q,fb,rec.n>0); ok++; return; }
     if(got!==rec.last){ rec.n++; rec.last=got; }
+    if(rec.n>=3){ galReveal(q,fb,'Try again.',a,rec); return; }   /* T-300 */
     galMiss(q,fb, rec.n>=2 ? 'Try again. Hint: '+galPattern(a, rec.n) : czHint(a));
   });
   $('czScore').textContent = ok+' of '+tot+' right' + (todo ? ' \u00b7 '+todo+' not done yet' : '');
@@ -1235,6 +1248,7 @@ $('fxCheck').addEventListener('click', function(){
     if(got===norm(f.good)){ galRight(q,fb,rec.n>0); ok++; return; }
     if(got!==rec.last){ rec.n++; rec.last=got; }
     var hint = f.hint ? ' Hint: ' + f.hint + (/[.!?]$/.test(String(f.hint).trim()) ? '' : '.') : '', word = fxWord(f);
+    if(rec.n>=3){ galReveal(q,fb,'Try again.',f.good,rec); return; }   /* T-300 */
     galMiss(q,fb, 'Try again.' + hint + (rec.n>=2 && word ? ' Look at the word \u201c'+word+'\u201d.' : ''));
   });
   $('fxScore').textContent = ok+' of '+SET.fix.length+' right' + (todo ? ' \u00b7 '+todo+' not done yet' : '');
@@ -1303,6 +1317,7 @@ $('spCheck').addEventListener('click', function(){
     if(!got){ galTodo(q,fb); fb.textContent='Not done yet. Tap \ud83d\udd0a Play and listen.'; todo++; return; }
     if(got===a.toLowerCase()){ galRight(q,fb,rec.n>0); ok++; return; }
     if(got!==rec.last){ rec.n++; rec.last=got; }
+    if(rec.n>=3){ galReveal(q,fb,'Listen again.',a,rec); return; }   /* T-300 */
     var n=a.replace(/[^A-Za-z]/g,'').length;
     galMiss(q,fb, 'Listen again. You '+(state.spellLevel===1?'chose':'wrote')+' "'+got+'".' +
       (rec.n>=3 ? ' Hint: '+galPattern(a, rec.n-1) :
@@ -1324,6 +1339,13 @@ function scoreSummary(){
   s.fix = SET.fix.filter(function(f,i){ return norm(state.fix[i])===norm(f.good); }).length;
   s.spell = SET.words.filter(function(w){ return (state.spell[w.w]||'').trim().toLowerCase()===w.w.toLowerCase(); }).length;
   s.total_words = SET.words.length;
+  /* T-300: the gradebook score (same rule as T-296 on vocab/strengths), set before every save and on
+     every touch. Before this the page had no GAL_SCORE, so track.js counted filled-in boxes. Every item
+     solved counts 1, on any try; the crossword is extra and stays out of GAL_MAX. */
+  var wsMax = (typeof WS !== 'undefined' && WS && WS.placed && WS.placed.length) ? WS.placed.length : SET.words.length;
+  var perWord = 4 + (s.say != null ? 1 : 0);
+  window.GAL_MAX = SET.words.length * perWord + wsMax + SET.fix.length + (s.grammar != null && SET.gram ? SET.gram.length : 0);
+  window.GAL_SCORE = Math.min(window.GAL_MAX, Math.min(s.match, SET.words.length) + Math.min(s.wordsearch, wsMax) + s.mc + s.cloze + s.spell + (s.say || 0) + s.fix + (s.grammar || 0));
   return s;
 }
 function restore(){
