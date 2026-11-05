@@ -388,10 +388,15 @@
       return st;
     } catch (e) { return null; }
   })();
+  /* T-284: a field the student typed into (a real, trusted input event) is never cleared as "expired".
+     John typed "jobalam", left the name box, and the email vanished three times: every click/focusout
+     re-ran scan() → resume() → clearExpired(), and his own username matched the old sign-in. */
+  document.addEventListener('input', function (e) { if (e.isTrusted && e.target) e.target.__galTyped = true; }, true);
   function clearExpired(box) {
     if (!STALE) return;
     var user = STALE.em.split('@')[0], els = box.querySelectorAll('input');
     for (var i = 0; i < els.length; i++) {
+      if (els[i].__galTyped) continue;                       /* T-284 */
       var k = fieldKind(els[i], box), v = (els[i].value || '').trim().toLowerCase();
       if (!v) continue;
       if ((k === 'email' && (v === STALE.em || v.split('@')[0] === user)) || (k === 'name' && STALE.nm && (v === STALE.nm || v === namePart(els[i], STALE.nm)))) {
@@ -402,7 +407,16 @@
   }
   function resume(box, btn) {
     var s = sess();
-    if (!s) { clearExpired(box); setTimeout(function () { clearExpired(box); }, 600); watchSignIn(box, btn); return; }
+    if (!s) {
+      /* T-284: clear an expired sign-in only on the box's FIRST pass (now + 600 ms for a page that
+         fills its own box a moment later) — never again on later scans (every click / focusout) */
+      if (!box.getAttribute('data-gal-expired-done')) {
+        box.setAttribute('data-gal-expired-done', 'pending');
+        clearExpired(box);
+        setTimeout(function () { clearExpired(box); box.setAttribute('data-gal-expired-done', '1'); }, 600);
+      }
+      watchSignIn(box, btn); return;
+    }
     watchSignIn(box, btn);
     tryResume(box, btn, s);
     /* a language picker added after us (the mirror block, or a page engine)
