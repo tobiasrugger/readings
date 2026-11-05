@@ -297,6 +297,58 @@ var PANES = [['p-words','Words'],['p-guess','Picture only'],['p-match','Match'],
     nav.appendChild(back);
   }
   $('p-words').classList.add('on');
+
+  /* T-288 (Nov 5): on iPad the tab row slid up under the green bar and could not be tapped.
+     The tab row now sticks just below the bar (its height is measured, so a bar that wraps
+     to two lines still fits), and every pane ends with a big "Next" button as a second way on. */
+  var css = document.createElement('style');
+  css.textContent =
+    'nav.tabs{position:sticky;top:var(--galBarH,44px);z-index:45;background:var(--paper,#faf7f1);' +
+      'margin:0 -16px 18px;padding:9px 16px;border-bottom:2px solid #241d12;box-shadow:0 3px 6px rgba(0,0,0,.12)}' +
+    'html{scroll-padding-top:calc(var(--galBarH,44px) + 70px)}' +
+    '@media(max-width:700px){nav.tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}' +
+      'nav.tabs button,nav.tabs a.backbtn{flex:0 0 auto}}' +
+    '.galNext{display:flex;justify-content:flex-end;margin:26px 0 6px;padding-top:16px;border-top:2px solid #241d12}' +
+    '.galNext button,.galNext a{font-family:inherit;font-weight:800;font-size:1.05rem;background:#17915a;color:#fff;' +
+      'border:2px solid #0f7a4a;border-radius:11px;padding:12px 22px;cursor:pointer;text-decoration:none;' +
+      'box-shadow:0 2px 5px rgba(0,0,0,.2)}' +
+    '.galNext button:hover,.galNext a:hover{background:#0f7a4a}' +
+    '@media print{.galNext{display:none!important}}';
+  document.head.appendChild(css);
+
+  var bar = document.querySelector('.bar');
+  function barH(){
+    if(!bar) return;
+    var h = Math.ceil(bar.getBoundingClientRect().height) || 44;
+    document.documentElement.style.setProperty('--galBarH', h + 'px');
+  }
+  barH();
+  window.addEventListener('resize', barH);
+  window.addEventListener('orientationchange', function(){ setTimeout(barH, 300); });
+  if(window.ResizeObserver && bar){ try{ new ResizeObserver(barH).observe(bar); }catch(e){} }
+  setTimeout(barH, 800); setTimeout(barH, 2500);   // fonts arriving can change the bar height
+
+  var tabBtns = nav.querySelectorAll('button');
+  PANES.forEach(function(p, i){
+    if(p[0] === 'p-teacher') return;
+    var pane = $(p[0]); if(!pane) return;
+    var box = document.createElement('div');
+    box.className = 'galNext'; box.setAttribute('translate', 'no');
+    var nxt = PANES[i + 1];
+    if(nxt && nxt[0] !== 'p-teacher'){
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = 'Next: ' + nxt[1] + ' \u2192';
+      b.addEventListener('click', function(){ if(tabBtns[i + 1]) tabBtns[i + 1].click(); });
+      box.appendChild(b);
+    } else if(SET.backHref){
+      var a = document.createElement('a');
+      a.href = SET.backHref;
+      a.textContent = SET.backLabel || '\u2190 Back to the story';
+      box.appendChild(a);
+    } else return;
+    pane.appendChild(box);
+  });
 })();
 
 /* ---------- flashcards ---------- */
