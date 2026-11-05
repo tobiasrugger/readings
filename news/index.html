@@ -2,6 +2,29 @@
 <html lang="en" translate="no">
 <head>
 <script src="/readings/saveguard.js"></script>
+<script>
+/* T-291: teacher view (?view=teacher&email=X). Decided here, before anything else runs:
+   no Supabase write leaves the browser (GAL_TV_BLOCKED counts them), nothing is written to
+   this laptop's localStorage, the laptop's remembered sign-in is NOT resumed, and track.js
+   (which snapshots + clears the sign-in keys and loads std.js) runs now, not after the
+   article loads. std.js then fills the sign-in box with the student; Exit puts the laptop back. */
+(function(){try{
+  var q=new URLSearchParams(location.search);
+  if(q.get('view')!=='teacher'||!q.get('email')) return;
+  window.GAL_NEWS_TV=String(q.get('email')).trim().toLowerCase();
+  window.GAL_NO_AUTOLOG=true;
+  var f=window.fetch;
+  window.fetch=function(i,o){
+    var u=typeof i==='string'?i:(i&&i.url)||'', m=String((o&&o.method)||(i&&i.method)||'GET').toUpperCase();
+    if(m!=='GET'&&m!=='HEAD'&&/supabase\.co\/(rest|storage)\/v1\//.test(u)){
+      window.GAL_TV_BLOCKED=(window.GAL_TV_BLOCKED||0)+1;
+      return Promise.resolve(new Response('[]',{status:201,headers:{'Content-Type':'application/json'}}));
+    }
+    return f.apply(this,arguments);
+  };
+  document.write('<script src="/readings/track.js"><\/script>');
+}catch(e){}})();
+</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="google" content="notranslate">
@@ -305,10 +328,12 @@ var A=null;        // parsed article
 var ANS={};        // student answers
 var ROLE='';
 var ME={email:'',first:'',last:'',name:'',period:'',lang:''};
+var TV=window.GAL_NEWS_TV||'';      /* T-291: teacher view = read only, this laptop untouched */
+function lsSet(k,v){ if(TV) return; try{localStorage.setItem(k,v);}catch(e){} }
 var LEVEL=localStorage.getItem('gal_news_level')||'';
 var LOCKED=false;
 var EMAIL_RE=/^[^@\s]+@(s\.)?sfusd\.edu$/;
-(function(){try{var e=localStorage.getItem('gal_student_email');if(e&&/@s\.sfusd\.edu$/i.test(e))localStorage.setItem('gal_student_email',e.toLowerCase().replace(/@s\.sfusd\.edu$/,'@sfusd.edu'));}catch(x){}})();
+(function(){try{var e=localStorage.getItem('gal_student_email');if(e&&/@s\.sfusd\.edu$/i.test(e))lsSet('gal_student_email',e.toLowerCase().replace(/@s\.sfusd\.edu$/,'@sfusd.edu'));}catch(x){}})();
 function canon(e){e=e.trim().toLowerCase();return e.replace(/@s\.sfusd\.edu$/,'@sfusd.edu');}
 var dirty=false;
 
@@ -519,7 +544,7 @@ function drawLevelPicker(){
 }
 $('lvl').addEventListener('change',function(){
   LEVEL=this.value;
-  localStorage.setItem('gal_news_level',LEVEL);
+  lsSet('gal_news_level',LEVEL);
   applyLevel(LEVEL);
   dirty=true;
   render();
@@ -544,7 +569,7 @@ function fiPara(key){
   return bi+1;
 }
 function fiState(k){ANS._ft=ANS._ft||{};return ANS._ft[k]=ANS._ft[k]||{m:0};}
-function fiSave(){dirty=true;setDot('');localStorage.setItem(lsKey(),JSON.stringify(ANS));galUpdate();saveSoon();}
+function fiSave(){dirty=true;setDot('');galUpdate();saveSoon();}
 function fiChoices(k){
   if(ANS._fo&&ANS._fo[k]) return ANS._fo[k];
   var right=fiKey(k),pool=[];
@@ -787,8 +812,7 @@ function wireInputs(){
   [].forEach.call(document.querySelectorAll('[data-k]'),function(el){
     el.addEventListener('input',function(){
       ANS[el.dataset.k]=el.value; dirty=true; setDot('');
-      localStorage.setItem(lsKey(),JSON.stringify(ANS));
-      galUpdate(); saveSoon();
+            galUpdate(); saveSoon();
     });
     if(el.classList.contains('cloze')){
       el.addEventListener('blur',function(){
@@ -803,7 +827,7 @@ var PULLED={};
 function pullAnswers(){
   if(!A||!ME.email) return;
   var k=ME.email+'|'+A.meta.SLUG; if(PULLED[k]) return; PULLED[k]=1;
-  fetch(SUPA_URL+'/rest/v1/news_work?select=answers,level&email=eq.'+encodeURIComponent(ME.email)+'&slug=eq.'+encodeURIComponent(A.meta.SLUG)+'&limit=1',{headers:H})
+  fetch(SUPA_URL+'/rest/v1/news_work?select=answers,level,updated_at&email=in.('+encodeURIComponent(bothEmails(ME.email).map(function(x){return '"'+x+'"';}).join(','))+')&slug=eq.'+encodeURIComponent(A.meta.SLUG)+'&order=updated_at.desc&limit=1',{headers:H})
   .then(function(r){return r.json();}).then(function(rows){
     if(!rows||!rows.length||!rows[0].answers) return;
     var server=rows[0].answers, local=Object.keys(ANS).filter(function(x){return x[0]!=='_';}).length;
@@ -817,14 +841,11 @@ function pullAnswers(){
       if(!added) return;
       dirty=true;
     } else ANS=server;
-    localStorage.setItem(lsKey(),JSON.stringify(ANS));
-    if(rows[0].level&&!LOCKED){LEVEL=rows[0].level;localStorage.setItem('gal_news_level',LEVEL);applyLevel(LEVEL);}
+        if(rows[0].level&&!LOCKED){LEVEL=rows[0].level;lsSet('gal_news_level',LEVEL);applyLevel(LEVEL);}
     render();
   }).catch(function(){});
 }
 function restore(){
-  var raw=localStorage.getItem(lsKey());
-  if(raw){try{ANS=JSON.parse(raw);}catch(e){}}
   pullAnswers();
   [].forEach.call(document.querySelectorAll('[data-k]'),function(el){
     if(ANS[el.dataset.k]!==undefined) el.value=ANS[el.dataset.k];
@@ -887,13 +908,13 @@ $('gGo').onclick=function(){
   if(!lg){$('gErr').textContent='Choose your language.';return;}
   var c=canon(raw), n=f+' '+l;
   ME={email:c,first:f,last:l,name:n,period:p,lang:lg};
-  localStorage.setItem('gal_student_email',c);
-  localStorage.setItem('gal_student_first',f);
-  localStorage.setItem('gal_student_last',l);
-  localStorage.setItem('gal_student_name',n);
-  localStorage.setItem('gal_period',p);
-  localStorage.setItem('gal_student_period',p);
-  localStorage.setItem('gal_lang',lg);
+  lsSet('gal_student_email',c);
+  lsSet('gal_student_first',f);
+  lsSet('gal_student_last',l);
+  lsSet('gal_student_name',n);
+  lsSet('gal_period',p);
+  lsSet('gal_student_period',p);
+  lsSet('gal_lang',lg);
   if(raw!==c){
     fetch(SUPA_URL+'/rest/v1/student_aliases',{method:'POST',headers:Object.assign({},H,{'Prefer':'resolution=ignore-duplicates,return=minimal'}),
       body:JSON.stringify({alias:raw,canonical:c})}).catch(function(){});
@@ -904,7 +925,8 @@ $('gGo').onclick=function(){
   $('gate').style.display='none';
   chip();
   fetchOverride(); checkRecording();
-  if(A){ANS={};render();}
+  if(BARE){ANS={};PULLED={};homeRoute();}
+  else if(A){ANS={};render();}
   else if(PICK) drawPicker();
   if(SETROWS) loadSetStatus();
   dirty=true;
@@ -916,7 +938,7 @@ function fetchOverride(){
     var lv=(rows&&rows.length&&rows[0].level)||'';
     if(lv&&lv!==LEVEL){
       LEVEL=lv;LOCKED=true;
-      localStorage.setItem('gal_news_level',LEVEL);
+      lsSet('gal_news_level',LEVEL);
       if(A){applyLevel(LEVEL);render();toast('Mr. Toby changed your version.');}
     } else if(lv){ LOCKED=true; if($('lvl'))$('lvl').disabled=true; }
     else if(LOCKED){ LOCKED=false; if($('lvl'))$('lvl').disabled=false; }
@@ -933,7 +955,7 @@ function toast(msg){
 (function(){
   var e=localStorage.getItem('gal_student_email'),f=localStorage.getItem('gal_student_first'),l=localStorage.getItem('gal_student_last'),
       p=localStorage.getItem('gal_period')||localStorage.getItem('gal_student_period'),lg=localStorage.getItem('gal_lang');
-  if(e&&f&&l&&p&&lg&&EMAIL_RE.test(e)){
+  if(!TV&&e&&f&&l&&p&&lg&&EMAIL_RE.test(e)){
     ME={email:e,first:f,last:l,name:f+' '+l,period:p,lang:lg};
     $('lang').value=lg; chip(); $('gate').style.display='none'; fetchOverride(); setTimeout(checkRecording,800);
   } else {
@@ -951,8 +973,7 @@ $('turnIn').onclick=function(){
   if(!em||em.indexOf('@')<0){showSignin();return;}
   dirty=true;
   ANS._turnedIn=new Date().toISOString();
-  localStorage.setItem(lsKey(),JSON.stringify(ANS));
-  galUpdate(); LAST_LOGGED=window.GAL_SCORE;
+    galUpdate(); LAST_LOGGED=window.GAL_SCORE;
   if(window.GAL_logAttempt) window.GAL_logAttempt({via:'turn-in'});
   alert('Turned in. You can still make changes — Mr. Toby sees the newest version.');
 };
@@ -973,7 +994,7 @@ function drawArch(){
         '<p class="muted">Missed a week? You can still do any of these.</p>';
   others.forEach(function(r){
     h+='<div style="padding:8px 0;border-top:1px solid var(--rule)">'+
-       '<a href="?a='+encodeURIComponent(r.slug)+'" style="font-weight:700;color:var(--pine)">'+esc(r.title||r.slug)+'</a>'+
+       '<a href="'+linkTo(r.slug)+'" style="font-weight:700;color:var(--pine)">'+esc(r.title||r.slug)+'</a>'+
        (r.week_of?' <span class="muted">'+esc(r.week_of)+'</span>':'')+'</div>';
   });
   box.innerHTML=h+'</div>';
@@ -1253,8 +1274,83 @@ document.addEventListener('visibilitychange',function(){if(!document.hidden)chec
 window.addEventListener('pageshow',function(){checkRecording();});
 window.addEventListener('focus',function(){checkRecording();});
 
+/* ---------- T-291: the bare page (no ?a=) ----------
+   Signed-in student who already turned in this week's reading → "✓ You finished" + cards for
+   published readings not done yet ("Nothing new yet." when none). Otherwise as before. */
+var BARE=false, PUBLISHED=null, DONE={};
+function linkTo(slug){
+  var p=[]; if(slug) p.push('a='+encodeURIComponent(slug));
+  if(TV) p.push('view=teacher','email='+encodeURIComponent(TV));
+  return p.length?'?'+p.join('&'):'./';
+}
+function showNewest(){
+  var d=parseDoc(PUBLISHED[0].doc||'');
+  if(d.meta.SET){
+    return fetchSet(d.meta.SET).then(function(set){
+      SETROWS=set;
+      if(set.length>1){A=null;PICK=true;drawPicker();loadSetStatus();return;}
+      PICK=false;A=d;render();loadTracker();checkRecording();
+    });
+  }
+  PICK=false;A=d;render();loadTracker();checkRecording();
+}
+function homeRoute(){
+  if(!PUBLISHED) return;
+  if(!ME.email){showNewest();return;}
+  var em=bothEmails(ME.email).map(function(x){return '"'+x+'"';}).join(','),
+      sl=PUBLISHED.map(function(r){return '"'+r.slug+'"';}).join(',');
+  fetch(SUPA_URL+'/rest/v1/news_work?select=slug,answers&email=in.('+encodeURIComponent(em)+')&slug=in.('+encodeURIComponent(sl)+')',{headers:H})
+  .then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(rows){
+    DONE={};
+    (rows||[]).forEach(function(w){if(w.answers&&w.answers._turnedIn)DONE[w.slug]=1;});
+    var top=PUBLISHED[0], set=parseDoc(top.doc||'').meta.SET;
+    var newest=PUBLISHED.filter(function(r){return set?parseDoc(r.doc||'').meta.SET===set:r.slug===top.slug;});
+    if(newest.some(function(r){return DONE[r.slug];})) drawFinished(); else showNewest();
+  }).catch(function(){showNewest();});
+}
+function drawFinished(){
+  A=null; PICK=false;
+  showArticleTabs(false);
+  $('barTitle').textContent='This Week\u2019s Reading';
+  var todo=PUBLISHED.filter(function(r){return !DONE[r.slug];}).slice(0,6),
+      done=PUBLISHED.filter(function(r){return DONE[r.slug];}).slice(0,8);
+  var h='<div class="card fin" style="border-color:#166534;background:#f0fbf3">'+
+        '<h2 style="margin:0 0 6px;color:#166534">\u2713 You finished this week\u2019s reading</h2>'+
+        '<div data-xl="Great work. Mr. Toby can see it.">Great work. Mr. Toby can see it.</div></div>';
+  if(todo.length){
+    h+='<div class="credit" data-xl="Want more? You can still do these readings.">Want more? You can still do these readings. &#11088;</div><div class="picks">';
+    todo.forEach(function(r){
+      var d=parseDoc(r.doc||''), art=(window.NEWS_ART||{})[r.slug];
+      h+='<a class="pick" href="'+linkTo(r.slug)+'">'+(art&&art.hero?art.hero:'<div style="font-size:54px;text-align:center;padding:18px 0;border-bottom:2px solid #2b3a33;background:#f6f4ec">&#128240;</div>')+
+         '<div class="pb"><h3>'+esc(d.meta.TITLE||r.title||r.slug)+'</h3><div class="muted" style="font-size:15px;color:#4b5249">'+esc(d.meta.DEK||'')+'</div>'+
+         '<span class="go">Read this \u2192</span></div></a>';
+    });
+    h+='</div>';
+  } else {
+    h+='<div class="card"><h3 data-xl="Nothing new yet.">Nothing new yet.</h3><div class="muted" data-xl="Mr. Toby will post the next reading soon.">Mr. Toby will post the next reading soon.</div></div>';
+  }
+  if(done.length){
+    h+='<div class="card"><h3 data-xl="Your finished readings">Your finished readings</h3>';
+    done.forEach(function(r){var d=parseDoc(r.doc||'');h+='<div style="padding:7px 0;border-top:1px solid var(--rule)"><span style="color:#166534;font-weight:800">\u2713</span> <a href="'+linkTo(r.slug)+'" style="font-weight:700;color:var(--pine)">'+esc(d.meta.TITLE||r.title||r.slug)+'</a></div>';});
+    h+='</div>';
+  }
+  $('readBody').innerHTML=h;
+  $('mediaBox').innerHTML='';$('qBox').innerHTML='';$('setBox').innerHTML='';$('archBox').innerHTML='';
+  dualTranslate();
+}
+
 function boot(){
   var want=new URLSearchParams(location.search).get('a');
+  if(!want){
+    BARE=true;
+    fetch(SUPA_URL+'/rest/v1/news_articles?select=slug,title,doc,week_of&published=is.true&order=week_of.desc,updated_at.desc&limit=12',{headers:H})
+    .then(function(r){return r.json();}).then(function(rows){
+      PUBLISHED=(rows||[]).filter(function(r){return r.doc;});
+      if(!PUBLISHED.length){A=parseDoc(SEED);render();loadTracker();checkRecording();return;}
+      homeRoute();
+    }).catch(function(){ if(!A&&!PICK){A=parseDoc(SEED);render();loadTracker();} });
+    return;
+  }
   var url=SUPA_URL+'/rest/v1/news_articles?select=doc,week_of&published=is.true&order=week_of.desc,updated_at.desc&limit=1';
   if(want) url=SUPA_URL+'/rest/v1/news_articles?select=doc,week_of&slug=eq.'+encodeURIComponent(want)+'&limit=1';
   fetch(url,{headers:H}).then(function(r){return r.json();}).then(function(rows){
@@ -1319,7 +1415,7 @@ function drawPicker(){
     '<div class="picks">';
   SETROWS.forEach(function(r){
     var art=(window.NEWS_ART||{})[r.slug];
-    h+='<a class="pick" href="?a='+encodeURIComponent(r.slug)+'">'+(art&&art.hero?art.hero:'')+
+    h+='<a class="pick" href="'+linkTo(r.slug)+'">'+(art&&art.hero?art.hero:'')+
        '<div class="pb"><h3>'+esc(r.title)+badge(r.slug)+'</h3><div class="muted" style="font-size:15px;color:#4b5249">'+esc(r.dek)+'</div>'+
        '<span class="go">Read this story \u2192</span></div></a>';
   });
@@ -1331,12 +1427,12 @@ function drawSetBox(){
   if(!A||!A.meta.SET||!SETROWS||SETROWS.length<2){ if($('setBox'))$('setBox').innerHTML=''; if($('setTop'))$('setTop').innerHTML=''; return; }
   var others=SETROWS.filter(function(r){return r.slug!==A.meta.SLUG;});
   var top=$('setTop');
-  if(top) top.innerHTML='<a href="./">\u2190 All '+SETROWS.length+' stories</a><span class="muted">\u00b7 '+esc(setTitleOf())+'</span>';
+  if(top) top.innerHTML='<a href="'+linkTo('')+'">\u2190 All '+SETROWS.length+' stories</a><span class="muted">\u00b7 '+esc(setTitleOf())+'</span>';
   var h='<div class="card"><h3>Read another story for extra credit &#11088;</h3>'+
         '<p class="muted" data-xl="Each story has its own questions, grammar, talk chart and recording.">Each story has its own questions, grammar, talk chart and recording.</p><div class="picks">';
   others.forEach(function(r){
     var art=(window.NEWS_ART||{})[r.slug];
-    h+='<a class="pick" href="?a='+encodeURIComponent(r.slug)+'">'+(art&&art.hero?art.hero:'')+
+    h+='<a class="pick" href="'+linkTo(r.slug)+'">'+(art&&art.hero?art.hero:'')+
        '<div class="pb"><h3>'+esc(r.title)+badge(r.slug)+'</h3><span class="go">Read this story \u2192</span></div></a>';
   });
   $('setBox').innerHTML=h+'</div></div>';
