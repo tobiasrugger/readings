@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Site health · failed saves</title>
+<script src="/readings/icon.js" data-teacher></script>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<!-- T-295 (Nov 5 2026): every failed Supabase save on a student page, from std.js's health check -->
+<style>
+:root{--ink:#2B2233;--bg:#f6f2ea;--card:#fff;--line:#2B2233;--muted:#5d536a;--red:#b3261e;--green:#1f8a4c}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Nunito,system-ui,sans-serif;font-size:17px;line-height:1.45}
+#gal04-back{position:fixed;top:10px;left:10px;z-index:50;background:#fff;color:var(--ink);border:2px solid var(--line);border-radius:999px;padding:6px 14px;font-weight:800;text-decoration:none;box-shadow:0 3px 0 rgba(43,34,51,.25)}
+main{max-width:1180px;margin:0 auto;padding:62px 16px 40px}
+h1{font-size:28px;margin:0 0 6px}
+.box{background:var(--card);border:2px solid var(--line);border-radius:14px;box-shadow:0 4px 0 rgba(43,34,51,.22);padding:16px 18px;margin:16px 0;overflow:hidden}
+.box h2{margin:0 0 8px;font-size:21px}
+.muted{color:var(--muted)}
+.banner{display:none;background:var(--red);color:#fff;border:2px solid var(--line);border-radius:14px;padding:14px 18px;font-weight:900;font-size:20px;box-shadow:0 4px 0 rgba(43,34,51,.22)}
+.banner.on{display:block}
+.ok{display:none;background:#e7f6ec;border:2px solid var(--green);border-radius:14px;padding:12px 16px;font-weight:900;color:var(--green)}
+.ok.on{display:block}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+button{font:inherit;font-weight:800;border:2px solid var(--line);background:#fff;border-radius:999px;padding:5px 14px;cursor:pointer}
+.tscroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:820px}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid #d9d2c3;vertical-align:top}
+th{font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+td.n{font-weight:900;font-size:20px}
+tr.new td{background:#fde9e6}
+.pill{display:inline-block;border:2px solid var(--red);color:var(--red);border-radius:999px;padding:0 9px;font-weight:900;font-size:13px;background:#fff}
+code{font-size:13px;background:#f3eee4;border-radius:6px;padding:2px 5px;word-break:break-word}
+#gate{max-width:380px;margin:120px auto}
+#gate input{font:inherit;border:2px solid var(--line);border-radius:10px;padding:8px 10px;width:100%}
+#err{color:var(--red);font-weight:800}
+.why svg{float:right;width:150px;height:110px;margin:0 0 8px 14px}
+</style>
+</head>
+<body>
+<a id="gal04-back" href="https://tobiasrugger.github.io/readings/dashboards/">← All dashboards</a>
+
+<div id="gate" class="box">
+  <h2>Teacher password</h2>
+  <input id="pw" type="password" autocomplete="current-password" placeholder="password">
+  <div class="row" style="margin-top:10px"><button id="go">Open</button><span id="err"></span></div>
+</div>
+
+<main id="app" style="display:none">
+  <h1>Site health — failed saves</h1>
+  <div class="banner" id="banner"></div>
+  <div class="ok" id="ok">✓ No failed saves in the last 7 days.</div>
+
+  <div class="box why">
+    <svg viewBox="0 0 150 110" aria-hidden="true">
+      <rect x="8" y="14" width="96" height="74" rx="8" fill="#fff" stroke="#2B2233" stroke-width="3"/>
+      <rect x="8" y="14" width="96" height="16" rx="8" fill="#5d536a"/>
+      <circle cx="18" cy="22" r="3" fill="#f3d9a8"/><circle cx="28" cy="22" r="3" fill="#f3d9a8"/>
+      <rect x="20" y="42" width="60" height="7" rx="3" fill="#d9d2c3"/><rect x="20" y="56" width="44" height="7" rx="3" fill="#d9d2c3"/>
+      <rect x="20" y="70" width="52" height="7" rx="3" fill="#d9d2c3"/>
+      <circle cx="110" cy="72" r="28" fill="#fde9e6" stroke="#b3261e" stroke-width="4"/>
+      <path d="M110 58v18" stroke="#b3261e" stroke-width="6" stroke-linecap="round"/><circle cx="110" cy="85" r="3.6" fill="#b3261e"/>
+    </svg>
+    <h2>What this shows</h2>
+    <p class="muted" style="margin:0">Every time a student page tries to save to the database and the database says no, std.js writes one line here. Same page + table + error are grouped. A row turns red when it first showed up in the last 24 hours. Most rows need a fix in that page's chat — copy the error text into it.</p>
+  </div>
+
+  <div class="box">
+    <div class="row" style="justify-content:space-between">
+      <h2 style="margin:0">Last 7 days</h2>
+      <div class="row"><span class="muted" id="count"></span><button id="refresh">Refresh</button></div>
+    </div>
+    <div class="tscroll"><table id="tbl"></table></div>
+  </div>
+</main>
+
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var PASSWORD='galileo2026';
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function ago(t){var m=(Date.now()-new Date(t).getTime())/60000;if(m<60)return Math.max(1,Math.round(m))+' min ago';if(m<1440)return Math.round(m/60)+' h ago';return new Date(t).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});}
+function local(e){return String(e||'').toLowerCase().split('@')[0];}
+/* the same error with different ids/values inside should group together */
+function errKey(t){return String(t||'').replace(/\d{4}-\d\d-\d\dT[\d:.]+Z?/g,'<time>').replace(/"[^"]{40,}"/g,'"…"').replace(/\b\d{3,}\b/g,'#').slice(0,160);}
+function tryPw(){if($('pw').value===PASSWORD){try{sessionStorage.setItem('dash_ok','1');}catch(e){}open_();}else $('err').textContent='Not the right password.';}
+function open_(){$('gate').style.display='none';$('app').style.display='block';load();}
+$('go').addEventListener('click',tryPw);
+$('pw').addEventListener('keydown',function(e){if(e.key==='Enter')tryPw();});
+$('refresh').addEventListener('click',load);
+try{if(sessionStorage.getItem('dash_ok')==='1')open_();}catch(e){}
+
+function fetchAll(since){
+  var out=[], step=1000;
+  function page(from){
+    return fetch(SUPA_URL+'/rest/v1/page_errors?select=*&at=gte.'+encodeURIComponent(since)+'&order=at.desc',
+      {headers:{apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY,'Range-Unit':'items',Range:from+'-'+(from+step-1)}})
+      .then(function(r){if(!r.ok)return r.text().then(function(t){throw new Error(r.status+' '+t.slice(0,200));});return r.json();})
+      .then(function(rows){out=out.concat(rows||[]);return (rows&&rows.length===step&&from<20000)?page(from+step):out;});
+  }
+  return page(0);
+}
+function load(){
+  $('count').textContent='Loading…';
+  var since=new Date(Date.now()-7*864e5).toISOString();
+  fetchAll(since).then(draw).catch(function(e){
+    $('count').textContent='';
+    $('tbl').innerHTML='<tr><td><b>Could not read page_errors.</b> '+esc(e.message)+'<br>If it says the table does not exist, run the T-295 SQL in Supabase.</td></tr>';
+  });
+}
+function draw(rows){
+  var G={}, day=Date.now()-864e5;
+  rows.forEach(function(r){
+    var k=(r.page||'')+'|'+(r.tbl||'')+'|'+(r.status||0)+'|'+errKey(r.err);
+    var g=G[k]||(G[k]={page:r.page,tbl:r.tbl,method:r.method,status:r.status,err:r.err,n:0,first:r.at,last:r.at,who:{}});
+    g.n++; if(r.at<g.first)g.first=r.at; if(r.at>g.last){g.last=r.at;g.err=r.err;g.method=r.method;}
+    if(r.email)g.who[local(r.email)]=1;
+  });
+  var list=Object.keys(G).map(function(k){return G[k];}).sort(function(a,b){return b.n-a.n||(b.last>a.last?1:-1);});
+  var fresh=list.filter(function(g){return new Date(g.first).getTime()>=day;});
+  $('banner').classList.toggle('on',fresh.length>0);
+  $('banner').innerHTML=fresh.length?'⚠ '+fresh.length+' new kind'+(fresh.length===1?'':'s')+' of failed save in the last 24 hours: '+
+    fresh.slice(0,4).map(function(g){return esc(g.page)+' → '+esc(g.tbl)+' ('+g.status+')';}).join(' · '):'';
+  $('ok').classList.toggle('on',list.length===0);
+  $('count').textContent=rows.length+' failed save'+(rows.length===1?'':'s')+' · '+list.length+' group'+(list.length===1?'':'s');
+  var h='<tr><th>Count</th><th>Page</th><th>Table</th><th>Error</th><th>Students</th><th>First seen</th><th>Last seen</th></tr>';
+  list.forEach(function(g){
+    var isNew=new Date(g.first).getTime()>=day, ns=Object.keys(g.who).length;
+    h+='<tr'+(isNew?' class="new"':'')+'><td class="n">'+g.n+'</td>'+
+       '<td><a href="https://tobiasrugger.github.io'+esc(g.page)+'" target="_blank" rel="noopener">'+esc(g.page)+'</a>'+(isNew?' <span class="pill">new</span>':'')+'</td>'+
+       '<td><b>'+esc(g.tbl)+'</b><br><span class="muted">'+esc(g.method)+' · '+(g.status||'no answer')+'</span></td>'+
+       '<td><code>'+esc(g.err||'(no text)')+'</code></td>'+
+       '<td>'+ns+'</td><td>'+ago(g.first)+'</td><td>'+ago(g.last)+'</td></tr>';
+  });
+  $('tbl').innerHTML=h;
+}
+</script>
+</body>
+</html>

@@ -527,6 +527,70 @@
       });
     };
   }
+  /* ================= T-295 HEALTH CHECK (Nov 5 2026) =================
+     A save to Supabase that fails is recorded in page_errors, so a silent failure (like song_tr's
+     missing updated_at column, which made every translation-cache save a 400 for weeks) shows up on
+     https://tobiasrugger.github.io/readings/health/dashboard.html the first day.
+     Only POST / PATCH / DELETE to /rest/v1/. The page gets its own response back untouched (a clone is
+     read); nothing here ever throws; the record's own request is never logged. Rate limit per tab:
+     1 per page+table+status per 10 min, 20 per hour. Off in teacher view and for robots/test runs. */
+  var HC = { last: {}, hour: [], real: null };
+  function hcOff() {
+    try {
+      if (window.GAL_HEALTH_TEST) return false;
+      if (window.GAL_TEACHER_VIEW || /[?&]view=teacher\b/.test(location.search)) return true;
+      if (navigator.webdriver || /\/(robot|audit)\//.test(location.pathname) || /[?&](robot|test)=/.test(location.search)) return true;
+      return !/^https?:$/.test(location.protocol);
+    } catch (e) { return true; }
+  }
+  function hcSend(rec) {
+    try {
+      var now = Date.now(), k = rec.page + '|' + rec.tbl + '|' + rec.status;
+      if (HC.last[k] && now - HC.last[k] < 600000) return;
+      HC.hour = HC.hour.filter(function (t) { return now - t < 3600000; });
+      if (HC.hour.length >= 20) return;
+      HC.last[k] = now; HC.hour.push(now);
+      HC.real.call(window, SUPA_URL + '/rest/v1/page_errors', { method: 'POST', keepalive: true,
+        headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify([rec]) }).catch(function () {});
+    } catch (e) {}
+  }
+  function hcRecord(url, method, status, err) {
+    try {
+      if (hcOff()) return;
+      var em = ''; try { em = localStorage.getItem('gal_student_email') || ''; } catch (e) {}
+      var tbl = (String(url).split('/rest/v1/')[1] || '').split('?')[0].split('/')[0];
+      hcSend({ page: location.pathname, tbl: tbl, method: method, status: status, err: String(err || '').slice(0, 300),
+               email: em, at: new Date().toISOString() });
+    } catch (e) {}
+  }
+  function healthWrap() {
+    if (!window.fetch || window.__GAL_HEALTH__) return;
+    window.__GAL_HEALTH__ = true;
+    var real = HC.real = window.fetch;
+    window.fetch = function (input, init) {
+      var url = '', method = 'GET';
+      try {
+        url = (typeof input === 'string') ? input : (input && input.url) || '';
+        method = String((init && init.method) || (input && typeof input !== 'string' && input.method) || 'GET').toUpperCase();
+      } catch (e) {}
+      var p = real.apply(this, arguments);
+      try {
+        if (url.indexOf('/rest/v1/') < 0 || url.indexOf('supabase.co') < 0 || url.indexOf('/rest/v1/page_errors') >= 0 ||
+            !/^(POST|PATCH|DELETE)$/.test(method)) return p;
+        p.then(function (res) {
+          try {
+            if (res && !res.ok) {
+              var st = res.status;
+              res.clone().text().then(function (t) { hcRecord(url, method, st, t); }, function () { hcRecord(url, method, st, ''); });
+            }
+          } catch (e) {}
+        }, function (e) { hcRecord(url, method, 0, (e && (e.name + ': ' + e.message)) || 'network error'); });
+      } catch (e) {}
+      return p;
+    };
+  }
+
   /* as soon as a language is known, pull that language's rows */
   function warm() {
     var lg = stored();
@@ -1827,6 +1891,7 @@
   function soon() { if (pending) return; pending = setTimeout(function () { pending = null; scan(); }, 150); }
   function boot() {
     wrapFetch();
+    try { healthWrap(); } catch (e) {}              /* T-295 */
     warm();
     scan();
     listenBoot();
