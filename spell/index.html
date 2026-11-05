@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spelling helper — teacher preview</title>
+<script src="/readings/icon.js" data-teacher></script>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#1c2640;--muted:#5c6b62;--bg:#f4efe4;--card:#fff;--green:#2d6a4f;--orange:#e07a1f}
+*{box-sizing:border-box}
+body{margin:0;font-family:Nunito,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:17px}
+.wrap{max-width:980px;margin:0 auto;padding:14px 14px 60px}
+.back{display:inline-block;background:var(--ink);color:#fff;text-decoration:none;font-weight:800;border-radius:8px;padding:6px 12px}
+h1{font-size:1.6rem;margin:12px 0 4px}
+.lead{color:var(--muted);margin:0 0 12px}
+.box{background:var(--card);border:2px solid var(--ink);border-radius:14px;box-shadow:0 4px 0 rgba(28,38,64,.25);padding:14px;margin:16px 0;overflow:hidden}
+.box h2{margin:0 0 6px;font-size:1.25rem}
+.box .pic{float:right;width:150px;margin:0 0 8px 12px}
+.box .pic svg{width:150px;height:120px;display:block;border-radius:8px;border:2px solid var(--ink)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+button.b{font:inherit;font-weight:800;border:2px solid var(--ink);border-radius:8px;background:#fff;padding:6px 12px;cursor:pointer}
+button.b.on{background:#ffe7c7}
+button.go{background:var(--green);color:#fff}
+.note{font-size:.92rem;color:var(--muted)}
+textarea{width:100%;min-height:90px;font:inherit;border:2px solid var(--ink);border-radius:10px;padding:8px}
+select{font:inherit;border:2px solid var(--ink);border-radius:8px;padding:4px 8px}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.gal div{border:2px solid var(--ink);border-radius:10px;padding:6px;text-align:center;font-weight:900;background:#fffdf7}
+.gal svg{width:100%;height:auto;display:block}
+#gate{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9}
+#gate form{background:#fff;border:2px solid var(--ink);border-radius:14px;padding:20px;box-shadow:0 4px 0 rgba(28,38,64,.25)}
+#gate input{font:inherit;border:2px solid var(--ink);border-radius:8px;padding:6px 10px}
+.chk{display:inline-block;margin:2px 0;font-weight:800}
+</style>
+</head>
+<body>
+<div id="gate"><form onsubmit="return unlock()"><div style="font-weight:900;margin-bottom:8px">Teacher password</div><input id="pw" type="password" autofocus> <button class="b go" type="submit">Open</button><div id="pwmsg" class="note"></div></form></div>
+<div class="wrap">
+  <a class="back" href="/readings/dashboards/">← All dashboards</a>
+  <h1>Spelling helper — teacher preview</h1>
+  <p class="lead">What <code>/readings/spell/spell.js</code> does on student pages (T-273). Launch Plus lessons 1–5 use it now; other pages can load it.</p>
+
+  <div class="box">
+    <div class="pic" id="picVoice"></div>
+    <h2>1 · Voice check</h2>
+    <p>Listen once and tell Claude which Mateo sounds right. Captions and the screen always show <b>Mateo</b>; only the voice changes.</p>
+    <div class="row">
+      <button class="b" onclick="raw('Mateo')">🔊 Mateo (plain, before)</button>
+      <button class="b on" onclick="raw('Matayo')">🔊 “Matayo” (in use now)</button>
+      <button class="b" onclick="raw('Mah-tay-oh')">🔊 “Mah-tay-oh”</button>
+      <button class="b" onclick="raw('Mateyo')">🔊 “Mateyo”</button>
+      <button class="b" onclick="raw('Ameera')">🔊 Amira</button>
+    </div>
+    <p style="margin-top:12px">Spelled names. The new way says letter names, each one starting on a fixed beat, so short letters like N and H don’t bunch up.</p>
+    <div class="row">
+      <button class="b" onclick="raw('L I N H')">🔊 L-I-N-H (old: one sentence)</button>
+      <button class="b go" onclick="Spell.letters('L-I-N-H',this)">🔊 L-I-N-H (new)</button>
+      <button class="b" onclick="Spell.letters('L-I-N-H',this,{slow:true})">🐢 new, slow</button>
+      <button class="b go" onclick="Spell.letters('C-h-r-i-s',this)">🔊 C-h-r-i-s</button>
+      <button class="b go" onclick="Spell.letters('T-h-a-n',this)">🔊 T-h-a-n</button>
+    </div>
+    <p class="note">In Launch Plus Lesson 3, “Spell it” uses the new way. Story lines like “J - U - N” are read as “jay, you, en”.</p>
+  </div>
+
+  <div class="box">
+    <div class="pic" id="picTips"></div>
+    <h2>2 · Writing tips (Launch Plus “Write”)</h2>
+    <p>When a student writes a word that is probably the wrong one, a tip opens under the box with both words, pictures, meanings and translations. Nothing is marked wrong: the student decides. Each tip shown is counted for the dashboard.</p>
+    <div class="row">
+      <label class="chk">Translations: <select id="lang"><option value="">none</option><option value="es">Spanish</option><option value="zh-CN">Chinese</option><option value="ar">Arabic</option><option value="vi">Vietnamese</option><option value="th">Thai</option><option value="ne">Nepali</option></select></label>
+    </div>
+    <div class="row" id="samples"></div>
+    <textarea id="demo">Can I barrow a pencil? </textarea>
+    <p class="note">A tip waits until the word is finished (a space or period after it).</p>
+  </div>
+
+  <div class="box">
+    <div class="pic" id="picChunks"></div>
+    <h2>3 · Spelling in parts</h2>
+    <p>For long words: one row of boxes per part, 🔊 under each part, then the whole word once. A miss never shows the letters; a hint appears under that part. Ready for the My Strengths words; a vocabulary page adds it to its “Listen and spell” (handover to that page’s chat).</p>
+    <div class="row"><label class="chk">Word: <select id="cw"></select></label> <span class="note" id="cwres"></span></div>
+    <div id="chunkHost"></div>
+  </div>
+
+  <div class="box">
+    <h2>4 · The tip pictures</h2>
+    <p class="note">All drawn for spell.js. Tell Claude any that should change.</p>
+    <div class="gal" id="gal"></div>
+  </div>
+</div>
+<script src="/readings/spell/spell.js"></script>
+<script>
+var PROXY='https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
+function unlock(){var v=document.getElementById('pw').value.trim();if(v==='galileo2026'){document.getElementById('gate').remove();try{sessionStorage.setItem('spell_t','1');}catch(e){}return false;}document.getElementById('pwmsg').textContent='Not that one.';return false;}
+try{if(sessionStorage.getItem('spell_t')==='1')document.getElementById('gate').remove();}catch(e){}
+function raw(t){if(!window.speechSynthesis)return;speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(t);u.__galSpell=1;u.lang='en-US';var v=speechSynthesis.getVoices().filter(function(x){return /Google US English/i.test(x.name);})[0]||speechSynthesis.getVoices().filter(function(x){return /en-US/i.test(x.lang);})[0];if(v)u.voice=v;u.rate=.85;speechSynthesis.speak(u);}
+document.getElementById('picVoice').innerHTML=Spell.PIC.sorry;
+document.getElementById('picTips').innerHTML=Spell.PIC.borrow;
+document.getElementById('picChunks').innerHTML=Spell.PIC.tomorrow;
+var TC={};
+function tr(w,m,lg,cb){var k=lg+'|'+w;if(TC[k]!=null){cb(TC[k]);return;}
+ fetch(PROXY+'?action=translate&idiom='+encodeURIComponent(w)+'&meaning='+encodeURIComponent(m||'')+'&lang='+encodeURIComponent(lg)).then(function(r){return r.json();}).then(function(d){var t=d&&d.translation?(d.translation.equiv||d.translation.meaning||''):'';TC[k]=t;cb(t);}).catch(function(){cb('');});}
+var demo=document.getElementById('demo');
+Spell.watch(demo,{lang:function(){return document.getElementById('lang').value;},tr:tr});
+document.getElementById('lang').onchange=function(){demo.dispatchEvent(new Event('input'));if(demo._spRefresh){var tip=demo.nextElementSibling;tip.innerHTML='';tip.classList.remove('show');}demo._spRefresh&&demo._spRefresh();};
+var SAMPLES=['Can I barrow a pencil? ','See you tomorow. ','I am sory. ','My brother is taller then me. ','Were are you from? ','I like to eat kitchen. ','Don\u2019t loose your key. ','I live school at 3. ','Please seat down. ','Please be quite. '];
+document.getElementById('samples').innerHTML=SAMPLES.map(function(s,i){return '<button class="b" data-s="'+i+'">'+s.trim()+'</button>';}).join('');
+document.getElementById('samples').onclick=function(e){var b=e.target.closest('[data-s]');if(!b)return;demo.value=SAMPLES[+b.getAttribute('data-s')];demo._spRefresh&&demo._spRefresh();};
+var cw=document.getElementById('cw');cw.innerHTML=Object.keys(Spell.CHUNKS).map(function(w){return '<option>'+w+'</option>';}).join('');
+function showChunk(){var h=document.getElementById('chunkHost');document.getElementById('cwres').textContent='';Spell.chunks(h,{word:cw.value,onDone:function(r){document.getElementById('cwres').textContent='Done · misses: '+r.misses;}});}
+cw.onchange=showChunk;cw.value='collaborative';showChunk();
+document.getElementById('gal').innerHTML=Object.keys(Spell.PIC).map(function(w){return '<div>'+Spell.PIC[w]+w+'</div>';}).join('');
+</script>
+</body>
+</html>

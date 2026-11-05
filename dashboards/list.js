@@ -100,6 +100,7 @@ window.DASHBOARDS = [
 {url:'fables/dashboard.html',             name:'Fables',                        course:'101', group:'Grammar'},
 
 /* ---------- Unit ---------- */
+{url:'spell/',                    name:'Spelling helper \u2014 voice, writing tips, spelling in parts', course:'101', group:'Writing', note:'Preview of spell.js: hear Mateo and spelled names, try the barrow/borrow tips, spell long words in parts.'},
 {url:'launch-plus/dashboard.html',      name:'Launch Plus',                   course:'101', group:'Unit', note:'Every lesson and its six parts, plus the Record step.'},
 {url:'basics/dashboard.html',           name:'Daily Basics',                  course:'101', group:'Unit'},
 {url:'basics/print/',                   name:'Daily Basics \u2014 print & project', course:'101', group:'Unit', note:'Make a paper do-now sheet (12\u201340 questions, answer key) or put the whole set on the board. Same questions as the tap-through page.'},
