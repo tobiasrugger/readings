@@ -50,7 +50,9 @@ select.per:hover{border-color:var(--edge);background:#fff}
 #chgbody .asg{border:2px solid var(--ink);border-radius:10px;padding:10px 14px;margin:0 0 12px;break-inside:avoid}
 #chgbody .asg h4{margin:0 0 4px;font-size:1.05rem}
 #chgbody .asg h4 span{font-weight:400;color:var(--muted);font-size:.82rem;margin-left:6px}
-#chgbody .asg .cnt{font-size:.78rem;color:var(--muted);margin:0 0 8px}
+#chgbody .asg .cnt{font-size:.78rem;color:var(--muted);margin:0 0 8px;display:flex;align-items:center;gap:10px}
+#chgbody .asg .cnt .allbox{margin-left:auto;display:flex;align-items:center;gap:5px;cursor:pointer;font-weight:700;color:var(--pine)}
+#chgbody .asg .cnt .allbox input{width:17px;height:17px;accent-color:var(--pine);cursor:pointer}
 /* one line per student: tick box, name and mark big enough to read while typing */
 #chgbody .ln{display:flex;align-items:center;gap:12px;padding:7px 2px;border-bottom:1px solid var(--edge)}
 #chgbody .ln:last-child{border-bottom:0}
@@ -616,7 +618,8 @@ function renderChanged(){
     host.innerHTML=slugs.map(function(sl){
       var a=activities[sl]||{}, list=r.by[sl];
       return '<div class="asg"><h4>'+esc(a.title||sl)+(a.unit?'<span>'+esc(a.unit)+'</span>':'')+'</h4>'+
-        '<div class="cnt">'+list.length+' mark'+(list.length===1?'':'s')+' to type \u00b7 Synergy order</div>'+
+        '<div class="cnt">'+list.length+' mark'+(list.length===1?'':'s')+' to type \u00b7 Synergy order'+
+          '<label class="allbox noprint"><input type="checkbox" data-all="'+esc(sl)+'"> tick all</label></div>'+
         list.map(function(x){
           var cls=x.was==null?'new':(x.now>x.was?'up':'down');
           var key=tickKey(sl,x.st.email);
@@ -642,11 +645,35 @@ function renderChanged(){
     host.querySelectorAll('[data-cls]').forEach(function(b){ b.onclick=function(){ copyClassroom(b.dataset.cls,false); }; });
     host.querySelectorAll('[data-clsall]').forEach(function(b){ b.onclick=function(){ copyClassroom(b.dataset.clsall,true); }; });
     slugs.forEach(function(sl){ showSkipped(sl); });
+    /* tick all / untick all for one assignment, one server call per line */
+    host.querySelectorAll('[data-all]').forEach(function(box){
+      var sl=box.dataset.all;
+      var lines=[].slice.call(host.querySelectorAll('[data-slug="'+sl.replace(/"/g,'\\"')+'"]'));
+      var allOn=lines.length && lines.every(function(l){ return l.querySelector('input').checked; });
+      box.checked=allOn;
+      box.parentNode.lastChild.nodeValue = allOn ? ' untick all' : ' tick all';
+      box.onchange=function(){
+        var on=this.checked;
+        lines.forEach(function(l){
+          var cb=l.querySelector('input');
+          if(cb.checked===on) return;                 // already where we want it
+          cb.checked=on; l.classList.toggle('ticked',on);
+          setTick(l.dataset.slug, l.dataset.email, on);
+        });
+        box.parentNode.lastChild.nodeValue = on ? ' untick all' : ' tick all';
+      };
+    });
     /* a tick is saved on the server, so the other computer sees it too */
     host.querySelectorAll('[data-email]').forEach(function(l){
       l.querySelector('input').onchange=function(){
         l.classList.toggle('ticked',this.checked);
         setTick(l.dataset.slug, l.dataset.email, this.checked);
+        var box=host.querySelector('[data-all="'+l.dataset.slug.replace(/"/g,'\\"')+'"]');
+        if(box){
+          var lines=[].slice.call(host.querySelectorAll('[data-slug="'+l.dataset.slug.replace(/"/g,'\\"')+'"]'));
+          var on=lines.every(function(x){ return x.querySelector('input').checked; });
+          box.checked=on; box.parentNode.lastChild.nodeValue = on ? ' untick all' : ' tick all';
+        }
       };
     });
   }
