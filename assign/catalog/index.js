@@ -6,6 +6,7 @@
    when the same page is in both, the folder file wins. Load with a plain <script src> in <head> or body. */
 (function(){
   var FILES = [
+ "advice",
  "alphabet",
  "arrival",
  "basics",
