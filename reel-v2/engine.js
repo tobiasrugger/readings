@@ -18,7 +18,13 @@
   var me = { name: '', email: '', period: '' };
   var state = { level: 'A', lang: '', pos: 0, maxPos: 0, answers: {}, yt: { A: [], B: [], C: [] }, turned: false, secs: 0, slow: false, cc: true, done: false };
   var dirty = false;
-  function touch() { dirty = true; }
+  var soonT = null;
+  function touch() {
+    dirty = true;
+    /* T-293b (Nov 5): save within ~1.5 s of a change, not only on the 20 s timer (project rule T-240) */
+    if (soonT) clearTimeout(soonT);
+    soonT = setTimeout(function () { soonT = null; if (dirty && loaded && me.email) { dirty = false; save(); } }, 1500);
+  }
   /* ---- T-147 practice log (Oct 27 2026): saved inside state, so it rides the same reel_views upsert.
      log.w[word] = {say: listens, tr: translations}; replays; slow; secs = active seconds (counted only when
      there was a tap / key / playback in the last 60 s and the tab is visible); last = time of last activity. */
@@ -208,6 +214,7 @@
     $('line').innerHTML = h;
     $('line').classList.remove('peek');
     $('capTr').textContent = '';
+    rtLine();
   }
   function hl(i) {
     var spans = $('line').querySelectorAll('.w');
@@ -306,6 +313,7 @@
   /* ================= PLAYBACK ================= */
   function render(p, instant) {
     var st = STEPS[p], ln = st.ln;
+    if (ears && (p >= ears.to || st.si !== ears.si || p < ears.from)) earsEnd();
     $('qcard').style.display = 'none';
     if (st.si !== curScene || instant) {
       enterScene(st.si);
@@ -384,6 +392,129 @@
   }
   function firstStepOf(si) { for (var i = 0; i < STEPS.length; i++) if (STEPS[i].si === si) return i; return 0; }
 
+  /* ================= T-160 EARS-ONLY ================= */
+  /* Replays the lines just before a question with every word hidden (caption strip, speaker tag);
+     the camera and the picture still move. Ends by itself at the question. Logged as log.ears[S#]. */
+  var ears = null;
+  function earsStartOf(p) {
+    var si = STEPS[p].si, i = p - 1;
+    while (i >= 0 && STEPS[i].si === si && STEPS[i].ln.type !== 'q') i--;
+    return i + 1;
+  }
+  function earsStart(from, to) {
+    var si = STEPS[to].si, L = LOG(), k = 'S' + (si + 1);
+    L.ears = L.ears || {}; L.ears[k] = (L.ears[k] || 0) + 1; active(); touch();
+    $('qcard').style.display = 'none';
+    ears = { from: from, to: to, si: si };
+    document.body.classList.add('ears');
+    setPlaying(true);
+    pos = from; render(pos, true);
+    speakStep(function () { if (playing) advanceLater(); });
+  }
+  function earsEnd() { ears = null; document.body.classList.remove('ears'); }
+
+  /* ================= T-157 READ IT TO MR. TOBY ================= */
+  /* Level A and B: the student reads one caption line aloud in their home language. The line is shown
+     translated, with romanization underneath when the language uses another script, so Mr. Toby can follow
+     by ear. The voice goes to fluency-recordings/reel/<episode>/<line>/; the record lives in state.rt
+     (same reel_views row, no new table). Questions and the teaser lines are left out. */
+  var RT_BUCKET = 'fluency-recordings', rtRec = null, rtCache = {};
+  var RT_GOOG = { ary: 'ar' };
+  function rtKey() { var st = STEPS[pos]; return 's' + (st.si + 1) + 'l' + (st.li + 1); }
+  function rtTeaser(ln) {
+    if (ln.teaser) return true;
+    var re = EP.tiers && EP.tiers.summary && EP.tiers.summary.teaser;
+    return !!(re && re.test && re.test(txt(ln)) && STEPS[pos].si === EP.scenes.length - 1);
+  }
+  function rtOk() {
+    var ln = STEPS[pos] && STEPS[pos].ln;
+    return !!(ln && ln.type !== 'q' && (state.level === 'A' || state.level === 'B') && me.email &&
+              state.lang && !/^en/.test(state.lang) && !rtTeaser(ln));
+  }
+  function rtLine() {
+    var b = $('rtBtn'); if (!b) return;
+    b.style.display = rtOk() ? '' : 'none';
+    var box = $('rtBox'); if (box) { box.style.display = 'none'; box.innerHTML = ''; }
+    if (rtRec) rtRec.stop(true);
+    var r = (state.rt || {})[rtKey()]; b.classList.toggle('done', !!(r && r.audio));
+  }
+  function gtx(q, tl) {
+    var u = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=' + encodeURIComponent(tl) + '&dt=t&dt=rm&q=' + encodeURIComponent(q);
+    return fetch(u).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }).then(function (d) {
+      var o = { tr: '', rom: '' };
+      (d && d[0] || []).forEach(function (x) { if (!x) return; if (typeof x[0] === 'string') o.tr += x[0]; if (x[2] && typeof x[2] === 'string') o.rom += x[2]; });
+      return o;
+    });
+  }
+  function rtTranslate(text, lang, cb) {
+    var k = lang + '|' + text; if (rtCache[k]) { cb(rtCache[k]); return; }
+    gtx(text, RT_GOOG[lang] || lang).then(function (o) {
+      if (!o.tr) throw new Error('empty');
+      if (o.rom && o.rom.replace(/\s/g, '') === o.tr.replace(/\s/g, '')) o.rom = '';   /* same script: no romanization */
+      rtCache[k] = o; cb(o);
+    }).catch(function () {
+      translate(text, lang, function (v) { var o = { tr: v || '', rom: '' }; if (v) rtCache[k] = o; cb(o); }, '', 'line');
+    });
+  }
+  function rtOpen() {
+    if (!rtOk()) return;
+    var box = $('rtBox'), ln = STEPS[pos].ln, en = txt(ln), key = rtKey(), lang = state.lang;
+    if (box.style.display === 'block') { box.style.display = 'none'; return; }
+    setPlaying(false); stopSpeech(); setTalking(null);
+    box.style.display = 'block';
+    box.innerHTML = '<p class="rthead" translate="yes">🎤 Read it to Mr. Toby — read this line out loud in your language.</p>' +
+      '<p class="rttr" id="rtTr" translate="no">Translating…</p><p class="rtrom" id="rtRom" translate="no"></p>' +
+      '<div class="rtrow"><button class="go" id="rtGo" translate="yes" disabled>🎤 Record</button>' +
+      '<button class="go alt" id="rtPlay" translate="yes" style="display:none">▶ Hear mine</button>' +
+      '<span class="rtmsg" id="rtMsg" translate="yes"></span></div>';
+    showDirections(box);
+    var have = (state.rt || {})[key];
+    if (have && have.audio && have.lang === lang) { $('rtPlay').style.display = ''; $('rtMsg').textContent = '✓ Mr. Toby has this one. You can record again.'; }
+    rtTranslate(en, lang, function (o) {
+      if (key !== rtKey() || box.style.display !== 'block') return;
+      $('rtTr').textContent = o.tr || 'The translator is busy. Read the English line in your language your own way.';
+      $('rtRom').textContent = o.rom || '';
+      box.setAttribute('data-tr', o.tr || ''); box.setAttribute('data-rom', o.rom || '');
+      $('rtGo').disabled = false;
+    });
+    $('rtGo').addEventListener('click', function () { if (rtRec) rtRec.stop(); else rtRecord(key, en, lang); });
+    $('rtPlay').addEventListener('click', function () { rtPlay((state.rt || {})[key]); });
+  }
+  function rtRecord(key, en, lang) {
+    var btn = $('rtGo'), msg = $('rtMsg');
+    if (!navigator.mediaDevices || !window.MediaRecorder) { msg.textContent = 'This computer can’t record. Read it to Mr. Toby in person.'; return; }
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+      var chunks = [], mr = new MediaRecorder(stream), t0 = Date.now(), cancelled = false;
+      var timer = setTimeout(function () { if (rtRec) rtRec.stop(); }, 30000);
+      mr.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
+      mr.onstop = function () {
+        clearTimeout(timer); stream.getTracks().forEach(function (t) { t.stop(); });
+        rtRec = null; if (!$('rtGo')) return;
+        $('rtGo').textContent = '🎤 Record again'; $('rtGo').classList.remove('rec');
+        if (cancelled || !chunks.length) return;
+        var blob = new Blob(chunks, { type: 'audio/webm' }), box = $('rtBox');
+        var R = (state.rt || (state.rt = {}));
+        var rec = R[key] = { lang: lang, en: en, tr: box.getAttribute('data-tr') || '', rom: box.getAttribute('data-rom') || '',
+                             secs: Math.round((Date.now() - t0) / 100) / 10, at: new Date().toISOString(), audio: (R[key] && R[key].audio) || '' };
+        rec.localUrl = URL.createObjectURL(blob);
+        $('rtPlay').style.display = ''; $('rtMsg').textContent = 'Sending…';
+        var path = 'reel/' + EP.id + '/' + key + '/' + localPart(me.email).replace(/[^a-z0-9]/g, '_') + '_' + Date.now() + '.webm';
+        fetch(SUPA_URL + '/storage/v1/object/' + RT_BUCKET + '/' + path, { method: 'POST',
+          headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY, 'Content-Type': 'audio/webm' }, body: blob })
+          .then(function (r) { if (!r.ok) throw new Error(r.status); rec.audio = path; if ($('rtMsg')) $('rtMsg').textContent = '✓ Sent to Mr. Toby!'; $('rtBtn').classList.add('done'); active(); touch(); })
+          .catch(function () { if ($('rtMsg')) $('rtMsg').textContent = 'Your voice didn’t upload. Try again in a minute.'; touch(); });
+      };
+      mr.start();
+      btn.textContent = '■ Stop'; btn.classList.add('rec'); msg.textContent = 'Recording… read the line now.';
+      rtRec = { stop: function (cancel) { cancelled = !!cancel; try { if (mr.state !== 'inactive') mr.stop(); } catch (e) {} } };
+    }).catch(function () { msg.textContent = 'The microphone is blocked. Click the 🎤 in the address bar and choose Allow.'; });
+  }
+  function rtPlay(r) {
+    if (!r) return;
+    var src = r.localUrl || (r.audio ? SUPA_URL + '/storage/v1/object/public/' + RT_BUCKET + '/' + r.audio : '');
+    if (src) new Audio(src).play().catch(function () {});
+  }
+
   /* ================= QUESTIONS ================= */
   var answeredNow = false;
   function showQ(ln) {
@@ -418,7 +549,16 @@
     ord.forEach(function (i) { h += '<button class="qopt" data-i="' + i + '" translate="no">' + esc(opts[i]) + '</button>'; });
     h += '</div>';
     h += '<div class="qfoot"><span class="qmsg" id="qmsg" translate="yes"></span><button class="go" id="qgo" style="display:none" translate="yes">Keep watching</button></div>';
+    /* T-160: 🎧 hear this part again with no words on screen, before answering (optional, never blocks) */
+    var earsFrom = earsStartOf(pos);
+    if (ln.kind === 'check' && earsFrom < pos) {
+      var offer = state.level === 'A' && !((state.earsOff || {})[ln.id]);
+      h += '<div class="earsrow"><button class="go earsbtn' + (offer ? ' pulse' : '') + '" id="earsBtn" translate="yes">🎧 Listen again — no words</button>' +
+           '<span class="earshint" translate="yes">Just listen. Then answer.</span></div>';
+      if (offer) { (state.earsOff || (state.earsOff = {}))[ln.id] = 1; }
+    }
     box.innerHTML = h; box.style.display = 'block';
+    if ($('earsBtn')) $('earsBtn').addEventListener('click', function () { earsStart(earsFrom, pos); });
     box.querySelectorAll('.qw').forEach(function (w) { w.addEventListener('click', function (e) { e.stopPropagation(); wordPop(w, txt(q)); }); });
     showDirections(box);
     var rec = state.answers[ln.id];
@@ -826,8 +966,22 @@
     var lineOk = state.level === 'A';
     $('trBtn').style.display = lineOk ? '' : 'none';
     if (!lineOk) $('capTr').textContent = '';
+    if (STEPS[pos]) rtLine();   /* T-157: 🎤 only on Level A/B with a home language */
+  }
+  function rtWire() {
+    if ($('rtBtn')) return;
+    var b = document.createElement('button');
+    b.className = 'icon rtbtn'; b.id = 'rtBtn'; b.title = 'Read it to Mr. Toby'; b.setAttribute('aria-label', 'Read it to Mr. Toby');
+    b.textContent = '🎤'; b.style.display = 'none';
+    var cb = document.querySelector('.capbtns'); if (cb) cb.appendChild(b);
+    var box = document.createElement('div'); box.id = 'rtBox'; box.className = 'rtbox'; box.style.display = 'none';
+    $('cap').appendChild(box);
+    var note = document.createElement('div'); note.id = 'earsNote'; note.setAttribute('translate', 'yes');
+    note.textContent = '🎧 Just listen…'; $('cap').appendChild(note);
+    b.addEventListener('click', rtOpen);
   }
   function wire() {
+    rtWire();
     $('playBtn').addEventListener('click', togglePlay);
     $('bigPlay').addEventListener('click', function () { start(false); });
     $('again').addEventListener('click', function () { start(true); });
