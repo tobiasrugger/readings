@@ -507,7 +507,7 @@ function loadFailed(){
 }
 setInterval(function(){ if(dirty && loaded){ dirty=false; save(); } }, 2500);
 document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='hidden' && dirty && loaded){ dirty=false; save(); } });
-function touch(){ dirty = true; }
+function touch(){ dirty = true; try{ scoreSummary(); }catch(e){} }
 
 $('turnin').addEventListener('click', function(){
   if(!loaded){ alert('The page can\u2019t reach the server yet. Wait a moment, then press Turn in again.'); return; }
@@ -1449,7 +1449,9 @@ function buildSpell(){
       try{
         var host=document.createElement('div'); host.className='spchunks'; host.setAttribute('data-a', a);
         inp.parentNode.replaceChild(host, inp);
-        window.Spell.chunks(host, {word:a, value:state.spell[a]||'', onInput:function(v){ state.spell[a]=v; touch(); }});
+        window.Spell.chunks(host, {word:a, value:state.spell[a]||'', onInput:function(v){ state.spell[a]=v; touch(); },
+          /* T-296: after 3 misses spell.js shows the part; full point either way (Toby), "shown" is for the Teacher tab only */
+          onDone:function(r){ if(r && r.shown){ state.spellShown=state.spellShown||{}; state.spellShown[a]=true; } touch(); }});
         return;
       }catch(e){ if(host && host.parentNode) host.parentNode.replaceChild(inp, host); }
     }
@@ -1508,7 +1510,14 @@ function scoreSummary(){
   s.spell = SET.words.filter(function(w){ return (state.spell[w.w]||'').trim().toLowerCase()===w.w.toLowerCase(); }).length;
   s.say = SET.words.filter(function(w){ return (state.say[w.w]||0) >= 3; }).length;
   s.grammar = SET.gram.filter(function(g,i){ return state.gram[i]===g.a; }).length;
+  s.spell_shown = Object.keys(state.spellShown||{}).length;   /* T-296 */
   s.total_words = SET.words.length;
+  /* T-296: the gradebook score, set before every save (project rule). Before this the page had no
+     GAL_SCORE, so track.js counted filled-in boxes, and Level 2's letter boxes (T-287) would have
+     swamped that count. Every item solved counts 1, on any try; crossword letters stay out (extra). */
+  var wsMax = (typeof WS !== 'undefined' && WS && WS.placed) ? WS.placed.length : SET.words.length;
+  window.GAL_MAX = SET.words.length * 5 + wsMax + SET.fix.length + SET.gram.length;
+  window.GAL_SCORE = Math.min(window.GAL_MAX, s.match + Math.min(s.wordsearch, wsMax) + s.mc + s.cloze + s.say + s.fix + s.grammar + s.spell);
   return s;
 }
 function restore(){
@@ -1570,7 +1579,7 @@ function tLoad(){
       var s=r.scores||{};
       h+='<tr><td>'+esc(r.student_name||r.email)+'</td><td>'+esc(r.period||'')+'</td>'
         +'<td>'+(s.match||0)+'</td><td>'+(s.wordsearch||0)+'</td><td>'+(s.mc||0)+'</td>'
-        +'<td>'+(s.cloze||0)+'</td><td>'+(s.say||0)+'</td><td>'+(s.fix||0)+'</td><td>'+(s.grammar||0)+'</td><td>'+(s.spell||0)+'</td>'
+        +'<td>'+(s.cloze||0)+'</td><td>'+(s.say||0)+'</td><td>'+(s.fix||0)+'</td><td>'+(s.grammar||0)+'</td><td>'+(s.spell||0)+(s.spell_shown?' <span title="answer shown after 3 misses" style="color:#8a6200">('+s.spell_shown+' shown)</span>':'')+'</td>'
         +'<td>'+(r.turned_in?'yes':'')+'</td>'
         +'<td>'+trCell(r.email)+'</td></tr>';
     });
