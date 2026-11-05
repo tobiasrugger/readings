@@ -58,6 +58,8 @@ details.grp.checks{border-color:var(--lab);background:var(--lab-soft)}
 button.tag{cursor:pointer;font-family:inherit}
 .tag.c101{background:var(--pine-soft);color:var(--pine);border-color:var(--pine)}
 .tag.c103{background:#fff1bf;color:#6d4a00;border-color:#c9a23a}
+.tag.rep{display:inline-flex;align-items:center;gap:3px;background:#dff4f1;color:#0d5e56;border-color:#0d5e56;font-size:.74rem}
+.tag.rep svg{flex:0 0 auto}
 .tag.teach{background:#e6eefc;color:#23407a;border-color:#7d97c9}
 .check{margin-top:6px;font-size:.82rem;background:var(--lab-soft);border:1.5px solid var(--lab);border-radius:8px;padding:5px 8px;line-height:1.35}
 .check b{color:var(--lab)}
@@ -105,12 +107,13 @@ footer{color:var(--muted);font-size:.78rem;text-align:center;padding:18px;line-h
 
   <div id="app" style="display:none">
     <div id="err"></div>
-    <div class="how">Every page starts in <b style="color:var(--lab)">🧪 Lab</b>. Used it with a class? Move it to <b style="color:var(--try)">🔧 Trying</b>. It worked and you'd hand it to a sub? <b style="color:var(--ready)">✅ Ready</b>. Done with an old version? <b style="color:#5b5348">📦 Retire</b> puts it away at the bottom. Purple boxes are things to watch for the first time you use that page — not homework.</div>
+    <div class="how">Every page starts in <b style="color:var(--lab)">🧪 Lab</b>. Used it with a class? Move it to <b style="color:var(--try)">🔧 Trying</b>. It worked and you'd hand it to a sub? <b style="color:var(--ready)">✅ Ready</b>. <b style="color:#0d5e56">♻ repeatable</b> = it makes fresh work every time, so it's always safe to grab. Done with an old version? <b style="color:#5b5348">📦 Retire</b> puts it away at the bottom. Purple boxes are things to watch for the first time you use that page — not homework.</div>
     <div class="bar">
       <input id="q" placeholder="Search — a story, a lesson, a page…" autocomplete="off">
       <button data-c="" class="on">All</button>
       <button data-c="101">ELD 101</button>
       <button data-c="103">ELD 103</button>
+      <button id="repf" title="Show only pages that make fresh work every time">♻ Repeatable only</button>
       <button id="tchr" title="Show or hide teacher pages">Teacher pages: on</button>
     </div>
     <div class="cols">
@@ -230,6 +233,16 @@ var DEFAULT_SHELF={
  '/readings/landlady-easy/':'retired',
  '/readings/landlady-hard/':'retired'
 };
+/* T-229: GENERATORS only — pages that make fresh work every time (a new article each week,
+   12 new items a day, any passage, any deck). Not fixed pages, not single articles. */
+var REPEATABLE={
+ '/readings/news/':'A new article every week.',
+ '/readings/basics/':'12 new items every day.',
+ '/readings/fluency/':'Any passage, any week.',
+ '/readings/group/':'Any deck, any question set.'
+};
+var REP_ONLY=false;
+var REP_SVG='<svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 0 1-13.7 5.6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M4 12a8 8 0 0 1 13.7-5.6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M18.5 2.5v4.6h-4.6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 21.5v-4.6h4.6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 var STATE={}, LOADED=false, COURSE='', Q='', SHOW_T=true, OPEN={};
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 
@@ -265,7 +278,7 @@ function card(it){
   var w=STATE[it.p]&&STATE[it.p].updated_at?'<span class="when">moved '+new Date(STATE[it.p].updated_at).toLocaleDateString()+'</span>':'';
   return '<div class="card'+(s==='retired'?' ret':'')+'" data-p="'+esc(it.p)+'"><a class="t" target="_blank" rel="noopener" href="'+esc(href(it))+'">'+esc(it.t)+'</a>'+
     '<div class="meta"><button class="tag '+cl+'" data-course title="Tap to change course">'+lab+'</button>'+
-    (it.teach?'<span class="tag teach">teacher</span>':'')+
+    (REPEATABLE[it.p]?'<span class="tag rep" title="'+esc(REPEATABLE[it.p])+'">'+REP_SVG+'repeatable</span>':'')+(it.teach?'<span class="tag teach">teacher</span>':'')+
     (s!=='lab'&&s!=='retired'?'<span class="tag">'+esc(it.g)+'</span>':'')+w+'</div>'+
     (ck&&s!=='retired'?'<div class="check"><b>'+(s==='lab'?'\ud83e\uddea Watch for':'Was')+' '+ck.c+':</b> '+esc(ck.n)+'</div>':'')+
     '<div class="moves">'+mv+'</div></div>';
@@ -274,6 +287,7 @@ function card(it){
 function render(){
   var all=items().filter(function(it){
     if(!SHOW_T && it.teach) return false;
+    if(REP_ONLY && !REPEATABLE[it.p]) return false;
     var c=courseOf(it); if(COURSE && c!==COURSE && c!=='both') return false;
     if(Q){var h=(it.t+' '+it.p+' '+it.g+' '+(CHECKS[it.p]?CHECKS[it.p].c+' '+CHECKS[it.p].n:'')).toLowerCase(); if(h.indexOf(Q)<0) return false;}
     return true;
@@ -296,7 +310,7 @@ function render(){
   var groups={}, order=[];
   by.lab.forEach(function(it){ if(!groups[it.g]){groups[it.g]=[];order.push(it.g);} groups[it.g].push(it); });
   order.sort(function(a,b){var ta=/^Teacher/.test(a),tb=/^Teacher/.test(b); if(ta!==tb)return ta?1:-1; return groups[a][0].o-groups[b][0].o;});
-  var open=function(k){return (Q||OPEN[k])?' open':'';};
+  var open=function(k){return (Q||REP_ONLY||OPEN[k])?' open':'';};
   var html='';
   if(withC.length) html+='<details class="grp checks" data-k="__checks"'+open('__checks')+'><summary>\ud83e\uddea Things to watch the first time you use them<span class="c">'+withC.length+'</span></summary><div class="in">'+withC.map(card).join('')+'</div></details>';
   html+=order.map(function(g){return '<details class="grp" data-k="'+esc(g)+'"'+open(g)+'><summary>'+esc(g)+'<span class="c">'+groups[g].length+'</span></summary><div class="in">'+groups[g].map(card).join('')+'</div></details>';}).join('');
@@ -336,6 +350,7 @@ document.addEventListener('toggle',function(e){var d=e.target; if(d.classList&&d
 document.getElementById('q').addEventListener('input',function(){Q=this.value.trim().toLowerCase();render();});
 document.querySelectorAll('.bar [data-c]').forEach(function(b){b.onclick=function(){COURSE=b.dataset.c;
   document.querySelectorAll('.bar [data-c]').forEach(function(x){x.classList.toggle('on',x===b);});render();};});
+document.getElementById('repf').onclick=function(){REP_ONLY=!REP_ONLY;this.classList.toggle('on',REP_ONLY);render();};
 document.getElementById('tchr').onclick=function(){SHOW_T=!SHOW_T;this.textContent='Teacher pages: '+(SHOW_T?'on':'off');this.classList.toggle('on',!SHOW_T);render();};
 
 function open_(){document.getElementById('gate').style.display='none';document.getElementById('app').style.display='block';
