@@ -145,6 +145,7 @@ body.proj #projbar{display:flex}
    so this sheet can never drift from the tap-through activity.
    ============================================================ */
 var DATA=null, ITEMS=[], ST={A:{},email:'print'}, RND=Math.random, LESSON='', TODAY='';
+var FOCUS='', LEVEL='A', fragQ=null; /* T-275: names the live buildItems() uses (T-270 fragQ, T-274 FOCUS, T-275 LEVEL); the sheet is always Level A */
 var SRC_OK=false;
 
 function seed(str){var h=2166136261;for(var i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619);}
@@ -168,6 +169,7 @@ function loadSource(cb){
    /* jshint evil:true */
    (0,eval)(dataSrc);                       /* defines DATA */
    buildItems=(0,eval)('('+fnSrc+')');      /* the live question-maker */
+   var fqSrc=grab(src,/function fragQ\(f\)\{/,'\n}'); if(fqSrc) fragQ=(0,eval)('('+fqSrc+')');  /* T-275: sentence-or-fragment maker */
    SRC_OK=!!(DATA&&DATA.people&&DATA.where&&buildItems);
    cb(SRC_OK);
   }catch(e){console.error(e);cb(false);}
@@ -181,7 +183,7 @@ function makeQuestions(n,lesson){
  while(out.length<n && guard++<60){
   TODAY='sheet-'+guard+'-'+Math.random();
   ST.email='sheet'+guard;
-  ITEMS=[];
+  ITEMS=[];ST.items=null;ST.lesson=null;   /* T-275: a fresh set every run (buildItems keeps a saved set) */
   buildItems();
   ITEMS.forEach(function(it){
    var key=it.q;
@@ -196,7 +198,7 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');}
 function qHTML(it,i){
  var showOpts=document.getElementById('showOpts').checked;
  var showPics=document.getElementById('showPics').checked;
- var txt=esc(it.q).replace('___','<span class="blank"></span>');
+ var txt=esc(String(it.q).replace(/<button[^>]*>[\s\S]*?<\/button>/g,'').replace(/<\/div>/g,' \u2014 ').replace(/<[^>]+>/g,'').replace(/\s*\u2014\s*$/,'')).replace('___','<span class="blank"></span>'); /* T-275: sentence-or-fragment questions carry HTML */
  var h='<div class="q">';
  if(showPics&&it.pic)h+='<div class="pic">'+it.pic+'</div>';
  h+='<div class="txt"><span class="n">'+(i+1)+'</span>'+txt+'</div>';

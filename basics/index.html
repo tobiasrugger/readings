@@ -109,12 +109,25 @@ textarea:focus{border-color:var(--moss);outline:none}
 #whobar b{color:var(--pine)}
 .notme{font-family:inherit;font-size:.86rem;font-weight:800;color:#fff;background:var(--pine2);border:0;border-radius:8px;padding:4px 10px;cursor:pointer}
 .nextbox{border:2px solid #8aa094}
+#qItems .card{border:2px solid #1b4332;box-shadow:0 3px 0 rgba(27,67,50,.15)}
+.lvlbar{display:flex;gap:8px;align-items:stretch;flex-wrap:wrap;margin:0 0 12px;padding:8px;border:2px solid #1b4332;border-radius:12px;background:#fff;box-shadow:0 3px 0 rgba(27,67,50,.2)}
+.lvlbar:empty{display:none}
+.lvlt{font-weight:800;color:var(--pine);align-self:center;margin-right:2px}
+.lvl{font-family:inherit;cursor:pointer;border:2px solid #8aa094;background:#f6f8f5;border-radius:10px;padding:5px 12px;display:flex;align-items:center;gap:8px;color:var(--ink)}
+.lvl b{font-size:1.3rem;line-height:1}.lvl small{font-size:.78rem;font-weight:700;color:var(--muted)}.lvl i{font-style:normal;font-weight:800;color:var(--pine)}
+.lvl.cur{background:var(--pine2);border-color:var(--pine);color:#fff}.lvl.cur small,.lvl.cur i{color:#e9f6ee}
+.lvl.done{border-color:var(--moss)}.lvl.half{border-style:dashed}
+textarea.wr{margin:6px 0}
+.pic svg{font-size:1rem}
 .nextbox .btn{text-decoration:none;display:inline-block}
 </style>
 <script>
 window.GAL_META={title:'Daily Basics',unit:'Basics',skills:['PRON.SUBJ','SENT.BE','PLACE','VOC.CTX','SENT.FRAG','CONJ.BBS']};
 </script>
+<script>/* T-275: one gradebook column per day (the daily grade), not one "basics" column forever */
+(function(){var d=new Date(),k=d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);window.GAL_SLUG_KEEP='basics/'+k;window.GAL_META.title='Daily Basics '+(d.getMonth()+1)+'/'+d.getDate();})();</script>
 <script src="/readings/wit/items.js"></script>
+<script src="/readings/basics/levels.js"></script>
 </head>
 <body>
 <div id="canary" aria-hidden="true">the quick brown fox jumps over the lazy dog</div>
@@ -138,6 +151,7 @@ window.GAL_META={title:'Daily Basics',unit:'Basics',skills:['PRON.SUBJ','SENT.BE
 <div id="srvBar" role="alert" data-dir="srv" data-en="Can't reach the server. Your work is NOT saving. Check the internet, then reload the page.">Can't reach the server. Your work is NOT saving. Check the internet, then reload the page.</div>
 <div class="steps" id="steps"></div>
 <div id="whobar"></div>
+<div id="lvlbar" class="lvlbar" translate="no"></div>
 
 <section class="act" id="a0">
   <h1>Daily Basics</h1>
@@ -145,6 +159,7 @@ window.GAL_META={title:'Daily Basics',unit:'Basics',skills:['PRON.SUBJ','SENT.BE
   <div class="card">
     <p class="dir" data-dir="d1" data-en="Twelve quick questions. Every day they are different. Tap the answer.">Twelve quick questions. Every day they are different. Tap the answer.</p>
     <p class="dir" data-dir="d2" data-en="He = one man. She = one woman. They = two or more. It = a thing. I am, you are, he is, she is, it is, we are, they are.">He = one man. She = one woman. They = two or more. It = a thing. <b>I am</b>, <b>you are</b>, <b>he is</b>, <b>she is</b>, <b>it is</b>, <b>we are</b>, <b>they are</b>.</p>
+    <p class="dir" data-dir="lv" data-en="Choose a level at the top: A = start here, B = harder, C = challenge. You can do more than one level every day.">Choose a level at the top: <b>A</b> = start here, <b>B</b> = harder, <b>C</b> = challenge. You can do more than one level every day.</p>
     <div class="rule" id="streak"></div>
   </div>
   <button class="btn" onclick="go(1)">Start</button>
@@ -241,13 +256,14 @@ var DATA={
 var LESSON=(new URLSearchParams(location.search).get('lesson')||'');
 /* T-274: ?focus=frag = a heavier sentence-or-fragment day: 4 of them (2 sentences + 2 fragments) instead of 2, one fewer "who?" and one fewer "where?" — still 12. Only shapes a day's FIRST build (today's set is saved all day). */
 var FOCUS=(new URLSearchParams(location.search).get('focus')||'').toLowerCase();
+var LEVEL='A',URL_LEVEL=(function(){var l=(new URLSearchParams(location.search).get('level')||'').toUpperCase();return /^[ABC]$/.test(l)?l:'';})();
 
 var ST={name:'',email:'',period:'',act:0,A:{},W:{},turnedIn:null,browserTranslated:false,items:null,lesson:null};
 /* T-263: today's work comes from the SERVER (table basics, row email+unit=today). The 12 questions
    (with their shuffled answers) are saved inside the row, so the same page shows the same questions
    all day — from My Page, from a lesson link, on another Chromebook. Nothing student-made lives in
    localStorage any more. LOADED stays false until the row has been read; nothing saves before that. */
-var LOADED=false,ROW_EMAIL='',DAYS=[];
+var LOADED=false,ROW_EMAIL='',DAYS=[],LOADED_ONCE=false;
 function $(i){return document.getElementById(i);}
 function clean(s){return String(s||'').trim().toLowerCase();}
 function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
@@ -262,10 +278,11 @@ function byTag(list){if(!LESSON)return list;var m=list.filter(function(x){return
 function buildItems(){
  if(ST.items&&ST.items.length){ITEMS=ST.items;ST.tags={};ITEMS.forEach(function(it){ST.tags[it.id]=it.tag;});return;}
  if(ST.lesson==null)ST.lesson=LESSON; var LESSON_=LESSON; LESSON=ST.lesson;
- ITEMS=[];RND=seed((ST.email||'anon')+'|'+TODAY+'|'+LESSON);
+ ITEMS=[];RND=seed((ST.email||'anon')+'|'+TODAY+'|'+LESSON+(LEVEL==='A'?'':'|'+LEVEL));
  function pri(list){if(!LESSON)return sh(list);return sh(list.filter(function(x){return x.t===LESSON;})).concat(sh(list.filter(function(x){return x.t!==LESSON;})));}
  var ppl=pri(DATA.people),thg=pri(DATA.things),whr=pri(DATA.where),be=sh(DATA.be);
  var qs=[];
+ if(LEVEL!=='A'){qs=buildLevel(LEVEL,pri,/^frag/.test(FOCUS)?2:1);}else{
  /* 3 × who? */
  var who=ppl.slice(0,2).map(function(p){var pl=RND()<0.35;var n=p.n;if(pl){var p2=ppl.filter(function(x){return x.n===p.n&&x!==p;})[0];return {pic:p.e+(p2?' '+p2.e:' '+p.e),q:'___ are '+plural(n)+'.',o:['He','She','They','It'],a:'They'};}
    return {pic:p.e,q:'___ is '+art(n)+' '+n+'.',o:['He','She','They','It'],a:p.g==='f'?'She':'He'};});
@@ -284,12 +301,14 @@ function buildItems(){
    .concat(bb.slice(0,1).map(function(b){return {pic:'🔗',q:b.s,o:['because','but','so'],a:b.a,k:'CONJ.BBS'};}));}
  if(/^frag/.test(FOCUS)){who=who.slice(1);whs=whs.slice(0,2);}
  qs=sh(who.map(function(x){x.k='PRON.SUBJ';return x;})).concat(sh(bes.map(function(x){x.k='SENT.BE';return x;}))).concat(sh(whs.map(function(x){x.k='PLACE';return x;}))).concat(sents);
+ }
  qs=sh(qs);
  var run=0,lastA=-1;
  qs.forEach(function(x,i){var o=sh(x.o),a=o.indexOf(x.a),g=0;
   while(run>=3&&a===lastA&&g<12){o=sh(x.o);a=o.indexOf(x.a);g++;}
-  run=(a===lastA)?run+1:1;lastA=a;
-  var it={id:'q'+i,part:1,tag:x.k,pic:x.pic,q:x.q,o:o,a:a,why:x.why||x.q.replace('___','<b>'+x.a+'</b>')};
+  if(!x.w){run=(a===lastA)?run+1:1;lastA=a;}
+  var it={id:'q'+i,part:1,tag:x.k,pic:x.pic,q:x.q,o:o,a:a,why:x.why||x.q.replace('___','<b>'+x.a+'</b>'),lv:LEVEL};
+  if(x.w){it.w=1;it.a=-1;it.why='';}
   if(x.oh){it.oh=o.map(function(t){return x.oh[t]||'';});it.rs=1;}
   ITEMS.push(it);});
  ST.tags={};ITEMS.forEach(function(it){ST.tags[it.id]=it.tag;});
@@ -330,7 +349,105 @@ function fragQ(f){
  return {pic:'\u270f\ufe0f',q:'<div class="fragq">Sentence or fragment? Why?</div><div class="fragbox"><span>'+f.s+'</span><button class="spk" onclick="speak(this.previousSibling.textContent)" aria-label="Listen">\ud83d\udd0a</button></div>',
   o:[correct].concat(c),a:correct,k:'SENT.FRAG',why:why,oh:oh};
 }
-function speak(t){try{var u=new SpeechSynthesisUtterance(String(t).replace(/\bI\b/g,'eye').replace(/^i\b/,'eye'));u.lang='en-US';u.rate=0.85;speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){}}
+function speak(t){try{var u=new SpeechSynthesisUtterance(String(t).replace(/_{2,}/g,' blank ').replace(/\bI\b/g,'eye').replace(/^i\b/,'eye'));u.lang='en-US';u.rate=0.85;speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){}}
+/* ===================== T-275 · LEVELS A / B / C ===================== */
+/* Three separate sets a day. A = rows unit DATE, B = DATE-B, C = DATE-C (same basics table, upsert on email+unit).
+   The gradebook gets ONE number a day (slug basics/DATE via GAL_SLUG_KEEP): the average of the sets the
+   student FINISHED (out of 12); if none is finished yet, the best partial set. A started-but-unfinished set never
+   pulls the day down. The Basics dashboard shows each level with its first-try score. */
+var LEVELS=['A','B','C'],LEVEL_NAMES={A:'Start here',B:'Harder',C:'Challenge'};
+var SETS={};            /* today's other sets: {A:{n,solved,first}} from the server (+ what this tab did) */
+function setUnit(l){LEVEL=l;UNIT=TODAY+(l==='A'?'':'-'+l);SLUG='basics/'+UNIT;}
+function levelOfUnit(u){var m=String(u||'').match(/-([ABC])$/);return m?m[1]:'A';}
+function dayOfUnit(u){return String(u||'').replace(/-[ABC]$/,'');}
+function sumRow(r){var p=(r&&r.payload)||{},A=p.A||{},its=p.items||[],n=its.length||12,s=0,f=0;
+ Object.keys(A).forEach(function(k){if(A[k]&&A[k].done){s++;if(A[k].first)f++;}});return {n:n,solved:Math.min(s,n),first:f};}
+function liveSum(){return {n:ITEMS.length||12,solved:solved(),first:firstTry()};}
+function allSets(){var o={};LEVELS.forEach(function(l){var s=(l===LEVEL&&LOADED&&ITEMS.length)?liveSum():SETS[l];if(s)o[l]=s;});return o;}
+function dailyGrade(){var S=allSets(),fin=[],best=0;Object.keys(S).forEach(function(l){var s=S[l],v=12*s.solved/(s.n||12);if(s.solved>=s.n)fin.push(v);if(v>best)best=v;});
+ var g=fin.length?fin.reduce(function(a,b){return a+b;},0)/fin.length:best;return Math.round(g*10)/10;}
+function lvlState(l){var s=allSets()[l];if(!s||!s.solved)return '';return s.solved>=s.n?'done':'half';}
+function drawLevels(){var h=$('lvlbar');if(!h)return;
+ h.innerHTML='<span class="lvlt">Level</span>'+LEVELS.map(function(l){var st=lvlState(l);
+  return '<button class="lvl'+(l===LEVEL?' cur':'')+(st?' '+st:'')+'" onclick="switchLevel(\''+l+'\')" aria-pressed="'+(l===LEVEL)+'"><b>'+l+'</b><small>'+LEVEL_NAMES[l]+'</small><i>'+(st==='done'?'\u2713':st==='half'?'\u25D0':'')+'</i></button>';}).join('');}
+var SWITCHING=false;
+function switchLevel(l){if(l===LEVEL||SWITCHING)return;if(!ST.email||!LOADED){setUnit(l);drawLevels();return;}
+ SWITCHING=true;SETS[LEVEL]=liveSum();clearTimeout(saveT);dirty=true;push(true);
+ (function wait(n){if(pushing&&n<60){setTimeout(function(){wait(n+1);},250);return;}
+  setUnit(l);ST.A={};ST.W={};ST.items=null;ST.lesson=null;ST.turnedIn=null;ST.act=0;ITEMS=[];
+  try{history.replaceState(null,'',location.pathname+qsWith('level',l));}catch(e){}
+  loadServer(ST.email,function(){SWITCHING=false;go(1);});})(0);}
+function qsWith(k,v){var p=new URLSearchParams(location.search);p.set(k,v);return '?'+p.toString();}
+function mapSVG(){
+ function room(x,y,w,h,fill,label,icon){return '<g><rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="6" fill="'+fill+'" stroke="#1b4332" stroke-width="2.5"/>'+
+  '<rect x="'+(x+w/2-11)+'" y="'+(y>100?y:y+h-5)+'" width="22" height="5" fill="#8a5a2b"/>'+icon+
+  '<text x="'+(x+w/2)+'" y="'+(y+h-12)+'" text-anchor="middle" font-family="Nunito,sans-serif" font-size="12.5" font-weight="800" fill="#1b4332">'+label+'</text></g>';}
+ var books='<g transform="translate(36,22)"><rect width="9" height="26" fill="#b5451b"/><rect x="10" y="4" width="9" height="22" fill="#2d6a4f"/><rect x="20" y="1" width="9" height="25" fill="#d4a017"/><rect x="30" y="6" width="9" height="20" fill="#5b7db1"/><rect x="-4" y="26" width="48" height="3" fill="#6b4423"/></g>';
+ var desk='<g transform="translate(150,22)"><rect x="0" y="10" width="44" height="14" fill="#a0703f"/><rect x="4" y="24" width="4" height="8" fill="#6b4423"/><rect x="36" y="24" width="4" height="8" fill="#6b4423"/><rect x="14" y="0" width="16" height="11" rx="2" fill="#40916c"/><circle cx="22" cy="5" r="3" fill="#fff1bf"/></g>';
+ var cross='<g transform="translate(262,20)"><rect x="9" y="0" width="12" height="32" rx="2" fill="#c0392b"/><rect x="-1" y="10" width="32" height="12" rx="2" fill="#c0392b"/><rect x="38" y="14" width="22" height="14" rx="3" fill="#fff" stroke="#999"/></g>';
+ var ball='<g transform="translate(55,160)"><circle cx="14" cy="14" r="13" fill="#e8742a" stroke="#7a3510" stroke-width="2"/><path d="M1 14h26M14 1v26M5 5q9 9 0 18M23 5q-9 9 0 18" stroke="#7a3510" stroke-width="1.6" fill="none"/></g>';
+ var tray='<g transform="translate(150,160)"><rect x="0" y="12" width="46" height="14" rx="3" fill="#95d5b2" stroke="#2d6a4f" stroke-width="1.5"/><circle cx="12" cy="10" r="7" fill="#d4a017"/><rect x="24" y="4" width="14" height="9" rx="2" fill="#b5451b"/><rect x="40" y="0" width="5" height="12" fill="#5b7db1"/></g>';
+ var talk='<g transform="translate(258,158)"><path d="M0 4q0-4 4-4h26q4 0 4 4v14q0 4-4 4H14l-8 7 2-7H4q-4 0-4-4z" fill="#fff" stroke="#2d6a4f" stroke-width="2"/><path d="M26 10q0-4 4-4h20q4 0 4 4v10q0 4-4 4h-2l2 6-8-6H30q-4 0-4-4z" fill="#d8f0e2" stroke="#2d6a4f" stroke-width="2"/></g>';
+ var lockers='';for(var i=0;i<8;i++)lockers+='<rect x="'+(12+i*12)+'" y="111" width="10" height="14" fill="#9db3e6" stroke="#5b7db1"/>';
+ return '<svg viewBox="0 0 360 230" role="img" aria-label="A map of school rooms" style="width:100%;max-width:420px;display:block;margin:0 auto;background:#f6f1e3;border:2px solid #1b4332;border-radius:12px">'+
+  room(8,8,110,92,'#e8f3ee','library',books)+room(125,8,110,92,'#fff1bf','main office',desk)+room(242,8,110,92,'#fdecec','nurse\u2019s office',cross)+
+  '<rect x="8" y="104" width="344" height="24" fill="#e6dfcc" stroke="#b9ad8c"/>'+lockers+'<text x="250" y="121" font-family="Nunito,sans-serif" font-size="11" font-weight="800" fill="#6b5d3a">hallway</text>'+
+  room(8,132,110,92,'#fde9d9','gym',ball)+room(125,132,110,92,'#e8f3ee','cafeteria',tray)+room(242,132,110,92,'#eef3ff','counseling office',talk)+'</svg>';}
+var HINTS_LV={
+ B:{'PRON.SUBJ':'Who is it? One man \u2192 He. One woman \u2192 She. A thing \u2192 It. Me + other people \u2192 We. You + other people \u2192 You. Other people \u2192 They.',
+    'SENT.BE':'One person or thing \u2192 is / isn\u2019t. Two or more, you, we \u2192 are / aren\u2019t. I \u2192 am / am not. Read the second sentence: is it yes or no?',
+    'PLACE':'What does the person need? Where at school can they get it?',
+    'SENT.FRAG':'Check all four: a who, a verb, a capital letter at the start, a period at the end.',
+    'CONJ.BBS':'Read the whole sentence out loud. Does the ending make sense with because / but / so?'},
+ C:{'PRON.SUBJ':'Two things must be right: the pronoun (who?) AND am / is / are.',
+    'SENT.BE':'Look at who comes after the blank. One \u2192 is. Two or more \u2192 are. I \u2192 am. Watch the apostrophe \u2019.',
+    'PLACE':'Look at the map. Next to = side by side. Across from = the other side of the hallway. Far from = not close.',
+    'SENT.FRAG':'Say it with each choice. Which one sounds right with the who?',
+    'CONJ.BBS':'Write 3 words or more. Who? Does what?'}};
+function buildLevel(L,pri,nf){
+ var D=BASICS_LEVELS[L],PR=['He','She','It','We','They','You'];
+ function be(p){return p==='He'||p==='She'||p==='It'?'is':'are';}
+ var who,bes,whs,frs=[],bb;
+ if(L==='B'){
+  who=pri(D.pron).slice(0,3).map(function(x){var o=[x.a].concat(sh(PR.filter(function(p){return p!==x.a;})).slice(0,3));return {pic:x.e,q:x.s+' \u2192 ___ '+x.r,o:o,a:x.a};});
+  bes=pri(D.be).slice(0,3).map(function(x){return {pic:x.e,q:x.s,o:x.neg?['am not','isn\u2019t','aren\u2019t']:['am','is','are'],a:x.a};});
+  whs=pri(D.where).slice(0,3).map(function(x){return {pic:x.e,q:x.s+' Where do they go? The ___.',o:[x.p].concat(sh(DATA.places.filter(function(p){return p!==x.p;})).slice(0,3)),a:x.p};});
+  bb=pri(D.bbs).slice(0,1).map(function(x){return {pic:'\ud83d\udd17',q:x.s,o:[x.a].concat(x.w),a:x.a};});
+ }else{
+  who=pri(D.pron).slice(0,3).map(function(x){var p=x.p,b=be(p),wb=b==='is'?'are':'is',q=sh(PR.filter(function(y){return y!==p&&y!=='You';}))[0];
+   return {pic:x.e,q:x.subj+' '+be(p)+' '+x.rest+'. \u2192 ___ '+x.rest+'.',o:[p+' '+b,p+' '+wb,q+' '+be(q),q+' '+(be(q)==='is'?'are':'is')],a:p+' '+b};});
+  bes=pri(D.be).slice(0,3).map(function(x){return {pic:x.e,q:x.q||x.s,o:x.o.slice(),a:x.a};});
+  whs=pri(D.where).slice(0,3).map(function(x){return x.q?{pic:'MAP',q:x.q+' The ___.',o:[x.a].concat(sh(D.rooms.filter(function(r){return r!==x.a&&x.q.indexOf(r)<0;})).slice(0,3)),a:x.a}
+   :{pic:'MAP',q:x.s,o:['next to','across from','far from'],a:x.a};});
+  bb=pri(D.bbs).slice(0,1).map(function(s){return {pic:'\u270d\ufe0f',q:s,w:1,o:[],a:''};});
+ }
+ if(window.WIT){var fr=pri(WIT.fragment.filter(function(x){return x.lvl==='101';}));
+  if(L==='B'){var fS=fr.filter(function(x){return x.k==='S';}).slice(0,nf),fF=fr.filter(function(x){return x.k==='F';}).slice(0,nf);frs=fS.concat(fF).map(fragB);}
+  else{frs=fr.filter(function(x){return x.k==='F'&&fragC(x);}).slice(0,2*nf).map(fragC);}}
+ if(nf>1){who=who.slice(1);whs=whs.slice(0,2);}
+ return sh(who.map(function(x){x.k='PRON.SUBJ';return x;})).concat(sh(bes.map(function(x){x.k='SENT.BE';return x;}))).concat(sh(whs.map(function(x){x.k='PLACE';return x;}))).concat(frs).concat(bb.map(function(x){x.k='CONJ.BBS';return x;}));
+}
+function marksOk(t){return /^[A-Z]/.test(t)&&/[.?!]$/.test(t);}
+function fragB(f){var o;
+ if(f.k==='F')o=[f.fix].concat(f.wrong||[]);
+ else{var lo=f.fix.charAt(0).toLowerCase()+f.fix.slice(1),np=f.fix.replace(/[.?!]$/,'');o=[f.fix,np,lo];if(lo===f.fix)o=[f.fix,np,np.charAt(0).toLowerCase()+np.slice(1)];}
+ o=o.filter(function(x,i,a){return a.indexOf(x)===i;});
+ var oh={};o.forEach(function(t){if(t===f.fix)return;oh[t]=marksOk(t)?'This one still has no who or no verb. Find the one with a who AND a verb.':'Look at the first letter and the last mark.';});
+ return {pic:'\u270f\ufe0f',q:'<div class="fragq">Which one is a complete sentence, written right?</div>',o:o,a:f.fix,k:'SENT.FRAG',oh:oh,rs:1,
+  why:'<b>'+f.fix+'</b> \u2014 a who, a verb, a capital letter and a period.'};}
+function fragC(f){var v=f.v,fam;
+ if(f.miss==='subject'){var sj=f.fix.split(' ')[0];var SUBJ={She:['She','Her','Hers'],He:['He','Him','His'],They:['They','Them','Their']};if(!SUBJ[sj])return null;
+  return {pic:'\u270f\ufe0f',q:'<div class="fragq">Fix it. Who does it?</div><div class="fragbox"><span>'+f.fix.replace(sj,'___')+'</span></div>',o:SUBJ[sj].slice(),a:sj,k:'SENT.FRAG',
+   why:'<b>'+f.fix+'</b> \u2014 now it has a who.'};}
+ if(/^(is|are|am)$/.test(v))fam=['am','is','are'];else if(/^(has|have)$/.test(v))fam=['has','have','is'];else return null;
+ if(f.fix.split(' ').filter(function(w){return w===v;}).length!==1)return null;
+ return {pic:'\u270f\ufe0f',q:'<div class="fragq">Fix it. Choose the verb.</div><div class="fragbox"><span>'+f.fix.replace(new RegExp('\\b'+v+'\\b'),'___')+'</span></div>',o:fam,a:v,k:'SENT.FRAG',
+  why:'<b>'+f.fix+'</b> \u2014 now it has a verb.'};}
+function wordsIn(t){return String(t||'').trim().split(/\s+/).filter(function(w){return /[a-z]/i.test(w);}).length;}
+function writeCheck(id){var it=ITEMS.filter(function(x){return x.id===id;})[0],st=state(id);if(st.done)return;var t=($('wr_'+id)||{}).value||'';
+ ST.W[id]=t;st.tries++;if(wordsIn(t)>=3){st.done=true;if(st.first===null)st.first=(st.tries===1);}else{st.wrongs=st.wrongs||[];st.wrongs.push(-1);if(st.first===null)st.first=false;}
+ save();var host=$('c_'+id);if(host)host.outerHTML=renderItem(it);drawSteps();drawLevels();
+ if(ITEMS.every(function(x){return state(x.id).done;}))setTimeout(function(){go(2);},700);}
 var HINTS={'PRON.SUBJ':'Look at the picture. One woman \u2192 She. One man \u2192 He. Two people \u2192 They. A thing \u2192 It.',
  'SENT.BE':'I \u2192 am. He, she, it, one person or thing \u2192 is. You, we, they, two or more \u2192 are.',
  'PLACE':'Read what the person does. Where at school do people do that?',
@@ -342,17 +459,22 @@ function plural(n){return /y$/.test(n)?n.replace(/y$/,'ies'):/(s|sh|ch|x)$/.test
 function state(id){if(!ST.A[id])ST.A[id]={tries:0,first:null,done:false};return ST.A[id];}
 function renderItem(it){
  var st=state(it.id);
- var h='<div class="card" id="c_'+it.id+'">'+(it.pic?'<div class="pic">'+it.pic+'</div>':'')+'<div class="q">'+it.q.replace('___','<span class="blank" style="display:inline-block;min-width:70px;border-bottom:2px solid var(--rust)">&nbsp;</span>')+'</div><div class="chips">';
+ var h='<div class="card" id="c_'+it.id+'">'+(it.pic?'<div class="pic">'+(it.pic==='MAP'?mapSVG():it.pic)+'</div>':'')+'<div class="q">'+it.q.replace('___','<span class="blank" style="display:inline-block;min-width:70px;border-bottom:2px solid var(--rust)">&nbsp;</span>')+'</div><div class="chips">';
+ if(it.w){var tv=(ST.W[it.id]||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  h+='</div><textarea id="wr_'+it.id+'" class="wr" placeholder="Write the ending here (3 words or more)" '+(st.done?'readonly':'')+' oninput="ST.W[\''+it.id+'\']=this.value;save();">'+tv+'</textarea>'+
+   (st.done?'<div class="why good"><b>\u2713 Nice!</b> '+it.q.replace('___','<b>'+tv+'</b>')+'</div>':'<button class="btn" onclick="writeCheck(\''+it.id+'\')">Check</button>'+
+   (st.wrongs&&st.wrongs.length?'<div class="why try"><b>'+QUIPS[st.wrongs.length%QUIPS.length]+'</b><span class="hint">\ud83d\udca1 '+HINTS_LV.C['CONJ.BBS']+'</span></div>':''))+'</div>';
+  return h;}
  it.o.forEach(function(o,k){
   var cls='chip';if(st.done){cls+=(k===it.a?' right':' dim');}else if(st.wrongs&&st.wrongs.indexOf(k)>=0)cls+=' wrong dim';
   h+='<button class="'+cls+(it.rs?' rsn':'')+'" onclick="pick(\''+it.id+'\','+k+')">'+o+(it.rs?'<span class="otr" data-en="'+o.replace(/"/g,'&quot;')+'"></span>':'')+'</button>';});
  var miss=!st.done&&st.wrongs&&st.wrongs.length;
- h+='</div><div class="why'+(st.done?(st.first?' good':' miss'):(miss?' try':''))+'" id="w_'+it.id+'">'+(st.done?it.why:(miss?'<b>'+QUIPS[(st.wrongs.length+(+it.id.slice(1)))%QUIPS.length]+'</b><span class="hint">\ud83d\udca1 '+((it.oh&&it.oh[st.wrongs[st.wrongs.length-1]])||HINTS[it.tag]||'Read it again slowly.')+'</span>'+(it.oh&&st.wrongs.length>1?'<span class="hint">\ud83d\udca1 '+HINTS[it.tag]+'</span>':''):''))+'</div></div>';
+ h+='</div><div class="why'+(st.done?(st.first?' good':' miss'):(miss?' try':''))+'" id="w_'+it.id+'">'+(st.done?it.why:(miss?'<b>'+QUIPS[(st.wrongs.length+(+it.id.slice(1)))%QUIPS.length]+'</b><span class="hint">\ud83d\udca1 '+((it.oh&&it.oh[st.wrongs[st.wrongs.length-1]])||(HINTS_LV[it.lv]||{})[it.tag]||HINTS[it.tag]||'Read it again slowly.')+'</span>'+(it.oh&&st.wrongs.length>1?'<span class="hint">\ud83d\udca1 '+HINTS[it.tag]+'</span>':''):''))+'</div></div>';
  return h;
 }
 function pick(id,k){var it=ITEMS.filter(function(x){return x.id===id;})[0],st=state(id);if(st.done)return;st.tries++;
  if(k===it.a){st.done=true;if(st.first===null)st.first=(st.tries===1);}else{st.wrongs=st.wrongs||[];st.wrongs.push(k);if(st.first===null)st.first=false;}
- save();var host=document.getElementById('c_'+id);if(host)host.outerHTML=renderItem(it);drawSteps();fillReasons();
+ save();var host=document.getElementById('c_'+id);if(host)host.outerHTML=renderItem(it);drawSteps();drawLevels();fillReasons();
  if(ITEMS.every(function(x){return state(x.id).done;}))setTimeout(function(){go(2);},700);}
 function fillReasons(){var lg=lang();document.querySelectorAll('.otr').forEach(function(e){if(!lg){e.textContent='';return;}if(e.dataset.done===lg)return;var en=e.getAttribute('data-en');tr(en,lg,function(t){if(lang()===lg&&t){e.textContent=t;e.dataset.done=lg;}});});}
 function renderPart(p){$('qItems').innerHTML=ITEMS.filter(function(x){return x.part===p;}).map(renderItem).join('');drawSteps();fillReasons();}
@@ -370,19 +492,22 @@ function go(n){
  ST.act=n;document.querySelectorAll('section.act').forEach(function(s,i){s.classList.toggle('show',i===n);});
  if(n>0&&!LOADED){n=0;ST.act=0;document.querySelectorAll('section.act').forEach(function(s,i){s.classList.toggle('show',i===0);});}
  if(n===0)renderStart(); if(n===1)renderPart(1); if(n===2)finish();
- drawSteps();window.scrollTo(0,0);save();if(DIR_ON)showDirections();
+ drawSteps();drawLevels();window.scrollTo(0,0);save();if(DIR_ON)showDirections();
 }
 function firstTry(){return ITEMS.filter(function(x){return state(x.id).done&&state(x.id).first;}).length;}
 function partScore(p){var its=ITEMS.filter(function(x){return x.part===p;});return its.filter(function(x){return state(x.id).done&&state(x.id).first;}).length+' / '+its.length;}
 function tagScore(t){var its=ITEMS.filter(function(x){return x.tag===t;});return its.filter(function(x){return state(x.id).done&&state(x.id).first;}).length+' / '+its.length;}
 function finish(){
  $('finScore').textContent=solved()+' / '+ITEMS.length;$('finFirst').textContent='First try: '+firstTry()+' / '+ITEMS.length;if(ITEMS.every(function(x){return state(x.id).done;})){markDay();if(!ST.turnedIn){ST.turnedIn=new Date().toISOString();}save();push(true);}
- $('finList').innerHTML=[['He / She / They / It','PRON.SUBJ'],['am / is / are','SENT.BE'],['Where?','PLACE'],['Sentence or fragment?','SENT.FRAG'],['because / but / so','CONJ.BBS']].map(function(r){return '<div class="sumrow"><span>'+r[0]+'</span><b>'+tagScore(r[1])+'</b></div>';}).join('')+'<div class="sumrow"><span>🔥 Days in a row</span><b>'+streak()+'</b></div>';
+ $('finList').innerHTML=[['He / She / They / It','PRON.SUBJ'],['am / is / are','SENT.BE'],['Where?','PLACE'],['Sentence or fragment?','SENT.FRAG'],['because / but / so','CONJ.BBS']].map(function(r){return '<div class="sumrow"><span>'+r[0]+'</span><b>'+tagScore(r[1])+'</b></div>';}).join('')+'<div class="sumrow"><span>🔥 Days in a row</span><b>'+streak()+'</b></div>'+
+  '<div class="sumrow"><span>Today\u2019s levels</span><b>'+LEVELS.map(function(l){var st=lvlState(l);return l+(st==='done'?' \u2713':st==='half'?' \u25D0':' \u2013');}).join(' \u00b7 ')+'</b></div>'+
+  (function(){var nx=LEVELS.filter(function(l){return l!==LEVEL&&lvlState(l)!=='done';}),up=nx.filter(function(l){return l>LEVEL;})[0]||nx[0];
+   return up?'<div style="margin-top:10px"><button class="btn" onclick="switchLevel(\''+up+'\')">'+(up>LEVEL?'Too easy? Try Level '+up+' \u2192':'Do Level '+up+' too \u2192')+'</button></div>':'';})();
 }
 function solved(){return ITEMS.filter(function(x){return state(x.id).done;}).length;}
 /* Fair score (T-238 rule): every question solved on ANY try = 1 point. First try stays in the
    score column + payload for the dashboard. */
-function setGal(){window.GAL_SCORE=solved();window.GAL_MAX=ITEMS.length||12;}
+function setGal(){window.GAL_SCORE=dailyGrade();window.GAL_MAX=12;} /* T-275: daily grade (finished sets averaged) */
 var saveT=null;
 function save(){dirty=true;setGal();if(!LOADED)return;clearTimeout(saveT);saveT=setTimeout(function(){push(false);},700);}
 function both(e){var lp=localPart(e);return [lp+'@s.sfusd.edu',lp+'@sfusd.edu'];}
@@ -393,19 +518,24 @@ function loadServer(email,then){
  var t=setTimeout(function(){fail();},12000),gone=false;
  function fail(){if(gone)return;gone=true;srvBar(true);dot('err');}
  Promise.all([
-  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?email='+inl+'&unit=eq.'+UNIT+'&select=email,payload,turned_in,updated_at&order=updated_at.desc',{headers:hdr()}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();}),
-  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?email='+inl+'&turned_in=eq.true&select=unit&order=unit.desc&limit=120',{headers:hdr()}).then(function(r){return r.ok?r.json():[];}).catch(function(){return [];})
+  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?email='+inl+'&unit=in.('+[TODAY,TODAY+'-B',TODAY+'-C'].join(',')+')&select=email,unit,payload,turned_in,updated_at&order=updated_at.desc',{headers:hdr()}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();}),
+  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?email='+inl+'&turned_in=eq.true&select=unit&order=unit.desc&limit=200',{headers:hdr()}).then(function(r){return r.ok?r.json():[];}).catch(function(){return [];}),
+  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?email='+inl+'&select=unit&order=updated_at.desc&limit=1',{headers:hdr()}).then(function(r){return r.ok?r.json():[];}).catch(function(){return [];})
  ]).then(function(res){if(gone)return;clearTimeout(t);gone=true;
-  var rows=res[0]||[],best=null,bn=-1;
+  /* T-275: which level opens? ?level= in the link, else the one this student used last (today first), else A */
+  var today=res[0]||[];if(!LOADED_ONCE){LOADED_ONCE=true;var pickL=URL_LEVEL||(today[0]?levelOfUnit(today[0].unit):((res[2]&&res[2][0])?levelOfUnit(res[2][0].unit):'A'));setUnit(pickL);}
+  LEVELS.forEach(function(l){var rs=today.filter(function(r){return levelOfUnit(r.unit)===l;}),b=null;rs.forEach(function(r){var x=sumRow(r);if(!b||x.solved>b.solved)b=x;});
+   var loc=SETS[l];if(b&&(!loc||b.solved>=loc.solved))SETS[l]=b;});
+  var rows=today.filter(function(r){return r.unit===UNIT;}),best=null,bn=-1;
   rows.forEach(function(r){var A=(r.payload&&r.payload.A)||{},n=Object.keys(A).filter(function(k){return A[k]&&A[k].done;}).length;if(n>bn){bn=n;best=r;}});
-  DAYS=[];(res[1]||[]).forEach(function(r){if(r.unit&&DAYS.indexOf(r.unit)<0)DAYS.push(r.unit);});
+  DAYS=[];(res[1]||[]).forEach(function(r){var d=dayOfUnit(r.unit);if(d&&DAYS.indexOf(d)<0)DAYS.push(d);});
   if(best&&best.payload){var d=best.payload;ROW_EMAIL=best.email;
    ST.A=d.A||{};ST.W=d.W||{};ST.turnedIn=d.turnedIn||(best.turned_in?(best.updated_at||true):null);
    ST.items=(d.items&&d.items.length)?d.items:null;ST.lesson=(d.lesson!=null)?d.lesson:null;
    if(typeof d.act==='number')ST.act=d.act;
    if(ST.turnedIn&&DAYS.indexOf(TODAY)<0)DAYS.push(TODAY);}
   else{ST.A={};ST.W={};ST.turnedIn=null;ST.items=null;ST.lesson=null;ST.act=0;}
-  LOADED=true;srvBar(false);dot('on');buildItems();setGal();
+  LOADED=true;srvBar(false);dot('on');buildItems();setGal();drawLevels();
   if(!best||!(best.payload&&best.payload.items))dirty=true;   /* store the question set right away */
   if(then)then();push(false);
  }).catch(function(){fail();});
@@ -416,7 +546,7 @@ function push(force){
  if(!ST.email||!LOADED)return;if(!dirty&&!force)return;if(pushing){if(force)setTimeout(function(){push(true);},800);return;}setGal();
  pushing=true;dot('busy');var mySeq=++pushSeq;
  setTimeout(function(){if(pushing&&mySeq===pushSeq){pushing=false;dirty=true;dot('err');}},15000);
- var snap=JSON.parse(JSON.stringify(ST));dirty=false;
+ ST.level=LEVEL;var snap=JSON.parse(JSON.stringify(ST));dirty=false;
  var body=[{email:ROW_EMAIL||ST.email,name:ST.name,period:ST.period,unit:UNIT,slug:SLUG,
   score:firstTry(),max_score:ITEMS.length,turned_in:!!ST.turnedIn,writing:ST.W,payload:snap,updated_at:new Date().toISOString()}];
  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email,unit',{method:'POST',keepalive:true,

@@ -50,6 +50,11 @@ tr:hover td{background:#fafbf8}
 .cell.hi{background:#d8f0e2;color:var(--pine)}.cell.mid{background:#fff1bf;color:#6b5200}.cell.lo{background:#fbeae5;color:#8a2f10}.cell.none{color:var(--line)}
 th.day{font-size:.68rem}
 @media(max-width:700px){.hidem{display:none}}
+.strip{display:flex;gap:2px;justify-content:center;margin-top:3px}
+.lv{font-style:normal;font-size:.7rem;font-weight:800;border:1.5px solid #c9d1cb;border-radius:5px;padding:0 3px;color:#9aa59e;background:#fff;line-height:1.4}
+.lv sub{font-size:.6rem;margin-left:1px}
+.lv.open{border-style:dotted;color:#5c6b62}.lv.half{border:1.5px dashed #d4a017;color:#7a5c00}.lv.done{background:#d8f0e2;border-color:#2d6a4f;color:#1b4332}
+.lvstat b small{font-size:.7em;color:#5c6b62}
 </style>
 </head>
 <body>
@@ -66,7 +71,7 @@ th.day{font-size:.68rem}
 <main>
   <div class="card stats" id="stats"></div>
   <div class="card" style="padding:0;overflow-x:auto"><table id="tbl"><thead></thead><tbody></tbody></table></div>
-  <p class="muted" style="font-size:.8rem">Each cell is that day's first-try score out of 12. Green 10+, yellow 7–9, red below 7. Tap a name to see which skill they miss most.</p>
+  <p class="muted" style="font-size:.8rem">Each day shows the <b>daily grade</b> out of 12 (the average of the levels the student finished; if none is finished, their best partial level). Under it, <b>A B C</b>: grey = not opened, dashed = started, green = finished. The small number is how many they got right on the <b>first try</b>; ⭐ = 11 or 12 first try. The gradebook gets the daily grade. Tap a name to see which skill they miss most, per level.</p>
 </main>
 <script>
 var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
@@ -82,25 +87,43 @@ function loadAll(){$('stats').innerHTML='<div class="muted">Loading…</div>';
  fetch(SUPA_URL+'/rest/v1/basics?select=email,name,period,unit,score,max_score,payload,updated_at&order=unit.desc&limit=5000',{headers:H()}).then(function(r){return r.json();}).then(function(res){ROWS=Array.isArray(res)?res:[];render();}).catch(function(e){$('stats').innerHTML='<div class="muted">Could not load: '+esc(e)+'</div>';});}
 function days(n){var out=[],d=new Date();for(var i=0;i<n;i++){out.unshift(d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2));d.setDate(d.getDate()-1);}return out;}
 function cls(sc){return sc>=10?'hi':sc>=7?'mid':'lo';}
-function skillMiss(rowsFor){var m={};rowsFor.forEach(function(r){var A=(r.payload&&r.payload.A)||{};/* ids q0..q11 don't carry tags; use payload.tags if present */var T=(r.payload&&r.payload.tags)||{};Object.keys(A).forEach(function(id){var t=T[id]||'?';m[t]=m[t]||{n:0,miss:0};m[t].n++;if(!(A[id].done&&A[id].first))m[t].miss++;});});return m;}
+/* T-275: a day has up to three sets (unit DATE = A, DATE-B, DATE-C). Daily grade = average of the FINISHED sets
+   (out of 12); if none is finished, the best partial set. Each level also shows its first-try score. */
+var LV=['A','B','C'];
+function lvOf(u){var m=String(u||'').match(/-([ABC])$/);return m?m[1]:'A';}
+function dayOf(u){return String(u||'').replace(/-[ABC]$/,'');}
+function sumOf(r){var p=r.payload||{},A=p.A||{},n=(p.items&&p.items.length)||r.max_score||12,s=0,f=0;Object.keys(A).forEach(function(k){if(A[k]&&A[k].done){s++;if(A[k].first)f++;}});return {n:n,solved:Math.min(s,n),first:f,done:s>=n};}
+function daily(L){var fin=[],best=0;Object.keys(L).forEach(function(l){var s=L[l],v=12*s.solved/(s.n||12);if(s.done)fin.push(v);if(v>best)best=v;});var g=fin.length?fin.reduce(function(a,b){return a+b;},0)/fin.length:best;return Math.round(g*10)/10;}
+function stripHTML(L){return '<span class="strip">'+LV.map(function(l){var s=L[l];if(!s)return '<i class="lv none" title="Level '+l+': not opened">'+l+'</i>';
+ var st=s.done?'done':(s.solved?'half':'open'),star=s.done&&s.first>=11?'\u2b50':'';
+ return '<i class="lv '+st+'" title="Level '+l+': '+s.solved+'/'+s.n+' solved, '+s.first+' first try">'+l+'<sub>'+(s.solved?s.first:'\u2013')+'</sub>'+star+'</i>';}).join('')+'</span>';}
+function skillMiss(rowsFor){var m={};rowsFor.forEach(function(r){var A=(r.payload&&r.payload.A)||{};var T=(r.payload&&r.payload.tags)||{};Object.keys(A).forEach(function(id){var t=(T[id]||'?')+(lvOf(r.unit)==='A'?'':' ('+lvOf(r.unit)+')');m[t]=m[t]||{n:0,miss:0};m[t].n++;if(!(A[id].done&&A[id].first))m[t].miss++;});});return m;}
+function build(rows){var by={};rows.forEach(function(r){var k=(r.email||'').toLowerCase().split('@')[0];by[k]=by[k]||{email:r.email,name:r.name,period:r.period,d:{},rows:[]};
+  var d=dayOf(r.unit),l=lvOf(r.unit),x=sumOf(r);by[k].d[d]=by[k].d[d]||{};var o=by[k].d[d][l];if(!o||x.solved>o.solved)by[k].d[d][l]=x;by[k].rows.push(r);if(r.name)by[k].name=r.name;if(r.period)by[k].period=r.period;});
+ return Object.keys(by).map(function(k){return by[k];}).sort(function(a,b){return (a.name||'').localeCompare(b.name||'');});}
 function render(){
  var pd=$('period').value,n=+$('span').value,ds=days(n);
- var rows=ROWS.filter(function(r){return (!pd||String(r.period)===pd)&&ds.indexOf(r.unit)>=0;});
- var by={};rows.forEach(function(r){var k=(r.email||'').toLowerCase();by[k]=by[k]||{email:r.email,name:r.name,period:r.period,d:{},rows:[]};by[k].d[r.unit]=r;by[k].rows.push(r);if(r.name)by[k].name=r.name;});
- var stu=Object.keys(by).map(function(k){return by[k];}).sort(function(a,b){return (a.name||'').localeCompare(b.name||'');});
- var today=ds[ds.length-1],didToday=stu.filter(function(s){return s.d[today];}).length;
- var all=rows.filter(function(r){return r.score!=null;}),avg=all.length?Math.round(10*all.reduce(function(a,r){return a+r.score;},0)/all.length)/10:0;
- $('stats').innerHTML='<div class="stat"><b>'+stu.length+'</b><span>students (period '+(pd||'all')+')</span></div><div class="stat"><b>'+didToday+'</b><span>did it today</span></div><div class="stat"><b>'+avg+'</b><span>average score / 12</span></div>';
+ var rows=ROWS.filter(function(r){return (!pd||String(r.period)===pd)&&ds.indexOf(dayOf(r.unit))>=0;});
+ var stu=build(rows),today=ds[ds.length-1];
+ var did=stu.filter(function(s){return s.d[today];}).length,cnt={A:[0,0],B:[0,0],C:[0,0]};
+ stu.forEach(function(s){var L=s.d[today]||{};LV.forEach(function(l){if(L[l]&&L[l].solved){cnt[l][0]++;if(L[l].done)cnt[l][1]++;}});});
+ var dg=[];stu.forEach(function(s){Object.keys(s.d).forEach(function(d){dg.push(daily(s.d[d]));});});
+ var avg=dg.length?Math.round(10*dg.reduce(function(a,b){return a+b;},0)/dg.length)/10:0;
+ $('stats').innerHTML='<div class="stat"><b>'+stu.length+'</b><span>students (period '+(pd||'all')+')</span></div><div class="stat"><b>'+did+'</b><span>did Basics today</span></div>'+
+  LV.map(function(l){return '<div class="stat lvstat lv-'+l+'"><b>'+cnt[l][1]+'<small> / '+cnt[l][0]+'</small></b><span>Level '+l+' today: finished / started</span></div>';}).join('')+
+  '<div class="stat"><b>'+avg+'</b><span>average daily grade / 12</span></div>';
  $('tbl').querySelector('thead').innerHTML='<tr><th>Student</th><th>P</th><th>Days</th><th>Avg</th>'+ds.map(function(d){return '<th class="day">'+d.slice(5).replace('-','/')+'</th>';}).join('')+'</tr>';
- $('tbl').querySelector('tbody').innerHTML=stu.map(function(s){var id=(s.email||'').replace(/[^a-z0-9]/gi,'_');var done=Object.keys(s.d).length,sum=0,c=0;Object.keys(s.d).forEach(function(k){if(s.d[k].score!=null){sum+=s.d[k].score;c++;}});
-  var tr='<tr><td class="nm"><button class="expand" onclick="toggle(\''+id+'\')">'+esc(s.name||s.email)+'</button><small>'+esc(s.email)+'</small></td><td>'+esc(s.period)+'</td><td>'+done+'</td><td>'+(c?Math.round(10*sum/c)/10:'—')+'</td>'+
-   ds.map(function(d){var r=s.d[d];return '<td>'+(r?'<span class="cell '+cls(r.score)+'">'+r.score+'</span>':'<span class="cell none">·</span>')+'</td>';}).join('')+'</tr>';
-  if(OPEN[id]){var m=skillMiss(s.rows),names={'PRON.SUBJ':'He / She / They / It','SENT.BE':'am / is / are','PLACE':'Where?'};tr+='<tr><td colspan="'+(4+ds.length)+'" class="muted" style="font-size:.85rem">Missed on first try — '+Object.keys(m).map(function(t){return (names[t]||t)+': '+m[t].miss+' of '+m[t].n;}).join(' · ')+'</td></tr>';}
+ $('tbl').querySelector('tbody').innerHTML=stu.map(function(s){var id=(s.email||'').replace(/[^a-z0-9]/gi,'_');var keys=Object.keys(s.d),sum=0;keys.forEach(function(k){sum+=daily(s.d[k]);});
+  var tr='<tr><td class="nm"><button class="expand" onclick="toggle(\''+id+'\')">'+esc(s.name||s.email)+'</button><small>'+esc(s.email)+'</small></td><td>'+esc(s.period)+'</td><td>'+keys.length+'</td><td>'+(keys.length?Math.round(10*sum/keys.length)/10:'\u2014')+'</td>'+
+   ds.map(function(d){var L=s.d[d];if(!L)return '<td><span class="cell none">\u00b7</span></td>';var g=daily(L);return '<td><span class="cell '+cls(g)+'" title="daily grade (finished sets averaged)">'+g+'</span>'+stripHTML(L)+'</td>';}).join('')+'</tr>';
+  if(OPEN[id]){var m=skillMiss(s.rows),names={'PRON.SUBJ':'He / She / They / It','SENT.BE':'am / is / are','PLACE':'Where?','SENT.FRAG':'Sentence or fragment?','CONJ.BBS':'because / but / so'};
+   tr+='<tr><td colspan="'+(4+ds.length)+'" class="muted" style="font-size:.85rem">Missed on first try \u2014 '+Object.keys(m).map(function(t){var b=t.replace(/ \([BC]\)$/,''),lv=t.slice(b.length);return (names[b]||b)+lv+': '+m[t].miss+' of '+m[t].n;}).join(' \u00b7 ')+'</td></tr>';}
   return tr;}).join('')||'<tr><td colspan="'+(4+ds.length)+'" class="muted">No students yet.</td></tr>';
 }
 function toggle(id){OPEN[id]=!OPEN[id];render();}
-function exportCSV(){var pd=$('period').value,ds=days(+$('span').value);var rows=ROWS.filter(function(r){return (!pd||String(r.period)===pd)&&ds.indexOf(r.unit)>=0;});
- var out=[['name','email','period','date','score','max']];rows.forEach(function(r){out.push([r.name,r.email,r.period,r.unit,r.score,r.max_score]);});
+function exportCSV(){var pd=$('period').value,ds=days(+$('span').value);var rows=ROWS.filter(function(r){return (!pd||String(r.period)===pd)&&ds.indexOf(dayOf(r.unit))>=0;});
+ var out=[['name','email','period','date','daily_grade_of_12','A_solved','A_first_try','B_solved','B_first_try','C_solved','C_first_try']];
+ build(rows).forEach(function(s){Object.keys(s.d).sort().forEach(function(d){var L=s.d[d],row=[s.name,s.email,s.period,d,daily(L)];LV.forEach(function(l){row.push(L[l]?L[l].solved:'',L[l]?L[l].first:'');});out.push(row);});});
  var csv=out.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
  var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);a.download='basics'+(pd?'-p'+pd:'')+'.csv';a.click();}
 (function(){var ok=false;try{ok=sessionStorage.getItem('dash_ok')==='1';}catch(e){}if(ok)openApp();else $('pw').focus();})();
