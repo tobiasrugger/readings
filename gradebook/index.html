@@ -245,7 +245,17 @@ var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
 var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
 var PASS='galileo2026';
 function H(x){var h={apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY,'Content-Type':'application/json'};if(x)for(var k in x)h[k]=x[k];return h;}
-function canon(e){return String(e||'').trim().toLowerCase().replace('@s.sfusd.edu','@sfusd.edu');}
+/* T-304 USERNAME IS THE ID (Toby, Nov 5). One student = the part of the email
+   before @, lowercased — the same rule std.js gives every page as GAL.key.
+   The gradebook doesn't load std.js, so the one line is copied here.
+   "jili81@s.sfusd.edu", "JILI81@sfusd.edu" and "jili81" all group as "jili81",
+   so a second sign-in can no longer split one student into two rows.
+   ALIAS then folds student_aliases in, which is what stops a merged row
+   (jobalam -> jobalamvazquez) coming back when that student signs in again.
+   Old rows are never rewritten: we only compare keys. */
+var ALIAS={};   // username -> the username it really belongs to
+function galKey(e){ return String(e==null?'':e).trim().toLowerCase().split('@')[0].replace(/\s+/g,''); }
+function canon(e){ var k=galKey(e); return ALIAS[k]||k; }
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 function toast(t){var s=document.getElementById('toast');s.textContent=t;s.classList.add('on');setTimeout(function(){s.classList.remove('on');},2200);}
 function getAll(path){ // page through PostgREST
@@ -275,16 +285,26 @@ function load(){
     getAll('activities?select=slug,title,unit,course,level,sort_order,url'),
     getAll('student_aliases?select=alias_email,email').catch(function(){return [];})
   ]).then(function(r){
+    /* aliases first: every later canon() call needs them */
+    ALIAS={};
+    (r[3]||[]).forEach(function(a){
+      var from=galKey(a.alias_email), to=galKey(a.email);
+      if(from && to && from!==to) ALIAS[from]=to;
+    });
     students={}; SPELLINGS={};
     r[0].forEach(function(s){
-      var e=canon(s.email); var cur=students[e]||{email:e};
+      var e=canon(s.email); var cur=students[e]||{email:e, mail:String(s.email||'').trim().toLowerCase()};
       // keep the most complete profile across @s.sfusd.edu / @sfusd.edu twins
       ['first_name','last_name','period','roster_order','course'].forEach(function(k){ if(s[k]!=null && s[k]!=='') cur[k]=s[k]; });
+      var raw=String(s.email||'').trim().toLowerCase();
+      if(!cur.mail || (galKey(raw)===e && (galKey(cur.mail)!==e || raw.indexOf('@s.sfusd.edu')>0))) cur.mail=raw;
       students[e]=cur;
       noteSpelling(e, s.email);
     });
     cells=r[1].map(function(c){noteSpelling(canon(c.email), c.email); c.email=canon(c.email); return c;});
     (r[3]||[]).forEach(function(a){ noteSpelling(canon(a.email), a.alias_email); noteSpelling(canon(a.email), a.email); });
+    /* a student seen only in the scores (no students row yet) still gets a row */
+    Object.keys(students).forEach(function(k){ if(!students[k].mail) students[k].mail=k+'@s.sfusd.edu'; });
     cells.forEach(function(c){ if(!students[c.email]) students[c.email]={email:c.email}; });
     activities={}; r[2].forEach(function(a){activities[a.slug]=a;});
     var units={}; cells.forEach(function(c){var u=c.unit||(activities[c.slug]&&activities[c.slug].unit)||'(untagged)';units[u]=1;});
@@ -301,9 +321,13 @@ function noteSpelling(canonical, raw){
   raw=String(raw||'').trim().toLowerCase();
   if(!canonical||!raw||raw.indexOf('@')<0) return;
   var cur=SPELLINGS[canonical];
-  if(!cur || (raw.indexOf('@s.sfusd.edu')>0 && cur.indexOf('@s.sfusd.edu')<0)) SPELLINGS[canonical]=raw;
+  if(!cur){ SPELLINGS[canonical]=raw; return; }
+  /* best address = the one whose username IS this student's id (not a merged-away
+     alias), and of those the @s.sfusd.edu one, since that is the Google account */
+  function rank(x){ return (galKey(x)===canonical?2:0) + (x.indexOf('@s.sfusd.edu')>0?1:0); }
+  if(rank(raw)>rank(cur)) SPELLINGS[canonical]=raw;
 }
-function signInEmail(s){ return SPELLINGS[s.email] || s.email; }
+function signInEmail(s){ return SPELLINGS[s.email] || s.mail || s.email; }
 function firstLast(s){                      // Classroom wants "First Last", not "Last, First"
   var n=((s.first_name||'')+' '+(s.last_name||'')).trim();
   return n || studentName(s);
@@ -363,7 +387,7 @@ function render(){
   var rows=sortStudents(Object.values(students).filter(function(s){
     if(per==='none'&&s.period)return false;
     if(per&&per!=='none'&&String(s.period)!==per)return false;
-    if(q&&studentName(s).toLowerCase().indexOf(q)<0&&s.email.indexOf(q)<0)return false;
+    if(q&&studentName(s).toLowerCase().indexOf(q)<0&&s.email.indexOf(q)<0&&String(s.mail||'').indexOf(q)<0)return false;
     return true;
   }));
   var rowSet={}; rows.forEach(function(s){rowSet[s.email]=1;});
@@ -399,7 +423,7 @@ function render(){
       line+='<td class="c" title="'+esc(pcttip+(c.score!=null?c.score+' / '+(c.max_score||'?'):'')+(c.completion?' · completion (parts done / parts on the page)':'')+' · '+c.attempts+' attempt'+(c.attempts==1?'':'s')+' · '+(c.last_at||'').slice(0,10))+'"><span class="'+(SHOW04?bandClass(b):grade(c.pct))+(c.completion?' cmp':'')+'">'+label+'</span></td>';
     });
     var avg=n?Math.round(sum/n):null;
-    h+='<tr><th>'+esc(studentName(s))+'<br><span style="font-weight:400;color:var(--muted);font-size:.7rem">'+esc(s.email)+'</span></th>'+
+    h+='<tr><th>'+esc(studentName(s))+'<br><span style="font-weight:400;color:var(--muted);font-size:.7rem">'+esc(signInEmail(s))+'</span></th>'+
        '<td><select class="per" data-email="'+esc(s.email)+'"><option value="">–</option>'+[1,2,3,4,5,6,7].map(function(p){return '<option'+(s.period==p?' selected':'')+'>'+p+'</option>';}).join('')+'</select></td>'+
        '<td class="avg"><span class="'+grade(avg)+'">'+(avg!=null?avg+'%':'')+'</span></td>'+line+'</tr>';
   });
@@ -410,9 +434,11 @@ function render(){
   document.querySelectorAll('select.per').forEach(function(sel){sel.onchange=function(){setPeriod(sel.dataset.email,sel.value?+sel.value:null);};});
 }
 
-function setPeriod(email,p){
-  students[email].period=p;
-  fetch(SUPA_URL+'/rest/v1/students?on_conflict=email',{method:'POST',headers:H({Prefer:'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify([{email:email,period:p,updated_at:new Date().toISOString()}])})
+function setPeriod(key,p){
+  var st=students[key]; if(!st) return;
+  st.period=p;
+  /* the row is keyed by username, but the database still stores real addresses */
+  fetch(SUPA_URL+'/rest/v1/students?on_conflict=email',{method:'POST',headers:H({Prefer:'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify([{email:(st.mail||signInEmail(st)),period:p,updated_at:new Date().toISOString()}])})
    .then(function(r){toast(r.ok?'Period saved':'Save failed');}).catch(function(){toast('Save failed');});
 }
 
