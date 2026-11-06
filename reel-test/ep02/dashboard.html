@@ -26,7 +26,7 @@ th,td{border:1px solid #cfc6d8;padding:6px 8px;text-align:center}
 th{background:#f3ecdf;position:sticky;top:0}
 td.nm{text-align:left;font-weight:800;cursor:pointer;color:var(--pu);text-decoration:underline}
 tr.sel td{background:#fff1d8}
-.s4{background:#d8f2e0}.s3{background:#eef7d6}.s2{background:#fff3cc}.s1{background:#ffe0cc}.s0{background:#fdd}
+.s45{background:#0d5c3a;color:#fff}.s4{background:#d8f2e0}.s3{background:#eef7d6}.s2{background:#fff3cc}.s1{background:#ffe0cc}.s0{background:#fdd}
 .pend{color:#b25b00;font-weight:900}
 .mut{color:var(--mut);font-size:13px}
 .ok{color:var(--gr);font-weight:900}.no{color:#c0392b;font-weight:900}
@@ -99,7 +99,12 @@ function finalScore(row){ var sc=row.scores||{}, r=readPts(row), tot=r.pts, max=
 function fixPts(row){ var w=row.work||{}, ans=w.ans||{}, prac=MODE==='practice', p=0, m=0, dn=0, any=false;
   FIX.forEach(function(it){ var a=ans[it.id]; m+=it.errs.length; if(a&&a.done){ any=true; dn++; p+=(prac&&a.ok)?it.errs.length:(a.pts||0); } });
   return (any||(row.scores||{}).fix)?{pts:p,max:m,done:dn,total:FIX.length}:null; }
-function band(p){ return p>=90?4:p>=80?3:p>=65?2:p>=40?1:0; }
+/* T-313: the gradebook's own 0–4.5 scale (T-302) from grade04.js — no cut points of our own.
+   Fallback = the same table, only if grade04.js failed to load. */
+function band(p){ if(window.GAL04&&GAL04.band){ var b=GAL04.band(p); return b==null?0:b; }
+  p=Math.round(+p||0); var T=[[95,4.5],[76,4],[56,3],[36,2],[15,1]]; for(var i=0;i<T.length;i++) if(p>=T[i][0]) return T[i][1]; return 0; }
+function bandCls(b){ return 's'+String(b).replace('.',''); }
+window.__T313band=band;
 function extVal(row,k){ var t=(row.teacher||{}).ext||{}; if(t[k]!=null) return {v:+t[k],teacher:true}; var e=((row.scores||{}).ext||{})[k]; return e&&e.auto!=null?{v:e.auto,teacher:false}:null; }
 
 function loadAll(){
@@ -128,7 +133,7 @@ function draw(){
     h+='<tr data-e="'+esc(canon(r.email))+'"'+(CUR===canon(r.email)?' class="sel"':'')+'><td class="nm">'+esc(r.student_name||r.email)+'</td><td>'+esc(r.period||'')+'</td>'+
       '<td>'+rp.pts+'/'+rp.max+(rp.pend?' <span class="pend" title="needs your ear">\u2022'+rp.pend+'</span>':'')+((r.teacher||{}).read&&Object.keys(r.teacher.read).length?'<div class="mut">you scored</div>':'')+'</td>'+
       cell('words')+cell('listen')+cell('story')+cell('fix')+cell('gram')+
-      '<td>'+f.pts+'/'+f.max+'<div class="mut">'+f.pct+'%</div></td><td class="s'+b+'"><b>'+b+'</b></td><td>'+(ex||'\u2014')+'</td>'+
+      '<td>'+f.pts+'/'+f.max+'<div class="mut">'+f.pct+'%</div></td><td class="'+bandCls(b)+'"><b>'+b+'</b></td><td>'+(ex||'\u2014')+'</td>'+
       '<td>'+(lg.leaves||0)+(lg.translated?'<div class="mut">browser translate on</div>':'')+(lg.nosound?'<div class="mut">\ud83d\udd07 no sound \u00d7'+lg.nosound+'</div>':'')+'</td><td>'+(r.turned_in?'\u2713':'')+'</td><td class="mut">'+new Date(r.updated_at).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+'</td></tr>';
   });
   missing.sort(function(a,b){return String(a.last_name||'').localeCompare(String(b.last_name||''));}).forEach(function(s){
