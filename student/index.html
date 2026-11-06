@@ -68,6 +68,10 @@ label{display:block;font-weight:800;font-size:.9rem;color:var(--plum-dk);margin:
 .rname:last-child{border-bottom:0}
 .rname:hover,.rname:focus{background:var(--plum-lt);outline:0}
 .rname.on{background:var(--green);color:#fff}
+/* T-335: once a name is picked the Go button says whose page and glows */
+#goBtn.ready{box-shadow:0 0 0 4px rgba(46,125,79,.35),0 4px 0 rgba(0,0,0,.18);animation:goPulse 1.4s ease-in-out 3}
+@keyframes goPulse{50%{box-shadow:0 0 0 9px rgba(46,125,79,.12),0 4px 0 rgba(0,0,0,.18)}}
+@media (prefers-reduced-motion:reduce){#goBtn.ready{animation:none}}
 .rname small{font-weight:700;opacity:.65;white-space:nowrap}
 /* T-260: username box with a fixed @s.sfusd.edu inside it */
 .emailbox{display:flex;align-items:center;border:2px solid var(--line-dk);border-radius:11px;background:var(--field);cursor:text}
@@ -571,7 +575,7 @@ th,td{border-bottom:2px solid var(--line-dk)}
       <span class="emailsuf" aria-hidden="true">@s.sfusd.edu</span>
     </div>
   </div>
-  <button class="btn" onclick="signIn()">Go to my page</button>
+  <button class="btn" id="goBtn" onclick="signIn()">Go to my page</button>
   <p id="siErr" class="note" style="color:var(--red);font-weight:800"></p>
   <p class="note" style="margin-top:20px">Teacher? <a href="#" onclick="teacherLogin();return false;">Open teacher view</a></p>
 </div>
@@ -940,6 +944,22 @@ function buildRoster(rows){
   return Object.keys(keep).map(function(k){return keep[k];})
     .sort(function(a,b){ return rNorm(a.name)<rNorm(b.name)?-1:rNorm(a.name)>rNorm(b.name)?1:0; });
 }
+/* T-335: tapping a name only SELECTS it (so a wrong tap never opens someone else's page). The button then says
+   "Go to my page as Joselyn →" and is brought into view with the language box above it — on a laptop it used
+   to sit below the fold, so a green name looked like a frozen page. Double-click and Enter still sign in. */
+function rosterGo(scroll){
+  var btn=document.getElementById('goBtn'); if(!btn)return;
+  var on=document.querySelector('#rosterList .rname.on span'), sel=document.getElementById('rosterSel').value;
+  var first=on&&sel?String(on.textContent||'').trim().split(/\s+/)[0]:'';
+  btn.textContent=first?'Go to my page as '+first+' \u2192':'Go to my page';
+  btn.classList.toggle('ready',!!first);
+  if(scroll&&first){
+    var r=btn.getBoundingClientRect(), vh=window.innerHeight||document.documentElement.clientHeight;
+    /* button near the bottom of the screen, so the language box just above it shows too */
+    if(r.bottom>vh-8) window.scrollBy({top:r.bottom-vh+24,behavior:'smooth'});
+    else if(r.top<0) window.scrollBy({top:r.top-140,behavior:'smooth'});
+  }
+}
 function renderRoster(q){
   var box=document.getElementById('rosterList'); if(!box)return;
   var want=rNorm(q).split(' ').filter(Boolean), cur=document.getElementById('rosterSel').value;
@@ -954,6 +974,7 @@ function renderRoster(q){
       document.getElementById('rosterSel').value=b.getAttribute('data-e');
       [].forEach.call(box.querySelectorAll('.rname'),function(x){x.classList.toggle('on',x===b);});
       document.getElementById('siErr').textContent='';
+      rosterGo(true);   /* T-335 */
     });
     b.addEventListener('dblclick',function(){ signIn(); });
   });
@@ -972,7 +993,7 @@ function renderRoster(q){
   document.getElementById('emailIn').addEventListener('input',function(){
     var v=this.value, i=v.indexOf('@'); if(i>-1){ this.value=v.slice(0,i); }
     if(/\s/.test(this.value)) this.value=this.value.replace(/\s+/g,'');
-    if(this.value){ document.getElementById('rosterSel').value=''; [].forEach.call(document.querySelectorAll('#rosterList .rname.on'),function(x){x.classList.remove('on');}); } });
+    if(this.value){ document.getElementById('rosterSel').value=''; [].forEach.call(document.querySelectorAll('#rosterList .rname.on'),function(x){x.classList.remove('on');}); rosterGo(false); } });
   document.getElementById('rosterQ').addEventListener('keydown',function(e){
     if(e.key!=='Enter')return; e.preventDefault();
     var b=document.querySelectorAll('#rosterList .rname'); if(b.length===1){ b[0].click(); }
