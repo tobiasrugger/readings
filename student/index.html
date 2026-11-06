@@ -296,6 +296,14 @@ h2 .ico{vertical-align:-1px}
 .qtext{font-size:1.12rem;font-weight:700;margin:4px 0 5px;line-height:1.45}
 .qfrom{font-size:.8rem;color:var(--muted);font-weight:700}
 /* ---- My Words ---- */
+/* T-336: "words I know" opens the list */
+button.wstat.wopen{font:inherit;cursor:pointer;border:2px solid var(--green);background:#fff;text-align:center}
+button.wstat.wopen:hover{background:#eef8f1}
+.kwlist{display:flex;flex-direction:column;gap:6px}
+.kwrow{display:grid;grid-template-columns:44px minmax(90px,1fr) auto minmax(80px,1.4fr);align-items:center;gap:10px;border:2px solid var(--plum-dk);border-radius:10px;padding:6px 10px;background:#fff}
+.kwrow .kwpic,.kwrow img,.kwrow svg{width:40px;height:40px;object-fit:contain;font-size:30px;line-height:40px;text-align:center}
+.kwrow .kww{font-size:1.1rem}
+.kwrow .kwtr{font-weight:800;color:var(--plum-dp)}
 .whead{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding-bottom:10px;border-bottom:3px solid var(--plum-lt);margin-bottom:16px}
 .whead h2{margin:0;padding:0;border:0;flex:1}
 .whead select{width:auto;padding:7px 10px;font-size:.9rem}
@@ -1146,7 +1154,7 @@ async function loadInner(email){
     DATA.student=stu[0];
     if(!DATA.student.home_language){ var hl=stu.filter(function(r){return r.home_language;})[0]; if(hl)DATA.student.home_language=hl.home_language; }
   }
-  DATA.facts=facts||[]; DATA.acts=(acts||[]).map(function(a){var pu=paramUrl(a.slug); if(pu)a.url=pu; return a;}); /* T-255 */ DATA.atts=atts||[]; DATA.skills=mergeSkills(skills||[]); DATA.res=res||[]; DATA.alias={};
+  DATA.facts=facts||[]; DATA.acts=(acts||[]).map(function(a){var pu=paramUrl(a.slug); if(pu)a.url=pu; a.title=dateTitle(a.title,a.slug); /* T-336 */ return a;}); /* T-255 */ DATA.atts=atts||[]; DATA.skills=mergeSkills(skills||[]); DATA.res=res||[]; DATA.alias={};
   (aliases||[]).forEach(function(a){DATA.alias[a.alias]=a.code;}); DATA.work=work||[];
   /* T-175: Launch Plus lessons score FIRST-TRY answers, so a finished lesson can sit at 89% for ever.
      Finish This uses how many items are DONE for those lessons instead. Read-only. */
@@ -1906,7 +1914,7 @@ function renderAll(){
     if(hl!=='none'){ MYLANG=hl; if(!READ_ONLY){ try{localStorage.setItem('vocab_lang',hl);localStorage.setItem('gal_lang',hl);}catch(e){} } }
   }
   buildLangPicker();
-  (DATA.skills||[]).forEach(function(r){ if(r.label)SKILL_LABEL[r.skill]=r.label; });
+  (DATA.skills||[]).forEach(function(r){ if(r.label)SKILL_LABEL[r.skill]=r.label; r.label=niceSkill(r.skill); });   /* T-336 */
   renderGlance();
   // a student with work is not a stranger, even without a profile row
   if(NEW_STUDENT&&!(DATA.atts||[]).length&&!(DATA.skills||[]).length){
@@ -1945,7 +1953,7 @@ function renderWords(){
   }
   var t=st.totals, h='';
   h+='<div class="wstats">'+
-    '<div class="wstat k"><b>'+t.known+'</b><span>words I know</span></div>'+
+    '<button type="button" class="wstat k wopen" onclick="openKnown()" title="See the words"><b>'+t.known+'</b><span>words I know &#9662;</span></button>'+
     '<div class="wstat n"><b>'+t.learn+'</b><span>words to learn</span></div>'+
     '<div class="wstat p"><b>'+t.got+'</b><span>learned with practice</span></div></div>';
 
@@ -2005,6 +2013,23 @@ function phonicsHtml(){
       '<div class="phparts">'+parts+'</div></div>'+
       '<a class="btn sm noprint" href="'+R.url+'">'+(o.complete?'Practice again':(o.started?'Keep going':'Start'))+'</a></div>';
   }).join('');
+}
+/* T-336: tap "words I know" -> the list of those words, each with 🔊 and its translation (one row per word) */
+var KNOWN_ST=null;
+function openKnown(){
+  closeSheet(); var st=KNOWN_ST||MW.buildState(DATA.checks,DATA.practice), seen={}, list=[];
+  (st.quizzes||[]).forEach(function(g){ (g.known||[]).forEach(function(en){ var k=MW.norm(en.w); if(seen[k])return; seen[k]=1; list.push(en); }); });
+  list.sort(function(a,b){ return MW.norm(a.w)<MW.norm(b.w)?-1:1; });
+  var q=MW.esc;
+  var h='<div class="sheet-card" onclick="event.stopPropagation()"><div class="sheet-head"><b>Words I know ('+list.length+')</b>'+
+    '<button class="btn ghost sm" onclick="closeSheet()">Close</button></div><div class="sheet-body"><div class="kwlist" translate="no">'+
+    list.map(function(en){ return '<div class="kwrow">'+((en.e||en.icon)?MW.pic(en,'kwpic'):'<span class="kwpic"></span>')+'<b class="kww">'+q(en.w)+'</b>'+
+      '<button class="btn sm" data-say="'+q(en.w)+'" aria-label="Hear it">&#128266;</button>'+
+      '<span class="kwtr" data-wtr="'+q(en.w)+'"></span></div>'; }).join('')+
+    (list.length?'':'<p class="note">No words yet. Take a vocabulary check.</p>')+'</div></div></div>';
+  var b=document.createElement('div'); b.id='sheet'; b.className='sheet'; b.innerHTML=h;
+  b.addEventListener('click',closeSheet); document.body.appendChild(b); document.body.style.overflow='hidden';
+  wordsTranslate();
 }
 function wordsLang(L){WLANG=L;if(!TV_EMAIL)MW.setLang(L);wordsTranslate();}
 function wordsTranslate(){
@@ -2204,7 +2229,7 @@ function renderActs(){
     var btn=url?'<a class="btn sm '+(l.length?'ghost':'')+'" href="'+esc(url)+
       (url.indexOf('?')>-1?'&':'?')+'email='+encodeURIComponent(ME)+'">'+
       (l.length?'Do it again':'Start')+'</a>':'';
-    return '<tr><td><b>'+esc(act.title||act.slug)+'</b><br>'+
+    return '<tr><td><b>'+esc(dateTitle(act.title||act.slug,act.slug))+'</b><br>'+
       '<span class="tag '+(l.length?'done':'todo')+'">'+(l.length?'Finished':'Not started')+'</span>'+
       (act.unit?' <span class="note">'+esc(act.unit)+'</span>':'')+taskChips(l)+'</td>'+
       '<td class="score">'+(first!=null?first+'%':'&mdash;')+'</td>'+
@@ -2289,7 +2314,7 @@ function renderFinish(){
     var act=titleOf[slug]||{};
     var sl=slugLink(slug);
     if(otherCourse(act.url||sl.url,act.title||sl.title))return;  /* T-269 */
-    rows.push({slug:slug,pct:best,title:act.title||sl.title,unit:act.unit||'',url:act.url||sl.url});
+    rows.push({slug:slug,pct:best,title:dateTitle(act.title||sl.title,slug),unit:act.unit||'',url:act.url||sl.url});   /* T-336 */
   });
   rows.sort(function(a,b){return b.pct-a.pct;});
   if(!rows.length){card.classList.add('hide');return;}
@@ -2372,8 +2397,32 @@ function starHtml(sk){
     (st.star_round>1?'<span class="tries" title="Took '+st.star_round+' rounds">'+st.star_round+'</span>':'');
 }
 var SKILL_LABEL={};
+/* T-336: full names for the skill codes. The database labels are cut short ("Sent Order", "Sent Ques.");
+   students see these instead. Codes are the GAL_META skills used across the site. */
+var SKILL_NAMES={'VOC.CTX':'Words in context','WRITE.PARA':'Writing a paragraph','CAP.PUNC':'Capitals and punctuation',
+  'SV.3SG':'He / she / it + verb -s','SENT.BE':'Sentences with "be"','READ.INF':'Reading between the lines',
+  'SENT.FRAG':'Sentence or fragment','CONJ.BBS':'and, but, so','SENT.TYPE':'Kinds of sentences','REVISE':'Fixing my writing',
+  'PAST':'Past tense','PLUR':'Plurals','WRITE.TS':'Topic sentences','WRITE.INTRO':'Introductions','WRITE.ESSAY':'Writing an essay',
+  'WRITE.CONC':'Conclusions','PARAPHRASE':'Saying it in my own words','ORDER':'Putting things in order','ART.AN':'a and an',
+  'SENT.ORDER':'Sentence order','PRON.SUBJ':'Subject pronouns','VOC.TOPIC':'Topic vocabulary','SPK.INFO':'Giving information',
+  'SENT.EXPAND':'Making sentences longer','RUNON':'Run-on sentences','PRES.SIMP':'Present tense','PLACE':'Places',
+  'DETAIL':'Details','ADJ':'Adjectives','WRITE.TOPIC':'Writing about a topic','VOC.MORPH':'Word parts',
+  'SENT.QUES':'Sentence questions','SENT.HAVE':'Sentences with "have"','READ.LIT':'Reading stories',
+  'NUM.WORD':'Numbers in words','NUM.HYPH':'Numbers with hyphens','LISTEN':'Listening','COUNT':'Counting',
+  'ART.COUNTRY':'"the" with countries','ALPHA':'The alphabet','AGE.BE':'Saying your age'};
+var SKILL_ABBR={sent:'sentence',ques:'questions',vocab:'vocabulary',voc:'vocabulary',gram:'grammar',punc:'punctuation',punct:'punctuation',
+  prep:'prepositions',adj:'adjectives',adv:'adverbs',conj:'conjunctions',pl:'plurals',plur:'plurals',poss:'possessives',
+  pres:'present',simp:'simple',para:'paragraph',intro:'introduction',conc:'conclusion',num:'numbers',alpha:'alphabet',ctx:'context'};
+function fullSkill(label,code){
+  var c=String(code||'').toUpperCase(); if(SKILL_NAMES[c])return SKILL_NAMES[c];
+  var t=String(label||'').trim(); if(!t)return t;
+  var words=t.replace(/[._]+/g,' ').split(/\s+/).map(function(w){ var k=w.toLowerCase().replace(/\.$/,''); return SKILL_ABBR[k]||w; });
+  t=words.join(' ');
+  return t.charAt(0).toUpperCase()+t.slice(1).replace(/\b([A-Z])([a-z]+)\b/g,function(m){ return m.toLowerCase(); });
+}
 function niceSkill(k){
-  if(SKILL_LABEL[k])return SKILL_LABEL[k];
+  if(SKILL_NAMES[String(k).toUpperCase()])return SKILL_NAMES[String(k).toUpperCase()];   /* T-336 */
+  if(SKILL_LABEL[k])return fullSkill(SKILL_LABEL[k],k);
   // a bare spine code (VOC.TOPIC, SV.3SG) is meaningless to a student:
   // show it tidied rather than shouted
   var t=String(k).replace(/[-_.]/g,' ').trim();
@@ -2415,7 +2464,18 @@ function actsForSkill(code){
   return {done:done,todo:todo};
 }
 
+/* T-336: "Daily Basics 11/6", "Daily Basics 11 6" and slug basics/2026-11-06 all read "Daily Basics · Nov 6" */
+var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function dateTitle(t,slug){
+  var m=/^(?:readings\/)?([a-z0-9-]+)\/(\d{4})-(\d{2})-(\d{2})(?:-[a-z])?$/i.exec(String(slug||''));
+  t=String(t||'').trim();
+  if(m&&+m[3]>=1&&+m[3]<=12){ var base=(t&&!/\d/.test(t))?t:(m[1]==='basics'?'Daily Basics':prettySlug(m[1])); return base.replace(/\s*·.*$/,'')+' \u00b7 '+MON[+m[3]-1]+' '+(+m[4]); }
+  var d=/^(daily basics|basics|do now)\s*(\d{1,2})\s*[\/ ]\s*(\d{1,2})$/i.exec(t);   /* only dated daily pages; "Ch 3/4" stays */
+  if(d&&+d[2]>=1&&+d[2]<=12&&+d[3]>=1&&+d[3]<=31) return d[1].replace(/[\s·-]+$/,'')+' \u00b7 '+MON[+d[2]-1]+' '+(+d[3]);
+  return t;
+}
 function actTitle(a){
+  var t0=dateTitle(a.title,a.slug); if(t0&&t0!==String(a.title||'').trim()) return t0;   /* T-336 */
   var t=(a.title||'').trim();
   if(t&&t.indexOf('/')<0)return t;
   var raw=t||a.slug||'';
@@ -2429,7 +2489,10 @@ function actTitle(a){
   return last.length>44?last.slice(0,42)+'\u2026':last;
 }
 function actLink(act,label,cls){
-  if(!act.url)return '<span class="muted">'+esc(label)+'</span>';
+  /* T-336: no url on the activity -> use its folder (vocab/verbs-1 -> /readings/vocab/verbs-1/); nothing found -> no words at all */
+  var url=act.url||(act.slug?slugLink(act.slug).url:'');
+  if(!url)return '';
+  act={url:url};
   var u=act.url+(act.url.indexOf('?')>-1?'&':'?')+'email='+encodeURIComponent(ME);
   return '<a class="btn sm '+(cls||'ghost')+'" href="'+esc(u)+'">'+esc(label)+'</a>';
 }
