@@ -19,14 +19,17 @@
    How it works: std.js loads this file on every page. Every translation on
    the site is a fetch to the Apps Script proxy, so this file sits in front of
    fetch. When the student's language (vocab_lang) is 'en-simple':
-     - a word (1–2 words): Simple English Wiktionary definition (simple.
+     - a TAPPED word (1–2 words): Simple English Wiktionary definition (simple.
        wiktionary.org, written for learners), saved in song_tr (slug
        'simple-wk', lang 'en-simple') so the next student gets it at once;
        if it has no entry, the proxy is asked with lang "Simple English";
-     - a sentence or a direction: the proxy with lang "Simple English",
-       saved in song_tr (slug 'simple-ai', lang 'en-simple');
-     - the proxy gives nothing for a sentence (T-286b): its harder words are shown
-       with short Wiktionary definitions ("flair: a natural skill · ...");
+     - anything else (sentence, direction, label, button): the proxy with lang
+       "Simple English", saved in song_tr (slug 'simple-s', lang 'en-simple');
+       old 'simple-ai' rows are never read;
+     - T-324: a definition is ONLY for a word the student just tapped. Labels, buttons
+       and directions (drawn by the page, not tapped) come back as a simpler sentence or
+       as the original English — never as a definition. (The T-286b hard-word gloss
+       for sentences is gone: it turned "open · tap to start" into a definition.)
      - nothing comes back: the original English is shown, never a blank.
      - pages that read or write their OWN translation caches (song_tr,
        news_translations) get an empty answer / a quiet "saved", so no other
@@ -250,8 +253,8 @@
     }
     return next();
   }
-  function cacheGet(src) {
-    var u = SUPA_URL + '/rest/v1/song_tr?select=equiv&slug=in.(simple-wk,simple-ai)&lang=eq.' + CODE + '&src=eq.' + encodeURIComponent(src);
+  function cacheGet(src, slug) {
+    var u = SUPA_URL + '/rest/v1/song_tr?select=equiv&slug=eq.' + (slug || 'simple-wk') + '&lang=eq.' + CODE + '&src=eq.' + encodeURIComponent(src);
     return timed(inner(u, { headers: hdr() }).then(function (r) { return r.ok ? r.json() : []; }), 4000)
       .then(function (rows) { return rows && rows[0] && rows[0].equiv || ''; })
       .catch(function () { return ''; });
@@ -260,7 +263,7 @@
     try {
       inner(SUPA_URL + '/rest/v1/song_tr?on_conflict=slug,lang,src', {
         method: 'POST', headers: hdr('resolution=merge-duplicates,return=minimal'),
-        body: JSON.stringify([{ slug: slug || 'simple-wk', lang: CODE, src: src, equiv: val, meaning: '', note: slug === 'simple-ai' ? 'proxy Simple English' : 'simple.wiktionary.org', updated_at: new Date().toISOString() }])
+        body: JSON.stringify([{ slug: slug || 'simple-wk', lang: CODE, src: src, equiv: val, meaning: '', note: slug === 'simple-s' ? 'proxy Simple English' : 'simple.wiktionary.org', updated_at: new Date().toISOString() }])
       }).catch(function () {});
     } catch (e) {}
   }
@@ -275,83 +278,68 @@
       return v;
     }).catch(function () { return ''; });
   }
-  /* T-286b: when the proxy gives nothing back for a sentence or a direction, show the
-     sentence's harder words with short easy definitions instead, e.g.
-     "entrepreneurs: people who start a business · flair: a natural skill". Same Wiktionary
-     source as single words; common and short words are skipped; names are skipped. */
-  var EASY = ('a an the and or but so if of to in on at by for from with about into over under up down out off ' +
-    'is am are was were be been being do does did done have has had having can could will would shall should may might must ' +
-    'i you he she it we they me him her us them my your his its our their mine yours this that these those there here ' +
-    'what who whom whose which when where why how not no yes very too also just only then than now still yet again ever never ' +
-    'all any some many much more most few less each every other another such same own both either neither ' +
-    'one two three four five six seven eight nine ten first second last next ' +
-    'go goes went gone going come came coming get got make made take took give gave see saw seen look say said tell told ' +
-    'know knew think thought want like need use used find found put keep let help work play read write talk walk run ' +
-    'good bad big small new old long short high low great little right left best better well happy sad nice ' +
-    'day days time year years week man men woman women boy girl people person thing things way home school class ' +
-    'friend friends family mother father teacher student students water food book books room house hand hands ' +
-    'back after before because while until around through again always often sometimes today tomorrow yesterday').split(' ');
-  function hardWords(sentence) {
-    var out = [], seen = {}, toks = String(sentence || '').split(/\s+/);
-    for (var i = 0; i < toks.length; i++) {
-      var raw = toks[i], w = bare(raw);
-      if (!w || w.length < 5 || /[^A-Za-z'-]/.test(w)) continue;
-      if (i > 0 && /^[A-Z]/.test(w)) continue;                       /* a name */
-      var l = w.toLowerCase().replace(/'s$/, '');
-      if (EASY.indexOf(l) >= 0 || seen[l]) continue;
-      seen[l] = 1; out.push(l);
-    }
-    out.sort(function (a, b) { return b.length - a.length; });
-    return out.slice(0, 4);
+  /* T-324: a dictionary definition is ONLY for a word the student just tapped.
+     Labels, buttons and directions are translated when the page draws them, not on a
+     tap, so they never get a definition: they come back as a simpler sentence, or as
+     the original English. A "tap" = a pointer/click in the last 3 s whose element text
+     contains the requested word as a whole word, and that isn't simply the whole text
+     of a button/chip/label (tapping a chip redraws its label). */
+  var LAST_TAP = { t: 0, text: '', ctl: '' };
+  function noteTap(e) {
+    try {
+      var el = e.target && e.target.nodeType === 1 ? e.target : (e.target && e.target.parentElement);
+      if (!el) return;
+      var ctl = el.closest && el.closest('button, [role=button], select, option, label, a, input, textarea, .chip, [class*=chip]');
+      LAST_TAP = { t: Date.now(), text: String(el.textContent || '').slice(0, 4000), ctl: ctl ? String(ctl.textContent || '').trim() : '' };
+    } catch (x) {}
   }
-  function shortDef(d) {
-    d = String(d || '').split(' / ')[0].replace(/\s+/g, ' ').trim();
-    if (d.length > 90) { d = d.slice(0, 88); d = d.slice(0, d.lastIndexOf(' ')) + '…'; }
-    return d.replace(/\.$/, '');
-  }
-  function glossSentence(sentence) {
-    var ws = hardWords(sentence);
-    if (!ws.length) return Promise.resolve('');
-    return Promise.all(ws.map(function (w) {
-      return cacheGet(w).then(function (hit) {
-        if (hit) return hit;
-        return wiktDefine(w).then(function (d) { if (d) cachePut(w, d, 'simple-wk'); return d; });
-      }).then(function (d) { return d ? w + ': ' + shortDef(d) : ''; }, function () { return ''; });
-    })).then(function (parts) {
-      /* keep the sentence's own word order */
-      var low = String(sentence).toLowerCase();
-      parts = parts.filter(Boolean).sort(function (a, b) { return low.indexOf(a.split(':')[0]) - low.indexOf(b.split(':')[0]); });
-      return parts.join(' · ');
-    });
+  function norm(s) { return String(s || '').toLowerCase().replace(/[^a-z0-9' ]+/g, ' ').replace(/\s+/g, ' ').trim(); }
+  function isTappedWord(src) {
+    var w = norm(src);
+    if (!w || w.split(' ').length > 2) return false;
+    if (Date.now() - LAST_TAP.t > 3000) return false;
+    if (LAST_TAP.ctl && norm(LAST_TAP.ctl) === w) return false;       /* the whole button/label text */
+    return (' ' + norm(LAST_TAP.text) + ' ').indexOf(' ' + w + ' ') >= 0;
   }
 
-  function simpleFor(src, meaning) {
+  function simpleFor(src, meaning, forceWord) {
     var key = String(src || '').trim();
     if (!key) return Promise.resolve('');
-    if (MEM[key]) return MEM[key];
-    var ws = words(key), isWord = ws.length <= 2, w = isWord ? bare(ws.join(' ')) : '';
-    var ck = isWord && w ? w.toLowerCase() : key;
-    function ai() {
-      return askProxy(key, meaning, isWord).then(function (v) {
-        var same = !v || v.toLowerCase().replace(/\W+/g, '') === key.toLowerCase().replace(/\W+/g, '');
-        if (!same) { cachePut(ck, v, 'simple-ai'); return v; }
-        if (isWord) return '';
-        return glossSentence(key).then(function (g) { if (g) cachePut(ck, g, 'simple-ai'); return g; });
-      });
-    }
-    var p = cacheGet(ck).then(function (hit) {
-      if (hit) return hit;
-      if (isWord && /^[A-Za-z][A-Za-z' -]*$/.test(w)) {
+    var ws = words(key), w = ws.length <= 2 ? bare(ws.join(' ')) : '';
+    var tapped = !!w && /^[A-Za-z][A-Za-z' -]*$/.test(w) && (forceWord || isTappedWord(key));
+    var mk = (tapped ? 'w|' : 's|') + key;
+    if (MEM[mk]) return MEM[mk];
+    var p;
+    if (tapped) {
+      /* a tapped word: easy definition (Wiktionary), else ask the translator */
+      var ck = w.toLowerCase();
+      p = cacheGet(ck, 'simple-wk').then(function (hit) {
+        if (hit) return hit;
         return wiktDefine(w).then(function (d) {
           if (d) { cachePut(ck, d, 'simple-wk'); return d; }
-          return ai();
+          return askProxy(key, meaning, true);
         });
-      }
-      return ai();
-    });
+      });
+    } else if (ws.length <= 2) {
+      /* a 1–2 word label or button (or std.js warming up words nobody tapped yet):
+         short English is already simple — keep it, and spend no translator quota */
+      p = Promise.resolve(key);
+    } else {
+      /* a label, button, direction or sentence: a simpler sentence or the English itself */
+      p = cacheGet(key, 'simple-s').then(function (hit) {
+        if (hit) return hit;
+        return askProxy(key, meaning, false).then(function (v) {
+          var same = !v || norm(v) === norm(key);
+          if (same) return '';
+          if (/^[a-z' -]{2,30}:\s/i.test(v) && v.length > key.length * 2) return '';   /* looks like a definition, not a sentence */
+          cachePut(key, v, 'simple-s');
+          return v;
+        });
+      });
+    }
     p = p.then(function (v) { return v || key; });              /* never a blank: the English stays */
-    MEM[key] = p;
-    p.then(function (v) { if (v === key) delete MEM[key]; });  /* a miss is retried next tap */
+    MEM[mk] = p;
+    p.then(function (v) { if (v === key) delete MEM[mk]; });  /* a miss is retried next time */
     return p;
   }
 
@@ -412,6 +400,9 @@
     document.addEventListener('input', soon, true);
     document.addEventListener('change', soon, true);
     document.addEventListener('focusout', soon, true);
+    document.addEventListener('pointerdown', noteTap, true);
+    document.addEventListener('click', noteTap, true);
+    document.addEventListener('touchstart', noteTap, { capture: true, passive: true });
     document.addEventListener('click', function () { setTimeout(scan, 300); setTimeout(scan, 1300); setTimeout(scan, 3200); }, true);
   }
   window.GAL_SIMPLE = { CODE: CODE, settings: SET, simpleFor: simpleFor, parseWiki: parseWiki, rescan: scan };
