@@ -176,7 +176,7 @@ function save(){
   fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email,set_slug', {
     method:'POST',
     headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
-    body: JSON.stringify(payload())
+    body: JSON.stringify(payload()), keepalive: true
   }).then(function(r){
       $('dot').className = r.ok ? '' : 'err';
       if(r.ok){ try{ localStorage.removeItem(oldKey()); }catch(e){} }
@@ -211,7 +211,9 @@ function loadFailed(){
 }
 setInterval(function(){ if(dirty && loaded){ dirty=false; save(); } }, 2500);
 document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='hidden' && dirty && loaded){ dirty=false; save(); } });
-function touch(){ dirty = true; }
+window.addEventListener('pagehide', function(){ if(dirty && loaded){ dirty=false; save(); } });
+var touchT = null;
+function touch(){ dirty = true; clearTimeout(touchT); touchT = setTimeout(function(){ if(dirty && loaded){ dirty=false; save(); } }, 900); }   /* T-348: saves ~1 s after each answer */
 
 $('turnin').addEventListener('click', function(){
   if(!loaded){ alert('The page can\u2019t reach the server yet. Wait a moment, then press Turn in again.'); return; }
@@ -273,28 +275,42 @@ function translate(text, lang){
 }
 
 /* ---------- tabs ---------- */
-var PANES = [['p-words','Words'],['p-guess','Picture only'],['p-match','Match'],['p-search','Word search'],
-             ['p-cross','Crossword'],['p-mc','Choose'],['p-cloze','Fill the blank'],['p-fix','Fix it'],
-             ['p-spell','Listen and spell'],['p-teacher','Teacher']];
+/* T-348 (Nov 6): four core steps (numbered chips) set GAL_MAX; the rest is "Extra" and can only raise the score.
+   "Picture only" is now a switch on the Words screen, off again every time the student comes back to it. */
+var PANES = [['p-words','Words'],['p-match','Match'],['p-mc','Choose'],['p-spell','Listen and spell'],
+             ['p-search','Word search'],['p-cross','Crossword'],['p-fix','Fix it'],['p-cloze','Fill the blank'],
+             ['p-teacher','Teacher']];
+var CORE_N = 4;
 (function(){
   var nav=$('tabs');
+  var strip=document.createElement('div'); strip.className='vstrip'; strip.id='vstrip'; strip.setAttribute('translate','no');
+  var rowC=document.createElement('div'); rowC.className='vrow vcore';
+  var rowX=document.createElement('div'); rowX.className='vrow vextra';
+  var xl=document.createElement('span'); xl.className='vxlab'; xl.textContent='Extra:'; rowX.appendChild(xl);
+  var stripWrap=document.createElement('div'); stripWrap.className='vstripwrap'; stripWrap.appendChild(strip);
+  nav.parentNode.insertBefore(stripWrap, nav);   /* the story strip sticks on its own, above the tab rows */
+  nav.appendChild(rowC); nav.appendChild(rowX);
+  var NUM=['\u2460','\u2461','\u2462','\u2463'];
   PANES.forEach(function(p,i){
     var b=document.createElement('button');
-    b.textContent=p[1]; b.setAttribute('role','tab'); b.setAttribute('aria-selected', i===0?'true':'false');
+    b.textContent=(i<CORE_N ? NUM[i]+' ' : '')+p[1]; b.setAttribute('role','tab'); b.setAttribute('aria-selected', i===0?'true':'false');
+    b.setAttribute('data-pane', p[0]);
+    if(p[0]==='p-teacher') b.className='vteach';
     b.addEventListener('click', function(){
       PANES.forEach(function(q){ $(q[0]).classList.remove('on'); });
-      Array.prototype.forEach.call(nav.children, function(c){ c.setAttribute('aria-selected','false'); });
+      Array.prototype.forEach.call(nav.querySelectorAll('button[role=tab]'), function(c){ c.setAttribute('aria-selected','false'); });
       $(p[0]).classList.add('on'); b.setAttribute('aria-selected','true');
+      if(p[0]==='p-words' && window.galPicOnly) galPicOnly(false);   /* words come back on every visit */
       window.scrollTo(0,0);
     });
-    nav.appendChild(b);
+    (i<CORE_N ? rowC : rowX).appendChild(b);
   });
   if(SET.backHref){
     var back = document.createElement('a');
     back.className = 'backbtn';
     back.href = SET.backHref;
     back.textContent = SET.backLabel || 'Back to the story';
-    nav.appendChild(back);
+    strip.appendChild(back);
   }
   $('p-words').classList.add('on');
 
@@ -306,8 +322,31 @@ var PANES = [['p-words','Words'],['p-guess','Picture only'],['p-match','Match'],
     'nav.tabs{position:sticky;top:var(--galBarH,44px);z-index:45;background:var(--paper,#faf7f1);' +
       'margin:0 -16px 18px;padding:9px 16px;border-bottom:2px solid #241d12;box-shadow:0 3px 6px rgba(0,0,0,.12)}' +
     'html{scroll-padding-top:calc(var(--galBarH,44px) + 70px)}' +
-    '@media(max-width:700px){nav.tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}' +
-      'nav.tabs button,nav.tabs a.backbtn{flex:0 0 auto}}' +
+    'nav.tabs{display:block;top:calc(var(--galBarH,44px) + var(--galStripH,0px))}' +
+    'nav.tabs .vrow:first-child{margin-top:0}' +
+    '.vstripwrap{position:sticky;top:var(--galBarH,44px);z-index:46;background:var(--paper,#faf7f1);margin:0 -16px;padding:8px 16px 0}' +
+    '.vstrip a.backbtn{display:inline-flex;align-items:center;gap:6px;font-family:Nunito,sans-serif;font-weight:800;background:#17915a;color:#fff;' +
+      'border:2px solid #0f7a4a;border-radius:9px;text-decoration:none;box-shadow:0 1px 3px rgba(0,0,0,.18)}' +
+    '.vstrip a.backbtn:hover{background:#0f7a4a}' +
+    '@media(max-width:700px){.bar{position:static}.vstripwrap{top:0}nav.tabs{position:static;box-shadow:none}.vstripwrap{padding-bottom:8px;border-bottom:2px solid #241d12;box-shadow:0 3px 6px rgba(0,0,0,.12)}}' +
+    'nav.tabs .vrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:7px}' +
+    'nav.tabs .vcore button{font-size:.84rem;padding:6px 11px;border:2px solid #241d12;border-radius:999px;background:#fff;color:#241d12}' +
+    'nav.tabs .vcore button[aria-selected="true"]{background:#3C3489;border-color:#3C3489;color:#fff}' +
+    'nav.tabs .vextra button{font-size:.74rem;padding:3px 9px;border:1.5px solid #8a7f6c;border-radius:999px;background:#fff;color:#4a4232}' +
+    'nav.tabs .vextra button[aria-selected="true"]{background:#c8892a;border-color:#c8892a;color:#1a1208}' +
+    'nav.tabs .vextra .vteach{margin-left:auto}' +
+    'nav.tabs .vxlab{font:800 .72rem/1 Nunito,sans-serif;color:#6b6152;letter-spacing:.04em}' +
+    '.vstrip{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;border:2px solid #241d12;border-radius:10px;' +
+      'background:#fff;padding:6px 9px;box-shadow:0 2px 4px rgba(0,0,0,.12);font:700 .86rem/1.25 Nunito,sans-serif}' +
+    '.vstrip .vst{color:#241d12;font-weight:800}' +
+    '.vstrip .vparts{display:flex;flex-wrap:wrap;gap:5px}' +
+    '.vstrip .vparts a{color:#241d12;text-decoration:none;border:1.5px solid #8a7f6c;border-radius:7px;padding:3px 9px;font-size:.82rem;background:#faf7f1}' +
+    '.vstrip .vparts a:hover{border-color:#3C3489;color:#3C3489}' +
+    '.vstrip .vparts a.on{background:#fff1b0;border:2px solid #c8892a;font-weight:900}' +
+    '.vstrip .vall{font-size:.74rem;color:#6b6152;font-weight:600}' +
+    '.vstrip a.backbtn{margin-left:auto;padding:6px 12px!important;font-size:.84rem!important}' +
+    '@media(max-width:620px){.vstrip{font-size:.8rem;gap:5px 8px;padding:5px 8px}.vstrip .vparts a{padding:3px 7px}.vstrip .vall{display:none}' +
+      '.vstrip a.backbtn{margin-left:0;padding:5px 10px!important;font-size:.8rem!important}}' +
     '.galNext{display:flex;justify-content:flex-end;margin:26px 0 6px;padding-top:16px;border-top:2px solid #241d12}' +
     '.galNext button,.galNext a{font-family:inherit;font-weight:800;font-size:1.05rem;background:#17915a;color:#fff;' +
       'border:2px solid #0f7a4a;border-radius:11px;padding:12px 22px;cursor:pointer;text-decoration:none;' +
@@ -322,7 +361,14 @@ var PANES = [['p-words','Words'],['p-guess','Picture only'],['p-match','Match'],
     var h = Math.ceil(bar.getBoundingClientRect().height) || 44;
     document.documentElement.style.setProperty('--galBarH', h + 'px');
   }
-  barH();
+  function stripH(){
+    var w = document.querySelector('.vstripwrap');
+    var h = (w && window.innerWidth > 700) ? Math.ceil(w.getBoundingClientRect().height) : 0;
+    document.documentElement.style.setProperty('--galStripH', h + 'px');
+  }
+  barH(); stripH();
+  window.addEventListener('resize', stripH);
+  setTimeout(stripH, 300); setTimeout(stripH, 1500);
   window.addEventListener('resize', barH);
   window.addEventListener('orientationchange', function(){ setTimeout(barH, 300); });
   if(window.ResizeObserver && bar){ try{ new ResizeObserver(barH).observe(bar); }catch(e){} }
@@ -338,7 +384,7 @@ var PANES = [['p-words','Words'],['p-guess','Picture only'],['p-match','Match'],
     if(nxt && nxt[0] !== 'p-teacher'){
       var b = document.createElement('button');
       b.type = 'button';
-      b.textContent = 'Next: ' + nxt[1] + ' \u2192';
+      b.textContent = (i + 1 >= CORE_N ? 'Extra: ' : 'Next: ') + nxt[1] + ' \u2192';
       b.addEventListener('click', function(){ if(tabBtns[i + 1]) tabBtns[i + 1].click(); });
       box.appendChild(b);
     } else if(SET.backHref){
@@ -388,21 +434,25 @@ function buildMatch(){
   var pics=$('mPics'), words=$('mWords');
   pics.innerHTML=''; words.innerHTML='';
   shuffle(SET.words).forEach(function(w){
-    var d=document.createElement('div'); d.className='mitem'; d.dataset.w=w.w;
-    d.innerHTML = pic(w);
+    var d=document.createElement('div'); d.className='mitem mpic'; d.dataset.w=w.w;
+    d.innerHTML = pic(w) + '<div class="mw">'+(state.match[w.w]===1 ? esc(w.w) : '')+'</div>';
+    if(state.match[w.w]===1) d.classList.add('done');
     d.addEventListener('click', function(){
+      if(d.classList.contains('done')) return;
       if(mSel) mSel.classList.remove('sel');
       mSel=d; d.classList.add('sel');
     });
     pics.appendChild(d);
   });
   shuffle(SET.words).forEach(function(w){
-    var d=document.createElement('div'); d.className='mitem'; d.dataset.w=w.w;
+    var d=document.createElement('div'); d.className='mitem mword'; d.dataset.w=w.w;
     d.textContent = w.w;
+    if(state.match[w.w]===1) d.classList.add('done');
     d.addEventListener('click', function(){
       if(!mSel) return;
       if(mSel.dataset.w === w.w){
         mSel.classList.add('done'); d.classList.add('done');
+        var mw = mSel.querySelector('.mw'); if(mw) mw.textContent = w.w;
         state.match[w.w]=1; mSel=null; touch(); mScore();
         speak(w.w);
       } else {
@@ -420,7 +470,7 @@ function mScore(){
   var n=0; SET.words.forEach(function(w){ if(state.match[w.w]===1) n++; });
   $('mScore').textContent = n+' of '+SET.words.length+' matched';
 }
-$('mReset').addEventListener('click', function(){ state.match={}; buildMatch(); touch(); });
+$('mReset').addEventListener('click', function(){ mSel=null; buildMatch(); });   /* T-348: reshuffles the rest; matches already made stay */
 buildMatch();
 
 /* ---------- word search ---------- */
@@ -860,6 +910,14 @@ function galPattern(a, n){
   if(out.indexOf('_')<0 && L>1) out[Math.floor(L/2)]='_';
   return out.join(' ');
 }
+/* T-348: after the 3rd miss the answer is shown with 🔊; doing it once then counts a full point (shown is kept for Mr. Toby). */
+function galReveal(ans, how){
+  return 'Here it is: <b class="galans">'+esc(ans)+'</b> <button type="button" class="spk galsay" data-say="'+esc(ans)+'">\ud83d\udd0a</button> '+esc(how);
+}
+document.addEventListener('click', function(e){
+  var b = e.target.closest ? e.target.closest('.galsay') : null;
+  if(b){ e.preventDefault(); speak(b.getAttribute('data-say')); }
+});
 function galWord(n){ for(var i=0;i<SET.words.length;i++) if(SET.words[i].w===n) return SET.words[i]; return null; }
 function galPlan(names){
   var q=shuffle(names), o={}, run=0, last=-1;
@@ -970,6 +1028,7 @@ $('czCheck').addEventListener('click', function(){
     if(!got){ galTodo(q,fb); todo++; return; }
     if(got===a.toLowerCase()){ galRight(q,fb,rec.n>0); ok++; return; }
     if(got!==rec.last){ rec.n++; rec.last=got; }
+    if(rec.n>=3){ rec.shown=true; galMiss(q,fb,''); fb.innerHTML=galReveal(a, 'Type it in the blank once to finish.'); return; }
     galMiss(q,fb, rec.n>=2 ? 'Try again. Hint: '+galPattern(a, rec.n) : czHint(a));
   });
   $('czScore').textContent = ok+' of '+tot+' right' + (todo ? ' \u00b7 '+todo+' not done yet' : '');
@@ -992,7 +1051,7 @@ function buildFix(){
     inp.addEventListener('input', function(){ state.fix[i]=inp.value; touch(); });
   });
 }
-function norm(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ').trim(); }
+function norm(s){ return String(s||'').replace(/\b(STOP AND THINK|REVIEW|INFER|PREDICT|CONNECT|CRAFT)\s+\d+\s+words?\b/g,'').toLowerCase().replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ').trim(); }
 /* Fix it (T-27, T-45): empty -> "Not done yet" | right -> check | wrong -> "Try again" + the page's hint;
    each NEW wrong try after that also points at the word to change. Never the corrected sentence.
    No "show answers" button. */
@@ -1012,6 +1071,7 @@ $('fxCheck').addEventListener('click', function(){
     if(!got){ galTodo(q,fb); todo++; return; }
     if(got===norm(f.good)){ galRight(q,fb,rec.n>0); ok++; return; }
     if(got!==rec.last){ rec.n++; rec.last=got; }
+    if(rec.n>=3){ rec.shown=true; galMiss(q,fb,''); fb.innerHTML=galReveal(f.good, 'Type it once to finish.'); return; }
     var hint = f.hint ? ' Hint: ' + f.hint + (/[.!?]$/.test(String(f.hint).trim()) ? '' : '.') : '', word = fxWord(f);
     galMiss(q,fb, 'Try again.' + hint + (rec.n>=2 && word ? ' Look at the word \u201c'+word+'\u201d.' : ''));
   });
@@ -1081,6 +1141,7 @@ $('spCheck').addEventListener('click', function(){
     if(!got){ galTodo(q,fb); fb.textContent='Not done yet. Tap \ud83d\udd0a Play and listen.'; todo++; return; }
     if(got===a.toLowerCase()){ galRight(q,fb,rec.n>0); ok++; return; }
     if(got!==rec.last){ rec.n++; rec.last=got; }
+    if(rec.n>=3){ rec.shown=true; galMiss(q,fb,''); fb.innerHTML=galReveal(a, state.spellLevel===1 ? 'Tap it once to finish.' : 'Type it once to finish.'); return; }
     var n=a.replace(/[^A-Za-z]/g,'').length;
     galMiss(q,fb, 'Listen again. You '+(state.spellLevel===1?'chose':'wrote')+' "'+got+'".' +
       (rec.n>=3 ? ' Hint: '+galPattern(a, rec.n-1) :
@@ -1102,15 +1163,17 @@ function reportScore(){
     var s = scoreSummary();
     var W = SET.words.length, F = (SET.fix || []).length;
     var n = function(o){ return o ? (o.length !== undefined ? o.length : Object.keys(o).length) : 0; };
-    var games = [[s.match, W, n(state.match)], [s.wordsearch, W, n(state.ws)],
-                 [s.mc, W, n(state.mc)], [s.cloze, W, n(state.cloze)],
-                 [s.fix, F, n(state.fix)], [s.spell, W, n(state.spell)]];
+    /* T-348: GAL_MAX = the four core steps (Match, Choose, Listen and spell; Words has nothing to score).
+       Extras (Word search, Fill the blank, Fix it) add points but the score never passes GAL_MAX. */
+    var games = [[s.match, W, n(state.match)], [s.mc, W, n(state.mc)], [s.spell, W, n(state.spell)]];
+    var extra = s.wordsearch + s.cloze + s.fix;
     var got = 0, max = 0, done = 0, i;
     for(i = 0; i < games.length; i++){
       got += games[i][0];
       max += games[i][1];
       done += Math.min(games[i][2], games[i][1]);
     }
+    got = Math.min(max, got + extra);
     if(max > 0){ window.GAL_SCORE = got; window.GAL_MAX = max; }
     window.GAL_COMPLETION = { done: done, total: max };
   }catch(err){}
@@ -1449,7 +1512,7 @@ $('imode').addEventListener('change', function(){
    Chrome/Edge/Safari translation rewrites the DOM. The tab labels are
    translatable and we know exactly what they should say, so any drift
    means an outside translator is running. Nothing is shown to the student. */
-var TR_EXPECT = PANES.map(function(p){ return p[1]; });
+var TR_EXPECT = Array.prototype.map.call(document.querySelectorAll('nav.tabs button'), function(b){ return (b.textContent||'').trim(); });
 var TR_SENT = '';
 
 function detectTranslation(){
@@ -1537,8 +1600,6 @@ setTimeout(checkTranslation, 4000);
     n.value = o.value; n.textContent = o.textContent;
     box.appendChild(n);
   }
-  var e = document.createElement("option");
-  e.value = "none"; e.textContent = "English only"; box.appendChild(e);
   var saved = null;
   try{ saved = localStorage.getItem("vocab_lang"); }catch(err){}
   if(saved) box.value = saved;
@@ -1550,3 +1611,108 @@ setTimeout(checkTranslation, 4000);
   });
 })();
 
+
+/* ============================================================
+   T-348 (Nov 6) — story sets: the story is always one tap away,
+   "Picture only" lives on the Words screen, Match tiles sized to the job.
+   ============================================================ */
+(function(){
+  var STORIES = {
+    landlady:   { title: 'The Landlady', vers: ['/readings/landlady/', '/readings/landlady-easy/', '/readings/landlady-hard/'] },
+    telltale:   { title: 'The Tell-Tale Heart', vers: ['/readings/telltale/'] },
+    monkeyspaw: { title: 'The Monkey\u2019s Paw', vers: ['/readings/monkeyspaw/'] }
+  };
+  var key = String(SET.slug || '').replace(/-\d+$/, ''), S = STORIES[key];
+
+  /* which version does this student read? referrer, then this tab's memory, then std.js's last page, then the regular one */
+  function pick(path){
+    if(!S || !path) return '';
+    for(var i = 0; i < S.vers.length; i++){ if(path.indexOf(S.vers[i]) === 0) return S.vers[i]; }
+    return '';
+  }
+  var base = '';
+  if(S){
+    try{ base = pick(new URL(document.referrer).pathname); }catch(e){}
+    var mem = 'gal_story_ver_' + key;
+    try{
+      if(base) sessionStorage.setItem(mem, base);
+      else base = pick(sessionStorage.getItem(mem) || '') || pick(sessionStorage.getItem('gal_last_page') || '');
+    }catch(e){}
+    if(!base) base = S.vers[0];
+    window.GAL_STORY_BASE = base;
+  }
+
+  /* bar crumb, page heading and sign-in title name the right story */
+  var crumb = document.querySelector('.bar .crumb'), h1 = document.querySelector('.bar h1'), gh = document.querySelector('#gate h2');
+  if(S && crumb){ crumb.href = base; crumb.innerHTML = '<span class="arr">&larr;</span>' + esc(S.title); }
+  if(h1) h1.textContent = SET.title;
+  if(gh) gh.textContent = SET.title;
+
+  /* every link back to the story goes to the version this student uses */
+  if(S){
+    Array.prototype.forEach.call(document.querySelectorAll('a[href]'), function(a){
+      var h = a.getAttribute('href');
+      if(h === S.vers[0] || h === S.vers[0].replace(/\/$/, '')) a.setAttribute('href', base);
+    });
+  }
+
+  /* the story strip: 📖 The Landlady: Part 1 · Part 2 · Part 3 · Part 4 */
+  var strip = document.getElementById('vstrip');
+  if(strip && S){
+    var parts = SET.parts || [], html = '<span class="vst">\uD83D\uDCD6 ' + esc(S.title) + ':</span><span class="vparts">';
+    for(var k = 1; k <= 4; k++){
+      var on = parts.indexOf(k) >= 0;
+      html += '<a href="' + base + '#p' + k + '"' + (on ? ' class="on" title="These words are from this part"' : '') + '>Part ' + k + '</a>';
+    }
+    html += '</span>' + (parts.length ? '' : '<span class="vall">words from the whole story</span>');
+    strip.insertAdjacentHTML('afterbegin', html);
+  } else if(strip && !strip.children.length){ strip.style.display = 'none'; }
+
+  /* "Picture only" switch on the Words screen; always starts OFF */
+  var pw = $('p-words'), fg = $('fcGuess'), fw = $('fcWords'), pg = $('p-guess');
+  if(pw && fg && fw){
+    var bar = document.createElement('div'); bar.className = 'vpicbar';
+    bar.innerHTML = '<button type="button" class="vpic" id="vpic" aria-pressed="false">\uD83D\uDDBC\uFE0F Picture only: <b>off</b></button>' +
+                    '<span class="vpictip" translate="yes">Turn it on to test yourself: say the word, then tap the card.</span>';
+    pw.insertBefore(bar, fw);
+    pw.insertBefore(fg, fw.nextSibling);
+    if(pg && pg.parentNode) pg.parentNode.removeChild(pg);
+    window.galPicOnly = function(on){
+      var b = $('vpic');
+      fw.style.display = on ? 'none' : '';
+      fg.style.display = on ? '' : 'none';
+      if(b){ b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.innerHTML = '\uD83D\uDDBC\uFE0F Picture only: <b>' + (on ? 'on' : 'off') + '</b>'; }
+      if(on) buildCards(fg, true);   /* every word hidden again each time */
+    };
+    $('vpic').addEventListener('click', function(){ galPicOnly(this.getAttribute('aria-pressed') !== 'true'); });
+    galPicOnly(false);
+  }
+
+  var css = document.createElement('style');
+  css.textContent =
+    '.vpicbar{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin:0 0 12px}' +
+    '.vpic{font:800 .84rem/1.2 Nunito,sans-serif;border:2px solid #241d12;border-radius:999px;background:#fff;color:#241d12;padding:5px 12px;cursor:pointer}' +
+    '.vpic[aria-pressed="true"]{background:#3C3489;border-color:#3C3489;color:#fff}' +
+    '.vpictip{font-size:.82rem;color:#6b6152}' +
+    /* Match: pictures in a grid of ~130px tiles, words as chips below */
+    '#p-match .match{display:block}' +
+    '#mPics{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));max-width:880px}' +
+    '#mPics .mitem{padding:7px;border:2px solid #8a7f6c;border-radius:11px;max-width:150px;width:100%;justify-self:center}' +
+    '#mPics .mitem .pic.drawn svg{max-width:132px;margin:0 auto}' +
+    '#mPics .mitem .pic{font-size:2.6rem}' +
+    '#mPics .mitem.sel{border-color:#3C3489;box-shadow:0 0 0 3px #c9c4f5;background:#f3f1ff}' +
+    '#mPics .mitem.done{opacity:1;border-style:solid;border-color:#17915a;background:#eef8f2}' +
+    '#mPics .mw{min-height:1.25em;margin-top:5px;font:800 .9rem/1.2 Nunito,sans-serif;color:#17915a}' +
+    '#mWords{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;padding-top:12px;border-top:2px solid #241d12}' +
+    '#mWords .mitem{padding:7px 13px;font:800 .95rem/1.2 Nunito,sans-serif;border:2px solid #241d12;border-radius:9px}' +
+    '#mWords .mitem.done{opacity:.3}' +
+    '@media(max-width:620px){#mPics{grid-template-columns:repeat(auto-fill,minmax(104px,1fr))}#mPics .mitem .pic.drawn svg{max-width:112px}' +
+      '#mWords{position:sticky;bottom:0;z-index:60;background:var(--paper,#faf7f1);margin:14px -16px 0;padding:10px 16px 12px;' +
+      'max-height:38vh;overflow-y:auto;box-shadow:0 -4px 8px rgba(0,0,0,.12);gap:6px}#mWords .mitem{padding:6px 10px;font-size:.88rem}}' +
+    '.galans{font-size:1.05em}';
+  document.head.appendChild(css);
+
+  /* captions say which kind of step this is */
+  var ex = document.querySelectorAll('#p-search h2.pt, #p-cross h2.pt, #p-fix h2.pt, #p-cloze h2.pt');
+  Array.prototype.forEach.call(ex, function(h){ h.insertAdjacentHTML('beforeend', ' <span style="font:800 .8rem Nunito,sans-serif;color:#7A5A05;border:1.5px solid #c8892a;border-radius:999px;padding:2px 8px;vertical-align:middle">Extra</span>'); });
+})();
