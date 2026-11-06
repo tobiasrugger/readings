@@ -49,6 +49,7 @@ select,input[type=text]{font-family:inherit;font-size:1rem;font-weight:700;paddi
 .q .txt{font-size:1rem;font-weight:700;line-height:1.4}
 .q .sub{font-size:.8rem;font-weight:800;color:var(--muted);margin:0 0 2px}
 .q .opts{margin-top:5px;font-size:.92rem;font-weight:700}
+.q .quotebox{display:block;border:2px solid var(--ink);border-radius:8px;padding:4px 10px;margin:3px 0 2px;font-size:1.08rem;font-weight:800;background:#fff} /* T-338 */
 .q .opts span{display:inline-block;border:1.5px solid var(--ink);border-radius:7px;padding:1px 8px;margin:3px 5px 0 0}
 .q .opts span i{font-style:normal;color:var(--muted);margin-right:4px}
 .q .opts.col span{display:block;margin:4px 0 0}
@@ -190,7 +191,7 @@ function makeSet(code,lesson,level){LESSON=lesson;LEVEL=level;TODAY=code;ST={A:{
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');}
 function plain(h){return String(h).replace(/<button[^>]*>[\s\S]*?<\/button>/g,'').replace(/<\/div>/g,' \u2014 ').replace(/<[^>]+>/g,' ').replace(/\s*\u2014\s*$/,'').replace(/\s+/g,' ').trim();}
 function blanks(w){return '<span class="lb">'+String(w).split('').map(function(c){return c===' '?'&nbsp;':'_';}).join(' ')+'</span>';}
-function letters(n){return 'abcd'.charAt(n);}
+function letters(n){return '\u2460\u2461\u2462\u2463\u2464\u2465'.charAt(n);} /* T-338: circled numbers, so an option label is never mistaken for a sentence like “B, C, and D.” */
 function opts(o,col){return '<div class="opts'+(col?' col':'')+'">'+o.map(function(x,k){return '<span><i>'+letters(k)+'</i>'+esc(x)+'</span>';}).join('')+'</div>';}
 function picOf(it,show){if(!show||!it.pic||it.pic==='MAP')return '';return '<div class="pic">'+(/^[0-9 AEIOU]+$/.test(it.pic)?'<span class="num">'+esc(it.pic)+'</span>':it.pic)+'</div>';}
 function keyOf(it){if(it.w)return '(their own ending, 3+ words)';if(it.ty==='fix')return it.bad+' \u2192 '+it.o[it.a];if(it.ty==='tiles')return it.full;if(it.ty==='type')return it.ans;return it.o[it.a];}
@@ -201,6 +202,9 @@ function qHTML(it,n){var O=document.getElementById('showOpts').checked,P=documen
   '<div class="bank">'+it.tl.map(function(w){return '<span>'+esc(w)+'</span>';}).join('')+'</div><span class="wline"></span>';}
  else if(it.ty==='type'){var p=String(it.q).split('___');h+='<div class="sub">Write the word. One letter on each line.</div><div class="txt">'+num+esc(p[0])+blanks(it.ans)+esc(p[1]||'')+'</div>';}
  else if(it.w){h+='<div class="sub">Finish the sentence (3 words or more).</div><div class="txt">'+num+esc(plain(it.q)).replace('___','<span class="blank"></span>')+'</div><span class="wline"></span>';}
+ else if(/class="fragbox/.test(it.q)){var m=String(it.q).match(/<div class="fragq">([\s\S]*?)<\/div>/),b=String(it.q).match(/<div class="fragbox[^"]*"><span>([\s\S]*?)<\/span>/),qu=/fragbox quote/.test(it.q);
+  /* T-338: the sentence being judged sits alone in a bordered quote box under its question */
+  h+='<div class="txt">'+num+esc(m?m[1]:'')+'</div><div class="quotebox">'+(qu?'\u201C':'')+esc(b?b[1]:'').replace('___','<span class="blank"></span>')+(qu?'\u201D':'')+'</div>'+opts(it.o,it.o.some(function(x){return x.length>22;}));}
  else{var t=esc(plain(it.q)).replace('___','<span class="blank"></span>'),long=it.o.some(function(x){return x.length>22;});
   h+='<div class="txt">'+num+t+'</div>'+(O||it.tag==='SENT.FRAG'||it.tag==='STR.JOIN'||it.tag==='STR.READ'?opts(it.o,long):'');}
  return h+'</div>';}

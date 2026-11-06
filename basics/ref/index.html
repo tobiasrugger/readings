@@ -48,7 +48,13 @@ td.ex{font-size:.92rem;color:#2d3a33}
 .ctl .btn.gold{background:var(--gold);color:#2b1b00}
 .ctl .btn.ghost{background:#fff;color:var(--pine);border:2px solid var(--pine2)}
 #status{font-size:.85rem;color:var(--muted);font-weight:700}
-.edit [data-fix]{outline:2px dashed var(--gold);outline-offset:2px;cursor:text;min-width:40px;display:inline-block}
+/* T-338: in Fix mode every translation is a yellow box with ✎; empty ones say "type here" */
+.edit .tr[data-fix]{outline:3px solid #e0b100;outline-offset:1px;background:#fff6c7;border-radius:6px;padding:2px 22px 2px 6px;cursor:text;min-width:70px;min-height:1.4em;display:inline-block;position:relative}
+.edit .tr[data-fix]::after{content:'\270E';position:absolute;right:5px;top:1px;color:#8a6a00;font-size:.9em}
+.edit .tr.none:not([contenteditable="true"]) b,.edit .tr.pending:not([contenteditable="true"]) b{display:none}
+.edit .tr.none:not([contenteditable="true"])::before,.edit .tr.pending:not([contenteditable="true"])::before{content:'empty \2014  type here';color:#8a6a00;font-style:italic;font-weight:700}
+.edit .tr[contenteditable="true"]{background:#fff;outline-color:#2d6a4f}
+#status.editbar{position:fixed;left:10px;right:10px;bottom:10px;z-index:90;background:#1b4332;color:#fff;font-size:1rem;padding:10px 14px;border-radius:12px;box-shadow:0 4px 14px rgba(0,0,0,.3);text-align:center}
 #printHead{display:none}
 .wcard .lw{display:none}
 .lcol{display:none}
@@ -194,10 +200,10 @@ function pump(){status();while(RUNNING<MAXRUN&&QUEUE.length){var job=QUEUE.shift
  .then(function(d){var t=d&&d.translation?(d.translation.equiv||d.translation.meaning||''):'';TR[l][s]=t;if(t)cacheSave(l,s,t,false);})
  .catch(function(){TR[l][s]='';})
  .then(function(){RUNNING--;delete PENDING[key(l,s)];paint(l,s);pump();});})(job[0],job[1]);}}
-function status(){var n=QUEUE.length+RUNNING;$('status').textContent=n?'Translating… '+n+' left':'';}
-function trHTML(l,s,cls){var t=(TR[l]||{})[s];if(t==null){want(l,s);return '<span class="tr '+(cls||'')+'" data-l="'+esc(l)+'" data-s="'+esc(s)+'" data-fix="1">…</span>';}
+function status(){if(EDIT)return;var n=QUEUE.length+RUNNING;$('status').textContent=n?'Translating… '+n+' left':'';} /* T-338: never wipe the Fix-mode help */
+function trHTML(l,s,cls){var t=(TR[l]||{})[s];if(t==null){want(l,s);return '<span class="tr pending '+(cls||'')+'" data-l="'+esc(l)+'" data-s="'+esc(s)+'" data-fix="1"><b>…</b></span>';}
  return '<span class="tr '+(cls||'')+(t?'':' none')+'" data-l="'+esc(l)+'" data-s="'+esc(s)+'" data-fix="1"><b>'+esc(t||s)+'</b></span>';}
-function paint(l,s){document.querySelectorAll('.tr[data-l]').forEach(function(e){if(e.getAttribute('data-l')===l&&e.getAttribute('data-s')===s){var t=TR[l][s];e.classList.toggle('none',!t);e.innerHTML='<b>'+esc(t||s)+'</b>';}});}
+function paint(l,s){document.querySelectorAll('.tr[data-l]').forEach(function(e){if(e.getAttribute('data-l')===l&&e.getAttribute('data-s')===s){var t=TR[l][s];e.classList.remove('pending');e.classList.toggle('none',!t);e.innerHTML='<b>'+esc(t||s)+'</b>';}});}
 
 /* ---------- render ---------- */
 function rowsHTML(b,langs,one){
@@ -217,7 +223,7 @@ function render(){var L=$('lesson').value,one=lang(),langs=PRINT_LANGS||[];
  $('phLesson').textContent=L?$('lesson').selectedOptions[0].textContent:'Unit 1';
  $('phLangs').textContent=langs.join(' · ');
  $('back').href='/readings/basics/'+(L?'?lesson='+L:'');
- if(EDIT)document.body.classList.add('edit');
+ if(EDIT){document.body.classList.add('edit');editHelp();}
 }
 function allStrings(L){var s=[];GRAM.concat(lessonBoxes(L)).forEach(function(b){b.rows.forEach(function(r){s.push(r[0]);if(r[1])s.push(r[1]);});});wordList(L).forEach(function(w){s.push(w.w);});return s;}
 function printLangs(ls){ls=ls.filter(Boolean);if(!ls.length){alert('Choose a language at the top first.');return;}
@@ -227,11 +233,13 @@ window.addEventListener('afterprint',function(){PRINT_LANGS=null;render();});
 
 /* ---------- teacher fix ---------- */
 var EDIT=false;
-function teacherFix(){if(!EDIT){var pw=prompt('Teacher password');if(pw!=='galileo2026')return;}EDIT=!EDIT;document.body.classList.toggle('edit',EDIT);$('fixBtn').textContent=EDIT?'✓ Done fixing':'✎ Fix a translation (teacher)';
- $('status').textContent=EDIT?'Click a translation, type the right one, then click away. It is saved for everyone.':'';}
-document.addEventListener('click',function(e){if(!EDIT)return;var t=e.target.closest&&e.target.closest('.tr[data-fix]');if(!t||t.isContentEditable)return;t.contentEditable='true';t.focus();
+function teacherFix(){if(!EDIT){var pw=prompt('Teacher password');if(pw!=='galileo2026')return;}EDIT=!EDIT;document.body.classList.toggle('edit',EDIT);$('fixBtn').textContent=EDIT?'✓ Done fixing':'✎ Fix a translation (teacher)';editHelp();}
+function editHelp(){var st=$('status');st.classList.toggle('editbar',EDIT);if(!EDIT){st.textContent='';return;}
+ st.textContent=lang()?'✎ Fix mode: click any yellow box, type the right translation, then click away. It is saved for everyone. Empty boxes say “type here”.':'✎ Fix mode: first choose a language in the green bar at the top. Its translations will show as yellow boxes you can click.';}
+document.addEventListener('click',function(e){if(!EDIT)return;var t=e.target.closest&&e.target.closest('.tr[data-fix]');if(!t||t.isContentEditable)return;if(t.classList.contains('none')||t.classList.contains('pending'))t.innerHTML='';t.contentEditable='true';t.focus();
+ try{var rg=document.createRange();rg.selectNodeContents(t);var sl=getSelection();sl.removeAllRanges();sl.addRange(rg);}catch(x){}
  t.addEventListener('blur',function once(){t.removeEventListener('blur',once);t.contentEditable='false';var l=t.getAttribute('data-l'),s=t.getAttribute('data-s'),v=t.textContent.trim();
-  if(v&&v!==(TR[l]||{})[s]){TR[l][s]=v;TEACH[key(l,s)]=1;cacheSave(l,s,v,true);$('status').textContent='Saved: '+s+' → '+v;}paint(l,s);});},true);
+  if(v&&v!==(TR[l]||{})[s]){TR[l][s]=v;TEACH[key(l,s)]=1;cacheSave(l,s,v,true);$('status').textContent='✓ Saved: '+s+' → '+v+' — click another yellow box, or ✓ Done fixing.';}paint(l,s);});},true);
 
 /* ---------- directions in the student's language ---------- */
 function dirs(){var l=lang();document.querySelectorAll('.dir').forEach(function(p){var o=p.querySelector('.dirtr');if(!o){o=document.createElement('span');o.className='dirtr';p.appendChild(o);}
