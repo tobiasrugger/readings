@@ -33,7 +33,7 @@ button{cursor:pointer}
 .dots i.now{background:var(--gold)}
 
 main{max-width:760px;margin:0 auto;padding:18px 20px 40px}
-.panel{background:#fff;border:2px solid var(--line);border-radius:20px;padding:28px;margin:26px auto;max-width:480px}
+.panel{background:#fff;border:2px solid #3A2F45;box-shadow:0 4px 0 rgba(42,32,48,.18);border-radius:20px;padding:28px;margin:26px auto;max-width:480px}
 .panel h2{margin:0 0 8px;font-size:1.5rem;color:var(--plum-deep)}
 .panel p{margin:0 0 16px;color:var(--muted)}
 .field{margin-bottom:14px}
@@ -47,6 +47,9 @@ main{max-width:760px;margin:0 auto;padding:18px 20px 40px}
 .btn.ghost:active{box-shadow:0 1px 0 var(--line)}
 .btn.wide{width:100%}
 .btn:disabled{opacity:.5}
+/* T-318: green "practice the words you missed" button on the done screen */
+.btn.missed{display:block;text-align:center;text-decoration:none;background:#2F8A5B;box-shadow:0 5px 0 #1D6140;font-size:1.15rem;font-weight:700;padding:16px 24px;margin:14px 0 10px}
+.btn.missed:active{box-shadow:0 1px 0 #1D6140}
 
 /* menu */
 .menu{display:grid;gap:12px;max-width:560px;margin:0 auto}
@@ -150,6 +153,7 @@ main{max-width:760px;margin:0 auto;padding:18px 20px 40px}
   <section id="scrDone" class="panel hidden">
     <h2 id="doneTitle">You finished. 🎉</h2>
     <p id="doneSub">Thank you. Mr. Toby will see your answers.</p>
+    <a class="btn wide missed hidden" id="btnMissed" href="#">Practice the words you missed →</a>
     <button class="btn wide hidden" id="btnNextQuiz"></button>
     <button class="btn ghost wide" id="btnAgain" style="margin-top:10px">Back to the list</button>
   </section>
@@ -259,6 +263,7 @@ $('btnSignin').addEventListener('click', function(){
       ATTEMPT = (last.attempt || 1) + 1;                                  // the link asked for another go
     } else if (last){
       ATTEMPT = last.attempt || 1;
+      S.items = last.items || []; S.answers = last.answers || {};         // T-318: the done screen counts misses from this try
       renderDone(); show('scrDone'); return;                              // already done, and not asked to redo
     } else {
       ATTEMPT = 1;
@@ -377,6 +382,12 @@ function nextInSet(){
   return (i >= 0 && i < SET.quizzes.length - 1) ? SET.quizzes[i+1] : null;
 }
 function renderDone(){
+  /* T-318: pre-check only, and only when something was wrong or "I don't know" */
+  var miss = 0;
+  (S.items || []).forEach(function(it){ var a = S.answers[it.k]; if (a !== it.w) miss++; });
+  var mb = $('btnMissed');
+  mb.href = '/readings/missed/?q=' + encodeURIComponent(QUIZ.id);
+  mb.classList.toggle('hidden', !(PHASE === 'pre' && miss > 0));
   var nextId = SET ? nextInSet() : null;
   var btn = $('btnNextQuiz'), back = $('btnAgain');
   if (SET){
