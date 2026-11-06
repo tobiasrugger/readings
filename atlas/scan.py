@@ -20,7 +20,7 @@ TEACHER_PATH = re.compile(r'dashboard|teacher|gradebook|roadmap|(^|/)assign/|(^|
 SKIP_DIRS = {'_phases', 'node_modules', '.git', 'mnt'}
 SHARED = {'track.js', 'std.js', 'grade04.js'}
 REGISTRIES = {'assign/catalog.js', 'dashboards/list.js', 'atlas/book.js', 'atlas/scan.js'}  # lists of other pages: read as engines they would fake every layer
-REGISTRY_DIRS = ('assign/catalog/',)  # T-215: the Push catalog is now one file per top-level folder
+REGISTRY_DIRS = ('assign/catalog/', 'dashboards/list/')  # T-215: Push catalog one file per folder; T-322: so is the dashboards front door (T-319)
 
 def is_registry(rel):
     rel = rel.lstrip('./')
@@ -37,8 +37,20 @@ def js_list(path, var):
     return s
 
 # ---- registries ----
+# T-322: since T-319 the dashboards registry is one file per folder in dashboards/list/<folder>.js;
+# dashboards/list.js is only a loader. Read the old single file (in case it still holds entries) plus every
+# folder file except index.js (that one only lists the FILES). Entry lines are unchanged, so the regex is too.
 dash_src = read(os.path.join(ROOT, 'dashboards', 'list.js'))
+DASH_DIR = os.path.join(ROOT, 'dashboards', 'list')
+DASH_FILES = {}
+if os.path.isdir(DASH_DIR):
+    for fn in sorted(os.listdir(DASH_DIR)):
+        if not fn.endswith('.js') or fn == 'index.js': continue
+        part = read(os.path.join(DASH_DIR, fn))
+        DASH_FILES['dashboards/list/' + fn] = len(re.findall(r"\{url:'", part))
+        dash_src += '\n' + part
 DASH = re.findall(r"\{url:'([^']+)',\s*name:'((?:[^'\\]|\\.)*)'", dash_src)
+_seen = set(); DASH = [d for d in DASH if not (d[0] in _seen or _seen.add(d[0]))]   # one entry per url
 def catalog_paths(src):
     """every "p" in a catalog file. T-215 folder files hold one array inside .push( ... );
        — read those blocks when they exist, otherwise the whole file (assign/catalog.js)."""
