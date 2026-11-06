@@ -393,6 +393,9 @@ details.wq .qm{font-size:.85rem;color:var(--muted);font-weight:800}
 .pushrow .pn{font-size:.92rem;color:var(--ink);margin-top:2px}
 .pushrow .pp{font-size:.85rem;font-weight:800;color:var(--muted);margin-top:4px}
 .pushrow .pp.done{color:var(--green)}
+/* T-347: Daily Basics is done only at a full day (score = max). Done = yellow "more levels optional"; below = in progress */
+.pushrow .pp.dailyok{display:inline-block;background:#fff3b0;color:#4a3a00;border:2px solid #8a6d00;border-radius:8px;padding:3px 10px}
+.pushrow .pp.dailyip{display:inline-block;background:#fff;color:#3d3554;border:2px solid #6b6385;border-radius:8px;padding:3px 10px}
 .pushrow .pbar{display:inline-block;width:110px;height:10px;border:1.5px solid var(--plum-dk);border-radius:6px;overflow:hidden;vertical-align:middle;margin-left:6px;background:#fff}
 .pushrow .pbar i{display:block;height:100%;background:var(--green)}
 .pushrow .btn{white-space:nowrap;font-size:1.02rem}
@@ -1564,6 +1567,7 @@ async function loadGrade(email){
 }
 async function loadPushed(email){
   var box=document.getElementById('pushBox');
+  DATA.dailyBand=false;   /* T-347 */
   try{
     var p=await myPeriod(email);
     var per=['all'].concat(p?[p]:[]);
@@ -1608,12 +1612,12 @@ async function loadPushed(email){
         if(item) slug=slug+'/'+item; else prefix=slug+'/';
       }
       var daily=DAILY_SLUGS.indexOf(slug)>-1, since=r.created_at?new Date(r.created_at):new Date(0);
-      if(daily){var t=new Date();t.setHours(0,0,0,0);if(t>since)since=t;}
+      if(daily){var t=new Date();t.setHours(0,0,0,0);if(t>since)since=t; prefix=slug+'/';}   /* T-347: today's row is logged as basics/DATE (T-275) */
       var best=null;
       (DATA.atts||[]).forEach(function(a){
         var as=String(a.slug||''); if(!(as===slug||(prefix&&as.indexOf(prefix)===0)))return; var when=a.completed_at?new Date(a.completed_at):null;
         if(!when||when<since)return;
-        if(!best||(a.score||0)>(best.score||0))best={score:a.score||0,max:a.max_score||0,daily:daily};
+        if(!best||(a.score||0)>(best.score||0)||((a.score||0)===(best.score||0)&&(a.max_score||0)>best.max))best={score:a.score||0,max:a.max_score||0,daily:daily};
       });
       return best;
     }
@@ -1629,7 +1633,15 @@ async function loadPushed(email){
         /* T-131: any other pushed page (Daily Basics, practice pages…) counts as done when the student has a
            finished attempt for it since it was pushed. Daily Basics is a daily job: only today's attempt counts. */
         var at=attemptSince(r);
-        if(at){ line='<div class="pp done">&#10003; Done'+(at.daily?' today':'')+(at.max?' &middot; score '+at.score+' of '+at.max:'')+'</div>'; }
+        /* T-347 (Toby, Nov 6): track.js logs a Daily Basics attempt seconds after the FIRST answer, so "any attempt
+           today" folded the row while the student was still working. A daily row is done only when today's best
+           attempt reaches its max (Daily Basics gives 20/20 when a level is finished, misses included). */
+        if(at&&at.daily){
+          DATA.dailyBand=true;
+          if(at.max>0&&at.score>=at.max) line='<div class="pp done dailyok">&#10003; Done today &middot; more levels optional</div>';
+          else { started=true; line='<div class="pp dailyip">In progress today'+(at.max?' &middot; score '+at.score+' of '+at.max:'')+'</div>'; }
+        }
+        else if(at){ line='<div class="pp done">&#10003; Done'+(at.daily?' today':'')+(at.max?' &middot; score '+at.score+' of '+at.max:'')+'</div>'; }
       }
       var quill=isQuill(r.href);  /* T-317 */
       if(quill) line='<div class="pp quillnote">Opens Quill in a new tab. Sign in to Quill the way you always do.</div>';
@@ -1640,6 +1652,7 @@ async function loadPushed(email){
         (quill?'':'<a class="btn noprint" href="'+esc(url)+'">'+(line.indexOf('Turned in')>-1||line.indexOf('pp done')>-1?'Open &rarr;':started?'Keep going &rarr;':'Start &rarr;')+'</a></div>');
     }).join('');
     sinkDone(); bandMode(true);
+    if(DATA.dailyBand){ try{ renderFinish(); translatePage(); }catch(e){} }   /* T-347: the band owns today's Daily Basics */
   }catch(e){box.innerHTML='';bandMode(false);}
 }
 /* T-317: a Classroom post can link to Quill. Quill rows open Quill in a new tab, never get ?email=, never turn ✓
@@ -1846,7 +1859,7 @@ function translatePage(){
 
 /* T-267: activity titles in the green band keep English on top and get a small home-language line under them.
    Word tiles, "I know" chips and students' own words stay English only. */
-var ROW_TITLES='#pushBox .pushrow .pt, #extraBox .pushrow .pt, #pushDone .pushrow .pt, #finBody .fin .what > b, #growth .ncell:not(.words) .nhead > b';
+var ROW_TITLES='#pushBox .pushrow .pp.dailyok, #pushBox .pushrow .pp.dailyip, #pushDone .pushrow .pp.dailyok, #pushBox .pushrow .pt, #extraBox .pushrow .pt, #pushDone .pushrow .pt, #finBody .fin .what > b, #growth .ncell:not(.words) .nhead > b';
 function translateRows(){
   var nodes=document.querySelectorAll(ROW_TITLES);
   Array.prototype.forEach.call(nodes,function(el){
@@ -2310,6 +2323,8 @@ function renderFinish(){
     /* T-175: a Launch Plus lesson counts by items DONE, not first-try score (a miss can't be won back) */
     /* T-176: word checks (vocab/pre…, the post-checks too) are DATA for Mr. Toby, not work to redo — never in Finish This */
     if(isDataCheck(slug,titleOf[slug]))return;
+    /* T-347: today's Daily Basics sits in the band when Mr. Toby pushed it; never list it twice */
+    if(DATA.dailyBand&&(slug===DAILY_SLUGS[0]||slug===DAILY_SLUGS[0]+'/'+todayISO()))return;
     var lpc=lpDone(slug);
     if(lpc!=null){ if(lpc>=100)return; best=lpc; }
     /* T-175: turned in again and the score didn't move -> nothing left to earn here; stop asking */
