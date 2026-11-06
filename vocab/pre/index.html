@@ -191,7 +191,8 @@ function sb(path, opts){
   return fetch(SUPA_URL + '/rest/v1/' + path, {
     method: opts.method || 'GET',
     headers: Object.assign({ apikey:SUPA_KEY, Authorization:'Bearer '+SUPA_KEY, 'Content-Type':'application/json' }, opts.headers || {}),
-    body: opts.body ? JSON.stringify(opts.body) : undefined
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+    keepalive: !!opts.keepalive
   }).then(function(r){
     if (!r.ok) return r.text().then(function(t){ throw new Error(r.status + ' ' + t); });
     return r.status === 204 ? null : r.text().then(function(t){ return t ? JSON.parse(t) : null; });
@@ -302,7 +303,7 @@ function tally(){
   });
   return { score:score, answered:answered, idk:idk, total:S.items.length };
 }
-function save(finish){
+function rowBody(finish){
   var t = tally();
   /* the gradebook reads these: right answers out of the whole quiz */
   window.GAL_SCORE = t.score; window.GAL_MAX = t.total;
@@ -315,8 +316,12 @@ function save(finish){
   };
   if (!S.created) body.items = S.items;
   if (finish){ body.turned_in = true; body.turned_in_at = new Date().toISOString(); }
+  return body;
+}
+function save(finish){
+  var body = rowBody(finish);
   $('saveState').textContent = 'Saving…';
-  saving = saving.then(function(){
+  var p = saving.then(function(){
     return sb(TABLE + '?on_conflict=email,quiz,attempt', { method:'POST', headers:{ Prefer:'resolution=merge-duplicates,return=minimal' }, body:[body] });
   }).then(function(){
     S.created = true; $('saveState').textContent = 'Saved';
@@ -324,8 +329,22 @@ function save(finish){
     console.error(e); $('saveState').textContent = 'Not saved. Check internet.';
     if (finish) throw e;
   });
-  return saving;
+  saving = p.catch(function(){});   // T-331: one failed Finish must not block every later save
+  return p;
 }
+
+/* T-331: save again when the student leaves (tab hidden or page closing), with keepalive */
+function saveOnLeave(){
+  if (!S.email || !QUIZ || !S.items || !S.items.length) return;
+  if ($('scrTest').classList.contains('hidden')) return;              // only while a check is open
+  try {
+    sb(TABLE + '?on_conflict=email,quiz,attempt', { method:'POST', keepalive:true,
+      headers:{ Prefer:'resolution=merge-duplicates,return=minimal' }, body:[rowBody(false)] })
+      .then(function(){ S.created = true; }).catch(function(){});
+  } catch(e){}
+}
+window.addEventListener('pagehide', saveOnLeave);
+document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'hidden') saveOnLeave(); });
 
 /* ================= QUESTION ================= */
 function render(){
@@ -363,19 +382,30 @@ function render(){
     inp.addEventListener('change', function(){
       S.answers[it.k] = inp.value;
       save(false);
-      if (last){ $('btnFinish').classList.remove('hidden'); return; }
-      setTimeout(function(){ S.i++; render(); window.scrollTo(0,0); }, 320);   // move on by itself
+      if (last){                                                        // T-331: finish by itself
+        $('btnFinish').classList.remove('hidden');
+        var gap = firstUnanswered();
+        if (S.answers[S.items[gap].k]) setTimeout(finishNow, 450);   // everything answered → results
+        else setTimeout(function(){ S.i = gap; render(); window.scrollTo(0,0); }, 320);
+        return;
+      }
+      var gap2 = firstUnanswered();                                     // T-331
+      if (S.answers[S.items[gap2].k]) { setTimeout(finishNow, 450); return; }   // all answered → results
+      setTimeout(function(){ S.i = (S.i + 1 <= gap2) ? S.i + 1 : gap2; render(); window.scrollTo(0,0); }, 320);   // move on by itself
     });
   });
 }
 
 $('btnBack').addEventListener('click', function(){ if (S.i > 0){ S.i--; render(); } });
-$('btnFinish').addEventListener('click', function(){
-  var btn = this; btn.disabled = true; btn.textContent = 'Turning in…';
+$('btnFinish').addEventListener('click', finishNow);
+var finishing = false;
+function finishNow(){
+  if (finishing) return; finishing = true;
+  var btn = $('btnFinish'); btn.disabled = true; btn.textContent = 'Turning in…';
   save(true).then(function(){ renderDone(); show('scrDone'); })
     .catch(function(){ btn.textContent = 'Try again'; })
-    .finally(function(){ btn.disabled = false; if (btn.textContent === 'Turning in…') btn.textContent = 'Finish'; });
-});
+    .finally(function(){ finishing = false; btn.disabled = false; if (btn.textContent === 'Turning in…') btn.textContent = 'Finish'; });
+}
 function setPos(){ return SET ? SET.quizzes.indexOf(QUIZ.id) : -1; }
 function nextInSet(){
   var i = setPos();
