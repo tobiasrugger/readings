@@ -2179,7 +2179,27 @@
     'th': 'Mr. Toby เห็นได้ว่าคอมพิวเตอร์เครื่องไหนบันทึกงานของคุณ กรุณาเข้าสู่ระบบด้วยชื่อของตัวเองเท่านั้น',
     'ne': 'Mr. Toby ले कुन कम्प्युटरले तिम्रो काम सेभ गर्छ भनेर देख्न सक्नुहुन्छ। कृपया आफ्नै नामले मात्र साइन इन गर।'
   };
+  /* T-343 (Nov 6): the note is OFF unless Toby switches it on (gal_settings key 'trail_note' {on:true},
+     switch on trail/dashboard.html). He would rather not put the idea in anyone's head; the trail itself
+     records either way. One read per tab, remembered for 10 minutes (a setting, not student work). */
+  var TR_NOTE_ON = null, TR_NOTE_WAIT = [];
+  function trNoteOn(cb) {
+    if (window.GAL_TRAIL_NOTE_TEST != null) { cb(!!window.GAL_TRAIL_NOTE_TEST); return; }
+    if (TR_NOTE_ON !== null) { cb(TR_NOTE_ON); return; }
+    try { var c = JSON.parse(sessionStorage.getItem('gal_trail_note') || 'null'); if (c && Date.now() - c.t < 600000) { TR_NOTE_ON = !!c.on; cb(TR_NOTE_ON); return; } } catch (e) {}
+    TR_NOTE_WAIT.push(cb); if (TR_NOTE_WAIT.length > 1) return;
+    var done = function (on) { TR_NOTE_ON = on; try { sessionStorage.setItem('gal_trail_note', JSON.stringify({ on: on, t: Date.now() })); } catch (e) {}
+      var w = TR_NOTE_WAIT; TR_NOTE_WAIT = []; w.forEach(function (f) { try { f(on); } catch (e) {} }); };
+    try {
+      (TR.real || window.fetch).call(window, SUPA_URL + '/rest/v1/gal_settings?key=eq.trail_note&select=value', { headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY } })
+        .then(function (r) { return r.ok ? r.json() : []; })
+        .then(function (rows) { done(!!(rows && rows[0] && rows[0].value && rows[0].value.on)); }, function () { done(false); });
+    } catch (e) { done(false); }
+  }
   function trBoxNote(box, btn) {
+    trNoteOn(function (on) { if (on) trBoxNote2(box, btn); });
+  }
+  function trBoxNote2(box, btn) {
     try {
       if (!box || !btn || box.querySelector('.gal-trail-note')) return;
       if (window.GAL_TEACHER_VIEW || /[?&]view=teacher\b/.test(location.search)) return;

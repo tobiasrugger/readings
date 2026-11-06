@@ -81,7 +81,13 @@ a{color:var(--blue);font-weight:700}
     <h2>What this shows</h2>
     <p style="margin:0 0 6px">Every browser that opens a student page gets its own <b>device code</b> (like <span class="dev" style="cursor:default">K7Q2-M9XD</span>). It stays on that computer. Each time a student page saves, the code is written down with the student, the page, the period and the time.</p>
     <p style="margin:0 0 6px">🚩 <b>Word flags:</b> saved text is checked against a short list of bad words in English, Spanish, Chinese, Arabic, Vietnamese, Thai and Nepali. A match shows here. The student sees nothing, and nothing is blocked or deleted.</p>
-    <p class="muted" style="margin:0;font-size:15px">Every sign-in box tells students, kindly and in their language, that Mr. Toby can see which computer saves their work. Tap a <b>device code</b> to see every student who used it; tap a <b>name</b> to see every device they used. Counting started Nov 2026 (T-337).</p>
+    <p class="muted" style="margin:0;font-size:15px">Students are not told about this unless you switch the note on below. Tap a <b>device code</b> to see every student who used it; tap a <b>name</b> to see every device they used. Counting started Nov 2026 (T-337).</p>
+  </div>
+
+  <div class="box" id="noteBox">
+    <h2>🖥️ The note in sign-in boxes</h2>
+    <p style="margin:0 0 8px">When it is on, every student sign-in box shows one small line, in the student’s language: <i>“Mr. Toby can see which computer saves your work. Please sign in only as yourself.”</i> The trail records either way.</p>
+    <div class="row"><b>Note:</b><button id="noteOff">Off</button><button id="noteOn">On</button><span id="noteMsg" class="muted"></span></div>
   </div>
 
   <div class="box">
@@ -138,7 +144,7 @@ function dt(t){if(!t)return'';try{return new Date(t).toLocaleString('en-US',{tim
 var ST={day:laDay(new Date()),rows:[],flags:[],roster:{},fmode:'new'};
 
 function tryPw(){if($('pw').value===PASSWORD){try{sessionStorage.setItem('dash_ok','1');}catch(e){}open_();}else $('err').textContent='Not the right password.';}
-function open_(){$('gate').style.display='none';$('app').style.display='block';$('day').value=ST.day;load();}
+function open_(){$('gate').style.display='none';$('app').style.display='block';$('day').value=ST.day;load();noteRead();}
 $('go').addEventListener('click',tryPw);
 $('pw').addEventListener('keydown',function(e){if(e.key==='Enter')tryPw();});
 $('refresh').addEventListener('click',load);
@@ -160,6 +166,18 @@ function get(path){
   }
   return page(0);
 }
+/* T-343: the sign-in note switch (gal_settings key trail_note {on}) — OFF unless switched on */
+function H2(p){var h={apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY,'Content-Type':'application/json'};if(p)h.Prefer=p;return h;}
+function notePaint(on){$('noteOn').classList.toggle('on',!!on);$('noteOff').classList.toggle('on',!on);}
+function noteRead(){fetch(SUPA_URL+'/rest/v1/gal_settings?key=eq.trail_note&select=value',{headers:H2()}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();})
+  .then(function(rows){notePaint(!!(rows[0]&&rows[0].value&&rows[0].value.on));$('noteMsg').textContent='';},function(e){notePaint(false);$('noteMsg').textContent='Off (could not read the setting: '+e.message+').';});}
+function noteSet(on){$('noteMsg').textContent='Saving…';
+  fetch(SUPA_URL+'/rest/v1/gal_settings?on_conflict=key',{method:'POST',headers:H2('resolution=merge-duplicates,return=minimal'),
+    body:JSON.stringify([{key:'trail_note',value:{on:!!on},updated_at:new Date().toISOString()}])})
+  .then(function(r){if(!r.ok)throw new Error('save '+r.status);notePaint(on);$('noteMsg').textContent=on?'On ✓ — sign-in boxes show the note within 10 minutes.':'Off ✓ — no note in sign-in boxes.';},
+        function(e){$('noteMsg').textContent='Could not save ('+e.message+').';noteRead();});}
+$('noteOn').addEventListener('click',function(){noteSet(true);});
+$('noteOff').addEventListener('click',function(){noteSet(false);});
 function rpc(fn,body){return fetch(SUPA_URL+'/rest/v1/rpc/'+fn,{method:'POST',headers:{apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY,'Content-Type':'application/json'},body:JSON.stringify(body)});}
 function nm(k){var r=ST.roster[k];return r&&r.name?r.name:k;}
 function per(row){return row.period||((ST.roster[row.who]||{}).period)||'';}
