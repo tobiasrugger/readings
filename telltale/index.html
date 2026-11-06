@@ -794,6 +794,23 @@ body.easy .story p{ font-size:calc(var(--tsize) + .05rem); line-height:calc(var(
 #cneednote .dirtr{ display:block; color:var(--amber-text); font-weight:600; margin-top:.25rem; }
 @media print{ .cbtn .cneed, #cneednote{ display:none !important; } }
 </style>
+<style id="t323-bar">
+/* ===== T-323 (Nov 6): chapter bar — smaller chips, colour counts, no "open · tap to start" ===== */
+.chapters .cbtn{ padding:.26rem .55rem !important; font-size:.8rem !important; line-height:1.12; }
+.chapters .cbtn .cneed{ font-size:.52rem; margin-top:.05rem; }
+.chapters .cbtn .ccnt, #actbar .actbtn .cnt{ font-weight:700; border-radius:4px; padding:0 .22rem; margin-left:.3rem; }
+.chapters .t323-c0, #actbar .t323-c0{ color:#a5463c !important; background:#fbeae7; }
+.chapters .t323-cp, #actbar .t323-cp{ color:#9a5408 !important; background:#fdebd0; }
+.chapters .t323-cf, #actbar .t323-cf{ color:#1c6b43 !important; background:#ddf0e3; }
+.chapters .cbtn.t323-u:not(.locked):not([aria-disabled="true"]), #actbar .actbtn.t323-u{ border-color:#d98a2b !important; }
+#actbar .actbtn{ padding:.26rem .55rem; font-size:.8rem; }
+#actbar .actrow{ gap:.35rem; }
+</style>
+<style id="t323-tt">
+/* T-323: labels sit ON TOP of their chips — no side column */
+.chapters .cgrp{ display:block !important; padding:.45rem .75rem !important; }
+.chapters .cgl{ margin:0 0 .25rem !important; white-space:normal; }
+</style>
 </head>
 <span id="canary" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden">the quick brown fox jumps over the lazy dog</span>
 <body>
@@ -3745,7 +3762,7 @@ showScore();
         continue;
       }
       if(b.classList.contains("full")){ clearLine(b); continue; }
-      line(b, "go", "open \u00b7 tap to start");
+      clearLine(b);   /* T-323: an open chip already says "tap to start" */
       if(!nextOpen) nextOpen = b;
     }
     /* the one they should go to next gets a green edge */
@@ -3825,6 +3842,34 @@ showScore();
     }catch(e){}
     var b = document.getElementById("gGo"); if(b) b.click();
   }, 300);
+})();
+</script>
+<script id="t323-bar-js">
+/* T-323 (Nov 6): colour the counts on the chapter bar and the After chips — 0/n soft red, part done orange, full green; unfinished chips keep an orange border */
+(function(){
+  var busy = false;
+  function paint(){
+    busy = false;
+    var chips = document.querySelectorAll("#chapters .cbtn, #actbar .actbtn"), i;
+    for(i = 0; i < chips.length; i++){
+      var c = chips[i], cnt = c.querySelector(".ccnt, .cnt");
+      if(!cnt) continue;
+      var m = (cnt.textContent || "").match(/(\d+)\s*\/\s*(\d+)/);
+      cnt.classList.remove("t323-c0", "t323-cp", "t323-cf");
+      if(!m){ c.classList.remove("t323-u"); continue; }
+      var a = +m[1], b = +m[2];
+      cnt.classList.add(a >= b ? "t323-cf" : (a > 0 ? "t323-cp" : "t323-c0"));
+      c.classList.toggle("t323-u", a < b);
+    }
+  }
+  function soon(){ if(busy) return; busy = true; (window.requestAnimationFrame || setTimeout)(paint); }
+  function start(){
+    paint();
+    if(!window.MutationObserver) return;
+    var mo = new MutationObserver(soon);
+    ["chapters", "actbar"].forEach(function(id){ var el = document.getElementById(id); if(el) mo.observe(el, { childList:true, characterData:true, subtree:true }); });
+  }
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
 })();
 </script>
 </body>
