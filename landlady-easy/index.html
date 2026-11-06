@@ -6059,5 +6059,171 @@ function savePract(){ try{ localStorage.setItem(LKEY + "_pract", JSON.stringify(
   });
 })();
 </script>
+<style id="t327-lb">
+/* T-327 (Nov 6): "Look back at the story" — read-only copy of Parts 1–4 beside the After activities */
+.lbbtn{ display:inline-flex; align-items:center; gap:.35rem; margin:.55rem 0 .2rem; padding:.42rem .85rem;
+  font:800 .92rem/1.2 Nunito, system-ui, sans-serif; color:#fff; background:#2f6b3a; border:2px solid #1d4424;
+  border-radius:8px; box-shadow:0 2px 0 #1d4424; cursor:pointer; }
+.lbbtn:hover{ background:#36803f; } .lbbtn:focus-visible{ outline:3px solid var(--amber,#c8892a); outline-offset:2px; }
+.act-head .lbbtn{ display:flex; width:max-content; }
+#lbpanel{ position:fixed; top:0; right:0; bottom:0; width:min(46vw, 560px); z-index:650; display:none;
+  flex-direction:column; background:#fffdf7; border-left:3px solid #2a2010; box-shadow:-8px 0 24px rgba(0,0,0,.28); }
+body.lb-open #lbpanel{ display:flex; }
+@media (min-width:900px){
+  body.lb-open #main-page{ padding-right:min(46vw, 560px) !important; }
+  body.lb-open .page{ margin-left:auto; margin-right:auto; }
+}
+#lbpanel .lbhead{ flex:0 0 auto; background:#2a2010; color:#f6efe0; padding:.55rem .7rem .6rem;
+  font:800 1rem/1.25 Nunito, system-ui, sans-serif; border-bottom:3px solid var(--amber,#c8892a); }
+#lbpanel .lbtop{ display:flex; align-items:center; gap:.5rem; }
+#lbpanel .lbtitle{ flex:1 1 auto; } #lbpanel .lbtitle small{ font-weight:600; opacity:.8; font-size:.8rem; }
+#lbpanel .lbx{ flex:0 0 auto; font:800 1rem/1 Nunito, system-ui, sans-serif; color:#2a2010; background:#f6efe0;
+  border:2px solid #f6efe0; border-radius:8px; padding:.45rem .8rem; cursor:pointer; }
+#lbpanel .lbjump{ display:flex; gap:.35rem; margin-top:.45rem; flex-wrap:wrap; }
+#lbpanel .lbjump button{ font:700 .8rem/1 Nunito, system-ui, sans-serif; color:#f6efe0; background:transparent;
+  border:1.5px solid #c9b88f; border-radius:999px; padding:.3rem .65rem; cursor:pointer; }
+#lbpanel .lbjump button.on{ background:var(--amber,#c8892a); border-color:var(--amber,#c8892a); color:#1a1208; }
+#lbpanel .lbbody{ flex:1 1 auto; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:.8rem 1rem 3rem; }
+#lbpanel .lbpart{ border:2px solid #2a2010; border-radius:10px; background:#fff; padding:.6rem .9rem .3rem;
+  margin:0 0 1rem; box-shadow:0 2px 6px rgba(0,0,0,.12); }
+#lbpanel .lbph{ font:800 .78rem/1 'Courier Prime', monospace; letter-spacing:.14em; text-transform:uppercase;
+  color:#8b1a1a; margin:.2rem 0 .6rem; }
+#lbpanel .lbp{ position:relative; font-family:'Lora', Georgia, serif; font-size:1rem; line-height:1.75; color:#2a2010;
+  margin:0 0 .85rem; padding-left:2.1rem; }
+#lbpanel .lbn{ position:absolute; left:0; top:.2rem; min-width:1.6rem; text-align:center;
+  font:800 .7rem/1.5 'Courier Prime', monospace; color:#5a5040; border:1.5px solid #8a7a58; border-radius:5px; background:#fff; }
+#lbpanel .lbp.lbhl-y{ background:#ffec80; } #lbpanel .lbp.lbhl-p{ background:#ffc6d8; } #lbpanel .lbp.lbhl-b{ background:#b3defc; }
+#lbpanel .lbp[class*="lbhl-"]{ border-radius:4px; padding-top:.15rem; padding-bottom:.15rem; padding-right:.3rem; }
+#lbpanel .lbnote{ font:600 .82rem/1.4 Nunito, system-ui, sans-serif; color:#5a5040; margin:0 0 .8rem; }
+@media (max-width:899px){
+  #lbpanel{ left:0; width:auto; border-left:none; box-shadow:none; }
+  #lbpanel .lbx{ font-size:1.1rem; padding:.6rem 1rem; }
+  #lbpanel .lbp{ font-size:1.05rem; }
+}
+@media print{ #lbpanel, .lbbtn{ display:none !important; } }
+</style>
+<aside id="lbpanel" role="dialog" aria-modal="false" aria-labelledby="lbtitle">
+  <div class="lbhead">
+    <div class="lbtop">
+      <span class="lbtitle" id="lbtitle">📖 The story <small>· read only</small></span>
+      <button type="button" class="lbx" id="lbclose" aria-label="Close the story">✕ Close</button>
+    </div>
+    <div class="lbjump" id="lbjump"></div>
+  </div>
+  <div class="lbbody" id="lbbody" translate="no"></div>
+</aside>
+<script id="t327-lb-js">
+/* T-327 (Nov 6): a read-only copy of Parts 1–4, rebuilt on every open.
+   Saves nothing, has no data-qid, no textarea, and no .story class — so
+   galCounted(), collectPayload(), the rail and the highlight code never see it. */
+(function(){
+  var ACTS = ["ending", "sum", "write", "police"];
+  var panel = document.getElementById("lbpanel"), body = document.getElementById("lbbody"),
+      jump = document.getElementById("lbjump"), lastTop = 0, pageY = 0, opener = null, built = false;
+  if(!panel) return;
+  document.body.appendChild(panel);
+
+  function addButtons(){
+    for(var i = 0; i < ACTS.length; i++){
+      var sec = document.getElementById("act-" + ACTS[i]); if(!sec) continue;
+      var head = sec.querySelector(".act-head") || sec;
+      if(head.querySelector(".lbbtn")) continue;
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "lbbtn"; b.setAttribute("data-lb", ACTS[i]);
+      b.textContent = "📖 Look back at the story";
+      head.appendChild(b);
+    }
+  }
+
+  function build(){
+    body.innerHTML = ""; jump.innerHTML = "";
+    var names = ["One", "Two", "Three", "Four"];
+    for(var k = 1; k <= 4; k++){
+      var ch = document.getElementById("ch-p" + k); if(!ch) continue;
+      var box = document.createElement("section"); box.className = "lbpart"; box.id = "lbpart" + k;
+      var h = document.createElement("div"); h.className = "lbph"; h.textContent = "Part " + names[k - 1];
+      box.appendChild(h);
+      var ps = ch.querySelectorAll(".story p"), n = 0;
+      for(var i = 0; i < ps.length; i++){
+        var p = ps[i];
+        if(!p.parentElement || !p.parentElement.classList.contains("story")) continue;   /* story paragraphs only — not inline practice, signal heads or questions */
+        if(p.classList.contains("qtext") || p.closest(".qbox") || p.closest(".hard-only")) continue;
+        if(!(p.textContent || "").trim()) continue;
+        var c = p.cloneNode(true);
+        var junk = c.querySelectorAll(".hlnum, .pen, textarea, input, button, .qbox");
+        for(var j = 0; j < junk.length; j++) junk[j].parentNode.removeChild(junk[j]);
+        var ids = c.querySelectorAll("[id]"); for(j = 0; j < ids.length; j++) ids[j].removeAttribute("id");
+        var num = p.getAttribute("data-p") || "";
+        var hl = (p.className.match(/\bhl-([ypb])\b/) || [])[1];
+        c.removeAttribute("id"); c.removeAttribute("data-p"); c.removeAttribute("data-qid");
+        c.className = "lbp" + (hl ? " lbhl-" + hl : "");
+        if(num){ var nb = document.createElement("span"); nb.className = "lbn"; nb.textContent = num; c.insertBefore(nb, c.firstChild); }
+        box.appendChild(c); n++;
+      }
+      if(!n) continue;
+      body.appendChild(box);
+      var jb = document.createElement("button"); jb.type = "button"; jb.textContent = "Part " + k;
+      jb.setAttribute("data-k", k); jump.appendChild(jb);
+    }
+    var note = document.createElement("p"); note.className = "lbnote";
+    note.textContent = "Tap a dotted word to hear it and see what it means. Your highlights show here too.";
+    body.insertBefore(note, body.firstChild);
+    built = true;
+  }
+
+  function markJump(){
+    var bs = jump.querySelectorAll("button"), top = body.getBoundingClientRect().top + 8, cur = null;
+    for(var i = 0; i < bs.length; i++){
+      var sec = document.getElementById("lbpart" + bs[i].getAttribute("data-k"));
+      if(sec && sec.getBoundingClientRect().top <= top + 40) cur = bs[i];
+    }
+    if(!cur && bs.length) cur = bs[0];
+    for(i = 0; i < bs.length; i++) bs[i].classList.toggle("on", bs[i] === cur);
+  }
+
+  function open(btn){
+    opener = btn || null; pageY = window.scrollY;
+    build();
+    document.body.classList.add("lb-open");
+    body.scrollTop = lastTop;
+    window.scrollTo(0, pageY);
+    markJump();
+    try{ document.getElementById("lbclose").focus({ preventScroll: true }); }catch(e){}
+  }
+  function close(){
+    if(!document.body.classList.contains("lb-open")) return;
+    lastTop = body.scrollTop;
+    if(typeof hideTip === "function") try{ hideTip(); }catch(e){}
+    document.body.classList.remove("lb-open");
+    window.scrollTo(0, pageY);
+    if(opener) try{ opener.focus({ preventScroll: true }); }catch(e){}
+  }
+  window.GAL_LOOKBACK = { open: open, close: close };
+
+  document.addEventListener("click", function(e){
+    if(!e.target.closest) return;
+    var b = e.target.closest(".lbbtn");
+    if(b){ e.preventDefault(); open(b); return; }
+    if(e.target.closest("#lbclose")){ e.preventDefault(); close(); return; }
+    var j = e.target.closest("#lbjump button");
+    if(j){ var s = document.getElementById("lbpart" + j.getAttribute("data-k"));
+      if(s) body.scrollTop = s.offsetTop - 6; markJump(); }
+  });
+  document.addEventListener("keydown", function(e){ if(e.key === "Escape") close(); });
+  body.addEventListener("scroll", function(){ markJump(); if(typeof hideTip === "function") try{ hideTip(); }catch(e){} }, { passive: true });
+  /* leaving the After group, or switching to an activity that doesn't need the story, closes it */
+  document.addEventListener("click", function(e){
+    if(!e.target.closest || !document.body.classList.contains("lb-open")) return;
+    var a = e.target.closest(".actbtn, #chapters .cbtn");
+    if(!a) return;
+    var act = a.getAttribute("data-act");
+    if(!act || ACTS.indexOf(act) < 0) close();
+  }, true);
+
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", addButtons); else addButtons();
+  setTimeout(addButtons, 600);
+})();
+</script>
+
 </body>
 </html>
