@@ -20,8 +20,7 @@ table{border-collapse:collapse;width:100%;font-size:14px}
 th,td{padding:6px 8px;border-bottom:1px solid #ddd5ea;text-align:left;white-space:nowrap}
 th{background:var(--plum-l);color:var(--plum-d);position:sticky;top:0;font-size:13px}
 tr.r{cursor:pointer}tr.r:hover{background:#f6f1fd}tr.sel{background:#fff1df}
-.ok{color:var(--good);font-weight:900}.no{color:#aaa}.b04{display:inline-block;min-width:26px;text-align:center;border-radius:7px;font-weight:900;padding:1px 6px;border:2px solid var(--ink)}
-.b4{background:#bfe8cf}.b3{background:#dff3e6}.b2{background:#fff1bf}.b1{background:#fde0d6}.b0{background:#eee}
+.ok{color:var(--good);font-weight:900}.no{color:#aaa}
 .em{display:block;color:var(--muted);font-size:12px;font-weight:600}
 .det{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .pane{border:2px solid var(--ink);border-radius:10px;padding:10px;white-space:pre-wrap;background:#fffdf8;font-size:15px;line-height:1.5}
@@ -99,13 +98,15 @@ function hash(s){var h=2166136261;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i)
 function shown(){var p=$('perSel').value,q=$('q').value.trim().toLowerCase();
   return ROWS.filter(function(r){return (!p||String(r.period)===p)&&(!q||String(r.name||'').toLowerCase().indexOf(q)>=0||lp(r.email).indexOf(q)>=0);})
    .sort(function(a,b){return (+a.period||9)-(+b.period||9)||String(a.name).localeCompare(String(b.name));});}
-function band(r){var pct=r.max_score?100*(r.score||0)/r.max_score:null;if(window.GAL04)return GAL04.band(pct);if(pct==null)return null;return pct>=90?4:pct>=75?3:pct>=60?2:pct>0?1:0;}
+/* T-311: the 0–4.5 mark comes ONLY from grade04.js (GAL04.band / GAL04.badge), never a table of our own */
+function pctOf(r){return r.max_score?100*(r.score||0)/r.max_score:null;}
+function badge04(r){var p=pctOf(r);if(!window.GAL04)return '<span title="grade04.js did not load">\u2014</span>';return GAL04.badge(p,(r.score||0)+' / '+(r.max_score||44));}
 function cnt(obj,ids){var first=0,done=0,miss=0;ids.forEach(function(id){var r=obj&&obj[id];if(r&&r.ok){done++;if(!(r.m&&r.m.length))first++;}if(r&&r.m)miss+=r.m.length;});return{first:first,done:done,miss:miss};}
 function draw(){
   var rs=shown(),cids=LET?LET.comp.map(function(q){return q.id;}):['c1','c2','c3','c4','c5'];
   var vids=['p1','p2','p3','p4','p5','p6'].concat(LET?LET.fill.map(function(f){return f.id;}):[]);
-  $('tbl').innerHTML='<tr><th>Name</th><th>P</th><th>Lvl</th><th>Problem</th><th>Advice</th><th>Compare</th><th>Check (1st try / done)</th><th>Words (1st try / done)</th><th>❤ votes</th><th>Score</th><th>0–4</th><th>Turned in</th><th>Updated</th></tr>'+
-   rs.map(function(r){var a=r.answers||{},w=a.w||{},c=cnt(a.q,cids),v=cnt(a.v,vids),b=band(r);
+  $('tbl').innerHTML='<tr><th>Name</th><th>P</th><th>Lvl</th><th>Problem</th><th>Advice</th><th>Compare</th><th>Check (1st try / done)</th><th>Words (1st try / done)</th><th>❤ votes</th><th>Score</th><th>0–4.5</th><th>Turned in</th><th>Updated</th></tr>'+
+   rs.map(function(r){var a=r.answers||{},w=a.w||{},c=cnt(a.q,cids),v=cnt(a.v,vids);
     var pr=w.prob||(w.pa&&w.pb?'x':'');
     return '<tr class="r'+(SEL===lp(r.email)?' sel':'')+'" data-e="'+esc(lp(r.email))+'"><td><b>'+esc(r.name||lp(r.email))+'</b><span class="em">'+esc(r.email)+'</span></td><td>'+esc(r.period||'')+'</td><td>'+esc(r.level||'')+'</td>'+
      '<td>'+(pr?'<span class="ok">✓</span>':'<span class="no">—</span>')+'</td>'+
@@ -113,7 +114,7 @@ function draw(){
      '<td>'+((w.cmp&&wc(w.cmp)>=15)||(w.cA&&w.cA.filter(function(x){return wc(x)>=2;}).length===3)?'<span class="ok">✓</span>':'<span class="no">—</span>')+'</td>'+
      '<td>'+c.first+' / '+c.done+' of '+cids.length+(c.miss?' <span class="miss">('+c.miss+' miss)</span>':'')+'</td>'+
      '<td>'+v.first+' / '+v.done+' of '+vids.length+(v.miss?' <span class="miss">('+v.miss+' miss)</span>':'')+'</td>'+
-     '<td>'+(r._votes||'')+'</td><td><b>'+(r.score||0)+'</b> / '+(r.max_score||44)+'</td><td>'+(b==null?'—':'<span class="b04 b'+b+'">'+b+'</span>')+'</td>'+
+     '<td>'+(r._votes||'')+'</td><td><b>'+(r.score||0)+'</b> / '+(r.max_score||44)+'</td><td>'+badge04(r)+'</td>'+
      '<td>'+(r.turned_in?'<span class="ok">✓</span>':'<span class="no">—</span>')+'</td><td>'+esc(String(r.updated_at||'').slice(5,16).replace('T',' '))+'</td></tr>';}).join('');
   $('tbl').querySelectorAll('tr.r').forEach(function(tr){tr.onclick=function(){SEL=tr.dataset.e;draw();detail();};});
   qsum(rs,cids);if(SEL)detail();
