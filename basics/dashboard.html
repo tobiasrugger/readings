@@ -55,6 +55,22 @@ th.day{font-size:.68rem}
 .lv sub{font-size:.6rem;margin-left:1px}
 .lv.open{border-style:dotted;color:#5c6b62}.lv.half{border:1.5px dashed #d4a017;color:#7a5c00}.lv.done{background:#d8f0e2;border-color:#2d6a4f;color:#1b4332}
 .lvstat b small{font-size:.7em;color:#5c6b62}
+.lv.paper{background:#fff1bf;border-color:#8a6a00;color:#5c4400}
+/* T-307 · paper scores */
+#paperPanel{display:none;border:2.5px solid #1f2421;box-shadow:0 3px 0 rgba(0,0,0,.15)}
+#paperPanel.show{display:block}
+#paperPanel h2{margin:0 0 8px;font-size:1.1rem;color:var(--pine)}
+.prow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 10px}
+.prow label{font-weight:800;font-size:.82rem;color:var(--muted)}
+.prow input,.prow select{font-family:inherit;font-size:.95rem;font-weight:700;padding:7px 10px;border:2px solid #8aa094;border-radius:9px}
+#ptbl input{width:64px;font-family:inherit;font-size:1.05rem;font-weight:800;padding:5px 8px;border:2px solid #8aa094;border-radius:8px;text-align:center}
+#ptbl input.bad{border-color:#b5451b;background:#fbeae5}
+#ptbl input:focus{outline:3px solid var(--gold);border-color:#1f2421}
+#ptbl td{vertical-align:middle}
+#ptbl .tot{font-weight:900;color:var(--pine)}
+#pmsg{font-weight:800;min-height:1.3em}
+#pmsg.ok{color:var(--pine2)}#pmsg.err{color:var(--rust)}
+.saved{font-size:.72rem;font-weight:800;color:var(--pine2)}
 </style>
 </head>
 <body>
@@ -64,14 +80,30 @@ th.day{font-size:.68rem}
   <select id="period" onchange="render()"><option value="">All periods</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select>
   <select id="span" onchange="render()"><option value="10">Last 10 days</option><option value="20">Last 20 days</option><option value="40">Last 40 days</option></select>
   <button onclick="loadAll()">↻ Refresh</button>
+  <button id="paperBtn" onclick="togglePaper()">📝 Paper scores</button>
+  <a href="print/">🖨️ Print a sheet</a>
+  <a href="ref/">📖 Help sheet</a>
   <span class="sp"></span>
   <a href="./">Student page</a>
   <button onclick="exportCSV()">CSV</button>
 </div>
 <main>
+  <div class="card" id="paperPanel">
+    <h2>📝 Paper scores</h2>
+    <p class="muted" style="margin:0 0 10px;font-size:.88rem">Type each student's Warm-up and Stretch from the paper sheet. Leave a box empty for a student who was absent. Tab and Enter move down the column. The score goes to the gradebook as that day's Daily Basics grade (out of 20); if the student also did it on a Chromebook that day, the better of the two counts.</p>
+    <div class="prow">
+      <label for="pDate">Day</label><input type="date" id="pDate" onchange="paperLoad()">
+      <label for="pPer">Period</label><select id="pPer" onchange="paperLoad()"><option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select>
+      <label for="pWm">Warm-up out of</label><input id="pWm" type="number" min="1" max="40" value="12" style="width:70px" onchange="paperTotals()">
+      <label for="pSm">Stretch out of</label><input id="pSm" type="number" min="0" max="40" value="8" style="width:70px" onchange="paperTotals()">
+      <label for="pCode">Sheet code</label><input id="pCode" placeholder="L3-B-7K2Q" size="10">
+    </div>
+    <div style="overflow-x:auto"><table id="ptbl"><thead><tr><th>#</th><th>Student</th><th>Warm-up</th><th>Stretch</th><th>Total / 20</th><th></th></tr></thead><tbody><tr><td colspan="6" class="muted">Choose a period.</td></tr></tbody></table></div>
+    <div class="prow" style="margin-top:10px"><button class="btn" onclick="paperSave()">💾 Save this period</button><span id="pmsg"></span></div>
+  </div>
   <div class="card stats" id="stats"></div>
   <div class="card" style="padding:0;overflow-x:auto"><table id="tbl"><thead></thead><tbody></tbody></table></div>
-  <p class="muted" style="font-size:.8rem">Each day shows the <b>daily grade</b> out of 12 (the average of the levels the student finished; if none is finished, their best partial level). Under it, <b>A B C</b>: grey = not opened, dashed = started, green = finished. The small number is how many they got right on the <b>first try</b>; ⭐ = 11 or 12 first try. The gradebook gets the daily grade. Tap a name to see which skill they miss most, per level.</p>
+  <p class="muted" style="font-size:.8rem">Each day shows the <b>daily grade</b> out of 20 (Warm-up 12 + Stretch 8; sets from before Stretch count their 12 as the full 20). It is the average of the sets the student finished; if none is finished, their best partial set. Under it, <b>A B C</b>: grey = not opened, dashed = started, green = finished; the small number is first-try answers. A yellow <b>📝</b> is a paper sheet you entered (Warm-up + Stretch).</p>
 </main>
 <script>
 var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
@@ -82,19 +114,19 @@ function $(i){return document.getElementById(i);}
 function H(){return {'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY};}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 function tryPw(){if($('pw').value===PASSWORD){try{sessionStorage.setItem('dash_ok','1');}catch(e){}openApp();}else $('err').textContent='Not the right password.';}
-function openApp(){$('pwwrap').style.display='none';loadAll();}
+function openApp(){$('pwwrap').style.display='none';loadAll();if(location.hash==='#paper')setTimeout(function(){togglePaper(true);},50);}
 function loadAll(){$('stats').innerHTML='<div class="muted">Loading…</div>';
  fetch(SUPA_URL+'/rest/v1/basics?select=email,name,period,unit,score,max_score,payload,updated_at&order=unit.desc&limit=5000',{headers:H()}).then(function(r){return r.json();}).then(function(res){ROWS=Array.isArray(res)?res:[];render();}).catch(function(e){$('stats').innerHTML='<div class="muted">Could not load: '+esc(e)+'</div>';});}
 function days(n){var out=[],d=new Date();for(var i=0;i<n;i++){out.unshift(d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2));d.setDate(d.getDate()-1);}return out;}
-function cls(sc){return sc>=10?'hi':sc>=7?'mid':'lo';}
+function cls(sc){return sc>=16.7?'hi':sc>=11.7?'mid':'lo';} /* T-307: daily grade is out of 20 (12 Warm-up + 8 Stretch) */
 /* T-275: a day has up to three sets (unit DATE = A, DATE-B, DATE-C). Daily grade = average of the FINISHED sets
    (out of 12); if none is finished, the best partial set. Each level also shows its first-try score. */
 var LV=['A','B','C'];
-function lvOf(u){var m=String(u||'').match(/-([ABC])$/);return m?m[1]:'A';}
-function dayOf(u){return String(u||'').replace(/-[ABC]$/,'');}
-function sumOf(r){var p=r.payload||{},A=p.A||{},n=(p.items&&p.items.length)||r.max_score||12,s=0,f=0;Object.keys(A).forEach(function(k){if(A[k]&&A[k].done){s++;if(A[k].first)f++;}});return {n:n,solved:Math.min(s,n),first:f,done:s>=n};}
-function daily(L){var fin=[],best=0;Object.keys(L).forEach(function(l){var s=L[l],v=12*s.solved/(s.n||12);if(s.done)fin.push(v);if(v>best)best=v;});var g=fin.length?fin.reduce(function(a,b){return a+b;},0)/fin.length:best;return Math.round(g*10)/10;}
-function stripHTML(L){return '<span class="strip">'+LV.map(function(l){var s=L[l];if(!s)return '<i class="lv none" title="Level '+l+': not opened">'+l+'</i>';
+function lvOf(u){var m=String(u||'').match(/-([ABCP])$/);return m?m[1]:'A';}
+function dayOf(u){return String(u||'').replace(/-[ABCP]$/,'');}
+function sumOf(r){var p=r.payload||{},A=p.A||{};if(p.paper){var pp=p.paper,pn=(+pp.warmMax||0)+(+pp.stretchMax||0)||20,ps=(+pp.warm||0)+(+pp.stretch||0);return {n:pn,solved:Math.min(ps,pn),first:ps,done:true,paper:pp};}var n=(p.items&&p.items.length)||r.max_score||12,s=0,f=0;Object.keys(A).forEach(function(k){if(A[k]&&A[k].done){s++;if(A[k].first)f++;}});return {n:n,solved:Math.min(s,n),first:f,done:s>=n};}
+function daily(L){var fin=[],best=0;Object.keys(L).forEach(function(l){var s=L[l],v=20*s.solved/(s.n||12);if(s.done)fin.push(v);if(v>best)best=v;});var g=fin.length?fin.reduce(function(a,b){return a+b;},0)/fin.length:best;return Math.round(g*10)/10;}
+function stripHTML(L){return '<span class="strip">'+(L.P?'<i class="lv paper" title="Paper: Warm-up '+L.P.paper.warm+'/'+L.P.paper.warmMax+', Stretch '+L.P.paper.stretch+'/'+L.P.paper.stretchMax+(L.P.paper.sheet?' · sheet '+L.P.paper.sheet:'')+'">📝'+L.P.solved+'</i>':'')+LV.map(function(l){var s=L[l];if(!s)return '<i class="lv none" title="Level '+l+': not opened">'+l+'</i>';
  var st=s.done?'done':(s.solved?'half':'open'),star=s.done&&s.first>=11?'\u2b50':'';
  return '<i class="lv '+st+'" title="Level '+l+': '+s.solved+'/'+s.n+' solved, '+s.first+' first try">'+l+'<sub>'+(s.solved?s.first:'\u2013')+'</sub>'+star+'</i>';}).join('')+'</span>';}
 function skillMiss(rowsFor){var m={};rowsFor.forEach(function(r){var A=(r.payload&&r.payload.A)||{};var T=(r.payload&&r.payload.tags)||{};Object.keys(A).forEach(function(id){var t=(T[id]||'?')+(lvOf(r.unit)==='A'?'':' ('+lvOf(r.unit)+')');m[t]=m[t]||{n:0,miss:0};m[t].n++;if(!(A[id].done&&A[id].first))m[t].miss++;});});return m;}
@@ -111,7 +143,7 @@ function render(){
  var avg=dg.length?Math.round(10*dg.reduce(function(a,b){return a+b;},0)/dg.length)/10:0;
  $('stats').innerHTML='<div class="stat"><b>'+stu.length+'</b><span>students (period '+(pd||'all')+')</span></div><div class="stat"><b>'+did+'</b><span>did Basics today</span></div>'+
   LV.map(function(l){return '<div class="stat lvstat lv-'+l+'"><b>'+cnt[l][1]+'<small> / '+cnt[l][0]+'</small></b><span>Level '+l+' today: finished / started</span></div>';}).join('')+
-  '<div class="stat"><b>'+avg+'</b><span>average daily grade / 12</span></div>';
+  '<div class="stat"><b>'+avg+'</b><span>average daily grade / 20</span></div>';
  $('tbl').querySelector('thead').innerHTML='<tr><th>Student</th><th>P</th><th>Days</th><th>Avg</th>'+ds.map(function(d){return '<th class="day">'+d.slice(5).replace('-','/')+'</th>';}).join('')+'</tr>';
  $('tbl').querySelector('tbody').innerHTML=stu.map(function(s){var id=(s.email||'').replace(/[^a-z0-9]/gi,'_');var keys=Object.keys(s.d),sum=0;keys.forEach(function(k){sum+=daily(s.d[k]);});
   var tr='<tr><td class="nm"><button class="expand" onclick="toggle(\''+id+'\')">'+esc(s.name||s.email)+'</button><small>'+esc(s.email)+'</small></td><td>'+esc(s.period)+'</td><td>'+keys.length+'</td><td>'+(keys.length?Math.round(10*sum/keys.length)/10:'\u2014')+'</td>'+
@@ -121,9 +153,59 @@ function render(){
   return tr;}).join('')||'<tr><td colspan="'+(4+ds.length)+'" class="muted">No students yet.</td></tr>';
 }
 function toggle(id){OPEN[id]=!OPEN[id];render();}
+/* ===================== T-307 · PAPER SCORES ===================== */
+var PROSTER=[];
+function hdrJ(p){var h=H();h['Content-Type']='application/json';if(p)h['Prefer']=p;return h;}
+function todayStr(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);}
+function togglePaper(on){var p=$('paperPanel');on=(on==null)?!p.classList.contains('show'):on;p.classList.toggle('show',on);$('paperBtn').style.background=on?'#d4a017':'';
+ if(on){if(!$('pDate').value)$('pDate').value=todayStr();if(!$('pPer').value&&$('period').value)$('pPer').value=$('period').value;paperLoad();}
+ try{history.replaceState(null,'',on?'#paper':location.pathname+location.search);}catch(e){}}
+function lpOf(e){return String(e||'').toLowerCase().split('@')[0];}
+function paperLoad(){var pd=$('pPer').value,day=$('pDate').value,tb=$('ptbl').querySelector('tbody');$('pmsg').textContent='';
+ if(!pd||!day){tb.innerHTML='<tr><td colspan="6" class="muted">Choose a day and a period.</td></tr>';return;}
+ tb.innerHTML='<tr><td colspan="6" class="muted">Loading the roster…</td></tr>';
+ fetch(SUPA_URL+'/rest/v1/students?select=email,first_name,last_name,period,roster_order&period=eq.'+encodeURIComponent(pd),{headers:H()}).then(function(r){return r.ok?r.json():[];}).then(function(list){
+  PROSTER=(list||[]).sort(function(a,b){return (a.roster_order||999)-(b.roster_order||999)||String(a.last_name||'').localeCompare(String(b.last_name||''));});
+  if(!PROSTER.length){tb.innerHTML='<tr><td colspan="6" class="muted">No students in period '+esc(pd)+'.</td></tr>';return;}
+  var have={},code='';ROWS.forEach(function(r){if(r.unit===day+'-P'&&r.payload&&r.payload.paper){have[lpOf(r.email)]=r.payload.paper;if(r.payload.paper.sheet)code=r.payload.paper.sheet;}});
+  var any=Object.keys(have).map(function(k){return have[k];})[0];if(any){$('pWm').value=any.warmMax||12;$('pSm').value=any.stretchMax!=null?any.stretchMax:8;}if(code&&!$('pCode').value)$('pCode').value=code;
+  var n=PROSTER.length;
+  tb.innerHTML=PROSTER.map(function(s,i){var h=have[lpOf(s.email)]||{},nm=((s.first_name||'')+' '+(s.last_name||'')).trim()||s.email;
+   return '<tr data-i="'+i+'"><td class="muted">'+(i+1)+'</td><td class="nm">'+esc(nm)+'<small>'+esc(s.email)+'</small></td>'+
+    '<td><input inputmode="numeric" class="pw" data-col="w" tabindex="'+(i+1)+'" value="'+(h.warm!=null?h.warm:'')+'" oninput="paperTotals()" onkeydown="paperKey(event,this)"></td>'+
+    '<td><input inputmode="numeric" class="ps" data-col="s" tabindex="'+(n+i+1)+'" value="'+(h.stretch!=null?h.stretch:'')+'" oninput="paperTotals()" onkeydown="paperKey(event,this)"></td>'+
+    '<td class="tot"></td><td>'+(h.warm!=null?'<span class="saved">saved</span>':'')+'</td></tr>';}).join('');
+  paperTotals();var f=tb.querySelector('input');if(f)f.focus();
+ }).catch(function(){tb.innerHTML='<tr><td colspan="6" class="muted">Could not load the roster.</td></tr>';});}
+function paperKey(e,el){if(e.key!=='Enter')return;e.preventDefault();var t=+el.tabIndex+1,nx=document.querySelector('#ptbl input[tabindex="'+t+'"]');if(nx){nx.focus();nx.select();}}
+function numOrNull(v){v=String(v||'').trim();if(v==='')return null;var n=+v;return isFinite(n)?n:NaN;}
+function paperTotals(){var wm=+$('pWm').value||12,sm=+$('pSm').value||0,bad=0;
+ document.querySelectorAll('#ptbl tbody tr[data-i]').forEach(function(tr){var w=tr.querySelector('.pw'),s=tr.querySelector('.ps'),wv=numOrNull(w.value),sv=numOrNull(s.value);
+  var wb=wv!=null&&(isNaN(wv)||wv<0||wv>wm),sb=sv!=null&&(isNaN(sv)||sv<0||sv>sm);w.classList.toggle('bad',wb);s.classList.toggle('bad',sb);if(wb||sb)bad++;
+  tr.querySelector('.tot').textContent=(wv==null&&sv==null)||wb||sb?'':String(Math.round(10*20*((wv||0)+(sv||0))/(wm+sm))/10);});return bad;}
+function paperSave(){var day=$('pDate').value,pd=$('pPer').value,wm=+$('pWm').value||12,sm=+$('pSm').value||0,code=$('pCode').value.trim().toUpperCase(),msg=$('pmsg');
+ if(!day||!pd){msg.className='err';msg.textContent='Choose a day and a period first.';return;}
+ if(paperTotals()){msg.className='err';msg.textContent='Some boxes are bigger than the maximum (red). Fix them, then save.';return;}
+ var rows=[],atts=[],emails=[],when=new Date(day+'T15:00:00').toISOString(),now=new Date().toISOString();
+ document.querySelectorAll('#ptbl tbody tr[data-i]').forEach(function(tr){var s=PROSTER[+tr.getAttribute('data-i')],wv=numOrNull(tr.querySelector('.pw').value),sv=numOrNull(tr.querySelector('.ps').value);
+  if(wv==null&&sv==null)return;wv=wv||0;sv=sv||0;var nm=((s.first_name||'')+' '+(s.last_name||'')).trim(),g=Math.round(10*20*(wv+sv)/(wm+sm))/10;
+  var paper={warm:wv,warmMax:wm,stretch:sv,stretchMax:sm,sheet:code,entered:now};
+  rows.push({email:s.email,name:nm,period:String(pd),unit:day+'-P',slug:'basics/'+day,score:wv+sv,max_score:wm+sm,turned_in:true,writing:{},payload:{paper:paper,A:{}},updated_at:now});
+  atts.push({email:s.email,slug:'basics/'+day,score:g,max_score:20,detail:{source:'paper',path:'/readings/basics/dashboard.html',sheet:code,warm:wv,warmMax:wm,stretch:sv,stretchMax:sm},completed_at:when});emails.push(s.email);});
+ if(!rows.length){msg.className='err';msg.textContent='Nothing typed in yet.';return;}
+ msg.className='';msg.textContent='Saving '+rows.length+'…';
+ /* a re-entry replaces this day's earlier paper grade (if the database allows the delete; if not, the gradebook keeps the better one) */
+ var del=fetch(SUPA_URL+'/rest/v1/activity_attempts?slug=eq.'+encodeURIComponent('basics/'+day)+'&detail->>source=eq.paper&email=in.('+emails.map(encodeURIComponent).join(',')+')',{method:'DELETE',headers:hdrJ('return=minimal')}).catch(function(){});
+ del.then(function(){return fetch(SUPA_URL+'/rest/v1/basics?on_conflict=email,unit',{method:'POST',headers:hdrJ('resolution=merge-duplicates,return=minimal'),body:JSON.stringify(rows)});})
+ .then(function(r){if(!r.ok)throw new Error('basics '+r.status);return fetch(SUPA_URL+'/rest/v1/activity_attempts',{method:'POST',headers:hdrJ('return=minimal'),body:JSON.stringify(atts)});})
+ .then(function(r){if(!r.ok)throw new Error('gradebook '+r.status);msg.className='ok';msg.textContent='✓ Saved '+rows.length+' students for period '+pd+' · '+day+'. They show in the table below and in the gradebook.';
+  rows.forEach(function(x){var k=-1;ROWS.forEach(function(r,i){if(r.email===x.email&&r.unit===x.unit)k=i;});if(k>=0)ROWS[k]=x;else ROWS.push(x);});
+  document.querySelectorAll('#ptbl tbody tr[data-i]').forEach(function(tr){var s=PROSTER[+tr.getAttribute('data-i')];if(emails.indexOf(s.email)>=0)tr.lastChild.innerHTML='<span class="saved">saved</span>';});render();})
+ .catch(function(e){msg.className='err';msg.textContent='Not saved ('+e.message+'). Check the internet and press Save again.';});}
+
 function exportCSV(){var pd=$('period').value,ds=days(+$('span').value);var rows=ROWS.filter(function(r){return (!pd||String(r.period)===pd)&&ds.indexOf(dayOf(r.unit))>=0;});
- var out=[['name','email','period','date','daily_grade_of_12','A_solved','A_first_try','B_solved','B_first_try','C_solved','C_first_try']];
- build(rows).forEach(function(s){Object.keys(s.d).sort().forEach(function(d){var L=s.d[d],row=[s.name,s.email,s.period,d,daily(L)];LV.forEach(function(l){row.push(L[l]?L[l].solved:'',L[l]?L[l].first:'');});out.push(row);});});
+ var out=[['name','email','period','date','daily_grade_of_20','A_solved','A_first_try','B_solved','B_first_try','C_solved','C_first_try','paper_warmup','paper_stretch']];
+ build(rows).forEach(function(s){Object.keys(s.d).sort().forEach(function(d){var L=s.d[d],row=[s.name,s.email,s.period,d,daily(L)];LV.forEach(function(l){row.push(L[l]?L[l].solved:'',L[l]?L[l].first:'');});row.push(L.P?L.P.paper.warm:'',L.P?L.P.paper.stretch:'');out.push(row);});});
  var csv=out.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
  var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);a.download='basics'+(pd?'-p'+pd:'')+'.csv';a.click();}
 (function(){var ok=false;try{ok=sessionStorage.getItem('dash_ok')==='1';}catch(e){}if(ok)openApp();else $('pw').focus();})();
