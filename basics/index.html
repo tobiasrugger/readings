@@ -148,6 +148,12 @@ textarea:focus{border-color:var(--moss);outline:none}
 .lvl b{font-size:1.3rem;line-height:1}.lvl small{font-size:.78rem;font-weight:700;color:var(--muted)}.lvl i{font-style:normal;font-weight:800;color:var(--pine)}
 .lvl.cur{background:var(--pine2);border-color:var(--pine);color:#fff}.lvl.cur small,.lvl.cur i{color:#e9f6ee}
 .lvl.done{border-color:var(--moss)}.lvl.half{border-style:dashed}
+/* T-346 */
+.doneband{border:2px solid #8a6a00;background:#fff3b0;border-radius:12px;box-shadow:0 3px 0 #8a6a00;padding:10px 14px;margin:0 0 10px;font-weight:800;font-size:1.05rem;color:#3d2c00;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.doneband[hidden]{display:none}.doneband .dbtxt{flex:1 1 220px}
+.lvl em.opt{font-style:normal;font-size:.7rem;font-weight:800;border:1.5px solid #8a6a00;background:#fff3b0;color:#3d2c00;border-radius:8px;padding:0 6px}
+.homebtn{font-size:1.15rem;padding:12px 22px;background:var(--pine2);color:#fff !important}
+.morebtn{font-size:.9rem;padding:6px 12px}
 textarea.wr{margin:6px 0}
 .pic svg{font-size:1rem}
 .nextbox .btn{text-decoration:none;display:inline-block}
@@ -183,6 +189,7 @@ window.GAL_META={title:'Daily Basics',unit:'Basics',skills:['PRON.SUBJ','SENT.BE
 <div id="srvBar" role="alert" data-dir="srv" data-en="Can't reach the server. Your work is NOT saving. Check the internet, then reload the page.">Can't reach the server. Your work is NOT saving. Check the internet, then reload the page.</div>
 <div class="steps" id="steps"></div>
 <div id="whobar"></div>
+<div id="doneBand" class="doneband" role="status" hidden><span class="dbtxt" data-dir="db" data-en="✓ Daily Basics is done for today. More levels are optional.">✓ Daily Basics is done for today. More levels are optional.</span> <button class="spk" type="button" onclick="speak('Daily Basics is done for today. More levels are optional.')" aria-label="Listen">&#128266;</button></div>
 <div id="lvlbar" class="lvlbar" translate="no"></div>
 
 <section class="act" id="a0">
@@ -191,7 +198,7 @@ window.GAL_META={title:'Daily Basics',unit:'Basics',skills:['PRON.SUBJ','SENT.BE
   <div class="card">
     <p class="dir" data-dir="d1" data-en="Two pages every day. Warm-up: 12 quick questions. Stretch: 8 harder questions. Every day they are different.">Two pages every day. <b>Warm-up</b>: 12 quick questions. <b>Stretch</b>: 8 harder questions. Every day they are different.</p>
     <p class="dir" data-dir="d2" data-en="He = one man. She = one woman. They = two or more. It = a thing. I am, you are, he is, she is, it is, we are, they are.">He = one man. She = one woman. They = two or more. It = a thing. <b>I am</b>, <b>you are</b>, <b>he is</b>, <b>she is</b>, <b>it is</b>, <b>we are</b>, <b>they are</b>.</p>
-    <p class="dir" data-dir="lv" data-en="Choose a level at the top: A = start here, B = harder, C = challenge. You can do more than one level every day.">Choose a level at the top: <b>A</b> = start here, <b>B</b> = harder, <b>C</b> = challenge. You can do more than one level every day.</p>
+    <p class="dir" data-dir="lv" data-en="Start with Level A. If A is easy, you can try B or C. One level is enough for the day.">Start with Level <b>A</b>. If A is easy, you can try <b>B</b> or <b>C</b>. One level is enough for the day.</p>
     <div class="rule" id="streak"></div>
     <a class="helpbtn" id="helpLink" href="/readings/basics/ref/" target="_blank" rel="noopener">&#128214; Help sheet: words and grammar in your language</a>
   </div>
@@ -249,8 +256,9 @@ window.GAL_META={title:'Daily Basics',unit:'Basics',skills:['PRON.SUBJ','SENT.BE
   <button class="btn ghost" onclick="go(1)">Look again</button>
   <div class="card nextbox">
     <h3 style="margin:0 0 6px;color:var(--pine)">Finished? Here is where to go</h3>
-    <p class="dir" data-dir="nx" data-en="Go back to My Page or to Google Classroom. If you are not sure, ask Mr. Toby.">Go back to <b>My Page</b> or to <b>Google Classroom</b>. If you are not sure, ask Mr. Toby.</p>
-    <a class="btn ghost" href="https://classroom.google.com/" target="_blank" rel="noopener">Google Classroom</a>
+    <p class="dir" data-dir="nx2" data-en="You are done for today. Go back to My Page. If you are not sure, ask Mr. Toby.">You are done for today. Go back to <b>My Page</b>. If you are not sure, ask Mr. Toby.</p>
+    <a class="btn homebtn" id="homeBtn" href="/readings/student/">&larr; Back to My Page</a>
+    <div id="moreLv" style="margin-top:10px"></div>
   </div>
 </section>
 </main>
@@ -450,9 +458,10 @@ function allSets(){var o={};LEVELS.forEach(function(l){var s=(l===LEVEL&&LOADED&
 function dailyGrade(){var S=allSets(),fin=[],best=0;Object.keys(S).forEach(function(l){var s=S[l],v=20*s.solved/(s.n||12);if(s.solved>=s.n)fin.push(v);if(v>best)best=v;});
  var g=fin.length?fin.reduce(function(a,b){return a+b;},0)/fin.length:best;return Math.round(g*10)/10;}
 function lvlState(l){var s=allSets()[l];if(!s||!s.solved)return '';return s.solved>=s.n?'done':'half';}
-function drawLevels(){var h=$('lvlbar');if(!h)return;
+function dayDone(){return LEVELS.some(function(l){return lvlState(l)==='done';});}
+function drawLevels(){var h=$('lvlbar');if(!h)return;var dd=dayDone(),band=$('doneBand');if(band)band.hidden=!dd;
  h.innerHTML='<span class="lvlt">Level</span>'+LEVELS.map(function(l){var st=lvlState(l);
-  return '<button class="lvl'+(l===LEVEL?' cur':'')+(st?' '+st:'')+'" onclick="switchLevel(\''+l+'\')" aria-pressed="'+(l===LEVEL)+'"><b>'+l+'</b><small>'+LEVEL_NAMES[l]+'</small><i>'+(st==='done'?'\u2713':st==='half'?'\u25D0':'')+'</i></button>';}).join('');}
+  return '<button class="lvl'+(l===LEVEL?' cur':'')+(st?' '+st:'')+'" onclick="switchLevel(\''+l+'\')" aria-pressed="'+(l===LEVEL)+'"><b>'+l+'</b><small>'+LEVEL_NAMES[l]+'</small><i>'+(st==='done'?'\u2713':st==='half'?'\u25D0':'')+'</i>'+(dd&&st!=='done'?'<em class="opt">optional</em>':'')+'</button>';}).join('');}
 var SWITCHING=false;
 function switchLevel(l){if(l===LEVEL||SWITCHING)return;if(!ST.email||!LOADED){setUnit(l);drawLevels();return;}
  SWITCHING=true;SETS[LEVEL]=liveSum();clearTimeout(saveT);dirty=true;push(true);
@@ -656,9 +665,13 @@ function finish(){
  $('finScore').textContent=solved()+' / '+ITEMS.length;$('finFirst').textContent='First try: '+firstTry()+' / '+ITEMS.length;if(ITEMS.every(function(x){return state(x.id).done;})){markDay();if(!ST.turnedIn){ST.turnedIn=new Date().toISOString();}save();push(true);}
  $('finList').innerHTML=[['He / She / They / It','PRON.SUBJ'],['am / is / are','SENT.BE'],['Where?','PLACE'],['Sentence or fragment?','SENT.FRAG'],['because / but / so','CONJ.BBS']].concat(window.BasicsStretch?Object.keys(BasicsStretch.NAMES).map(function(k){return ['Stretch \u00b7 '+BasicsStretch.NAMES[k],k];}):[]).filter(function(r){return ITEMS.some(function(x){return x.tag===r[1];});}).map(function(r){return '<div class="sumrow"><span>'+r[0]+'</span><b>'+tagScore(r[1])+'</b></div>';}).join('')+'<div class="sumrow"><span>🔥 Days in a row</span><b>'+streak()+'</b></div>'+
   '<div class="sumrow"><span>Today\u2019s levels</span><b>'+LEVELS.map(function(l){var st=lvlState(l);return l+(st==='done'?' \u2713':st==='half'?' \u25D0':' \u2013');}).join(' \u00b7 ')+'</b></div>'+
-  (function(){var nx=LEVELS.filter(function(l){return l!==LEVEL&&lvlState(l)!=='done';}),up=nx.filter(function(l){return l>LEVEL;})[0]||nx[0];
-   return up?'<div style="margin-top:10px"><button class="btn" onclick="switchLevel(\''+up+'\')">'+(up>LEVEL?'Too easy? Try Level '+up+' \u2192':'Do Level '+up+' too \u2192')+'</button></div>':'';})();
+  '';drawMore();
 }
+/* T-346: the finish screen sends students home; ONE small optional button for the lowest unfinished level */
+function drawMore(){var hb=$('homeBtn');if(hb){var hm='';try{hm=sessionStorage.getItem('gal_home')||'';}catch(e){}hb.href=hm||'/readings/student/';}
+ var m=$('moreLv');if(!m)return;var left=LEVELS.filter(function(l){return l!==LEVEL&&lvlState(l)!=='done';});
+ left.sort();
+ m.innerHTML=left.slice(0,1).map(function(l){return '<button class="btn ghost morebtn" onclick="switchLevel(\''+l+'\')">Want more? Try Level '+l+' (optional)</button>';}).join(' ');}
 function solved(){return ITEMS.filter(function(x){return state(x.id).done;}).length;}
 /* Fair score (T-238 rule): every question solved on ANY try = 1 point. First try stays in the
    score column + payload for the dashboard. */
@@ -677,8 +690,11 @@ function loadServer(email,then){
   fetch(SUPA_URL+'/rest/v1/'+TABLE+'?email='+inl+'&turned_in=eq.true&select=unit&order=unit.desc&limit=200',{headers:hdr()}).then(function(r){return r.ok?r.json():[];}).catch(function(){return [];}),
   fetch(SUPA_URL+'/rest/v1/'+TABLE+'?email='+inl+'&select=unit&order=updated_at.desc&limit=1',{headers:hdr()}).then(function(r){return r.ok?r.json():[];}).catch(function(){return [];})
  ]).then(function(res){if(gone)return;clearTimeout(t);gone=true;
-  /* T-275: which level opens? ?level= in the link, else the one this student used last (today first), else A */
-  var today=res[0]||[];if(!LOADED_ONCE){LOADED_ONCE=true;var pickL=URL_LEVEL||(today[0]?levelOfUnit(today[0].unit):((res[2]&&res[2][0])?levelOfUnit(res[2][0].unit):'A'));setUnit(pickL);}
+  /* T-346 (v2): which level opens? ?level= in the link wins; else the LOWEST level not finished today
+     (A, then B, then C); all three finished → A. No "most recent row" fallback any more. */
+  var today=res[0]||[];if(!LOADED_ONCE){LOADED_ONCE=true;
+   var fin={};today.forEach(function(r){var x=sumRow(r);if(x.solved>=x.n)fin[levelOfUnit(r.unit)]=true;});
+   var pickL=URL_LEVEL||(LEVELS.filter(function(l){return !fin[l];})[0]||'A');setUnit(pickL);}
   LEVELS.forEach(function(l){var rs=today.filter(function(r){return levelOfUnit(r.unit)===l;}),b=null;rs.forEach(function(r){var x=sumRow(r);if(!b||x.solved>b.solved)b=x;});
    var loc=SETS[l];if(b&&(!loc||b.solved>=loc.solved))SETS[l]=b;});
   var rows=today.filter(function(r){return r.unit===UNIT;}),best=null,bn=-1;
