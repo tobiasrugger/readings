@@ -430,6 +430,9 @@ details.wq .qm{font-size:.85rem;color:var(--muted);font-weight:800}
 #pushDone .pushrow .btn{background:#fff;color:var(--green);border:2px solid var(--green);font-size:.95rem;padding:7px 14px}
 #pushDone .spcard.inband{display:none}
 .thenline.donehead{margin-top:14px}
+.donetoggle{display:inline-flex;align-items:center;gap:6px;margin:14px 0 8px;font:inherit;font-weight:900;font-size:1rem;color:var(--green);background:#fff;border:2px solid var(--green);border-radius:999px;padding:6px 14px;cursor:pointer}
+.donetoggle .dtap{font-weight:700;color:#4f6b5a}
+.fin .nextpart{font-weight:800;color:var(--plum-dp)}
 .nextband.aimed .nextpoint{align-items:flex-start}
 /* T-130: a pushed story's part buttons sit inside its row, full width under the title */
 #pushBox .pushrow{flex-wrap:wrap}
@@ -654,7 +657,7 @@ th,td{border-bottom:2px solid var(--line-dk)}
       <p class="thenline hide" id="thenLine">Then practice:</p>
       <div class="nextcells" id="growth"></div>
       <!-- T-133: finished teacher pushes sink here, below everything still to do -->
-      <div id="pushDoneWrap" class="hide"><p class="thenline donehead">&#10003; Finished:</p><div id="pushDone"></div></div>
+      <div id="pushDoneWrap" class="hide"><button type="button" class="donetoggle" id="doneToggle" aria-expanded="false" onclick="toggleDone()">&#10003; <span id="doneCount">0</span> finished <span class="dtap">(tap to see)</span></button><div id="pushDone" class="hide"></div></div>
     </div>
   </div>
 
@@ -684,11 +687,11 @@ th,td{border-bottom:2px solid var(--line-dk)}
         <path d="M120 112l-14 6 14 6z" fill="#f4dcb4" stroke="#2b2244" stroke-width="2" stroke-linejoin="round"/><path d="M109 116.6l-3 1.4 3 1.4z" fill="#2b2244"/>
       </g>
     </svg>
-    <h2><span class="ico">&#128202;</span>My grade right now</h2>
+    <h2><span class="ico">&#128202;</span><span id="gTitle">My grade right now</span></h2>
     <p class="gline gtr" id="gLine"></p>
     <div class="gbig" id="gBig"><span class="glab gtr" id="gBigLab"></span><span class="gletters" id="gBigL"></span></div>
     <div class="gmps" id="gMps"></div>
-    <p class="gnote gtr">Mr. Toby also grades work on paper, so your real grade can be a little different.</p>
+    <p class="gnote gtr" id="gNote">Mr. Toby also grades work on paper, so your real grade can be a little different.</p>
     <p class="graise gtr hide" id="gRaise">To raise your grade, do some or all of these:</p>
     <p class="gall hide gtr" id="gAll"></p>
     <div class="gbtns" id="gBtns"></div>
@@ -1427,6 +1430,18 @@ function gRange(v){
   else other=(up-v)<=(v-down)?L[i-1]:L[i+1];   /* a tie leans up */
   var pair=[me,other].sort(); return pair[0]+' or '+pair[1];
 }
+/* T-325: the letters are HIDDEN from students unless Mr. Toby turns them on (gal_settings 'mypage_grade' =
+   {all, periods:['3'], emails:[LOCAL PARTS]}, set at /readings/student/dashboard.html). Reason (Toby, Nov 6):
+   a B or C after one or two extras reads as "good enough". Teacher view always sees them. If the setting
+   can't be read, the letters stay hidden. While hidden the box shows a count ("4 still to do") and the buttons. */
+async function gradeShown(email,period){
+  try{
+    var r=await sb('gal_settings?key=eq.mypage_grade&select=value'); var v=(r&&r[0]&&r[0].value)||{};
+    if(v.all) return true;
+    if((v.periods||[]).map(String).indexOf(String(period||''))>-1) return true;
+    return (v.emails||[]).map(function(x){return String(x).toLowerCase().split('@')[0];}).indexOf(String(email).toLowerCase().split('@')[0])>-1;
+  }catch(e){ return false; }
+}
 async function loadGrade(email){
   var card=document.getElementById('gradeCard'); if(!card)return;
   try{
@@ -1452,6 +1467,7 @@ async function loadGrade(email){
       var b=gBest(r); if(!b.done)extras.push({r:r});
     });
     if(!items.length){ card.classList.add('hide'); return; }
+    var STUDENT_SEES=await gradeShown(email,p), SHOW=STUDENT_SEES||!!(TV_EMAIL||READ_ONLY);   /* T-325: teacher view always sees */
     /* T-301: each push belongs to the marking period it was pushed in; the big cell = this semester only */
     items.forEach(function(it){ it.mp=mpOf(it.r.created_at); });
     var now=curMP(), semItems=items.filter(function(it){ return it.mp&&it.mp.sem===now.sem; });
@@ -1489,10 +1505,24 @@ async function loadGrade(email){
     var all=document.getElementById('gAll');
     if(!todo.length&&items.length){ all.textContent='You did everything Mr. Toby gave you. Great work! Ask Mr. Toby for extra work to raise it more.'; all.classList.remove('hide'); }
     else all.classList.add('hide');
+    /* T-325: letters hidden -> no letter in the DOM at all; title + count instead */
+    document.getElementById('gTitle').textContent=SHOW?'My grade right now':'My work to do';
+    if(!SHOW){
+      document.getElementById('gBig').innerHTML=''; document.getElementById('gBig').classList.add('hide');
+      document.getElementById('gMps').innerHTML='';
+      document.getElementById('gNote').classList.add('hide');
+      var left=todo.length;
+      document.getElementById('gLine').textContent=left?(left===1?'1 still to do.':left+' still to do.'):'';
+      document.getElementById('gRaise').textContent='Do these next:';
+    } else {
+      document.getElementById('gNote').classList.remove('hide');
+      document.getElementById('gRaise').textContent='To raise your grade, do some or all of these:';
+    }
     var t=document.getElementById('gTeach');
     if(TV_EMAIL||READ_ONLY){
       var done=items.filter(function(it){return it.done;}).length;
-      t.textContent='Teacher view: '+now.sem+' semester average '+(avg==null?'\u2014':avg.toFixed(2))+' (scale 0\u20134.5, same as the gradebook) over '+items.length+' pushed activities ('+done+' done, '+(items.length-done)+' not done); now = MP'+now.mp+'. Extras are left out of the average. Letters: A 3.5+, B 2.5+, C 1.5+, D 0.5+. MP dates live in MPS in student/index.html.';
+      t.innerHTML='Teacher view &mdash; this student '+(STUDENT_SEES?'<b>sees</b> the letters':'does <b>not</b> see the letters (only &ldquo;'+todo.length+' still to do&rdquo;)')+'. <a href="/readings/student/dashboard.html">Change who sees them</a>. ';
+      t.appendChild(document.createTextNode(now.sem+' semester average '+(avg==null?'\u2014':avg.toFixed(2))+' (scale 0\u20134.5, same as the gradebook) over '+items.length+' pushed activities ('+done+' done, '+(items.length-done)+' not done); now = MP'+now.mp+'. Extras are left out of the average. Letters: A 3.5+, B 2.5+, C 1.5+, D 0.5+. MP dates live in MPS in student/index.html.'));
       t.classList.remove('hide');
     } else t.classList.add('hide');
     card.classList.remove('hide');
@@ -1582,12 +1612,19 @@ async function loadPushed(email){
 /* T-317: a Classroom post can link to Quill. Quill rows open Quill in a new tab, never get ?email=, never turn ✓
    (My Page can't see Quill scores) and never count in "My grade right now". They leave by their expiry date. */
 function isQuill(href){ return /^https?:\/\/([^\/]*\.)?quill\.org([\/?#]|$)/i.test(String(href||'')); }
+/* T-325: finished pushes fold into one line, "✓ 7 finished (tap to see)" — finished work only, so it may collapse */
+function toggleDone(){
+  var d=document.getElementById('pushDone'), b=document.getElementById('doneToggle'); if(!d||!b)return;
+  var open=d.classList.toggle('hide')===false; b.setAttribute('aria-expanded',open?'true':'false');
+  b.querySelector('.dtap').textContent=open?'(tap to hide)':'(tap to see)';
+}
 function sinkDone(){
   var wrap=document.getElementById('pushDoneWrap'), dest=document.getElementById('pushDone'); if(!dest)return;
   var xb=document.getElementById('extraBox');
   if(xb){ [].slice.call(document.querySelectorAll('#pushBox .pushrow.extrarow')).forEach(function(r){ xb.appendChild(r); }); }
   [].slice.call(document.querySelectorAll('#pushBox .pushrow, #extraBox .pushrow')).forEach(function(r){ if(r.querySelector('.pp.done'))dest.appendChild(r); });
   wrap.classList.toggle('hide',!dest.children.length);
+  var dc=document.getElementById('doneCount'); if(dc)dc.textContent=dest.children.length;   /* T-325 */
   if(xb)document.getElementById('extraWrap').classList.toggle('hide',!xb.children.length);
 }
 /* the band says "Do this next" when Mr. Toby pushed something, "Practice Next" otherwise */
@@ -2241,11 +2278,49 @@ function renderFinish(){
                    :rows.length+' activities still need work. Start at the top \u2014 that one is closest to done.';
   body.innerHTML=rows.map(function(r){
     var btn=r.url?'<a class="btn sm" href="'+esc(r.url)+(r.url.indexOf('?')>-1?'&':'?')+'email='+encodeURIComponent(ME)+'">Finish</a>':'';
-    return '<div class="fin"><div class="what"><b>'+esc(r.title)+'</b>'+
+    return '<div class="fin" data-slug="'+esc(r.slug)+'"><div class="what"><b>'+esc(r.title)+'</b><span class="nextpart"></span>'+
       (r.unit?'<span class="note">'+esc(r.unit)+'</span>':'')+
       '<div class="bar"><i style="width:'+r.pct+'%"></i></div></div>'+
       '<div class="pcts">'+r.pct+'%</div><div class="noprint">'+btn+'</div></div>';
   }).join('');
+  storyNext(rows);   /* T-325 */
+}
+/* ---------- T-325: a story row in Finish This names the next unfinished chunk ----------
+   "The Landlady — next: Part 3", "— next: After you read (Write a summary)". Same rules as the story page and
+   landlady/progress.js (owned by the ELD 103 chat): a part counts as done at 70%, Parts unlock in order, the
+   After-you-read activities open once the story is 70% answered, Harder-only questions skipped in Easier.
+   Works for all five guides progress.js maps: landlady (+ easy, hard), telltale, monkeyspaw. Read-only. */
+var STORY_GK={'landlady':'landlady','landlady-easy':'landlady_easy','landlady-hard':'landlady_hard','telltale':'telltale','monkeyspaw':'monkeyspaw'};
+function storyNextOf(gk,row){
+  var MAPS=window.StoryProgress&&StoryProgress.map, m=MAPS&&MAPS[gk]; if(!m)return null;
+  var pay=(row&&row.payload)||{}, easy=((pay.meta&&pay.meta.mode)||(row&&row.mode))==='easy';
+  var ans={}; (pay.questions||[]).forEach(function(q){ if(q&&q.id&&String(q.a||'').trim())ans[q.id]=1; });
+  function cnt(st){ var d=0,n=0; (st.q||[]).forEach(function(x){ if(easy&&x[1])return; n++; if(ans[x[0]])d++; }); return [d,n]; }
+  var byId={}; m.steps.forEach(function(st){ byId[st.id]=st; });
+  function done(id){ var c=cnt(byId[id]); return c[1]===0||c[0]>=Math.ceil(c[1]*0.70); }
+  var ORD=['intro','p1','p2','p3','p4'], sd=0, sn=0;
+  m.story.forEach(function(id){ var c=cnt(byId[id]); sd+=c[0]; sn+=c[1]; });
+  var storyOpen=sn>0&&sd>=Math.max(1,Math.ceil(sn*0.70));
+  for(var i=0;i<m.steps.length;i++){
+    var st=m.steps[i], c=cnt(st), lock=false;
+    if(st.kind==='ch'){ var k=ORD.indexOf(st.id); if(k>1&&!done(ORD[k-1]))lock=true; } else if(!storyOpen) lock=true;
+    if(!lock&&c[1]>0&&!done(st.id)) return   /* first chunk still under its 70% threshold */ {id:st.id,label:st.kind==='act'?'After you read ('+st.label+')':st.label,url:m.url};
+  }
+  return null;
+}
+async function storyNext(rows){
+  var want=rows.filter(function(r){ return STORY_GK[r.slug]; }); if(!want.length||!ME)return;
+  var lp=ME.split('@')[0], both='in.('+encodeURIComponent(lp+'@s.sfusd.edu')+','+encodeURIComponent(lp+'@sfusd.edu')+')';
+  for(var i=0;i<want.length;i++){
+    var r=want[i], gk=STORY_GK[r.slug], m=window.StoryProgress&&StoryProgress.map&&StoryProgress.map[gk]; if(!m)continue;
+    try{
+      var got=await sb(m.table+'?email='+both+'&guide_key=eq.'+gk+'&select=guide_key,mode,payload,updated_at&order=updated_at.desc&limit=1');
+      var nx=storyNextOf(gk,got&&got[0]); if(!nx)continue;
+      var el=document.querySelector('#finBody .fin[data-slug="'+r.slug+'"]'); if(!el)continue;
+      el.querySelector('.nextpart').textContent=' \u2014 next: '+nx.label;
+      var a=el.querySelector('a.btn'); if(a){ a.setAttribute('href',a.getAttribute('href').replace(/#.*$/,'')+'#'+nx.id); }
+    }catch(e){ console.error('storyNext',e); }
+  }
 }
 
 function band(p){return p==null?'n':p>=90?'g':p>=80?'l':p>=70?'y':p>=60?'o':'r';}
