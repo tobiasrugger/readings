@@ -35,6 +35,7 @@ body.proj .letter{font-size:26px}body.proj .wall{grid-template-columns:1fr}
 .obar span{display:flex;align-items:center;justify-content:center;color:#fff;min-width:0}
 .detail{white-space:pre-wrap}
 .muted{color:#5a6470}
+.gal04{display:inline-block;min-width:30px;text-align:center;color:#fff;font-weight:900;border-radius:7px;padding:1px 6px}.gal04-none{color:#777;background:none}
 </style>
 </head>
 <body>
@@ -194,7 +195,9 @@ function lp(e){return String(e||'').toLowerCase().split('@')[0];}
 function cnt(b){var n=0;for(var k in (b||{}))if(b[k]&&b[k].done)n++;return n;}
 function opDone(a){return VOICES.every(function(v){return (a.op||{})[v.id];})&&a.fav&&a.fav.id&&wc(a.fav.because)>=8;}
 function score(a){return (a.warm?1:0)+cnt(a.w)+cnt(a.vc)+cnt(a.dc)+cnt(a.who)+(opDone(a)?1:0)+(a.letter&&a.letter.turned?2:0);}
-function band(p){if(window.GAL04)return GAL04.fmt(p);return p>=90?'4':p>=75?'3':p>=60?'2':p>0?'1':'0';}
+/* T-312: one scale for the whole site (T-302) - grade04.js owns the cut points, incl. 4.5. Never attempted = blank. */
+function tried(a){return score(a)>0||Object.keys(a.miss||{}).length>0||!!(a.letter&&a.letter.to);}
+function band(p,a){if(a&&!tried(a))return '';return window.GAL04?GAL04.badge(p):p+'%';}
 function misses(a,pre){var n=0;for(var k in (a.miss||{}))if(k.indexOf(pre)===0)n+=(a.miss[k]||[]).length;return n;}
 function cell(n,m,mi){var c=n>=m?'full':n>0?'part':'none';return '<td class="'+c+'">'+n+'/'+m+(mi?' <span class="miss">'+mi+'\u2717</span>':'')+'</td>';}
 function letterText(a){var L=a.letter||{};return L.text||'';}
@@ -213,7 +216,7 @@ function draw(){var R=rows();var h='<tr><th>Student</th><th>P</th><th>Lang</th><
    h+='<tr class="stu" data-i="'+i+'"><td><b>'+esc(r.name)+'</b><br><span class="muted">'+esc(r.email)+'</span></td><td>'+esc(r.period)+'</td><td>'+esc(r.lang||'')+'</td><td>'+esc(a.lvl||'')+'</td>'
     +'<td class="'+(a.warm?'full':'none')+'">'+(a.warm?'\u2713':'')+'</td>'+cell(cnt(a.w),12,misses(a,'w-'))+cell(cnt(a.vc),6,misses(a,'vc-'))+cell(cnt(a.dc),6,misses(a,'d-'))+cell(cnt(a.who),6,misses(a,'who-'))
     +'<td class="'+(opDone(a)?'full':'none')+'">'+(opDone(a)?'\u2713':Object.keys(a.op||{}).length+'/6')+'</td>'
-    +'<td class="'+(L.turned?'full':'none')+'">'+(L.turned?'\u2713 '+wc(letterText(a))+' w':(L.to?'drafting':''))+'</td><td><b>'+s+'</b>/'+MAX+' ('+pct+'%)</td><td><b>'+band(pct)+'</b></td><td class="muted">'+esc(String(r.updated_at||'').slice(5,16).replace('T',' '))+'</td></tr>';});
+    +'<td class="'+(L.turned?'full':'none')+'">'+(L.turned?'\u2713 '+wc(letterText(a))+' w':(L.to?'drafting':''))+'</td><td><b>'+s+'</b>/'+MAX+' ('+pct+'%)</td><td>'+band(pct,a)+'</td><td class="muted">'+esc(String(r.updated_at||'').slice(5,16).replace('T',' '))+'</td></tr>';});
   $('tbl').innerHTML=h;var turned=R.filter(function(r){return r.answers&&r.answers.letter&&r.answers.letter.turned;}).length;
   $('stats').textContent=R.length+' students \u00B7 '+turned+' letters turned in \u00B7 a student signed in with both email spellings shows as one row. Tap a row for details.';
   [].forEach.call(document.querySelectorAll('tr.stu'),function(tr){tr.onclick=function(){detail(R[+tr.dataset.i]);};});
