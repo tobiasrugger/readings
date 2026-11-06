@@ -4,6 +4,8 @@ When you post an assignment or material in Google Classroom that links to a page
 https://tobiasrugger.github.io/readings/…, this script copies **just the link** to every student's
 My Page (https://tobiasrugger.github.io/readings/student/) in that class's period — the same way
 the Push page (https://tobiasrugger.github.io/readings/assign/, password galileo2026) does.
+**Quill links are copied too (T-317).** On My Page a Quill row says ✏️ Quill and opens Quill in a new tab. My Page can't see Quill scores, so a Quill row never counts in "My grade right now" and never turns ✓; it disappears 7 days after its due date, or 7 days after you posted it if it has no due date.
+
 On My Page it looks like any push ("⭐ Most important"), with a small green **from Classroom · due …** tag,
 soonest due date first. No post text, no student data, nothing else is copied.
 
@@ -43,5 +45,6 @@ Fix any `?` to the right period number and delete any class you don't want. **Sa
 - **The due date passes** → it stays 7 more days, then disappears.
 - **You press Clear on the Push page** → it stays cleared; the script won't bring it back.
 - **A link goes to a teacher page** (dashboards, Desk, reports) → it is skipped.
+- **A link goes to Quill** → it is copied with your post's title (T-317). Any other outside site is skipped.
 
 To stop it: run **removeTrigger**.

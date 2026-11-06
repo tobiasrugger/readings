@@ -1,7 +1,7 @@
 /**
  * Google Classroom → My Page  (T-135, Oct 2026)
  * Runs in Mr. Toby's OWN Google account (script.google.com). Every 15 minutes on school days it reads the
- * posts in the courses you map below, finds every link to https://tobiasrugger.github.io/readings/…,
+ * posts in the courses you map below, finds every link to https://tobiasrugger.github.io/readings/… (and, T-317, every Quill link),
  * and writes one row per link to Supabase class_assignments — the same kind of row the Push page
  * (https://tobiasrugger.github.io/readings/assign/) writes — so it shows on each student's My Page.
  *
@@ -24,6 +24,11 @@ var SUPA_URL = 'https://lhmwtfyceilgndpygivj.supabase.co';
 var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
 var SITE_HOST = 'tobiasrugger.github.io';
 var KEEP_DAYS_AFTER_DUE = 7;
+/* T-317: Quill links are copied too (any *.quill.org address). My Page can't see Quill scores, so a Quill row
+   never counts in "My grade right now" and is never marked done; it disappears KEEP_DAYS_AFTER_DUE days after
+   its due date, or QUILL_KEEP_DAYS days after you posted it if it has no due date. */
+var QUILL_HOST = /(^|\.)quill\.org$/i;
+var QUILL_KEEP_DAYS = 7;
 var SCHOOL_HOURS = [6, 18];        // only sync between 6:00 and 18:00, Monday–Friday (project time zone)
 
 // =====================================================================
@@ -80,11 +85,14 @@ function sync_(dry) {
       work.concat(mats).forEach(function (post) {
         var due = dueOf_(post);
         linksOf_(post).forEach(function (L) {
+          var posted = post.creationTime ? new Date(post.creationTime) : new Date();
           rows.push({
-            area: 'site', period: period, href: L.href, slug: L.slug, title: L.title || prettySlug_(L.slug), note: null,
+            area: 'site', period: period, href: L.href, slug: L.slug,
+            title: L.quill ? (cleanTitle_(post.title) || L.title || 'Quill practice') : (L.title || prettySlug_(L.slug)), note: null,
             source: 'classroom', kind: 'classroom', ext_id: cid + ':' + post.id + ':' + L.slug,
             due_at: due ? due.toISOString() : null,
-            expires_at: due ? new Date(due.getTime() + KEEP_DAYS_AFTER_DUE * 864e5).toISOString() : null
+            expires_at: due ? new Date(due.getTime() + KEEP_DAYS_AFTER_DUE * 864e5).toISOString()
+                      : (L.quill ? new Date(posted.getTime() + QUILL_KEEP_DAYS * 864e5).toISOString() : null)
           });
         });
       });
@@ -150,6 +158,12 @@ function linksOf_(post) {
   var out = [], seen = {};
   found.forEach(function (f) {
     var m = f.url.match(/^https?:\/\/([^\/?#]+)(\/[^?#]*)?(\?[^#]*)?/i);
+    if (m && QUILL_HOST.test(m[1])) {                       // T-317: a Quill link — kept whole, opened in a new tab
+      var qslug = 'quill' + (m[2] || '/').replace(/\/+$/, '') + (m[3] ? '?' + Utilities.base64EncodeWebSafe(m[3]).slice(0, 24) : '');
+      if (seen[qslug]) return; seen[qslug] = 1;
+      out.push({ href: f.url, slug: qslug.slice(0, 180), title: cleanTitle_(f.title), quill: true });
+      return;
+    }
     if (!m || m[1].toLowerCase() !== SITE_HOST) return;
     var path = m[2] || '/';
     if (path.indexOf('/readings/') !== 0) return;

@@ -504,6 +504,9 @@ th,td{border-bottom:2px solid var(--line-dk)}
   #actCard td.score:empty{display:none}
 }
 
+/* T-317: Quill rows */
+.quilltag{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;background:#eef4ff;border:1.5px solid #1f5fb3;color:#1f5fb3;font-weight:800;font-size:.8rem}
+.pp.quillnote{color:#3d4f7a;font-weight:700}
 /* ---------- T-143: My grade right now ---------- */
 #gradeCard .gart{float:right;width:150px;height:auto;margin:0 0 10px 16px}
 #gradeCard h2{margin-top:0}
@@ -1436,7 +1439,7 @@ async function loadGrade(email){
     if(rows===null){ card.classList.add('hide'); return; }   /* server hiccup: show nothing rather than a wrong grade */
     var scP=courseOfPeriod(p), seen={}, items=[];
     rows.forEach(function(r){
-      if(!r.href)return;
+      if(!r.href||isQuill(r.href))return;   /* T-317: Quill never counts */
       if(String(r.period)==='all'&&otherCourse(r.href,r.title,scP))return;
       var k=gSlug(r.href); var key=k.slug+'|'+k.prefix; if(!k.slug||seen[key])return;
       if(isDataCheck(k.slug,{url:r.href,title:r.title}))return;
@@ -1444,7 +1447,7 @@ async function loadGrade(email){
     });
     var extras=[];
     (ex||[]).forEach(function(r){
-      if(!r.href)return; var k=gSlug(r.href), key=k.slug+'|'+k.prefix; if(!k.slug||seen[key])return; seen[key]=1;
+      if(!r.href||isQuill(r.href))return; var k=gSlug(r.href), key=k.slug+'|'+k.prefix; if(!k.slug||seen[key])return; seen[key]=1;
       if(isDataCheck(k.slug,{url:r.href,title:r.title}))return;
       var b=gBest(r); if(!b.done)extras.push({r:r});
     });
@@ -1565,14 +1568,20 @@ async function loadPushed(email){
         var at=attemptSince(r);
         if(at){ line='<div class="pp done">&#10003; Done'+(at.daily?' today':'')+(at.max?' &middot; score '+at.score+' of '+at.max:'')+'</div>'; }
       }
-      var url=r.href+(r.href.indexOf('?')>-1?'&':'?')+'email='+encodeURIComponent(TV_EMAIL||email)+(TV_EMAIL?'&view=teacher':'');  /* T-285 */
-      return '<div class="pushrow'+(r.cls?' classrow':'')+(r.extra?' extrarow':'')+'"><div><div class="from">'+(/pp done/.test(line)?'&#10003; Done':r.cls?'&#128101; Your class is doing this':r.extra?'&#10133; Just for you':'&#11088; Most important')+(r.source==='classroom'?' <span class="clstag">from Classroom'+(r.due_at?' &middot; due '+esc(new Date(r.due_at).toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'})):'')+'</span>':'')+'</div><div class="pt">'+esc(r.source==='classroom'?catTitle(String(r.href).split('?')[0],r.title||r.href).replace(/\s+[\u2014\u00b7|].*$/,''):(r.title||r.href))+'</div>'+
+      var quill=isQuill(r.href);  /* T-317 */
+      if(quill) line='<div class="pp quillnote">Opens Quill in a new tab. Sign in to Quill the way you always do.</div>';
+      var url=quill?r.href:r.href+(r.href.indexOf('?')>-1?'&':'?')+'email='+encodeURIComponent(TV_EMAIL||email)+(TV_EMAIL?'&view=teacher':'');  /* T-285 */
+      return '<div class="pushrow'+(r.cls?' classrow':'')+(r.extra?' extrarow':'')+'"><div><div class="from">'+(/pp done/.test(line)?'&#10003; Done':r.cls?'&#128101; Your class is doing this':r.extra?'&#10133; Just for you':'&#11088; Most important')+(quill?' <span class="quilltag">&#9999;&#65039; Quill</span>':'')+(r.source==='classroom'?' <span class="clstag">from Classroom'+(r.due_at?' &middot; due '+esc(new Date(r.due_at).toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'})):'')+'</span>':'')+'</div><div class="pt">'+esc(quill?(r.title||'Quill practice'):r.source==='classroom'?catTitle(String(r.href).split('?')[0],r.title||r.href).replace(/\s+[\u2014\u00b7|].*$/,''):(r.title||r.href))+'</div>'+
         (r.note?'<div class="pn">'+esc(r.note)+'</div>':'')+line+'</div>'+
-        '<a class="btn noprint" href="'+esc(url)+'">'+(line.indexOf('Turned in')>-1||line.indexOf('pp done')>-1?'Open &rarr;':started?'Keep going &rarr;':'Start &rarr;')+'</a></div>';
+        (quill?'<a class="btn noprint" href="'+esc(url)+'" target="_blank" rel="noopener">Open Quill &#8599;</a></div>':'')+
+        (quill?'':'<a class="btn noprint" href="'+esc(url)+'">'+(line.indexOf('Turned in')>-1||line.indexOf('pp done')>-1?'Open &rarr;':started?'Keep going &rarr;':'Start &rarr;')+'</a></div>');
     }).join('');
     sinkDone(); bandMode(true);
   }catch(e){box.innerHTML='';bandMode(false);}
 }
+/* T-317: a Classroom post can link to Quill. Quill rows open Quill in a new tab, never get ?email=, never turn ✓
+   (My Page can't see Quill scores) and never count in "My grade right now". They leave by their expiry date. */
+function isQuill(href){ return /^https?:\/\/([^\/]*\.)?quill\.org([\/?#]|$)/i.test(String(href||'')); }
 function sinkDone(){
   var wrap=document.getElementById('pushDoneWrap'), dest=document.getElementById('pushDone'); if(!dest)return;
   var xb=document.getElementById('extraBox');
