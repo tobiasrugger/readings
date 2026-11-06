@@ -510,12 +510,13 @@ function mergeIn(o){
 }
 function load(cb){
   dot('saving','Loading…');
-  var q='?select=answers,turned_in&email=eq.'+encodeURIComponent(ME.email);
+  var lp=String(ME.email||'').toLowerCase().split('@')[0];  /* T-170: both email spellings; every row merges in */
+  var q='?select=answers,turned_in&email=in.('+encodeURIComponent('"'+lp+'@sfusd.edu"')+','+encodeURIComponent('"'+lp+'@s.sfusd.edu"')+')';
   Object.keys(STORE.match).forEach(function(k){q+='&'+k+'=eq.'+encodeURIComponent(STORE.match[k]);});
   fetch(SUPA_URL+'/rest/v1/'+STORE.table+q,{headers:hdr()})
    .then(function(r){if(!r.ok)throw new Error(r.status);return r.json();})
    .then(function(rows){
-     if(rows&&rows[0]){mergeIn(rows[0].answers);if(rows[0].turned_in)W.turned=true;}
+     (rows||[]).forEach(function(r){if(r&&r.answers)mergeIn(r.answers);if(r&&r.turned_in)W.turned=true;});
      LOADED=true;$('neterr').style.display='none';dot('ok','Saved');setScore();if(DIRTY)save();cb&&cb();})
    .catch(function(){$('neterr').style.display='block';dot('err','Not saved');cb&&cb();setTimeout(function(){if(!LOADED)load();},15000);});
 }

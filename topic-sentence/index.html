@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="/readings/saveguard.js"></script><!-- T-170 (Nov 6 rebuild): load before save, first in head -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Topic Sentences · ELD 101</title>
@@ -397,12 +398,13 @@ function finish(){
  $('finScore').textContent=firstTry()+' / '+ITEMS.length;
  $('finList').innerHTML='<div class="sumrow"><span>Choose the topic sentence</span><b>'+firstTry()+' / '+ITEMS.length+'</b></div><div class="sumrow"><span>Write the topic sentence</span><b>'+(partDone(3)?'done · your teacher reads it':'not finished')+'</b></div>';
 }
-function save(){dirty=true;try{var k='ts_'+UNIT+'_'+(ST.email||'anon').replace(/[^a-z0-9]+/g,'_');localStorage.setItem(k,JSON.stringify(ST));localStorage.setItem(LAST_KEY,k);}catch(e){}}
+function save(){dirty=true;try{var k='ts_'+UNIT+'_'+(ST.email||'anon').replace(/[^a-z0-9]+/g,'_');localStorage.setItem(k,JSON.stringify(ST));localStorage.setItem(LAST_KEY,k);}catch(e){}saveSoon();}
+function saveSoon(){if(SYNCED)setTimeout(function(){push(false);},800);} /* T-240 */
 function load(){try{var k=localStorage.getItem(LAST_KEY);if(!k)return;var d=JSON.parse(localStorage.getItem(k));if(d)ST=Object.assign(ST,d);}catch(e){}}
 var dirty=false,pushing=false,pushSeq=0;
 function dot(c){var d=$('saveDot');if(d)d.className=c;}
 function push(force){
- if(!ST.email)return;if(!dirty&&!force)return;if(pushing)return;
+ if(!ST.email)return;if(!SYNCED){pullServer();return;}if(!dirty&&!force)return;if(pushing)return; /* T-170 */
  pushing=true;dot('busy');var mySeq=++pushSeq;
  setTimeout(function(){if(pushing&&mySeq===pushSeq){pushing=false;dirty=true;dot('err');}},15000);
  var snap=JSON.parse(JSON.stringify(ST));dirty=false;
@@ -419,6 +421,43 @@ function turnIn(){
  if(left.length&&!confirm('You still have '+left.length+' part'+(left.length===1?'':'s')+' to finish. Turn in anyway?')){go(left[0]);return;}
  ST.turnedIn=new Date().toISOString();save();push(true);alert('Turned in. Thank you!');
 }
+
+
+/* ===================== T-170 (Nov 6): READ SAVED WORK FIRST =====================
+   Nothing is pushed until this student's saved row has been read (both email spellings).
+   Server copy and this device's copy merge item by item: a finished item beats an unfinished
+   one, the longer writing wins, turned-in sticks. A watchdog shows the red bar after 12 s even
+   if saveguard.js is still holding the request open. */
+var SYNCED=false,SYNCING=false,SYNC_RETRY=null,SYNC_DOG=null;
+function emailForms(e){var lp=String(e||'').trim().toLowerCase().split('@')[0];return [lp+'@sfusd.edu',lp+'@s.sfusd.edu'];}
+function progressOf(s){if(!s)return 0;var n=0,A=s.A||{},W=s.W||{};Object.keys(A).forEach(function(k){var x=A[k];if(!x)return;if(x.done)n+=3;else if(x.tries)n+=1;});
+ Object.keys(W).forEach(function(k){n+=String(W[k]||'').trim().split(/\s+/).filter(Boolean).length;});if(s.turnedIn)n+=5;return n;}
+function itemRank(x){return !x?0:x.done?3:(x.tries?1:0);}
+function mergeState(cur,srv){if(!srv)return cur;var out=Object.assign({},srv,cur),A={},ka=cur.A||{},kb=srv.A||{},W={},wa=cur.W||{},wb=srv.W||{};
+ Object.keys(kb).concat(Object.keys(ka)).forEach(function(k){if(k in A)return;var a=ka[k],b=kb[k];A[k]=itemRank(b)>itemRank(a)?b:(a||b);});
+ Object.keys(wb).concat(Object.keys(wa)).forEach(function(k){if(k in W)return;var x=String(wa[k]||'').trim(),y=String(wb[k]||'').trim();W[k]=y.length>x.length?wb[k]:(wa[k]!=null?wa[k]:wb[k]);});
+ out.A=A;out.W=W;out.turnedIn=cur.turnedIn||srv.turnedIn||null;out.act=Math.max(cur.act||0,srv.act||0);
+ if(srv.L||cur.L){var L={};Object.keys(srv.L||{}).forEach(function(k){L[k]=srv.L[k];});Object.keys(cur.L||{}).forEach(function(k){if(cur.L[k])L[k]=cur.L[k];});out.L=L;}
+ return out;}
+function pullServer(then){
+ if(!ST.email){if(then)then();return;}if(SYNCING)return;SYNCING=true;dot('busy');
+ clearTimeout(SYNC_DOG);SYNC_DOG=setTimeout(function(){if(SYNCING&&!SYNCED){dot('err');srvBar(true);}},12000);
+ var forms=emailForms(ST.email).map(function(x){return encodeURIComponent('"'+x+'"');}).join(',');
+ fetch(SUPA_URL+'/rest/v1/'+TABLE+'?select=email,payload,updated_at&unit=eq.'+encodeURIComponent(UNIT)+'&email=in.('+forms+')',{headers:hdr()})
+ .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+ .then(function(rows){SYNCING=false;clearTimeout(SYNC_RETRY);clearTimeout(SYNC_DOG);
+   var best=null;(rows||[]).forEach(function(row){if(row&&row.payload&&(!best||progressOf(row.payload)>progressOf(best.payload)))best=row;});
+   var me={name:ST.name,email:ST.email,period:ST.period};
+   if(best){ST=mergeState(ST,best.payload);ST.name=me.name;ST.email=me.email;ST.period=me.period;}
+   SYNCED=true;srvBar(false);dirty=true;buildItems();go(ST.act||0);if(then)then();push(true);})
+ .catch(function(){SYNCING=false;SYNCED=false;dot('err');srvBar(true);clearTimeout(SYNC_RETRY);SYNC_RETRY=setTimeout(function(){pullServer(then);},20000);});
+}
+
+/* T-170: red bar when the saved work can't be read (nothing is sent until it is) */
+function srvBar(on){var b=document.getElementById('srvBar');if(!b){if(!on)return;b=document.createElement('div');b.id='srvBar';b.setAttribute('role','alert');
+ b.style.cssText='position:fixed;left:8px;right:8px;bottom:8px;z-index:250;background:#b3261e;color:#fff;font:800 15px Nunito,sans-serif;padding:10px 14px;border:2px solid #5c0f0a;border-radius:10px;text-align:center';
+ b.textContent="Can't reach the server. Your work is kept on this Chromebook but is NOT saving to Mr. Toby yet. It will keep trying.";document.body.appendChild(b);}
+ b.style.display=on?'block':'none';}
 
 /* ===================== SIGN IN ===================== */
 var rosterLoaded=false,ROSTER=[];
@@ -453,7 +492,7 @@ function saveName(){
  recordAlias(e,canon);ST.name=n;ST.email=canon;ST.period=pd;
  $('whoami').textContent=n+' \u00b7 P'+pd;$('namewrap').classList.remove('show');
  try{localStorage.setItem('gal_student_email',canon);}catch(x){}
- seedRoster(canon,n,pd);save();push(true);buildItems();go(ST.act||0);
+ SYNCED=false;seedRoster(canon,n,pd);save();buildItems();go(ST.act||0);pullServer(); /* T-170: read saved work, then push */
 }
 
 /* ===================== DIRECTIONS IN MY LANGUAGE ===================== */
@@ -504,7 +543,7 @@ function boot(){
  var L=savedLang();if(L){$('lang').value=L;DIR_ON=true;$('dirBtn').classList.add('on');}
  go(ST.act||0);dot('on');
  if(L)showDirections();
- if(!ST.email||!L)askName();
+ if(!ST.email||!L)askName();else pullServer(); /* T-170 */
  setTimeout(checkCanary,2500);setInterval(checkCanary,20000);
  setInterval(function(){push(false);},20000);
  document.addEventListener('visibilitychange',function(){if(document.hidden)push(false);});

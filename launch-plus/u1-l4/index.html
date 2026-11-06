@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="/readings/saveguard.js"></script><!-- T-170 (Nov 6 rebuild): load before save, first in head -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Launch Plus · Unit 1 Lesson 4 · 0 to 100</title>
@@ -905,6 +906,7 @@ function save(){
  dirty=true;publishScore();
  clearTimeout(saveT);saveT=setTimeout(function(){
   try{localStorage.setItem(key(),JSON.stringify(ST));localStorage.setItem(LAST_KEY,key());}catch(e){}
+  if(SYNCED)setTimeout(function(){push(false);},800); /* T-170/T-240: to the server within ~1–2 s of an answer */
   dot(dirty?'busy':'on');},400);
 }
 function load(){try{var k=localStorage.getItem(LAST_KEY);if(!k)return;var d=JSON.parse(localStorage.getItem(k));if(d)ST=Object.assign(ST,d);}catch(e){}}
@@ -939,7 +941,7 @@ function turnIn(){
    item (a finished item always beats an unfinished one; the longer writing wins), so a blank
    page can never overwrite saved work. Canonical email is always <name>@sfusd.edu; rows
    saved under @s.sfusd.edu are still found. */
-var SYNCED=false,SYNCING=false,SYNC_RETRY=null,SERVER_P=0,SYNC_WARNED=false;
+var SYNCED=false,SYNCING=false,SYNC_RETRY=null,SERVER_P=0,SYNC_WARNED=false,SYNC_DOG=null;
 function canonical(e){var lp=localPart(e);return lp?lp+'@sfusd.edu':'';}
 function emailForms(e){var lp=localPart(e);return [lp+'@sfusd.edu',lp+'@s.sfusd.edu'];}
 function progressOf(s){if(!s)return 0;var n=0,A=s.A||{},W=s.W||{};
@@ -963,29 +965,37 @@ function refreshAfterSync(){buildItems();renderAnchors();if(typeof migrateAct===
 function syncFromServer(then){
  if(!ST.email){if(then)then();return;}
  if(SYNCING)return;SYNCING=true;dot('busy');
+ clearTimeout(SYNC_DOG);SYNC_DOG=setTimeout(function(){if(SYNCING&&!SYNCED){dot('err');srvBar(true);if(!SYNC_WARNED){SYNC_WARNED=true;try{toast("Can't reach the server. Your work is kept on this Chromebook for now.");}catch(x){}}}},12000); /* T-170: saveguard can hold a failing read open, so the page keeps its own watchdog */
  var forms=emailForms(ST.email).map(encodeURIComponent).join(',');
  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?select=email,payload,updated_at&unit=eq.'+encodeURIComponent(UNIT)+'&email=in.('+forms+')',{headers:hdr()})
  .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
  .then(function(rows){
-   SYNCING=false;clearTimeout(SYNC_RETRY);
+   SYNCING=false;clearTimeout(SYNC_RETRY);clearTimeout(SYNC_DOG);
    var best=null;(rows||[]).forEach(function(row){if(row&&row.payload&&(!best||progressOf(row.payload)>progressOf(best.payload)))best=row;});
    var me={name:ST.name,email:ST.email,period:ST.period};
    if(best){ST=mergeState(ST,best.payload);ST.name=me.name;ST.email=me.email;ST.period=me.period;SERVER_P=progressOf(best.payload);}
-   SYNCED=true;SYNC_WARNED=false;dirty=true;
+   SYNCED=true;SYNC_WARNED=false;dirty=true;srvBar(false);
    refreshAfterSync();if(then)then();
    push(true);})
  .catch(function(){
-   SYNCING=false;SYNCED=false;dot('err');
+   SYNCING=false;SYNCED=false;dot('err');srvBar(true);
    if(!SYNC_WARNED){SYNC_WARNED=true;try{toast("Can't reach the server. Your work is kept on this Chromebook for now.");}catch(x){}}
    clearTimeout(SYNC_RETRY);SYNC_RETRY=setTimeout(function(){syncFromServer(then);},20000);});
 }
 function adoptSharedLogin(){
  if(ST.email)ST.email=canonical(ST.email);
  try{var at=+(localStorage.getItem('gal_student_at')||0),e=canonical(localStorage.getItem('gal_student_email')||'');
-  if(e&&at&&Date.now()-at<=12*3600*1000&&ST.email&&e!==ST.email){
+  if(e&&at&&Date.now()-at<=70*60*1000&&ST.email&&e!==ST.email){
    ST=freshState();restoreLocal(e);ST.email=e;ST.name=localStorage.getItem('gal_student_name')||ST.name||'';ST.period=localStorage.getItem('gal_student_period')||ST.period||'';}
  }catch(x){}
 }
+
+
+/* T-170: red bar when the saved work can't be read (nothing is sent until it is) */
+function srvBar(on){var b=document.getElementById('srvBar');if(!b){if(!on)return;b=document.createElement('div');b.id='srvBar';b.setAttribute('role','alert');
+ b.style.cssText='position:fixed;left:8px;right:8px;bottom:8px;z-index:250;background:#b3261e;color:#fff;font:800 15px Nunito,sans-serif;padding:10px 14px;border:2px solid #5c0f0a;border-radius:10px;text-align:center';
+ b.textContent="Can't reach the server. Your work is kept on this Chromebook but is NOT saving to Mr. Toby yet. It will keep trying.";document.body.appendChild(b);}
+ b.style.display=on?'block':'none';}
 
 /* ===================== SIGN IN ===================== */
 var rosterLoaded=false,ROSTER=[];
@@ -1088,11 +1098,11 @@ if(window.speechSynthesis){pickVoice();speechSynthesis.onvoiceschanged=pickVoice
 var SAY_SET=DATA.say||'people-at-school';
 function sayLang(){var v=lang();return v==='Chinese (Simplified)'?'Mandarin':(v||'none');}
 function shareLogin(){try{localStorage.setItem('gal_student_email',ST.email||'');localStorage.setItem('gal_student_name',ST.name||'');localStorage.setItem('gal_student_period',ST.period||'');localStorage.setItem('gal_student_lang',sayLang());localStorage.setItem('gal_student_at',String(Date.now()));}catch(e){}}
-/* signed in on another activity in the last 12 hours? walk straight in */
+/* signed in on another activity in the last 70 minutes (one class period, T-170)? walk straight in */
 function resumeLogin(){
  try{
   var at=+(localStorage.getItem('gal_student_at')||0),e=localStorage.getItem('gal_student_email')||'';
-  if(!e||!at||Date.now()-at>12*3600*1000)return false;
+  if(!e||!at||Date.now()-at>70*60*1000)return false;
   if(!ST.email){ST.email=canonical(e);ST.name=localStorage.getItem('gal_student_name')||'';ST.period=localStorage.getItem('gal_student_period')||'';}
   return !!ST.email;
  }catch(x){return false;}
