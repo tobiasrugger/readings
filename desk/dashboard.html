@@ -83,7 +83,7 @@ table.gb{border-collapse:collapse;font-size:.92rem;min-width:100%;background:rep
 .gb td.sc{cursor:pointer;font-family:Caveat,cursive;font-size:1.45rem;font-weight:700}
 .gb td.sc:hover{background:#fff3c4}
 .gb td.sc.off{opacity:.4}
-.s0{color:#a3241a}.s1{color:#c0392b}.s2{color:#c27a00}.s3{color:#1f6fa5}.s4{color:#16683a}.sn{color:#9aa}
+.s0{color:#a3241a}.s1{color:#c0392b}.s2{color:#c27a00}.s3{color:#1f6fa5}.s4{color:#16683a}.s45{color:#0d5c3a;font-weight:900}.sn{color:#9aa}
 /* ---- T-150: reports, R W S L, last seen, missing filter, Synergy copy ---- */
 .gbtools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 12px 10px}
 .gbtools .btn{padding:4px 12px;font-size:.9rem}
@@ -390,7 +390,9 @@ document.addEventListener('keydown',function(e){if(!$('vw').classList.contains('
 /* ---------------- the gradebook under the desk (T-149) ----------------
    Teacher-only view settings (column order, which columns count) are kept in this
    browser's localStorage per period - never student data. */
-function band04(c){ if(!c) return null; if(c.pct==null) return c.completion?4:1; var p=+c.pct; return p>=90?4:p>=75?3:p>=60?2:p>0?1:0; }
+/* T-309: the one 0-4.5 scale lives in grade04.js (T-302) — never our own cut points. A done-but-unscored row still counts as 4. */
+function band04(c){ if(!c) return null; if(c.pct==null) return c.completion?4:1; return (window.GAL04&&GAL04.band)?GAL04.band(+c.pct):null; }
+function bcls(b){ return b==null?'sn':(b===4.5?'s45':'s'+Math.max(0,Math.min(4,Math.round(b)))); }
 function prefs(){ try{ return JSON.parse(localStorage.getItem('desk_gb_p'+cur)||'{}'); }catch(e){ return {}; } }
 function savePrefs(p){ try{ localStorage.setItem('desk_gb_p'+cur, JSON.stringify(p)); }catch(e){} }
 /* a column's key: the slug, or x:slug for blue extra work (extras start unticked: they only count once you tick them) */
@@ -442,11 +444,11 @@ function drawBook(){
     var d=rowData(s,C); if(only&&!d.miss)return; if(onlyS&&!d.stuck)return; shown++;
     var ls=lastSeen(s.k),old=!ls||Date.now()-ls>4*864e5;
     h+='<tr><td class="nm"><button type="button" class="pr" data-pr="'+esc(s.k)+'" title="Print '+esc(s.first)+'\u2019s progress report">🖨</button>'+esc(s.first+' '+s.last)+'<span class="seen'+(old?' old':'')+'">last seen '+seenTxt(ls)+'</span></td>'+
-      '<td class="av '+(d.av==null?'sn':'s'+Math.round(d.av))+'">'+(d.av==null?'\u2014':d.av.toFixed(1))+'</td><td class="rwsl">'+rwslHtml(rwsl(s.k))+'</td>';
+      '<td class="av '+(d.av==null?'sn':(d.av>=4.5?'s45':bcls(d.av)))+'">'+(d.av==null?'\u2014':d.av.toFixed(1))+'</td><td class="rwsl">'+rwslHtml(rwsl(s.k))+'</td>';
     d.cells.forEach(function(x){
       if(x.na){h+='<td class="na" title="Not given to '+esc(s.first)+'">\u00b7</td>';return;}
       var sk=stuck(x.it);
-      h+='<td class="sc '+(x.b==null?'sn':'s'+x.b)+(x.c.on?'':' off')+(sk?' stuck':'')+(x.c.x?' xa':'')+'" data-st="'+x.c.i+'" data-k="'+esc(s.k)+'" title="'+esc(s.first+' \u00b7 '+STATIONS[x.c.i].a.title+'\n'+facts(x.it)+(sk?'\n\u2691 stuck: 3+ tries, still 0\u20131':''))+'">'+(x.b==null?'\u2014':x.b)+(sk?'<span class="fl">\u2691</span>':'')+'</td>';});
+      h+='<td class="sc '+bcls(x.b)+(x.c.on?'':' off')+(sk?' stuck':'')+(x.c.x?' xa':'')+'" data-st="'+x.c.i+'" data-k="'+esc(s.k)+'" title="'+esc(s.first+' \u00b7 '+STATIONS[x.c.i].a.title+'\n'+facts(x.it)+(sk?'\n\u2691 stuck: 3+ tries, still 0\u20131':''))+'">'+(x.b==null?'\u2014':x.b)+(sk?'<span class="fl">\u2691</span>':'')+'</td>';});
     h+='</tr>';
   });
   if((only||onlyS)&&!shown)h+='<tr><td class="nm" colspan="'+(3+C.length)+'">'+(onlyS?'Nobody is stuck right now. 🎉':'Nobody is missing a ticked assignment. 🎉')+'</td></tr>';

@@ -170,7 +170,8 @@ var ACTS = [
 ];
 var ACT = {};   /* canonical email -> slug -> {pct, attempts} */
 function canonEm(e){ return String(e || "").trim().toLowerCase().replace("@s.sfusd.edu", "@sfusd.edu"); }
-function band04(p){ if(p == null || isNaN(p)) return null; p = +p; return p >= 90 ? 4 : p >= 75 ? 3 : p >= 60 ? 2 : p > 0 ? 1 : 0; }
+/* T-309: the one 0-4.5 scale lives in grade04.js (T-302) — never our own cut points. */
+function band04(p){ if(p == null || isNaN(p)) return null; return (window.GAL04 && GAL04.band) ? GAL04.band(+p) : null; }
 var B04C = ["#9aa39e","#c0392b","#d9822b","#3a7ca5","#2e7d4f"];
 function actsHtml(email){
   var mine = ACT[canonEm(email)] || {}, h = "";
@@ -180,7 +181,7 @@ function actsHtml(email){
     if(!rec && (slug === "landlady-easy" || slug === "landlady-hard" || slug === "landlady/investigate")) continue;
     var b = rec ? band04(rec.pct) : null;
     h += '<span class="a04" title="' + esc(lab + (rec ? " \u00b7 " + rec.pct + "% done" : " \u00b7 not started")) + '">' +
-         esc(lab) + ' <b style="background:' + (b == null ? "#eceeea;color:#6b7b74" : B04C[b]) + '">' + (b == null ? "\u2014" : b) + '</b></span>';
+         esc(lab) + ' <b style="background:' + (b == null ? "#eceeea;color:#6b7b74" : (b === 4.5 ? "#0d5c3a" : B04C[b])) + '">' + (b == null ? "\u2014" : b) + '</b></span>';
   }
   return '<div class="acts">' + h + '</div>';
 }
