@@ -1,6 +1,19 @@
 /* After-the-story tier data for ep02 (owned by the tiers chat; loaded by ../tiers.js). */
 window.EP_TIERS = {
     ask: 'Ask your teacher which activity to do next.',
+    /* T-342 order: 4 events, ends anchored. The first and last must be right; the two in
+       the middle count right in any order, because both orders really are defensible. */
+    order: [
+      { t: "Jun cannot find his backpack.", lock: 1 },
+      { t: "They look in the library." },
+      { t: "They look in the gym." },
+      { t: "Jun finds his backpack in the music corner.", lock: "last" }
+    ],
+    /* T-342 two worked examples for Tier B. [brackets] mark the words that changed. */
+    bex: [
+      { how: "Change one word.", from: "Students read books [in the library].", to: "Students read books [there]." },
+      { how: "Say it the other way around.", from: "[Mateo has a red backpack]. [Jun has an orange backpack].", to: "[Jun's backpack is orange]. [Mateo's is red]." }
+    ],
     key: [
       { t: 'Jun cannot find his backpack.', swap: 'cannot find his backpack',
         rungs: [ ['can\u2019t find his backpack'], ['does not have his backpack', 'is looking for his backpack'], ['Jun\u2019s backpack is missing.', 'forgot his backpack somewhere'] ],

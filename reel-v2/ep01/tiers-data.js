@@ -1,6 +1,19 @@
 /* After-the-story tier data for ep01 (owned by the tiers chat; loaded by ../tiers.js). */
 window.EP_TIERS = {
     ask: 'Ask your teacher which activity to do next.',
+    /* T-342 order: 4 events, ends anchored. The first and last must be right; the two in
+       the middle count right in any order, because both orders really are defensible. */
+    order: [
+      { t: "Linh is new. She is from Vietnam.", lock: 1 },
+      { t: "Amira says hello to Linh." },
+      { t: "Linh asks her classmates questions." },
+      { t: "Linh has new friends. She is not nervous now.", lock: "last" }
+    ],
+    /* T-342 two worked examples for Tier B. [brackets] mark the words that changed. */
+    bex: [
+      { how: "Change one word.", from: "Linh is [short].", to: "Linh is [not tall]." },
+      { how: "Say it the other way around.", from: "[Mateo is tall] and [Linh is short].", to: "[Linh is short] and [Mateo is tall]." }
+    ],
     key: [
       { t: 'Linh is a new student from Vietnam.', keep: true,
         idea: 'who Linh is', ideas: /\b(new|first day|vietnam|arriv\w*|moved)\b/i },

@@ -9,6 +9,19 @@
    not for the word lunch. */
 window.EP_TIERS = {
     ask: 'Ask your teacher which activity to do next.',
+    /* T-342 order: 4 events, ends anchored. The first and last must be right; the two in
+       the middle count right in any order, because both orders really are defensible. */
+    order: [
+      { t: "The bell rings. Mateo does not know which class he has.", lock: 1 },
+      { t: "Paolo shows Mateo how to read a schedule." },
+      { t: "Mateo opens the door of the science lab." },
+      { t: "Amira takes Mateo to the gym for P.E.", lock: "last" }
+    ],
+    /* T-342 two worked examples for Tier B. [brackets] mark the words that changed. */
+    bex: [
+      { how: "Change one word.", from: "I have math on Tuesday [at 10:20].", to: "I have math on Tuesday [in the morning]." },
+      { how: "Say it the other way around.", from: "[Mateo has P.E.] [on Tuesday and Thursday].", to: "[On Tuesday and Thursday], [Mateo has P.E.]" }
+    ],
     key: [
       { t: 'Every student has a different schedule.', swap: 'has a different schedule',
         rungs: [ ['has a schedule'],

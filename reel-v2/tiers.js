@@ -53,6 +53,15 @@
     '.ghint{margin:8px 0 0;font-weight:800;color:#8a6200;background:#fff8e8;border:2px solid #f0d9a8;border-radius:10px;padding:6px 10px}' +
     '.gok{font-weight:900;color:#2d7a47}' +
     '.gcount{font-weight:800;color:var(--soft)}' +
+    '.bex{border:2px solid var(--line);border-radius:14px;padding:10px 14px;margin:0 0 16px;background:#faf9fc}' +
+    '.bex .lab{display:block;font-weight:900;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--purple);margin:0 0 6px}' +
+    '.bexrow{border-top:1px solid var(--line);padding:8px 0 2px}.bexrow:first-of-type{border-top:0}' +
+    '.bexhow{display:block;font-weight:800;color:var(--soft);font-size:15px;margin:0 0 2px}' +
+    '.bexrow p{margin:2px 0;font-size:19px;font-weight:700;display:flex;gap:8px;align-items:baseline}' +
+    '.bexlab{flex:none;width:22px;height:22px;border-radius:50%;background:var(--purple);color:#fff;font-size:13px;font-weight:900;display:inline-flex;align-items:center;justify-content:center}' +
+    '.chg{background:#fff3e2;box-shadow:inset 0 -3px 0 var(--orange);border-radius:4px;padding:0 2px}' +
+    '.cex{margin:4px 0 2px}.cex summary{cursor:pointer;font-weight:800;color:var(--purple);font-size:15px}' +
+    '.cex p{margin:4px 0;font-size:17px;font-weight:700;display:flex;gap:8px;align-items:baseline}' +
     '.tstep.ok{border-color:#3b9b5c;color:#2d7a47}' +
     '@media (max-width:760px){.gpic{float:none;width:100%;margin:0 0 10px}.gs{font-size:19px}.gtile{font-size:18px;padding:8px 14px}}' +
     /* Real borders (standing rule): the shared --line is light grey on off-white, which two
@@ -93,7 +102,7 @@
   var assignedTier = '';                 /* '', 'A', 'B', 'C' or 'D' — written by the dashboard */
   var TIER_INFO = {
     A: { name: 'Words and voice', e: '🗣️', blurb: 'Read along. Put the story in order. Pick the topic sentence.' },
-    B: { name: 'Synonyms and details', e: '🔁', blurb: 'Say the key sentences in a new way.' },
+    B: { name: 'Paraphrase', e: '🔁', blurb: 'Say it a new way.' },
     C: { name: 'Paragraph', e: '✍️', blurb: 'Write a short summary of the story in your own words.' },
     D: { name: 'Grammar from the story', e: '🧩', blurb: 'Tap the word that fits. The sentences come from this episode.' }
   };
@@ -101,7 +110,7 @@
   function tierState() {
     if (!state.tiers) state.tiers = {};
     var t = state.tiers;
-    if (!t.A) t.A = { step: 0, read: null, order: { shuf: null, slots: [null, null, null, null, null], first: null, best: 0, tries: 0 }, topic: { first: null, pick: null, tries: 0 } };
+    if (!t.A) t.A = { step: 0, read: null, order: { shuf: null, slots: [], first: null, best: 0, tries: 0 }, topic: { first: null, pick: null, tries: 0 } };
     if (!t.B) t.B = { rw: [] };
     if (!t.C) t.C = { text: '', fb: null, checked: 0, draft1: '', revised: false };
     if (!t.D) t.D = { set: 0, ans: {}, shuf: {}, tools: 0 };
@@ -129,7 +138,7 @@
     if (A.order.first != null || A.topic.first != null || A.read) {
       var tp = A.topic.first === true ? 1 : 0;
       out.tierA = { order: A.order.best, order_first: A.order.first, topic: tp, read: A.read };
-      pts += A.order.best + tp; max += TIERS.key.length + 1;
+      pts += A.order.best + tp; max += ordList().length + 1;
     }
     var nB = 0, anyB = false, maxB = 0;
     TIERS.key.forEach(function (k, i) { if (k.keep) return; maxB++; if (B.rw[i]) anyB = true; if (changedB(i)) nB++; });
@@ -243,22 +252,33 @@
     return a;
   }
   var ordSel = null;
+  /* T-342: ordering uses TIERS.order (4 events) when the episode supplies it, not the key
+     sentences — several orders of those are defensible. Only the ends are anchored: lock:1 must
+     come first, lock:'last' must come last, and the middle counts right in any order, so a
+     newcomer practises the IDEA of sequencing and still succeeds. Stricter orders are for later. */
+  function ordList() { return (TIERS.order && TIERS.order.length) ? TIERS.order : TIERS.key; }
+  function ordRight(k, slot, n) {
+    var it = ordList()[k], L = it && it.lock;
+    if (L === 1) return slot === 0;
+    if (L === 'last') return slot === n - 1;
+    return slot > 0 && slot < n - 1;
+  }
   function renderOrder(root) {
-    var o = tierState().A.order, n = TIERS.key.length, i;
+    var o = tierState().A.order, LIST = ordList(), n = LIST.length, i;
     if (!o.shuf || o.shuf.length !== n) { o.shuf = shuffledIdx(n); o.slots = []; for (i = 0; i < n; i++) o.slots.push(null); }
     var placed = {};
     o.slots.forEach(function (v) { if (v != null) placed[v] = 1; });
-    var h = dir('Tap a sentence. Then tap its place in the list, 1 to 5. Tap a sentence in the list to take it out.', 'p', 'lead');
+    var h = dir('Tap a sentence. Then tap its place in the list. Tap a sentence in the list to take it out. Start with what happened FIRST and finish with what happened LAST.', 'p', 'lead');
     h += '<div class="ord"><div class="opool" id="opool">';
     o.shuf.forEach(function (k) {
       if (placed[k]) return;
-      h += '<div class="ochip' + (ordSel === k ? ' sel' : '') + '" draggable="true" data-k="' + k + '" translate="no"><button class="osay" data-k="' + k + '" aria-label="Listen">🔊</button><span>' + esc(TIERS.key[k].t) + '</span></div>';
+      h += '<div class="ochip' + (ordSel === k ? ' sel' : '') + '" draggable="true" data-k="' + k + '" translate="no"><button class="osay" data-k="' + k + '" aria-label="Listen">🔊</button><span>' + esc(LIST[k].t) + '</span></div>';
     });
     h += '</div><ol class="oslots" id="oslots">';
     for (i = 0; i < n; i++) {
       var v = o.slots[i];
       h += '<li class="oslot' + (v != null ? ' full' : '') + '" data-i="' + i + '"><span class="onum">' + (i + 1) + '</span>' +
-           (v != null ? '<div class="ochip in" draggable="true" data-k="' + v + '" translate="no"><button class="osay" data-k="' + v + '" aria-label="Listen">🔊</button><span>' + esc(TIERS.key[v].t) + '</span></div>' : '<span class="ohint" translate="yes" data-en="Tap here">Tap here</span>') + '</li>';
+           (v != null ? '<div class="ochip in" draggable="true" data-k="' + v + '" translate="no"><button class="osay" data-k="' + v + '" aria-label="Listen">🔊</button><span>' + esc(LIST[v].t) + '</span></div>' : '<span class="ohint" translate="yes" data-en="Tap here">Tap here</span>') + '</li>';
     }
     h += '</ol></div>';
     h += '<div class="row"><button class="btn" id="ordCheck" translate="yes">Check</button><button class="btn alt" id="ordReset" translate="yes">Start over</button><span id="ordMsg" translate="yes"></span></div>';
@@ -269,7 +289,7 @@
       var cur = o.slots.indexOf(k); if (cur >= 0) o.slots[cur] = null;
       o.slots[i] = k; ordSel = null; redraw();
     }
-    root.querySelectorAll('.osay').forEach(function (b) { b.addEventListener('click', function (e) { e.stopPropagation(); speakPlain(TIERS.key[+b.getAttribute('data-k')].t); }); });
+    root.querySelectorAll('.osay').forEach(function (b) { b.addEventListener('click', function (e) { e.stopPropagation(); speakPlain(LIST[+b.getAttribute('data-k')].t); }); });
     root.querySelectorAll('#opool .ochip').forEach(function (c) {
       c.addEventListener('click', function () { var k = +c.getAttribute('data-k'); ordSel = ordSel === k ? null : k; renderOrder(root); });
       c.addEventListener('dragstart', function (e) { ordSel = +c.getAttribute('data-k'); try { e.dataTransfer.setData('text/plain', String(ordSel)); } catch (x) {} });
@@ -287,14 +307,14 @@
       if (inChip) inChip.addEventListener('dragstart', function (e) { ordSel = +inChip.getAttribute('data-k'); try { e.dataTransfer.setData('text/plain', String(ordSel)); } catch (x) {} });
     });
     $('ordCheck').addEventListener('click', function () {
-      if (o.slots.some(function (v) { return v == null; })) { $('ordMsg').textContent = 'Put all five sentences in the list first.'; showDirections(root); return; }
+      if (o.slots.some(function (v) { return v == null; })) { var m0 = 'Put all ' + n + ' sentences in the list first.'; $('ordMsg').setAttribute('data-en', m0); $('ordMsg').textContent = m0; showDirections(root); return; }
       var right = 0;
       root.querySelectorAll('.oslot').forEach(function (li) {
-        var i = +li.getAttribute('data-i'), ok = o.slots[i] === i;
+        var i = +li.getAttribute('data-i'), ok = ordRight(o.slots[i], i, n);
         li.classList.toggle('ok', ok); li.classList.toggle('bad', !ok); if (ok) right++;
       });
       o.tries++; if (o.first == null) o.first = right; if (right > o.best) o.best = right;
-      var msg = right === n ? 'Yes! That is the story, 1 to 5.' : right + ' of ' + n + ' are in the right place. Move the orange ones.';
+      var msg = right === n ? 'Yes! That is the story, 1 to ' + n + '.' : right + ' of ' + n + ' are in a good place. Move the orange ones. What happened first? What happened last?';
       $('ordMsg').setAttribute('data-en', msg); $('ordMsg').textContent = msg; showDirections(root);
       score(); touch(); save();
     });
@@ -323,9 +343,24 @@
 
   /* ---------- Tier B ---------- */
   var ladderOpen = null;
+  /* T-342: two worked examples above the items — one swaps a word, one moves the sentence
+     around. [brackets] in the data mark the words that changed, so a student sees WHAT moved. */
+  function markWords(s2) { return esc(s2).replace(/\[([^\]]*)\]/g, '<b class="chg">$1</b>'); }
+  function bExamples() {
+    var ex = TIERS.bex || [];
+    if (!ex.length) return '';
+    var h2 = '<div class="bex"><span class="lab" translate="yes" data-en="Two examples">Two examples</span>';
+    ex.forEach(function (e) {
+      h2 += '<div class="bexrow">' + dir(e.how, 'span', 'bexhow') +
+            '<p translate="no"><span class="bexlab">1</span><span>' + markWords(e.from) + '</span></p>' +
+            '<p translate="no"><span class="bexlab">2</span><span>' + markWords(e.to) + '</span></p></div>';
+    });
+    return h2 + '</div>';
+  }
   function renderTierB(root) {
     var B = tierState().B, h = '';
     h += dir('Say each sentence in a new way. Tap the orange words to see other ways to say them. Change at least one thing, but keep the meaning.', 'p', 'lead');
+    h += bExamples();
     TIERS.key.forEach(function (k, i) {
       if (k.keep && !B.rw[i]) B.rw[i] = k.t;
       var orig = k.swap ? esc(k.t).replace(esc(k.swap), '<button class="swapw" data-i="' + i + '">' + esc(k.swap) + '</button>') : esc(k.t);
@@ -438,6 +473,29 @@
       cb(d && d.ok && d.feedback && typeof d.feedback === 'object' ? d.feedback : null);
     }).catch(function () { if (!done) { done = true; clearTimeout(timer); cb(null); } });
   }
+  /* T-342: a collapsed worked example under each copied line — the key sentence it overlaps and
+     one of that sentence's own rewrites, else the first Tier B example. Collapsed on purpose:
+     the student tries their own words first (models may hide; reading never does). */
+  function copyExample(copied) {
+    var c = norm(copied), best = null, bestHits = 0;
+    (TIERS.key || []).forEach(function (k) {
+      if (!k.rungs || !k.rungs.length || !k.swap) return;
+      var hits = 0;
+      wordsOf(k.t).forEach(function (w) { if (w.length > 2 && c.indexOf(w) >= 0) hits++; });
+      if (hits > bestHits) { bestHits = hits; best = k; }
+    });
+    var from, to;
+    if (best && bestHits >= 2) {
+      from = best.t;
+      var r = best.rungs[1] || best.rungs[0], opt = r[0];
+      to = /\.$/.test(opt) ? opt : best.t.replace(best.swap, opt);
+    } else if ((TIERS.bex || []).length) {
+      from = TIERS.bex[0].from.replace(/[\[\]]/g, ''); to = TIERS.bex[0].to.replace(/[\[\]]/g, '');
+    } else return '';
+    return '<details class="cex"><summary translate="yes" data-en="See an example">See an example</summary>' +
+           '<p><span class="bexlab">1</span><span translate="no">' + esc(from) + '</span></p>' +
+           '<p><span class="bexlab">2</span><span translate="no">' + esc(to) + '</span></p></details>';
+  }
   function renderTierC(root) {
     var C = tierState().C, S = TIERS.summary, h = '';
     h += dir(S.hint, 'p', 'lead');
@@ -466,7 +524,7 @@
       var s = '';
       if (fb.copied && fb.copied.length) {
         s += '<div class="fbrow copy"><b translate="yes" data-en="These words are copied from the story. Say them your way.">These words are copied from the story. Say them your way.</b><ul>';
-        fb.copied.forEach(function (c) { s += '<li translate="no">\u201c' + esc(c) + '\u201d</li>'; });
+        fb.copied.forEach(function (c) { s += '<li translate="no">\u201c' + esc(c) + '\u201d' + copyExample(c) + '</li>'; });
         s += '</ul></div>';
       } else s += '<div class="fbrow good"><b translate="yes" data-en="Your words are your own. Good.">✓ Your words are your own. Good.</b></div>';
       if (fb.ideas && fb.ideas.length) {
@@ -738,6 +796,17 @@
   function init() {
     TIERS = EP.tiers || window.EP_TIERS || null;
     if (!TIERS) return;
+    /* ep01 still carries an old inline EP.tiers block, so its tiers-data.js was being ignored and
+       anything added there (order, bex) never arrived. Always read the data file and fill in the
+       keys the inline block lacks; the inline block still wins for keys it does have. */
+    function fill(src) { if (!src) return; for (var k in src) if (!(k in TIERS)) TIERS[k] = src[k]; }
+    fill(window.EP_TIERS);
+    if (!TIERS.order || !TIERS.bex) {
+      addScript('tiers-data.js', function () {
+        fill(window.EP_TIERS);
+        if ($('tiers') && $('tiers').style.display === 'block') showTiers(false);
+      });
+    }
     /* Tier D's sets live in epNN/grammar-data.js (window.EP_GRAMMAR), beside the tier data */
     if (!TIERS.grammar && window.EP_GRAMMAR) TIERS.grammar = window.EP_GRAMMAR;
     if (!TIERS.grammar) { addScript('grammar-data.js', function () { if (window.EP_GRAMMAR) { TIERS.grammar = window.EP_GRAMMAR; if ($('tiers') && $('tiers').style.display === 'block') showTiers(false); } }); }
