@@ -155,6 +155,8 @@ dialog .row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
       <button class="btn" id="syn">Synergy export</button>
       <button class="btn sec" id="csv">Download CSV</button>
       <button class="btn sec" id="reload">Reload</button>
+      <button class="btn" id="edit" style="background:#b5820c">✏ Edit students</button>
+      <label title="Accounts marked test or teacher are hidden from the grades"><input type="checkbox" id="showhidden"> show test/teacher rows</label>
     </div>
     <div class="tally" id="tally"></div>
     <div class="gridwrap"><table id="grid"></table></div>
@@ -280,7 +282,7 @@ function open(){document.getElementById('gate').style.display='none';document.ge
 function load(){
   toast('Loading…');
   Promise.all([
-    getAll('students?select=email,first_name,last_name,period,roster_order,course'),
+    getAll('students?select=email,first_name,last_name,period,roster_order,course,kind'),
     getAll('gradebook_best?select=email,slug,unit,title,course,score,max_score,pct,attempts,last_at,completion'),
     getAll('activities?select=slug,title,unit,course,level,sort_order,url'),
     getAll('student_aliases?select=alias_email,email').catch(function(){return [];})
@@ -295,7 +297,7 @@ function load(){
     r[0].forEach(function(s){
       var e=canon(s.email); var cur=students[e]||{email:e, mail:String(s.email||'').trim().toLowerCase()};
       // keep the most complete profile across @s.sfusd.edu / @sfusd.edu twins
-      ['first_name','last_name','period','roster_order','course'].forEach(function(k){ if(s[k]!=null && s[k]!=='') cur[k]=s[k]; });
+      ['first_name','last_name','period','roster_order','course','kind'].forEach(function(k){ if(s[k]!=null && s[k]!=='') cur[k]=s[k]; });
       var raw=String(s.email||'').trim().toLowerCase();
       if(!cur.mail || (galKey(raw)===e && (galKey(cur.mail)!==e || raw.indexOf('@s.sfusd.edu')>0))) cur.mail=raw;
       students[e]=cur;
@@ -379,12 +381,131 @@ document.addEventListener('DOMContentLoaded', function(){
   };
 });
 
+/* ---------- Editing mode (T-227) ----------
+   One place to fix a name, an email's period, or to put two rows for the same
+   student back together. The students table has a trigger (students_keep_roster)
+   that silently undoes a name or period change unless the connection first sets
+   app.roster_edit — a browser can't do that, so both buttons call an RPC that
+   sets it server-side. Nothing is written until Save, so a mis-click costs nothing. */
+var EDIT=false, SHOWHIDDEN=false, PEND={}, PICK={};
+var KINDS=[['student','student'],['test','test account'],['teacher','teacher'],['ta','TA']];
+
+function pend(key){ return PEND[key] || (PEND[key]={}); }
+function fieldOf(s,f){ var p=PEND[s.email]; return (p&&p[f]!==undefined)?p[f]:(s[f]==null?'':s[f]); }
+function dirtyCount(){ return Object.keys(PEND).filter(function(k){return Object.keys(PEND[k]).length;}).length; }
+
+function renderEdit(){
+  var rows=sortStudents(Object.values(students).filter(function(s){
+    var per=document.getElementById('period').value, q=document.getElementById('q').value.trim().toLowerCase();
+    if(per==='none'&&s.period)return false;
+    if(per&&per!=='none'&&String(s.period)!==per)return false;
+    if(q&&(studentName(s)+' '+(s.mail||'')).toLowerCase().indexOf(q)<0)return false;
+    return true;                                   // editing always shows hidden kinds
+  }));
+  var picked=Object.keys(PICK).filter(function(k){return PICK[k];});
+  var h='<thead><tr><th class="corner" style="width:34px"></th><th class="corner" style="left:auto">First name</th>'+
+        '<th>Last name</th><th>Sign-in address</th><th>Per.</th><th>Counts as</th></tr></thead><tbody>';
+  rows.forEach(function(s){
+    var d=PEND[s.email]&&Object.keys(PEND[s.email]).length;
+    h+='<tr'+(d?' style="background:#fff8e1"':'')+'>'+
+      '<td style="text-align:center"><input type="checkbox" class="pick" data-k="'+esc(s.email)+'"'+(PICK[s.email]?' checked':'')+'></td>'+
+      '<th style="font-weight:400"><input class="ed" data-k="'+esc(s.email)+'" data-f="first_name" value="'+esc(fieldOf(s,'first_name'))+'" style="width:9em"></th>'+
+      '<td><input class="ed" data-k="'+esc(s.email)+'" data-f="last_name" value="'+esc(fieldOf(s,'last_name'))+'" style="width:11em"></td>'+
+      '<td style="color:var(--muted);font-size:.78rem">'+esc(signInEmail(s))+'</td>'+
+      '<td><select class="ed" data-k="'+esc(s.email)+'" data-f="period"><option value="">\u2013</option>'+
+        [1,2,3,4,5,6,7].map(function(p){return '<option'+(String(fieldOf(s,'period'))==String(p)?' selected':'')+'>'+p+'</option>';}).join('')+'</select></td>'+
+      '<td><select class="ed" data-k="'+esc(s.email)+'" data-f="kind">'+
+        KINDS.map(function(k){return '<option value="'+k[0]+'"'+((fieldOf(s,'kind')||'student')===k[0]?' selected':'')+'>'+k[1]+'</option>';}).join('')+'</select></td></tr>';
+  });
+  h+='</tbody>';
+  document.getElementById('grid').innerHTML=h;
+
+  var merge='';
+  if(picked.length===2){
+    var a=students[picked[0]], b=students[picked[1]];
+    merge='<div style="margin-left:auto;display:flex;gap:8px;align-items:center">'+
+      '<span style="font-size:.8rem">Same student?</span>'+
+      '<button class="btn sec" id="mergeA">Keep '+esc(studentName(a))+' ('+esc(picked[0])+')</button>'+
+      '<button class="btn sec" id="mergeB">Keep '+esc(studentName(b))+' ('+esc(picked[1])+')</button></div>';
+  } else if(picked.length>2){
+    merge='<div style="margin-left:auto;color:var(--bad);font-size:.82rem">Tick exactly two rows to merge them.</div>';
+  }
+  document.getElementById('tally').innerHTML=
+    '<div><b>'+rows.length+'</b>students</div><div><b id="edcount">'+dirtyCount()+'</b>changed, not saved</div>'+
+    '<div style="flex:1"></div>'+
+    '<button class="btn" id="edsave">Save</button>'+
+    '<button class="btn" id="edsaveback">Save and return to grades</button>'+
+    '<button class="btn sec" id="edcancel">Cancel</button>'+merge;
+
+  /* Don't redraw the table while Toby is typing — it would steal the cursor
+     mid-row and drop whatever he was halfway through. Mark the row and update
+     the counter instead; the table is only rebuilt when a tick box changes. */
+  document.querySelectorAll('.ed').forEach(function(el){
+    var stash=function(){
+      pend(el.dataset.k)[el.dataset.f]=el.value;
+      var tr=el.closest('tr'); if(tr) tr.style.background='#fff8e1';
+      var n=document.getElementById('edcount'); if(n) n.textContent=dirtyCount();
+    };
+    el.onchange=stash; el.oninput=stash;
+  });
+  document.querySelectorAll('.pick').forEach(function(cb){
+    cb.onchange=function(){ PICK[cb.dataset.k]=cb.checked; renderEdit(); };
+  });
+  document.getElementById('edsave').onclick=function(){ saveEdits(false); };
+  document.getElementById('edsaveback').onclick=function(){ saveEdits(true); };
+  document.getElementById('edcancel').onclick=function(){
+    if(dirtyCount() && !confirm('Throw away '+dirtyCount()+' unsaved change'+(dirtyCount()===1?'':'s')+'?')) return;
+    PEND={}; PICK={}; EDIT=false; render();
+  };
+  if(picked.length===2){
+    document.getElementById('mergeA').onclick=function(){ doMerge(picked[0],picked[1]); };
+    document.getElementById('mergeB').onclick=function(){ doMerge(picked[1],picked[0]); };
+  }
+}
+
+function rpc(name,body){
+  return fetch(SUPA_URL+'/rest/v1/rpc/'+name,{method:'POST',headers:H({}),body:JSON.stringify(body)})
+    .then(function(r){ return r.ok ? r.json().catch(function(){return null;})
+                                   : r.text().then(function(t){ throw new Error(t||('HTTP '+r.status)); }); });
+}
+function saveEdits(back){
+  var keys=Object.keys(PEND).filter(function(k){return Object.keys(PEND[k]).length;});
+  if(!keys.length){ if(back){EDIT=false;render();} else toast('Nothing to save'); return; }
+  toast('Saving '+keys.length+'\u2026');
+  var jobs=keys.map(function(k){
+    var s=students[k], p=PEND[k];
+    return rpc('roster_save',{
+      p_email: s.mail||signInEmail(s),
+      p_first: p.first_name!==undefined?p.first_name:(s.first_name||''),
+      p_last:  p.last_name !==undefined?p.last_name :(s.last_name ||''),
+      p_period:p.period    !==undefined?String(p.period||''):String(s.period||''),
+      p_kind:  p.kind      !==undefined?p.kind      :(s.kind||'student')
+    }).then(function(){ Object.keys(p).forEach(function(f){ s[f]=p[f]==='' && f==='period' ? null : p[f]; }); });
+  });
+  Promise.all(jobs).then(function(){
+    PEND={}; toast('Saved. Every dashboard reads these names.');
+    if(back){ EDIT=false; render(); } else renderEdit();
+  }).catch(function(e){
+    toast('Save failed \u2014 has the T-227 SQL been run? ('+String(e.message||e).slice(0,60)+')');
+  });
+}
+function doMerge(keep,drop){
+  var k=students[keep], d=students[drop];
+  if(!confirm('Put '+studentName(d)+' ('+signInEmail(d)+') into '+studentName(k)+' ('+signInEmail(k)+')?\n\nTheir work moves across and the extra row goes. This cannot be undone here.')) return;
+  toast('Merging\u2026');
+  rpc('roster_merge',{p_keep:(k.mail||signInEmail(k)), p_drop:(d.mail||signInEmail(d))})
+    .then(function(){ PICK={}; PEND={}; toast('Merged. Reloading\u2026'); load(); })
+    .catch(function(e){ toast('Merge failed \u2014 has the T-227 SQL been run? ('+String(e.message||e).slice(0,60)+')'); });
+}
+
 function render(){
+  if(EDIT) return renderEdit();
   var per=document.getElementById('period').value, course=document.getElementById('course').value, unit=document.getElementById('unit').value;
   var since=+document.getElementById('since').value, q=document.getElementById('q').value.trim().toLowerCase(), hide=document.getElementById('hideempty').checked;
   var cutoff=since?Date.now()-since*864e5:0;
 
   var rows=sortStudents(Object.values(students).filter(function(s){
+    if(!SHOWHIDDEN && (s.kind==='test'||s.kind==='teacher')) return false;   // not real students
     if(per==='none'&&s.period)return false;
     if(per&&per!=='none'&&String(s.period)!==per)return false;
     if(q&&studentName(s).toLowerCase().indexOf(q)<0&&s.email.indexOf(q)<0&&String(s.mail||'').indexOf(q)<0)return false;
@@ -925,6 +1046,9 @@ function renderScale(){
 document.getElementById('scl').onclick=function(){ renderScale(); document.getElementById('scldlg').showModal(); };
 document.getElementById('sclclose').onclick=function(){ document.getElementById('scldlg').close(); };
 document.getElementById('sclprint').onclick=function(){ window.print(); };
+
+document.getElementById('edit').onclick=function(){ EDIT=!EDIT; PICK={}; render(); };
+document.getElementById('showhidden').onchange=function(){ SHOWHIDDEN=this.checked; render(); };
 
 ['period','course','unit','since','hideempty'].forEach(function(id){document.getElementById(id).addEventListener('change',render);});
 document.getElementById('q').addEventListener('input',render);
