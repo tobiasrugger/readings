@@ -29,3 +29,10 @@ Extra verdicts: tap-no-save, tap-saved-nothing-new (taps changed nothing saved â
 robot-found-nothing-to-tap.
 Running it in this sandbox: bash calls stop at 300 s, so start the http server and the robot in one detached
 script (setsid nohup â€¦ &) and poll the log. Keep -j at 4 or lower; higher makes it flaky.
+
+## Verdict "inconclusive" and the audit column (T-192, Oct 28)
+A test the robot cannot judge is now `pass: null` instead of a fail, and the page's verdict is "inconclusive":
+in tap mode, test 1 when the page made no save after the extra tap and nothing countable shows on screen; and
+write/* ladders, whose text only shows inside an opened rung (every save there kept the work).
+Every run gets its own results file in readings/robot/, and its name is appended to results-index.json
+(later files win). The audit grid and https://tobiasrugger.github.io/readings/audit/check.html read it.

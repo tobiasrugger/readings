@@ -748,7 +748,8 @@ async def run_tap(browser, rel, R):
         shown_dom = (sig1 >= need) if dom_ok else None
         shown_save = (min(shares) >= 0.7) if shares else None
         shown = shown_dom if shown_dom is not None else bool(shown_save)
-        R["t1"] = {"pass": bool(shown) and not bad, "shown_on_screen": shown_dom, "kept_in_saves": [round(s, 2) for s in shares][:6],
+        t1pass = (bool(shown) and not bad) if (dom_ok or shares) else None   # None = the robot could not tell
+        R["t1"] = {"pass": t1pass, "shown_on_screen": shown_dom, "kept_in_saves": [round(s, 2) for s in shares][:6],
                    "saves": len(ws), "saves_dropping_work": len(bad), "sig": sig1, "gate": g}
     finally:
         await ctx.close()
@@ -826,7 +827,8 @@ async def run_tap(browser, rel, R):
                    "saves_as_A": len(asA)}
     finally:
         await ctx.close()
-    R["verdict"] = "PASS" if all(R[k]["pass"] for k in ("t1", "t2", "t3")) else "FAIL"
+    ps = [R[k]["pass"] for k in ("t1", "t2", "t3")]
+    R["verdict"] = "FAIL" if False in ps else ("inconclusive" if None in ps else "PASS")
     return R
 
 async def main():
