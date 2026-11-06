@@ -40,7 +40,16 @@ th.corner{z-index:4;left:0}
 td.c{text-align:center;min-width:52px}
 td.c span{display:inline-block;min-width:40px;padding:2px 5px;border-radius:6px;font-weight:700}
 .g1{background:var(--ok-bg);color:var(--ok)}
-td.c span.cmp{outline:2px dotted #8a6a00;outline-offset:-2px} .g2{background:var(--warn-bg);color:var(--warn)} .g3{background:var(--bad-bg);color:var(--bad)} .g0{background:#eef2f0;color:var(--muted)} .g45{background:#0d5c3a;color:#fff;font-weight:900}
+td.c span.cmp{outline:2px dotted #8a6a00;outline-offset:-2px} .g2{background:var(--warn-bg);color:var(--warn)} .g3{background:var(--bad-bg);color:var(--bad)} .g0{background:#eef2f0;color:var(--muted)}
+#bulkbar{display:none;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 10px;padding:8px 12px;border:2px solid var(--ink);border-radius:10px;background:#fffbe6}
+tr.edrow{cursor:pointer}
+tr.edrow.dirty{background:#fff8e1}
+tr.edrow.picked{background:#e3f1e6}
+tr.edrow.picked.dirty{background:#e8eed2}
+tr.edrow td,tr.edrow th{user-select:none}
+#mgdlg{max-width:520px;width:92vw}
+.mgpick{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;margin:0 0 8px;border:2px solid var(--ink);border-radius:10px;cursor:pointer}
+.mgpick input{width:20px;height:20px;flex:none;accent-color:var(--pine)} .g45{background:#0d5c3a;color:#fff;font-weight:900}
 td.avg{font-weight:800;text-align:center;background:#fafcfb}
 tbody tr:hover td,tbody tr:hover th{background:#f3f7f5}
 select.per{border:1px solid transparent;background:transparent;font:inherit;font-size:.78rem;padding:2px}
@@ -163,6 +172,15 @@ dialog .row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
     <p class="legend">Cell = best attempt as a mark out of 4 (4 = 90%+, 3 = 75–89, 2 = 60–74, 1 = anything started, 0 = nothing right; ✓ = done but the activity reports no number). Press <b>Show percents</b> to switch back. A dotted outline means a completion score: parts done over parts on the page, for activities with no quiz number. Hover a cell for attempts and date. <b>Click an activity header</b> to copy that column for Synergy in roster order. Change a student's period with the dropdown in their row; it saves. Sort order inside a period = roster order if set, else last name.</p>
   </div>
 </div>
+
+<dialog id="mgdlg">
+  <h3 style="margin:0 0 8px">Merge two rows</h3>
+  <div id="mgbody"></div>
+  <div class="row">
+    <button class="btn" id="mgdo">Merge them</button>
+    <button class="btn sec" id="mgcancel" style="margin-left:auto">Cancel</button>
+  </div>
+</dialog>
 
 <dialog id="scldlg">
   <div id="sclhead">
@@ -308,6 +326,12 @@ function load(){
     /* a student seen only in the scores (no students row yet) still gets a row */
     Object.keys(students).forEach(function(k){ if(!students[k].mail) students[k].mail=k+'@s.sfusd.edu'; });
     cells.forEach(function(c){ if(!students[c.email]) students[c.email]={email:c.email}; });
+    /* T-332: every row needs a REAL address, including one seen only in the
+       scores — without it roster_save updates nothing and silently loses the
+       edit, which is why rows marked test/teacher kept coming back. */
+    Object.keys(students).forEach(function(k){
+      if(!students[k].mail) students[k].mail = SPELLINGS[k] || (k+'@s.sfusd.edu');
+    });
     activities={}; r[2].forEach(function(a){activities[a.slug]=a;});
     var units={}; cells.forEach(function(c){var u=c.unit||(activities[c.slug]&&activities[c.slug].unit)||'(untagged)';units[u]=1;});
     var us=document.getElementById('unit'); var keep=us.value; us.innerHTML='<option value="">All</option>'+Object.keys(units).sort().map(function(u){return '<option'+(u===keep?' selected':'')+'>'+esc(u)+'</option>';}).join('');
@@ -394,6 +418,41 @@ function pend(key){ return PEND[key] || (PEND[key]={}); }
 function fieldOf(s,f){ var p=PEND[s.email]; return (p&&p[f]!==undefined)?p[f]:(s[f]==null?'':s[f]); }
 function dirtyCount(){ return Object.keys(PEND).filter(function(k){return Object.keys(PEND[k]).length;}).length; }
 
+/* T-321: bulk ticking. Toby has a pile of junk rows to mark and a small screen,
+   so: click anywhere in a row to tick it, shift-click for a run, tick-all in the
+   header, then set Counts as (or the period) on every ticked row at once.
+   Merge is NO LONGER offered just for ticking two rows — he ticks pairs all the
+   time while bulk-editing — it now sits behind its own button and two prompts. */
+var SHOWN=[], LASTPICK=null;
+
+function pickedKeys(){ return SHOWN.filter(function(k){ return PICK[k]; }); }
+function attemptsOf(key){
+  var n=0; cells.forEach(function(c){ if(canon(c.email)===key) n+=(c.attempts||1); }); return n;
+}
+function paintTicks(){
+  /* update ticks, the counts and the bulk bar WITHOUT redrawing the table,
+     so a half-typed name is never thrown away mid-edit */
+  var picked=pickedKeys();
+  document.querySelectorAll('#grid tbody tr').forEach(function(tr){
+    var on=!!PICK[tr.dataset.k];
+    tr.classList.toggle('picked', on);
+    var cb=tr.querySelector('.pick'); if(cb) cb.checked=on;
+  });
+  var c=document.getElementById('tickcount'); if(c) c.textContent=picked.length;
+  var bn=document.getElementById('bulkn'); if(bn) bn.textContent=picked.length;
+  var bar=document.getElementById('bulkbar'); if(bar) bar.style.display=picked.length?'flex':'none';
+  var all=document.getElementById('tickall'); if(all) all.checked = SHOWN.length>0 && picked.length===SHOWN.length;
+  var mg=document.getElementById('mergebtn');
+  if(mg){ mg.disabled = picked.length!==2;
+          mg.title = picked.length===2 ? 'Put these two rows together' : 'Tick exactly two rows to merge them'; }
+}
+function setPicked(field, value){
+  var picked=pickedKeys(); if(!picked.length) return;
+  picked.forEach(function(k){ pend(k)[field]=value; });
+  renderEdit();                       // the cells themselves changed, so redraw
+  toast(picked.length+' row'+(picked.length===1?'':'s')+' changed \u2014 not saved yet');
+}
+
 function renderEdit(){
   var rows=sortStudents(Object.values(students).filter(function(s){
     var per=document.getElementById('period').value, q=document.getElementById('q').value.trim().toLowerCase();
@@ -402,13 +461,15 @@ function renderEdit(){
     if(q&&(studentName(s)+' '+(s.mail||'')).toLowerCase().indexOf(q)<0)return false;
     return true;                                   // editing always shows hidden kinds
   }));
-  var picked=Object.keys(PICK).filter(function(k){return PICK[k];});
-  var h='<thead><tr><th class="corner" style="width:34px"></th><th class="corner" style="left:auto">First name</th>'+
+  SHOWN=rows.map(function(s){ return s.email; });
+  var h='<thead><tr><th class="corner" style="width:40px;text-align:center">'+
+        '<input type="checkbox" id="tickall" title="Tick every row shown"></th>'+
+        '<th class="corner" style="left:auto">First name</th>'+
         '<th>Last name</th><th>Sign-in address</th><th>Per.</th><th>Counts as</th></tr></thead><tbody>';
   rows.forEach(function(s){
     var d=PEND[s.email]&&Object.keys(PEND[s.email]).length;
-    h+='<tr'+(d?' style="background:#fff8e1"':'')+'>'+
-      '<td style="text-align:center"><input type="checkbox" class="pick" data-k="'+esc(s.email)+'"'+(PICK[s.email]?' checked':'')+'></td>'+
+    h+='<tr data-k="'+esc(s.email)+'" class="edrow'+(PICK[s.email]?' picked':'')+(d?' dirty':'')+'">'+
+      '<td style="text-align:center"><input type="checkbox" class="pick"'+(PICK[s.email]?' checked':'')+'></td>'+
       '<th style="font-weight:400"><input class="ed" data-k="'+esc(s.email)+'" data-f="first_name" value="'+esc(fieldOf(s,'first_name'))+'" style="width:9em"></th>'+
       '<td><input class="ed" data-k="'+esc(s.email)+'" data-f="last_name" value="'+esc(fieldOf(s,'last_name'))+'" style="width:11em"></td>'+
       '<td style="color:var(--muted);font-size:.78rem">'+esc(signInEmail(s))+'</td>'+
@@ -420,47 +481,82 @@ function renderEdit(){
   h+='</tbody>';
   document.getElementById('grid').innerHTML=h;
 
-  var merge='';
-  if(picked.length===2){
-    var a=students[picked[0]], b=students[picked[1]];
-    merge='<div style="margin-left:auto;display:flex;gap:8px;align-items:center">'+
-      '<span style="font-size:.8rem">Same student?</span>'+
-      '<button class="btn sec" id="mergeA">Keep '+esc(studentName(a))+' ('+esc(picked[0])+')</button>'+
-      '<button class="btn sec" id="mergeB">Keep '+esc(studentName(b))+' ('+esc(picked[1])+')</button></div>';
-  } else if(picked.length>2){
-    merge='<div style="margin-left:auto;color:var(--bad);font-size:.82rem">Tick exactly two rows to merge them.</div>';
-  }
   document.getElementById('tally').innerHTML=
-    '<div><b>'+rows.length+'</b>students</div><div><b id="edcount">'+dirtyCount()+'</b>changed, not saved</div>'+
+    '<div><b>'+rows.length+'</b>students</div>'+
+    '<div><b id="tickcount">0</b>ticked</div>'+
+    '<div><b id="edcount">'+dirtyCount()+'</b>changed, not saved</div>'+
+    '<button class="btn sec" id="tickclear">Clear ticks</button>'+
+    '<button class="btn sec" id="mergebtn" disabled>Merge\u2026</button>'+
     '<div style="flex:1"></div>'+
     '<button class="btn" id="edsave">Save</button>'+
     '<button class="btn" id="edsaveback">Save and return to grades</button>'+
-    '<button class="btn sec" id="edcancel">Cancel</button>'+merge;
+    '<button class="btn sec" id="edcancel">Cancel</button>';
 
-  /* Don't redraw the table while Toby is typing — it would steal the cursor
-     mid-row and drop whatever he was halfway through. Mark the row and update
-     the counter instead; the table is only rebuilt when a tick box changes. */
+  var bulk=document.getElementById('bulkbar');
+  if(!bulk){
+    bulk=document.createElement('div'); bulk.id='bulkbar'; bulk.className='noprint';
+    var t=document.getElementById('tally'); t.parentNode.insertBefore(bulk, t.nextSibling);
+  }
+  bulk.innerHTML='<span><b id="bulkn">0</b> ticked \u2014 set them all to:</span>'+
+    KINDS.map(function(k){ return '<button class="btn sec" data-kind="'+k[0]+'">'+k[1]+'</button>'; }).join('')+
+    '<span style="margin-left:10px">period</span><select id="bulkper"><option value="">\u2013</option>'+
+    [1,2,3,4,5,6,7].map(function(p){return '<option>'+p+'</option>';}).join('')+'</select>';
+  bulk.style.display='none';
+
   document.querySelectorAll('.ed').forEach(function(el){
     var stash=function(){
       pend(el.dataset.k)[el.dataset.f]=el.value;
-      var tr=el.closest('tr'); if(tr) tr.style.background='#fff8e1';
+      var tr=el.closest('tr'); if(tr) tr.classList.add('dirty');
       var n=document.getElementById('edcount'); if(n) n.textContent=dirtyCount();
     };
     el.onchange=stash; el.oninput=stash;
   });
-  document.querySelectorAll('.pick').forEach(function(cb){
-    cb.onchange=function(){ PICK[cb.dataset.k]=cb.checked; renderEdit(); };
+
+  /* click the row to tick it — but never when the click was meant for a box */
+  document.querySelectorAll('#grid tbody tr').forEach(function(tr){
+    tr.onclick=function(ev){
+      var t=ev.target;
+      if(t.closest('input.ed') || t.closest('select') || t.tagName==='OPTION') return;  // typing, not ticking
+      var k=tr.dataset.k;
+      if(ev.shiftKey && LASTPICK && LASTPICK!==k){
+        var a=SHOWN.indexOf(LASTPICK), b=SHOWN.indexOf(k);
+        if(a>-1 && b>-1){ var lo=Math.min(a,b), hi=Math.max(a,b);
+          for(var i=lo;i<=hi;i++) PICK[SHOWN[i]]=true; }
+      } else { PICK[k]=!PICK[k]; }
+      LASTPICK=k; paintTicks();
+    };
   });
+  document.getElementById('tickall').onchange=function(){
+    var on=this.checked; SHOWN.forEach(function(k){ PICK[k]=on; }); LASTPICK=null; paintTicks();
+  };
+  document.getElementById('tickclear').onclick=function(){ PICK={}; LASTPICK=null; paintTicks(); };
+  bulk.querySelectorAll('[data-kind]').forEach(function(b){
+    b.onclick=function(){ setPicked('kind', b.dataset.kind); };
+  });
+  document.getElementById('bulkper').onchange=function(){ setPicked('period', this.value); this.value=''; };
+  document.getElementById('mergebtn').onclick=openMerge;
   document.getElementById('edsave').onclick=function(){ saveEdits(false); };
   document.getElementById('edsaveback').onclick=function(){ saveEdits(true); };
   document.getElementById('edcancel').onclick=function(){
     if(dirtyCount() && !confirm('Throw away '+dirtyCount()+' unsaved change'+(dirtyCount()===1?'':'s')+'?')) return;
-    PEND={}; PICK={}; EDIT=false; render();
+    PEND={}; PICK={}; LASTPICK=null; EDIT=false; render();
   };
-  if(picked.length===2){
-    document.getElementById('mergeA').onclick=function(){ doMerge(picked[0],picked[1]); };
-    document.getElementById('mergeB').onclick=function(){ doMerge(picked[1],picked[0]); };
+  paintTicks();
+}
+
+/* Merge: behind its own button, then two deliberate steps */
+function openMerge(){
+  var p=pickedKeys(); if(p.length!==2) return;
+  function card(st,key){
+    var n=attemptsOf(key);
+    return '<label class="mgpick"><input type="radio" name="mgkeep" value="'+esc(key)+'">'+
+      '<span><b>'+esc(studentName(st))+'</b><br><span style="color:var(--muted);font-size:.82rem">'+
+      esc(signInEmail(st))+' \u00b7 '+n+' attempt'+(n===1?'':'s')+'</span></span></label>';
   }
+  document.getElementById('mgbody').innerHTML=
+    '<p style="margin:0 0 10px">Which row do you want to <b>keep</b>? The other row\u2019s work moves over to it.</p>'+
+    card(students[p[0]],p[0])+card(students[p[1]],p[1]);
+  document.getElementById('mgdlg').showModal();
 }
 
 function rpc(name,body){
@@ -472,8 +568,15 @@ function saveEdits(back){
   var keys=Object.keys(PEND).filter(function(k){return Object.keys(PEND[k]).length;});
   if(!keys.length){ if(back){EDIT=false;render();} else toast('Nothing to save'); return; }
   toast('Saving '+keys.length+'\u2026');
+  var WANTED={};
   var jobs=keys.map(function(k){
     var s=students[k], p=PEND[k];
+    WANTED[k]={
+      first_name: p.first_name!==undefined?p.first_name:(s.first_name||''),
+      last_name:  p.last_name !==undefined?p.last_name :(s.last_name ||''),
+      period:     p.period    !==undefined?(p.period||''):(s.period||''),
+      kind:       p.kind      !==undefined?p.kind      :(s.kind||'student')
+    };
     return rpc('roster_save',{
       p_email: s.mail||signInEmail(s),
       p_first: p.first_name!==undefined?p.first_name:(s.first_name||''),
@@ -483,8 +586,27 @@ function saveEdits(back){
     }).then(function(){ Object.keys(p).forEach(function(f){ s[f]=p[f]==='' && f==='period' ? null : p[f]; }); });
   });
   Promise.all(jobs).then(function(){
-    PEND={}; toast('Saved. Every dashboard reads these names.');
-    if(back){ EDIT=false; render(); } else renderEdit();
+    PEND={};
+    /* T-332: read the roster back and check the change actually landed.
+       roster_save updates by address; if no students row matches, Postgres
+       updates 0 rows and returns success, so a lost edit looked like a save. */
+    return getAll('students?select=email,first_name,last_name,period,kind').then(function(rows){
+      var by={}; (rows||[]).forEach(function(r){ by[canon(r.email)]=r; });
+      var lost=keys.filter(function(k){
+        var want=WANTED[k], got=by[k];
+        if(!got) return true;
+        return Object.keys(want).some(function(f){
+          return String(got[f]==null?'':got[f]) !== String(want[f]==null?'':want[f]);
+        });
+      });
+      if(lost.length){
+        toast(lost.length+' row'+(lost.length===1?'':'s')+' did NOT save \u2014 no roster row for '+
+              lost.slice(0,3).join(', ')+'. Run the T-332 SQL.');
+      } else {
+        toast('Saved. Every dashboard reads these names.');
+      }
+      if(back){ EDIT=false; render(); } else renderEdit();
+    });
   }).catch(function(e){
     toast('Save failed \u2014 has the T-227 SQL been run? ('+String(e.message||e).slice(0,60)+')');
   });
@@ -1047,7 +1169,19 @@ document.getElementById('scl').onclick=function(){ renderScale(); document.getEl
 document.getElementById('sclclose').onclick=function(){ document.getElementById('scldlg').close(); };
 document.getElementById('sclprint').onclick=function(){ window.print(); };
 
-document.getElementById('edit').onclick=function(){ EDIT=!EDIT; PICK={}; render(); };
+document.getElementById('edit').onclick=function(){ EDIT=!EDIT; PICK={}; LASTPICK=null; render(); };
+document.getElementById('mgcancel').onclick=function(){ document.getElementById('mgdlg').close(); };
+document.getElementById('mgdo').onclick=function(){
+  var sel=document.querySelector('input[name=mgkeep]:checked');
+  if(!sel){ toast('Pick which row to keep first'); return; }
+  var keep=sel.value, drop=pickedKeys().filter(function(k){ return k!==keep; })[0];
+  if(!drop) return;
+  /* second, deliberate step — this one cannot be undone from here */
+  if(!confirm('Are you sure you want to merge?\n\n'+studentName(students[drop])+' ('+signInEmail(students[drop])+
+              ')\nTheir work moves over to '+studentName(students[keep])+' and that row is deleted.\n\nThis cannot be undone.')) return;
+  document.getElementById('mgdlg').close();
+  doMerge(keep, drop);
+};
 document.getElementById('showhidden').onchange=function(){ SHOWHIDDEN=this.checked; render(); };
 
 ['period','course','unit','since','hideempty'].forEach(function(id){document.getElementById(id).addEventListener('change',render);});
