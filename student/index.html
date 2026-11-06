@@ -1462,7 +1462,7 @@ function gRange(v){
 /* T-325: the letters are HIDDEN from students unless Mr. Toby turns them on (gal_settings 'mypage_grade' =
    {all, periods:['3'], emails:[LOCAL PARTS]}, set at /readings/student/dashboard.html). Reason (Toby, Nov 6):
    a B or C after one or two extras reads as "good enough". Teacher view always sees them. If the setting
-   can't be read, the letters stay hidden. While hidden the box shows a count ("4 still to do") and the buttons. */
+   can't be read, the letters stay hidden. T-344: while hidden, students see no box at all. */
 async function gradeShown(email,period){
   try{
     var r=await sb('gal_settings?key=eq.mypage_grade&select=value'); var v=(r&&r[0]&&r[0].value)||{};
@@ -1475,6 +1475,11 @@ async function loadGrade(email){
   var card=document.getElementById('gradeCard'); if(!card)return;
   try{
     var p=await myPeriod(email), lpx=email.split('@')[0];
+    /* T-344 (Toby, Nov 6): letters hidden = NO card for the student at all (no title, count, buttons or all-done line);
+       the green "Do this next" band above already lists the work. Teacher view still sees the full card.
+       gradeShown() returns false if gal_settings can't be read, so a failed read also hides it. */
+    var STUDENT_SEES=await gradeShown(email,p), SHOW=STUDENT_SEES||!!(TV_EMAIL||READ_ONLY);
+    if(!SHOW){ card.classList.add('hide'); return; }
     var per=['all'].concat(p?[p]:[]);
     var rows=await sb('class_assignments?area=eq.site&period=in.('+per.map(function(x){return '"'+x+'"';}).join(',')+')'+
       '&created_at=gte.'+GRADE_SINCE+'&order=created_at.asc&select=*');
@@ -1496,7 +1501,6 @@ async function loadGrade(email){
       var b=gBest(r); if(!b.done)extras.push({r:r});
     });
     if(!items.length){ card.classList.add('hide'); return; }
-    var STUDENT_SEES=await gradeShown(email,p), SHOW=STUDENT_SEES||!!(TV_EMAIL||READ_ONLY);   /* T-325: teacher view always sees */
     /* T-301: each push belongs to the marking period it was pushed in; the big cell = this semester only */
     items.forEach(function(it){ it.mp=mpOf(it.r.created_at); });
     var now=curMP(), semItems=items.filter(function(it){ return it.mp&&it.mp.sem===now.sem; });
@@ -1550,7 +1554,7 @@ async function loadGrade(email){
     var t=document.getElementById('gTeach');
     if(TV_EMAIL||READ_ONLY){
       var done=items.filter(function(it){return it.done;}).length;
-      t.innerHTML='Teacher view &mdash; this student '+(STUDENT_SEES?'<b>sees</b> the letters':'does <b>not</b> see the letters (only &ldquo;'+todo.length+' still to do&rdquo;)')+'. <a href="/readings/student/dashboard.html">Change who sees them</a>. ';
+      t.innerHTML='Teacher view &mdash; this student '+(STUDENT_SEES?'<b>sees</b> this box with the letters':'sees <b>nothing</b> here &mdash; this whole box is hidden from them')+'. <a href="/readings/student/dashboard.html">Change who sees them</a>. ';
       t.appendChild(document.createTextNode(now.sem+' semester average '+(avg==null?'\u2014':avg.toFixed(2))+' (scale 0\u20134.5, same as the gradebook) over '+items.length+' pushed activities ('+done+' done, '+(items.length-done)+' not done); now = MP'+now.mp+'. Extras are left out of the average. Letters: A 3.5+, B 2.5+, C 1.5+, D 0.5+. MP dates live in MPS in student/index.html.'));
       t.classList.remove('hide');
     } else t.classList.add('hide');
