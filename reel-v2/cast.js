@@ -179,6 +179,18 @@
              '<path d="M-14,-18 L16,-18 M-14,-6 L16,-6 M-14,6 L12,6 M-14,18 L14,18" stroke="#9aa3ad" stroke-width="3"/>' +
              '<path d="M-30,-30 L-36,-30 M-30,-16 L-36,-16 M-30,-2 L-36,-2 M-30,12 L-36,12 M-30,26 L-36,26" stroke="#8b8f98" stroke-width="4" stroke-linecap="round"/></g>';
     }
+    if (name === 'schedule') {
+      /* a printed class schedule, held up to read */
+      var sc = '<g transform="translate(96,-250) rotate(-6)"><rect x="-56" y="-72" width="112" height="144" rx="5" fill="#fffdf8" stroke="#c9c2b3" stroke-width="3"/>' +
+               '<rect x="-56" y="-72" width="112" height="26" rx="5" fill="#864D9E"/>' +
+               '<text x="0" y="-53" text-anchor="middle" font-family="Nunito,Arial,sans-serif" font-weight="900" font-size="17" fill="#fff">SCHEDULE</text>';
+      for (var r = 0; r < 5; r++) {
+        sc += '<path d="M-56,' + (-34 + r * 22) + ' L56,' + (-34 + r * 22) + '" stroke="#e0d7c8" stroke-width="2"/>';
+        sc += '<rect x="-48" y="' + (-28 + r * 22) + '" width="34" height="9" rx="3" fill="#9aa3ad"/>';
+        sc += '<rect x="-4" y="' + (-28 + r * 22) + '" width="' + (30 + (r * 13) % 22) + '" height="9" rx="3" fill="' + ['#2f6fbd', '#1f8a7e', '#F8981F', '#d9567f', '#864D9E'][r] + '"/>';
+      }
+      return sc + '</g>';
+    }
     if (name === 'calculator') {
       var cs = '<g transform="translate(-70,-250) rotate(-8)"><rect x="-30" y="-48" width="60" height="96" rx="8" fill="#5b6b7c"/>' +
                '<rect x="-22" y="-40" width="44" height="24" rx="3" fill="#dfe9d3"/>';
@@ -192,7 +204,7 @@
     return '';
   }
 
-  /* opts: {expr, pose:'idle'|'wave'|'point'|'spin'|'think'|'read'|'write', hold:'ball'|'sketchbook'|'paper'|'backpack'|'pencil'|'notebook'|'calculator', talk:bool} */
+  /* opts: {expr, pose:'idle'|'wave'|'point'|'spin'|'think'|'read'|'write', hold:'ball'|'sketchbook'|'paper'|'backpack'|'pencil'|'notebook'|'calculator'|'schedule', talk:bool} */
 
   /* =================== SEASONS & HOLIDAYS (T-36) ===================
      The cast dresses for the time of year with no change to any episode.
@@ -630,6 +642,78 @@
     s += '<rect x="0" y="628" width="1600" height="16" fill="#cbbfae"/>';
     s += floor('#d6a564');
     s += '<path d="M0,760 L1600,760" stroke="#864D9E" stroke-width="8"/><circle cx="800" cy="760" r="90" fill="none" stroke="#864D9E" stroke-width="8"/>';
+    return s;
+  };
+  R.BG.lab = function () {
+    var s = '<rect width="1600" height="900" fill="#e7eef0"/>';
+    s += '<rect x="0" y="0" width="1600" height="60" fill="#d7e2e5"/>';
+    s += sign(620, 90, 360, 'Science', '#1f8a7e');
+    /* periodic-table poster */
+    s += '<rect x="90" y="170" width="420" height="250" rx="8" fill="#fffdf8" stroke="#2b2233" stroke-width="5"/>';
+    var pc = ['#F8981F', '#2f6fbd', '#1f8a7e', '#d9567f', '#864D9E', '#c9412e'];
+    for (var r = 0; r < 5; r++) for (var k = 0; k < 10; k++) {
+      s += '<rect x="' + (108 + k * 39) + '" y="' + (188 + r * 44) + '" width="33" height="38" rx="4" fill="' + pc[(k + r) % 6] + '" opacity=".85"/>';
+    }
+    /* whiteboard with a diagram */
+    s += '<rect x="1050" y="170" width="460" height="250" rx="8" fill="#fffdf8" stroke="#c9c2b3" stroke-width="6"/>';
+    s += '<circle cx="1230" cy="296" r="30" fill="#f2c230"/><ellipse cx="1230" cy="296" rx="86" ry="34" fill="none" stroke="#2f6fbd" stroke-width="5"/>';
+    s += '<ellipse cx="1230" cy="296" rx="86" ry="34" fill="none" stroke="#c9412e" stroke-width="5" transform="rotate(62,1230,296)"/>';
+    s += '<circle cx="1316" cy="296" r="11" fill="#2f6fbd"/><circle cx="1190" cy="228" r="9" fill="#c9412e"/>';
+    s += '<text x="1420" y="400" text-anchor="middle" font-family="Nunito,Arial,sans-serif" font-weight="900" font-size="34" fill="#1f8a7e">H O</text>';
+    s += '<rect x="0" y="628" width="1600" height="16" fill="#c6d2d6"/>';
+    s += floor('#9fb2bb');
+    /* black lab bench with a sink, beakers and a burner */
+    s += '<rect x="500" y="690" width="680" height="30" rx="6" fill="#2b2233"/><rect x="520" y="720" width="640" height="100" fill="#5b6b7c"/>';
+    s += '<rect x="548" y="736" width="130" height="64" rx="6" fill="#9aa3ad"/><path d="M613,736 L613,700 Q613,686 638,686" fill="none" stroke="#c0c7cf" stroke-width="9"/>';
+    s += '<path d="M744,690 L724,604 L804,604 L784,690 Z" fill="#cfe7f2" opacity=".92" stroke="#8fd3c6" stroke-width="4"/>';
+    s += '<path d="M757,690 L748,648 L780,648 L771,690 Z" fill="#1f8a7e" opacity=".6"/>';
+    s += '<rect x="738" y="592" width="76" height="14" rx="5" fill="#8fd3c6"/>';
+    s += '<rect x="872" y="614" width="78" height="76" rx="5" fill="#cfe7f2" stroke="#9aa3ad" stroke-width="4"/>';
+    s += '<rect x="876" y="652" width="70" height="38" fill="#F8981F" opacity=".65"/>';
+    s += '<path d="M940,628 L950,628 M940,644 L950,644 M940,660 L950,660" stroke="#5b6b7c" stroke-width="3"/>';
+    s += '<rect x="1016" y="664" width="42" height="26" rx="4" fill="#2b2233"/><rect x="1031" y="616" width="12" height="50" fill="#5b6b7c"/>';
+    s += '<path d="M1037,616 q-18,-34 0,-56 q18,22 0,56 Z" fill="#F8981F"/><path d="M1037,606 q-8,-18 0,-30 q8,12 0,30 Z" fill="#f2c230"/>';
+    /* safety goggles on a hook */
+    s += '<g transform="translate(300,470)"><rect x="-44" y="-16" width="88" height="32" rx="14" fill="#8fd3c6" opacity=".8" stroke="#1f8a7e" stroke-width="4"/><path d="M-44,0 L-62,-10 M44,0 L62,-10" stroke="#2b2233" stroke-width="5"/></g>';
+    return s;
+  };
+  R.BG.art = function () {
+    var s = '<rect width="1600" height="900" fill="#fdf1e2"/>';
+    s += '<rect x="0" y="0" width="1600" height="60" fill="#f4e2cc"/>';
+    s += sign(640, 90, 320, 'Art', '#d9567f');
+    /* finished paintings on the wall */
+    var fr = [[90, 180, 230, 170, '#2f6fbd'], [350, 200, 190, 150, '#1f8a7e'], [1120, 180, 200, 160, '#F8981F'], [1360, 210, 170, 140, '#864D9E']];
+    fr.forEach(function (f, i) {
+      s += '<rect x="' + f[0] + '" y="' + f[1] + '" width="' + f[2] + '" height="' + f[3] + '" fill="#fffdf8" stroke="#9c7650" stroke-width="8"/>';
+      if (i % 2) {
+        s += '<circle cx="' + (f[0] + f[2] / 2) + '" cy="' + (f[1] + f[3] * .4) + '" r="' + (f[3] * .22) + '" fill="' + f[4] + '"/>' +
+             '<path d="M' + (f[0] + 14) + ',' + (f[1] + f[3] - 16) + ' L' + (f[0] + f[2] / 2) + ',' + (f[1] + f[3] * .5) + ' L' + (f[0] + f[2] - 14) + ',' + (f[1] + f[3] - 16) + ' Z" fill="#1f8a7e" opacity=".8"/>';
+      } else {
+        s += '<rect x="' + (f[0] + 16) + '" y="' + (f[1] + 16) + '" width="' + (f[2] - 32) + '" height="' + (f[3] / 3) + '" fill="' + f[4] + '" opacity=".8"/>' +
+             '<rect x="' + (f[0] + 16) + '" y="' + (f[1] + 20 + f[3] / 3) + '" width="' + (f[2] - 32) + '" height="' + (f[3] / 4) + '" fill="#f2c230" opacity=".8"/>';
+      }
+    });
+    s += '<rect x="0" y="628" width="1600" height="16" fill="#e8d2b4"/>';
+    s += floor('#c89a62');
+    /* easel with a half-finished painting */
+    s += '<path d="M60,820 L150,560 M300,820 L210,560 M180,820 L180,600" stroke="#9c7650" stroke-width="14" stroke-linecap="round"/>';
+    s += '<rect x="76" y="470" width="208" height="166" fill="#fffdf8" stroke="#9c7650" stroke-width="8"/>';
+    s += '<path d="M88,590 L180,502 L272,590 Z" fill="#8fd3c6"/><circle cx="140" cy="520" r="20" fill="#f2c230"/>';
+    s += '<path d="M88,604 L272,604" stroke="#1f8a7e" stroke-width="10"/>';
+    s += '<rect x="64" y="632" width="232" height="18" rx="5" fill="#9c7650"/>';
+    /* work table with paint jars and a brush pot */
+    s += '<rect x="1000" y="692" width="430" height="26" rx="6" fill="#c89a62"/><rect x="1016" y="718" width="14" height="102" fill="#9c7650"/><rect x="1400" y="718" width="14" height="102" fill="#9c7650"/>';
+    ['#c9412e', '#F8981F', '#f2c230', '#1f8a7e', '#2f6fbd'].forEach(function (c, i) {
+      var jx = 1020 + i * 62;
+      s += '<rect x="' + jx + '" y="634" width="48" height="58" rx="7" fill="#cfe7f2" stroke="#9aa3ad" stroke-width="3"/>' +
+           '<rect x="' + (jx + 5) + '" y="658" width="38" height="30" rx="3" fill="' + c + '"/>' +
+           '<rect x="' + (jx + 2) + '" y="628" width="44" height="10" rx="4" fill="' + c + '"/>';
+    });
+    s += '<rect x="1336" y="628" width="64" height="64" rx="8" fill="#9aa3ad"/>';
+    ['#c9412e', '#f2c230', '#2f6fbd'].forEach(function (c, i) {
+      s += '<path d="M' + (1352 + i * 16) + ',628 L' + (1346 + i * 16) + ',556" stroke="#9c7650" stroke-width="6"/>' +
+           '<path d="M' + (1346 + i * 16) + ',556 l-6,-16 l12,0 Z" fill="' + c + '"/>';
+    });
     return s;
   };
   R.BG.cafeteria = function () {
