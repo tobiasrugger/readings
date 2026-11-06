@@ -1,133 +1,18 @@
-/* list.js — the registry behind readings/dashboards/.
+/* dashboards/list.js — FROZEN. Do not add pages here.
  *
- * ONE line per teacher page. A page missing from here is unfinished, the same
- * way a student page with no score is unfinished. Any chat that builds, moves
- * or renames a teacher page edits this file in the SAME zip.
+ * The registry moved to dashboards/list/<folder>.js (T-319, Nov 2026), one file
+ * per folder, so two chats shipping teacher pages on the same day stop
+ * overwriting each other. This file stays only so the pages that already load
+ * it keep working and keep seeing NEW pages: it just pulls in the loader.
  *
- *   url     path from the repo root
- *   name    what it is, in Toby's words — not the <title>
- *   course  '101' | '103' | 'both'
- *   group   what kind of page: Reading, Vocabulary, Speaking, Writing,
- *           Grammar, Unit, Data
- *   note    optional one line: what it is good for
+ * Readers that come through here: shelves/, atlas/, desk/dashboard.html.
+ * To add a page: edit dashboards/list/<your folder>.js. A new top-level folder
+ * also adds one line to FILES in dashboards/list/index.js.
  */
-window.DASHBOARDS = [
-
-/* ---------- Data: the pages that answer "how is everyone doing?" ---------- */
-{url:'atlas/',                  name:'The Atlas \u2014 everything we\u2019ve built', course:'both', group:'Data', note:'Every page, maker and engine on one spiral. Tap one to peel its layers: sign-in, pictures, listening, translation, saving, score, My Page, dashboard \u2014 and read what changed.'},
-{url:'gradebook/',              name:'Gradebook — all scores',       course:'both', group:'Data', note:'Every student, every activity, 0\u20134. Synergy export lives here.'},
-{url:'desk/dashboard.html',      name:'Teacher\u2019s Desk \u2014 piles of paper', course:'both', group:'Data', note:'One desk per period: every assignment with its not-finished and done piles; tap a sheet to read that student\u2019s work. Gradebook underneath: \ud83d\udcca per activity, tap a score to jump to that student on its dashboard, \u2691 stuck, blue extra work for chosen students, and a tray to push a sheet to the whole period.'},
-{url:'groups/',                 name:'Group grades',                 course:'both', group:'Data', note:'Seat tables, then tap a table and a 0\u20134 while you walk around.'},
-{url:'teacher/',                name:'Class data',                   course:'both', group:'Data', note:'Skill bars and activity history per student.'},
-{url:'reports/',                name:'Class report',                 course:'both', group:'Data'},
-{url:'assign/',                 name:'Push an activity',             course:'both', group:'Data', note:'Send one activity to a period or a student.'},
-{url:'shelves/',                name:'Shelves \u2014 Lab, Trying, Ready', course:'both', group:'Data', note:'Every page on one of three shelves. When it\u2019s urgent, look only at Ready. Things to watch the first time you use a page sit on its card.'},
-{url:'year/',                   name:'Year calendar \u2014 the year so far', course:'both', group:'Data', note:'Week by week from Aug 17: what happened in class and what landed on the site, with Digital and Paper links, book pages, shelf badges, students who did it, and Push it. Scope and sequence by strand, the August plan. Print button. Copy without student numbers to share: year/share.html'},
-{url:'roadmap/',                name:'Build roadmap',                course:'both', group:'Data', note:'What is built, in progress, still to do.'},
-{url:'audit/',                  name:'Feature audit',                course:'both', group:'Data', note:'Which pages meet the student-page standard.'},
-{url:'audit/check.html',        name:'Conformance checker',          course:'both', group:'Data', note:'Re-checks every page live and shows what drifted since the saved grid.'},
-{url:'teacher/mywords.html',    name:'My Words',                     course:'both', group:'Data', note:'The words each student chose to keep.'},
-{url:'simple/dashboard.html',    name:'English - simple \u2014 who sees it', course:'both', group:'Data', note:'Tick students who speak a home language but can\u2019t read it: they get easy English definitions instead of a translation. Or switch it on for everyone (challenge day). Try-a-word box shows what a student would see.'},
-{url:'health/dashboard.html',    name:'Site health \u2014 failed saves', course:'both', group:'Data', note:'Every save a student page tried that the database refused (wrong column, missing table, bad data), grouped by page and table: count, students, first and last seen, the error text. Red banner when something new broke in the last 24 hours.'},
-{url:'diagnostic/report.html',  name:'Grammar checks report',        course:'both', group:'Data'},
-
-/* ---------- Reading ---------- */
-{url:'news/dashboard.html',             name:'This Week\u2019s Reading',      course:'103', group:'Reading', note:'Weekly news article, per student and per question.'},
-{url:'voices/homelessness/dashboard.html', name:'Who Answers Whom? Homelessness', course:'103', group:'Reading', note:'Op-ed + letters to the editor: progress per student, wrong first picks, the class wall of student letters (projector mode), and what the class thinks of each idea.'},
-{url:'landlady/dashboard.html',         name:'The Landlady',                  course:'103', group:'Reading'},
-{url:'landlady/investigate/dashboard.html', name:'The Landlady: Investigate the tea', course:'103', group:'Reading', note:'Optional detective game: which bottle, which poison, the case report.'},
-{url:'landlady/test/dashboard.html',    name:'The Landlady: Test',            course:'103', group:'Reading', note:'44-point test: 12 words with pictures (closed book), order, questions, cozy or warning, writing. Score Part E here; tab-leaves and 🌐 uses per student; which items were hard.'},
-{url:'landlady/test/preview.html',      name:'The Landlady: Test preview (all questions)', course:'103', group:'Reading', note:'Every test question on one page, Easier/Harder, answers shown or hidden, printable. Nothing saves.'},
-{url:'landlady/table/dashboard.html',   name:'The Landlady: Read it together', course:'103', group:'Reading', note:'Table read-aloud on one Chromebook: turns read, recordings to play, each student\u2019s turn length, and the one-time Fill translations button.'},
-{url:'landlady/table/handout.html',     name:'The Landlady: paper story (print)', course:'103', group:'Reading', note:'Printable story with \u00b61\u2013\u00b652 numbers that match the Reader, room to write translations, the 12 words with pictures, table-talk questions.'},
-{url:'wordgame/landlady/solo/dashboard.html', name:'The Landlady: 12 words (solo)', course:'103', group:'Reading', note:'Each student alone: picture → type the word, then a sentence with each word. Read the sentences here.'},
-{url:'telltale/dashboard.html',         name:'The Tell-Tale Heart',           course:'103', group:'Reading'},
-{url:'monkeyspaw/dashboard.html',       name:'The Monkey\u2019s Paw',         course:'103', group:'Reading'},
-{url:'omelas/dashboard.html',           name:'Omelas',                        course:'103', group:'Reading'},
-{url:'sept11/dashboard.html',           name:'September 11',                  course:'103', group:'Reading'},
-{url:'maus/dashboard.html',             name:'Maus',                          course:'103', group:'Reading'},
-{url:'manzanar/dashboard.html',         name:'Farewell to Manzanar',          course:'103', group:'Reading'},
-{url:'stand-by-me/dashboard.html',      name:'Stand By Me',                   course:'103', group:'Reading'},
-{url:'odyssey/dashboard.html',          name:'The Odyssey',                   course:'103', group:'Reading'},
-{url:'romeo-juliet/dashboard.html',     name:'Romeo and Juliet',              course:'103', group:'Reading'},
-{url:'seedfolks/dashboard.html',        name:'Seedfolks',                     course:'both', group:'Reading'},
-{url:'seedfolks/quiz-prep/dashboard.html', name:'Seedfolks: Quiz Practice 1 (group)', course:'101', group:'Reading', note:'Slides marked right, not-yet taps, repeats asked, words spelled aloud.'},
-{url:'group/dashboard.html',            name:'Group Practice (every deck)',   course:'both', group:'Reading', note:'Every Group Practice deck and mix: score, misses, repeats asked.'},
-{url:'group/maker.html',                name:'Group Practice \u2014 make or mix a deck', course:'both', group:'Reading', note:'Teacher tool: type words, sentences, pictures and questions; get a student link.'},
-{url:'brothers-in-arms/dashboard.html', name:'Brothers in Arms',              course:'101', group:'Reading'},
-{url:'easy-true/dashboard.html',        name:'Very Easy True Stories',        course:'101', group:'Reading', note:'All six stories and their seven modules.'},
-{url:'arrival/dashboard.html',          name:'The Arrival',                   course:'101', group:'Reading'},
-{url:'holidays/dashboard.html',         name:'Ghosts, Candy, and Remembering',course:'101', group:'Reading'},
-{url:'monsters/dashboard.html',         name:'Monsters as Symbols',           course:'103', group:'Reading'},
-{url:'four-agreements/dashboard.html',  name:'The Four Agreements',           course:'103', group:'Reading'},
-{url:'psychology/dashboard.html',       name:'Who Am I? (psychology)',        course:'103', group:'Reading'},
-{url:'creativity/dashboard.html',       name:'Open Mode (Cleese)',            course:'103', group:'Reading'},
-{url:'fluency/dashboard.html',          name:'Fluency \u2014 read aloud',     course:'both', group:'Reading', note:'Words per minute and the recordings. Listen and tap the words they missed; your marks replace the computer\u2019s guess.'},
-
-/* ---------- Vocabulary ---------- */
-{url:'vocab/pre/dashboard.html',          name:'Vocabulary pre-assessments',  course:'101', group:'Vocabulary'},
-{url:'vocab/pre/report.html',             name:'Vocabulary \u2014 class report', course:'101', group:'Vocabulary'},
-{url:'missed/dashboard.html',               name:'Practice the words you missed', course:'101', group:'Vocabulary', note:'Each student\u2019s own misses from a word check: see it, hear it, spell it. Who hasn\u2019t started.'},
-{url:'vocab/pretest-ll12/dashboard.html', name:'Vocabulary pre-test (U1\u2013U2)', course:'101', group:'Vocabulary'},
-{url:'false-friends/dashboard.html',        name:'False Friends',               course:'both', group:'Vocabulary'},
-
-/* ---------- Speaking ---------- */
-{url:'skills/dashboard.html',            name:'Skill Map',                     course:'both', group:'Data', note:'What each student practised and showed in listening, speaking, reading, writing; strengths, needs work, what to give next; gaps in what the site practises.'},
-{url:'checks/dashboard.html',            name:'Read-aloud Check',              course:'both', group:'Speaking', note:'A student reads to you; tap the words they miss. Next check shows last time\u2019s misses. Most-missed words per period.'},
-{url:'reel-v2/#teacher',               name:'Story Reel \u2014 who watched, practiced, translated', course:'101', group:'Speaking', note:'The Teacher table at the foot of the Story Reel page: one row per student per episode \u2014 level, answers, Your Turn, practice minutes, listens, translations (words + whole lines), last active, and Browser translate (on / leaked / nudged \u00d7N).'},
-{url:'reel-test/ep02/dashboard.html',      name:'Story Check 2: The Backpack (read-aloud + test)', course:'101', group:'Speaking', note:'Practice and test versions of the Ep 2 check. Listen to every read-aloud and set 0\u20132 per sentence; set 0\u20134 on the extras; your numbers go to the gradebook.'},
-{url:'say/dashboard/',                  name:'Say the Words',                 course:'101', group:'Speaking', note:'Every recording, by set.'},
-{url:'describe/dashboard/',             name:'Describe a Classmate',          course:'101', group:'Speaking'},
-{url:'oral-histories/dashboard.html',   name:'Oral Histories',                course:'103', group:'Speaking'},
-{url:'oral-histories/teacher-guide.html',name:'Oral Histories \u2014 unit guide', course:'103', group:'Speaking', note:'How to run the unit, not student data.'},
-{url:'favorite-songs/dashboard.html',   name:'Our Favorite Songs',            course:'101', group:'Speaking'},
-{url:'songs/enjoy-the-silence/dashboard.html', name:'Enjoy the Silence',      course:'101', group:'Speaking'},
-
-/* ---------- Writing ---------- */
-{url:'advice/dashboard.html',           name:'Dear Lion \u2014 advice letters', course:'103', group:'Writing', note:'Each student\u2019s advice, compare and misses; per-question first-try; projector wall sorted by votes.'},
-{url:'write/dashboard.html',            name:'Writing Ladder',                course:'103', group:'Writing', note:'Every rung, every text.'},
-{url:'eld103/dashboard.html',           name:'ELD 103 Writing',               course:'103', group:'Writing'},
-{url:'eld103/ch1-2/dashboard.html',     name:'ELD 103 Ch. 1\u20132',          course:'103', group:'Writing'},
-{url:'eld103/ch3/dashboard.html',       name:'ELD 103 Ch. 3',                 course:'103', group:'Writing'},
-{url:'eld103/unit1/dashboard.html',     name:'ELD 103 Unit 1: Introducing People', course:'103', group:'Writing'},
-{url:'eld103/respect/dashboard.html',   name:'Respect reflection',            course:'103', group:'Writing'},
-{url:'resume/dashboard.html',           name:'R\u00e9sum\u00e9 unit',         course:'103', group:'Writing'},
-{url:'this-is-how/dashboard.html',      name:'This Is How We Do It',          course:'103', group:'Writing'},
-{url:'toolkits/dashboard.html',         name:'Toolkits',                      course:'103', group:'Writing'},
-
-/* ---------- Grammar ---------- */
-{url:'verbs/dashboard.html',            name:'Verb drills',                   course:'both', group:'Grammar'},
-{url:'questions/dashboard.html',          name:'Question Practice',             course:'103', group:'Grammar'},
-{url:'question-builder/dashboard.html', name:'Question Builder (pictures): Find Someone Who', course:'103', group:'Grammar'},
-{url:'grasshopper-ant/dashboard.html',    name:'Grasshopper and Ant',           course:'101', group:'Grammar'},
-{url:'fables/dashboard.html',             name:'Fables',                        course:'101', group:'Grammar'},
-
-/* ---------- Unit ---------- */
-{url:'spell/',                    name:'Spelling helper \u2014 voice, writing tips, spelling in parts', course:'101', group:'Writing', note:'Preview of spell.js: hear Mateo and spelled names, try the barrow/borrow tips, spell long words in parts.'},
-{url:'launch-plus/dashboard.html',      name:'Launch Plus',                   course:'101', group:'Unit', note:'Every lesson and its six parts, plus the Record step.'},
-{url:'basics/dashboard.html',           name:'Daily Basics',                  course:'101', group:'Unit', note:'Daily grade out of 20 (Warm-up 12 + Stretch 8). \ud83d\udcdd Paper scores tab: type each student\u2019s Warm-up and Stretch from a paper sheet; it goes to the gradebook.'},
-{url:'basics/print/',                   name:'Daily Basics \u2014 print & project', course:'101', group:'Unit', note:'Paper sheet: Warm-up (12) on the front, Stretch (8) on the back, levels A/B/C, answer key on its own page. A sheet code remakes the same sheet later. Or put it on the board.'},
-{url:'basics/ref/',                     name:'Daily Basics \u2014 help sheet', course:'101', group:'Unit', note:'Words and grammar (pronouns, am/is/are, have/has, question words, joining words, the lesson\u2019s words) in each student\u2019s language. Print a table copy: \u4e2d\u6587/Espa\u00f1ol/\u0627\u0644\u0639\u0631\u0628\u064a\u0629 or Vi\u1ec7t/\u0e44\u0e17\u0e22/\u0928\u0947\u092a\u093e\u0932\u0940. Teacher can fix a translation (password).'},
-{url:'teachme/dashboard.html',          name:'Teach Mr. Toby \u2014 check their words, my practice, Quiz Mr. Toby', course:'101', group:'Vocabulary', note:'Every word students taught you, with how to say it in English letters and what it means back in English; tap \u2714 / \u2248 / \u2717. Practise five a day in My practice, with their voices. Quiz Mr. Toby = projector mode: the class judges you. Set picker at the top: Unit 1 or Lesson 1\u20135 (?set=u1-l3).'},
-{url:'donow/dashboard.html',            name:'Do Now \u2014 all',             course:'both', group:'Unit'},
-{url:'donow/dog-01/dashboard.html',     name:'Do Now: The Dog at the Bus Stop',course:'both', group:'Unit'},
-{url:'donow/0918/dashboard.html',       name:'Do Now: Sept 18',               course:'both', group:'Unit'},
-{url:'survival-english/dashboard.html', name:'Survival English',              course:'101', group:'Unit'},
-{url:'phonics/dashboard.html',          name:'Phonics',                       course:'101', group:'Unit'}
-];
-
-/* Legacy paths kept working but NOT listed: the front door redirects them.
-   arrival/arrival_dashboard.html -> arrival/dashboard.html
-   eld103/ch3_dashboard.html      -> eld103/ch3/dashboard.html
-   dashboard.html (repo root)     -> easy-true/dashboard.html
-   fables/ false-friends/ grasshopper-ant/ questions/ teacher.html -> dashboard.html (T-121)
-   New dashboards are named dashboard.html inside their activity's folder. */
-window.DASHBOARD_LEGACY = {
-  'arrival/arrival_dashboard.html': 'arrival/dashboard.html',
-  'eld103/ch3_dashboard.html':      'eld103/ch3/dashboard.html',
-  'dashboard.html':                 'easy-true/dashboard.html',
-  'fables/teacher.html':            'fables/dashboard.html',
-  'false-friends/teacher.html':     'false-friends/dashboard.html',
-  'grasshopper-ant/teacher.html':   'grasshopper-ant/dashboard.html',
-  'questions/teacher.html':         'questions/dashboard.html'
-};
+(function () {
+  var me = document.currentScript || (function () {
+    var s = document.getElementsByTagName('script'); return s[s.length - 1];
+  })();
+  var base = String(me && me.src || '').replace(/[^/]*$/, '');   // .../dashboards/
+  document.write('<scr' + 'ipt src="' + base + 'list/index.js"></scr' + 'ipt>');
+})();
