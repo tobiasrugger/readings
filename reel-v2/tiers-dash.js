@@ -10,26 +10,27 @@
   var esc = D.esc || function (s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); };
   function $(id) { return document.getElementById(id); }
   var CSS = 'select.tsel{border:2px solid var(--line,#d9d3e3);border-radius:8px;padding:3px 6px;font-weight:800;background:#fff}' +
-            'select.tsel.A{background:#fff3e2;border-color:#F8981F}select.tsel.B{background:#f1e8f6;border-color:#864D9E}select.tsel.C{background:#e3f4e8;border-color:#2d7a47}' +
+            'select.tsel.A{background:#fff3e2;border-color:#F8981F}select.tsel.B{background:#f1e8f6;border-color:#864D9E}select.tsel.C{background:#e3f4e8;border-color:#2d7a47}select.tsel.D{background:#e6eefc;border-color:#2f6fbd}' +
             '.ask{font-size:18px}td.tier{white-space:nowrap}.tnote{margin:10px 0 0;color:#6b5f78;font-size:14px}' +
             '.tsetall{margin-left:auto;font-weight:800;font-size:14px}.tsetall select{width:auto;display:inline-block}';
   if (!$('tiersDashCss')) { var st = document.createElement('style'); st.id = 'tiersDashCss'; st.textContent = CSS; document.head.appendChild(st); }
 
   function tierCols(r) {
-    var sc = r.scores || {}, w = r.work || {}, t = w.tiers || {}, A = sc.tierA, B = sc.tierB, C = sc.tierC;
+    var sc = r.scores || {}, w = r.work || {}, t = w.tiers || {}, A = sc.tierA, B = sc.tierB, C = sc.tierC, G = sc.tierD;
     return {
       tier: r.tier || '', ask: !!t.askNext, open: t.open || '',
       a: A ? ('order ' + A.order + '/5' + (A.order_first != null && A.order_first !== A.order ? ' (first ' + A.order_first + ')' : '') + ' · topic ' + (A.topic ? '✓' : '✗') + (A.read ? ' · read ' + A.read.ok + '/' + A.read.total : '')) : '',
       b: (B != null) ? (B + '/' + (sc.tierB_max || 4) + ' changed') : '',
       c: C ? (C.words + ' words · ' + C.ideas + '/5 ideas · checked ' + C.checked + (C.revised ? ' · revised' : '')) : '',
       para: (t.C && t.C.text) || '',
-      pts: (A ? A.order + A.topic : 0) + (B || 0) + (C ? C.pts : 0)
+      d: G ? (G.solved + '/' + G.total + ' grammar' + (G.first_try != null ? ' · ' + G.first_try + ' first try' : '') + (G.shown ? ' · ' + G.shown + ' shown' : '')) : '',
+      pts: (A ? A.order + A.topic : 0) + (B || 0) + (C ? C.pts : 0) + (G ? G.solved : 0)
     };
   }
   function tierSel(r) {
     var v = r.tier || '';
     return '<select class="tsel ' + esc(v) + '" data-email="' + esc(r.email) + '"><option value=""' + (!v ? ' selected' : '') + '>Ask teacher</option>' +
-           ['A', 'B', 'C'].map(function (k) { return '<option' + (v === k ? ' selected' : '') + '>' + k + '</option>'; }).join('') + '</select>';
+           ['A', 'B', 'C', 'D'].map(function (k) { return '<option' + (v === k ? ' selected' : '') + '>' + k + '</option>'; }).join('') + '</select>';
   }
   function setTier(email, v, done) {
     fetch(D.SUPA_URL + '/rest/v1/reel_views?email=eq.' + encodeURIComponent(email) + '&episode=eq.' + encodeURIComponent(D.episode()), {
@@ -47,14 +48,14 @@
     var head = table.querySelector('tr');
     if (head && !head.querySelector('.th-tier')) {
       var ins = head.children[head.children.length - 2] || null;   /* before "Turned in" */
-      ['Tier', 'A', 'B', 'C'].forEach(function (lab) { var th = document.createElement('th'); th.textContent = lab; if (lab === 'Tier') th.className = 'th-tier'; head.insertBefore(th, ins); });
+      ['Tier', 'A', 'B', 'C', 'D'].forEach(function (lab) { var th = document.createElement('th'); th.textContent = lab; if (lab === 'Tier') th.className = 'th-tier'; head.insertBefore(th, ins); });
     }
     table.querySelectorAll('tr[data-email]').forEach(function (tr) {
       if (tr.querySelector('td.tier')) return;
       var r = byEmail[tr.getAttribute('data-email')]; if (!r) return;
       var s = tierCols(r), ins = tr.children[tr.children.length - 2] || null, cells = [];
       cells.push('<td class="tier">' + tierSel(r) + (s.ask ? ' <span class="ask" title="Ready for the next one?">🙋</span>' : '') + (!s.tier && s.open ? ' <span class="pill no">doing ' + esc(s.open) + '</span>' : '') + '</td>');
-      cells.push('<td>' + esc(s.a) + '</td><td>' + esc(s.b) + '</td><td' + (s.para ? ' title="' + esc(s.para) + '"' : '') + '>' + esc(s.c) + '</td>');
+      cells.push('<td>' + esc(s.a) + '</td><td>' + esc(s.b) + '</td><td' + (s.para ? ' title="' + esc(s.para) + '"' : '') + '>' + esc(s.c) + '</td><td>' + esc(s.d) + '</td>');
       var tmp = document.createElement('tr'); tmp.innerHTML = cells.join('');
       while (tmp.firstChild) tr.insertBefore(tmp.firstChild, ins);
     });
@@ -65,10 +66,10 @@
     var csv = $('tCsv');
     if (csv && !$('tAll')) {
       var lab = document.createElement('label'); lab.className = 'tsetall';
-      lab.innerHTML = 'Set all shown to <select class="txt tsel" id="tAll"><option value="">…</option><option value="">Ask teacher</option><option value="A">A</option><option value="B">B</option><option value="C">C</option></select>';
+      lab.innerHTML = 'Set all shown to <select class="txt tsel" id="tAll"><option value="">…</option><option value="">Ask teacher</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select>';
       csv.parentNode.insertBefore(lab, csv.nextSibling);
       var note = document.createElement('p'); note.className = 'tnote';
-      note.textContent = 'Tier: A words and voice · B synonyms and details · C paragraph. “Ask teacher” means no tier is set and the student sees all three cards. 🙋 = the student tapped “Ready for the next one?”.';
+      note.textContent = 'Tier: A words and voice · B synonyms and details · C paragraph · D grammar from the story. “Ask teacher” means no tier is set and the student sees all three cards. 🙋 = the student tapped “Ready for the next one?”.';
       csv.parentNode.parentNode.insertBefore(note, csv.parentNode.nextSibling);
       $('tAll').addEventListener('change', function () {
         var v = $('tAll').value, per = D.period(), idx = $('tAll').selectedIndex; if (idx === 0) return;
@@ -80,8 +81,8 @@
   }
   window.REEL_TIERS_DASH = {
     decorate: decorate,
-    csvHead: function () { return ['tier', 'asks_next', 'tier_a', 'tier_b', 'tier_c', 'paragraph', 'tier_points']; },
-    csvRow: function (r) { var s = tierCols(r); return [s.tier, s.ask, s.a, s.b, s.c, s.para, s.pts]; }
+    csvHead: function () { return ['tier', 'asks_next', 'tier_a', 'tier_b', 'tier_c', 'tier_d', 'paragraph', 'tier_points']; },
+    csvRow: function (r) { var s = tierCols(r); return [s.tier, s.ask, s.a, s.b, s.c, s.d, s.para, s.pts]; }
   };
   decorate();
 })();

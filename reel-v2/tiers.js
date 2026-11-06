@@ -15,7 +15,51 @@
       wordPop = H.wordPop, showDirections = H.showDirections, spokenWord = H.spokenWord, pickVoice = H.pickVoice,
       boardState = H.boardState, R = H.R, PROXY = H.PROXY, SUPA_URL = H.SUPA_URL, TABLE = H.TABLE, sbHead = H.sbHead;
   var CSS = '\n.tiers{max-width:1180px;margin:0 auto 50px;padding:0 16px}\n.tiersbox{background:#fff;border-radius:18px;padding:22px 22px 20px;border:2px solid var(--line)}\n.tiersbox h2{margin:0 0 6px;font-size:28px;font-weight:900}\n.tiersbox .lead{margin:0 0 14px;color:var(--soft)}\n.tiersbox .soft{color:var(--soft)}\n.tiersbox .lab{display:block;font-weight:900;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--purple);margin:0 0 4px}\n.tcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:0 0 18px}\n.tcards.one{grid-template-columns:minmax(220px,420px) auto;align-items:center}\n.tcard{text-align:left;background:#faf9fc;border:2px solid var(--line);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:4px;color:var(--plum)}\n.tcard:hover{border-color:var(--purple)}\n.tcard.on{background:#f1e8f6;border-color:var(--purple);box-shadow:0 0 0 3px #e4d3ee}\n.tcard .te{font-size:30px;line-height:1}\n.tcard b{font-size:20px;font-weight:900}\n.tcard .tb{color:var(--soft);font-size:15px;font-weight:700}\n.tcard .tb .dirtr{font-size:1em}\n.asknext{align-self:center}\n.asknext.on{background:#e3f4e8;border-color:#2d7a47;color:#2d7a47}\n.tsteps{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}\n.tstep{border:2px solid var(--line);background:#fff;border-radius:999px;padding:8px 16px;font-weight:800;color:var(--soft)}\n.tstep.on{background:var(--purple);border-color:var(--purple);color:#fff}\n.tstep .dirtr{display:inline;margin-left:6px;font-size:.9em;color:inherit;opacity:.85}\n.osay{border:0;background:#f1e8f6;border-radius:999px;width:34px;height:34px;font-size:15px;flex:none}\n/* order */\n.ord{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}\n.opool{display:flex;flex-direction:column;gap:10px;min-height:60px;padding:10px;border:2px dashed var(--line);border-radius:14px;background:#faf9fc}\n.ochip{display:flex;align-items:center;gap:10px;background:#fff;border:2px solid var(--line);border-radius:12px;padding:10px 12px;font-weight:700;font-size:19px;line-height:1.3;cursor:pointer;user-select:none}\n.ochip:hover{border-color:var(--purple)}\n.ochip.sel{border-color:var(--orange);box-shadow:0 0 0 3px #fde3c3;background:#fff7ec}\n.ochip.in{flex:1;cursor:grab}\n.oslots{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}\n.oslot{display:flex;align-items:center;gap:12px;min-height:60px;border:2px solid var(--line);border-radius:14px;padding:6px 10px 6px 6px;background:#fff;cursor:pointer}\n.oslot.over,.oslot:hover{border-color:var(--purple)}\n.onum{width:40px;height:40px;border-radius:50%;background:var(--purple);color:#fff;font-weight:900;font-size:20px;display:inline-flex;align-items:center;justify-content:center;flex:none}\n.ohint{color:var(--soft);font-weight:700}\n.oslot.ok{border-color:#3b9b5c;background:#e3f4e8}\n.oslot.bad{border-color:#F8981F;background:#fff3e2}\n.oslot.full .ochip{border-color:transparent;background:transparent;padding:4px 0}\n/* topic sentence */\n.topts{display:flex;flex-direction:column;gap:10px;margin:0 0 10px}\n.toptrow{display:flex;align-items:center;gap:10px}\n.toptrow .qopt{flex:1}\n.tiersbox .qmsg{margin:0;min-height:1.5em}\n/* tier B */\n.rw{display:grid;grid-template-columns:1fr 1fr;gap:16px;border:2px solid var(--line);border-radius:16px;padding:14px 16px;margin:0 0 12px;background:#faf9fc}\n.rw.done{border-color:#3b9b5c;background:#f3faf5}\n.rwo p{margin:0;font-size:21px;font-weight:700;line-height:1.35;display:flex;align-items:center;gap:8px;flex-wrap:wrap}\n.swapw{border:0;background:none;padding:0 2px;font:inherit;font-weight:800;color:var(--plum);box-shadow:inset 0 -3px 0 var(--orange);border-radius:4px;cursor:pointer}\n.swapw:hover{background:#fff1dd}\n.rwm textarea{width:100%;min-height:64px;border:2px solid var(--line);border-radius:12px;padding:10px 12px;font-size:19px;resize:vertical;background:#fff}\n.rwm textarea:focus{border-color:var(--purple);outline:none}\n.rwok{display:block;margin-top:6px;font-weight:800;font-size:15px}\n.rwok.yes{color:#2d7a47}.rwok.no{color:#b2612a}.rwok.keep{color:var(--soft)}\n.ladder{display:none;margin-top:10px;background:#fff;border:2px solid var(--line);border-radius:12px;padding:8px 10px 4px}\n.ladder.on{display:block}\n.rung{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 8px}\n.rlab{font-weight:900;font-size:13px;color:var(--purple);width:100%}\n.rlab .dirtr{display:inline;margin-left:6px}\n.rchip{border:2px solid var(--line);background:#faf9fc;border-radius:999px;padding:5px 12px;font-weight:700;font-size:16px}\n.rchip:hover{border-color:var(--purple);background:#f1e8f6}\n/* tier C */\n.cgrid{display:grid;grid-template-columns:minmax(220px,1fr) minmax(280px,1.3fr);gap:18px;align-items:start}\n.cframes{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-height:70vh;overflow:auto;padding:4px}\n.cframe{background:#fff;border:2px solid var(--line);border-radius:12px;overflow:hidden}\n.cframe svg{display:block;width:100%;height:auto}\n.cframe p{margin:0;padding:6px 8px 8px;font-weight:700;font-size:14px;line-height:1.3}\n.cframe b{color:var(--purple)}\n.cwrite textarea{width:100%;min-height:220px;border:2px solid var(--line);border-radius:12px;padding:12px 14px;font-size:19px;line-height:1.5;resize:vertical}\n.cwrite textarea:focus{border-color:var(--purple);outline:none}\n.cwrite .row{margin:10px 0}\n.wc{font-weight:800;color:var(--soft);margin-right:auto}\n.fb{display:none;border:2px solid var(--line);border-radius:14px;padding:4px 14px 10px;background:#faf9fc}\n.fbrow{padding:10px 0;border-bottom:1px solid var(--line);font-size:16px}\n.fbrow:last-child{border-bottom:0}\n.fbrow ul{margin:6px 0 0;padding-left:20px}\n.fbrow.good b{color:#2d7a47}\n.fbrow.copy b{color:#864D9E}\n.fbrow .hit{color:#2d7a47;font-weight:800;list-style:none;margin-left:-20px}\n.fbrow .miss{color:var(--soft);font-weight:700;list-style:none;margin-left:-20px}\n.fbrow.fix p{margin:6px 0 0;font-size:18px}\n.fbrow.fix s{color:#8a7f95}\n.fbrow.next{font-weight:800;color:var(--purple)}\n.saywrap{--say-accent:#864D9E;--say-soft:#f1e8f6;--say-line:#d9d3e3;--say-radius:14px}\n@media (max-width:760px){\n  .ord,.rw,.cgrid{grid-template-columns:1fr}\n  .tcards.one{grid-template-columns:1fr}\n  .cframes{max-height:40vh}\n}\n';
-  function addStyle() { if ($('tiersCss')) return; var st = document.createElement('style'); st.id = 'tiersCss'; st.textContent = CSS; document.head.appendChild(st); }
+  var CSS_D = '.gbox{position:relative;border:2px solid var(--line);border-radius:16px;padding:14px 16px 16px;margin:0 0 16px;background:#faf9fc;box-shadow:0 2px 0 rgba(0,0,0,.06)}' +
+    '.gbox:after{content:"";display:block;clear:both}' +
+    '.gpic{float:right;width:min(42%,340px);margin:0 0 10px 16px;border:2px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}' +
+    '.gpic svg{display:block;width:100%;height:auto}' +
+    '.gbox h3{margin:0 0 6px;font-size:23px;font-weight:900}' +
+    '.grule{margin:0 0 10px;font-size:18px;font-weight:700;color:var(--plum)}' +
+    '.gex{border:2px dashed var(--line);border-radius:12px;padding:8px 12px;background:#fff}' +
+    '.gex .lab{display:block;font-weight:900;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--purple);margin:0 0 2px}' +
+    '.gnote{display:block;color:var(--soft);font-weight:700;font-size:15px;margin-top:4px}' +
+    '.gtools{border:2px solid var(--orange);background:#fff7ec;border-radius:12px;padding:8px 14px;margin:0 0 14px;font-weight:800}' +
+    '.gtools p{margin:0}' +
+    '.gs{font-size:21px;font-weight:700;line-height:1.5}' +
+    '.gslot{display:inline-block;min-width:92px;border-bottom:3px solid var(--purple);text-align:center;font-weight:900;color:var(--purple);margin:0 4px}' +
+    '.gslot.full{border-bottom-color:#3b9b5c;color:#2d7a47}' +
+    '.gslot.drop{animation:gdrop .3s ease-out}' +
+    '@keyframes gdrop{0%{transform:translateY(-14px);opacity:0}100%{transform:none;opacity:1}}' +
+    '.gq{border:2px solid var(--line);border-radius:14px;padding:12px 14px;margin:0 0 12px;background:#fff}' +
+    '.gq.done{border-color:#3b9b5c;background:#f3faf5}' +
+    '.gq.firstq{border-color:var(--orange);box-shadow:0 0 0 3px #fde3c3}' +
+    '.gqtop{display:flex;align-items:center;gap:10px;flex-wrap:wrap}' +
+    '.gopts{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 0}' +
+    '.gtile{border:2px solid var(--line);background:#faf9fc;border-radius:12px;padding:8px 16px;font-weight:800;font-size:19px;color:var(--plum)}' +
+    '.gtile:hover{border-color:var(--purple);background:#f1e8f6}' +
+    '.gtile.gone{opacity:.25;text-decoration:line-through;pointer-events:none}' +
+    '.gtile.right{background:#e3f4e8;border-color:#3b9b5c;color:#2d7a47;opacity:1;text-decoration:none}' +
+    '.gtile.show{border-color:var(--orange);background:#fff3e2;animation:gpulse 1s ease-in-out infinite}' +
+    '@keyframes gpulse{0%,100%{box-shadow:0 0 0 0 #f8981f55}50%{box-shadow:0 0 0 7px #f8981f00}}' +
+    '.wobble{animation:gwob .4s ease-in-out}' +
+    '@keyframes gwob{0%,100%{transform:none}20%{transform:translateX(-6px) rotate(-3deg)}50%{transform:translateX(6px) rotate(3deg)}80%{transform:translateX(-3px)}}' +
+    '.shimmer{position:relative;animation:gshim 1.4s ease-in-out infinite}' +
+    '@keyframes gshim{0%,100%{box-shadow:0 0 0 0 #864d9e44}50%{box-shadow:0 0 0 8px #864d9e00}}' +
+    '.gfb{min-height:4px}' +
+    '.gquip{display:flex;align-items:center;gap:10px;margin:10px 0 0}' +
+    '.gquip p{margin:0;font-weight:800;color:var(--plum)}' +
+    '.quipface{width:62px;height:62px;flex:none;border:2px solid var(--line);border-radius:50%;background:#fff}' +
+    '.ghint{margin:8px 0 0;font-weight:800;color:#8a6200;background:#fff8e8;border:2px solid #f0d9a8;border-radius:10px;padding:6px 10px}' +
+    '.gok{font-weight:900;color:#2d7a47}' +
+    '.gcount{font-weight:800;color:var(--soft)}' +
+    '.tstep.ok{border-color:#3b9b5c;color:#2d7a47}' +
+    '@media (max-width:760px){.gpic{float:none;width:100%;margin:0 0 10px}.gs{font-size:19px}.gtile{font-size:18px;padding:8px 14px}}' +
+    /* Real borders (standing rule): the shared --line is light grey on off-white, which two
+       sections cannot be told apart by from across a classroom. Every tier box gets a dark line. */
+    '.tiersbox,.gbox,.gq:not(.done),.rw:not(.done),.cframe,.fb,.gex,.gpic,.tcard:not(.on),.oslot:not(.ok):not(.bad),.opool,.ochip,.ladder,.rwm textarea,.cwrite textarea{border-color:#2B2233}' +
+    '.gbox,.gq,.rw,.tiersbox{box-shadow:0 2px 0 rgba(43,34,51,.18)}';
+  function addStyle() { if ($('tiersCss')) return; var st = document.createElement('style'); st.id = 'tiersCss'; st.textContent = CSS + CSS_D; document.head.appendChild(st); }
   function addScript(src, cb) { var s = document.createElement('script'); s.src = src; s.onload = cb || null; s.onerror = cb || null; document.body.appendChild(s); }
   function ensureMarkup() {
     if (!$('tiers')) {
@@ -46,18 +90,21 @@
      The teacher assigns a tier from the dashboard (reel_views.tier). With no tier set,
      the page says "Ask your teacher" and shows the three cards. */
   var TIERS = null;
-  var assignedTier = '';                 /* '', 'A', 'B' or 'C' — written by the dashboard */
+  var assignedTier = '';                 /* '', 'A', 'B', 'C' or 'D' — written by the dashboard */
   var TIER_INFO = {
     A: { name: 'Words and voice', e: '🗣️', blurb: 'Read along. Put the story in order. Pick the topic sentence.' },
     B: { name: 'Synonyms and details', e: '🔁', blurb: 'Say the key sentences in a new way.' },
-    C: { name: 'Paragraph', e: '✍️', blurb: 'Write a short summary of the story in your own words.' }
+    C: { name: 'Paragraph', e: '✍️', blurb: 'Write a short summary of the story in your own words.' },
+    D: { name: 'Grammar from the story', e: '🧩', blurb: 'Tap the word that fits. The sentences come from this episode.' }
   };
+  var TIER_KEYS = ['A', 'B', 'C', 'D'];
   function tierState() {
     if (!state.tiers) state.tiers = {};
     var t = state.tiers;
     if (!t.A) t.A = { step: 0, read: null, order: { shuf: null, slots: [null, null, null, null, null], first: null, best: 0, tries: 0 }, topic: { first: null, pick: null, tries: 0 } };
     if (!t.B) t.B = { rw: [] };
     if (!t.C) t.C = { text: '', fb: null, checked: 0, draft1: '', revised: false };
+    if (!t.D) t.D = { set: 0, ans: {}, shuf: {}, tools: 0 };
     if (!t.open) t.open = '';
     return t;
   }
@@ -95,6 +142,10 @@
       out.tierC = { words: w, ideas: hits, checked: C.checked, revised: C.revised, pts: p };
       pts += p; max += 5;
     }
+    if (TIERS.grammar && TIERS.grammar.length) {
+      var g = gSolved();
+      if (g.solved || g.first_try || Object.keys(t.D.ans || {}).length) { out.tierD = g; pts += g.solved; max += g.total; }
+    }
     if (t.askNext) out.ask_next = true;
     return { out: out, pts: pts, max: max };
   }
@@ -119,7 +170,8 @@
     } else {
       h += dir(TIERS.ask, 'p', 'lead');
       h += '<div class="tcards">';
-      ['A', 'B', 'C'].forEach(function (k) {
+      TIER_KEYS.forEach(function (k) {
+        if (k === 'D' && !(TIERS.grammar && TIERS.grammar.length)) return;
         var inf = TIER_INFO[k];
         h += '<button class="tcard' + (open === k ? ' on' : '') + '" data-t="' + k + '"><span class="te">' + inf.e + '</span><b>' + k + '. ' + esc(inf.name) + '</b>' + dir(inf.blurb, 'span', 'tb') + '</button>';
       });
@@ -136,6 +188,7 @@
     if (open === 'A') renderTierA($('tpanel'));
     else if (open === 'B') renderTierB($('tpanel'));
     else if (open === 'C') renderTierC($('tpanel'));
+    else if (open === 'D') renderTierD($('tpanel'));
     score();
     if (scroll) $('tiers').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
@@ -451,9 +504,222 @@
     });
   }
 
+  /* ================= TIER D: GRAMMAR FROM THE STORY (T-333) =================
+     EP_TIERS.grammar = [{ id, title, rule, example:{p,a,note}, scene:<index into EP.scenes>,
+                           items:[{p:'... ___ ...', o:[...], a:'...'}] }]
+     Every sentence is a real line from the episode. The mechanic is not A's chips: the wrong
+     word wobbles out of the row and the right one drops into the blank.
+     House rules: options shuffled and the order kept per student; the answer never sits in the
+     same slot more than 3 times running; the voice reads the blank as "blank"; every sentence has
+     🔊 and tap-to-translate; nothing red — a wrong tile fades, a cast member says one line, then a
+     hint; after the 3rd miss the answer is shown with 🔊 and the student taps it once. Any try
+     earns the point; first tries and misses are for the dashboard only. */
+  var QUIPS = [
+    { who: 'mateo', line: 'Not that one. I read the wrong row this morning, so I know the feeling.' },
+    { who: 'amira', line: 'Try again. Read the whole sentence first, then choose.' },
+    { who: 'paolo', line: 'Close! Say the sentence out loud with that word in it.' },
+    { who: 'linh', line: 'Hmm, that one does not fit. Look at the words beside the blank.' },
+    { who: 'jun', line: 'Try another one. I get this wrong too.' }
+  ];
+  function gSets() { return (TIERS && TIERS.grammar) || []; }
+  function gState() {
+    var t = tierState();
+    if (!t.D) t.D = { set: 0, ans: {}, shuf: {}, tools: 0 };
+    if (!t.D.ans) t.D.ans = {};
+    if (!t.D.shuf) t.D.shuf = {};
+    return t.D;
+  }
+  function gRec(gid, i) {
+    var D = gState(), k = gid + ':' + i;
+    if (!D.ans[k]) D.ans[k] = { tries: 0, first: null, done: false, shown: false };
+    return D.ans[k];
+  }
+  /* the shuffle is made once and kept, so reloading never moves the words about */
+  function gOrder(set, i, recent) {
+    var D = gState(), k = set.id + ':' + i, it = set.items[i], n = it.o.length;
+    if (D.shuf[k] && D.shuf[k].length === n) return D.shuf[k];
+    var right = it.o.indexOf(it.a), ord = null, tries = 0;
+    while (tries++ < 40) {
+      var a = [], j, x, tmp;
+      for (j = 0; j < n; j++) a.push(j);
+      for (j = n - 1; j > 0; j--) { x = Math.floor(Math.random() * (j + 1)); tmp = a[j]; a[j] = a[x]; a[x] = tmp; }
+      var slot = a.indexOf(right);
+      if (!(recent.length >= 2 && recent[recent.length - 1] === slot && recent[recent.length - 2] === slot)) { ord = a; break; }
+    }
+    if (!ord) { ord = []; for (var m = 0; m < n; m++) ord.push(m); }
+    D.shuf[k] = ord; touch();
+    return ord;
+  }
+  function gSolved() {
+    var n = 0, total = 0, first = 0, shown = 0;
+    gSets().forEach(function (s) {
+      s.items.forEach(function (it, i) {
+        total++;
+        var r = (gState().ans[s.id + ':' + i]) || {};
+        if (r.done) n++;
+        if (r.first === true) first++;
+        if (r.shown) shown++;
+      });
+    });
+    return { solved: n, total: total, first_try: first, shown: shown };
+  }
+  /* a sentence with 🔊 and tap-to-translate on every word; blank = a plain ___ slot */
+  function gSentence(p, fill, cls) {
+    var parts = String(p).split('___'), h = '<span class="gs ' + (cls || '') + '" translate="no">';
+    parts.forEach(function (chunk, ci) {
+      if (ci) h += fill ? '<b class="gslot full">' + esc(fill) + '</b>' : '<b class="gslot"></b>';
+      chunk.split(/(\s+)/).forEach(function (tok) {
+        if (!tok.trim()) { h += esc(tok); return; }
+        var core = tok.replace(/[^A-Za-z'\u2019-]/g, '');
+        h += core ? '<span class="w qw" data-w="' + esc(core.toLowerCase()) + '">' + esc(tok) + '</span>' : esc(tok);
+      });
+    });
+    return h + '</span>';
+  }
+  function gWire(root, sentenceOf) {
+    root.querySelectorAll('.gs .qw').forEach(function (w) {
+      if (w.__wired) return; w.__wired = true;
+      w.addEventListener('click', function (e) { e.stopPropagation(); wordPop(w, sentenceOf(w)); });
+    });
+  }
+  function headSVG(id) {
+    var c = R.CAST[id]; if (!c) return '';
+    var top = R.headTop(id), x = 0;
+    return '<svg class="quipface" viewBox="' + (x - 150) + ' ' + top + ' 300 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="' + esc(c.name) + '">' +
+           R.placeChar(id, 0, 1, { expr: 'smile', pose: 'idle' }) + '</svg>';
+  }
+  function renderTierD(root) {
+    var sets = gSets(), D = gState();
+    if (!sets.length) { root.innerHTML = dir('This episode has no grammar sets yet.', 'p', 'lead'); showDirections(root); return; }
+    if (D.set >= sets.length) D.set = 0;
+    var h = '<div class="tsteps">';
+    sets.forEach(function (s, i) {
+      var done = s.items.every(function (it, j) { return gRec(s.id, j).done; });
+      h += '<button class="tstep' + (i === D.set ? ' on' : '') + (done ? ' ok' : '') + '" data-i="' + i + '" translate="yes" data-en="' + esc(s.title) + '">' + (i + 1) + '. ' + esc(s.title) + (done ? ' ✓' : '') + '</button>';
+    });
+    h += '</div><div id="gBody"></div>';
+    root.innerHTML = h;
+    root.querySelectorAll('.tstep').forEach(function (b) {
+      b.addEventListener('click', function () { gState().set = +b.getAttribute('data-i'); touch(); renderTierD(root); });
+    });
+    showDirections(root);
+    renderGSet($('gBody'), sets[D.set], root);
+  }
+  function renderGSet(root, set, outer) {
+    var D = gState(), sets = gSets(), si = sets.indexOf(set), h = '';
+    var sc = EP.scenes[set.scene != null ? set.scene : Math.min(si, EP.scenes.length - 1)];
+    h += '<div class="gbox">';
+    h += '<div class="gpic">' + (sc ? R.sceneSVG(boardState(sc)) : '') + '</div>';
+    h += '<h3 translate="no">' + esc(set.title) + '</h3>';
+    h += dir(set.rule, 'p', 'grule');
+    h += '<div class="gex"><span class="lab" translate="yes" data-en="Like this">Like this</span>' +
+         gSentence(set.example.p, set.example.a, 'ok') + '<button class="osay gexsay" data-say="' + esc(set.example.p.replace(/___/g, set.example.a)) + '" aria-label="Listen">🔊</button>' +
+         (set.example.note ? dir(set.example.note, 'span', 'gnote') : '') + '</div>';
+    h += '</div>';
+    if (si === 0 && !D.tools) {
+      h += '<div class="gtools" id="gTools">' + dir('First, try the buttons. Tap a word in the sentence to hear it and see it in your language. Then press 🔊 to hear the whole sentence.', 'p') + '</div>';
+    }
+    var recent = [];
+    h += '<div class="gitems">';
+    set.items.forEach(function (it, i) {
+      var r = gRec(set.id, i), ord = gOrder(set, i, recent);
+      recent.push(ord.indexOf(it.o.indexOf(it.a)));
+      var first = (si === 0 && i === 0 && !D.tools);
+      h += '<div class="gq' + (r.done ? ' done' : '') + (first ? ' firstq' : '') + '" data-g="' + set.id + '" data-i="' + i + '">' +
+           '<div class="gqtop">' + gSentence(it.p, r.done ? it.a : '') +
+           '<button class="osay' + (first ? ' shimmer' : '') + '" data-say="' + esc(it.p.replace(/___/g, ' blank ')) + '" aria-label="Listen">🔊</button></div>';
+      h += '<div class="gopts">';
+      ord.forEach(function (oi) {
+        var o = it.o[oi];
+        h += '<button class="gtile' + (r.done && o === it.a ? ' right' : '') + (r.shown && o === it.a && !r.done ? ' show' : '') + '" data-o="' + esc(o) + '"' + (r.done ? ' disabled' : '') + ' translate="no">' + esc(o) + '</button>';
+      });
+      h += '</div><div class="gfb"></div></div>';
+    });
+    h += '</div>';
+    var nxt = sets[si + 1];
+    h += '<div class="row">' + (nxt ? '<button class="btn" id="gNext" translate="yes">Next set →</button>' : '<button class="btn" id="gTurnIn" translate="yes">Turn in</button>') +
+         '<span class="gcount" id="gCount"></span></div>';
+    root.innerHTML = h;
+    showDirections(root);
+    function sentenceOf(w) {
+      var q = w.closest('.gq'), ex = w.closest('.gex');
+      if (ex) return set.example.p.replace(/___/g, set.example.a);
+      if (!q) return '';
+      return set.items[+q.getAttribute('data-i')].p.replace(/___/g, set.items[+q.getAttribute('data-i')].a);
+    }
+    gWire(root, sentenceOf);
+    root.querySelectorAll('.osay').forEach(function (b) {
+      b.addEventListener('click', function (e) {
+        e.stopPropagation(); b.classList.remove('shimmer');
+        if (!gState().tools) { gState().tools = 1; touch(); }
+        speakPlain(b.getAttribute('data-say'));
+      });
+    });
+    function count() {
+      var g = gSolved(), m = $('gCount'); if (!m) return;
+      var s = g.solved + ' of ' + g.total + ' done';
+      m.setAttribute('data-en', s); m.textContent = s; showDirections(root);
+    }
+    count();
+    root.querySelectorAll('.gq').forEach(function (q) {
+      var i = +q.getAttribute('data-i'), it = set.items[i], r = gRec(set.id, i);
+      var fb = q.querySelector('.gfb'), slot = q.querySelector('.gslot');
+      function finish(byShow) {
+        r.done = true; if (byShow) r.shown = true;
+        slot.textContent = it.a; slot.classList.add('full', 'drop');
+        q.classList.add('done');
+        q.querySelectorAll('.gtile').forEach(function (t) {
+          t.disabled = true;
+          if (t.getAttribute('data-o') === it.a) t.classList.add('right'); else t.classList.add('gone');
+        });
+        fb.innerHTML = '<span class="gok" translate="yes" data-en="That fits.">✓ That fits.</span>';
+        showDirections(q);
+        speakPlain(it.p.replace(/___/g, it.a));
+        count(); score(); touch(); save();
+      }
+      q.querySelectorAll('.gtile').forEach(function (t) {
+        t.addEventListener('click', function () {
+          if (r.done) return;
+          var o = t.getAttribute('data-o'), right = (o === it.a);
+          if (r.first === null) r.first = right;
+          if (right) { finish(false); return; }
+          r.tries++;
+          t.classList.add('wobble');
+          setTimeout(function () { t.classList.remove('wobble'); t.classList.add('gone'); t.disabled = true; }, 420);
+          slot.classList.add('wobble');
+          setTimeout(function () { slot.classList.remove('wobble'); }, 420);
+          var qp = QUIPS[(r.tries - 1) % QUIPS.length];
+          var hint = set.hint || set.rule;
+          /* with two or three choices the wrong ones run out before a third miss: once only the
+             right word is left, that IS the answer shown, so record it the same way */
+          var left = 0;
+          q.querySelectorAll('.gtile').forEach(function (b2) { if (b2.getAttribute('data-o') !== it.a && !b2.classList.contains('gone') && b2 !== t) left++; });
+          if (r.tries >= 3 || left === 0) {
+            r.shown = true;
+            fb.innerHTML = '<div class="gquip">' + headSVG(qp.who) + '<p translate="yes" data-en="' + esc('Here is the answer. Tap it once, and you still get the point.') + '">Here is the answer. Tap it once, and you still get the point.</p></div>' +
+                           '<p class="ghint" translate="yes" data-en="' + esc(hint) + '">💡 ' + esc(hint) + '</p>';
+            q.querySelectorAll('.gtile').forEach(function (b2) { if (b2.getAttribute('data-o') === it.a) { b2.classList.add('show'); b2.classList.remove('gone'); b2.disabled = false; } });
+            speakPlain(it.a);
+          } else {
+            fb.innerHTML = '<div class="gquip">' + headSVG(qp.who) + '<p translate="yes" data-en="' + esc(qp.line) + '">' + esc(qp.line) + '</p></div>' +
+                           '<p class="ghint" translate="yes" data-en="' + esc(hint) + '">💡 ' + esc(hint) + '</p>';
+          }
+          showDirections(q);
+          score(); touch(); save();
+        });
+      });
+    });
+    if ($('gNext')) $('gNext').addEventListener('click', function () { gState().set = si + 1; touch(); renderTierD(outer); outer.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+    if ($('gTurnIn')) $('gTurnIn').addEventListener('click', function () {
+      state.turned = true; save();
+      var g = gSolved(), m = 'Saved. ' + g.solved + ' of ' + g.total + ' done.';
+      $('gCount').setAttribute('data-en', m); $('gCount').textContent = m; showDirections(root);
+    });
+  }
+
   /* ---------- the teacher's tier switch (reel_views.tier) ---------- */
   function applyTier(v) {
-    v = (v || '').toUpperCase(); if (!/^[ABC]$/.test(v)) v = '';
+    v = (v || '').toUpperCase(); if (!/^[ABCD]$/.test(v)) v = '';
     if (v === assignedTier) return;
     assignedTier = v;
     if (assignedTier) { tierState().open = assignedTier; tierState().askNext = false; }
@@ -472,6 +738,9 @@
   function init() {
     TIERS = EP.tiers || window.EP_TIERS || null;
     if (!TIERS) return;
+    /* Tier D's sets live in epNN/grammar-data.js (window.EP_GRAMMAR), beside the tier data */
+    if (!TIERS.grammar && window.EP_GRAMMAR) TIERS.grammar = window.EP_GRAMMAR;
+    if (!TIERS.grammar) { addScript('grammar-data.js', function () { if (window.EP_GRAMMAR) { TIERS.grammar = window.EP_GRAMMAR; if ($('tiers') && $('tiers').style.display === 'block') showTiers(false); } }); }
     addStyle(); ensureMarkup();
     if (!window.Say) addScript('/readings/say/sets.js', function () { addScript('/readings/say/say.js'); });
     if (!pollTimer) pollTimer = setInterval(pollTier, 30000);
