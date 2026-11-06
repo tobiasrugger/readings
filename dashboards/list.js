@@ -67,6 +67,7 @@ window.DASHBOARDS = [
 /* ---------- Vocabulary ---------- */
 {url:'vocab/pre/dashboard.html',          name:'Vocabulary pre-assessments',  course:'101', group:'Vocabulary'},
 {url:'vocab/pre/report.html',             name:'Vocabulary \u2014 class report', course:'101', group:'Vocabulary'},
+{url:'missed/dashboard.html',               name:'Practice the words you missed', course:'101', group:'Vocabulary', note:'Each student\u2019s own misses from a word check: see it, hear it, spell it. Who hasn\u2019t started.'},
 {url:'vocab/pretest-ll12/dashboard.html', name:'Vocabulary pre-test (U1\u2013U2)', course:'101', group:'Vocabulary'},
 {url:'false-friends/dashboard.html',        name:'False Friends',               course:'both', group:'Vocabulary'},
 

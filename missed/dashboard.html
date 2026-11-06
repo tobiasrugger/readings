@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Practice the words you missed — teacher dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<!-- T-177: who practiced the words they missed on a word check (missed_work), and who still has misses and hasn't started (vocab_preassess). -->
+<style>
+:root{--pine:#1b4332;--pine2:#2d6a4f;--ink:#1c2640;--muted:#5c6b62;--paper:#f4f5f2}
+*{box-sizing:border-box}body{margin:0;font-family:Nunito,system-ui,sans-serif;background:var(--paper);color:var(--ink);font-size:16px}
+header{background:var(--pine);color:#fff;padding:12px 16px 12px 190px;min-height:56px}header h1{margin:0;font-size:1.25rem}header small{opacity:.8}
+#gal04-back{position:fixed;top:10px;left:10px;z-index:9}
+main{max-width:1200px;margin:0 auto;padding:14px}
+.box{background:#fff;border:2px solid var(--ink);border-radius:12px;box-shadow:0 4px 0 var(--ink);padding:14px 16px;margin:12px 0;overflow-x:auto}
+.box h2{margin:0 0 8px;font-size:1.15rem;color:var(--pine)}
+select,button,input{font-family:inherit;font-size:.95rem;font-weight:700;border:2px solid var(--ink);border-radius:8px;padding:6px 10px;background:#fff}
+table{border-collapse:collapse;width:100%;min-width:860px}th,td{border-bottom:1px solid #cfd6cc;padding:7px 8px;text-align:left;vertical-align:top}
+th{background:#e9f1ea;font-size:.85rem;position:sticky;top:0}tr.row{cursor:pointer}tr.row:hover{background:#f6faf6}
+.n{text-align:center}.ok{color:#2f7d4f;font-weight:900}.part{color:#9a6a00;font-weight:800}.zero{color:#9aa3b5}
+.det td{background:#fbfcfa}.det table{min-width:0;width:auto}.det th{position:static}
+.tag{display:inline-block;border:1.5px solid var(--ink);border-radius:12px;padding:0 8px;font-size:.8rem;font-weight:800;background:#fff8dc}
+.tag.g{background:#d8f0e2}.tag.r{background:#fde2dc}
+a.v{font-weight:800;color:var(--pine2)}
+#gate{position:fixed;inset:0;background:var(--pine);display:flex;align-items:center;justify-content:center;z-index:20}
+#gate div{background:#fff;border:2px solid var(--ink);border-radius:14px;padding:22px;box-shadow:0 4px 0 var(--ink)}
+.help{color:var(--muted);font-size:.9rem;margin:.3em 0}
+</style>
+<script src="/readings/grade04.js"></script>
+<script src="/readings/vocab/pre/quizzes.js"></script>
+</head>
+<body>
+<div id="gate"><div><b>Teacher password</b><br><br><input id="pw" type="password" onkeydown="if(event.key==='Enter')tryPw()"> <button onclick="tryPw()">Open</button><div id="err" style="color:#b5451b;font-weight:800"></div></div></div>
+<header><h1>Practice the words you missed</h1><small>Each student practices only their own misses from a word check: see it · hear it · spell it. Word shown after 3 misses still counts.</small></header>
+<main>
+<div class="box"><h2>Show</h2>
+ Period <select id="fPer" onchange="draw()"><option value="">All</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select>
+ Word check <select id="fQuiz" onchange="draw()"><option value="">All</option></select>
+ <label><input type="checkbox" id="fNot" onchange="draw()" style="width:auto;padding:0"> only students who have misses and haven't started</label>
+ <button onclick="load()">↻ Reload</button>
+ <p class="help">Click a row to see each word: tries in each part and 👁 = the answer was shown. Student link for the page: <code>https://tobiasrugger.github.io/readings/missed/?q=&lt;check id&gt;</code> — the word-check results screen will link there.</p></div>
+<div class="box"><h2 id="cnt">Students</h2><div id="out">Loading…</div></div>
+</main>
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co',SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+function $(i){return document.getElementById(i);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function key(e){return (window.GAL04&&GAL04.canon)?GAL04.canon(e):String(e||'').toLowerCase().split('@')[0];}
+function get(p){return fetch(SUPA_URL+'/rest/v1/'+p,{headers:{apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY}}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();});}
+function tryPw(){if($('pw').value==='galileo2026'){try{sessionStorage.setItem('dash_ok','1');}catch(e){}$('gate').remove();load();}else $('err').textContent='Not the right password.';}
+var ROWS=[],OPEN={};
+function title(q){var m=(window.QUIZZES||[]).filter(function(x){return x.id===q;})[0];return m?m.title:q;}
+function missesOf(r){var A=r.answers||{},n=0;(r.items||[]).forEach(function(it){var a=A[it.k];if((a&&a!==it.w)||(!a&&r.turned_in))n++;});return n;}
+function load(){$('out').textContent='Loading…';
+ Promise.all([get('missed_work?select=email,quiz,quiz_title,name,period,work,score,max_score,turned_in,updated_at&order=updated_at.desc'),
+  get('vocab_preassess?select=email,name,period,quiz,quiz_title,phase,attempt,items,answers,turned_in,answered,total,updated_at&phase=eq.pre&order=updated_at.desc'),
+  get('students?select=email,first_name,last_name,period')]).then(function(res){
+  var names={};(res[2]||[]).forEach(function(s){names[key(s.email)]={n:((s.first_name||'')+' '+(s.last_name||'')).trim(),p:s.period};});
+  var by={};
+  (res[1]||[]).forEach(function(r){if(!(r.turned_in||(r.answered||0)>=(r.total||10)))return;var k=key(r.email)+'|'+r.quiz;if(by[k])return;var m=missesOf(r);if(!m)return;
+   by[k]={k:key(r.email),email:r.email,quiz:r.quiz,name:(names[key(r.email)]||{}).n||r.name||r.email,period:String((names[key(r.email)]||{}).p||r.period||''),miss:m,work:null};});
+  (res[0]||[]).forEach(function(r){var k=key(r.email)+'|'+r.quiz,o=by[k];var w=r.work||{};
+   if(!o){o=by[k]={k:key(r.email),email:r.email,quiz:r.quiz,name:(names[key(r.email)]||{}).n||r.name||r.email,period:String((names[key(r.email)]||{}).p||r.period||''),miss:(w.words||[]).length};}
+   if(!o.period&&r.period)o.period=String(r.period);if(o.row&&o.row.score>=r.score)return;o.row=r;o.work=w;o.miss=(w.words||[]).length;});
+  ROWS=Object.keys(by).map(function(k){return by[k];});
+  var qs={};ROWS.forEach(function(r){qs[r.quiz]=1;});var sel=$('fQuiz'),cur=sel.value;sel.innerHTML='<option value="">All</option>'+Object.keys(qs).sort().map(function(q){return '<option value="'+esc(q)+'">'+esc(title(q))+'</option>';}).join('');sel.value=cur;
+  draw();}).catch(function(e){$('out').textContent='Could not load ('+e.message+'). If it says 404, the T-177 SQL (missed_work table) has not been run yet.';});}
+function cnt(w,r){var o=(w.R||{})[r]||{},d=0,s=0,m=0;Object.keys(o).forEach(function(k){if(o[k].done)d++;if(o[k].shown)s++;m+=(o[k].tries||0);});return {d:d,s:s,m:m};}
+function cell(c,n){return '<td class="n '+(n&&c.d===n?'ok':c.d?'part':'zero')+'">'+c.d+'/'+n+(c.s?' <span title="answer shown">👁'+c.s+'</span>':'')+'</td>';}
+function draw(){var per=$('fPer').value,q=$('fQuiz').value,not=$('fNot').checked;
+ var list=ROWS.filter(function(r){return (!per||r.period===per)&&(!q||r.quiz===q)&&(!not||!r.work);});
+ list.sort(function(a,b){return (a.period||'9').localeCompare(b.period||'9')||String(a.name).localeCompare(String(b.name))||a.quiz.localeCompare(b.quiz);});
+ $('cnt').textContent=list.length+' row'+(list.length===1?'':'s')+' · '+list.filter(function(r){return !r.work;}).length+' not started';
+ if(!list.length){$('out').innerHTML='<p class="help">Nobody yet.</p>';return;}
+ $('out').innerHTML='<table><thead><tr><th>Student</th><th>P</th><th>Word check</th><th class="n">Missed</th><th class="n">See it</th><th class="n">Hear it</th><th class="n">Spell it</th><th class="n">Wrong tries</th><th class="n">0–4.5</th><th>Last saved</th><th></th></tr></thead><tbody>'+
+ list.map(function(r,ix){var w=r.work,n=r.miss,id=r.k+'|'+r.quiz,tv='/readings/missed/?q='+encodeURIComponent(r.quiz)+'&email='+encodeURIComponent(r.email)+'&view=teacher';
+  if(!w)return '<tr><td>'+esc(r.name)+'</td><td>'+esc(r.period)+'</td><td>'+esc(title(r.quiz))+'</td><td class="n">'+n+'</td><td colspan="5"><span class="tag r">not started</span></td><td></td><td><a class="v" href="'+tv+'" target="_blank">view</a></td></tr>';
+  var a=cnt(w,'see'),b=cnt(w,'hear'),c=cnt(w,'spell'),pct=r.row&&r.row.max_score?100*r.row.score/r.row.max_score:null;
+  var h='<tr class="row" onclick="tog(\''+esc(id)+'\')"><td>'+esc(r.name)+'</td><td>'+esc(r.period)+'</td><td>'+esc(title(r.quiz))+'</td><td class="n">'+n+'</td>'+cell(a,n)+cell(b,n)+cell(c,n)+'<td class="n">'+(a.m+b.m+c.m)+'</td><td class="n">'+(window.GAL04&&pct!=null?GAL04.badge(pct,r.row.score+' / '+r.row.max_score):(pct==null?'—':Math.round(pct)+'%'))+'</td><td>'+esc((r.row.updated_at||'').slice(5,16).replace('T',' '))+(r.row.turned_in?' <span class="tag g">done</span>':'')+'</td><td><a class="v" href="'+tv+'" target="_blank" onclick="event.stopPropagation()">view</a></td></tr>';
+  if(OPEN[id])h+='<tr class="det"><td colspan="11"><table><tr><th>Word</th><th>See it</th><th>Hear it</th><th>Spell it</th></tr>'+(w.words||[]).map(function(x,i){
+   function one(rr){var s=((w.R||{})[rr]||{})[i]||{};return s.done?(s.first?'✓ first try':'✓ '+(s.tries||0)+' wrong'+(s.shown?' · 👁 shown':'')):(s.tries?'… '+s.tries+' wrong'+(s.shown?' · 👁':''):'—');}
+   return '<tr><td><b>'+esc(x.w)+'</b> '+(x.e||'')+'</td><td>'+one('see')+'</td><td>'+one('hear')+'</td><td>'+one('spell')+'</td></tr>';}).join('')+'</table></td></tr>';
+  return h;}).join('')+'</tbody></table>';}
+function tog(id){OPEN[id]=!OPEN[id];draw();}
+(function(){var ok=false;try{ok=sessionStorage.getItem('dash_ok')==='1';}catch(e){}if(ok){$('gate').remove();load();}else $('pw').focus();})();
+</script>
+</body>
+</html>
