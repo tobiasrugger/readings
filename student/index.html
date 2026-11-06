@@ -1386,7 +1386,12 @@ function curMP(){ var t=todayISO(), m=mpOf(t); if(m)return m;
   var last=null; MPS.forEach(function(x){ if(x.to<t)last=x; }); return last||MPS[0]; }
 var GRADE_SINCE=MPS[0].from;   /* first day of the school year: every MP cell is filled from here */
 var GRADE_MIN=3;                /* fewer pushes than this = too early, the card stays hidden */
-function g4(p){ if(p==null)return null; return p>=90?4:p>=75?3:p>=60?2:p>=1?1:0; }
+/* T-314: the gradebook's scale (T-302, Synergy's): 0 = 0–14%, 1 = 15–35, 2 = 36–55, 3 = 56–75, 4 = 76–94, 4.5 = 95–100,
+   percent rounded first. THE table lives in grade04.js (GAL04.BANDS); My Page doesn't load grade04.js (it adds teacher
+   buttons and icons), so this is a copy — used only if GAL04 isn't on the page. Keep the two the same. */
+var G4_BANDS=[[95,4.5],[76,4],[56,3],[36,2],[15,1],[0,0]];
+function g4(p){ if(p==null)return null; p=Math.round(+p); var B=(window.GAL04&&GAL04.BANDS)||G4_BANDS;
+  for(var i=0;i<B.length;i++) if(p>=B[i][0]) return B[i][1]; return 0; }
 function gSlug(href){
   var h=String(href||'').replace(/^https?:\/\/[^\/]+/i,''), path=h.split('#')[0].split('?')[0];
   var slug=path.replace(/^\/?readings\//,'').replace(/\/index\.html?$/,'').replace(/\.html?$/,'').replace(/\/+$/,'');
@@ -1407,7 +1412,7 @@ function gBest(r){
     done=true;
     if(a.max_score>0&&a.score!=null){ var p=Math.round(100*a.score/a.max_score); if(best==null||p>best)best=p; }
   });
-  if(done&&best==null)best=100;
+  if(done&&best==null)best=90;   /* T-314: done but no number = a 4, as before (not a 4.5) */
   return {pct:best,done:done};
 }
 function gLetter(v){ return v>=3.5?'A':v>=2.5?'B':v>=1.5?'C':v>=0.5?'D':'F'; }
@@ -1472,7 +1477,7 @@ async function loadGrade(email){
     var btn=function(it,kind){
       var r=it.r, title=r.source==='classroom'?catTitle(String(r.href).split('?')[0],r.title||r.href).replace(/\s+[\u2014\u00b7|].*$/,''):(r.title||r.href);
       var url=r.href+(r.href.indexOf('?')>-1?'&':'?')+'email='+encodeURIComponent(TV_EMAIL||email)+(TV_EMAIL?'&view=teacher':'');
-      var sub=kind==='xtra'?'&#10133; Extra &mdash; can only help':(!it.done?'Not done yet &mdash; Start &rarr;':'Your mark: '+it.m+' of 4 &mdash; Try again &rarr;');
+      var sub=kind==='xtra'?'&#10133; Extra &mdash; can only help':(!it.done?'Not done yet &mdash; Start &rarr;':'Your mark: '+it.m+' &mdash; Try again &rarr;');
       return '<a class="gbtn '+(kind==='xtra'?'xtra':!it.done?'miss':'low')+'" href="'+esc(url)+'"><span class="gt">'+esc(title)+'</span><small>'+sub+'</small></a>';
     };
     var html=todo.slice(0,6).map(function(it){return btn(it,'');}).join('')+extras.slice(0,3).map(function(it){return btn(it,'xtra');}).join('');
@@ -1484,7 +1489,7 @@ async function loadGrade(email){
     var t=document.getElementById('gTeach');
     if(TV_EMAIL||READ_ONLY){
       var done=items.filter(function(it){return it.done;}).length;
-      t.textContent='Teacher view: '+now.sem+' semester average '+(avg==null?'\u2014':avg.toFixed(2))+' of 4 over '+items.length+' pushed activities ('+done+' done, '+(items.length-done)+' not done); now = MP'+now.mp+'. Extras are left out of the average. Letters: A 3.5+, B 2.5+, C 1.5+, D 0.5+. MP dates live in MPS in student/index.html.';
+      t.textContent='Teacher view: '+now.sem+' semester average '+(avg==null?'\u2014':avg.toFixed(2))+' (scale 0\u20134.5, same as the gradebook) over '+items.length+' pushed activities ('+done+' done, '+(items.length-done)+' not done); now = MP'+now.mp+'. Extras are left out of the average. Letters: A 3.5+, B 2.5+, C 1.5+, D 0.5+. MP dates live in MPS in student/index.html.';
       t.classList.remove('hide');
     } else t.classList.add('hide');
     card.classList.remove('hide');
