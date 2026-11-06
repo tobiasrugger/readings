@@ -46,9 +46,11 @@
   /* ---------- how words are SPOKEN (captions stay as written) ----------
      ___ is read as "blank", names get their real pronunciation,
      and a lone I is read as "eye" (never "capital I"). */
-  var SAY_AS = { 'Amira': 'Ameera' };
+  /* T-340: the ONE list the reel uses, applied here before any voice speaks, so it works even
+     before std.js loads (std.js keeps the same entries for every other page). */
+  var SAY_AS = { 'Amira': 'Ameera', 'Mateo': 'Mah-tay-oh', 'ELD': 'E. L. D.', 'hijab': 'hee-jahb', 'hijabs': 'hee-jahbs', 'Hijab': 'Hee-jahb' };
   function spokenWord(tok) {
-    var t = String(tok).replace(/_{2,}/g, 'blank');
+    var t = String(tok).replace(/_{2,}/g, 'blank').replace(/[\u2014\u2013]/g, '');   /* dashes become a pause (T-340), not a sound */
     for (var k in SAY_AS) t = t.replace(new RegExp('\\b' + k + '\\b', 'g'), SAY_AS[k]);
     if (/^[^A-Za-z]*I[^A-Za-z'\u2019]*$/.test(t)) t = t.replace('I', 'eye');
     return t;
@@ -207,7 +209,12 @@
       h += '<span class="' + cls + '" data-i="' + n + '" data-w="' + esc(core) + '">' + esc(tok) + '</span>';
       var sw = spokenWord(tok);
       if (SPOKEN) SPOKEN += ' ';
-      WORDS.push({ start: SPOKEN.length, end: SPOKEN.length + sw.length, len: core.length || 1 });
+      /* T-340 pauses: a beat after a dash, an ellipsis, or a short interjection (Hmm. / Wait / Oh, / Well,) */
+      var nextTok = (parts[i + 1] && /^\s+$/.test(parts[i + 1]) ? parts[i + 2] : parts[i + 1]) || '';
+      var beat = /[\u2014\u2013]$|\.\.\.$|\u2026$/.test(tok) || /^[\u2014\u2013]+$/.test(nextTok) ||
+                 (/^(hmm+|wait|oh|well|ah|um+|uh)[.!?,\u2014\u2013]*$/i.test(tok) && (n === 0 || /[.!?,]$/.test(tok)) && i < parts.length - 1);
+      if (/^[\u2014\u2013]+$/.test(tok) && WORDS.length) { WORDS[WORDS.length - 1].beat = true; beat = false; }
+      WORDS.push({ start: SPOKEN.length, end: SPOKEN.length + sw.length, len: core.length || 1, beat: beat });
       SPOKEN += sw;
       off += tok.length; n++;
     }
@@ -270,8 +277,9 @@
     }
     var rate = (p.rate || 1) * (state.slow ? 0.72 : 0.94) * (opt.slow ? 0.72 : 1);
     /* word-timing estimate (used unless the browser reports real word boundaries) */
-    var perChar = 62 / rate, times = [], t = 0, k;
-    for (k = 0; k < WORDS.length; k++) { times.push(t); t += 150 / rate + WORDS[k].len * perChar; }
+    var perChar = 62 / rate, times = [], t = 0, k, BEAT = 380;
+    var useBeats = !opt.override && !lineAudio && text === SPOKEN;
+    for (k = 0; k < WORDS.length; k++) { times.push(t); t += 150 / rate + WORDS[k].len * perChar + (useBeats && WORDS[k].beat ? BEAT : 0); }
     var total = t;
     var t0 = Date.now(), useEst = true;
     hl(0);
@@ -291,17 +299,32 @@
       return;
     }
     if (!window.speechSynthesis) { safety = setTimeout(finish, total + 500); return; }
-    var u = new SpeechSynthesisUtterance(text);
-    var v = pickVoice(p.voice); if (v) { try { u.voice = v; } catch (e) {} }   /* an odd voice must never stop the line */
-    u.lang = 'en-US'; u.rate = rate; u.pitch = p.pitch || 1;
-    u.onboundary = function (e) {
-      if (myId !== playId || typeof e.charIndex !== 'number' || opt.override) return;
-      useEst = false;
-      for (var i = 0; i < WORDS.length; i++) if (e.charIndex >= WORDS[i].start && e.charIndex < WORDS[i].end + 1) { hl(i); break; }
+    /* T-340: the line is spoken in pieces split at the beats, with a short gap between them; each
+       piece maps its word boundaries back by its own offset, so the word-by-word highlight holds. */
+    var cuts = [0];
+    if (useBeats) for (k = 0; k < WORDS.length - 1; k++) if (WORDS[k].beat) cuts.push(WORDS[k + 1].start);
+    var pieces = cuts.map(function (c, j) { return { off: c, text: text.slice(c, j + 1 < cuts.length ? cuts[j + 1] : text.length) }; })
+                     .filter(function (x) { return /\S/.test(x.text); });
+    if (!pieces.length) pieces = [{ off: 0, text: text }];
+    var v = pickVoice(p.voice);
+    var speakPiece = function (j) {
+      if (myId !== playId) return;
+      if (j >= pieces.length) { finish(); return; }
+      var pc = pieces[j], u = new SpeechSynthesisUtterance(pc.text);
+      if (v) { try { u.voice = v; } catch (e) {} }   /* an odd voice must never stop the line */
+      u.lang = 'en-US'; u.rate = rate; u.pitch = p.pitch || 1;
+      u.onboundary = function (e) {
+        if (myId !== playId || typeof e.charIndex !== 'number' || opt.override) return;
+        useEst = false;
+        var ci = e.charIndex + pc.off;
+        for (var i = 0; i < WORDS.length; i++) if (ci >= WORDS[i].start && ci < WORDS[i].end + 1) { hl(i); break; }
+      };
+      u.onend = function () { if (j + 1 < pieces.length) setTimeout(function () { speakPiece(j + 1); }, BEAT); else finish(); };
+      u.onerror = finish;
+      speechSynthesis.speak(u);
     };
-    u.onend = finish; u.onerror = finish;
-    safety = setTimeout(finish, total * 1.8 + 5000);
-    setTimeout(function () { if (myId === playId) speechSynthesis.speak(u); }, 60);
+    safety = setTimeout(finish, total * 1.8 + 5000 + pieces.length * BEAT);
+    setTimeout(function () { speakPiece(0); }, 60);
   }
   function sayWord(w) {
     if (!window.speechSynthesis) return;
@@ -554,7 +577,7 @@
     if (ln.kind === 'check' && earsFrom < pos) {
       var offer = state.level === 'A' && !((state.earsOff || {})[ln.id]);
       h += '<div class="earsrow"><button class="go earsbtn' + (offer ? ' pulse' : '') + '" id="earsBtn" translate="yes">🎧 Listen again — no words</button>' +
-           '<span class="earshint" translate="yes">Just listen. Then answer.</span></div>';
+           '<span class="earshint" translate="yes" style="display:block;margin-top:4px">Listen. The words are hidden. Then answer.</span></div>';
       if (offer) { (state.earsOff || (state.earsOff = {}))[ln.id] = 1; }
     }
     box.innerHTML = h; box.style.display = 'block';
@@ -587,7 +610,11 @@
       });
     });
     $('qgo').addEventListener('click', function () { box.style.display = 'none'; setPlaying(true); next(true); });
-    if (rec && ln.kind !== 'predict' && rec.right !== null) { /* already answered earlier: allow skipping */ }
+    if (rec && ((ln.kind !== 'predict' && rec.ok) || (ln.kind === 'predict' && rec.pick != null))) {   /* already answered: allow going on (T-340) */
+      $('qgo').style.display = ''; answeredNow = true;
+      var done = box.querySelector('.qopt[data-i="' + (ln.kind === 'predict' ? rec.pick : ans) + '"]');
+      if (done) done.classList.add(ln.kind === 'predict' ? 'picked' : 'right');
+    }
   }
   function score() {
     /* T-237 (Nov 3 2026, Toby chose option A): every story question solved counts, on any try
@@ -987,6 +1014,18 @@
     $('again').addEventListener('click', function () { start(true); });
     $('nextBtn').addEventListener('click', function () { next(false); });
     $('prevBtn').addEventListener('click', prev);
+    /* T-340: ⏮ Start over — back to scene 1, every answer kept */
+    if (!$('restartBtn')) {
+      var rb = document.createElement('button');
+      rb.className = $('prevBtn').className; rb.id = 'restartBtn'; rb.type = 'button';
+      rb.setAttribute('translate', 'yes'); rb.textContent = '\u23ee Start over';
+      $('prevBtn').parentNode.insertBefore(rb, $('prevBtn'));
+      rb.addEventListener('click', function () {
+        $('curtain').style.display = 'none'; $('qcard').style.display = 'none';
+        if ($('yt') && $('yt').style.display === 'block') $('yt').style.display = 'none';
+        stopSpeech(); setPlaying(true); go(0);
+      });
+    }
     $('repBtn').addEventListener('click', function () {
       if (STEPS[pos].ln.type !== 'q') { speakStep(null); LOG().replays++; if (state.slow) LOG().slow++; active(); touch(); }
     });
@@ -1015,7 +1054,9 @@
     document.querySelectorAll('#levelSeg button').forEach(function (b) {
       b.addEventListener('click', function () {
         state.level = b.getAttribute('data-l'); syncControls(); touch();
+        var qOpen = $('qcard').style.display === 'block' && STEPS[pos] && STEPS[pos].ln.type === 'q';
         render(pos, true);
+        if (qOpen) { stopSpeech(); showQ(STEPS[pos].ln); }   /* T-340: the open question stays, at the new level */
         if ($('yt').style.display === 'block') showYourTurn(false);
         else if (window.REEL_TIERS) REEL_TIERS.refresh();
       });

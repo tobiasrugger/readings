@@ -86,6 +86,7 @@ a{color:var(--blue);font-weight:700}
     <p class="muted" style="margin:0 0 6px">Every student page counts three things, per student, per page, per day:</p>
     <p style="margin:0 0 4px"><b>⏱ Active minutes</b> — the page was open on screen <i>and</i> the student touched, typed or scrolled in the last minute. A page left open in another tab counts nothing.</p>
     <p style="margin:0 0 4px"><b>🔊 Listens</b> — the student tapped something and sound played (a word, a sentence, a recording). One per tap.</p>
+    <p style="margin:0 0 4px">🕘 <b>First → last</b> — the clock time of the first and last minute counted that day. 🏠 = some of it was outside school hours (weekdays 8:00–3:45), so maybe at home.</p>
     <p style="margin:0">🌐 <b>Translations</b> — the student tapped something and asked for a translation. Directions translated on arrival don’t count.</p>
     <p class="muted" style="margin:8px 0 0;font-size:15px">Counting started Nov 2026 (T-148). Nothing is counted on the sign-in screen, in teacher view, or for test runs. Tap a student to see their pages, day by day.</p>
   </div>
@@ -122,6 +123,13 @@ function $(id){return document.getElementById(id);}
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 /* T-299: one student = the username (part before @). Same rule as GAL.key in std.js. */
 function key(e){return String(e==null?'':e).trim().toLowerCase().split('@')[0].replace(/\s+/g,'');}
+/* T-341: clock times in San Francisco; "school hours" = weekdays 8:00–3:45 (anything else = 🏠 maybe home) */
+function clock(t){if(!t)return'';try{return new Date(t).toLocaleTimeString('en-US',{timeZone:'America/Los_Angeles',hour:'numeric',minute:'2-digit'});}catch(e){return'';}}
+function outOfSchool(t){if(!t)return false;try{var d=new Date(t),p=new Intl.DateTimeFormat('en-US',{timeZone:'America/Los_Angeles',weekday:'short',hour:'numeric',minute:'numeric',hour12:false}).formatToParts(d),o={};
+  p.forEach(function(x){o[x.type]=x.value;});var h=(+o.hour%24)+(+o.minute)/60;return o.weekday==='Sat'||o.weekday==='Sun'||h<8||h>15.75;}catch(e){return false;}}
+function dayTimes(rows){var D={};rows.forEach(function(r){var d=D[r.day]||(D[r.day]={first:r.first_at||r.updated_at,last:r.updated_at||r.first_at,home:false});
+  if(r.first_at&&r.first_at<d.first)d.first=r.first_at;if(r.updated_at&&r.updated_at>d.last)d.last=r.updated_at;
+  if(outOfSchool(r.first_at)||outOfSchool(r.updated_at))d.home=true;});return D;}
 function mins(s){var m=(s||0)/60;return m<10?(Math.round(m*10)/10):Math.round(m);}
 function laDay(d){try{return d.toLocaleDateString('en-CA',{timeZone:'America/Los_Angeles'});}catch(e){return d.toISOString().slice(0,10);}}
 var ST={range:7,view:'st',rows:[],roster:{},open:{},sort:'secs'};
@@ -155,7 +163,7 @@ function since(){
 function load(){
   $('count').textContent='Loading…';
   Promise.all([
-    get('practice_log?select=who,email,day,page,secs,speaks,trs,updated_at&day=gte.'+since()+'&order=day.desc'),
+    get('practice_log?select=who,email,day,page,secs,speaks,trs,first_at,updated_at&day=gte.'+since()+'&order=day.desc'),
     get('students?select=email,name,period').catch(function(){return [];})
   ]).then(function(res){
     ST.rows=res[0]; ST.roster={};
@@ -208,20 +216,25 @@ function draw(){
     $('tblTitle').textContent='Students';
     st.sort(function(a,b){return (b[ST.sort]||0)-(a[ST.sort]||0)||nm(a.k).localeCompare(nm(b.k));});
     st.forEach(function(s){if(s.secs>max)max=s.secs;});
-    var h='<tr><th data-s="name">Student</th><th>Period</th><th data-s="secs">⏱ Minutes ▾</th><th data-s="speaks">🔊</th><th data-s="trs">🌐</th><th>Days</th><th>Pages</th></tr>';
+    var h='<tr><th data-s="name">Student</th><th>Period</th><th data-s="secs">⏱ Minutes ▾</th><th data-s="speaks">🔊</th><th data-s="trs">🌐</th><th>Days</th><th>Pages</th><th>Latest day: first → last</th></tr>';
     st.forEach(function(s){
       var r=ST.roster[s.k]||{};
       h+='<tr class="st'+(s.zero?' zero':'')+'" data-k="'+esc(s.k)+'"><td><b>'+esc(nm(s.k))+'</b>'+(s.zero?' <span class="muted">— nothing logged</span>':'')+'</td><td>'+esc(r.period||'')+'</td>'+
         '<td class="n">'+mins(s.secs)+'<span class="bar" style="width:'+Math.round(140*s.secs/max)+'px"></span></td>'+
-        '<td class="n">'+s.speaks+'</td><td class="n">'+s.trs+'</td><td>'+Object.keys(s.days).length+'</td><td>'+Object.keys(s.pages).length+'</td></tr>';
+        '<td class="n">'+s.speaks+'</td><td class="n">'+s.trs+'</td><td>'+Object.keys(s.days).length+'</td><td>'+Object.keys(s.pages).length+'</td>'+
+        (function(){var D=dayTimes(s.rows),ks=Object.keys(D).sort();if(!ks.length)return '<td></td>';var d=D[ks[ks.length-1]],homeDays=ks.filter(function(k){return D[k].home;}).length;
+          return '<td style="white-space:nowrap">'+esc(ks[ks.length-1].slice(5))+' · '+esc(clock(d.first))+' → '+esc(clock(d.last))+(homeDays?' <span title="Saved outside school hours (weekdays 8:00–3:45) on '+homeDays+' day(s)">🏠'+(homeDays>1?'×'+homeDays:'')+'</span>':'')+'</td>';})()+'</tr>';
       if(ST.open[s.k]&&s.rows.length){
         var rs=s.rows.slice().sort(function(a,b){return a.day<b.day?1:a.day>b.day?-1:(b.secs-a.secs);});
-        h+='<tr class="detail"><td colspan="7"><table class="mini"><tr><th>Day</th><th>Page</th><th>⏱ Min</th><th>🔊</th><th>🌐</th></tr>'+
-          rs.map(function(x){return '<tr><td>'+esc(x.day)+'</td><td>'+pageLink(x.page)+'</td><td>'+mins(x.secs)+'</td><td>'+(x.speaks||0)+'</td><td>'+(x.trs||0)+'</td></tr>';}).join('')+
+        var DT=dayTimes(s.rows);
+        h+='<tr class="detail"><td colspan="8"><p style="margin:0 0 6px"><b>First → last, by day:</b> '+Object.keys(DT).sort().reverse().map(function(k){var d=DT[k];
+            return '<span class="pill" style="display:inline-block;border:2px solid #2B2233;border-radius:999px;padding:0 9px;margin:2px 4px 2px 0;font-weight:800;font-size:14px;background:'+(d.home?'#fff4d6':'#fff')+'">'+esc(k.slice(5))+' '+esc(clock(d.first))+' → '+esc(clock(d.last))+(d.home?' 🏠':'')+'</span>';}).join('')+'</p>'+
+          '<table class="mini"><tr><th>Day</th><th>Page</th><th>First → last</th><th>⏱ Min</th><th>🔊</th><th>🌐</th></tr>'+
+          rs.map(function(x){return '<tr><td>'+esc(x.day)+'</td><td>'+pageLink(x.page)+'</td><td style="white-space:nowrap">'+esc(clock(x.first_at))+' → '+esc(clock(x.updated_at))+(outOfSchool(x.first_at)||outOfSchool(x.updated_at)?' 🏠':'')+'</td><td>'+mins(x.secs)+'</td><td>'+(x.speaks||0)+'</td><td>'+(x.trs||0)+'</td></tr>';}).join('')+
           '</table></td></tr>';
       }
     });
-    if(!st.length) h+='<tr><td colspan="7" class="muted">Nothing logged in this window yet.</td></tr>';
+    if(!st.length) h+='<tr><td colspan="8" class="muted">Nothing logged in this window yet.</td></tr>';
     $('tbl').innerHTML=h;
     Array.prototype.forEach.call($('tbl').querySelectorAll('tr.st'),function(tr){tr.addEventListener('click',function(){var k=tr.dataset.k;ST.open[k]=!ST.open[k];draw();});});
   } else {
@@ -237,9 +250,9 @@ function draw(){
   Array.prototype.forEach.call($('tbl').querySelectorAll('th[data-s]'),function(th){th.addEventListener('click',function(e){e.stopPropagation();ST.sort=th.dataset.s==='name'?'k':th.dataset.s;draw();});});
 }
 function csv(){
-  var lines=[['username','name','period','day','page','active_minutes','listens','translations'].join(',')];
+  var lines=[['username','name','period','day','page','first','last','active_minutes','listens','translations'].join(',')];
   ST.rows.forEach(function(r){var k=r.who||key(r.email);if(!inPer(k))return;var ro=ST.roster[k]||{};
-    lines.push([k,ro.name||'',ro.period||'',r.day,r.page,mins(r.secs),r.speaks||0,r.trs||0].map(function(v){v=String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}).join(','));});
+    lines.push([k,ro.name||'',ro.period||'',r.day,r.page,clock(r.first_at),clock(r.updated_at),mins(r.secs),r.speaks||0,r.trs||0].map(function(v){v=String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}).join(','));});
   var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/csv'}));
   a.download='practice-log-'+since()+'.csv';document.body.appendChild(a);a.click();a.remove();
 }

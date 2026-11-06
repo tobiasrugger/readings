@@ -71,7 +71,7 @@
      highlights don't drift after the name. */
   (function () {
     /* T-287: Mateo too ("Matayo", same as spell/spell.js from T-273; Toby's pick, Nov 5). */
-    var SAY_AS = { 'Amira': 'Ameera', 'Mateo': 'Matayo' };
+    var SAY_AS = { 'Amira': 'Ameera', 'Mateo': 'Mah-tay-oh', 'ELD': 'E. L. D.', 'hijab': 'hee-jahb', 'hijabs': 'hee-jahbs', 'Hijab': 'Hee-jahb' };   /* T-340: same list as reel-v2/engine.js */
     var ss = window.speechSynthesis; if (!ss || ss.__galSayAs) return; ss.__galSayAs = 1;
     var orig = ss.speak, RE = new RegExp('\\b(' + Object.keys(SAY_AS).join('|') + ')\\b', 'g');
     function swap(text) {
