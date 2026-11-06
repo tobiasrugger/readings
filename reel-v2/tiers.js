@@ -86,7 +86,9 @@
     }
     var nB = 0, anyB = false, maxB = 0;
     TIERS.key.forEach(function (k, i) { if (k.keep) return; maxB++; if (B.rw[i]) anyB = true; if (changedB(i)) nB++; });
-    if (anyB) { out.tierB = nB; pts += nB; max += maxB; }
+    /* tierB_max: ep01 keeps sentence 1 (names and countries), so B is out of 4 there and out of 5 in
+       later episodes — the dashboard reads this instead of assuming 4. */
+    if (anyB) { out.tierB = nB; out.tierB_max = maxB; pts += nB; max += maxB; }
     if (norm(C.text)) {
       var w = wordsOf(C.text).length, hits = ideaHits(C.text).filter(function (h) { return h.hit; }).length;
       var p = (w >= (TIERS.summary.min || 25) ? 2 : (w >= 10 ? 1 : 0)) + (hits >= 3 ? 2 : (hits >= 1 ? 1 : 0)) + (C.revised ? 1 : 0);
@@ -324,7 +326,7 @@
   /* ---------- Tier C ---------- */
   function sourceText() {
     var parts = [];
-    EP.scenes.forEach(function (sc) { sc.lines.forEach(function (ln) { if (ln.type === 'q') return; if (ln.A) parts.push(ln.A); if (ln.B) parts.push(ln.B); }); });
+    EP.scenes.forEach(function (sc) { sc.lines.forEach(function (ln) { if (ln.type === 'q') return; ['A', 'B', 'C'].forEach(function (lv) { if (ln[lv]) parts.push(ln[lv]); }); }); });
     TIERS.key.forEach(function (k) { parts.push(k.t); });
     return ' ' + parts.map(norm).join(' | ') + ' ';
   }
@@ -371,7 +373,7 @@
     var fb = { copied: copiedRuns(text, 5), ideas: ideaHits(text), fix: grammarFix(text), notes: [] };
     var w = wordsOf(text).length, min = TIERS.summary.min || 25;
     if (w < min) fb.notes.push('You wrote ' + w + ' words. Try for ' + min + ' or more.');
-    if (TIERS.summary.teaser && TIERS.summary.teaser.test(text)) fb.notes.push('The backpack is a teaser for the next episode. Leave it out of the summary.');
+    if (TIERS.summary.teaser && TIERS.summary.teaser.test(text)) fb.notes.push(TIERS.summary.teaserNote || 'That part is a teaser for the next episode. Leave it out of the summary.');
     return fb;
   }
   function remoteFeedback(text, cb) {
