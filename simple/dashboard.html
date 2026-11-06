@@ -33,6 +33,10 @@ td.tick input{width:22px;height:22px;accent-color:var(--green);cursor:pointer}
 .status.good{color:var(--green)}
 button.go{font:inherit;font-weight:900;background:var(--green);color:#fff;border:2px solid var(--line);border-radius:10px;padding:7px 16px;cursor:pointer}
 #tryOut{margin-top:10px;padding:10px 12px;border:2px dashed var(--line);border-radius:10px;min-height:2.6em;background:var(--hi)}
+textarea{font:inherit;width:100%;border:2px solid var(--line);border-radius:10px;padding:8px 10px}
+button.soft{font:inherit;font-weight:800;background:#fff;color:var(--ink);border:2px solid var(--line);border-radius:10px;padding:7px 14px;cursor:pointer}
+.fix{display:block;width:100%;text-align:left;font:inherit;background:#fff;border:2px solid var(--line);border-radius:10px;padding:8px 12px;margin:0 0 8px;cursor:pointer}
+.fix b{color:var(--green)}
 #gate{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:100}
 #gate .box{width:min(420px,92vw)}
 #gate input{width:100%;margin:8px 0}
@@ -72,14 +76,30 @@ button.go{font:inherit;font-weight:900;background:var(--green);color:#fff;border
     </table>
   </div>
 
-  <div class="box">
-    <h2>Try a word or sentence</h2>
-    <p class="muted" style="margin:0 0 8px">See exactly what a student would get.</p>
+  <div class="box" id="fixBox">
+    <h2>Try a word — and fix it</h2>
+    <p class="muted" style="margin:0 0 8px">See exactly what a student gets when they tap a word (or what a sentence becomes). If it’s not helpful, write a better one and save it — every student gets yours from then on, and the computer never changes it.</p>
     <div class="row">
-      <input type="text" id="tryIn" value="borrow" placeholder="a word or a sentence">
+      <input type="text" id="tryIn" value="pleasantly" placeholder="a word or a sentence">
       <button class="go" onclick="tryIt()">Try it</button>
     </div>
     <div id="tryOut" class="muted">—</div>
+    <div id="fixArea" hidden>
+      <label for="fixIn" style="display:block;font-weight:900;margin:12px 0 4px">Students should see instead:</label>
+      <textarea id="fixIn" rows="3"></textarea>
+      <div class="row" style="margin-top:8px">
+        <button class="go" onclick="saveFix()">Save my fix</button>
+        <button class="soft" onclick="freshIt()">Look it up fresh</button>
+        <span id="fixMsg" class="status"></span>
+      </div>
+      <p class="muted" style="margin:8px 0 0;font-size:15px">“Look it up fresh” asks Wiktionary (or the translator) again and puts the answer in the box. Nothing changes for students until you press Save.</p>
+    </div>
+  </div>
+
+  <div class="box">
+    <h2>Words you’ve fixed</h2>
+    <p class="muted" style="margin:0 0 8px">Tap one to change it.</p>
+    <div id="fixList" class="muted">Loading…</div>
   </div>
 
   <div id="status" class="status"></div>
@@ -119,7 +139,7 @@ function change(fn){
 }
 
 function openApp(){
-  $('gate').style.display='none';$('app').hidden=false;
+  $('gate').style.display='none';$('app').hidden=false;loadFixes();
   readSettings().then(function(v){VAL=v;paint();}).catch(function(e){say('Can’t read the settings yet — run the gal_settings SQL first. ('+e.message+')','bad');});
   fetch(SUPA_URL+'/rest/v1/students?select=email,first_name,last_name,period,home_language,roster_order&order=period.asc,roster_order.asc',{headers:H()})
     .then(function(r){if(!r.ok)throw new Error('students '+r.status);return r.json();})
@@ -152,10 +172,48 @@ function paint(){
   $('rows').innerHTML=list.map(function(s){var ck=VAL.emails.indexOf(s.l)>=0;
     return '<tr class="'+(ck?'on':'')+'"><td class="tick"><input type="checkbox" data-l="'+esc(s.l)+'"'+(ck?' checked':'')+'></td><td><b>'+esc(s.name)+'</b></td><td>P'+esc(s.period)+'</td><td>'+esc(s.lang)+'</td><td class="muted">'+esc(s.email)+'</td></tr>';}).join('')||'<tr><td colspan="5" class="muted">No one matches.</td></tr>';
 }
+/* ---------- T-330: try a word, fix it ---------- */
+var CUR=null;
+function fixSay(t,cls){var m=$('fixMsg');m.textContent=t||'';m.className='status '+(cls||'');}
 function tryIt(){
-  var t=$('tryIn').value.trim();if(!t)return;$('tryOut').textContent='Looking it up…';
-  window.GAL_SIMPLE.simpleFor(t,'',t.trim().split(/\s+/).length<=2).then(function(v){$('tryOut').innerHTML='<b><u>'+esc(v)+'</u></b>'+(v===t?' <span class="muted">(nothing came back — a student would see the English as it is)</span>':'');});
+  var t=$('tryIn').value.trim();if(!t)return;$('tryOut').textContent='Looking it up…';$('fixArea').hidden=true;fixSay('');
+  var S=window.GAL_SIMPLE,k=S.keyFor(t);
+  S.forget(t);
+  S.simpleFor(t,'',t.split(/\s+/).length<=2).then(function(v){
+    var circ=k&&k.word&&S.circular(k.word,v);
+    $('tryOut').innerHTML='<b>Students see:</b> <u>'+esc(v)+'</u>'+(v===t?' <span class="muted">(nothing came back — a student would see the English as it is)</span>':'')+
+      (circ?' <span class="status bad">— this one still uses the word to explain itself</span>':'');
+    if(!k){$('tryOut').innerHTML+='<br><span class="muted">This isn’t a word or a sentence that gets saved, so it can’t be fixed here.</span>';return;}
+    CUR=k;$('fixIn').value=(v===t?'':v);$('fixArea').hidden=false;
+  });
 }
+function saveFix(){
+  if(!CUR)return;var v=$('fixIn').value.trim();if(!v){fixSay('Write something first.','bad');return;}
+  fixSay('Saving…');
+  fetch(SUPA_URL+'/rest/v1/song_tr?on_conflict=slug,lang,src',{method:'POST',headers:H('resolution=merge-duplicates,return=minimal'),
+    body:JSON.stringify([{slug:CUR.slug,lang:'en-simple',src:CUR.src,equiv:v,meaning:'',note:'fixed by Mr. Toby',updated_at:new Date().toISOString()}])})
+    .then(function(r){if(!r.ok)throw new Error('save '+r.status);
+      window.GAL_SIMPLE.forget($('tryIn').value);fixSay('Saved ✓ — students get this now (a student who already has the page open: refresh).','good');
+      $('tryOut').innerHTML='<b>Students see:</b> <u>'+esc(v)+'</u>';loadFixes();})
+    .catch(function(e){fixSay('Could not save ('+e.message+')','bad');});
+}
+function freshIt(){
+  if(!CUR)return;fixSay('Looking it up again…');
+  window.GAL_SIMPLE.fresh($('tryIn').value).then(function(v){
+    if(!v){fixSay('Nothing new came back — write your own.','bad');return;}
+    $('fixIn').value=v;fixSay('That’s the fresh answer — press Save to use it.');
+  });
+}
+function loadFixes(){
+  fetch(SUPA_URL+'/rest/v1/song_tr?select=slug,src,equiv,updated_at&lang=eq.en-simple&note=like.fixed%20by*&order=updated_at.desc&limit=300',{headers:H()})
+    .then(function(r){if(!r.ok)throw new Error('song_tr '+r.status);return r.json();})
+    .then(function(rows){
+      $('fixList').innerHTML=(rows||[]).length?rows.map(function(r){
+        return '<button class="fix" data-src="'+esc(r.src)+'"><b>'+esc(r.src)+'</b> → '+esc(r.equiv)+'</button>';}).join(''):'<span class="muted">None yet.</span>';
+    }).catch(function(e){$('fixList').innerHTML='<span class="status bad">Couldn’t load ('+esc(e.message)+')</span>';});
+}
+$('fixList').addEventListener('click',function(e){var b=e.target.closest('[data-src]');if(!b)return;
+  $('tryIn').value=b.getAttribute('data-src');tryIt();$('fixBox').scrollIntoView({behavior:'smooth',block:'start'});});
 $('tryIn').addEventListener('keydown',function(e){if(e.key==='Enter')tryIt();});
 (function(){var ok=false;try{ok=sessionStorage.getItem('dash_ok')==='1';}catch(e){}if(ok)openApp();else $('pw').focus();})();
 </script>

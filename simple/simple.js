@@ -36,6 +36,16 @@
        language's cache is shown and nothing simple ever lands in another
        language's cache.
    Teacher pages are left alone.
+
+   T-330 (Nov 2026) — circular definitions. Simple Wiktionary sometimes defines a
+   word with itself ("pleasantly: done or appearing pleasantly"). circular() strips
+   the word, its forms and its root, plus filler words (way, done, something…); if
+   nothing real is left, the definition is skipped. Then: the second sense, then the
+   ROOT word ("pleasantly" -> "in a pleasant way. pleasant: nice, enjoyable"), then
+   the proxy. A good definition that leans on the root ("in a happy way") gets the
+   root's meaning added. Saved definitions that are circular are replaced the next
+   time someone taps the word — EXCEPT rows Mr. Toby fixed by hand (note starts
+   "fixed by"), which are never overwritten. He fixes words on simple/dashboard.html.
    ===================================================================== */
 (function () {
   if (window.__GAL_SIMPLE__) return;
@@ -235,29 +245,120 @@
     if (/'s$/.test(l)) out.push(l.replace(/'s$/, ''));
     return out.filter(function (x, i, a) { return x.length > 1 && a.indexOf(x) === i; });
   }
-  function wiktDefine(word) {
+  /* ---------- T-330: circular definitions ---------- */
+  var FILLER = ('a an the of to in on at for by with without or and as is are was were be been being it its ' +
+    'this that these those which who whom what something someone somebody anything thing things way ways manner ' +
+    'done doing does do did appearing appear seeming seem quality state condition act action fact kind sort type ' +
+    'person people one ones having has have if when you your yours they them their he she him his her we us our ' +
+    'very more most not so such can could will would may might in being said describe describes describing ' +
+    'used use form word means mean meaning').split(' ');
+  function stems(w) {
+    var l = String(w || '').toLowerCase(), out = [];
+    function add(x) { if (x && x.length >= 3 && x !== l && out.indexOf(x) < 0) out.push(x); }
+    if (/ically$/.test(l)) add(l.replace(/ically$/, 'ic'));
+    if (/ily$/.test(l)) add(l.replace(/ily$/, 'y'));
+    var le = /(bly|ply|gly|zly)$/.test(l) || (/tly$/.test(l) && l.length <= 7);   /* terribly, simply, gently, subtly */
+    if (le) add(l.replace(/ly$/, 'le'));
+    if (/ly$/.test(l)) add(l.replace(/ly$/, ''));
+    if (!le && /[^aeiou]tly$/.test(l)) add(l.replace(/ly$/, 'le'));
+    if (/iness$/.test(l)) add(l.replace(/iness$/, 'y'));
+    if (/ness$/.test(l)) add(l.replace(/ness$/, ''));
+    if (/less$/.test(l)) add(l.replace(/less$/, ''));
+    if (/fulness$/.test(l)) add(l.replace(/fulness$/, ''));
+    if (/ful$/.test(l)) add(l.replace(/ful$/, ''));
+    if (/ment$/.test(l)) add(l.replace(/ment$/, ''));
+    if (/^un/.test(l) && l.length > 5) add(l.slice(2));
+    forms(l).forEach(add);
+    return out;
+  }
+  function circular(word, def) {
+    var l = String(word || '').toLowerCase().trim();
+    var body = String(def || '').toLowerCase();
+    if (!l || !body) return false;
+    body = body.replace(/^\s*(if|when)\b[^,]{0,80},\s*/, '');       /* "If you do something pleasantly, ..." */
+    var own = [l].concat(stems(l));
+    var toks = body.match(/[a-z']+/g) || [];
+    var left = toks.filter(function (t) {
+      t = t.replace(/'s$/, '');
+      if (FILLER.indexOf(t) >= 0) return false;
+      for (var i = 0; i < own.length; i++) {
+        var o = own[i];
+        if (t === o) return false;
+        if (o.length >= 5 && (t.indexOf(o) === 0 || o.indexOf(t) === 0) && t.length >= 4) return false;
+      }
+      return true;
+    });
+    return left.length === 0;
+  }
+  function rootIn(word, def) {                       /* a root of the word that the definition leans on */
+    var body = ' ' + String(def || '').toLowerCase().replace(/[^a-z' ]+/g, ' ') + ' ';
+    var st = stems(word);
+    for (var i = 0; i < st.length; i++) if (st[i].length >= 4 && body.indexOf(' ' + st[i] + ' ') >= 0) return st[i];
+    return '';
+  }
+  function frame(word, root) {
+    var l = word.toLowerCase();
+    if (/ly$/.test(l)) return 'in a ' + root + ' way.';
+    if (/ness$/.test(l)) return 'being ' + root + '.';
+    if (/less$/.test(l)) return 'without ' + root + '.';
+    if (/ful$/.test(l)) return 'full of ' + root + '.';
+    return 'from the word "' + root + '".';
+  }
+  function cap(d, n) { d = String(d || '').trim(); n = n || 220; return d.length > n ? d.slice(0, n - 3) + '…' : d; }
+
+  /* the definitions Wiktionary gives (following "past tense of …" to the base word) */
+  function wiktDefs(word) {
     var tries = forms(word), i = 0;
     function next() {
-      if (i >= tries.length || i >= 4) return Promise.resolve('');
+      if (i >= tries.length || i >= 4) return Promise.resolve([]);
       var t = tries[i++];
       return wiktPage(t).then(function (p) {
         if (!p) return next();
-        if (p.defs.length && !/^(plural|past|present|third|simple past|comparative|superlative)\b[^.]*\bof\b/i.test(p.defs[0])) {
-          var d = p.defs[0];
-          if (d.length < 40 && p.defs[1]) d += ' / ' + p.defs[1];
-          return d.length > 220 ? d.slice(0, 217) + '…' : d;
-        }
+        var ds = p.defs.filter(function (d) { return !/^(plural|past|present|third|simple past|comparative|superlative)\b[^.]*\bof\b/i.test(d); });
+        if (ds.length) return ds;
         if (p.base) { tries.splice(i, 0, p.base.toLowerCase()); }
         return next();
       });
     }
     return next();
   }
+  /* the first sense that isn't circular ('' if none) */
+  function goodSense(word, word2) {
+    return wiktDefs(word).then(function (ds) {
+      var ok = ds.filter(function (d) { return !circular(word2 || word, d); });
+      if (!ok.length) return '';
+      var d = ok[0];
+      if (d.length < 40 && ok[1]) d += ' / ' + ok[1];
+      return cap(d);
+    });
+  }
+  /* "pleasantly" -> "in a pleasant way. pleasant: nice, enjoyable" */
+  function viaRoot(word) {
+    var st = stems(word).filter(function (x) { return x.length >= 3; }), i = 0;
+    function next() {
+      if (i >= st.length || i >= 4) return Promise.resolve('');
+      var r = st[i++];
+      return goodSense(r).then(function (d) { return d ? cap(frame(word, r) + ' ' + r + ': ' + d, 260) : next(); });
+    }
+    return next();
+  }
+  function wiktDefine(word) {
+    return goodSense(word).then(function (d) {
+      if (!d) return viaRoot(word);
+      var r = rootIn(word, d);
+      if (!r || d.length > 120) return d;
+      return goodSense(r).then(function (rd) { return rd ? cap(d + ' (' + r + ': ' + rd + ')', 260) : d; });
+    });
+  }
   function cacheGet(src, slug) {
-    var u = SUPA_URL + '/rest/v1/song_tr?select=equiv&slug=eq.' + (slug || 'simple-wk') + '&lang=eq.' + CODE + '&src=eq.' + encodeURIComponent(src);
+    var u = SUPA_URL + '/rest/v1/song_tr?select=equiv,note&slug=eq.' + (slug || 'simple-wk') + '&lang=eq.' + CODE + '&src=eq.' + encodeURIComponent(src);
     return timed(inner(u, { headers: hdr() }).then(function (r) { return r.ok ? r.json() : []; }), 4000)
-      .then(function (rows) { return rows && rows[0] && rows[0].equiv || ''; })
-      .catch(function () { return ''; });
+      .then(function (rows) {
+        var r = rows && rows[0];
+        if (!r || !r.equiv) return null;
+        return { v: r.equiv, teacher: /^fixed by/i.test(r.note || '') };
+      })
+      .catch(function () { return null; });
   }
   function cachePut(src, val, slug) {
     try {
@@ -302,6 +403,31 @@
     return (' ' + norm(LAST_TAP.text) + ' ').indexOf(' ' + w + ' ') >= 0;
   }
 
+  function freshWord(w, key, meaning) {
+    var ck = w.toLowerCase();
+    return wiktDefine(w).then(function (d) {
+      if (d) { cachePut(ck, d, 'simple-wk'); return d; }
+      return askProxy(key || w, meaning, true);
+    });
+  }
+  /* where a word or sentence is saved: {slug, src, word} — or null if it is never saved */
+  function keyFor(src) {
+    var key = String(src || '').trim(), ws = words(key);
+    if (!key) return null;
+    if (ws.length <= 2) {
+      var w = bare(ws.join(' '));
+      if (w && /^[A-Za-z][A-Za-z' -]*$/.test(w)) return { slug: 'simple-wk', src: w.toLowerCase(), word: w };
+      return null;
+    }
+    return { slug: 'simple-s', src: key, word: '' };
+  }
+  function fresh(src) {                                /* teacher: look it up again, ignoring what's saved */
+    var k = keyFor(src);
+    if (!k) return Promise.resolve('');
+    if (k.word) return wiktDefine(k.word).then(function (d) { return d || askProxy(k.word, '', true); });
+    return askProxy(k.src, '', false);
+  }
+  function forget(src) { var k = String(src || '').trim(); delete MEM['w|' + k]; delete MEM['s|' + k]; }
   function simpleFor(src, meaning, forceWord) {
     var key = String(src || '').trim();
     if (!key) return Promise.resolve('');
@@ -314,11 +440,8 @@
       /* a tapped word: easy definition (Wiktionary), else ask the translator */
       var ck = w.toLowerCase();
       p = cacheGet(ck, 'simple-wk').then(function (hit) {
-        if (hit) return hit;
-        return wiktDefine(w).then(function (d) {
-          if (d) { cachePut(ck, d, 'simple-wk'); return d; }
-          return askProxy(key, meaning, true);
-        });
+        if (hit && (hit.teacher || !circular(w, hit.v))) return hit.v;   /* T-330: a circular saved one is replaced */
+        return freshWord(w, key, meaning);
       });
     } else if (ws.length <= 2) {
       /* a 1–2 word label or button (or std.js warming up words nobody tapped yet):
@@ -327,7 +450,7 @@
     } else {
       /* a label, button, direction or sentence: a simpler sentence or the English itself */
       p = cacheGet(key, 'simple-s').then(function (hit) {
-        if (hit) return hit;
+        if (hit) return hit.v;
         return askProxy(key, meaning, false).then(function (v) {
           var same = !v || norm(v) === norm(key);
           if (same) return '';
@@ -405,7 +528,8 @@
     document.addEventListener('touchstart', noteTap, { capture: true, passive: true });
     document.addEventListener('click', function () { setTimeout(scan, 300); setTimeout(scan, 1300); setTimeout(scan, 3200); }, true);
   }
-  window.GAL_SIMPLE = { CODE: CODE, settings: SET, simpleFor: simpleFor, parseWiki: parseWiki, rescan: scan };
+  window.GAL_SIMPLE = { CODE: CODE, settings: SET, simpleFor: simpleFor, parseWiki: parseWiki, rescan: scan,
+                        circular: circular, stems: stems, wiktDefine: wiktDefine, fresh: fresh, keyFor: keyFor, forget: forget };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
 })();
