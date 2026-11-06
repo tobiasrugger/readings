@@ -45,6 +45,8 @@
       reads and saves the email exactly as before. A pasted full email keeps only the part
       before @; Enter signs in; a stored/prefilled @sfusd.edu (Period 1) keeps that domain.
 
+  12. Who wrote it (T-337, Nov 6 2026): device code per browser + word flags on every save,
+      and a friendly line in each sign-in box. Teacher page trail/dashboard.html.
   11. Practice log (T-148, Nov 5 2026): active minutes, 🔊 taps and translations per student,
       page and day → practice_log. GAL.key(email) (T-299) = the username, the one student ID.
 
@@ -622,6 +624,7 @@
       if (looksLikeLangSelect(own[i])) haveLang = own[i];
     }
     var btn0 = startButton(box);
+    if (btn0) trBoxNote(box, btn0);                   /* T-337 */
     if (haveLang && haveLang.id !== 'galStdLang') {              /* page already does it right */
       if (btn0) resume(box, btn0);
       return;
@@ -2011,6 +2014,194 @@
     window.GAL.practiceState = function () { return PL.b; };
   }
 
+  /* ================= T-337 WHO WROTE IT (Nov 6 2026) =================
+     Students sign in by picking a name, with no password, so one student could sign in as
+     another. Toby wants deterrence and a trail, NOT passwords:
+     1. DEVICE TRAIL. Each browser gets a random device code on first load (localStorage
+        gal_device, e.g. "K7Q2-M9XD"; machine setting, not student work). Every save a student
+        page sends to Supabase records username (GAL.key), device, page, day and period in
+        device_log through rpc device_add (adds, never overwrites).
+     2. WORD FLAGS. The text inside each save is checked against a short list (English, Spanish,
+        Chinese, Arabic, Vietnamese, Thai, Nepali). A hit goes to word_flags through rpc flag_add.
+        The student sees nothing different; nothing is blocked or deleted.
+     3. A short, friendly line in every sign-in box: Mr. Toby can see which computer saves your
+        work. Translated (six languages built in, others through the proxy).
+     Teacher page: https://tobiasrugger.github.io/readings/trail/dashboard.html (pw galileo2026).
+     Off in teacher view, on teacher pages and for robots (GAL_TRAIL_TEST turns it on in tests). */
+  var TR = { real: null, b: {}, seen: {}, kind: '' };
+  function trOff() {
+    if (window.GAL_TRAIL_TEST) return false;
+    var save = window.GAL_PRACTICE_TEST; window.GAL_PRACTICE_TEST = false;
+    var off = plOff(); window.GAL_PRACTICE_TEST = save; return off;
+  }
+  function trDevice() {
+    var d = '';
+    try { d = localStorage.getItem('gal_device') || ''; } catch (e) {}
+    if (!/^[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(d)) {
+      var A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', s = '', r = new Uint8Array(8);
+      try { crypto.getRandomValues(r); } catch (e) { for (var j = 0; j < 8; j++) r[j] = Math.floor(Math.random() * 256); }
+      for (var i = 0; i < 8; i++) s += A[r[i] % A.length] + (i === 3 ? '-' : '');
+      d = s; try { localStorage.setItem('gal_device', d); } catch (e) {}
+    }
+    return d;
+  }
+  function trKind() {
+    if (TR.kind) return TR.kind;
+    var u = navigator.userAgent || '', k = 'Computer';
+    if (/CrOS/.test(u)) k = 'Chromebook';
+    else if (/iPad/.test(u) || (/Macintosh/.test(u) && navigator.maxTouchPoints > 1)) k = 'iPad';
+    else if (/iPhone/.test(u)) k = 'iPhone';
+    else if (/Android/.test(u)) k = /Mobile/.test(u) ? 'Android phone' : 'Android tablet';
+    else if (/Windows/.test(u)) k = 'Windows';
+    else if (/Macintosh/.test(u)) k = 'Mac';
+    try { k += ' ' + screen.width + '\u00d7' + screen.height; } catch (e) {}
+    return (TR.kind = k);
+  }
+  /* --- the word list. Plain words match whole words; "*" = any ending; "~" = anywhere in the
+     text (Chinese, Thai, Devanagari and long Arabic words have no spaces to lean on). Words that
+     are also everyday words (dog, donkey, your mom, chicken) are left out on purpose. --- */
+  var TR_WORDS = [
+    /* English */ 'fuck*','motherfuck*','fck','fuk','shit*','bullshit','bitch*','asshole*','ass','dick','dicks','dickhead*','pussy','cunt*','cock','cocks',
+    'nigga*','nigger*','fag','fags','faggot*','whore*','slut*','bastard*','retard*','kys','kill yourself','kill urself','go die','porn*','stfu',
+    /* Spanish */ 'puta*','puto*','pendej*','cabron*','cabrón*','mierda*','verga*','chinga*','culer*','culo','maric*','coño','joder','jodid*','zorra*','perra*','pinche*','hijueputa','malparid*','mamaguev*','mátate','matate',
+    /* Vietnamese */ 'địt','đụ','đĩ','lồn','cặc','buồi','đéo','vcl','mẹ mày','đồ khốn',
+    /* Chinese (Mandarin + Cantonese) */ '~傻逼','~傻b','~煞笔','~他妈的','~他媽的','~操你','~肏','~滚蛋','~滾蛋','~鸡巴','~雞巴','~婊子','~草泥马','~去死','~贱人','~賤人','~王八蛋','~狗日','~屌你','~仆街','~撚','~𨳒','~戇鳩','~臭西',
+    /* Arabic */ 'كس','كسمك','كس امك','كس أمك','~شرموط','~منيوك','~عاهرة','~قحبة','~يلعن','زب','زبي','خرا','ابن الكلب','يا حمار','يا كلب',
+    /* Thai */ '~เหี้ย','~ควย','~เย็ด','~ไอ้สัตว์','~อีดอก','~ส้นตีน','~แม่ง',
+    /* Nepali / Hindi (Devanagari + typed in English letters) */ '~मुजी','~मुजि','~रन्डी','~रण्डी','~मादरचोद','~भोसडी','~चुतिया','चिक','muji','randi','madarchod','machikne','bhosdi*','chutiya','chutiye'
+  ];
+  var TR_RX = null;
+  function trRx() {
+    if (TR_RX) return TR_RX;
+    TR_RX = [];
+    var esc = function (s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); };
+    TR_WORDS.forEach(function (w) {
+      var any = w.charAt(0) === '~', star = w.slice(-1) === '*', core = w.replace(/^~/, '').replace(/\*$/, '');
+      var src = esc(core).replace(/ /g, '[\\s_.-]+') + (star ? '[\\p{L}\\p{M}]*' : '');
+      try { TR_RX.push([core, any ? new RegExp(src, 'iu') : new RegExp('(?:^|[^\\p{L}\\p{M}\\p{N}])(' + src + ')(?=$|[^\\p{L}\\p{M}\\p{N}])', 'iu')]); } catch (e) {}
+    });
+    /* f*ck, sh!t, b1tch */
+    TR_RX.push(['f*ck', /(?:^|[^a-z])f[\W_]{1,3}c?k/i], ['sh*t', /(?:^|[^a-z])sh[*!1@]+t/i], ['b*tch', /(?:^|[^a-z])b[*!1@]+tch/i]);
+    return TR_RX;
+  }
+  var TR_SKIPKEY = /^(email|e|lang|.*_lang|set_slug|slug|guide_key|period|level|id|key|test_key|ep|episode|kind|src|url|href|audio|path|.*_at|.*_url|.*_path|color|colour)$/i;
+  function trStrings(o, out, k, depth) {
+    if (out.length > 400 || depth > 8 || o == null) return out;
+    if (typeof o === 'string') { if (o.length > 1 && !TR_SKIPKEY.test(k || '') && !/^data:/.test(o)) out.push(o); return out; }
+    if (Array.isArray(o)) { for (var i = 0; i < o.length; i++) trStrings(o[i], out, k, depth + 1); return out; }
+    if (typeof o === 'object') { for (var p in o) if (Object.prototype.hasOwnProperty.call(o, p)) trStrings(o[p], out, p, depth + 1); }
+    return out;
+  }
+  function trScan(text) {
+    var R = trRx(), low = String(text).normalize ? String(text).normalize('NFC') : String(text);
+    for (var i = 0; i < R.length; i++) {
+      var m = R[i][1].exec(low);
+      if (m) {
+        var at = m.index + (m[0].length - (m[1] || m[0]).length);
+        return { word: R[i][0], at: at, len: (m[1] || m[0]).length };
+      }
+    }
+    return null;
+  }
+  function trRpc(fn, body, leaving) {
+    return (TR.real || window.fetch).call(window, SUPA_URL + '/rest/v1/rpc/' + fn, { method: 'POST', keepalive: !!leaving,
+      headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify(body) });
+  }
+  function trSend(leaving) {
+    try {
+      Object.keys(TR.b).forEach(function (k) {
+        var b = TR.b[k]; if (!b.saves) return;
+        var n = b.saves; b.saves = 0;
+        trRpc('device_add', { p_who: b.who, p_email: b.email, p_device: b.device, p_kind: b.kind, p_day: b.day, p_page: b.page, p_period: b.period, p_saves: n }, leaving)
+          .then(function (r) { if (!r.ok && !leaving) b.saves += n; }, function () { if (!leaving) b.saves += n; });
+      });
+    } catch (e) {}
+  }
+  function trNote(url, init) {
+    var body = null, raw = init && init.body;
+    if (typeof raw === 'string') { try { body = JSON.parse(raw); } catch (e) {} }
+    var row = Array.isArray(body) ? body[0] : body;
+    var email = (row && typeof row.email === 'string' && row.email) || '';
+    if (!email) { var m = /[?&]email=eq\.([^&]+)/.exec(url); if (m) email = decodeURIComponent(m[1]); }
+    if (!email) { var s = sess(); email = (s && s.email) || ''; }
+    var who = window.GAL.key(email); if (!who) return;
+    var s2 = sess() || {}, period = String((row && row.period) || s2.period || '').slice(0, 10);
+    var day = plDay(), page = plPage(), dev = trDevice(), first = false;
+    var k = who + '|' + day + '|' + page;
+    var b = TR.b[k];
+    if (!b) { b = TR.b[k] = { who: who, email: email.toLowerCase(), device: dev, kind: trKind(), day: day, page: page, period: period, saves: 0 }; first = true; }
+    if (period) b.period = period;
+    b.saves++;
+    if (first) trSend(document.visibilityState === 'hidden');        /* first save on a page: record at once */
+    /* word check */
+    if (!body) return;
+    var tbl = (url.split('/rest/v1/')[1] || '').split('?')[0];
+    trStrings(body, [], '', 0).forEach(function (t) {
+      var hit = trScan(t); if (!hit) return;
+      var snip = t.slice(Math.max(0, hit.at - 80), hit.at + hit.len + 80);
+      var sk = who + '|' + page + '|' + hit.word + '|' + snip;
+      if (TR.seen[sk]) return; TR.seen[sk] = 1;
+      trRpc('flag_add', { p_who: who, p_email: email.toLowerCase(), p_device: dev, p_kind: trKind(), p_day: day, p_page: page, p_period: period,
+        p_word: hit.word, p_text: snip.slice(0, 400), p_tbl: tbl.slice(0, 60) }, document.visibilityState === 'hidden').then(function () {}, function () {});
+    });
+  }
+  var TR_SKIPTBL = /^(rpc\/|song_tr|news_translations|page_errors|practice_log|device_log|word_flags|activity_attempts|response_history|gal_settings|grade_ticks|class_assignments)/;
+  function trBoot() {
+    if (trOff() || window.__GAL_TRAIL__) return;
+    window.__GAL_TRAIL__ = true;
+    trDevice();
+    try {
+      var real = TR.real = window.fetch;
+      window.fetch = function (input, init) {
+        try {
+          var url = (typeof input === 'string') ? input : (input && input.url) || '';
+          var method = String((init && init.method) || 'GET').toUpperCase();
+          if (url.indexOf('supabase.co/rest/v1/') >= 0 && /^(POST|PATCH)$/.test(method) &&
+              !TR_SKIPTBL.test(url.split('/rest/v1/')[1] || '')) trNote(url, init);
+        } catch (e) {}
+        return real.apply(this, arguments);
+      };
+    } catch (e) {}
+    setInterval(function () { trSend(false); }, 60000);
+    window.addEventListener('pagehide', function () { trSend(true); });
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') trSend(true); });
+    window.GAL.trailState = function () { return { b: TR.b, device: trDevice() }; };   /* tests */
+  }
+  /* --- the line in the sign-in box (runs even where the trail is off for robots, never on teacher pages) --- */
+  var TR_NOTE = 'Mr. Toby can see which computer saves your work. Please sign in only as yourself.';
+  var TR_NOTE_T = {
+    'es': 'Mr. Toby puede ver qué computadora guarda tu trabajo. Por favor, entra solo con tu propio nombre.',
+    'zh-CN': 'Mr. Toby 可以看到是哪台电脑保存了你的作业。请只用你自己的名字登录。',
+    'yue': 'Mr. Toby 睇到係邊部電腦儲存你嘅功課。請只用你自己嘅名登入。',
+    'ar': 'يستطيع Mr. Toby أن يرى أيّ حاسوب يحفظ عملك. من فضلك سجّل الدخول باسمك أنت فقط.',
+    'vi': 'Mr. Toby có thể thấy máy tính nào lưu bài của em. Hãy chỉ đăng nhập bằng tên của chính em.',
+    'th': 'Mr. Toby เห็นได้ว่าคอมพิวเตอร์เครื่องไหนบันทึกงานของคุณ กรุณาเข้าสู่ระบบด้วยชื่อของตัวเองเท่านั้น',
+    'ne': 'Mr. Toby ले कुन कम्प्युटरले तिम्रो काम सेभ गर्छ भनेर देख्न सक्नुहुन्छ। कृपया आफ्नै नामले मात्र साइन इन गर।'
+  };
+  function trBoxNote(box, btn) {
+    try {
+      if (!box || !btn || box.querySelector('.gal-trail-note')) return;
+      if (window.GAL_TEACHER_VIEW || /[?&]view=teacher\b/.test(location.search)) return;
+      var n = document.createElement('div');
+      n.className = 'gal-trail-note';
+      n.style.cssText = 'margin:10px 0 2px;padding:7px 10px;border:2px solid #2B2233;border-radius:10px;background:#fff;font-size:13.5px;line-height:1.35;color:#2B2233;text-align:left';
+      n.innerHTML = '<span aria-hidden="true">\ud83d\udda5\ufe0f </span><span class="gal-trail-en" translate="no"></span><div class="gal-trail-tr" translate="no" style="color:#5d536a;margin-top:3px"></div>';
+      n.querySelector('.gal-trail-en').textContent = TR_NOTE;
+      var anchor = childOf(box, btn) || btn;
+      if (anchor.nextSibling) anchor.parentNode.insertBefore(n, anchor.nextSibling); else anchor.parentNode.appendChild(n);
+      var paint = function () {
+        var lg = listenLang(), out = n.querySelector('.gal-trail-tr');
+        if (!lg || lg === 'en' || lg === 'en-simple') { out.textContent = ''; return; }
+        if (TR_NOTE_T[lg]) { out.textContent = TR_NOTE_T[lg]; out.dir = lg === 'ar' ? 'rtl' : 'ltr'; return; }
+        var want = lg;
+        proxyTranslate(TR_NOTE, 'sentence', function (v) { if (v && listenLang() === want) { out.textContent = v; out.dir = 'auto'; } });
+      };
+      paint();
+      box.addEventListener('change', function (e) { if (e.target && e.target.tagName === 'SELECT') setTimeout(paint, 80); });
+    } catch (e) {}
+  }
+
   function scan() {
     addCSS();
     speakerIcons();
@@ -2033,6 +2224,7 @@
     tvBoot();
     try { updBoot(); } catch (e) {}                  /* T-272 */
     try { plBoot(); } catch (e) {}                   /* T-148 practice log */
+    try { trBoot(); } catch (e) {}                   /* T-337 who wrote it */
     try { var gs = document.createElement('script'); gs.src = '/readings/simple/simple.js'; (document.head || document.documentElement).appendChild(gs); } catch (e) {}   /* T-286 English - simple (T-293) */
     try { new MutationObserver(soon).observe(document.body, { childList: true, subtree: true }); } catch (e) {}
     /* T-228: a sign-in box revealed by a class change (no new nodes) or left while typing */
