@@ -20,7 +20,7 @@ th,td{border-bottom:1px solid #cdbf9f;padding:6px 8px;text-align:left;vertical-a
 th{background:#2b2016;color:#f3ecd9;position:sticky;top:0;font-size:.9rem}
 tr.stu{cursor:pointer}tr.stu:hover{background:#fdf0d0}
 .pill{display:inline-block;border-radius:999px;padding:0 8px;font-weight:800;font-size:.85rem;border:1.5px solid #2b2016;white-space:nowrap}
-.ok{background:#e2f2e6}.no{background:#fbe9e6}.mid{background:#fdf0c8}.grey{background:#eee}
+.ok{background:#e2f2e6}.top{background:#0d5c3a;color:#fff}.no{background:#fbe9e6}.mid{background:#fdf0c8}.grey{background:#eee}
 .det td{background:#fbf6ea}
 .small{font-size:.85rem;color:#6b5c46}
 .gate{position:fixed;inset:0;background:rgba(34,28,20,.86);display:flex;align-items:center;justify-content:center;z-index:50}
@@ -81,7 +81,10 @@ function scoreOf(p){
   var E=(typeof p.eScore==='number')?p.eScore:null;
   return {A:A,B:B,C:C,D:D,E:E,total:A+B+C+D+(E||0),max:40+(E==null?0:4)};
 }
-function band(pct){return pct>=90?4:pct>=75?3:pct>=60?2:pct>0?1:0;}
+/* T-310: the one 0–4 scale (T-302) lives in grade04.js — 0..4 plus 4.5; never keep our own cut points */
+function band(pct){ pct=Math.round(pct); if(window.GAL04&&GAL04.band) return GAL04.band(pct);
+  var B=[[95,4.5],[76,4],[56,3],[36,2],[15,1],[0,0]]; for(var i=0;i<B.length;i++) if(pct>=B[i][0]) return B[i][1]; return 0; }
+function bandCls(b){ return b>=4.5?'top':b>=3?'ok':b>=2?'mid':'no'; }
 
 function load(){
   $('stat').textContent='Loading…';
@@ -114,7 +117,7 @@ function draw(){
     var st=r.submitted?'<span class="pill ok">handed in</span>':'<span class="pill mid">'+(r.answered||0)+'/'+(r.total||0)+' working</span>';
     h+='<tr class="stu" data-k="'+k+'"><td><b>'+esc(r.student_name||r.email)+'</b><div class="small">'+esc(r.email)+'</div></td><td>'+esc(r.period||'')+'</td><td>'+esc(p.mode||r.mode||'')+'</td><td>'+st+'</td>'+
        '<td>'+s.A+'</td><td>'+s.B+'</td><td>'+s.C+'</td><td>'+s.D+'</td><td>'+(s.E==null?(r.submitted?'<span class="flag">score it</span>':'—'):s.E)+'</td>'+
-       '<td><b>'+s.total+'</b>/'+s.max+'</td><td><span class="pill '+(pct>=75?'ok':pct>=60?'mid':'no')+'">'+band(pct)+'</span></td>'+
+       '<td><b>'+s.total+'</b>/'+s.max+'</td><td><span class="pill '+bandCls(band(pct))+'" title="'+Math.round(pct)+'%">'+band(pct)+'</span></td>'+
        '<td>'+(((p.leaves||0)+(p.fsExits||0))?'<span class="flag">'+(p.leaves||0)+'× tab, '+(p.fsExits||0)+'× full screen · '+Math.round(p.away||0)+' s</span>':'—')+'</td>'+
        '<td>'+(trn||'—')+(p.practice?'<div class="small">'+Object.keys(p.miss||{}).reduce(function(a,k){return a+(p.miss[k]||0);},0)+' misses</div>':'')+'</td><td class="small">'+new Date(r.updated_at).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+'</td></tr>';
     if(OPEN[k]) h+='<tr class="det"><td colspan="14">'+detail(r)+'</td></tr>';
