@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en" translate="no" class="notranslate">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="google" content="notranslate">
+<title>Vocabulary check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --plum:#5B2A6E; --plum-deep:#3D1A4C; --plum-edge:#2E1239;
+  --lilac:#EFE7F3; --lilac-2:#E2D3EA; --paper:#FBF9FC;
+  --gold:#E3A92B; --ink:#2A2030; --muted:#6E6275; --line:#D9CCE0; --warn:#B3261E;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:"Lexend",system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--paper);color:var(--ink);line-height:1.45;-webkit-user-select:none;user-select:none}
+input,button,select{font:inherit}
+button{cursor:pointer}
+.hidden{display:none!important}
+
+.bar{background:var(--plum);color:#fff}
+.bar .in{max-width:760px;margin:0 auto;padding:13px 20px;display:flex;align-items:center;gap:14px}
+.bar h1{margin:0;font-size:1rem;font-weight:600}
+.bar .who{margin-left:auto;font-size:.85rem;opacity:.9;text-align:right}
+.bar .save{display:block;font-size:.72rem;opacity:.75}
+.dots{display:flex;gap:5px;max-width:760px;margin:0 auto;padding:10px 20px 0;flex-wrap:wrap}
+.dots i{width:22px;height:6px;border-radius:3px;background:var(--lilac-2)}
+.dots i.done{background:var(--plum)}
+.dots i.now{background:var(--gold)}
+
+main{max-width:760px;margin:0 auto;padding:18px 20px 40px}
+.panel{background:#fff;border:2px solid #3A2F45;box-shadow:0 4px 0 rgba(42,32,48,.18);border-radius:20px;padding:28px;margin:26px auto;max-width:480px}
+.panel h2{margin:0 0 8px;font-size:1.5rem;color:var(--plum-deep)}
+.panel p{margin:0 0 16px;color:var(--muted)}
+.field{margin-bottom:14px}
+.field label{display:block;font-weight:500;margin-bottom:5px}
+.field input,.field select{width:100%;padding:12px 14px;border:2px solid var(--line);border-radius:12px;background:#fff;-webkit-user-select:text;user-select:text}
+.field input:focus,.field select:focus{outline:none;border-color:var(--plum)}
+.err{color:var(--warn);font-size:.92rem;min-height:1.3em;margin-bottom:8px}
+.btn{border:0;border-radius:14px;padding:13px 24px;font-weight:600;background:var(--plum);color:#fff;box-shadow:0 5px 0 var(--plum-edge);transition:transform .08s,box-shadow .08s}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--plum-edge)}
+.btn.ghost{background:#fff;color:var(--plum);border:2px solid var(--line);box-shadow:0 5px 0 var(--line)}
+.btn.ghost:active{box-shadow:0 1px 0 var(--line)}
+.btn.wide{width:100%}
+.btn:disabled{opacity:.5}
+/* T-318: green "practice the words you missed" button on the done screen */
+.btn.missed{display:block;text-align:center;text-decoration:none;background:#2F8A5B;box-shadow:0 5px 0 #1D6140;font-size:1.15rem;font-weight:700;padding:16px 24px;margin:14px 0 10px}
+.btn.missed:active{box-shadow:0 1px 0 #1D6140}
+
+/* menu */
+.menu{display:grid;gap:12px;max-width:560px;margin:0 auto}
+.menu a{display:flex;align-items:center;gap:16px;background:#fff;border:2px solid var(--line);border-radius:16px;padding:16px 18px;text-decoration:none;color:inherit}
+.menu a:hover{border-color:var(--plum)}
+.menu .e{font-size:2rem;line-height:1;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+.menu .gh{font-size:.95rem;font-weight:600;color:var(--plum-deep);margin:14px 0 0;letter-spacing:.02em}
+.menu .gh:first-child{margin-top:0}
+.menu b{display:block;font-weight:600;color:var(--plum-deep)}
+.menu span{color:var(--muted);font-size:.88rem}
+
+/* question */
+.qwrap{max-width:520px;margin:0 auto}
+.qnum{text-align:center;color:var(--muted);font-size:.9rem;margin:6px 0 4px}
+.emoji{
+  background:#fff;border:2px solid var(--line);border-radius:24px;
+  display:grid;place-items:center;font-size:clamp(88px,26vw,140px);line-height:1.15;
+  padding:22px 10px;margin-bottom:18px;
+  font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;
+}
+.emoji{border-color:#3d2a52;box-shadow:0 3px 0 rgba(61,42,82,.25)}
+.emoji.pic{padding:14px 10px}
+.opt{border-color:#5a4670 !important}
+.emoji.pic svg{width:clamp(150px,44vw,220px);height:auto;display:block}
+.sent{
+  background:#fff;border:2px solid var(--line);border-radius:24px;
+  padding:26px 24px;margin-bottom:18px;min-height:150px;display:grid;align-items:center;
+}
+/* drawn by CSS, like the answer words, so translators cannot reach it */
+.sent::before{content:attr(data-s);font-size:clamp(1.15rem,4.6vw,1.45rem);line-height:1.6;font-weight:500}
+.opts{display:grid;gap:10px}
+.opt{display:flex;align-items:center;gap:14px;padding:14px 16px;border:2px solid var(--line);border-radius:14px;background:#fff;min-height:58px;cursor:pointer}
+.opt:hover{background:var(--paper)}
+.opt input{position:absolute;opacity:0;width:1px;height:1px}
+.opt .dot{width:24px;height:24px;border-radius:50%;border:2px solid var(--plum);background:#fff;flex:none}
+.opt:has(input:checked){border-color:var(--plum);background:var(--lilac)}
+.opt input:checked + .dot{background:var(--plum);box-shadow:inset 0 0 0 4px #fff}
+.opt input:focus-visible + .dot{outline:3px solid var(--gold);outline-offset:3px}
+/* the words are drawn by CSS so translators and copy-paste cannot reach them */
+.opt .w::before{content:attr(data-w);font-size:1.2rem;font-weight:500}
+.opt.idk{border-style:dashed}
+.opt.idk .w::before{font-size:1rem;font-weight:400;color:var(--muted)}
+.qfoot{display:flex;gap:12px;align-items:center;margin-top:18px}
+.qfoot .msg{flex:1;color:var(--muted);font-size:.9rem}
+
+.after{display:block;margin-top:14px;padding-top:14px;border-top:2px solid var(--line);color:var(--ink);font-weight:500;line-height:1.55}
+.overlay{position:fixed;inset:0;background:rgba(46,18,57,.82);display:grid;place-items:center;z-index:50;padding:20px}
+.overlay .box{background:#fff;border-radius:20px;padding:28px;max-width:420px;text-align:center}
+.overlay h3{margin:0 0 10px;color:var(--plum-deep)}
+.overlay p{margin:0 0 18px;color:var(--muted)}
+#canary{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div id="canary" aria-hidden="true">Good morning, teacher. The dog is happy.</div>
+
+<header class="bar">
+  <div class="in">
+    <h1 id="barTitle">Vocabulary check</h1>
+    <div class="who"><span id="whoName"></span><span class="save" id="saveState"></span></div>
+  </div>
+</header>
+<div class="dots" id="dots"></div>
+
+<main>
+
+  <section id="scrMenu" class="hidden">
+    <p style="text-align:center;color:var(--muted)">Choose your vocabulary check.</p>
+    <div class="menu" id="menu"></div>
+  </section>
+
+  <section id="scrSignin" class="panel hidden">
+    <h2 id="signTitle">Sign in</h2>
+    <p id="signSub">Mr. Toby</p>
+    <div class="field"><label for="inName">Name</label><input id="inName" autocomplete="name"></div>
+    <div class="field"><label for="inEmail">School email</label><input id="inEmail" type="email" inputmode="email" autocapitalize="off" spellcheck="false" placeholder="name@s.sfusd.edu"></div>
+    <div class="field"><label for="inPeriod">Period</label>
+      <select id="inPeriod">
+    <option value="">Choose</option>
+    <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option>
+  </select>
+    </div>
+    <div class="err" id="signErr"></div>
+    <button class="btn wide" id="btnSignin">Start</button>
+  </section>
+
+  <section id="scrTest" class="qwrap hidden">
+    <div class="qnum" id="qnum"></div>
+    <div class="emoji" id="emoji" aria-hidden="true"></div>
+    <div class="sent hidden" id="sent" aria-hidden="true"></div>
+    <div class="opts" id="opts" role="radiogroup" aria-label="Choose the word"></div>
+    <div class="qfoot">
+      <button class="btn ghost" id="btnBack">Back</button>
+      <div class="msg" id="qmsg"></div>
+      <button class="btn hidden" id="btnFinish">Finish</button>
+    </div>
+  </section>
+
+  <section id="scrDone" class="panel hidden">
+    <h2 id="doneTitle">You finished. 🎉</h2>
+    <p id="doneSub">Thank you. Mr. Toby will see your answers.</p>
+    <a class="btn wide missed hidden" id="btnMissed" href="#">Practice the words you missed →</a>
+    <button class="btn wide hidden" id="btnNextQuiz"></button>
+    <button class="btn ghost wide" id="btnAgain" style="margin-top:10px">Back to the list</button>
+  </section>
+
+</main>
+
+<div class="overlay hidden" id="ovTranslate" role="alertdialog">
+  <div class="box">
+    <h3>Turn off translate</h3>
+    <p>This check is in English only. Turn off translation, then tap Continue. Your answers are saved.</p>
+    <button class="btn" id="btnTransOk">Continue</button>
+  </div>
+</div>
+
+<script src="quizzes.js"></script>
+<script>
+/* ================= CONFIG ================= */
+var SUPA_URL = 'https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var TABLE     = 'vocab_preassess';
+var ALLOW_IDK = true;   // show "I don't know" under each question
+var IDK       = '__idk';
+
+var QUIZ = null, SET = null, SET_KEY = '', PHASE = 'pre', AGAIN = false;
+var ATTEMPT = 1;
+var S = { email:'', name:'', period:'', items:[], answers:{}, i:0, created:false, translateFlags:0 };
+
+function $(id){ return document.getElementById(id); }
+function show(id){ ['scrMenu','scrSignin','scrTest','scrDone'].forEach(function(s){ $(s).classList.toggle('hidden', s !== id); }); window.scrollTo(0,0); }
+function shuffle(a){ a=a.slice(); for (var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+function escAttr(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function sb(path, opts){
+  opts = opts || {};
+  return fetch(SUPA_URL + '/rest/v1/' + path, {
+    method: opts.method || 'GET',
+    headers: Object.assign({ apikey:SUPA_KEY, Authorization:'Bearer '+SUPA_KEY, 'Content-Type':'application/json' }, opts.headers || {}),
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+    keepalive: !!opts.keepalive
+  }).then(function(r){
+    if (!r.ok) return r.text().then(function(t){ throw new Error(r.status + ' ' + t); });
+    return r.status === 204 ? null : r.text().then(function(t){ return t ? JSON.parse(t) : null; });
+  });
+}
+
+/* ================= MENU ================= */
+function renderMenu(){
+  var qs = window.QUIZZES || [], groups = [], by = {};
+  qs.forEach(function(q){
+    var m = /Unit\s*(\d+)/i.exec(q.tag || '');
+    var t = /Toolkit\s*(\d+)/i.exec(q.tag || '');
+    var g = q.group ? q.group : m ? 'Unit ' + m[1] : t ? 'Toolkit ' + t[1] : 'More';
+    if (!by[g]){ by[g] = []; groups.push(g); }
+    by[g].push(q);
+  });
+  $('menu').innerHTML = groups.map(function(g){
+    return '<h2 class="gh">' + g + '</h2>' + by[g].map(function(q){
+      var reading = q.items.every(function(it){ return it.s; });
+      return '<a href="?q=' + encodeURIComponent(q.id) + '"><span class="e">' + (q.emoji || '📝') + '</span>'
+        + '<span><b>' + q.title + '</b><span>' + (q.tag ? q.tag + ' &middot; ' : '') + q.items.length + ' questions'
+        + (reading ? ' &middot; reading' : '') + '</span></span></a>';
+    }).join('');
+  }).join('');
+  show('scrMenu');
+}
+
+/* ================= SIGN IN ================= */
+var EMAIL_RE = /^[^@\s]+@(s\.)?sfusd\.edu$/;
+
+function canonicalEmail(typed){
+  var local = typed.split('@')[0], a = local + '@s.sfusd.edu', b = local + '@sfusd.edu';
+  return sb('students?select=email&email=in.(' + encodeURIComponent('"'+a+'","'+b+'"') + ')').then(function(rows){
+    if (rows && rows.length) return rows.some(function(r){ return r.email === a; }) ? a : rows[0].email;
+    return a;
+  }).catch(function(){ return a; });
+}
+
+$('btnSignin').addEventListener('click', function(){
+  var name = $('inName').value.trim(), typed = $('inEmail').value.trim().toLowerCase(), period = $('inPeriod').value, err = $('signErr');
+  if (!name){ err.textContent = 'Write your name.'; return; }
+  if (!EMAIL_RE.test(typed)){ err.textContent = 'Use your school email. It ends with @s.sfusd.edu'; return; }
+  if (!period){ err.textContent = 'Choose your period.'; return; }
+  err.textContent = '';
+  var btn = this; btn.disabled = true; btn.textContent = 'Just a second…';
+
+  canonicalEmail(typed).then(function(email){
+    S.email = email; S.name = name; S.period = period;
+    try {
+      localStorage.setItem('gal_student_email', email);
+      localStorage.setItem('gal_student_name', name);
+      localStorage.setItem('gal_student_period', period);
+    } catch(e){}
+    var jobs = [ sb('students?on_conflict=email', { method:'POST', headers:{ Prefer:'resolution=ignore-duplicates,return=minimal' }, body:[{ email:email, name:name, period:period }] }).catch(function(){}) ];
+    if (typed !== email) jobs.push(sb('student_aliases?on_conflict=alias_email', { method:'POST', headers:{ Prefer:'resolution=ignore-duplicates,return=minimal' }, body:[{ alias_email:typed, email:email }] }).catch(function(){}));
+    return Promise.all(jobs).then(function(){
+      return sb(TABLE + '?select=*&email=eq.' + encodeURIComponent(email)
+        + '&quiz=eq.' + encodeURIComponent(QUIZ.id) + '&order=attempt');
+    });
+  }).then(function(rows){
+    $('whoName').textContent = S.name;
+    rows = rows || [];
+    var open = rows.filter(function(r){ return !r.turned_in; })[0];      // an unfinished try comes first
+    var last = rows.length ? rows[rows.length-1] : null;
+    var row = null;
+    if (open){
+      row = open; ATTEMPT = open.attempt || 1;
+    } else if (last && AGAIN){
+      ATTEMPT = (last.attempt || 1) + 1;                                  // the link asked for another go
+    } else if (last){
+      ATTEMPT = last.attempt || 1;
+      S.items = last.items || []; S.answers = last.answers || {};         // T-318: the done screen counts misses from this try
+      renderDone(); show('scrDone'); return;                              // already done, and not asked to redo
+    } else {
+      ATTEMPT = 1;
+    }
+    if (row && row.items && row.items.length === QUIZ.items.length){
+      S.items = row.items; S.answers = row.answers || {}; S.created = true;
+      S.translateFlags = row.translate_flags || 0;
+      S.i = firstUnanswered();
+    } else {
+      buildItems();
+    }
+    show('scrTest'); render(); save(false);
+  }).catch(function(e){
+    console.error(e); err.textContent = 'Could not connect. Check the internet and try again.';
+  }).finally(function(){ btn.disabled = false; btn.textContent = 'Start'; });
+});
+
+function buildItems(){
+  S.items = shuffle(QUIZ.items).map(function(it, n){
+    return { k:'q' + (n+1) + '_' + it.w.replace(/\s+/g,'-'), w:it.w, e:it.e || '', icon:it.icon || '', s:it.s || '', opts:shuffle([it.w].concat(it.opts)) };
+  });
+  S.answers = {}; S.i = 0; S.created = false;
+}
+function firstUnanswered(){
+  for (var i=0;i<S.items.length;i++) if (!S.answers[S.items[i].k]) return i;
+  return S.items.length - 1;
+}
+
+/* ================= SAVE ================= */
+var saving = Promise.resolve();
+function tally(){
+  var score=0, answered=0, idk=0;
+  S.items.forEach(function(it){
+    var a = S.answers[it.k]; if (!a) return;
+    answered++; if (a === IDK) idk++; else if (a === it.w) score++;
+  });
+  return { score:score, answered:answered, idk:idk, total:S.items.length };
+}
+function rowBody(finish){
+  var t = tally();
+  /* the gradebook reads these: right answers out of the whole quiz */
+  window.GAL_SCORE = t.score; window.GAL_MAX = t.total;
+  window.GAL_META = { title: (QUIZ.title || 'Vocabulary pre-assessment'), unit: 'Vocabulary', sort_order: 120 };
+  var body = {
+    email:S.email, name:S.name, period:S.period, quiz:QUIZ.id, quiz_title:QUIZ.title,
+    phase:PHASE, attempt:ATTEMPT,
+    answers:S.answers, score:t.score, total:t.total, answered:t.answered, idk:t.idk,
+    translate_flags:S.translateFlags, updated_at:new Date().toISOString()
+  };
+  if (!S.created) body.items = S.items;
+  if (finish){ body.turned_in = true; body.turned_in_at = new Date().toISOString(); }
+  return body;
+}
+function save(finish){
+  var body = rowBody(finish);
+  $('saveState').textContent = 'Saving…';
+  var p = saving.then(function(){
+    return sb(TABLE + '?on_conflict=email,quiz,attempt', { method:'POST', headers:{ Prefer:'resolution=merge-duplicates,return=minimal' }, body:[body] });
+  }).then(function(){
+    S.created = true; $('saveState').textContent = 'Saved';
+  }).catch(function(e){
+    console.error(e); $('saveState').textContent = 'Not saved. Check internet.';
+    if (finish) throw e;
+  });
+  saving = p.catch(function(){});   // T-331: one failed Finish must not block every later save
+  return p;
+}
+
+/* T-331: save again when the student leaves (tab hidden or page closing), with keepalive */
+function saveOnLeave(){
+  if (!S.email || !QUIZ || !S.items || !S.items.length) return;
+  if ($('scrTest').classList.contains('hidden')) return;              // only while a check is open
+  try {
+    sb(TABLE + '?on_conflict=email,quiz,attempt', { method:'POST', keepalive:true,
+      headers:{ Prefer:'resolution=merge-duplicates,return=minimal' }, body:[rowBody(false)] })
+      .then(function(){ S.created = true; }).catch(function(){});
+  } catch(e){}
+}
+window.addEventListener('pagehide', saveOnLeave);
+document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'hidden') saveOnLeave(); });
+
+/* ================= QUESTION ================= */
+function render(){
+  var it = S.items[S.i], last = S.i === S.items.length - 1;
+  $('qnum').textContent = 'Question ' + (S.i+1) + ' of ' + S.items.length;
+  if (it.s){
+    $('sent').setAttribute('data-s', it.s); $('sent').classList.remove('hidden');
+    $('emoji').classList.add('hidden');
+  } else {
+    /* Always show the quiz's CURRENT picture for this word. A saved try keeps the
+       picture it was started with, so pictures fixed later would never reach it. */
+    var cur = QUIZ.items.filter(function(q){ return q.w === it.w; })[0];
+    var src = cur || it;
+    var svg = src.icon && (window.ICONS || {})[src.icon];
+    if (svg){ $('emoji').innerHTML = svg; $('emoji').classList.add('pic'); }
+    else { $('emoji').textContent = src.e || it.e || ''; $('emoji').classList.remove('pic'); }
+    $('emoji').classList.remove('hidden');
+    $('sent').classList.add('hidden');
+  }
+  $('dots').innerHTML = S.items.map(function(x, n){
+    return '<i class="' + (n === S.i ? 'now' : (S.answers[x.k] ? 'done' : '')) + '"></i>';
+  }).join('');
+  var html = it.opts.map(function(o){
+    return '<label class="opt"><input type="radio" name="' + it.k + '" value="' + escAttr(o) + '"><span class="dot"></span><span class="w" data-w="' + escAttr(o) + '"></span></label>';
+  }).join('');
+  if (ALLOW_IDK) html += '<label class="opt idk"><input type="radio" name="' + it.k + '" value="' + IDK + '"><span class="dot"></span><span class="w" data-w="I don&#39;t know"></span></label>';
+  $('opts').innerHTML = html;
+  $('qmsg').textContent = '';
+  $('btnBack').style.visibility = S.i === 0 ? 'hidden' : 'visible';
+  $('btnFinish').classList.toggle('hidden', !(last && S.answers[it.k]));
+
+  var prev = S.answers[it.k];
+  $('opts').querySelectorAll('input').forEach(function(inp){
+    if (prev && inp.value === prev) inp.checked = true;
+    inp.addEventListener('change', function(){
+      S.answers[it.k] = inp.value;
+      save(false);
+      if (last){                                                        // T-331: finish by itself
+        $('btnFinish').classList.remove('hidden');
+        var gap = firstUnanswered();
+        if (S.answers[S.items[gap].k]) setTimeout(finishNow, 450);   // everything answered → results
+        else setTimeout(function(){ S.i = gap; render(); window.scrollTo(0,0); }, 320);
+        return;
+      }
+      var gap2 = firstUnanswered();                                     // T-331
+      if (S.answers[S.items[gap2].k]) { setTimeout(finishNow, 450); return; }   // all answered → results
+      setTimeout(function(){ S.i = (S.i + 1 <= gap2) ? S.i + 1 : gap2; render(); window.scrollTo(0,0); }, 320);   // move on by itself
+    });
+  });
+}
+
+$('btnBack').addEventListener('click', function(){ if (S.i > 0){ S.i--; render(); } });
+$('btnFinish').addEventListener('click', finishNow);
+var finishing = false;
+function finishNow(){
+  if (finishing) return; finishing = true;
+  var btn = $('btnFinish'); btn.disabled = true; btn.textContent = 'Turning in…';
+  save(true).then(function(){ renderDone(); show('scrDone'); })
+    .catch(function(){ btn.textContent = 'Try again'; })
+    .finally(function(){ finishing = false; btn.disabled = false; if (btn.textContent === 'Turning in…') btn.textContent = 'Finish'; });
+}
+function setPos(){ return SET ? SET.quizzes.indexOf(QUIZ.id) : -1; }
+function nextInSet(){
+  var i = setPos();
+  return (i >= 0 && i < SET.quizzes.length - 1) ? SET.quizzes[i+1] : null;
+}
+function renderDone(){
+  /* T-318: pre-check only, and only when something was wrong or "I don't know" */
+  var miss = 0;
+  (S.items || []).forEach(function(it){ var a = S.answers[it.k]; if (a !== it.w) miss++; });
+  var mb = $('btnMissed');
+  mb.href = '/readings/missed/?q=' + encodeURIComponent(QUIZ.id);
+  mb.classList.toggle('hidden', !(PHASE === 'pre' && miss > 0));
+  var nextId = SET ? nextInSet() : null;
+  var btn = $('btnNextQuiz'), back = $('btnAgain');
+  if (SET){
+    var i = setPos(), n = SET.quizzes.length;
+    $('doneSub').textContent = 'Number ' + (i+1) + ' of ' + n + ' is done. Mr. Toby will see your answers.';
+  }
+  if (nextId){
+    var nq = (window.QUIZZES || []).filter(function(q){ return q.id === nextId; })[0];
+    btn.textContent = 'Next: ' + (nq ? nq.title : 'keep going') + ' →';
+    btn.classList.remove('hidden');
+    back.textContent = 'See the list';
+  } else if (SET){
+    $('doneTitle').textContent = 'All done! 🎉';
+    $('doneSub').innerHTML = 'You finished all ' + SET.quizzes.length + '. Thank you.'
+      + '<span class="after">Tell your teacher you are finished.<br>Or, if he is busy, go to Google Classroom to do more work.</span>';
+    btn.classList.add('hidden');
+    back.textContent = 'See the list';
+  } else {
+    btn.classList.add('hidden');
+    back.textContent = 'Back to the list';
+  }
+}
+$('btnNextQuiz').addEventListener('click', function(){
+  var nextId = nextInSet();
+  if (nextId) location.search = '?q=' + encodeURIComponent(nextId) + '&set=' + encodeURIComponent(SET_KEY)
+    + (PHASE === 'post' ? '&phase=post' : AGAIN ? '&again=1' : '');
+});
+$('btnAgain').addEventListener('click', function(){
+  location.href = SET && SET.page
+    ? SET.page + (PHASE === 'post' ? 'post/' : '')   /* SET.page sits next to this page */
+    : location.pathname;
+});
+
+/* ================= NO TRANSLATION ================= */
+var CANARY = $('canary').textContent, transShown = false;
+function isTranslated(){
+  var h = document.documentElement;
+  if (/translated-(ltr|rtl)/.test(h.className)) return true;
+  if (h.lang && h.lang.toLowerCase().slice(0,2) !== 'en') return true;
+  if ($('canary').textContent !== CANARY) return true;
+  if (document.querySelector('.goog-te-banner-frame, #goog-gt-tt, font[style*="vertical-align"]')) return true;
+  return false;
+}
+function checkTranslate(){
+  if (!isTranslated() || transShown) return;
+  transShown = true; $('ovTranslate').classList.remove('hidden');
+  if (S.email){ S.translateFlags++; save(false); }
+}
+new MutationObserver(checkTranslate).observe(document.documentElement, { attributes:true, attributeFilter:['class','lang'], childList:true, subtree:true, characterData:true });
+setInterval(checkTranslate, 1500);
+$('btnTransOk').addEventListener('click', function(){
+  if (isTranslated()){ location.reload(); return; }
+  transShown = false; $('ovTranslate').classList.add('hidden');
+});
+document.addEventListener('contextmenu', function(e){ if (!e.target.closest('input')) e.preventDefault(); });
+
+/* ================= START ================= */
+(function init(){
+  var params = new URLSearchParams(location.search);
+  var id = params.get('q');
+  QUIZ = (window.QUIZZES || []).filter(function(q){ return q.id === id; })[0];
+  PHASE = (params.get('phase') || 'pre').toLowerCase() === 'post' ? 'post' : 'pre';
+  AGAIN = PHASE === 'post' || params.get('again') === '1';
+  SET_KEY = params.get('set') || '';
+  SET = (window.SETS || {})[SET_KEY] || null;
+  if (SET && SET.quizzes.indexOf(id) === -1) { SET = null; SET_KEY = ''; }
+  if (!QUIZ){ renderMenu(); return; }
+  $('barTitle').textContent = QUIZ.title + (AGAIN ? '  (again)' : '');
+  $('signTitle').textContent = QUIZ.title;
+  var sentences = QUIZ.items.every(function(it){ return it.s; });
+  $('signSub').textContent = (QUIZ.tag ? QUIZ.tag + '. ' : '') + QUIZ.items.length + ' questions. '
+    + (sentences ? 'Read the sentence and choose the word.' : 'Look at the picture and choose the word.');
+  try {
+    var e = localStorage.getItem('gal_student_email'); if (e) $('inEmail').value = e;
+    var n = localStorage.getItem('gal_student_name');  if (n) $('inName').value = n;
+    var p = localStorage.getItem('gal_student_period');if (p) $('inPeriod').value = p;
+  } catch(err){}
+  show('scrSignin');
+})();
+</script>
+<script src="/readings/track.js"></script>
+</body>
+</html>
