@@ -468,8 +468,19 @@ function headers(extra){
   return h;
 }
 
+/* T-330: load before save. Rows here are keyed by name + period (no email), so saveguard.js can't hold them;
+   the page does it itself: no save until the student's row has been read, and a red note if it can't be. */
+var LOADED='', LOADTRY=0;
+function loadKey(){ return (S.name||'').toLowerCase()+'|'+S.period; }
+function offlineNote(on){ var n=document.getElementById('t330off');
+  if(!n){ n=document.createElement('div'); n.id='t330off';
+    n.style.cssText='position:fixed;left:0;right:0;top:0;z-index:99999;background:#b42318;color:#fff;font:700 15px Nunito,sans-serif;padding:10px 14px;text-align:center;border-bottom:3px solid #7a1610';
+    n.textContent='\u26a0\ufe0f Can\u2019t reach the server. Nothing is being saved yet \u2014 keep this tab open; it will try again.';
+    document.body.appendChild(n); }
+  n.style.display = on ? 'block' : 'none'; }
 function save(){
   if(!S.name || !S.period) return;
+  if(LOADED !== loadKey()){ dirty = true; return; }
   var row = {
     student_name: S.name,
     class_period: S.period,
@@ -495,20 +506,26 @@ function load(){
     + '?student_name=eq.' + encodeURIComponent(S.name)
     + '&class_period=eq.' + encodeURIComponent(S.period)
     + '&select=*';
+  var want = loadKey();
   return fetch(q, {headers:headers()})
-    .then(function(r){ return r.ok ? r.json() : []; })
+    .then(function(r){ if(!r.ok) throw new Error('load ' + r.status); return r.json(); })
     .then(function(rows){
+      LOADED = want; offlineNote(false);
       if(rows && rows.length){
         var d = rows[0].data || {};
-        S.answers   = d.answers   || {};
-        S.other     = d.other     || '';
-        S.sentences = d.sentences || {};
-        S.drawings  = d.drawings  || {};
+        /* anything already typed on this screen wins; the server fills the rest */
+        S.answers   = Object.assign({}, d.answers   || {}, S.answers   || {});
+        S.other     = S.other || d.other || '';
+        S.sentences = Object.assign({}, d.sentences || {}, S.sentences || {});
+        S.drawings  = Object.assign({}, d.drawings  || {}, S.drawings  || {});
         if(d.lang) S.lang = d.lang;
         S.turnedIn = !!rows[0].turned_in;
       }
     })
-    .catch(function(){});
+    .catch(function(){
+      offlineNote(true); setDot('err');
+      setTimeout(function(){ if(LOADED !== loadKey()) load().then(function(){ if(LOADED === loadKey() && dirty) save(); }); }, Math.min(30000, 4000 * (++LOADTRY)));
+    });
 }
 
 function fetchClass(period){

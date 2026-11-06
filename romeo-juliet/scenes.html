@@ -825,8 +825,23 @@ restoreAnswers();
 setLevel(state.level);
 go(state.cur);
 updateProgress();
+/* T-330: put saved work back on screen from the server (new Chromebook). saveguard.js reads both email
+   spellings. Only empty answers are filled, so nothing typed on this computer is lost. */
+function pullRJ(after){
+  var e=(document.getElementById('sEmail').value||'').trim().toLowerCase(); if(!e) return;
+  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?select=data&email=eq.'+encodeURIComponent(e)+'&page=eq.'+encodeURIComponent(PAGE),
+    {headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}})
+  .then(function(r){return r.ok?r.json():[];}).then(function(rows){
+    var got=0;(rows||[]).forEach(function(row){var d=row&&row.data;if(typeof d==='string'){try{d=JSON.parse(d)}catch(x){d=null}}
+      if(!d)return; after(d,function(){got++;});});
+  }).catch(function(){});
+}
+function rjFill(d,count){ var a=d.ans||{},n=0,k;
+  for(k in a){ if(state.ans[k]===undefined||state.ans[k]===''){ state.ans[k]=a[k]; n++; } }
+  if(n){ saveLocal(); restoreAnswers(); updateProgress(); count(); } }
+pullRJ(rjFill);
 ['sName','sEmail','sPeriod'].forEach(function(id){
-  document.getElementById(id).addEventListener('change', function(){ saveLocal(); push(); });
+  document.getElementById(id).addEventListener('change', function(){ saveLocal(); push(); if(id==='sEmail') pullRJ(rjFill); });
 });
 </script>
 <script src="/readings/track.js"></script>

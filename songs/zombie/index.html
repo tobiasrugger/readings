@@ -713,6 +713,8 @@ function queueDraft(){
     try{
       var d = gather();
       d.savedAt = Date.now();
+      d.email = String((document.getElementById('sEmail')||{}).value||'').trim().toLowerCase();
+      window.__zOwner = d.email || window.__zOwner || '';
       localStorage.setItem(LS_KEY, JSON.stringify(d));
       setStatus('Draft saved on this device.');
     }catch(err){}
@@ -723,6 +725,9 @@ function loadDraft(){
     var raw = localStorage.getItem(LS_KEY);
     if(!raw) return;
     var d = JSON.parse(raw);
+    /* T-330: a draft on this Chromebook comes back only within one class period (70 min); after that it's gone */
+    if(!d.savedAt || Date.now() - d.savedAt > 70*60*1000){ localStorage.removeItem(LS_KEY); return; }
+    window.__zOwner = d.email || '';
     if(d.student_name) document.getElementById('sName').value = d.student_name;
     apply(d);
     setStatus('Your draft from this device was opened.');
@@ -994,6 +999,11 @@ document.getElementById('ccBtn').addEventListener('click', function(){
       err.textContent='';
       var c=canonMail(raw);
       if(c!==raw) mail.value=c;
+      /* T-330: the draft on screen belongs to someone else — clear it and start clean for this student */
+      if(window.__zOwner && window.__zOwner.split('@')[0] !== c.split('@')[0]){
+        try{ localStorage.removeItem(LS_KEY); localStorage.removeItem('zombie_me'); localStorage.setItem('gal_student_email',c); }catch(e){}
+        window.__zOwner=''; location.reload(); return;
+      }
       recordAlias(raw,c); seedStudent(nm?nm.value:'', c, per?per.value:'');
       try{ localStorage.setItem('gal_student_email',c); }catch(e){}
       window.ZOMBIE_ME={name:nm?nm.value:'',email:c,period:per?per.value:''};

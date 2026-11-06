@@ -381,8 +381,14 @@ function queueSave(){
   saveTimer=setTimeout(pushSave,1200);
 }
 
+/* T-330: load before save. Nothing is written for a student until their saved row has been read
+   (or found empty) — otherwise a fresh Chromebook would overwrite their work with a blank copy. */
+var PULLED='';
+function pk(){return S.name.trim().toLowerCase()+'|'+String(S.period).trim().toLowerCase();}
 function pushSave(turnIn){
   if(!S.name||!S.period){flag('type your name to save',false);return Promise.resolve()}
+  if(PULLED!==pk()){pullSave();return Promise.resolve();}
+  if(!turnIn&&!Object.keys(S.answers).length) return Promise.resolve(); /* nothing typed yet: no empty row */
   if(saving) return Promise.resolve();
   saving=true; flag('saving…',false);
   var body=[{
@@ -414,8 +420,9 @@ function pullSave(){
   var u=SUPA_URL+'/rest/v1/maus_progress?student_name=eq.'+encodeURIComponent(S.name.trim().toLowerCase())
       +'&class_period=eq.'+encodeURIComponent(String(S.period).trim().toLowerCase())
       +'&activity=eq.'+encodeURIComponent(ACTIVITY)+'&select=answers,level,turned_in';
+  var want=pk();
   fetch(u,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}})
-    .then(function(r){return r.json()})
+    .then(function(r){if(!r.ok)throw new Error('load');return r.json()})
     .then(function(d){
       if(d&&d[0]&&d[0].answers&&Object.keys(d[0].answers).length){
         var local=Object.keys(S.answers).length;
@@ -424,7 +431,8 @@ function pullSave(){
         if(d[0].level){setLevel(d[0].level,true)}
         restore(); flag('loaded your work ✓',true);
       }
-    }).catch(function(){});
+      if(want===pk()){PULLED=want; if(Object.keys(S.answers).length) queueSave();}
+    }).catch(function(){flag('can\u2019t reach the server — not saved yet',false);});
 }
 
 /* ============ level ============ */

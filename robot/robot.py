@@ -459,7 +459,8 @@ async def run_page(browser, rel):
                and w["method"] != "DELETE"]
         R["t1"] = {"pass": bool(shown) and not bad, "shown": bool(shown),
                    "saves": len([w for w in db1.writes(t0) if w["table"] in seed]),
-                   "saves_without_work": len(bad), "gate": g,
+                   "saves_without_work": len(bad), "bad_tables": sorted({w["table"] for w in bad}),
+                   "bad_sample": [(w["body"] or "")[:300] for w in bad][:2], "gate": g,
                    "read_emails": sorted({m for x in db1.log if x["method"] == "GET" and x["table"] in seed
                                           for m in re.findall(r"[a-z0-9._%-]+(?:%40|@)[a-z.]+", urllib.parse.unquote(x["url"]).lower())})[:4]}
     finally:

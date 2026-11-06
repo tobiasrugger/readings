@@ -437,8 +437,24 @@ function turnIn(){
   var f=fields(); if(!f.name||!f.email){alert('Put your name and school email in the top bar first.');return;}
   checkAll(); push(true); msg('Turned in.');
 }
+/* T-330: put saved work back on screen from the server (new Chromebook). saveguard.js reads both email
+   spellings. Only empty answers are filled, so nothing typed on this computer is lost. */
+function pullRJ(after){
+  var e=(document.getElementById('sEmail').value||'').trim().toLowerCase(); if(!e) return;
+  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?select=data&email=eq.'+encodeURIComponent(e)+'&page=eq.'+encodeURIComponent(PAGE),
+    {headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}})
+  .then(function(r){return r.ok?r.json():[];}).then(function(rows){
+    var got=0;(rows||[]).forEach(function(row){var d=row&&row.data;if(typeof d==='string'){try{d=JSON.parse(d)}catch(x){d=null}}
+      if(!d)return; after(d,function(){got++;});});
+  }).catch(function(){});
+}
+function rjFill(d,count){ var a=d.ans||{},r=d.results||{},n=0,k;
+  for(k in a){ if(ans[k]===undefined||ans[k]===''){ ans[k]=a[k]; n++; } }
+  for(k in r){ if(results[k]===undefined) results[k]=r[k]; }
+  if(n){ save(); load(); count(); } }
 load();
-['sName','sEmail','sPeriod'].forEach(function(id){document.getElementById(id).addEventListener('change',function(){save();push();});});
+pullRJ(rjFill);
+['sName','sEmail','sPeriod'].forEach(function(id){document.getElementById(id).addEventListener('change',function(){save();push();if(id==='sEmail')pullRJ(rjFill);});});
 </script>
 <script src="/readings/track.js"></script>
 <script>
