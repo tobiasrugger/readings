@@ -5381,6 +5381,42 @@ function savePract(){ try{ localStorage.setItem(LKEY + "_pract", JSON.stringify(
       }catch(e){}
     }, 1200);
   }
+  /* ============================================================
+     T-350 (Nov 6) — the story's own translation cache in song_tr.
+     slug "story:<story>" (all three Landlady versions share one), lang = the
+     language name this page sends the proxy, src = the exact English text.
+     Loaded once per language, in pages of 1000, before any proxy call;
+     a fresh proxy answer is added to it so the next student gets it free.
+     ============================================================ */
+  var STORY_SLUG='story:'+(location.pathname.replace(/^\/readings\//,'').split('/')[0]||'').replace(/-(easy|hard)$/,'');
+  window.GAL_STORY_SLUG=STORY_SLUG;
+  var STC={}, STLOAD={};
+  function storyLoad(lang){
+    if(STLOAD[lang]) return STLOAD[lang];
+    var p=new Promise(function(done){
+      var off=0;
+      function page(){
+        fetch(SUPA_URL+'/rest/v1/song_tr?select=src,equiv,meaning&slug=eq.'+encodeURIComponent(STORY_SLUG)+'&lang=eq.'+encodeURIComponent(lang)+'&limit=1000&offset='+off, {headers:head()})
+          .then(function(r){ return r.ok?r.json():[]; })
+          .then(function(rows){
+            (rows||[]).forEach(function(r){ var v=r.equiv||r.meaning||''; if(v) STC[r.src+'|'+lang]=v; });
+            if(rows && rows.length===1000){ off+=1000; page(); } else done();
+          }).catch(function(){ done(); });
+      }
+      page();
+    });
+    /* never let a slow database hold up a tap for more than 4 s */
+    STLOAD[lang]=Promise.race([p, new Promise(function(r){ setTimeout(r, 4000); })]);
+    return STLOAD[lang];
+  }
+  function storySave(text, lang, t){
+    var v=t&&(t.equiv||t.meaning); if(!v||!text||!lang) return;
+    STC[text+'|'+lang]=v;
+    fetch(SUPA_URL+'/rest/v1/song_tr?on_conflict=slug,lang,src',{
+      method:'POST', headers:head('resolution=ignore-duplicates,return=minimal'),
+      body:JSON.stringify([{slug:STORY_SLUG, lang:lang, src:text, equiv:v, meaning:'', note:''}])}).catch(function(){});
+  }
+  window.GAL_STORY_LANGNAME=function(code){ return (!code||code==='none')?'':(C2N[code]||code); };
   var TRQ=[], TRACTIVE=0, TRMAX=3;
   window.__trPending=function(){ return TRQ.length+TRACTIVE; };
   function trPump(){
@@ -5395,7 +5431,7 @@ function savePract(){ try{ localStorage.setItem(LKEY + "_pract", JSON.stringify(
           .then(function(r){ return r.json(); })
           .then(function(d){
             if(timer) clearTimeout(timer);
-            if(d && d.ok && d.translation){ tcache[job.key]=d.translation; trPersist(); job.done(d.translation); }
+            if(d && d.ok && d.translation){ tcache[job.key]=d.translation; trPersist(); storySave(job.text, job.lang, d.translation); job.done(d.translation); }
             else { retry(job); }
           })
           .catch(function(){ if(timer) clearTimeout(timer); retry(job); })
@@ -5413,9 +5449,15 @@ function savePract(){ try{ localStorage.setItem(LKEY + "_pract", JSON.stringify(
     var key=text+'|'+lang;
     if(tcache[key]) return Promise.resolve(tcache[key]);
     if(!lang||!String(text||'').trim()) return Promise.resolve(null);
-    return new Promise(function(res){
-      TRQ.push({text:text, lang:lang, key:key, done:res});
-      trPump();
+    if(/[?&]pretr=1/.test(location.search)) return Promise.resolve(null);   /* the dashboard's hidden copy never spends quota */
+    /* T-350: the story's own saved translations (filled ahead by Pre-translate on the dashboard) come first */
+    return storyLoad(lang).then(function(){
+      var hit=STC[text+'|'+lang];
+      if(hit){ tcache[key]={equiv:hit, meaning:'', note:''}; trPersist(); return tcache[key]; }
+      return new Promise(function(res){
+        TRQ.push({text:text, lang:lang, key:key, done:res});
+        trPump();
+      });
     });
   }
 
@@ -6225,5 +6267,42 @@ body.lb-open #lbpanel{ display:flex; }
 })();
 </script>
 
+<script id="t350-pretr">
+/* T-350 (Nov 6): the list of every text this page can send to the translation proxy,
+   for the dashboard's Pre-translate button (it loads this page in a hidden frame).
+   Mirrors the page's own callers: GLOSS words (definition, skipped where a hand-written
+   translation exists), the picture-card words (.vtr), and the directions/questions in
+   BOTH Easier and Harder wordings (.qtext as stampQuestions reads them, plus [data-en]). */
+window.GAL_PRETR = function(){
+  var out = {}, list = [];
+  function add(t, skip){
+    t = String(t || '').trim(); if(!t) return;
+    if(!out[t]){ out[t] = { text: t, skip: skip || [] }; list.push(out[t]); }
+    else if(!skip || !skip.length){ out[t].skip = []; }   /* asked somewhere without a hand-written answer */
+  }
+  try{
+    for(var k in GLOSS){
+      var g = GLOSS[k] || {}, sk = [];
+      for(var c in (g.t || {})) if(g.t[c]) sk.push(c);
+      add(g.d || k, sk);
+    }
+  }catch(e){}
+  Array.prototype.forEach.call(document.querySelectorAll('.vtr[data-word]'), function(el){ add(el.getAttribute('data-word')); });
+  function grab(){
+    Array.prototype.forEach.call(document.querySelectorAll('.qtext'), function(el){
+      var c = el.cloneNode(true), d = c.querySelectorAll('.dirtr'), i;
+      for(i = 0; i < d.length; i++) d[i].parentNode.removeChild(d[i]);
+      var t = (c.textContent || '').trim();
+      if(t.length >= 18) add(t);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-dir][data-en]'), function(el){ add(el.getAttribute('data-en')); });
+  }
+  var wasEasy = document.body.classList.contains('easy');
+  var mb = function(m){ var b = document.querySelector('#modesw [data-mode="' + m + '"]'); if(b) b.click(); };
+  grab();
+  if(document.querySelector('#modesw')){ mb(wasEasy ? 'hard' : 'easy'); grab(); mb(wasEasy ? 'easy' : 'hard'); }
+  return list;
+};
+</script>
 </body>
 </html>
