@@ -5,7 +5,9 @@
    Types:  fix   = find the wrong word, then choose the right one
            mc    = choose (has/have, join two sentences, reading questions)
            tiles = put the words in order (make a question / unscramble)
-           type  = write the word (one blank per letter)
+           type  = write the word (one blank per letter). The voice says the word (dictation),
+                   unless rc:1 = the item asks students to RECALL the word; then the voice says "blank" (T-355).
+                   Plurals: one:'class', pp:'class' (picture key) = one picture under "one class", two under the blank.
    Used by basics/index.html (tap-through) and basics/print/ (paper). */
 (function(){
 var Q='\u2019';
@@ -58,8 +60,8 @@ var S={
   {d:2,one:'class',pp:'class',s:'one class, two ___',a:'classes',h:'A word that ends in s: add -es.'},
   {d:2,pic:'20',s:'There are ___ desks in the room.',a:'twenty',t:'u1-l4'},
   {d:2,pic:'14',s:'Paolo is ___ years old.',a:'fourteen',t:'u1-l4'},
-  {d:2,pic:'\ud83c\udd70\ufe0f',s:'A is the ___ letter of the alphabet.',a:'first',t:'u1-l3'},
-  {d:2,pic:'A E I O U',s:'A, E, I, O and U are ___.',a:'vowels',t:'u1-l3'},
+  {d:2,pic:'\ud83c\udd70\ufe0f',rc:1,s:'A is the ___ letter of the alphabet.',a:'first',t:'u1-l3'},
+  {d:2,pic:'A E I O U',rc:1,s:'A, E, I, O and U are ___.',a:'vowels',t:'u1-l3'},
   {d:3,pic:'40',s:'There are ___ chairs in the cafeteria.',a:'forty',t:'u1-l4',h:'Careful: four has a U, but this number does not.'},
   {d:3,one:'library',pp:'library',s:'one library, two ___',a:'libraries',h:'A word that ends in y: change y to i, then add -es.'},
   {d:3,one:'box',pp:'box',s:'one box, two ___',a:'boxes',h:'A word that ends in x: add -es.'}
@@ -133,7 +135,7 @@ function make(L,lesson,rnd,sh){L=L||'A';var out=[];
  out.push({ty:'mc',k:'STR.JOIN',pic:'\ud83d\udd17',q:'<div class="fragq">Put the two sentences together. Which one makes sense?</div><div class="fragbox two"><span>'+j.s1+'</span> <span>'+j.s2+'</span></div>',
   plain:'Put the two sentences together. '+j.s1+' '+j.s2,o:[j.a].concat(j.w),a:j.a,rs:0,why:'<b>'+j.a+'</b>'});
  var p=pick(S.spell,L,lesson,rnd,sh);
- out.push({ty:'type',k:'STR.SPELL',pic:p.pic||'',one:p.one||'',pp:p.pp||'',q:p.s,a:p.a,h:p.h||'',why:p.s.replace('___','<b>'+p.a+'</b>')});
+ out.push({ty:'type',k:'STR.SPELL',pic:p.pic||'',one:p.one||'',pp:p.pp||'',rc:p.rc||0,q:p.s,a:p.a,h:p.h||'',why:p.s.replace('___','<b>'+p.a+'</b>')});
  var o=pick(S.order,L,lesson,rnd,sh);
  out.push({ty:'tiles',k:'STR.ORDER',say:'',a:o.a,ans:tiles(o.a),alts:(o.alt||[]).map(tiles),tl:sh(tiles(o.a)),h:'',why:'<b>'+o.a+'</b>'});
  var q=pick(S.ques,L,lesson,rnd,sh);
