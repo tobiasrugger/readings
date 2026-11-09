@@ -10,6 +10,7 @@
  */
 window.DASHBOARDS = (window.DASHBOARDS || []).concat([
 {url:'donow/dashboard.html',            name:'Do Now \u2014 all',             course:'both', group:'Unit'},
+{url:'donow/reel-03/dashboard.html',    name:'Do Now: Reel 3 warm-up (What Class Do We Have Now?)', course:'101', group:'Unit'},
 {url:'donow/dog-01/dashboard.html',     name:'Do Now: The Dog at the Bus Stop',course:'both', group:'Unit'},
 {url:'donow/0918/dashboard.html',       name:'Do Now: Sept 18',               course:'both', group:'Unit'}
 ]);
