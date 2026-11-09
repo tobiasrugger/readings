@@ -30,6 +30,7 @@ window.DASHBOARD_FILES = [
   'fables',
   'false-friends',
   'favorite-songs',
+  'finished',
   'fluency',
   'four-agreements',
   'gradebook',
