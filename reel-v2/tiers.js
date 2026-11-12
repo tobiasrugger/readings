@@ -54,18 +54,22 @@
     '.gok{font-weight:900;color:#2d7a47}' +
     '.gcount{font-weight:800;color:var(--soft)}' +
     /* the what's-next line and the bobbing arrow (T-371) */
-    '.gline{display:flex;align-items:center;gap:10px;border:2px solid #2B2233;border-left:10px solid var(--orange);border-radius:12px;background:#fff7ec;padding:9px 14px;margin:0 0 14px;box-shadow:0 2px 0 rgba(43,34,51,.18)}' +
+    '.gline{display:flex;align-items:center;gap:10px;border:2px solid #2B2233;border-left:10px solid #1f7a4d;border-radius:12px;background:#e0f2e8;padding:9px 14px;margin:0 0 14px;box-shadow:0 2px 0 rgba(43,34,51,.18)}' +
     '.gline p{margin:0;font-weight:900;font-size:19px;color:var(--plum)}' +
-    '.gline .gpin{color:var(--orange);font-size:15px}' +
-    '.gnudge{position:fixed;width:96px;height:44px;z-index:40;pointer-events:none;display:none;filter:drop-shadow(0 2px 2px rgba(43,34,51,.25))}' +
+    '.gline .gpin{color:#1f7a4d;font-size:15px}' +
+    /* the arrow moves the way My Page's does: slides in and fades up, 1 s */
+    '.gnudge{position:fixed;width:56px;height:56px;z-index:40;pointer-events:none;display:none}' +
     '.gnudge svg{width:100%;height:100%;display:block}' +
-    '.gnudge.left{animation:gnudgeX 1.5s ease-in-out infinite}' +
-    '.gnudge.up{transform:rotate(90deg);animation:gnudgeY 1.5s ease-in-out infinite}' +
-    '.gnudge.down{transform:rotate(-90deg);animation:gnudgeY 1.5s ease-in-out infinite}' +
-    '@keyframes gnudgeX{0%,100%{margin-left:0}50%{margin-left:3px}}' +
-    '@keyframes gnudgeY{0%,100%{margin-top:0}50%{margin-top:3px}}' +
-    '@media (prefers-reduced-motion:reduce){.gnudge.left,.gnudge.up,.gnudge.down{animation:none}}' +
-    '@media (max-width:760px){.gline p{font-size:17px}.gnudge{width:70px;height:32px}}' +
+    '.gnudge.left{animation:gnudgeX 1s ease-in-out infinite}' +
+    '.gnudge.up{animation:gnudgeY 1s ease-in-out infinite}' +
+    '.gnudge.down{animation:gnudgeYup 1s ease-in-out infinite}' +
+    '.gnudge.up svg{transform:rotate(90deg)}' +
+    '.gnudge.down svg{transform:rotate(-90deg)}' +
+    '@keyframes gnudgeX{0%,100%{transform:translateX(-10px);opacity:.5}50%{transform:translateX(5px);opacity:1}}' +
+    '@keyframes gnudgeY{0%,100%{transform:translateY(-10px);opacity:.5}50%{transform:translateY(5px);opacity:1}}' +
+    '@keyframes gnudgeYup{0%,100%{transform:translateY(10px);opacity:.5}50%{transform:translateY(-5px);opacity:1}}' +
+    '@media (prefers-reduced-motion:reduce){.gnudge.left,.gnudge.up,.gnudge.down{animation:none;opacity:.9}}' +
+    '@media (max-width:760px){.gline p{font-size:17px}.gnudge{width:42px;height:42px}}' +
     '.bex{border:2px solid var(--line);border-radius:14px;padding:10px 14px;margin:0 0 16px;background:#faf9fc}' +
     '.bex .lab{display:block;font-weight:900;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--purple);margin:0 0 6px}' +
     '.bexrow{border-top:1px solid var(--line);padding:8px 0 2px}.bexrow:first-of-type{border-top:0}' +
@@ -232,9 +236,10 @@
     NUDGE = document.createElement('div');
     NUDGE.className = 'gnudge';
     NUDGE.setAttribute('aria-hidden', 'true');
-    NUDGE.innerHTML = '<svg viewBox="0 0 96 44" xmlns="http://www.w3.org/2000/svg">' +
-      '<path d="M4 22 C 26 8, 46 8, 70 22" fill="none" stroke="#F8981F" stroke-width="7" stroke-linecap="round"/>' +
-      '<path d="M70 22 L 52 12 L 56 22 L 52 32 Z" fill="#F8981F"/></svg>';
+    /* T-374: the same arrow My Page uses in its "Do this next" band — a solid green ➤, drawn as
+       SVG here (the orange line arrow read as a scratch, and orange is the site's own theme). */
+    NUDGE.innerHTML = '<svg viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg">' +
+      '<path d="M12 6 C 30 18, 40 24, 48 28 C 40 32, 30 38, 12 50 C 17 38, 19 32, 19 28 C 19 24, 17 18, 12 6 Z" fill="#1f7a4d"/></svg>';
     document.body.appendChild(NUDGE);
     return NUDGE;
   }
@@ -243,7 +248,7 @@
     if (!el || !el.getBoundingClientRect) { hideNudge(); return; }
     var r = el.getBoundingClientRect();
     if (!r.width && !r.height) { hideNudge(); return; }
-    var n = nudgeEl(), W = 96, H = 44, gap = 6;
+    var n = nudgeEl(), W = 56, H = 56, gap = 2;
     var left = r.left - W - gap, top = r.top + r.height / 2 - H / 2, mode = 'left';
     if (left < 4) {                       /* no room beside it: sit above and point down */
       left = Math.max(4, r.left + r.width / 2 - W / 2);
@@ -413,7 +418,7 @@
     h += '<div class="row"><button class="btn" id="ordCheck" translate="yes">Check</button><button class="btn alt" id="ordReset" translate="yes">Start over</button><span id="ordMsg" translate="yes"></span></div>';
     root.innerHTML = h;
     showDirections(root);
-    function redraw() { touch(); renderOrder(root); }
+    function redraw() { touch(); renderOrder(root); guide(); }   /* T-374: the line keeps up with each placement */
     function placeAt(k, i) {
       var cur = o.slots.indexOf(k); if (cur >= 0) o.slots[cur] = null;
       o.slots[i] = k; ordSel = null; redraw();
