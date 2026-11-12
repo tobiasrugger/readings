@@ -100,6 +100,7 @@ table.gb{border-collapse:collapse;font-size:.92rem;min-width:100%;background:rep
 .gb th.col .db{text-decoration:none;font-size:1rem;margin-left:4px;border:1.5px solid #1d3b2a;border-radius:5px;padding:0 3px;background:#fff;display:inline-block;line-height:1.3}
 .gb th.col .db:hover{background:#fff3c4}
 .gb td.sc .fl{font-family:Nunito,sans-serif;font-size:.8rem;color:#a3241a;vertical-align:super;margin-left:1px}
+.gb td.sc .fl.pen{color:#9a5b00}
 .gb td.sc.stuck{background:#fde3df}
 .find{display:inline-block;margin-left:8px;font-size:.82rem;font-weight:800;color:#f3c34a}
 /* ---- T-142 v3: blue extra sheets ---- */
@@ -190,7 +191,7 @@ table.gb{border-collapse:collapse;font-size:.92rem;min-width:100%;background:rep
   <div class="stations" id="stations"><p class="msg">Pick a period above.</p></div>
 </div>
 <div class="book" id="book" style="display:none"><span class="rings"></span><h2 id="bookT">Gradebook</h2>
-  <p class="hint">Scores are 0–4 (— = not started, counts as 0). Tap a score to read that student's work. Tap an activity name to open it, or <b>class</b> to spread every sheet. Drag a column (or use ◀ ▶) to move it; untick the box to leave it out of the average. Your column order and ticks are remembered on this computer. <b>R W S L</b> = how much Reading, Writing, Speaking and Listening work each student has done in the last 30 days (a guess from the kind of activity, not a test) — the red word is what they probably need next. <b>copy</b> puts a column’s scores on the clipboard in this order, ready to paste into Synergy. <b>📊</b> beside an activity opens its whole-class dashboard; a tap on a score opens that dashboard at that student. <b>⚑</b> = stuck (three or more tries, still 0 or 1). Hover a score for its %, tries and last day worked. <b>Blue columns</b> are extra work you gave to chosen students: they only count for those students, and start unticked.</p>
+  <p class="hint">Scores are 0–4 (— = not started, counts as 0). Tap a score to read that student's work. Tap an activity name to open it, or <b>class</b> to spread every sheet. Drag a column (or use ◀ ▶) to move it; untick the box to leave it out of the average. Your column order and ticks are remembered on this computer. <b>R W S L</b> = how much Reading, Writing, Speaking and Listening work each student has done in the last 30 days (a guess from the kind of activity, not a test) — the red word is what they probably need next. <b>copy</b> puts a column’s scores on the clipboard in this order, ready to paste into Synergy. <b>📊</b> beside an activity opens its whole-class dashboard; a tap on a score opens that dashboard at that student. <b>⚑</b> = stuck (three or more tries, still 0 or 1). <b>✎</b> = written story answers waiting for your ✓ or ✗ (tap the score to mark them). Hover a score for its %, tries and last day worked. <b>Blue columns</b> are extra work you gave to chosen students: they only count for those students, and start unticked.</p>
   <div class="gbtools"><button type="button" class="btn dk" id="prAll">🖨 Print the whole period</button>
     <label><input type="checkbox" id="half"> two half-page reports per sheet</label>
     <label><input type="checkbox" id="missOnly"> show only students missing something</label>
@@ -428,6 +429,8 @@ function rosterSort(a,b){if(a.ro!=null&&b.ro!=null&&a.ro!==b.ro)return a.ro-b.ro
 function rowData(s,C){var sum=0,n=0,miss=false,stk=false,cells=[];C.forEach(function(c){var it=(BEST[s.k]||{})[c.slug],b=band04(it),na=!assigned(c,s);
     if(c.on&&!na){n++;sum+=(b==null?0:b);if(b==null||b===0)miss=true;}if(!na&&stuck(it))stk=true;cells.push({c:c,it:it,b:b,na:na});});
   return {av:n?sum/n:null,miss:miss,stuck:stk,cells:cells};}
+/* T-366: ✎ = written answers on a story waiting for Mr. Toby's ✓/✗ (landlady/marks.js) */
+function penOf(k,slug){var n=window.GALMARKS&&GALMARKS.desk&&GALMARKS.desk[k]&&GALMARKS.desk[k][slug];return n?'<span class="fl pen" title="'+n+' written answer'+(n===1?'':'s')+' to mark \u2713/\u2717">\u270e</span>':'';}
 function drawBook(){
   var C=cols(); $('book').style.display=''; $('bookT').textContent='Gradebook \u00b7 Period '+cur;
   var kids=KIDS.slice().sort(rosterSort), only=$('missOnly')&&$('missOnly').checked, onlyS=$('stuckOnly')&&$('stuckOnly').checked;
@@ -448,7 +451,7 @@ function drawBook(){
     d.cells.forEach(function(x){
       if(x.na){h+='<td class="na" title="Not given to '+esc(s.first)+'">\u00b7</td>';return;}
       var sk=stuck(x.it);
-      h+='<td class="sc '+bcls(x.b)+(x.c.on?'':' off')+(sk?' stuck':'')+(x.c.x?' xa':'')+'" data-st="'+x.c.i+'" data-k="'+esc(s.k)+'" title="'+esc(s.first+' \u00b7 '+STATIONS[x.c.i].a.title+'\n'+facts(x.it)+(sk?'\n\u2691 stuck: 3+ tries, still 0\u20131':''))+'">'+(x.b==null?'\u2014':x.b)+(sk?'<span class="fl">\u2691</span>':'')+'</td>';});
+      h+='<td class="sc '+bcls(x.b)+(x.c.on?'':' off')+(sk?' stuck':'')+(x.c.x?' xa':'')+'" data-st="'+x.c.i+'" data-k="'+esc(s.k)+'" title="'+esc(s.first+' \u00b7 '+STATIONS[x.c.i].a.title+'\n'+facts(x.it)+(sk?'\n\u2691 stuck: 3+ tries, still 0\u20131':''))+'">'+(x.b==null?'\u2014':x.b)+(sk?'<span class="fl">\u2691</span>':'')+penOf(s.k,STATIONS[x.c.i].a.slug)+'</td>';});
     h+='</tr>';
   });
   if((only||onlyS)&&!shown)h+='<tr><td class="nm" colspan="'+(3+C.length)+'">'+(onlyS?'Nobody is stuck right now. 🎉':'Nobody is missing a ticked assignment. 🎉')+'</td></tr>';
@@ -692,4 +695,5 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
 gate();
 </script>
 <script src="/readings/grade04.js"></script>
+<script src="/readings/landlady/marks.js"></script><!-- T-366 ✎ -->
 </body></html>
