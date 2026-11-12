@@ -918,14 +918,21 @@ section.act .artfig{ margin:0 0 1.1rem; }
 .qbox.hlprac{ border:2px solid #2a2010 !important; }
 .qbox.hlprac.done{ border-color:#3b6d11 !important; }
 /* next step: one line + one drawn arrow */
-#t372next{ display:flex; align-items:center; gap:.5rem; margin:.35rem auto .2rem; max-width:860px; padding:.45rem .7rem;
-  font:800 .95rem/1.3 Nunito, system-ui, sans-serif; color:#1a1208; background:#fff7e0; border:2px solid #2a2010; border-radius:10px; box-shadow:0 2px 0 #c9bca3; }
-#t372next.done{ background:#e6f3ea; border-color:#2e7d4f; color:#1d4f33; }
-#t372next .i{ flex:0 0 auto; width:1.4rem; height:1.4rem; }
-#t372arrow{ position:absolute; z-index:400; width:34px; height:40px; pointer-events:none; display:none; }
-#t372arrow.on{ display:block; animation:t372bob 1.6s ease-in-out infinite; }
-@keyframes t372bob{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(3px); } }
-@media (prefers-reduced-motion: reduce){ #t372arrow.on{ animation:none; } }
+/* T-383 (Nov 12): My Page's arrow (T-374 rule) — solid green ➤, slides in and fades; green line */
+#t372next{ display:flex; align-items:center; gap:.55rem; margin:.35rem auto .2rem; max-width:860px; padding:.5rem .8rem;
+  font:900 1rem/1.3 Nunito, system-ui, sans-serif; color:#1a1208; background:#e0f2e8; border:2px solid #2B2233; border-left:10px solid #1f7a4d; border-radius:12px; box-shadow:0 2px 0 rgba(43,34,51,.18); }
+#t372next.done{ background:#e0f2e8; }
+#t372next .i{ flex:0 0 auto; width:1.3rem; height:1.3rem; }
+#t372arrow{ position:absolute; z-index:400; width:56px; height:56px; pointer-events:none; display:none; }
+#t372arrow svg{ width:100%; height:100%; display:block; }
+#t372arrow.on{ display:block; }
+#t372arrow.left{ animation:t383X 1s ease-in-out infinite; }
+#t372arrow.up{ animation:t383Y 1s ease-in-out infinite; }
+#t372arrow.up svg{ transform:rotate(90deg); }
+@keyframes t383X{ 0%,100%{ transform:translateX(-10px); opacity:.5; } 50%{ transform:translateX(5px); opacity:1; } }
+@keyframes t383Y{ 0%,100%{ transform:translateY(-10px); opacity:.5; } 50%{ transform:translateY(5px); opacity:1; } }
+@media (prefers-reduced-motion: reduce){ #t372arrow.left, #t372arrow.up{ animation:none; opacity:.9; } }
+@media (max-width:760px){ #t372arrow{ width:42px; height:42px; } }
 @media print{ #t372next, #t372arrow{ display:none !important; } }
 
 </style>
@@ -4757,11 +4764,11 @@ body.lb-open #lbpanel{ display:flex; }
   var bar = document.querySelector(".progwrap");
   if(bar){
     var line = document.createElement("div"); line.id = "t372next"; line.setAttribute("aria-live", "polite");
-    line.innerHTML = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#c8892a"/><path d="M7 12h9M12 7l5 5-5 5" stroke="#fff" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="t" translate="yes"></span>';
+    line.innerHTML = '<svg class="i" viewBox="0 0 56 56" aria-hidden="true"><path d="M12 6 C 30 18, 40 24, 48 28 C 40 32, 30 38, 12 50 C 17 38, 19 32, 19 28 C 19 24, 17 18, 12 6 Z" fill="#1f7a4d"/></svg><span class="t" translate="yes"></span>';
     bar.parentNode.insertBefore(line, bar.nextSibling);
     var arrow = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    arrow.id = "t372arrow"; arrow.setAttribute("viewBox", "0 0 34 40"); arrow.setAttribute("aria-hidden", "true");
-    arrow.innerHTML = '<path d="M17 2 C 9 10, 25 18, 17 28" stroke="#2a2010" stroke-width="7" fill="none" stroke-linecap="round"/><path d="M17 2 C 9 10, 25 18, 17 28" stroke="#e8a33a" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M7 24 L17 38 L27 24 Z" fill="#e8a33a" stroke="#2a2010" stroke-width="2.5" stroke-linejoin="round"/>';
+    arrow.id = "t372arrow"; arrow.setAttribute("viewBox", "0 0 56 56"); arrow.setAttribute("aria-hidden", "true");   /* T-383: My Page's green arrow */
+    arrow.innerHTML = '<path d="M12 6 C 30 18, 40 24, 48 28 C 40 32, 30 38, 12 50 C 17 38, 19 32, 19 28 C 19 24, 17 18, 12 6 Z" fill="#1f7a4d"/>';
     document.body.appendChild(arrow);
     var label = function(b){ return ((b.childNodes[0] && b.childNodes[0].textContent) || b.textContent || "").trim(); };
     var pick = function(){
@@ -4800,10 +4807,12 @@ body.lb-open #lbpanel{ display:flex; }
       if(t.textContent !== p.text) t.textContent = p.text;
       line.classList.toggle("done", /finished/.test(p.text));
       if(!p.el || !p.el.offsetParent){ arrow.classList.remove("on"); return; }
-      var r = p.el.getBoundingClientRect();
-      arrow.style.left = Math.round(r.left + window.scrollX + r.width / 2 - 17) + "px";
-      arrow.style.top = Math.round(r.top + window.scrollY - 42) + "px";
-      arrow.classList.add("on");
+      var r = p.el.getBoundingClientRect(), W = arrow.getBoundingClientRect().width || 56, gap = 2;
+      var left = r.left - W - gap, top = r.top + r.height / 2 - W / 2, mode = "left";
+      if(left < 4){ left = Math.max(4, r.left + r.width / 2 - W / 2); top = r.top - W - gap; mode = "up"; }   /* no room beside it: above, pointing down */
+      arrow.style.left = Math.round(left + window.scrollX) + "px";
+      arrow.style.top = Math.round(top + window.scrollY) + "px";
+      arrow.classList.remove("left", "up"); arrow.classList.add("on", mode);
     };
     var tm = null, soon = function(){ clearTimeout(tm); tm = setTimeout(place, 120); };
     document.addEventListener("click", soon, true); document.addEventListener("input", soon, true);
