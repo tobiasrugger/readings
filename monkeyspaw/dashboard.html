@@ -114,7 +114,7 @@ td.ans.right{color:#1c5c37}td.ans.wrong{color:#b3261e}td.ans.none{color:#b6bebb}
   <div class="card">
     <h1>Teacher Dashboard</h1>
     <p>The Monkey&#8217;s Paw &mdash; W. W. Jacobs</p>
-    <input id="pw" type="password" placeholder="Password" autocomplete="current-password">
+    <input type="text" name="username" autocomplete="username" value="teacher" aria-hidden="true" tabindex="-1" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0"><input id="pw" type="password" placeholder="Password" autocomplete="current-password">
     <button id="pwGo" type="button">Open dashboard</button>
     <div class="err" id="pwErr"></div>
   </div>
@@ -129,7 +129,7 @@ td.ans.right{color:#1c5c37}td.ans.wrong{color:#b3261e}td.ans.none{color:#b6bebb}
     <option value="in">Turned in only</option>
     <option value="wip">Not turned in</option>
   </select>
-  <input id="fSearch" type="text" placeholder="Search name or email">
+  <input id="fSearch" type="search" name="t388-find" autocomplete="off" data-lpignore="true" data-1p-ignore placeholder="Search name or email">
   <button id="refresh" type="button">Refresh</button>
   <button id="csv" type="button">Download CSV</button>
   <span class="spacer"></span>
@@ -511,5 +511,28 @@ try{
 <script src="/readings/pretr.js"></script><!-- T-370 shared Pre-translate -->
 <script src="/readings/landlady/pretr.js" data-pages="/readings/monkeyspaw/"></script>
 <script src="/readings/landlady/marks.js"></script><!-- T-366 -->
+<script id="t388-js">
+/* T-388 (Nov 12): Chrome autofilled the teacher's email into the student search box, so every
+   period showed "No students match". Now: the box is a search field with autofill off; a hidden
+   username field takes Chrome's saved email; any change that arrives without a keystroke or paste
+   (= autofill) is cleared; and clicking into a box you never typed in empties it. */
+(function(){
+  var f = document.getElementById("fSearch"); if(!f) return;
+  var lastKey = 0, typed = false;
+  function clear(){
+    if(!f.value) return;
+    f.value = "";
+    try{ f.dispatchEvent(new Event("input", { bubbles:true })); }catch(e){}
+  }
+  f.addEventListener("keydown", function(){ lastKey = Date.now(); typed = true; });
+  f.addEventListener("paste", function(){ lastKey = Date.now(); typed = true; });
+  f.addEventListener("input", function(){ if(f.value && Date.now() - lastKey > 800){ typed = false; setTimeout(clear, 0); } }, true);
+  f.addEventListener("focus", function(){ if(!typed) clear(); });
+  function sweep(){ if(!typed) clear(); }
+  [0, 300, 1000, 2500, 5000].forEach(function(ms){ setTimeout(sweep, ms); });
+  var go = document.getElementById("pwGo");
+  if(go) go.addEventListener("click", function(){ [50, 600, 1500, 3000].forEach(function(ms){ setTimeout(sweep, ms); }); });
+})();
+</script>
 </body>
 </html>
