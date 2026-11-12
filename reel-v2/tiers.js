@@ -53,6 +53,19 @@
     '.ghint{margin:8px 0 0;font-weight:800;color:#8a6200;background:#fff8e8;border:2px solid #f0d9a8;border-radius:10px;padding:6px 10px}' +
     '.gok{font-weight:900;color:#2d7a47}' +
     '.gcount{font-weight:800;color:var(--soft)}' +
+    /* the what's-next line and the bobbing arrow (T-371) */
+    '.gline{display:flex;align-items:center;gap:10px;border:2px solid #2B2233;border-left:10px solid var(--orange);border-radius:12px;background:#fff7ec;padding:9px 14px;margin:0 0 14px;box-shadow:0 2px 0 rgba(43,34,51,.18)}' +
+    '.gline p{margin:0;font-weight:900;font-size:19px;color:var(--plum)}' +
+    '.gline .gpin{color:var(--orange);font-size:15px}' +
+    '.gnudge{position:fixed;width:96px;height:44px;z-index:40;pointer-events:none;display:none;filter:drop-shadow(0 2px 2px rgba(43,34,51,.25))}' +
+    '.gnudge svg{width:100%;height:100%;display:block}' +
+    '.gnudge.left{animation:gnudgeX 1.5s ease-in-out infinite}' +
+    '.gnudge.up{transform:rotate(90deg);animation:gnudgeY 1.5s ease-in-out infinite}' +
+    '.gnudge.down{transform:rotate(-90deg);animation:gnudgeY 1.5s ease-in-out infinite}' +
+    '@keyframes gnudgeX{0%,100%{margin-left:0}50%{margin-left:3px}}' +
+    '@keyframes gnudgeY{0%,100%{margin-top:0}50%{margin-top:3px}}' +
+    '@media (prefers-reduced-motion:reduce){.gnudge.left,.gnudge.up,.gnudge.down{animation:none}}' +
+    '@media (max-width:760px){.gline p{font-size:17px}.gnudge{width:70px;height:32px}}' +
     '.bex{border:2px solid var(--line);border-radius:14px;padding:10px 14px;margin:0 0 16px;background:#faf9fc}' +
     '.bex .lab{display:block;font-weight:900;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--purple);margin:0 0 6px}' +
     '.bexrow{border-top:1px solid var(--line);padding:8px 0 2px}.bexrow:first-of-type{border-top:0}' +
@@ -169,7 +182,9 @@
   function showTiers(scroll) {
     if (!TIERS) return;
     var box = $('tiersBox'); if (!box) return;
-    var t = tierState(), open = assignedTier || t.open || '', h = '';
+    /* T-371: with no tier set the page used to show three closed cards, and students left
+       without opening one. Card A opens by itself, so the microphone is on screen on arrival. */
+    var t = tierState(), open = assignedTier || t.open || 'A', h = '';
     h += '<h2 translate="yes">After the story</h2>';
     if (assignedTier) {
       var inf = TIER_INFO[assignedTier];
@@ -198,8 +213,121 @@
     else if (open === 'B') renderTierB($('tpanel'));
     else if (open === 'C') renderTierC($('tpanel'));
     else if (open === 'D') renderTierD($('tpanel'));
+    else hideNudge();
+    guide();
     score();
     if (scroll) $('tiers').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  /* ================= WHAT'S NEXT: one line, one arrow (T-371) =================
+     The next action is named in a short line at the top of the open card, and a drawn arrow
+     bobs at the thing itself — the microphone, the first chip, the word tile. One arrow on
+     screen at a time, pointing at exactly one element. Most of these students see the arrow
+     before they can read the label, so the arrow carries the meaning on its own; the line is
+     translated like every other direction. The bob is 3px and slow, and stops dead under
+     prefers-reduced-motion. */
+  var NUDGE = null, nudgeTimer = null;
+  function nudgeEl() {
+    if (NUDGE && NUDGE.parentNode) return NUDGE;
+    NUDGE = document.createElement('div');
+    NUDGE.className = 'gnudge';
+    NUDGE.setAttribute('aria-hidden', 'true');
+    NUDGE.innerHTML = '<svg viewBox="0 0 96 44" xmlns="http://www.w3.org/2000/svg">' +
+      '<path d="M4 22 C 26 8, 46 8, 70 22" fill="none" stroke="#F8981F" stroke-width="7" stroke-linecap="round"/>' +
+      '<path d="M70 22 L 52 12 L 56 22 L 52 32 Z" fill="#F8981F"/></svg>';
+    document.body.appendChild(NUDGE);
+    return NUDGE;
+  }
+  function hideNudge() { if (NUDGE) NUDGE.style.display = 'none'; }
+  function pointAt(el) {
+    if (!el || !el.getBoundingClientRect) { hideNudge(); return; }
+    var r = el.getBoundingClientRect();
+    if (!r.width && !r.height) { hideNudge(); return; }
+    var n = nudgeEl(), W = 96, H = 44, gap = 6;
+    var left = r.left - W - gap, top = r.top + r.height / 2 - H / 2, mode = 'left';
+    if (left < 4) {                       /* no room beside it: sit above and point down */
+      left = Math.max(4, r.left + r.width / 2 - W / 2);
+      top = r.top - H - gap;
+      mode = 'up';
+      if (top < 4) { top = r.bottom + gap; mode = 'down'; }
+    }
+    n.style.display = 'block';
+    n.style.left = Math.round(left) + 'px';
+    n.style.top = Math.round(top) + 'px';
+    n.className = 'gnudge ' + mode;
+  }
+  /* what the student should do right now, read off the open panel */
+  function nextStep() {
+    var p = $('tpanel'); if (!p) return null;
+    var q, t;
+    /* D: grammar */
+    q = p.querySelector('.gq:not(.done)');
+    if (q) return { say: 'Tap the word that fits in the sentence.', at: q.querySelector('.gtile:not(.gone)') || q };
+    if (p.querySelector('.gq')) {
+      t = p.querySelector('.tstep:not(.ok)');
+      return t ? { say: 'Next: ' + t.getAttribute('data-en'), at: t } : { say: 'You finished the grammar sets. Nice work.', at: null };
+    }
+    /* A step 1: read along */
+    if ($('sayMount')) {
+      var rd = tierState().A.read;
+      if (rd && rd.ok >= rd.total && rd.total) return { say: 'Next: put the story in order.', at: p.querySelector('.tstep[data-i="1"]') };
+      var mic = $('sayMount').querySelector('button');
+      return { say: rd && rd.ok ? 'Keep going. Listen, then say the next sentence.' : 'Start here \u2014 listen, then say the sentence out loud.', at: mic };
+    }
+    /* A step 2: order */
+    if (p.querySelector('.oslots')) {
+      var pool = p.querySelector('#opool .ochip');
+      if (pool) return { say: 'Tap a sentence. Then tap its place in the list.', at: pool };
+      if (p.querySelector('.oslot.ok') && !p.querySelector('.oslot.bad') && p.querySelectorAll('.oslot.ok').length === p.querySelectorAll('.oslot').length)
+        return { say: 'Next: pick the topic sentence.', at: p.querySelector('.tstep[data-i="2"]') };
+      if (p.querySelector('.oslot.bad')) return { say: 'Move the orange ones. What happened first? What happened last?', at: p.querySelector('.oslot.bad') };
+      return { say: 'Now press Check.', at: $('ordCheck') };
+    }
+    /* A step 3: topic sentence */
+    if (p.querySelector('.topts')) {
+      var right = p.querySelector('.topts .qopt.right');
+      if (right) return { say: 'You finished Words and voice. Ask your teacher what to do next.', at: null };
+      return { say: 'Which sentence tells the whole story? Tap it.', at: p.querySelector('.topts .qopt') };
+    }
+    /* B: paraphrase */
+    if (p.querySelector('.rw')) {
+      var open2 = p.querySelector('.rw:not(.done) .swapw');
+      if (open2) return { say: 'Tap an orange word to see other ways to say it.', at: open2 };
+      return { say: 'All five are changed. Press Turn in.', at: $('bTurnIn') };
+    }
+    /* C: paragraph */
+    if ($('cText')) {
+      if (!String($('cText').value || '').trim()) return { say: 'Write 4 or 5 sentences about the story here.', at: $('cText') };
+      if (!tierState().C.checked) return { say: 'Now press Check my writing.', at: $('cCheck') };
+      return { say: 'Change one thing in your summary, then press Turn in.', at: $('cTurnIn') };
+    }
+    return null;
+  }
+  function updateGuide() {
+    var p = $('tpanel');
+    if (!p || !$('tiers') || $('tiers').style.display !== 'block') { hideNudge(); return; }
+    var step = nextStep();
+    var line = p.querySelector('.gline');
+    if (!step) { if (line) line.remove(); hideNudge(); return; }
+    if (!line) {
+      line = document.createElement('div');
+      line.className = 'gline';
+      p.insertBefore(line, p.firstChild);
+    }
+    if (line.getAttribute('data-say') !== step.say) {
+      line.setAttribute('data-say', step.say);
+      line.innerHTML = '<span class="gpin">\u25B6</span><p translate="yes" data-en="' + esc(step.say) + '">' + esc(step.say) + '</p>';
+      showDirections(line);
+    }
+    pointAt(step.at);
+  }
+  function guide() {
+    setTimeout(updateGuide, 30);
+    if (!nudgeTimer) {
+      nudgeTimer = setInterval(updateGuide, 700);          /* follows scrolling and re-renders */
+      window.addEventListener('resize', updateGuide);
+      window.addEventListener('scroll', updateGuide, true);
+    }
   }
 
   /* ---------- Tier A ---------- */
@@ -224,6 +352,7 @@
     showDirections(root);
     var body = $('tstepBody');
     if (step === 0) renderRead(body); else if (step === 1) renderOrder(body); else renderTopic(body);
+    guide();
   }
   function renderRead(root) {
     root.innerHTML = dir('Listen to each line. Then say it. The microphone listens and shows a check when it understands you. Start with the Key sentences.', 'p', 'lead') + '<div class="saywrap" id="sayMount"></div>';
@@ -241,7 +370,7 @@
           if (had == null) el.removeAttribute('data-w'); else el.setAttribute('data-w', had);
         }, 0);
       },
-      onProgress: function (ok, total) { tierState().A.read = { ok: ok, total: total }; score(); touch(); }
+      onProgress: function (ok, total) { tierState().A.read = { ok: ok, total: total }; score(); touch(); guide(); }
     });
   }
   function shuffledIdx(n) {
@@ -316,7 +445,7 @@
       o.tries++; if (o.first == null) o.first = right; if (right > o.best) o.best = right;
       var msg = right === n ? 'Yes! That is the story, 1 to ' + n + '.' : right + ' of ' + n + ' are in a good place. Move the orange ones. What happened first? What happened last?';
       $('ordMsg').setAttribute('data-en', msg); $('ordMsg').textContent = msg; showDirections(root);
-      score(); touch(); save();
+      score(); touch(); save(); guide();
     });
     $('ordReset').addEventListener('click', function () { o.shuf = shuffledIdx(n); o.slots = []; for (var j = 0; j < n; j++) o.slots.push(null); ordSel = null; redraw(); });
   }
@@ -336,7 +465,7 @@
       b.addEventListener('click', function () {
         var i = +b.getAttribute('data-i');
         tp.tries++; if (tp.first == null) tp.first = (i === T.good);
-        tp.pick = i; score(); touch(); save(); renderTopic(root);
+        tp.pick = i; score(); touch(); save(); renderTopic(root); guide();
       });
     });
   }
@@ -401,7 +530,7 @@
     if (ladderOpen != null) fillLadder(ladderOpen);
     root.querySelectorAll('.osay').forEach(function (b) { b.addEventListener('click', function () { speakPlain(TIERS.key[+b.getAttribute('data-k')].t); }); });
     root.querySelectorAll('textarea').forEach(function (ta) {
-      ta.addEventListener('input', function () { B.rw[+ta.getAttribute('data-i')] = ta.value; score(); touch(); });
+      ta.addEventListener('input', function () { B.rw[+ta.getAttribute('data-i')] = ta.value; score(); touch(); guide(); });
       ta.addEventListener('change', function () { renderTierB(root); });
     });
     $('bTurnIn').addEventListener('click', function () {
@@ -518,7 +647,7 @@
     $('cText').addEventListener('input', function () {
       C.text = this.value; count();
       if (C.checked && norm(C.text) && norm(C.text) !== norm(C.draft1)) C.revised = true;
-      score(); touch();
+      score(); touch(); guide();
     });
     function showFb(fb) {
       var s = '';
@@ -733,7 +862,7 @@
         fb.innerHTML = '<span class="gok" translate="yes" data-en="That fits.">✓ That fits.</span>';
         showDirections(q);
         speakPlain(it.p.replace(/___/g, it.a));
-        count(); score(); touch(); save();
+        count(); score(); touch(); save(); guide();
       }
       q.querySelectorAll('.gtile').forEach(function (t) {
         t.addEventListener('click', function () {
