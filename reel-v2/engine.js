@@ -788,6 +788,7 @@
     $('yt').style.display = 'block';
     showDirections($('ytBox'));
     $('ytBox').querySelectorAll('textarea').forEach(function (ta) {
+      ta.addEventListener('focus', function () { watchCheck(ta); });
       ta.addEventListener('input', function () { saved[+ta.getAttribute('data-i')] = ta.value; highlights(); touch(); });
     });
     $('turnIn').addEventListener('click', function () {
@@ -798,6 +799,57 @@
     $('rewatch').addEventListener('click', function () { LOG().replays++; active(); touch(); window.scrollTo(0, 0); start(true); });
     if (scroll) $('yt').scrollIntoView({ behavior: 'smooth', block: 'start' });
     if (window.REEL_TIERS) REEL_TIERS.show(false);   /* "After the story" tiers under Your turn */
+  }
+  /* ---------- T-369: "Wait — did you finish watching the story?" ----------
+     The first time a student starts Your Turn before reaching the last line of the episode, ask once, in
+     English AND their language, both visible. "Yes" closes it; "I need to watch" scrolls the stage back into
+     view and resumes from where they were. The answer is saved in work.watchAsk for the dashboard. */
+  var WATCH_TXT = {
+    en: ['Wait \u2014 did you finish watching the story?', 'Yes, I finished watching', 'I need to watch the story'],
+    es: ['Espera, \u00bfterminaste de ver la historia?', 'S\u00ed, termin\u00e9 de verla', 'Necesito ver la historia'],
+    zh: ['\u7b49\u4e00\u4e0b\u2014\u2014\u4f60\u770b\u5b8c\u6545\u4e8b\u4e86\u5417\uff1f', '\u662f\u7684\uff0c\u6211\u770b\u5b8c\u4e86', '\u6211\u9700\u8981\u770b\u6545\u4e8b'],
+    yue: ['\u7b49\u4e00\u7b49\u2014\u2014\u4f60\u7747\u5b8c\u500b\u6545\u4e8b\u672a\u5440\uff1f', '\u4fc2\uff0c\u6211\u7747\u5b8c\u5587', '\u6211\u8981\u7747\u500b\u6545\u4e8b'],
+    ar: ['\u0627\u0646\u062a\u0638\u0631 \u2014 \u0647\u0644 \u0627\u0646\u062a\u0647\u064a\u062a \u0645\u0646 \u0645\u0634\u0627\u0647\u062f\u0629 \u0627\u0644\u0642\u0635\u0629\u061f', '\u0646\u0639\u0645\u060c \u0627\u0646\u062a\u0647\u064a\u062a \u0645\u0646 \u0627\u0644\u0645\u0634\u0627\u0647\u062f\u0629', '\u0623\u062d\u062a\u0627\u062c \u0623\u0646 \u0623\u0634\u0627\u0647\u062f \u0627\u0644\u0642\u0635\u0629'],
+    vi: ['Ch\u1edd \u0111\u00e3 \u2014 em \u0111\u00e3 xem h\u1ebft c\u00e2u chuy\u1ec7n ch\u01b0a?', 'R\u1ed3i, em \u0111\u00e3 xem xong', 'Em c\u1ea7n xem c\u00e2u chuy\u1ec7n'],
+    th: ['\u0e40\u0e14\u0e35\u0e4b\u0e22\u0e27\u0e01\u0e48\u0e2d\u0e19 \u2014 \u0e14\u0e39\u0e40\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e08\u0e1a\u0e41\u0e25\u0e49\u0e27\u0e2b\u0e23\u0e37\u0e2d\u0e22\u0e31\u0e07?', '\u0e43\u0e0a\u0e48 \u0e14\u0e39\u0e08\u0e1a\u0e41\u0e25\u0e49\u0e27', '\u0e15\u0e49\u0e2d\u0e07\u0e14\u0e39\u0e40\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e01\u0e48\u0e2d\u0e19'],
+    ne: ['\u092a\u0930\u094d\u0916\u0928\u0941\u0939\u094b\u0938\u094d \u2014 \u0915\u0947 \u0924\u093f\u092e\u0940\u0932\u0947 \u0915\u0925\u093e \u0939\u0947\u0930\u093f\u0938\u0915\u094d\u092f\u094c?', '\u0939\u094b, \u092e\u0948\u0932\u0947 \u0939\u0947\u0930\u093f\u0938\u0915\u0947\u0902', '\u092e\u0932\u093e\u0908 \u0915\u0925\u093e \u0939\u0947\u0930\u094d\u0928\u0941 \u091b']
+  };
+  function watchLang() {
+    var v = String(state.lang || '').toLowerCase();
+    if (!v || /^en/.test(v)) return '';
+    if (/yue|cantonese|zh-hk|zh-tw/.test(v)) return 'yue';
+    if (/^zh|mandarin|chinese|cmn/.test(v)) return 'zh';
+    if (/^es|spanish/.test(v)) return 'es';
+    if (/^ar|arabic/.test(v)) return 'ar';
+    if (/^vi|vietnam/.test(v)) return 'vi';
+    if (/^th|thai/.test(v)) return 'th';
+    if (/^ne|nepal/.test(v)) return 'ne';
+    return 'other';
+  }
+  function watchCheck(ta) {
+    if (state.done || state.watchAsk || (state.maxPos || 0) >= STEPS.length - 1 || $('galWatch')) return;
+    var L = watchLang(), T = WATCH_TXT[L] || null, E = WATCH_TXT.en;
+    var ov = document.createElement('div'); ov.id = 'galWatch';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:9000;background:rgba(43,34,51,.55);display:flex;align-items:center;justify-content:center;padding:16px';
+    var two = function (i, tag) { return '<' + tag + ' translate="no" style="margin:0">' + esc(E[i]) + (T ? '<span ' + (L === 'ar' ? 'dir="rtl" ' : '') + 'class="wtr" style="display:block;font-weight:700;color:#5d536a;margin-top:2px">' + esc(T[i]) + '</span>' : '<span class="wtr" style="display:block;font-weight:700;color:#5d536a;margin-top:2px"></span>') + '</' + tag + '>'; };
+    ov.innerHTML = '<div role="dialog" aria-modal="true" style="background:#fff;border:2px solid #2B2233;border-radius:14px;box-shadow:0 6px 0 rgba(43,34,51,.3);max-width:440px;width:100%;padding:18px 18px 14px;font-size:18px;font-weight:900;color:#2B2233">' +
+      two(0, 'p') +
+      '<div style="display:flex;flex-direction:column;gap:10px;margin-top:16px">' +
+      '<button type="button" id="galWatchYes" class="btn" style="text-align:left;font-size:16px">' + two(1, 'span') + '</button>' +
+      '<button type="button" id="galWatchNo" class="btn alt" style="text-align:left;font-size:16px">' + two(2, 'span') + '</button></div></div>';
+    document.body.appendChild(ov);
+    if (L === 'other') {   /* any other language: translate the three lines (cached after the first time) */
+      var spans = ov.querySelectorAll('.wtr');
+      E.forEach(function (t, i) { try { translate(t, state.lang, function (v) { if (v && spans[i]) spans[i].textContent = v; }); } catch (e) {} });
+    }
+    var rec = function (ans) { state.watchAsk = { ans: ans, at: new Date().toISOString(), maxPos: state.maxPos || 0, of: STEPS.length - 1 }; touch(); };
+    $('galWatchYes').addEventListener('click', function () { rec('yes'); ov.remove(); try { ta.focus(); } catch (e) {} });
+    $('galWatchNo').addEventListener('click', function () {
+      rec('watch'); ov.remove(); try { ta.blur(); } catch (e) {}
+      var stg = $('stage'); if (stg) window.scrollTo({ top: Math.max(0, stg.getBoundingClientRect().top + window.pageYOffset - 8), behavior: 'auto' });
+      start(false);   /* resume from where they were */
+    });
+    setTimeout(function () { try { $('galWatchYes').focus(); } catch (e) {} }, 30);
   }
   function highlights() {
     var s = state.yt[state.level] || [];
@@ -967,7 +1019,7 @@
       showDirections($('curtain'));
       $('again').style.display = '';
     }
-    if (state.done) showYourTurn(false);
+    showYourTurn(false);   /* T-369: Your Turn is always open below the story, never behind a button */
     score(); highlights();
   }
   setInterval(function () { if (dirty && loaded) { dirty = false; save(); } }, 20000);
@@ -1022,8 +1074,7 @@
       $('prevBtn').parentNode.insertBefore(rb, $('prevBtn'));
       rb.addEventListener('click', function () {
         $('curtain').style.display = 'none'; $('qcard').style.display = 'none';
-        if ($('yt') && $('yt').style.display === 'block') $('yt').style.display = 'none';
-        stopSpeech(); setPlaying(true); go(0);
+        stopSpeech(); setPlaying(true); go(0);   /* T-369: Your Turn stays open */
       });
     }
     $('repBtn').addEventListener('click', function () {
@@ -1074,7 +1125,9 @@
       $('board').classList.remove('on'); $('curtain').style.display = 'none';
       go(firstStepOf(+f.getAttribute('data-s')));
     });
-    $('ytBtn').addEventListener('click', function () { showYourTurn(true); });
+    $('ytBtn').addEventListener('click', function () {   /* T-369: scroll to it (render first if needed) */
+      if ($('yt').style.display === 'block') $('yt').scrollIntoView({ behavior: 'smooth', block: 'start' }); else showYourTurn(true);
+    });
     $('fsBtn').addEventListener('click', function () {
       var el = $('player');
       if (document.fullscreenElement) document.exitFullscreen(); else if (el.requestFullscreen) el.requestFullscreen();
