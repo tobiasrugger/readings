@@ -40,7 +40,11 @@ th.corner{z-index:4;left:0}
 td.c{text-align:center;min-width:52px}
 td.c span{display:inline-block;min-width:40px;padding:2px 5px;border-radius:6px;font-weight:700}
 .g1{background:var(--ok-bg);color:var(--ok)}
-td.c span.cmp{outline:2px dotted #8a6a00;outline-offset:-2px} .g2{background:var(--warn-bg);color:var(--warn)} .g3{background:var(--bad-bg);color:var(--bad)} .g0{background:#eef2f0;color:var(--muted)} .xtra{background:#efe7fa;color:#4a2d7a;font-weight:700;font-size:.78rem;white-space:nowrap}
+td.c span.cmp{outline:2px dotted #8a6a00;outline-offset:-2px} .g2{background:var(--warn-bg);color:var(--warn)} .g3{background:var(--bad-bg);color:var(--bad)} .g0{background:#eef2f0;color:var(--muted)} .xtra{background:#e4e7e6;color:#3d4542;font-weight:700;font-size:.78rem;white-space:nowrap}
+/* T-364: optional columns are plainly not grades — grey, and fenced off */
+th.act.xcol,td.c.xcol{border-left:2px solid var(--ink);border-right:2px solid var(--ink);background:#f1f3f2}
+th.act.xcol{background:#e4e7e6}
+th.act.xcol em{display:block;font-style:normal;font-weight:400;font-size:.62rem;color:#55605c;margin-top:2px}
 #bulkbar{display:none;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 10px;padding:8px 12px;border:2px solid var(--ink);border-radius:10px;background:#fffbe6}
 tr.edrow{cursor:pointer}
 tr.edrow.dirty{background:#fff8e1}
@@ -96,6 +100,9 @@ select.per:hover{border-color:var(--edge);background:#fff}
 #cmpdlg{max-width:820px;width:95vw}
 #cmpbody{max-height:62vh;overflow:auto}
 #cmpbody .asg{border:2px solid var(--ink);border-radius:10px;padding:10px 14px;margin:0 0 12px;break-inside:avoid}
+#cmpbody .xasg{background:#f4f6f5}
+#cmpbody .xasg h4 span{color:#55605c}
+#cmpbody .xasg .mine{background:#e4e7e6;color:#3d4542;font-size:.86rem;min-width:7.5em}
 #cmpbody .asg h4{margin:0 0 2px;font-size:1.05rem}
 #cmpbody .asg h4 span{font-weight:400;color:var(--muted);font-size:.82rem;margin-left:6px}
 #cmpbody .asg .cnt{font-size:.76rem;color:var(--muted);margin:0 0 8px}
@@ -709,7 +716,9 @@ function render(){
   view={rows:rows,cols:cols,byCell:byCell};
 
   var h='<thead><tr><th class="corner">Student</th><th class="corner" style="left:auto">Per.</th><th>Avg</th>';
-  cols.forEach(function(s){var a=activities[s]||{};h+='<th class="act" data-slug="'+esc(s)+'" title="'+esc(s)+' — click to copy for Synergy">'+esc(a.title||s)+'<small>'+esc(a.unit||'')+'</small></th>';});
+  cols.forEach(function(s){var a=activities[s]||{}, x=isExtras(s);
+    h+='<th class="act'+(x?' xcol':'')+'" data-slug="'+esc(s)+'" title="'+esc(x?(s+' — optional work; not part of the average'):(s+' — click to copy for Synergy'))+'">'+
+       esc(a.title||s)+'<small>'+esc(a.unit||'')+'</small>'+(x?'<em>optional \u00b7 not in the average</em>':'')+'</th>';});
   h+='</tr></thead><tbody>';
   var done=0,total=0;
   rows.forEach(function(s){
@@ -717,13 +726,13 @@ function render(){
     var line='';
     cols.forEach(function(slug){
       var c=byCell[s.email+'|'+slug];
-      if(!c){line+='<td class="c"></td>';return;}
+      if(!c){line+='<td class="c'+(isExtras(slug)?' xcol':'')+'"></td>';return;}
       total++; done++;
       if(isExtras(slug)){
         /* optional: no band, no average — just how far they got */
         var left=EXTRA_LEFT[s.email+'|'+slug];
         var dn=(c.score!=null?+c.score:0);
-        line+='<td class="c" title="'+esc('optional extras — not in the average; adds to it when done · '+
+        line+='<td class="c xcol" title="'+esc('optional extras — not in the average; adds to it when done · '+
               dn+(c.max_score?' / '+c.max_score:'')+' · '+c.attempts+' attempt'+(c.attempts==1?'':'s')+' · '+(c.last_at||'').slice(0,10))+
               '"><span class="xtra">'+dn+' done'+(left!=null?' · '+left+' left':'')+'</span></td>';
         return;
@@ -1160,9 +1169,10 @@ function cmpGrade(c){
 }
 function renderCompare(){
   var per=document.getElementById('period').value, everyone=document.getElementById('cmpwho').value==='all';
-  var cols=view.cols.filter(function(sl){ return !isExtras(sl); }).slice().sort(function(x,y){
-    var ax=activities[x]||{}, ay=activities[y]||{};
-    return (ax.unit||x).localeCompare(ay.unit||y)||(ax.title||x).localeCompare(ay.title||y);});
+  var byName=function(x,y){ var ax=activities[x]||{}, ay=activities[y]||{};
+    return (ax.unit||x).localeCompare(ay.unit||y)||(ax.title||x).localeCompare(ay.title||y); };
+  var cols=view.cols.filter(function(sl){ return !isExtras(sl); }).slice().sort(byName);
+  var xcols=view.cols.filter(isExtras).slice().sort(byName);      // T-364: optional, listed last
   var host=document.getElementById('cmpbody'), total=0;
   var html=cols.map(function(sl){
     var a=activities[sl]||{};
@@ -1180,10 +1190,27 @@ function renderCompare(){
           '<span class="box"></span></div>';
       }).join('')+'</div>';
   }).join('');
-  host.innerHTML = html || '<p style="color:var(--muted);padding:12px 0">Nothing in view. Widen the Since filter or pick another period.</p>';
+  /* T-364 (Toby chose B): the optional columns go on the sheet too, at the end,
+     as "done · left" with no Synergy box — nothing to type, just something to
+     read: who has room to do more. */
+  var xhtml=xcols.map(function(sl){
+    var a=activities[sl]||{};
+    var rows=view.rows.filter(function(s){ return everyone || !!view.byCell[s.email+'|'+sl]; });
+    if(!rows.length) return '';
+    return '<div class="asg xasg"><h4>'+esc(a.title||sl)+'<span>optional \u00b7 not a Synergy mark</span></h4>'+
+      '<div class="cnt">'+rows.length+' student'+(rows.length===1?'':'s')+' \u00b7 roster order \u00b7 adds to the average, never lowers it</div>'+
+      rows.map(function(s){
+        var c=view.byCell[s.email+'|'+sl], left=EXTRA_LEFT[s.email+'|'+sl];
+        var dn=c&&c.score!=null?+c.score:0;
+        return '<div class="ln"><span class="nm">'+esc(studentName(s))+'</span>'+
+          '<span class="mine'+(dn?'':' none')+'">'+dn+' done'+(left!=null?' \u00b7 '+left+' left':'')+'</span></div>';
+      }).join('')+'</div>';
+  }).join('');
+  host.innerHTML = (html+xhtml) || '<p style="color:var(--muted);padding:12px 0">Nothing in view. Widen the Since filter or pick another period.</p>';
   document.getElementById('cmpnote').textContent=
     (per&&per!=='none'?'Period '+per:'All periods')+' \u00b7 '+cols.length+' assignment'+(cols.length===1?'':'s')+
-    ' \u00b7 '+total+' line'+(total===1?'':'s')+' \u00b7 '+(cmpFmt()==='4'?'0\u20134':'percent');
+    ' \u00b7 '+total+' line'+(total===1?'':'s')+' \u00b7 '+(cmpFmt()==='4'?'0\u20134':'percent')+
+    (xcols.length?' \u00b7 plus '+xcols.length+' optional column'+(xcols.length===1?'':'s')+' at the end':'');
 }
 document.getElementById('cmp').onclick=function(){ renderCompare(); document.getElementById('cmpdlg').showModal(); };
 document.getElementById('cmpclose').onclick=function(){ document.getElementById('cmpdlg').close(); };
