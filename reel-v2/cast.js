@@ -191,6 +191,21 @@
       }
       return sc + '</g>';
     }
+    if (name === 'tray') {
+      /* a lunch tray carried in front: plate, milk carton, apple, napkin, fork and spoon */
+      return '<g transform="translate(0,-212)">' +
+             '<rect x="-108" y="-16" width="216" height="40" rx="10" fill="#9aa3ad"/>' +
+             '<rect x="-100" y="-22" width="200" height="30" rx="8" fill="#c0c7cf"/>' +
+             '<ellipse cx="-34" cy="-20" rx="46" ry="16" fill="#fffdf8" stroke="#d9d3e3" stroke-width="3"/>' +
+             '<path d="M-60,-24 A46,16 0 0 1 -8,-24 Z" fill="#F8981F"/>' +
+             '<path d="M-50,-26 l10,-6 l10,6 l10,-6 l10,6" fill="none" stroke="#c9412e" stroke-width="3"/>' +
+             '<rect x="28" y="-52" width="34" height="46" rx="4" fill="#fffdf8" stroke="#2f6fbd" stroke-width="3"/>' +
+             '<path d="M28,-52 L45,-62 L62,-52 Z" fill="#2f6fbd"/>' +
+             '<circle cx="86" cy="-24" r="16" fill="#c9412e"/><path d="M86,-40 q6,-10 14,-8" fill="none" stroke="#1f8a7e" stroke-width="4"/>' +
+             '<rect x="-104" y="-8" width="26" height="20" rx="3" fill="#fffdf8"/>' +
+             '<path d="M-96,-10 L-96,-34 M-92,-10 L-92,-34 M-88,-10 L-88,-34" stroke="#8b8f98" stroke-width="3"/>' +
+             '<path d="M-74,-10 L-74,-36 q6,-4 6,-14 q-6,4 -6,14" fill="none" stroke="#8b8f98" stroke-width="3"/></g>';
+    }
     if (name === 'calculator') {
       var cs = '<g transform="translate(-70,-250) rotate(-8)"><rect x="-30" y="-48" width="60" height="96" rx="8" fill="#5b6b7c"/>' +
                '<rect x="-22" y="-40" width="44" height="24" rx="3" fill="#dfe9d3"/>';
@@ -204,7 +219,7 @@
     return '';
   }
 
-  /* opts: {expr, pose:'idle'|'wave'|'point'|'spin'|'think'|'read'|'write', hold:'ball'|'sketchbook'|'paper'|'backpack'|'pencil'|'notebook'|'calculator'|'schedule', talk:bool} */
+  /* opts: {expr, pose:'idle'|'wave'|'point'|'spin'|'think'|'read'|'write', hold:'ball'|'sketchbook'|'paper'|'backpack'|'pencil'|'notebook'|'calculator'|'schedule'|'tray', talk:bool} */
 
   /* =================== SEASONS & HOLIDAYS (T-36) ===================
      The cast dresses for the time of year with no change to any episode.
@@ -716,6 +731,54 @@
     });
     return s;
   };
+  R.BG.lunchline = function () {
+    var s = '<rect width="1600" height="900" fill="#fbead6"/>';
+    s += '<rect x="0" y="0" width="1600" height="60" fill="#f1dcc2"/>';
+    s += sign(560, 80, 480, 'Lunch line', '#c9412e');
+    /* menu board */
+    s += '<rect x="90" y="160" width="400" height="250" rx="10" fill="#2b2233"/>';
+    s += '<text x="290" y="216" text-anchor="middle" font-family="Nunito,Arial,sans-serif" font-weight="900" font-size="36" fill="#fffdf8">Today</text>';
+    ['Pizza', 'Rice and beans', 'Salad', 'Milk'].forEach(function (t, i) {
+      s += '<text x="120" y="' + (266 + i * 38) + '" font-family="Nunito,Arial,sans-serif" font-weight="700" font-size="28" fill="' + ['#F8981F', '#8fd3c6', '#f2c230', '#cfe7f2'][i] + '">' + t + '</text>';
+    });
+    /* the food service worker behind the counter: hairnet, apron, serving spoon */
+    s += '<g transform="translate(1180,250)">';
+    s += '<rect x="-86" y="66" width="172" height="250" rx="40" fill="#1f8a7e"/>';
+    s += '<rect x="-54" y="116" width="108" height="200" rx="12" fill="#fffdf8"/>';
+    s += '<path d="M-54,116 L-18,74 M54,116 L18,74" stroke="#fffdf8" stroke-width="10"/>';
+    s += '<circle cx="0" cy="0" r="74" fill="#c98f63"/>';
+    s += '<path d="M-74,-10 A74,74 0 0 1 74,-10 Z" fill="#5b4536"/>';
+    s += '<path d="M-77,-12 A77,77 0 0 1 77,-12" fill="none" stroke="#cfe7f2" stroke-width="9"/>';
+    s += '<circle cx="-26" cy="8" r="8" fill="#2b2233"/><circle cx="26" cy="8" r="8" fill="#2b2233"/>';
+    s += '<path d="M-22,38 q22,18 44,0" fill="none" stroke="#2b2233" stroke-width="6" stroke-linecap="round"/>';
+    s += '<path d="M-86,130 L-150,74" stroke="#c98f63" stroke-width="22" stroke-linecap="round"/>';
+    s += '<path d="M-150,74 L-212,40" stroke="#9aa3ad" stroke-width="11" stroke-linecap="round"/><ellipse cx="-222" cy="34" rx="28" ry="18" fill="#c0c7cf" transform="rotate(-28,-222,34)"/>';
+    s += '</g>';
+    s += '<rect x="0" y="628" width="1600" height="16" fill="#e8cdb0"/>';
+    s += floor('#e2d4c0');
+    /* the counter: sneeze guard, hot pans of food, stack of trays, napkins and forks */
+    s += '<rect x="120" y="560" width="1240" height="34" rx="6" fill="#c0c7cf"/>';
+    s += '<rect x="140" y="594" width="1200" height="120" fill="#9aa3ad"/>';
+    s += '<path d="M150,560 L150,440 M1330,560 L1330,440" stroke="#8b8f98" stroke-width="7"/>';
+    s += '<rect x="150" y="432" width="1180" height="12" rx="5" fill="#8b8f98"/>';
+    s += '<rect x="150" y="444" width="1180" height="116" fill="#cfe7f2" opacity=".32"/>';
+    var pans = [[620, '#F8981F'], [800, '#8fd3c6'], [980, '#f2c230']];
+    pans.forEach(function (pn) {
+      s += '<rect x="' + pn[0] + '" y="524" width="150" height="40" rx="5" fill="#8b8f98"/>';
+      s += '<rect x="' + (pn[0] + 10) + '" y="516" width="130" height="18" rx="5" fill="' + pn[1] + '"/>';
+      s += '<path d="M' + (pn[0] + 44) + ',512 q-10,-22 2,-34 M' + (pn[0] + 104) + ',512 q-10,-22 2,-34" fill="none" stroke="#fffdf8" stroke-width="4" opacity=".65"/>';
+    });
+    /* stack of trays */
+    for (var k = 0; k < 6; k++) s += '<rect x="' + (190 + k) + '" y="' + (548 - k * 9) + '" width="150" height="12" rx="4" fill="' + (k % 2 ? '#9aa3ad' : '#c0c7cf') + '"/>';
+    /* napkin box, forks and spoons in a tub */
+    s += '<rect x="1140" y="520" width="80" height="44" rx="5" fill="#fffdf8" stroke="#d9d3e3" stroke-width="3"/><rect x="1156" y="506" width="48" height="16" rx="3" fill="#fffdf8"/>';
+    s += '<rect x="1240" y="516" width="80" height="48" rx="5" fill="#5b6b7c"/>';
+    s += '<path d="M1258,516 L1258,480 M1266,516 L1266,480 M1274,516 L1274,480" stroke="#c0c7cf" stroke-width="4"/>';
+    s += '<path d="M1300,516 L1300,486 q8,-6 8,-18 q-8,6 -8,18" fill="none" stroke="#c0c7cf" stroke-width="4"/>';
+    /* the line on the floor */
+    s += '<path d="M120,790 L1480,790" stroke="#c9412e" stroke-width="7" stroke-dasharray="26 18"/>';
+    return s;
+  };
   R.BG.cafeteria = function () {
     var s = '<rect width="1600" height="900" fill="#fbead6"/>';
     s += '<rect x="0" y="0" width="1600" height="60" fill="#f1dcc2"/>';
@@ -754,9 +817,19 @@
     }
     return '';
   };
+  R.item2 = function (kind, x) {
+    if (kind === 'tray') {
+      /* a tray left on a lunch table (table top sits at y 704 in the cafeteria) */
+      return '<g transform="translate(' + x + ',700)"><rect x="-70" y="-12" width="140" height="26" rx="7" fill="#9aa3ad"/>' +
+             '<rect x="-64" y="-18" width="128" height="20" rx="6" fill="#c0c7cf"/>' +
+             '<ellipse cx="-16" cy="-16" rx="30" ry="11" fill="#fffdf8"/><path d="M-36,-19 A30,11 0 0 1 4,-19 Z" fill="#F8981F"/>' +
+             '<rect x="26" y="-40" width="24" height="32" rx="3" fill="#fffdf8" stroke="#2f6fbd" stroke-width="3"/></g>';
+    }
+    return '';
+  };
   R.itemsSVG = function (list) {
     var s = '';
-    (list || []).forEach(function (it) { s += R.item(it.kind, it.x); });
+    (list || []).forEach(function (it) { s += (R.item(it.kind, it.x) || R.item2(it.kind, it.x)); });
     return s;
   };
 
