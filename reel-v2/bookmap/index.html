@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Story Reel ↔ book map — Mr. Toby's ELD</title>
+<script src="/readings/icon.js" data-teacher></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../reel.css">
+<style>
+/* T-387 (Nov 12 2026): Story Reel episodes on top, Language Launch lessons below, lines between them.
+   Everything is counted live from the episode pages, so a new episode shows up by itself once the
+   hub lists it. The book lessons below come from the Unit 1 PDF in the project. */
+body{background:#f6f4ef;color:#22202a;font-family:'Nunito',system-ui,sans-serif}
+.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 18px;border-bottom:2px solid #22202a;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.08)}
+.top a.back{font-weight:800;text-decoration:none;color:#fff;background:#1f7a4d;border-radius:9px;padding:6px 12px;font-size:.9rem}
+.top h1{font-size:1.25rem;margin:0;font-weight:900}
+.wrap{padding:14px 18px 40px}
+.box{background:#fff;border:2px solid #22202a;border-radius:12px;box-shadow:0 3px 8px rgba(0,0,0,.12);padding:12px 14px;margin:0 0 14px}
+.lbl{font-size:.78rem;font-weight:900;text-transform:uppercase;letter-spacing:.04em;color:#5a5566;margin:0 0 6px}
+.ctl{display:flex;gap:18px;flex-wrap:wrap;align-items:center}
+.ctl label{font-weight:800;font-size:.92rem}
+.legend{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:.85rem;font-weight:700}
+.legend span.sw{display:inline-block;width:22px;height:16px;border:2px solid #22202a;border-radius:4px;vertical-align:middle;margin-right:4px}
+.scroller{overflow-x:auto;overflow-y:hidden;border:2px solid #22202a;border-radius:12px;background:#fff;box-shadow:0 3px 8px rgba(0,0,0,.12)}
+.stage{position:relative;padding:16px 16px 20px;width:max-content}
+.lane{display:flex;flex-wrap:nowrap;gap:14px;align-items:flex-start;position:relative;z-index:2}
+#eps{justify-content:space-around}
+.lanelbl{font-weight:900;font-size:.85rem;color:#5a5566;margin:0 0 6px;position:relative;z-index:2}
+.gap{height:150px}
+svg.links{position:absolute;left:0;top:0;z-index:1;pointer-events:none;overflow:visible}
+svg.links path{fill:none;stroke-linecap:round;transition:opacity .15s}
+.ep{width:230px;flex:0 0 230px;border:2px solid #22202a;border-radius:12px;background:#fff;overflow:hidden;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.12)}
+.ep .th svg{display:block;width:100%;height:auto}
+.ep .bd{padding:8px 10px 10px}
+.ep .n{font-size:.75rem;font-weight:900;color:#7a6a8a}
+.ep h3{margin:0 0 6px;font-size:1rem;line-height:1.2}
+.ep .chips{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0}
+.ep .chips span{font-size:.74rem;font-weight:800;border:1.5px solid #22202a;border-radius:999px;padding:1px 7px;background:#f3f0fa}
+.ep .chips span.idea{background:#e0f2e8;border-color:#1f7a4d;color:#14532d}
+.ep .books{font-size:.78rem;font-weight:700;color:#5a5566}
+.ep.soon{border-style:dashed;background:#faf9f6;cursor:default}
+.ep.on,.bk.on{outline:4px solid #1f7a4d;outline-offset:2px}
+.unit{display:flex;flex-direction:column;gap:6px}
+.unit .uh{font-weight:900;font-size:.85rem}
+.unit .row{display:flex;flex-wrap:nowrap;gap:8px}
+.bk{width:104px;flex:0 0 104px;min-height:132px;border:2px solid #22202a;border-radius:4px 10px 10px 4px;position:relative;padding:8px 8px 8px 16px;cursor:pointer;background:#fff;box-shadow:2px 3px 0 #22202a}
+.bk:before{content:"";position:absolute;left:0;top:0;bottom:0;width:8px;border-right:2px solid #22202a;background:rgba(0,0,0,.08)}
+.bk .ln{font-weight:900;font-size:.8rem}
+.bk .tt{font-weight:800;font-size:.86rem;line-height:1.15;margin:2px 0 4px}
+.bk .pg{font-size:.7rem;color:#5a5566;font-weight:700}
+.bk .ct{font-size:.72rem;font-weight:900;margin-top:4px}
+.bk .lp{position:absolute;right:-6px;top:-8px;background:#2457a6;color:#fff;font-size:.62rem;font-weight:900;border-radius:999px;padding:1px 6px;border:2px solid #22202a}
+.bk.later{border-style:dashed;box-shadow:none;background:#faf9f6;width:170px;flex-basis:170px;cursor:default;color:#5a5566;font-weight:700;font-size:.82rem}
+.dim{opacity:.12}
+#detail table{border-collapse:collapse;width:100%;font-size:.88rem}
+#detail th,#detail td{border:1.5px solid #22202a;padding:5px 8px;text-align:left;vertical-align:top}
+#detail th{background:#f3f0fa}
+#detail .w{display:inline-block;margin:1px 3px 1px 0;padding:0 6px;border-radius:6px;background:#f3f0fa;font-weight:700}
+#detail .w.idea{background:#e0f2e8}
+.note{font-size:.86rem;color:#5a5566}
+#gate{position:fixed;inset:0;background:rgba(34,32,42,.75);display:flex;align-items:center;justify-content:center;z-index:50}
+#gate .card{background:#fff;border:2px solid #22202a;border-radius:14px;padding:22px;max-width:340px;width:90%}
+#gate input{width:100%;font:inherit;padding:8px 10px;border:2px solid #22202a;border-radius:8px;margin:8px 0}
+#gate button{font:inherit;font-weight:900;background:#1f7a4d;color:#fff;border:0;border-radius:9px;padding:8px 16px;cursor:pointer}
+</style>
+</head>
+<body>
+<div id="gate"><div class="card"><b>Teacher page</b><input id="pw" type="password" placeholder="Password" aria-label="Password"><button id="go">Open</button><div id="pwErr" class="note"></div></div></div>
+
+<div class="top">
+  <a class="back" href="/readings/dashboards/">← All dashboards</a>
+  <h1>Story Reel ↔ book lessons</h1>
+  <a href="/readings/reel-v2/" style="font-weight:800">Story Reel hub ↗</a>
+</div>
+
+<div class="wrap">
+  <div class="box">
+    <div class="lbl">How to read this</div>
+    <div class="note">Top: every Story Reel episode. Bottom: every book lesson. A line means the episode uses enough of that lesson’s words and ideas (the number below). Thick line = the lesson the episode uses most. The colour of a book shows how many episodes use it. Tap an episode or a book to see the exact words. Blue <b>LP</b> tag = Launch Plus has a lesson for it.</div>
+  </div>
+
+  <div class="box ctl">
+    <label>A line needs <input id="thr" type="number" min="2" max="12" value="5" style="width:56px;font:inherit;font-weight:900"> or more of a lesson’s words/ideas</label>
+    <div class="legend">
+      <span><span class="sw" style="background:#fff"></span>0 episodes</span>
+      <span><span class="sw" style="background:#fbcfe0"></span>1</span>
+      <span><span class="sw" style="background:#ec6fa3"></span>2</span>
+      <span><span class="sw" style="background:#fde047"></span>3</span>
+      <span><span class="sw" style="background:#fb923c"></span>4–5</span>
+      <span><span class="sw" style="background:#4ade80"></span>6+</span>
+    </div>
+  </div>
+
+  <div class="scroller"><div class="stage" id="stage">
+    <svg class="links" id="links"></svg>
+    <div class="lanelbl">Story Reel episodes</div>
+    <div class="lane" id="eps"><div class="note">Loading episodes…</div></div>
+    <div class="gap"></div>
+    <div class="lanelbl">Language Launch book lessons</div>
+    <div class="lane" id="books"></div>
+  </div></div>
+
+  <div class="box" id="detail" style="margin-top:14px"><div class="lbl">Details</div><div class="note">Tap an episode or a book above.</div></div>
+</div>
+
+<script src="../cast.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+  /* ---------- password ---------- */
+  function openPage() { $('gate').style.display = 'none'; try { sessionStorage.setItem('gal_bookmap_ok', '1'); } catch (e) {} start(); }
+  $('go').addEventListener('click', function () { if ($('pw').value.trim() === 'galileo2026') openPage(); else $('pwErr').textContent = 'Not quite — try again.'; });
+  $('pw').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('go').click(); });
+  try { if (sessionStorage.getItem('gal_bookmap_ok') === '1') setTimeout(openPage, 0); } catch (e) {}
+
+  /* ---------- the book (Unit 1 from ELD_LL1_SE_U1.pdf; vocabulary = each lesson's Vocabulary Review
+     list plus its word bank; "ideas" = the lesson's Language Builder, counted when enough markers show) ---------- */
+  var UNITS = [
+    { u: 1, title: 'Welcome to School', lessons: [
+      { l: 1, t: 'Welcome to School', p: '6–15', lp: 'LP 1', words: ['school', 'student', 'teacher', 'friend', 'listen', 'speak', 'read', 'write', 'name'] },
+      { l: 2, t: 'Meet and Greet', p: '16–29', lp: 'LP 2', words: ['hello', 'introduce', 'meet', 'ask', 'thank you', 'goodbye', 'nice to meet you', 'wave', 'shake hands'],
+        ideas: [{ n: 'introducing yourself', m: ['my name is', 'nice to meet you', 'this is', 'i am from', 'where are you from'], min: 2 }] },
+      { l: 3, t: 'From A to Z', p: '30–37', lp: 'LP 3', words: ['letter', 'alphabet', 'uppercase', 'lowercase', 'spell'],
+        ideas: [{ n: 'spelling names', m: ['spell', 'how do you spell', 'letter'], min: 2 }] },
+      { l: 4, t: 'From 0 to 100', p: '38–47', lp: 'LP 4', words: ['number', 'country', 'go', 'twenty', 'thirty', 'forty', 'fifty', 'hundred'],
+        ideas: [{ n: 'numbers 20–100', m: ['twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety', 'hundred', '\\b[2-9][0-9]\\b', '\\b[1-9][0-9][0-9]\\b'], min: 3 }] },
+      { l: 5, t: 'About Me', p: '48–63', lp: 'LP 5', words: ['language', 'share', 'years', 'years old', 'how old', 'spanish', 'vietnamese', 'arabic', 'mandarin', 'cantonese'],
+        ideas: [{ n: 'subject pronouns', m: ['\\bi\\b', '\\byou\\b', '\\bhe\\b', '\\bshe\\b', '\\bit\\b', '\\bwe\\b', '\\bthey\\b'], min: 7 }] },
+      { l: 6, t: 'People at School', p: '64–77', lp: 'LP 1', words: ['principal', 'assistant', 'coach', 'counselor', 'custodian', 'food service worker', 'librarian', 'nurse'] },
+      { l: 7, t: 'School Supplies', p: '78–89', words: ['backpack', 'book', 'calculator', 'computer', 'folder', 'notebook', 'pen', 'pencil', 'eraser', 'paper', 'borrow'],
+        ideas: [{ n: 'plural -s', m: ['pencils', 'pens', 'books', 'notebooks', 'folders', 'computers'], min: 2 }] },
+      { l: 8, t: 'Class Acts', p: '90–105', words: ['find', 'hang out', 'learn', 'play', 'practice', 'solve', 'study', 'understand'] },
+      { l: 9, t: 'Places at School', p: '106–117', words: ['bathroom', 'cafeteria', 'classroom', 'gym', 'hallway', 'library', 'office', 'schoolyard', 'computer lab'] },
+      { l: 10, t: 'School Subjects', p: '118–131', words: ['subject', 'english', 'math', 'science', 'social studies', 'art', 'physical education', 'p.e.', 'favorite'],
+        ideas: [{ n: 'favorite … because', m: ['favorite', 'because'], min: 2 }] },
+      { l: 11, t: 'School Schedule', p: '132–145', words: ['week', 'day', 'time', 'event', 'morning', 'afternoon', 'before', 'after', 'schedule', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+        ideas: [{ n: 'days of the week', m: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'], min: 2 }] },
+      { l: 12, t: 'In the Cafeteria', p: '146–159', words: ['eat', 'breakfast', 'lunch', 'wait', 'take', 'choose', 'sit', 'clean up', 'tray', 'napkin', 'fork', 'spoon', 'line', 'seat', 'drink', 'table'],
+        ideas: [{ n: 'sequence words', m: ['\\bfirst,', '\\bthen,', '\\balso,', '\\bnext,', '\\bfinally,'], min: 3 }] },
+      { l: 13, t: 'Getting Around School', p: '160–171', words: ['left', 'right', 'straight', 'downstairs', 'upstairs', 'inside', 'outside', 'through', 'turn', 'stairs', 'map'],
+        ideas: [{ n: 'direction words', m: ['turn left', 'turn right', 'go straight', 'go upstairs', 'go downstairs', 'go through'], min: 2 }] },
+      { l: 14, t: 'Project', p: '172–183', words: ['poster', 'present', 'presentation', 'how to'] }
+    ] }
+  ];
+
+  /* ---------- matching ---------- */
+  function wordRe(w) {
+    w = w.toLowerCase();
+    if (/[\\\[]/.test(w)) return new RegExp(w, 'g');                  /* already a pattern */
+    var e = w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/ /g, '\\s+');
+    var tail = /y$/.test(w) && !/[aeiou]y$/.test(w) ? '|' + e.slice(0, -1) + 'ies' : '';
+    return new RegExp('\\b(?:' + e + '(?:s|es|ed|d|ing)?' + tail + ')\\b', 'g');
+  }
+  function textOf(EP) {
+    var out = [], SKIP = { who: 1, expr: 1, bg: 1, focus: 1, pose: 1, hold: 1, id: 1, alt: 1, set: 1, board: 1, chars: 1, items: 1, sfx: 1, cam: 1, say: 1 };
+    function walk(v, key) {
+      if (v == null || SKIP[key]) return;
+      if (typeof v === 'string') { out.push(v); return; }
+      if (Array.isArray(v)) { v.forEach(function (x) { walk(x, key); }); return; }
+      if (typeof v === 'object') {
+        if (v.teaser) return;                                           /* teaser lines belong to the next episode */
+        Object.keys(v).forEach(function (k) { walk(v[k], k); });
+      }
+    }
+    walk(EP.scenes || [], 'scenes'); if (EP.yourTurn) walk(EP.yourTurn, 'yourTurn');
+    return out.join(' \n ').toLowerCase().replace(/[\u2018\u2019]/g, "'");
+  }
+  function matchLesson(L, text) {
+    var hits = [];
+    (L.words || []).forEach(function (w) { var m = text.match(wordRe(w)); if (m) hits.push({ w: w, n: m.length }); });
+    (L.ideas || []).forEach(function (c) {
+      var got = c.m.filter(function (mk) { return wordRe(mk).test(text); });
+      if (got.length >= c.min) hits.push({ w: c.n, n: got.length, idea: true });
+    });
+    return hits;
+  }
+  function extractObj(src, marker) {
+    var i = src.indexOf(marker); if (i < 0) return null;
+    i = src.indexOf(marker.slice(-1) === '[' ? '[' : '{', i + marker.length - 1);
+    var open = src[i], close = open === '[' ? ']' : '}', d = 0, q = null;
+    for (var j = i; j < src.length; j++) {
+      var c = src[j];
+      if (q) { if (c === '\\') { j++; continue; } if (c === q) q = null; continue; }
+      if (c === '/' && src[j + 1] === '/') { j = src.indexOf('\n', j); continue; }
+      if (c === '/' && src[j + 1] === '*') { j = src.indexOf('*/', j) + 1; continue; }
+      if (c === '"' || c === "'" || c === '`') { q = c; continue; }
+      if (c === open) d++; else if (c === close && --d === 0) return src.slice(i, j + 1);
+    }
+    return null;
+  }
+
+  /* ---------- load ---------- */
+  var EPS = [], NEXT = null, started = false;
+  function start() {
+    if (started) return; started = true;
+    drawBooks();
+    fetch('/readings/reel-v2/index.html', { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (hub) {
+      var arr = extractObj(hub, 'var EPISODES = [');
+      EPS = arr ? new Function('return ' + arr)() : [];
+      var nx = extractObj(hub, 'var NEXT = {'); NEXT = nx ? new Function('return ' + nx)() : null;
+      return Promise.all(EPS.map(function (e) {
+        return fetch('/readings/reel-v2/' + e.id + '/', { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (h) {
+          var o = extractObj(h, 'window.EP = {');
+          try { e.EP = o ? new Function('return ' + o)() : null; } catch (err) { e.EP = null; }
+          e.text = e.EP ? textOf(e.EP) : '';
+        }).catch(function () { e.text = ''; });
+      }));
+    }).then(compute).catch(function () { $('eps').innerHTML = '<div class="note">Could not load the Story Reel hub.</div>'; });
+  }
+  function allLessons() { var a = []; UNITS.forEach(function (U) { U.lessons.forEach(function (L) { L.u = U.u; L.key = 'u' + U.u + 'l' + L.l; a.push(L); }); }); return a; }
+  function compute() {
+    var LS = allLessons();
+    EPS.forEach(function (e) {
+      e.links = [];
+      LS.forEach(function (L) { var h = matchLesson(L, e.text); if (h.length) e.links.push({ L: L, hits: h }); });
+      e.links.sort(function (a, b) { return b.hits.length - a.hits.length || b.L.l - a.L.l; });
+    });
+    draw();
+  }
+
+  /* ---------- draw ---------- */
+  var SEL = null;
+  function thr() { return Math.max(2, +$('thr').value || 5); }
+  function color(n) { return n >= 6 ? '#4ade80' : n >= 4 ? '#fb923c' : n === 3 ? '#fde047' : n === 2 ? '#ec6fa3' : n === 1 ? '#fbcfe0' : '#fff'; }
+  function drawBooks() {
+    var h = '';
+    UNITS.forEach(function (U) {
+      h += '<div class="unit"><div class="uh">Unit ' + U.u + ' · ' + esc(U.title) + '</div><div class="row">';
+      U.lessons.forEach(function (L) {
+        h += '<div class="bk" data-k="u' + U.u + 'l' + L.l + '">' + (L.lp ? '<span class="lp" title="Launch Plus covers this lesson">' + L.lp + '</span>' : '') +
+             '<div class="ln">U' + U.u + ' · L' + L.l + '</div><div class="tt">' + esc(L.t) + '</div><div class="pg">pp. ' + L.p + '</div><div class="ct"></div></div>';
+      });
+      h += '</div></div>';
+    });
+    h += '<div class="unit"><div class="uh">Later units</div><div class="row"><div class="bk later">Units 2 and up appear here when their PDFs are added to the project.</div></div></div>';
+    $('books').innerHTML = h;
+    Array.prototype.forEach.call(document.querySelectorAll('.bk[data-k]'), function (b) { b.addEventListener('click', function () { pick('b', b.dataset.k); }); });
+  }
+  function draw() {
+    var T = thr(), h = '';
+    EPS.forEach(function (e) {
+      var strong = e.links.filter(function (x) { return x.hits.length >= T; });
+      var top = strong[0], words = [], ideas = [];
+      strong.forEach(function (x) { x.hits.forEach(function (w) { if (w.idea) { if (ideas.indexOf(w.w) < 0) ideas.push(w.w); } else if (x === top && words.length < 10) words.push(w.w); }); });
+      h += '<div class="ep" data-id="' + e.id + '"><div class="th">' + (window.REEL && REEL.sceneSVG ? REEL.sceneSVG(e.thumb || {}) : '') + '</div><div class="bd">' +
+           '<div class="n">Episode ' + e.num + '</div><h3>' + esc(e.title) + '</h3>' +
+           '<div class="chips">' + words.map(function (w) { return '<span>' + esc(w) + '</span>'; }).join('') + ideas.map(function (w) { return '<span class="idea">' + esc(w) + '</span>'; }).join('') + '</div>' +
+           '<div class="books">Book: ' + (strong.length ? strong.map(function (x) { return 'L' + x.L.l + ' (' + x.hits.length + ')'; }).join(' · ') : 'none at this setting') + '</div></div></div>';
+    });
+    if (NEXT) h += '<div class="ep soon"><div class="bd"><div class="n">Episode ' + NEXT.num + '</div><h3>Coming soon</h3><div class="note">' + esc(NEXT.teaser) + '</div></div></div>';
+    $('eps').innerHTML = h; $('eps').style.width = $('books').scrollWidth + 'px';
+    Array.prototype.forEach.call(document.querySelectorAll('.ep[data-id]'), function (c) { c.addEventListener('click', function () { pick('e', c.dataset.id); }); });
+    allLessons().forEach(function (L) {
+      var n = EPS.filter(function (e) { return e.links.some(function (x) { return x.L === L && x.hits.length >= T; }); }).length;
+      var b = document.querySelector('.bk[data-k="' + L.key + '"]'); if (!b) return;
+      b.style.background = color(n); b.querySelector('.ct').textContent = n ? (n + ' episode' + (n > 1 ? 's' : '')) : '';
+    });
+    lines(); if (SEL) pick(SEL[0], SEL[1], true);
+  }
+  var EPCOL = ['#2457a6', '#d97706', '#7c3aed', '#1f7a4d', '#c0265f', '#0e7490', '#92400e', '#4338ca'];
+  function lines() {
+    var st = $('stage'), sv = $('links'), T = thr(), R0 = st.getBoundingClientRect(), p = '';
+    sv.setAttribute('width', st.scrollWidth); sv.setAttribute('height', st.scrollHeight);
+    EPS.forEach(function (e, i) {
+      var c = document.querySelector('.ep[data-id="' + e.id + '"]'); if (!c) return;
+      var a = c.getBoundingClientRect(), x1 = a.left + a.width / 2 - R0.left, y1 = a.bottom - R0.top;
+      e.links.filter(function (x) { return x.hits.length >= T; }).forEach(function (x, k) {
+        var b = document.querySelector('.bk[data-k="' + x.L.key + '"]'); if (!b) return;
+        var r = b.getBoundingClientRect(), x2 = r.left + r.width / 2 - R0.left, y2 = r.top - R0.top, my = (y1 + y2) / 2;
+        p += '<path data-e="' + e.id + '" data-b="' + x.L.key + '" d="M' + x1 + ',' + y1 + ' C' + x1 + ',' + my + ' ' + x2 + ',' + my + ' ' + x2 + ',' + y2 + '" stroke="' + EPCOL[i % EPCOL.length] + '" stroke-width="' + (k === 0 ? 6 : 2.5) + '" opacity="' + (k === 0 ? .9 : .6) + '"/>';
+      });
+    });
+    sv.innerHTML = p;
+  }
+  function pick(kind, id, keep) {
+    if (!keep && SEL && SEL[0] === kind && SEL[1] === id) { SEL = null; clearPick(); return; }
+    SEL = [kind, id]; var T = thr(), rows = '';
+    Array.prototype.forEach.call(document.querySelectorAll('.ep,.bk'), function (x) { x.classList.remove('on'); });
+    Array.prototype.forEach.call(document.querySelectorAll('#links path'), function (pth) {
+      var on = kind === 'e' ? pth.dataset.e === id : pth.dataset.b === id; pth.classList.toggle('dim', !on);
+    });
+    function cell(hits) { return hits.map(function (w) { return '<span class="w' + (w.idea ? ' idea' : '') + '">' + esc(w.w) + (w.n > 1 && !w.idea ? ' ×' + w.n : '') + '</span>'; }).join(''); }
+    if (kind === 'e') {
+      var e = EPS.filter(function (x) { return x.id === id; })[0]; if (!e) return;
+      document.querySelector('.ep[data-id="' + id + '"]').classList.add('on');
+      e.links.forEach(function (x) { rows += '<tr' + (x.hits.length < T ? ' style="color:#8a8595"' : '') + '><td>U' + x.L.u + ' L' + x.L.l + ' ' + esc(x.L.t) + '</td><td>' + x.hits.length + '</td><td>' + cell(x.hits) + '</td></tr>'; });
+      $('detail').innerHTML = '<div class="lbl">Episode ' + e.num + ': ' + esc(e.title) + '</div><div class="note" style="margin-bottom:6px">Every lesson with at least one match. Grey rows are below the line setting (' + T + '). The teaser at the end is left out.</div>' +
+        '<table><tr><th>Book lesson</th><th>Found</th><th>Words and ideas found</th></tr>' + rows + '</table>';
+    } else {
+      var L = allLessons().filter(function (x) { return x.key === id; })[0]; if (!L) return;
+      document.querySelector('.bk[data-k="' + id + '"]').classList.add('on');
+      EPS.forEach(function (e) { var x = e.links.filter(function (y) { return y.L === L; })[0]; if (x) rows += '<tr' + (x.hits.length < T ? ' style="color:#8a8595"' : '') + '><td>Episode ' + e.num + ': ' + esc(e.title) + '</td><td>' + x.hits.length + '</td><td>' + cell(x.hits) + '</td></tr>'; });
+      $('detail').innerHTML = '<div class="lbl">Unit ' + L.u + ' Lesson ' + L.l + ': ' + esc(L.t) + ' (pp. ' + L.p + ')</div><div class="note" style="margin-bottom:6px">Words checked: ' + esc(L.words.join(', ')) + (L.ideas ? ' · ideas: ' + esc(L.ideas.map(function (c) { return c.n; }).join(', ')) : '') + '</div>' +
+        (rows ? '<table><tr><th>Episode</th><th>Found</th><th>Words and ideas found</th></tr>' + rows + '</table>' : '<div class="note">No episode uses this lesson yet.</div>');
+    }
+  }
+  function clearPick() {
+    Array.prototype.forEach.call(document.querySelectorAll('.ep,.bk'), function (x) { x.classList.remove('on'); });
+    Array.prototype.forEach.call(document.querySelectorAll('#links path'), function (p) { p.classList.remove('dim'); });
+    $('detail').innerHTML = '<div class="lbl">Details</div><div class="note">Tap an episode or a book above.</div>';
+  }
+  $('thr').addEventListener('input', function () { if (EPS.length) draw(); });
+  window.addEventListener('resize', function () { if (EPS.length) lines(); });
+  window.BOOKMAP = { eps: function () { return EPS; }, units: UNITS };   /* tests */
+})();
+</script>
+</body>
+</html>

@@ -9,5 +9,7 @@
  * group (Data, Reading, Vocabulary, Speaking, Writing, Grammar, Unit), note.
  */
 window.DASHBOARDS = (window.DASHBOARDS || []).concat([
-{url:'reel-v2/#teacher',               name:'Story Reel \u2014 who watched, practiced, translated', course:'101', group:'Speaking', note:'The Teacher table at the foot of the Story Reel page: one row per student per episode \u2014 level, answers, Your Turn, practice minutes, listens, translations (words + whole lines), last active, and Browser translate (on / leaked / nudged \u00d7N).'}
+{url:'reel-v2/#teacher',               name:'Story Reel \u2014 who watched, practiced, translated', course:'101', group:'Speaking', note:'The Teacher table at the foot of the Story Reel page: one row per student per episode \u2014 level, answers, Your Turn, practice minutes, listens, translations (words + whole lines), last active, and Browser translate (on / leaked / nudged \u00d7N).'},
+/* T-387 (Nov 12) */
+{url:'reel-v2/bookmap/', name:'Story Reel \u2194 book lessons map', course:'101', group:'Unit', note:'Episodes on top, Language Launch lessons below, lines between them; a book turns pink \u2192 green the more episodes use its words. Counted live from the episode pages.'}
 ]);
