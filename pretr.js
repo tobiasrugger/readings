@@ -66,10 +66,16 @@
   }
   /* ---- server ---- */
   function getJSON(url) { return fetch(url, { headers: H() }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }); }
-  function todayCount() {
+  /* T-367 (Nov 12): today's site-wide count = song_tr (every page, incl. student taps) + news_translations
+     (news Pre-translate and news taps), rows created since midnight Pacific — the same count news/index.html
+     shows since T-361, so a news run shows on every Pre-translate box. Cache reads only (count=exact, 0 rows). */
+  function countTable(tbl) {
     var h = H('count=exact'); h['Range-Unit'] = 'items'; h.Range = '0-0';
-    return fetch(SUPA_URL + '/rest/v1/song_tr?select=src&created_at=gte.' + encodeURIComponent(pacificMidnightISO()), { headers: h })
-      .then(function (r) { var cr = r.headers.get('content-range') || ''; var n = +(cr.split('/')[1] || NaN); return isNaN(n) ? null : n; }, function () { return null; });
+    return fetch(SUPA_URL + '/rest/v1/' + tbl + '?select=created_at&created_at=gte.' + encodeURIComponent(pacificMidnightISO()), { headers: h })
+      .then(function (r) { if (!r.ok) return 0; var cr = r.headers.get('content-range') || ''; var n = +(cr.split('/')[1] || NaN); return isNaN(n) ? 0 : n; }, function () { return 0; });
+  }
+  function todayCount() {
+    return Promise.all([countTable('song_tr'), countTable('news_translations')]).then(function (a) { return a[0] + a[1]; });
   }
   function softLimit() {
     return getJSON(SUPA_URL + '/rest/v1/gal_settings?key=eq.pretr_soft&select=value')
