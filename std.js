@@ -170,10 +170,19 @@
   var ROSTER_CSS = HIDE_ROSTER ? '#grosterwrap{display:none !important}' : '';
 
   /* T-167: the "Signed in as" line is now the only guard on a shared computer, so it is loud */
-  var WHO_CSS = '.gal-std-who{font-size:16px;font-weight:800;margin:10px 0;line-height:1.45;color:#2B2233;' +
-    'background:#fff3c4;border:2px solid #2B2233;border-radius:10px;padding:8px 10px;box-shadow:0 3px 0 rgba(43,34,51,.25)}' +
-    '.gal-std-notme{font:inherit;font-size:15px;font-weight:800;background:#fff;border:2px solid #2B2233;border-radius:999px;' +
-    'padding:3px 12px;margin-left:4px;cursor:pointer;color:#2B2233;text-decoration:none;opacity:1}';
+  /* T-368 (Nov 12): the yellow "Signed in as … Not you? Tap here" box pushed Start below the fold on a
+     Chromebook, and a student kept pressing "Not you?" (the only button she could see), clearing her own
+     sign-in each time. Now: a small "Signed in as …" line directly above ONE row — Start (big, unchanged)
+     with a small plain "Not ___?" beside it. And Start is never left below the fold (ensureStart). */
+  var WHO_CSS = '.gal-std-who{font-size:13.5px;font-weight:700;margin:6px 0 4px;line-height:1.35;color:#4a4256}' +
+    '.gal-std-who b{color:#2B2233}' +
+    '.gal-std-row{display:flex;align-items:center;gap:10px;flex-wrap:nowrap;max-width:100%}' +
+    '.gal-std-row > *{margin-top:0;margin-bottom:0}' +
+    '.gal-std-notme{font:inherit;font-size:13px;font-weight:700;background:transparent;border:1px solid #a9a1b3;border-radius:8px;' +
+    'padding:5px 9px;cursor:pointer;color:#5d536a;white-space:nowrap;flex:0 0 auto;width:auto;min-width:0;box-shadow:none}' +
+    '.gal-compact{padding-top:10px!important;padding-bottom:10px!important;row-gap:6px!important}' +
+    '.gal-compact > *{margin-top:5px!important;margin-bottom:5px!important}' +
+    '.gal-compact img,.gal-compact figure,.gal-compact picture,.gal-compact svg:not(button svg),.gal-compact .gal-trail-note{display:none!important}';
   function addCSS() {
     if (document.getElementById('gal-std-css')) return;
     var st = document.createElement('style');
@@ -355,10 +364,21 @@
     var d = document.createElement('div');
     d.className = 'gal-std-who';
     d.setAttribute('translate', 'no');
-    d.innerHTML = 'Signed in as <b></b>' + (s.period ? ' \u00b7 Period ' + s.period : '') +
-      ' \u2014 <button type="button" class="gal-std-notme">Not ' + first + '? Tap here</button>';
+    d.innerHTML = 'Signed in as <b></b>' + (s.period ? ' \u00b7 Period ' + s.period : '');
     d.querySelector('b').textContent = s.name || s.email;
-    d.querySelector('.gal-std-notme').addEventListener('click', function () {
+    /* T-368: Start and a small "Not ___?" share one row; the line sits directly above that row */
+    var row = btn.parentNode && btn.parentNode.classList && btn.parentNode.classList.contains('gal-std-row') ? btn.parentNode : null;
+    if (!row) {
+      var wide = btn.parentNode && btn.offsetWidth >= btn.parentNode.clientWidth * 0.8;
+      row = document.createElement('div'); row.className = 'gal-std-row';
+      btn.parentNode.insertBefore(row, btn); row.appendChild(btn);
+      if (wide) { btn.style.flex = '1 1 auto'; btn.style.minWidth = '0'; }
+    }
+    var nm = document.createElement('button'); nm.type = 'button'; nm.className = 'gal-std-notme';
+    nm.textContent = 'Not ' + first + '?';
+    row.appendChild(nm);
+    nm.addEventListener('click', function () {
+      nm.remove();
       forget();
       var els = box.querySelectorAll('input, select');
       for (var i = 0; i < els.length; i++) {
@@ -369,8 +389,27 @@
       var f = box.querySelector('input');
       if (f) f.focus();
     });
-    var anchor = childOf(box, btn) || btn;
-    anchor.parentNode.insertBefore(d, anchor);
+    row.parentNode.insertBefore(d, row);
+    ensureStart(box, btn);
+  }
+  /* T-368: Start must never sit below the fold (Chromebooks give ~650 px). If its bottom edge is past the
+     window: compact the box first (smaller padding/gaps, hide pictures and the optional note), then
+     scroll Start to the middle. Runs when the box draws, again a moment later, and on resize. */
+  function ensureStart(box, btn) {
+    try {
+      if (!btn || !shown(btn)) return;
+      var r = btn.getBoundingClientRect(), H = window.innerHeight || document.documentElement.clientHeight;
+      if (r.top >= 0 && r.bottom <= H - 4) return;
+      if (box && !box.classList.contains('gal-compact')) { box.classList.add('gal-compact'); r = btn.getBoundingClientRect(); }
+      if (r.top < 0 || r.bottom > H - 4) btn.scrollIntoView({ block: 'center' });
+    } catch (e) {}
+  }
+  function watchStart(box, btn) {
+    if (!btn || btn.__galEnsure) return;
+    btn.__galEnsure = 1;
+    [60, 450, 1200].forEach(function (t) { setTimeout(function () { ensureStart(box, btn); }, t); });
+    var tm = 0;
+    window.addEventListener('resize', function () { clearTimeout(tm); tm = setTimeout(function () { ensureStart(box, btn); }, 150); });
   }
   /* remember whoever signs in through this box, however the page handles it */
   function watchSignIn(box, btn) {
@@ -635,6 +674,7 @@
     }
     var btn0 = startButton(box);
     if (btn0) trBoxNote(box, btn0);                   /* T-337 */
+    if (btn0) watchStart(box, btn0);                  /* T-368 */
     if (haveLang && haveLang.id !== 'galStdLang') {              /* page already does it right */
       if (btn0) resume(box, btn0);
       return;
