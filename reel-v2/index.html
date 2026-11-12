@@ -80,15 +80,8 @@
         <span id="tCount"></span>
       </div>
       <div class="tscroll"><table id="tTable"></table></div>
-      <div id="pt351" style="margin-top:22px;border:2px solid #2B2233;border-radius:14px;padding:14px 16px;box-shadow:0 3px 0 rgba(43,34,51,.2);background:#fff">
-        <h3 style="margin:0 0 6px;font-size:19px">🌐 Pre-translate an episode</h3>
-        <p style="margin:0 0 10px;color:#5d536a;font-size:15px">Uses spare translator quota now, so students’ word taps, 🌐 line translations, questions and directions come from saved translations later. Already-saved text is skipped. Best after school.</p>
-        <div class="row" style="margin-bottom:8px"><b>Episode</b> <select class="txt" id="ptEp" style="max-width:300px"></select></div>
-        <div id="ptLangs" style="display:flex;flex-wrap:wrap;gap:6px 14px;margin:0 0 10px;font-size:15px"></div>
-        <div class="row"><button class="btn" id="ptGo" type="button">Pre-translate</button><button class="btn alt" id="ptStop" type="button" style="display:none">Stop</button><span id="ptMsg" style="font-weight:800"></span></div>
-        <div id="ptOut" style="margin-top:8px;font-size:14px;color:#5d536a"></div>
-        <iframe id="ptFrame" title="episode loader" style="display:none" aria-hidden="true"></iframe>
-      </div>
+      <div id="pt351" style="margin-top:22px"></div>
+      <iframe id="ptFrame" title="episode loader" style="display:none" aria-hidden="true"></iframe>
     </div>
   </section>
 </div>
@@ -281,163 +274,82 @@
 </script>
 <script src="/readings/track.js"></script>
 
+<script src="/readings/pretr.js"></script>
 <script>
-/* T-351 (Nov 6 2026): Pre-translate an episode ahead of time.
-   For the chosen episode and languages it asks the translator for exactly what the episode asks for and
-   saves each answer where std.js's cache looks first (song_tr):
-     · every underlined vocab word, as the episode sends it (idiom=word, meaning=gloss or its sentence,
-       mode=word) -> slug "tap:reel-v2/epNN", src = the word as shown;
-     · every Level A line (the 🌐 button), every question stem (A/B/C) and every direction on the page
-       -> slug "dir", src = the text.
-   Already-saved src+lang pairs are skipped. The Apps Script daily limit stops the run cleanly. */
+/* T-360 (Nov 12 2026): the hub's Pre-translate now uses the shared readings/pretr.js module (status line per
+   episode, today's site-wide count, soft limit, run records). This page only says WHAT to translate, exactly
+   what the episode itself sends (T-351):
+     · every underlined vocab word (idiom=word, meaning=gloss or its sentence, mode=word) -> slug "tap:reel-v2/epNN";
+     · every Level A line, every question stem (A/B/C) and every direction -> slug "dir". */
 (function () {
-  var SUPA_URL = 'https://lhmwtfyceilgndpygivj.supabase.co';
-  var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
-  var PROXY = 'https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
-  var PICK = /^(es|zh-CN|ar|vi)$|^(Spanish|Mandarin|Chinese|Arabic|Vietnamese)\b/;
   var $ = function (id) { return document.getElementById(id); };
-  var H = function (pref) { var h = { apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' }; if (pref) h.Prefer = pref; return h; };
-  var stopFlag = false, frameWin = null;
-  var EPS = (window.REEL_EPISODES || []);
-  function episodes() {
-    var sel = $('tEp'), out = [];
-    if (sel) Array.prototype.forEach.call(sel.options, function (o) { if (/^ep\d+/.test(o.value)) out.push({ id: o.value, label: o.textContent }); });
-    return out;
-  }
+  var frameQ = Promise.resolve(), EPCACHE = {};
   function loadEpisode(id) {
-    return new Promise(function (res, rej) {
-      var f = $('ptFrame'); var t = setTimeout(function () { rej(new Error('the episode did not load')); }, 20000);
-      f.onload = function () {
-        var tries = 0;
-        (function wait() {
-          try { var w = f.contentWindow; if (w && w.EP && w.EP.scenes && w.document.getElementById('lang')) { clearTimeout(t); frameWin = w; res(w); return; } } catch (e) {}
-          if (++tries > 80) { clearTimeout(t); rej(new Error('the episode data was not found')); return; }
-          setTimeout(wait, 150);
-        })();
-      };
-      f.src = '/readings/reel-v2/' + id + '/?view=teacher&pretranslate=1';
+    if (EPCACHE[id]) return Promise.resolve(EPCACHE[id]);
+    var p = frameQ.then(function () {
+      return new Promise(function (res, rej) {
+        var f = $('ptFrame'); var t = setTimeout(function () { rej(new Error('the episode did not load')); }, 20000);
+        f.onload = function () {
+          var tries = 0;
+          (function wait() {
+            try { var w = f.contentWindow; if (w && w.EP && w.EP.scenes && w.document.getElementById('lang')) { clearTimeout(t); res(snapshot(w)); return; } } catch (e) {}
+            if (++tries > 80) { clearTimeout(t); rej(new Error('the episode data was not found')); return; }
+            setTimeout(wait, 150);
+          })();
+        };
+        f.src = '/readings/reel-v2/' + id + '/?view=teacher&pretranslate=1';
+      });
     });
+    frameQ = p.catch(function () {});
+    return p.then(function (snap) { EPCACHE[id] = snap; return snap; });
   }
-  function paintLangs(w) {
-    var box = $('ptLangs'); if (box.dataset.done) return;
-    var sel = w.document.getElementById('lang'); if (!sel) return;
-    box.innerHTML = '';
-    Array.prototype.forEach.call(sel.options, function (o) {
-      if (!o.value || /^en/.test(o.value)) return;
-      var l = document.createElement('label'); l.style.whiteSpace = 'nowrap';
-      l.innerHTML = '<input type="checkbox" value="' + o.value.replace(/"/g, '&quot;') + '"' + (PICK.test(o.value) || PICK.test(o.textContent) ? ' checked' : '') + '> ' + o.textContent.replace(/</g, '&lt;');
-      box.appendChild(l);
-    });
-    box.dataset.done = 1;
+  function snapshot(w) {
+    var dirs = []; try { Array.prototype.forEach.call(w.document.querySelectorAll('[data-en]'), function (el) { dirs.push(el.getAttribute('data-en')); }); } catch (e) {}
+    var langs = []; try { Array.prototype.forEach.call(w.document.getElementById('lang').options, function (o) { if (o.value && !/^en/.test(o.value)) langs.push([o.value, o.textContent]); }); } catch (e) {}
+    return { EP: JSON.parse(JSON.stringify(w.EP)), dirs: dirs, langs: langs };
   }
   function words(EP) {
     var V = {}; (EP.vocab || []).forEach(function (w) { V[String(w).toLowerCase()] = 1; });
     var gloss = EP.gloss || {}, seen = {}, out = [];
-    (EP.scenes || []).forEach(function (sc) {
-      (sc.lines || []).forEach(function (ln) {
-        var levels = ln.type === 'q' ? [ln.q] : [ln];
-        levels.forEach(function (obj) {
-          ['A', 'B', 'C'].forEach(function (L) {
-            var t = obj && (typeof obj === 'string' ? obj : obj[L]); if (!t) return;
-            String(t).split(/\s+/).forEach(function (tok) {
-              var core = tok.replace(/^[^A-Za-z\u2019']+|[^A-Za-z\u2019']+$/g, '');
-              if (!core || !V[core.toLowerCase()] || seen[core]) return;
-              seen[core] = 1; out.push({ src: core, meaning: gloss[core.toLowerCase()] || String(t) });
-            });
-          });
+    (EP.scenes || []).forEach(function (sc) { (sc.lines || []).forEach(function (ln) {
+      (ln.type === 'q' ? [ln.q] : [ln]).forEach(function (obj) { ['A', 'B', 'C'].forEach(function (L) {
+        var t = obj && (typeof obj === 'string' ? obj : obj[L]); if (!t) return;
+        String(t).split(/\s+/).forEach(function (tok) {
+          var core = tok.replace(/^[^A-Za-z\u2019']+|[^A-Za-z\u2019']+$/g, '');
+          if (!core || !V[core.toLowerCase()] || seen[core]) return;
+          seen[core] = 1; out.push({ src: core, meaning: gloss[core.toLowerCase()] || String(t), mode: 'word' });
         });
-      });
-    });
+      }); });
+    }); });
     return out;
   }
-  function lines(EP, w) {
-    var seen = {}, out = [];
-    var add = function (t) { t = String(t || '').trim(); if (t && !seen[t]) { seen[t] = 1; out.push(t); } };
-    (EP.scenes || []).forEach(function (sc) {
-      (sc.lines || []).forEach(function (ln) {
-        if (ln.type === 'q') { ['A', 'B', 'C'].forEach(function (L) { add(typeof ln.q === 'string' ? ln.q : ln.q && ln.q[L]); }); }
-        else add(typeof ln === 'string' ? ln : ln.A);
-      });
-    });
-    try { Array.prototype.forEach.call(w.document.querySelectorAll('[data-en]'), function (el) { add(el.getAttribute('data-en')); }); } catch (e) {}
+  function lines(EP, dirs) {
+    var seen = {}, out = [], add = function (t) { t = String(t || '').trim(); if (t && !seen[t]) { seen[t] = 1; out.push(t); } };
+    (EP.scenes || []).forEach(function (sc) { (sc.lines || []).forEach(function (ln) {
+      if (ln.type === 'q') ['A', 'B', 'C'].forEach(function (L) { add(typeof ln.q === 'string' ? ln.q : ln.q && ln.q[L]); });
+      else add(typeof ln === 'string' ? ln : ln.A);
+    }); });
+    (dirs || []).forEach(add);
     return out;
   }
-  function saved(slugs, lg) {
-    var or = slugs.map(function (s) { return 'slug.eq.' + encodeURIComponent(s); }).join(',');
-    return fetch(SUPA_URL + '/rest/v1/song_tr?select=slug,src&lang=eq.' + encodeURIComponent(lg) + '&or=(' + or + ')', { headers: H() })
-      .then(function (r) { return r.ok ? r.json() : []; }).then(function (rows) { var m = {}; rows.forEach(function (r) { m[r.slug + '|' + r.src] = 1; }); return m; });
-  }
-  function ask(item, lg) {
-    var u = PROXY + '?action=translate&mode=' + (item.word ? 'word' : 'sentence') + '&idiom=' + encodeURIComponent(item.src) +
-            '&meaning=' + encodeURIComponent(item.meaning || '') + '&lang=' + encodeURIComponent(lg);
-    /* XMLHttpRequest, not fetch: std.js's translation cache wraps fetch and would also save a copy under the HUB's slug */
-    return new Promise(function (res) {
-      var x = new XMLHttpRequest(); x.open('GET', u); x.timeout = 15000;
-      x.onload = function () { res(x.responseText || ''); }; x.onerror = x.ontimeout = function () { res(''); }; x.send();
-    }).then(function (t) {
-      if (/too many times|quota|Service invoked/i.test(t)) return { quota: true };
-      var d = null; try { d = JSON.parse(t); } catch (e) {}
-      var tr = d && d.translation, v = '';
-      if (tr && typeof tr === 'object') v = tr.equiv || tr.meaning || ''; else if (typeof tr === 'string') v = tr;
-      return { v: String(v || '').trim() };
-    }, function () { return { v: '' }; });
-  }
-  function save(slug, lg, src, v) {
-    return fetch(SUPA_URL + '/rest/v1/song_tr?on_conflict=slug,lang,src', { method: 'POST', headers: H('resolution=merge-duplicates,return=minimal'),
-      body: JSON.stringify([{ slug: slug, lang: lg, src: src, equiv: v, meaning: '', note: '', updated_at: new Date().toISOString() }]) })
-      .then(function (r) { return r.ok; }, function () { return false; });
-  }
-  function run() {
-    var id = $('ptEp').value, langs = Array.prototype.map.call($('ptLangs').querySelectorAll('input:checked'), function (c) { return c.value; });
-    if (!id) return;
-    if (!langs.length) { $('ptMsg').textContent = 'Tick at least one language.'; return; }
-    stopFlag = false; $('ptGo').disabled = true; $('ptStop').style.display = ''; $('ptOut').innerHTML = '';
-    $('ptMsg').textContent = 'Loading ' + id + '…';
-    var tapSlug = 'tap:reel-v2/' + id, nSaved = 0, nSkip = 0, failed = [], quota = false;
-    loadEpisode(id).then(function (w) {
-      paintLangs(w);
-      var EP = w.EP, W = words(EP).map(function (x) { return { src: x.src, meaning: x.meaning, word: true, slug: tapSlug }; });
-      var Lx = lines(EP, w).map(function (t) { return { src: t, meaning: '', word: false, slug: 'dir' }; });
-      var all = W.concat(Lx), li = 0;
-      function nextLang() {
-        if (stopFlag || quota || li >= langs.length) return finish();
-        var lg = langs[li++];
-        return saved(['dir', tapSlug], lg).then(function (have) {
-          var todo = all.filter(function (it) { if (have[it.slug + '|' + it.src]) { nSkip++; return false; } return true; }), k = 0;
-          function one() {
-            if (stopFlag || quota) return Promise.resolve();
-            if (k >= todo.length) return Promise.resolve();
-            var it = todo[k++];
-            $('ptMsg').textContent = lg + ': ' + k + ' of ' + todo.length + ' · saved ' + nSaved;
-            return ask(it, lg).then(function (r) {
-              if (r.quota) { quota = true; return; }
-              if (!r.v) { failed.push(lg + ' · ' + it.src); return; }
-              return save(it.slug, lg, it.src, r.v).then(function (ok) { if (ok) nSaved++; else failed.push(lg + ' · ' + it.src + ' (save)'); });
-            }).then(function () { return new Promise(function (z) { setTimeout(z, 120); }); }).then(one);
-          }
-          return one().then(nextLang);
-        });
-      }
-      return nextLang();
-    }).catch(function (e) { failed.push('Could not load the episode: ' + e.message); finish(); });
-    function finish() {
-      $('ptGo').disabled = false; $('ptStop').style.display = 'none';
-      $('ptMsg').textContent = quota ? 'Daily limit reached. Run again tomorrow. (' + nSaved + ' saved so far.)'
-        : (stopFlag ? 'Stopped. ' : 'Done. ') + nSaved + ' saved, ' + failed.length + ' failed, ' + nSkip + ' already saved.';
-      $('ptOut').innerHTML = failed.length ? '<b>Failed:</b><br>' + failed.slice(0, 200).map(function (t) { return t.replace(/</g, '&lt;'); }).join('<br>') : '';
-    }
-  }
-  function init() {
-    var eps = episodes(); if (!eps.length) { setTimeout(init, 400); return; }
-    $('ptEp').innerHTML = eps.map(function (e) { return '<option value="' + e.id + '">' + e.label.replace(/</g, '&lt;') + '</option>'; }).join('');
-    $('ptEp').value = eps[eps.length - 1].id;   /* the newest episode first: the one students watch next */
-    $('ptLangs').innerHTML = '<span style="color:#5d536a">Loading the language list…</span>';
-    loadEpisode($('ptEp').value).then(paintLangs, function () { $('ptLangs').textContent = 'Could not load the language list.'; });
-  }
-  $('ptGo').addEventListener('click', run);
-  $('ptStop').addEventListener('click', function () { stopFlag = true; });
+  function episodes() { var sel = $('tEp'), out = []; if (sel) Array.prototype.forEach.call(sel.options, function (o) { if (/^ep\d+/.test(o.value)) out.push({ id: o.value, label: o.textContent }); }); return out; }
   var started = false;
-  var obs = setInterval(function () { if (!started && $('tBody') && $('tBody').style.display !== 'none') { started = true; clearInterval(obs); init(); } }, 400);
+  var obs = setInterval(function () {
+    if (started || !$('tBody') || $('tBody').style.display === 'none' || !episodes().length || !window.GAL || !GAL.pretr) return;
+    started = true; clearInterval(obs);
+    var eps = episodes().reverse();   /* newest first: the one students watch next */
+    GAL.pretr({
+      host: '#pt351',
+      title: '\ud83c\udf10 Pre-translate an episode',
+      langs: function () { return loadEpisode(eps[0].id).then(function (s) { return s.langs; }); },
+      items: eps.map(function (e) { return { key: 'reel-v2/' + e.id, title: e.label, lines: function () {
+        return loadEpisode(e.id).then(function (s) {
+          return words(s.EP).map(function (x) { return { src: x.src, meaning: x.meaning, mode: 'word', slug: 'tap:reel-v2/' + e.id }; })
+            .concat(lines(s.EP, s.dirs).map(function (t) { return { src: t, slug: 'dir' }; }));
+        });
+      } }; })
+    });
+  }, 400);
   window.GAL_PT351 = { words: words, lines: lines };   /* tests */
 })();
 </script>
