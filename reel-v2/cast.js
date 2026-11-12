@@ -206,6 +206,19 @@
              '<path d="M-96,-10 L-96,-34 M-92,-10 L-92,-34 M-88,-10 L-88,-34" stroke="#8b8f98" stroke-width="3"/>' +
              '<path d="M-74,-10 L-74,-36 q6,-4 6,-14 q-6,4 -6,14" fill="none" stroke="#8b8f98" stroke-width="3"/></g>';
     }
+    if (name === 'map') {
+      /* Episode 5: a folded paper school map, held open to read (three floors, a star, a dotted route) */
+      var mp = '<g transform="translate(96,-250) rotate(-5)"><rect x="-66" y="-60" width="132" height="120" rx="4" fill="#fffdf8" stroke="#c9c2b3" stroke-width="3"/>' +
+               '<path d="M-22,-60 L-22,60 M22,-60 L22,60" stroke="#e0d7c8" stroke-width="2"/>';
+      for (var f = 0; f < 3; f++) {
+        mp += '<rect x="-56" y="' + (-50 + f * 36) + '" width="112" height="28" rx="3" fill="' + ['#cfe7f2', '#f6e3c4', '#e7d9f0'][f] + '" stroke="#9aa3ad" stroke-width="2"/>';
+        mp += '<rect x="-52" y="' + (-46 + f * 36) + '" width="14" height="20" fill="#9aa3ad"/>';
+      }
+      mp += '<path d="M-36,32 L-45,32 L-45,-36 L40,-36" fill="none" stroke="#c9412e" stroke-width="3" stroke-dasharray="5 4"/>';
+      mp += '<path d="M-30,32 l3,-7 l3,7 l-7,-4 h8 Z" fill="#F8981F" stroke="#c9742a" stroke-width="1"/>';
+      mp += '<rect x="36" y="-46" width="16" height="20" fill="#1f8a7e"/>';
+      return mp + '</g>';
+    }
     if (name === 'calculator') {
       var cs = '<g transform="translate(-70,-250) rotate(-8)"><rect x="-30" y="-48" width="60" height="96" rx="8" fill="#5b6b7c"/>' +
                '<rect x="-22" y="-40" width="44" height="24" rx="3" fill="#dfe9d3"/>';
@@ -802,6 +815,136 @@
       s += '<rect x="' + (x + 20) + '" y="776" width="380" height="18" rx="6" fill="#8b8f98"/>';
       s += '<rect x="' + (x + 120) + '" y="688" width="70" height="18" rx="4" fill="#F8981F"/><rect x="' + (x + 240) + '" y="688" width="70" height="18" rx="4" fill="#2f6fbd"/>';
     }
+    return s;
+  };
+
+  /* ---------- Episode 5 places: Getting Around School ---------- */
+  /* the big "You are here" school map on the stairwell wall: three floors plus the cafeteria downstairs,
+     the stairwell on the left, a star on floor 1, and a dotted route up to the last room on floor 3 */
+  function wallMap(x, y, w, h) {
+    var s = '<rect x="' + (x - 10) + '" y="' + (y - 10) + '" width="' + (w + 20) + '" height="' + (h + 20) + '" rx="8" fill="#5b6b7c"/>';
+    s += '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="4" fill="#fffdf8"/>';
+    s += '<text x="' + (x + w / 2) + '" y="' + (y + 34) + '" text-anchor="middle" font-family="Nunito,Arial,sans-serif" font-weight="900" font-size="28" fill="#864D9E">School map</text>';
+    var top = y + 50, fh = (h - 110) / 3, sx = x + 18, sw = 70, tints = ['#e7d9f0', '#f6e3c4', '#cfe7f2'];
+    for (var f = 0; f < 3; f++) {
+      var fy = top + f * fh, fl = 3 - f;
+      s += '<rect x="' + (x + 12) + '" y="' + fy + '" width="' + (w - 24) + '" height="' + (fh - 8) + '" rx="4" fill="' + tints[f] + '" stroke="#9aa3ad" stroke-width="3"/>';
+      /* stairwell column with little steps */
+      s += '<rect x="' + sx + '" y="' + (fy + 6) + '" width="' + sw + '" height="' + (fh - 20) + '" fill="#c0c7cf" stroke="#8b8f98" stroke-width="2"/>';
+      for (var k = 0; k < 4; k++) s += '<path d="M' + (sx + 8 + k * 14) + ',' + (fy + fh - 18 - k * 9) + ' h14 v-9" fill="none" stroke="#5b6b7c" stroke-width="2"/>';
+      s += '<text x="' + (sx + sw / 2) + '" y="' + (fy + 26) + '" text-anchor="middle" font-family="Nunito,Arial,sans-serif" font-weight="900" font-size="20" fill="#2b2233">' + fl + '</text>';
+      /* rooms along the hallway */
+      var rx0 = sx + sw + 24, rw = (w - 24 - sw - 60) / 4;
+      for (var r = 0; r < 4; r++) {
+        var num = fl * 100 + 12 + r * 2, rxp = rx0 + r * (rw + 4);
+        var hot = (fl === 3 && r === 3);
+        s += '<rect x="' + rxp + '" y="' + (fy + 8) + '" width="' + rw + '" height="' + (fh - 40) + '" rx="3" fill="' + (hot ? '#8fd3c6' : '#fff') + '" stroke="' + (hot ? '#1f8a7e' : '#9aa3ad') + '" stroke-width="' + (hot ? 4 : 2) + '"/>';
+        s += '<text x="' + (rxp + rw / 2) + '" y="' + (fy + fh / 2 - 6) + '" text-anchor="middle" font-family="Nunito,Arial,sans-serif" font-weight="800" font-size="19" fill="#2b2233">' + num + '</text>';
+      }
+      s += '<rect x="' + rx0 + '" y="' + (fy + fh - 30) + '" width="' + (w - 24 - sw - 48) + '" height="12" rx="3" fill="#d2c9ba"/>';
+    }
+    /* downstairs: the cafeteria */
+    var cy = top + 3 * fh;
+    s += '<rect x="' + (x + 12) + '" y="' + cy + '" width="' + (w - 24) + '" height="40" rx="4" fill="#fbead6" stroke="#9aa3ad" stroke-width="3"/>';
+    s += '<text x="' + (x + w / 2 + 30) + '" y="' + (cy + 28) + '" text-anchor="middle" font-family="Nunito,Arial,sans-serif" font-weight="800" font-size="20" fill="#c9412e">Downstairs: Cafeteria</text>';
+    /* the route: star on floor 1 -> stairwell -> up to floor 3 -> right along the hallway to the end */
+    var f1y = top + 2 * fh + fh - 24, f3y = top + fh - 24, stx = x + w - 120;
+    s += '<path d="M' + (sx + sw + 70) + ',' + f1y + ' L' + (sx + sw / 2) + ',' + f1y + ' L' + (sx + sw / 2) + ',' + f3y + ' L' + (x + w - 60) + ',' + f3y + '" fill="none" stroke="#c9412e" stroke-width="5" stroke-dasharray="12 9" stroke-linecap="round"/>';
+    s += '<path d="M' + (x + w - 66) + ',' + (f3y - 10) + ' L' + (x + w - 50) + ',' + f3y + ' L' + (x + w - 66) + ',' + (f3y + 10) + '" fill="none" stroke="#c9412e" stroke-width="5" stroke-linejoin="round"/>';
+    var stc = sx + sw + 76;
+    s += '<path transform="translate(' + stc + ',' + f1y + ')" d="M0,-20 L6,-6 L21,-6 L9,3 L13,18 L0,9 L-13,18 L-9,3 L-21,-6 L-6,-6 Z" fill="#F8981F" stroke="#c9742a" stroke-width="2"/>';
+    s += '<rect x="' + (stc + 26) + '" y="' + (f1y - 18) + '" width="118" height="28" rx="6" fill="#2b2233"/>';
+    s += '<text x="' + (stc + 85) + '" y="' + (f1y + 2) + '" text-anchor="middle" font-family="Nunito,Arial,sans-serif" font-weight="800" font-size="17" fill="#fff">You are here</text>';
+    return s;
+  }
+  /* board for the stairwell: [floor number shown on the wall, show the wall map (true/false)] */
+  R.BG.stairwell = function (board) {
+    var b = board || ['1', false], s = '<rect width="1600" height="900" fill="#e3e8ef"/>';
+    s += '<rect x="0" y="0" width="1600" height="60" fill="#d3dae3"/>';
+    for (var l = 0; l < 4; l++) s += '<rect x="' + (120 + l * 400) + '" y="12" width="200" height="14" rx="7" fill="#fffbe8"/>';
+    /* concrete block wall texture */
+    for (var r = 0; r < 9; r++) for (var c = 0; c < 14; c++) {
+      s += '<rect x="' + (c * 120 + (r % 2) * 60 - 60) + '" y="' + (70 + r * 62) + '" width="116" height="58" rx="3" fill="none" stroke="#ccd4de" stroke-width="2"/>';
+    }
+    /* big floor number painted on the wall */
+    s += '<circle cx="180" cy="210" r="96" fill="#864D9E"/><circle cx="180" cy="210" r="80" fill="none" stroke="#fff" stroke-width="5" opacity=".5"/>';
+    s += '<text x="180" y="248" text-anchor="middle" font-family="Nunito,Arial,sans-serif" font-weight="900" font-size="112" fill="#fff">' + b[0] + '</text>';
+    s += '<text x="180" y="350" text-anchor="middle" font-family="Nunito,Arial,sans-serif" font-weight="900" font-size="34" fill="#864D9E">Floor</text>';
+    /* tall window on the landing: fog over the Bay */
+    s += '<rect x="330" y="120" width="190" height="320" rx="6" fill="#fbfaf7"/><rect x="342" y="132" width="166" height="296" fill="#c9d6de"/>';
+    s += '<path d="M342,330 q40,-30 84,-8 t82,-12 L508,428 L342,428 Z" fill="#7d9a86"/><rect x="342" y="300" width="166" height="40" fill="#fff" opacity=".55"/>';
+    s += '<path d="M425,132 L425,428 M342,280 L508,280" stroke="#fbfaf7" stroke-width="8"/>';
+    if (b[1]) {
+      s += wallMap(560, 110, 520, 470);
+    } else {
+      /* direction signs instead of the map */
+      s += '<rect x="600" y="130" width="420" height="96" rx="12" fill="#1f8a7e"/>';
+      s += '<path d="M640,210 L640,150 M620,172 L640,150 L660,172" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>';
+      s += '<text x="690" y="194" font-family="Nunito,Arial,sans-serif" font-weight="900" font-size="40" fill="#fff">UP · Floors 2, 3</text>';
+      s += '<rect x="600" y="250" width="420" height="96" rx="12" fill="#c9412e"/>';
+      s += '<path d="M640,266 L640,326 M620,304 L640,326 L660,304" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>';
+      s += '<text x="690" y="314" font-family="Nunito,Arial,sans-serif" font-weight="900" font-size="38" fill="#fff">DOWN · Cafeteria</text>';
+      s += '<rect x="600" y="370" width="420" height="96" rx="12" fill="#2f6fbd"/>';
+      s += '<text x="810" y="432" text-anchor="middle" font-family="Nunito,Arial,sans-serif" font-weight="900" font-size="34" fill="#fff">OUTSIDE · Schoolyard</text>';
+    }
+    s += '<rect x="0" y="628" width="1600" height="16" fill="#c6ced8"/>';
+    s += floor('#b9c2cc');
+    /* the staircase going UP to the right, behind the people: treads, risers, stringer, handrail */
+    var x0 = 1080, y0 = 640;
+    s += '<path d="M' + x0 + ',' + y0 + ' L1600,' + (y0 - 520) + ' L1600,' + y0 + ' Z" fill="#a9b2bd"/>';
+    for (var t = 0; t < 13; t++) {
+      var tx = x0 + t * 40, ty = y0 - t * 40;
+      s += '<rect x="' + tx + '" y="' + (ty - 40) + '" width="' + (1600 - tx) + '" height="40" fill="' + (t % 2 ? '#c4ccd6' : '#bcc5cf') + '"/>';
+      s += '<rect x="' + tx + '" y="' + (ty - 40) + '" width="' + (1600 - tx) + '" height="7" fill="#e9c46a"/>';   /* yellow safety edge */
+    }
+    s += '<path d="M' + (x0 - 20) + ',' + (y0 - 150) + ' L1600,' + (y0 - 670) + '" stroke="#5b6b7c" stroke-width="12" stroke-linecap="round"/>';
+    for (var p = 0; p < 7; p++) {
+      var px = x0 + 10 + p * 80;
+      s += '<path d="M' + px + ',' + (y0 - 160 - p * 80) + ' L' + px + ',' + (y0 - p * 80 - 40) + '" stroke="#5b6b7c" stroke-width="6"/>';
+    }
+    /* the stairwell door, propped open, with an EXIT sign above it */
+    s += '<rect x="20" y="452" width="170" height="40" rx="6" fill="#2b2233"/><text x="105" y="481" text-anchor="middle" font-family="Nunito,Arial,sans-serif" font-weight="900" font-size="28" fill="#e04b3a">EXIT</text>';
+    s += '<rect x="0" y="500" width="220" height="140" fill="#3f7f6a"/><rect x="0" y="500" width="40" height="140" fill="#336b58"/>';
+    s += '<rect x="170" y="560" width="30" height="10" rx="4" fill="#c0c7cf"/>';
+    return s;
+  };
+  /* board for a hallway of numbered rooms: [floor label, room A, room B, room C, which door is open (0-2), colour seen inside] */
+  R.BG.rooms = function (board) {
+    var b = board || ['Floor 1', '114', '116', '118', 2, '#d9567f'], s = '<rect width="1600" height="900" fill="#efe9dd"/>';
+    s += '<rect x="0" y="0" width="1600" height="60" fill="#e2dbcc"/>';
+    for (var l = 0; l < 4; l++) s += '<rect x="' + (120 + l * 400) + '" y="12" width="200" height="14" rx="7" fill="#fffbe8"/>';
+    /* floor label + an arrow sign for the room numbers */
+    s += '<rect x="40" y="96" width="250" height="80" rx="12" fill="#864D9E"/>';
+    s += '<text x="165" y="150" text-anchor="middle" font-family="Nunito,Arial,sans-serif" font-weight="900" font-size="44" fill="#fff">' + b[0] + '</text>';
+    /* a bulletin board with flyers and a fire-alarm pull */
+    s += '<rect x="60" y="230" width="230" height="170" rx="6" fill="#c89a62" stroke="#9c7650" stroke-width="8"/>';
+    s += '<rect x="80" y="250" width="80" height="60" fill="#fffdf8" transform="rotate(-4,120,280)"/><rect x="176" y="256" width="90" height="70" fill="#f2c230" transform="rotate(5,221,291)"/>';
+    s += '<rect x="96" y="326" width="96" height="56" fill="#8fd3c6" transform="rotate(3,144,354)"/><circle cx="120" cy="252" r="5" fill="#c9412e"/><circle cx="221" cy="258" r="5" fill="#2f6fbd"/>';
+    s += '<rect x="230" y="440" width="44" height="60" rx="6" fill="#c9412e"/><rect x="242" y="458" width="20" height="14" rx="3" fill="#fff"/>';
+    /* three doors with number plates above */
+    for (var d = 0; d < 3; d++) {
+      var dx = 380 + d * 420, open = (b[4] === d);
+      s += '<rect x="' + (dx - 14) + '" y="196" width="268" height="444" rx="6" fill="#9c7650"/>';
+      s += '<rect x="' + (dx + 34) + '" y="120" width="172" height="62" rx="10" fill="#fffdf8" stroke="#2b2233" stroke-width="5"/>';
+      s += '<text x="' + (dx + 120) + '" y="168" text-anchor="middle" font-family="Nunito,Arial,sans-serif" font-weight="900" font-size="48" fill="#2b2233">' + b[1 + d] + '</text>';
+      if (open) {
+        /* the room inside, then the door swung open against the frame */
+        s += '<rect x="' + dx + '" y="210" width="240" height="430" fill="' + (b[5] || '#d9567f') + '" opacity=".55"/>';
+        s += '<rect x="' + (dx + 20) + '" y="250" width="200" height="130" rx="4" fill="#fffdf8" opacity=".85"/>';
+        s += '<path d="M' + dx + ',210 L' + (dx - 60) + ',190 L' + (dx - 60) + ',660 L' + dx + ',640 Z" fill="#b98b5a" stroke="#8a6440" stroke-width="3"/>';
+      } else {
+        s += '<rect x="' + dx + '" y="210" width="240" height="430" fill="#b98b5a"/>';
+        s += '<rect x="' + (dx + 50) + '" y="240" width="140" height="120" rx="4" fill="#cfe7f2" stroke="#8a6440" stroke-width="4"/>';
+        s += '<path d="M' + (dx + 120) + ',240 L' + (dx + 120) + ',360" stroke="#8a6440" stroke-width="3"/>';
+        s += '<circle cx="' + (dx + 210) + '" cy="440" r="11" fill="#e9d38a" stroke="#8a6440" stroke-width="2"/>';
+        s += '<rect x="' + (dx + 30) + '" y="580" width="180" height="16" rx="3" fill="#a07a4f"/>';
+      }
+    }
+    /* a water fountain */
+    s += '<rect x="1414" y="470" width="120" height="70" rx="10" fill="#c0c7cf"/><rect x="1430" y="476" width="88" height="22" rx="8" fill="#9aa3ad"/><rect x="1460" y="540" width="28" height="90" fill="#9aa3ad"/>';
+    s += '<rect x="0" y="626" width="1600" height="16" fill="#d8cfbd"/>';
+    s += floor('#d2c9ba');
+    s += '<rect x="0" y="700" width="1600" height="30" fill="#fff" opacity=".18"/>';
     return s;
   };
 

@@ -6,5 +6,6 @@
 {"p": "/readings/reel-v2/ep01/", "t": "Story Reel 1: The New Student (reel-v2/ep01)", "d": "The New Student", "m": "", "g": "More: Story Reel", "o": 160},
 {"p": "/readings/reel-v2/ep02/", "t": "Story Reel 2: The Backpack", "d": "The Backpack", "m": "", "g": "More: Story Reel", "o": 161},
 {"p": "/readings/reel-v2/ep03/", "t": "Story Reel 3: What Class Do We Have Now?", "d": "What Class Do We Have Now?", "m": "", "g": "More: Story Reel", "o": 162},
-{"p": "/readings/reel-v2/ep04/", "t": "Story Reel 4: What’s for Lunch Today?", "d": "What’s for Lunch Today?", "m": "", "g": "More: Story Reel", "o": 163}
+{"p": "/readings/reel-v2/ep04/", "t": "Story Reel 4: What’s for Lunch Today?", "d": "What’s for Lunch Today?", "m": "", "g": "More: Story Reel", "o": 163},
+{"p": "/readings/reel-v2/ep05/", "t": "Story Reel 5: Where Is Room 318?", "d": "Where Is Room 318?", "m": "", "g": "More: Story Reel", "o": 164}
 );
