@@ -40,7 +40,7 @@ th.corner{z-index:4;left:0}
 td.c{text-align:center;min-width:52px}
 td.c span{display:inline-block;min-width:40px;padding:2px 5px;border-radius:6px;font-weight:700}
 .g1{background:var(--ok-bg);color:var(--ok)}
-td.c span.cmp{outline:2px dotted #8a6a00;outline-offset:-2px} .g2{background:var(--warn-bg);color:var(--warn)} .g3{background:var(--bad-bg);color:var(--bad)} .g0{background:#eef2f0;color:var(--muted)}
+td.c span.cmp{outline:2px dotted #8a6a00;outline-offset:-2px} .g2{background:var(--warn-bg);color:var(--warn)} .g3{background:var(--bad-bg);color:var(--bad)} .g0{background:#eef2f0;color:var(--muted)} .xtra{background:#efe7fa;color:#4a2d7a;font-weight:700;font-size:.78rem;white-space:nowrap}
 #bulkbar{display:none;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 10px;padding:8px 12px;border:2px solid var(--ink);border-radius:10px;background:#fffbe6}
 tr.edrow{cursor:pointer}
 tr.edrow.dirty{background:#fff8e1}
@@ -322,6 +322,7 @@ function load(){
       noteSpelling(e, s.email);
     });
     cells=r[1].map(function(c){noteSpelling(canon(c.email), c.email); c.email=canon(c.email); return c;});
+    loadExtrasLeft();
     (r[3]||[]).forEach(function(a){ noteSpelling(canon(a.email), a.alias_email); noteSpelling(canon(a.email), a.email); });
     /* a student seen only in the scores (no students row yet) still gets a row */
     Object.keys(students).forEach(function(k){ if(!students[k].mail) students[k].mail=k+'@s.sfusd.edu'; });
@@ -371,6 +372,46 @@ function sortStudents(list){
 }
 function grade(p){return p==null?'g0':p>=85?'g1':p>=70?'g2':'g3';}
 
+/* ---- Optional extras columns (T-363 / T-253, Toby, Nov 12) ---------
+   A slug ending in /extras is optional work: the six Landlady activities a
+   student may or may not get to. It is NEVER averaged and never gets a 0-4
+   mark, because a half-done optional column would read as a bad grade.
+   Instead its points are added to the average AFTER averaging, in proportion:
+   each extras point is worth one point of that story's required work.
+     bonus = (extras points / (Reading max + After max)) x (100 / cells averaged)
+   so finishing all the extras of a story is worth about one whole column.
+   The Avg is capped at 100. The cell shows "3 done · 19 left", not a band. */
+var EXTRA_LEFT={};                       // email|slug -> items not done yet
+function isExtras(slug){ return /\/extras$/.test(String(slug||'')); }
+function storyOf(slug){ return String(slug||'').replace(/\/extras$/,''); }
+/* the required work of a story, taken from the biggest max_score anyone has,
+   so a student who hasn't started Reading still has a sensible denominator */
+var REQMAX={};
+function buildReqMax(){
+  var parts={};                          // story -> {reading: n, after: n}
+  cells.forEach(function(c){
+    if(isExtras(c.slug) || c.max_score==null) return;
+    var after=/\/after$/.test(c.slug), base=String(c.slug).replace(/\/after$/,'');
+    var p=parts[base]||(parts[base]={reading:0, after:0});
+    var k=after?'after':'reading';
+    p[k]=Math.max(p[k], +c.max_score||0);
+  });
+  REQMAX={};
+  Object.keys(parts).forEach(function(b){ REQMAX[b]=parts[b].reading+parts[b].after; });
+}
+function extrasBonus(s, cols, nAveraged){
+  if(!nAveraged) return 0;
+  var add=0;
+  cols.forEach(function(slug){
+    if(!isExtras(slug)) return;
+    var c=byCellOf(s,slug); if(!c || !c.score) return;
+    var req=REQMAX[storyOf(slug)]||0;
+    if(!req) return;                       // nothing to measure it against
+    add += (+c.score / req) * (100 / nAveraged);
+  });
+  return add;
+}
+
 /* ---- the 0-4.5 scale (T-302, Toby, Nov 5) --------------------------
    Synergy's scale has a 4.5, and half the work should read as a 2:
    0 = 0-14%, 1 = 15-35, 2 = 36-55, 3 = 56-75, 4 = 76-94, 4.5 = 95-100.
@@ -391,6 +432,7 @@ function oldBand(p){
   for(var i=0;i<OLD_BANDS.length;i++) if(p>=OLD_BANDS[i][0]) return OLD_BANDS[i][1];
   return 0;
 }
+function byCellOf(s,slug){ return view && view.byCell ? view.byCell[s.email+'|'+slug] : null; }
 function bandClass(b){ return b==null?'g0': b>=4.5?'g45': b>=3?'g1': b==2?'g2': b==1?'g3':'g0'; }
 
 document.addEventListener('DOMContentLoaded', function(){
@@ -559,6 +601,23 @@ function openMerge(){
   document.getElementById('mgdlg').showModal();
 }
 
+/* how many optional items a student still has, from the newest attempt */
+function loadExtrasLeft(){
+  var slugs=Object.keys(cells.reduce(function(m,c){ if(isExtras(c.slug)) m[c.slug]=1; return m; },{}));
+  if(!slugs.length) return;
+  var q='activity_attempts?select=email,slug,detail,completed_at&order=completed_at.asc&slug=in.('+
+        slugs.map(function(x){return '"'+x+'"';}).join(',')+')';
+  getAll(q).then(function(rows){
+    var map={};
+    (rows||[]).forEach(function(r){
+      var d=r.detail; if(typeof d==='string'){ try{ d=JSON.parse(d); }catch(e){ d=null; } }
+      if(d && d.left!=null) map[canon(r.email)+'|'+r.slug]=d.left;   // ascending, so the last wins
+    });
+    EXTRA_LEFT=map;
+    if(Object.keys(map).length) render();
+  }).catch(function(){ /* no "N left" is fine; the count still shows */ });
+}
+
 function rpc(name,body){
   return fetch(SUPA_URL+'/rest/v1/rpc/'+name,{method:'POST',headers:H({}),body:JSON.stringify(body)})
     .then(function(r){ return r.ok ? r.json().catch(function(){return null;})
@@ -646,6 +705,7 @@ function render(){
   use.forEach(function(c){byCell[c.email+'|'+c.slug]=c; if(rowSet[c.email])colSet[c.slug]=1;});
   var cols=Object.keys(hide?colSet:use.reduce(function(m,c){m[c.slug]=1;return m;},{}));
   cols.sort(function(x,y){var ax=activities[x]||{},ay=activities[y]||{};var u=(ax.unit||x).localeCompare(ay.unit||y);if(u)return u;return (ax.sort_order||600)-(ay.sort_order||600)||x.localeCompare(y);});
+  buildReqMax();
   view={rows:rows,cols:cols,byCell:byCell};
 
   var h='<thead><tr><th class="corner">Student</th><th class="corner" style="left:auto">Per.</th><th>Avg</th>';
@@ -658,17 +718,30 @@ function render(){
     cols.forEach(function(slug){
       var c=byCell[s.email+'|'+slug];
       if(!c){line+='<td class="c"></td>';return;}
-      total++;
+      total++; done++;
+      if(isExtras(slug)){
+        /* optional: no band, no average — just how far they got */
+        var left=EXTRA_LEFT[s.email+'|'+slug];
+        var dn=(c.score!=null?+c.score:0);
+        line+='<td class="c" title="'+esc('optional extras — not in the average; adds to it when done · '+
+              dn+(c.max_score?' / '+c.max_score:'')+' · '+c.attempts+' attempt'+(c.attempts==1?'':'s')+' · '+(c.last_at||'').slice(0,10))+
+              '"><span class="xtra">'+dn+' done'+(left!=null?' · '+left+' left':'')+'</span></td>';
+        return;
+      }
       var b=band(c.pct);
       var label=c.pct!=null?(SHOW04?String(b):c.pct+'%'):'✓';
       var pcttip=(c.pct!=null?c.pct+'% · mark '+b+' · ':'');
-      if(c.pct!=null){sum+=+c.pct;n++;} done++;
+      if(c.pct!=null){sum+=+c.pct;n++;}
       line+='<td class="c" title="'+esc(pcttip+(c.score!=null?c.score+' / '+(c.max_score||'?'):'')+(c.completion?' · completion (parts done / parts on the page)':'')+' · '+c.attempts+' attempt'+(c.attempts==1?'':'s')+' · '+(c.last_at||'').slice(0,10))+'"><span class="'+(SHOW04?bandClass(b):grade(c.pct))+(c.completion?' cmp':'')+'">'+label+'</span></td>';
     });
-    var avg=n?Math.round(sum/n):null;
+    var avgRaw=n?(sum/n):null;
+    var bonus=avgRaw!=null?extrasBonus(s,cols,n):0;
+    var avg=avgRaw!=null?Math.min(100,Math.round(avgRaw+bonus)):null;
     h+='<tr><th>'+esc(studentName(s))+'<br><span style="font-weight:400;color:var(--muted);font-size:.7rem">'+esc(signInEmail(s))+'</span></th>'+
        '<td><select class="per" data-email="'+esc(s.email)+'"><option value="">–</option>'+[1,2,3,4,5,6,7].map(function(p){return '<option'+(s.period==p?' selected':'')+'>'+p+'</option>';}).join('')+'</select></td>'+
-       '<td class="avg"><span class="'+grade(avg)+'">'+(avg!=null?avg+'%':'')+'</span></td>'+line+'</tr>';
+       '<td class="avg" title="'+esc(avgRaw!=null?(Math.round(avgRaw)+'% from '+n+' graded column'+(n==1?'':'s')+
+            (bonus>0.05?' · +'+(Math.round(bonus*10)/10)+' from optional extras':'')):'')+
+            '"><span class="'+grade(avg)+'">'+(avg!=null?avg+'%':'')+'</span></td>'+line+'</tr>';
   });
   h+='</tbody>';
   document.getElementById('grid').innerHTML=h;
@@ -749,6 +822,7 @@ function synLists(){
     if(what==='__avg'){
       var sum=0,n=0;
       view.cols.forEach(function(sl){
+      if(isExtras(sl)) return;        // optional extras are not a Synergy mark
         var v=synPct(view.byCell[s.email+'|'+sl]);
         if(v!=null){sum+=v;n++;}
       });
@@ -1086,7 +1160,7 @@ function cmpGrade(c){
 }
 function renderCompare(){
   var per=document.getElementById('period').value, everyone=document.getElementById('cmpwho').value==='all';
-  var cols=view.cols.slice().sort(function(x,y){
+  var cols=view.cols.filter(function(sl){ return !isExtras(sl); }).slice().sort(function(x,y){
     var ax=activities[x]||{}, ay=activities[y]||{};
     return (ax.unit||x).localeCompare(ay.unit||y)||(ax.title||x).localeCompare(ay.title||y);});
   var host=document.getElementById('cmpbody'), total=0;
@@ -1125,6 +1199,7 @@ function scaleRows(){
   var by={}, per=document.getElementById('period').value;
   view.rows.forEach(function(s,i){
     view.cols.forEach(function(sl){
+      if(isExtras(sl)) return;        // optional extras are not a Synergy mark
       var c=view.byCell[s.email+'|'+sl];
       if(!c) return;                                   // never attempted stays blank
       var pct = c.pct==null ? 100 : c.pct;             // done, no number = full credit
