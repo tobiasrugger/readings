@@ -231,10 +231,10 @@ function buildPeriodFilter(){
   var sel = document.getElementById("fPeriod");
   var cur = sel.value, seen = {}, list = [];
   for(var i = 0; i < rows.length; i++){
-    var p = rows[i].period || "";
+    var p = (rows[i].period == null) ? "" : String(rows[i].period);   /* T-375: number or text → text */
     if(p && !seen[p]){ seen[p] = 1; list.push(p); }
   }
-  list.sort();
+  list.sort(function(a, b){ return (parseFloat(a) - parseFloat(b)) || (a < b ? -1 : a > b ? 1 : 0); });
   var h = '<option value="">All periods</option>';
   for(var j = 0; j < list.length; j++){
     h += '<option value="' + esc(list[j]) + '">Period ' + esc(list[j]) + '</option>';
@@ -252,7 +252,7 @@ function filtered(){
   for(var i = 0; i < rows.length; i++){
     var r = rows[i];
     if(g && r.guide_key !== g) continue;
-    if(p && r.period !== p) continue;
+    if(p && String(r.period) !== p) continue;   /* T-375: Supabase returns period as a NUMBER; the dropdown value is text */
     if(st === "in" && !r.submitted) continue;
     if(st === "wip" && r.submitted) continue;
     if(q){
