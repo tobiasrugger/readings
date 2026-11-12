@@ -121,6 +121,19 @@
   .ptwarn{background:#fff7d6;border:1.5px solid #c98a12;border-radius:8px;padding:6px 9px;font-size:13.5px;margin:0 0 10px}
   .ptwarn b{font-weight:900}.ptwarn small{display:block;color:#6b5a2a;margin-top:2px}
   .ptline{font-size:13px;font-weight:600;color:#3d4a42;margin:3px 0 2px;line-height:1.45}
+  /* T-365: set intro box + past story sets + Try it links */
+  .sintro{font-size:17px}
+  .sintro .sip{margin:0 0 10px}
+  .sintro .sip.ask{font-weight:800;font-size:18px;color:#143528}
+  .sintro a,.try a.tl{color:var(--pine);font-weight:800}
+  .sintro .pic{width:min(40%,220px)}
+  .pastsets{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;margin-top:8px}
+  .pastset{display:block;text-decoration:none;color:inherit;border:2px solid #2b3a33;border-radius:12px;overflow:hidden;background:#fff;box-shadow:0 3px 0 rgba(20,53,40,.18)}
+  .pastset svg{display:block;width:100%;height:auto;border-bottom:2px solid #2b3a33}
+  .pastset .pb{padding:8px 10px;font-weight:800;font-size:15px}
+  .pastset .pb span{display:block;font-weight:600;font-size:13px;color:#4b5249}
+  .try .tl{display:inline-block;margin:6px 0 2px;padding:8px 14px;border:2px solid #2b3a33;border-radius:9px;background:#eef6f1;text-decoration:none}
+  .try .trow{padding:8px 0;border-top:1px solid var(--rule)}
   .credit{background:#fff8e6;border:2px solid #b7791f;border-radius:12px;padding:12px 14px;font-weight:700;margin:0 0 14px}
   .card h3{margin:0 0 8px;font-size:17px}
   label.q{display:block;font-weight:700;margin:18px 0 6px}
@@ -385,6 +398,18 @@ function parseDoc(txt){
       });
     } else if(name==='RECORD'){
       out.record=body;
+    } else if(name==='TRY'){
+      /* T-365: "Try it yourself" box. INTRO: text / LINK: label | https://url | note */
+      var tr={intro:'',links:[]};
+      body.split(/\n/).forEach(function(l){
+        var m;
+        if(m=l.match(/^INTRO:\s*(.*)/)) tr.intro=m[1].trim();
+        else if(m=l.match(/^LINK:\s*(.*)/)){
+          var b=m[1].split('|').map(function(x){return x.trim();});
+          if(b[0]&&/^https:\/\//.test(b[1]||'')) tr.links.push({label:b[0],url:b[1],note:b[2]||''});
+        }
+      });
+      if(tr.intro||tr.links.length) out.tryit=tr;
     } else if(name==='PROJECT'){
       var pj={title:'My Project',intro:'',fields:[],ifs:[]};
       body.split(/\n/).forEach(function(l){
@@ -527,7 +552,7 @@ function dualTranslate(){
 function say(text,slow){
   try{
     speechSynthesis.cancel();
-    var u=new SpeechSynthesisUtterance(plain(text));
+    var u=new SpeechSynthesisUtterance(plain(text).replace(/_{2,}/g,' blank '));
     u.rate=slow?0.62:0.95; u.lang='en-US';
     speechSynthesis.speak(u);
   }catch(e){}
@@ -652,6 +677,7 @@ function render(){
        '<button class="spk" data-i="'+i+'" data-s="1" title="Listen slowly">&#128034;</button>'+
        '<button class="spk xlb" data-i="'+i+'" title="In my language">&#127760;</button></div></div>';
   });
+  h+=tryBox(A.tryit);
   $('readBody').innerHTML=h;
 
   $('mediaBox').innerHTML = m.MEDIA ?
@@ -659,7 +685,7 @@ function render(){
 
   var q='<div class="card"><h3>Questions</h3>';
   A.qs.forEach(function(t,i){
-    q+='<label class="q" data-xl="'+esc(plain(t)).replace(/"/g,'&quot;')+'">'+(i+1)+'. '+rich(t)+'</label>'+
+    q+='<label class="q" data-xl="'+esc(plain(t)).replace(/"/g,'&quot;')+'">'+(i+1)+'. '+rich(t)+' <button class="spk" data-raw="'+esc(plain(t)).replace(/"/g,'&quot;')+'" title="Listen">&#128266;</button></label>'+
        '<textarea data-k="q'+i+'" lang="en" placeholder="Write your answer in English."></textarea>';
   });
   q+='</div>';
@@ -919,6 +945,7 @@ $('gGo').onclick=function(){
   lsSet('gal_period',p);
   lsSet('gal_student_period',p);
   lsSet('gal_lang',lg);
+  lsSet('vocab_lang',lg);   /* T-365: same key every page remembers */
   if(raw!==c){
     fetch(SUPA_URL+'/rest/v1/student_aliases',{method:'POST',headers:Object.assign({},H,{'Prefer':'resolution=ignore-duplicates,return=minimal'}),
       body:JSON.stringify({alias:raw,canonical:c})}).catch(function(){});
@@ -1207,6 +1234,8 @@ function textsOf(d){                       /* every string a student might see t
   (d.qs||[]).forEach(function(q){push(plain(q));var re=/\[\[(.+?)\|(.+?)\]\]/g,m;while((m=re.exec(q))!==null)push(m[1]+' \u2014 '+m[2]);});
   if(d.gram&&d.gram.produce)push(plain(d.gram.produce));
   push('Find each answer in the article and type it. Press Check. If you are stuck, you will get a hint.');   /* Find It intro (T-207) */
+  if(d.tryit){push(d.tryit.intro);d.tryit.links.forEach(function(k){push(k.label);push(k.note);});}
+  introParas(d.meta.SET_INTRO).forEach(function(x){push(unlink(x));});   /* T-365 */
   if(d.project){push(d.project.intro);d.project.fields.forEach(function(f){push(f.label);});d.project.ifs.forEach(function(f){push(f.text);});}
   return out;
 }
@@ -1466,13 +1495,22 @@ function drawFinished(){
     done.forEach(function(r){var d=parseDoc(r.doc||'');h+='<div style="padding:7px 0;border-top:1px solid var(--rule)"><span style="color:#166534;font-weight:800">\u2713</span> <a href="'+linkTo(r.slug)+'" style="font-weight:700;color:var(--pine)">'+esc(d.meta.TITLE||r.title||r.slug)+'</a></div>';});
     h+='</div>';
   }
-  $('readBody').innerHTML=h;
+  $('readBody').innerHTML=h+'<div id="pastSets"></div>';
   $('mediaBox').innerHTML='';$('qBox').innerHTML='';$('setBox').innerHTML='';$('archBox').innerHTML='';
   dualTranslate();
+  var top=PUBLISHED&&PUBLISHED[0]; drawPastSets(top?parseDoc(top.doc||'').meta.SET:'');
 }
 
 function boot(){
   var want=new URLSearchParams(location.search).get('a');
+  var wantSet=new URLSearchParams(location.search).get('set');   /* T-365: ?set=<slug> = that set's picker */
+  if(!want&&wantSet){
+    fetchSet(wantSet).then(function(set){
+      if(set.length){SETROWS=set;A=null;PICK=true;drawPicker();loadSetStatus();return;}
+      location.replace(linkTo(''));
+    });
+    return;
+  }
   if(!want){
     BARE=true;
     fetch(SUPA_URL+'/rest/v1/news_articles?select=slug,title,doc,week_of&published=is.true&order=week_of.desc,updated_at.desc&limit=12',{headers:H})
@@ -1507,7 +1545,7 @@ var SETROWS=null, PICK=false, SETSTATUS={};
 function fetchSet(set){
   var q=SUPA_URL+'/rest/v1/news_articles?select=slug,title,doc,week_of&published=is.true&doc=ilike.'+encodeURIComponent('*SET: '+set+'*')+'&order=updated_at.asc';
   return fetch(q,{headers:H}).then(function(r){return r.json();}).then(function(rows){
-    return (rows||[]).map(function(r){var d=parseDoc(r.doc||'');return {slug:r.slug,title:d.meta.TITLE||r.title||r.slug,dek:d.meta.DEK||'',set:d.meta.SET,setTitle:d.meta.SET_TITLE||''};})
+    return (rows||[]).map(function(r){var d=parseDoc(r.doc||'');return {slug:r.slug,title:d.meta.TITLE||r.title||r.slug,dek:d.meta.DEK||'',set:d.meta.SET,setTitle:d.meta.SET_TITLE||'',setIntro:d.meta.SET_INTRO||''};})
       .filter(function(r){return r.set===set;});
   }).catch(function(){return [];});
 }
@@ -1545,21 +1583,23 @@ function drawPicker(){
     '<div class="credit" data-xl="Pick one story and read it. Read two or three stories for extra credit.">Pick <b>one</b> story and read it. Read <b>two or three</b> for extra credit. &#11088;</div>'+
     (ME.email&&nDone?'<p style="font-weight:800;color:#166534;margin:0 0 10px">You have finished '+nDone+' of '+SETROWS.length+'.</p>':'')+
     '<div class="picks">';
+  h=h.replace('<h2>'+esc(setTitleOf())+'</h2>','<h2>'+esc(setTitleOf())+'</h2>'+setIntroBox());
   SETROWS.forEach(function(r){
     var art=(window.NEWS_ART||{})[r.slug];
     h+='<a class="pick" href="'+linkTo(r.slug)+'">'+(art&&art.hero?art.hero:'')+
        '<div class="pb"><h3>'+esc(r.title)+badge(r.slug)+'</h3><div class="muted" style="font-size:15px;color:#4b5249">'+esc(r.dek)+'</div>'+
        '<span class="go">Read this story \u2192</span></div></a>';
   });
-  $('readBody').innerHTML=h+'</div>';
+  $('readBody').innerHTML=h+'</div><div id="pastSets"></div>';
   $('mediaBox').innerHTML=''; $('qBox').innerHTML=''; $('setBox').innerHTML=''; $('archBox').innerHTML='';
   dualTranslate();
+  drawPastSets(SETROWS[0]&&SETROWS[0].set);
 }
 function drawSetBox(){
   if(!A||!A.meta.SET||!SETROWS||SETROWS.length<2){ if($('setBox'))$('setBox').innerHTML=''; if($('setTop'))$('setTop').innerHTML=''; return; }
   var others=SETROWS.filter(function(r){return r.slug!==A.meta.SLUG;});
   var top=$('setTop');
-  if(top) top.innerHTML='<a href="'+linkTo('')+'">\u2190 All '+SETROWS.length+' stories</a><span class="muted">\u00b7 '+esc(setTitleOf())+'</span>';
+  if(top) top.innerHTML='<a href="'+setLink(A.meta.SET)+'">\u2190 All '+SETROWS.length+' stories</a><span class="muted">\u00b7 '+esc(setTitleOf())+'</span>';
   var h='<div class="card"><h3>Read another story for extra credit &#11088;</h3>'+
         '<p class="muted" data-xl="Each story has its own questions, grammar, talk chart and recording.">Each story has its own questions, grammar, talk chart and recording.</p><div class="picks">';
   others.forEach(function(r){
@@ -1568,6 +1608,71 @@ function drawSetBox(){
        '<div class="pb"><h3>'+esc(r.title)+badge(r.slug)+'</h3><span class="go">Read this story \u2192</span></div></a>';
   });
   $('setBox').innerHTML=h+'</div></div>';
+}
+
+/* ---------- T-365: set intro, past story sets, Try it box ---------- */
+function setLink(set){
+  var p=[]; if(set) p.push('set='+encodeURIComponent(set));
+  if(TV) p.push('view=teacher','email='+encodeURIComponent(TV));
+  return p.length?'?'+p.join('&'):'./';
+}
+function introParas(t){return String(t||'').split('||').map(function(x){return x.trim();}).filter(Boolean);}
+function unlink(t){return String(t||'').replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,'$1');}
+function linkify(t){return esc(t).replace(/\[([^\]]+)\]\((https:\/\/[^)\s"]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1 \u2197</a>');}
+function setIntroBox(){
+  var src=(SETROWS||[]).filter(function(r){return r.setIntro;})[0];
+  if(!src) return '';
+  var art=(window.NEWS_ART_SET||{})[src.set]||null;
+  var h='<div class="card sintro">';
+  if(art&&art.svg) h+='<figure class="pic">'+art.svg+(art.cap?'<figcaption data-xl="'+esc(art.cap).replace(/"/g,'&quot;')+'">'+esc(art.cap)+'</figcaption>':'')+'</figure>';
+  introParas(src.setIntro).forEach(function(par,i){
+    var pl=unlink(par);
+    h+='<div data-xl="'+esc(pl).replace(/"/g,'&quot;')+'"><p class="sip'+(i===0?' ask':'')+'">'+linkify(par)+
+       ' <button class="spk" data-raw="'+esc(pl).replace(/"/g,'&quot;')+'" title="Listen">&#128266;</button></p></div>';
+  });
+  return h+'</div>';
+}
+function tryBox(tr){
+  if(!tr) return '';
+  var h='<div class="card try"><h3>&#9997;&#65039; Try it yourself</h3>';
+  if(tr.intro) h+='<div data-xl="'+esc(tr.intro).replace(/"/g,'&quot;')+'"><p style="margin:0 0 8px">'+esc(tr.intro)+
+     ' <button class="spk" data-raw="'+esc(tr.intro).replace(/"/g,'&quot;')+'" title="Listen">&#128266;</button></p></div>';
+  tr.links.forEach(function(k){
+    h+='<div class="trow"><a class="tl" href="'+esc(k.url).replace(/"/g,'&quot;')+'" target="_blank" rel="noopener">'+esc(k.label)+' \u2197</a>'+
+       (k.note?'<div data-xl="'+esc(k.note).replace(/"/g,'&quot;')+'" style="margin-top:4px">'+esc(k.note)+'</div>':'')+'</div>';
+  });
+  return h+'</div>';
+}
+var ALLSETS=null;
+function loadAllSets(){
+  if(ALLSETS) return Promise.resolve(ALLSETS);
+  var q=SUPA_URL+'/rest/v1/news_articles?select=slug,doc,week_of&published=is.true&doc=ilike.'+encodeURIComponent('*SET:*')+'&order=week_of.desc.nullslast,updated_at.asc';
+  return fetch(q,{headers:H}).then(function(r){return r.ok?r.json():[];}).then(function(rows){
+    var by={},order=[];
+    (rows||[]).forEach(function(r){
+      var m=parseDoc(r.doc||'').meta; if(!m.SET) return;
+      if(!by[m.SET]){by[m.SET]={set:m.SET,title:m.SET_TITLE||m.SET,first:r.slug,n:0};order.push(m.SET);}
+      by[m.SET].n++;
+    });
+    ALLSETS=order.map(function(k){return by[k];});
+    return ALLSETS;
+  }).catch(function(){return [];});
+}
+/* "Past story sets": every other published set, one tap away (?set=<slug>) */
+function drawPastSets(current){
+  loadAllSets().then(function(all){
+    var box=$('pastSets'); if(!box) return;
+    var newest=all[0]&&all[0].set, others=all.filter(function(x){return x.set!==current;});
+    if(!others.length){box.innerHTML='';return;}
+    var head=current&&current!==newest?'Other story sets':'Past story sets';
+    var h='<div class="card"><h3 data-xl="'+head+'">'+head+'</h3><div class="pastsets">';
+    others.forEach(function(x){
+      var art=(window.NEWS_ART||{})[x.first];
+      h+='<a class="pastset" href="'+setLink(x.set)+'">'+(art&&art.hero?art.hero:'')+'<div class="pb">'+esc(x.title)+'<span>'+x.n+' stories \u2192</span></div></a>';
+    });
+    box.innerHTML=h+'</div></div>';
+    dualTranslate();
+  });
 }
 
 /* Seed article — shows if Supabase is empty or unreachable, so the page is never blank. */
