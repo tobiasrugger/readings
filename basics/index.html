@@ -123,6 +123,14 @@ textarea:focus{border-color:var(--moss);outline:none}
 .tline.no{animation:shake .3s}
 .say{font-size:1.25rem;font-weight:800;margin:4px 0 2px}
 .lb{letter-spacing:.35em;font-weight:800;white-space:nowrap}
+/* T-355 plural boxes */
+.plrow{display:flex;flex-wrap:wrap;gap:12px;align-items:stretch;margin:0 0 10px}
+.plcol{border:2px solid #2b3a33;border-radius:10px;padding:8px 12px;background:#fff;box-shadow:0 2px 0 rgba(27,67,50,.18);text-align:center}
+.plw{font-size:1.25rem;margin:0 0 6px}
+.plpics{display:flex;gap:6px;justify-content:center}
+.plpics svg{width:84px;height:67px;display:block}
+.plspk{align-self:center}
+@media (max-width:480px){.plrow{gap:8px}.plcol{padding:6px 8px}.plpics svg{width:62px;height:50px}.plw{font-size:1.1rem}}
 .tin{font-family:inherit;font-size:1.25rem;font-weight:800;padding:8px 12px;border:2px solid #2b3a33;border-radius:10px;width:min(320px,100%);letter-spacing:.06em}
 .shown{display:block;margin-top:6px;padding:8px 12px;border:2px solid #b07d00;border-radius:10px;background:#fff8e1;font-size:1.1rem}
 .passage{border:2.5px solid #1b4332}
@@ -403,7 +411,7 @@ function makeStretch(lesson){if(!window.BasicsStretch)return [];
   else if(x.ty==='fix'){var fo=sh(x.o);it.s=x.s;it.bad=x.bad;it.o=fo;it.a=fo.indexOf(x.good);it.h=x.h;it.q='Find the wrong word. Tap it.';}
   else if(x.ty==='tiles'){it.say=x.say;it.ans=x.ans;it.alts=x.alts;it.tl=x.tl;it.full=x.a;it.h=x.h;
    it.q=x.say?'Make a question.':'Put the words in order.';}
-  else if(x.ty==='type'){it.ans=x.a;it.h=x.h;}
+  else if(x.ty==='type'){it.ans=x.a;it.h=x.h;if(x.one){it.one=x.one;it.pp=x.pp;}if(x.rc)it.rc=1;}
   out.push(it);});
  return out;}
 /* T-270 · SENTENCE OR FRAGMENT? WHY? — a capital letter and a period do not make a sentence; a who + a verb do.
@@ -550,6 +558,7 @@ function art(n){return /^[aeiou]/i.test(n)?'an':'a';}
 function plural(n){return /y$/.test(n)?n.replace(/y$/,'ies'):/(s|sh|ch|x)$/.test(n)?n+'es':n+'s';}
 function state(id){if(!ST.A[id])ST.A[id]={tries:0,first:null,done:false};return ST.A[id];}
 function plainQ(it){var t=it.plain||String(it.q||'').replace(/<button[\s\S]*?<\/button>/g,'').replace(/<[^>]+>/g,' ');
+ if(it.ty==='type'&&it.ans&&!it.rc)t=String(it.q).replace('___',it.ans); /* T-355: typed = dictation, the voice says the word; the screen keeps the blank */
  if(it.ty==='fix')t=it.s;if(it.ty==='tiles')t=it.say?('Make a question. '+it.say):'Put the words in order.';return t.replace(/\s+/g,' ').trim();}
 function spkBtn(it){return '<button class="spk qspk" onclick="speak(plainQ(ITEMS.filter(function(x){return x.id===\''+it.id+'\';})[0]))" aria-label="Listen">\ud83d\udd0a</button>';}
 function letterBlanks(w){return '<span class="lb">'+String(w).split('').map(function(c){return c===' '?'&nbsp;&nbsp;':'_';}).join(' ')+'</span>';}
@@ -594,8 +603,14 @@ function tileCheck(id){var it=ITEMS.filter(function(x){return x.id===id;})[0],st
  if(sameSeq(got,it.ans)||(it.alts||[]).some(function(a){return sameSeq(got,a);})){st.done=true;if(st.first===null)st.first=(st.tries===1);}
  else{st.wrongs=st.wrongs||[];st.wrongs.push(got.join(' '));if(st.first===null)st.first=false;if(st.wrongs.length>=3)st.shown=true;st.seq=[];}
  save();rerender(it);afterSolve();}
+/* T-355 · plurals: "one class" over ONE picture, "two _ _ _ _ _ _ _" over TWO. The voice says "one class, two classes". */
+function plPic(it){var P=(window.BasicsStretch&&BasicsStretch.PICS||{})[it.pp];return P||'';}
+function pluralHTML(it,st){var pic=plPic(it);
+ return '<div class="plrow"><div class="plcol"><div class="q sent plw">one '+it.one+'</div><div class="plpics">'+pic+'</div></div>'+
+  '<div class="plcol"><div class="q sent plw">two '+(st.done?'<b>'+it.ans+'</b>':letterBlanks(it.ans))+'</div><div class="plpics">'+pic+pic+'</div></div>'+
+  '<div class="plspk">'+spkBtn(it)+'</div></div>';}
 function renderType(it,st){var parts=String(it.q).split('___');
- var h='<div class="card" id="c_'+it.id+'">'+picHTML(it)+'<div class="q sent">'+parts[0]+(st.done?'<b>'+it.ans+'</b>':letterBlanks(it.ans))+(parts[1]||'')+' '+spkBtn(it)+'</div>';
+ var h='<div class="card" id="c_'+it.id+'">'+(it.one?pluralHTML(it,st):picHTML(it)+'<div class="q sent">'+parts[0]+(st.done?'<b>'+it.ans+'</b>':letterBlanks(it.ans))+(parts[1]||'')+' '+spkBtn(it)+'</div>');
  if(!st.done){var n=(st.wrongs||[]).length,hint='';if(n===2)hint='<span class="hint">\ud83d\udca1 It starts with <b>'+it.ans.charAt(0)+'</b> and has '+it.ans.replace(/ /g,'').length+' letters.'+(it.h?' '+it.h:'')+'</span>';
   h+='<input class="tin" id="ty_'+it.id+'" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="'+(it.ans.length+4)+'" placeholder="Write the word" onkeydown="if(event.key===\'Enter\')typeCheck(\''+it.id+'\')"> <button class="btn" onclick="typeCheck(\''+it.id+'\')">Check</button>';
   if(st.shown)h+=shownBox(it);
