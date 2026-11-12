@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Do Now: Reel 4 warm-up · Teacher</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<!-- T-378 (Nov 2026): reads eld103_donow rows with unit = 'reel-04'. One row per student (GAL04.key). -->
+<style>
+:root{--pine:#1b4332;--pine2:#2d6a4f;--ink:#1c2640;--muted:#5c6b62;--paper:#f4f5f2}
+*{box-sizing:border-box}body{margin:0;font-family:'Nunito',system-ui,sans-serif;background:var(--paper);color:var(--ink)}
+header{background:var(--pine);color:#fff;padding:48px 16px 14px 16px}header h1{margin:0;font-size:1.25rem}header p{margin:2px 0 0;font-size:.86rem;opacity:.85}
+main{max-width:1200px;margin:0 auto;padding:14px}
+.box{background:#fff;border:2px solid var(--ink);border-radius:12px;box-shadow:0 3px 0 var(--ink);padding:12px 14px;margin:0 0 14px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+select,button,input{font-family:inherit;font-size:.95rem;font-weight:700;border:2px solid var(--ink);border-radius:8px;padding:6px 10px;background:#fff}
+button{cursor:pointer;background:var(--pine2);color:#fff}
+.wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{border:1px solid #b9c4bd;padding:6px 8px;text-align:left;vertical-align:top}
+th{background:#e8f1ec;position:sticky;top:0}
+td.n{text-align:center;font-weight:800}
+.miss{color:#8a4b00;font-weight:800}.shown{background:#fff1bf;border-radius:6px;padding:0 4px;font-weight:800}
+.op{color:#2d4a6b}.muted{color:var(--muted)}
+#gate{position:fixed;inset:0;background:rgba(27,67,50,.96);display:flex;align-items:center;justify-content:center;z-index:100}
+#gate .gb{background:#fff;border:3px solid var(--ink);border-radius:14px;padding:22px;width:300px;text-align:center}
+#gateErr{color:#b5451b;font-weight:800;min-height:1.2em}
+a{color:var(--pine2);font-weight:800}
+</style>
+</head>
+<body>
+<div id="gate"><div class="gb"><h2 style="margin:0 0 10px">Teacher</h2>
+ <input id="pw" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')unlock()" style="width:100%">
+ <button onclick="unlock()" style="width:100%;margin-top:10px">Open</button><div id="gateErr"></div></div></div>
+<header><h1>Do Now: Reel 4 warm-up</h1><p>What’s for Lunch Today? · Look (I see / I wonder) · 7 words · 5 lunch steps in order · 2 comma lines · student page: <a style="color:#f2c230" href="./">donow/reel-04/</a></p></header>
+<main>
+ <div class="box row">
+  <label>Period <select id="per" onchange="draw()"><option value="">All</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select></label>
+  <button onclick="load()">↻ Refresh</button>
+  <span id="sum" class="muted"></span>
+ </div>
+ <div class="box"><b>What students wondered</b> <span class="muted">(opinion answers, never marked wrong — good talk starters)</span><div id="wonder" style="margin-top:6px"></div></div>
+ <div class="box wrap"><table><thead><tr><th>Student</th><th>Per.</th><th>Done /18</th><th>0–4</th><th>Picture 1: I see / I wonder</th><th>Picture 2: I see / I wonder</th><th>Words (misses)</th><th>Steps (misses)</th><th>Commas (misses)</th><th>Saved</th><th></th></tr></thead><tbody id="tb"><tr><td colspan="11">Loading…</td></tr></tbody></table></div>
+ <p class="muted" style="font-size:.85rem">Misses are wrong taps before the right one. <span class="shown">shown</span> = the page pointed to the answer after the misses; it still counts a full point (fair scores).</p>
+</main>
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var PW='galileo2026',ROWS=[];
+var WORDS=['line','tray','napkin','fork','spoon','drink','seat'],GRAM=['Next, choose…','___, take a tray.'],STEPSN=['First','Then','Also','Next','Finally'];
+function $(i){return document.getElementById(i);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function key(e){return window.GAL04&&GAL04.key?GAL04.key(e):String(e||'').trim().toLowerCase().split('@')[0];}
+function unlock(){if($('pw').value===PW){try{sessionStorage.setItem('donow_pw','1');}catch(e){}$('gate').style.display='none';load();}else $('gateErr').textContent='Not the right password.';}
+function band(pct){return window.GAL04&&GAL04.band?GAL04.band(pct):'';}
+function load(){fetch(SUPA_URL+'/rest/v1/eld103_donow?unit=eq.reel-04&select=email,name,period,score,max_score,turned_in,payload,updated_at&order=updated_at.desc',
+ {headers:{apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY}}).then(function(r){return r.json();}).then(function(rows){
+  var by={};(rows||[]).forEach(function(r){var k=key(r.email);if(!by[k]||(r.score||0)>(by[k].score||0))by[k]=r;});
+  ROWS=Object.keys(by).map(function(k){return by[k];});ROWS.sort(function(a,b){return String(a.period).localeCompare(String(b.period))||String(a.name).localeCompare(String(b.name));});draw();
+ }).catch(function(){$('tb').innerHTML='<tr><td colspan="11">Could not load.</td></tr>';});}
+function look(L){L=L||{};return (L.see?'I see <b>'+esc(L.see)+'</b>':'<span class="muted">—</span>')+'<br>'+(L.won?'I wonder why <span class="op">'+esc(L.won)+'</span>'+(L.own?' ✍️':''):'<span class="muted">—</span>');}
+function items(R,names){R=R||{};return names.map(function(n,i){var s=R[i];if(!s)return '<span class="muted">'+esc(n)+' —</span>';
+ return esc(n)+' '+(s.done?'✓':'…')+(s.tries?' <span class="miss">'+s.tries+'</span>':'')+(s.shown?' <span class="shown">shown</span>':'');}).join('<br>');}
+function steps(S){if(!S)return '<span class="muted">—</span>';return STEPSN.map(function(n,i){var t=(S.tries||{})[i]||0,ok=(S.placed||[]).length>i;return n+' '+(ok?'✓':'…')+(t?' <span class="miss">'+t+'</span>':'')+((S.shown||{})[i]?' <span class="shown">shown</span>':'');}).join('<br>');}
+function draw(){var p=$('per').value,list=ROWS.filter(function(r){return !p||String(r.period)===p;});
+ var done=list.filter(function(r){return (r.score||0)>=(r.max_score||18);}).length;
+ $('sum').textContent=list.length+' students · '+done+' finished';
+ $('tb').innerHTML=list.length?list.map(function(r){var P=r.payload||{},pct=r.max_score?Math.round(100*(r.score||0)/r.max_score):0;
+  return '<tr><td><b>'+esc(r.name)+'</b><br><span class="muted" style="font-size:.8rem">'+esc(r.email)+'</span></td><td class="n">'+esc(r.period)+'</td>'+
+   '<td class="n">'+(r.score||0)+'/'+(r.max_score||18)+'</td><td class="n">'+band(pct)+'</td>'+
+   '<td>'+look((P.look||{}).A)+'</td><td>'+look((P.look||{}).B)+'</td>'+
+   '<td>'+items((P.R||{}).w,WORDS)+'</td><td>'+steps(P.S)+'</td><td>'+items((P.R||{}).g,GRAM)+'</td>'+
+   '<td class="muted" style="font-size:.8rem">'+esc(new Date(r.updated_at).toLocaleString())+(P.lion?'<br>🦁 found the lion':'')+'</td>'+
+   '<td><a href="./?view=teacher&email='+encodeURIComponent(r.email)+'" target="_blank">👀 view</a></td></tr>';}).join(''):'<tr><td colspan="11">No work yet.</td></tr>';
+ var w={};list.forEach(function(r){var L=(r.payload||{}).look||{};['A','B'].forEach(function(k){var v=L[k]&&L[k].won;if(v){var t=(k==='A'?'1 · ':'2 · ')+v;w[t]=(w[t]||0)+1;}});});
+ $('wonder').innerHTML=Object.keys(w).sort(function(a,b){return w[b]-w[a];}).map(function(t){return '<div>I wonder why '+esc(t.slice(4))+' <span class="muted">(picture '+t.charAt(0)+', ×'+w[t]+')</span></div>';}).join('')||'<span class="muted">Nothing yet.</span>';}
+try{if(sessionStorage.getItem('donow_pw')){$('gate').style.display='none';load();}}catch(e){}
+</script>
+<script src="/readings/grade04.js" data-slugs="donow/reel-04"></script>
+</body>
+</html>
