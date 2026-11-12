@@ -476,18 +476,28 @@
     return h;
   }
   function ckey(slug, src, lg) { return slug + '|' + src + '|' + lg; }
+  /* T-358 (Nov 12): pages through ALL saved rows (Supabase returns at most 1,000 per request, and
+     "dir" is past that), and every caller waits for the same load instead of racing past it. */
   function cacheLoad(lg) {
-    if (!lg || loadedLang[lg]) return Promise.resolve();
-    loadedLang[lg] = true;
-    return fetch(SUPA_URL + '/rest/v1/song_tr?select=slug,src,equiv,meaning&lang=eq.' +
-        encodeURIComponent(lg) + '&or=(slug.eq.dir,slug.eq.' + encodeURIComponent(PAGE_SLUG) + ')', { headers: hdr() })
-      .then(function (r) { return r.ok ? r.json() : []; })
-      .then(function (rows) {
-        (rows || []).forEach(function (r) {
-          var v = r.equiv || r.meaning || '';
-          if (v) tcache[ckey(r.slug, r.src, lg)] = v;
+    if (!lg) return Promise.resolve();
+    if (loadedLang[lg]) return loadedLang[lg];
+    var base = SUPA_URL + '/rest/v1/song_tr?select=slug,src,equiv,meaning&lang=eq.' + encodeURIComponent(lg) +
+               '&or=(slug.eq.dir,slug.eq.' + encodeURIComponent(PAGE_SLUG) + ')&order=slug.asc,src.asc';
+    var STEP = 1000;
+    function page(from) {
+      var h = hdr(); h['Range-Unit'] = 'items'; h.Range = from + '-' + (from + STEP - 1);
+      return fetch(base, { headers: h })
+        .then(function (r) { return r.ok ? r.json() : []; })
+        .then(function (rows) {
+          (rows || []).forEach(function (r) {
+            var v = r.equiv || r.meaning || '';
+            if (v) tcache[ckey(r.slug, r.src, lg)] = v;
+          });
+          if (rows && rows.length === STEP && from < 30000) return page(from + STEP);
         });
-      }).catch(function () {});
+    }
+    loadedLang[lg] = page(0).catch(function () {});
+    return loadedLang[lg];
   }
   function cacheSave(slug, src, lg, val) {
     if (!val) return;
@@ -525,7 +535,7 @@
       if (hit) return Promise.resolve(fakeRes(hit));
       var args = arguments, self = this;
       return cacheLoad(lg).then(function () {
-        var again = tcache[ckey(slug, src, lg)] || tcache[ckey('dir', src, lg)];
+        var again = tcache[ckey(slug, src, lg)] || tcache[ckey('dir', src, lg)] || tcache[ckey(PAGE_SLUG, src, lg)];   /* T-358 */
         if (again) return fakeRes(again);
         return real.apply(self, args).then(function (res) {
           try {
@@ -820,7 +830,12 @@
         function () { if (attempt < TR_TRIES) go(); else cb('', true, attempt); });
     })();
   }
-  /* T-94 warm-up: once a language is known, quietly ask for the words on screen, a few at a
+  /* T-358 (Nov 12): the warm-up no longer calls the translator. It spent up to 80 of the shared
+     daily translator calls per page per language on words nobody tapped (48 on one Landlady load),
+     and when the daily limit runs out EVERY translation fails for everyone. Now it only loads the
+     saved translations (one paged Supabase read), so saved words are instant and only a real tap
+     can call the translator. Teachers fill the cache ahead of time with the Pre-translate buttons.
+     T-94 warm-up (old note): once a language is known, quietly ask for the words on screen, a few at a
      time, so most taps are instant. Each request goes through the song_tr cache wrapper, so a
      word any student already looked up costs nothing, and a new one is saved for everyone. */
   var WARM_MAX = 80, WARM_AT_ONCE = 3, warmQ = [], warmSeen = {}, warmBusy = 0, warmSent = 0, warmLang = '';
@@ -836,6 +851,7 @@
   function warmVisible() {
     if (listenOff()) return;
     var lg = listenLang(); if (!lg) return;
+    cacheLoad(lg); return;                                   /* T-358: cache only, no translator calls */
     if (lg !== warmLang) { warmLang = lg; warmSeen = {}; warmQ = []; warmSent = 0; }
     if (warmSent >= WARM_MAX) return;
     var vh = window.innerHeight, walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), n, added = 0;
