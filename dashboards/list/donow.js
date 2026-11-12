@@ -10,6 +10,7 @@
  */
 window.DASHBOARDS = (window.DASHBOARDS || []).concat([
 {url:'donow/dashboard.html',            name:'Do Now \u2014 all',             course:'both', group:'Unit'},
+{url:'donow/reel-05/dashboard.html',    name:'Do Now: Reel 5 warm-up (Where Is Room 318?)', course:'101', group:'Unit'},
 {url:'donow/reel-04/dashboard.html',    name:'Do Now: Reel 4 warm-up (What\u2019s for Lunch Today?)', course:'101', group:'Unit'},
 {url:'donow/reel-03/dashboard.html',    name:'Do Now: Reel 3 warm-up (What Class Do We Have Now?)', course:'101', group:'Unit'},
 {url:'donow/dog-01/dashboard.html',     name:'Do Now: The Dog at the Bus Stop',course:'both', group:'Unit'},
