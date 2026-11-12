@@ -118,6 +118,9 @@
   .fich{display:flex;flex-wrap:wrap;gap:7px;margin-top:6px}
   .fich button{font-family:inherit;font-size:15px;padding:7px 11px;border:2px solid #2b3a33;border-radius:9px;background:#fff;cursor:pointer;text-align:left}
   .fich button.gone{opacity:.3;pointer-events:none;text-decoration:line-through}
+  .ptwarn{background:#fff7d6;border:1.5px solid #c98a12;border-radius:8px;padding:6px 9px;font-size:13.5px;margin:0 0 10px}
+  .ptwarn b{font-weight:900}.ptwarn small{display:block;color:#6b5a2a;margin-top:2px}
+  .ptline{font-size:13px;font-weight:600;color:#3d4a42;margin:3px 0 2px;line-height:1.45}
   .credit{background:#fff8e6;border:2px solid #b7791f;border-radius:12px;padding:12px 14px;font-weight:700;margin:0 0 14px}
   .card h3{margin:0 0 8px;font-size:17px}
   label.q{display:block;font-weight:700;margin:18px 0 6px}
@@ -238,6 +241,7 @@
     <div class="card">
       <h3>Pre-translate this article</h3>
       <p class="muted">Translates every paragraph, question, direction, and glossary word once, for the languages you tick, and saves them so students never wait. Run it after you publish. Leave this tab open until it says done.</p>
+      <div class="ptwarn"><b id="ptToday">Today so far: \u2026 translations saved site-wide.</b><small id="ptRemind"></small></div>
       <div id="ptLangs" style="display:flex;flex-wrap:wrap;gap:8px 14px;margin:6px 0 10px;font-size:14px"></div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <button class="btn solid" id="ptGo">Pre-translate</button>
@@ -1041,16 +1045,20 @@ function stamp(t){
 }
 var DOCS={};
 function loadList(){
-  fetch(SUPA_URL+'/rest/v1/news_articles?select=slug,title,week_of,published,updated_at,doc&order=week_of.desc.nullslast,updated_at.desc',{headers:H})
-  .then(function(r){return r.json();})
+  var base=SUPA_URL+'/rest/v1/news_articles?select=slug,title,week_of,published,updated_at,doc{PT}&order=week_of.desc.nullslast,updated_at.desc';
+  /* T-359: ask for the pt status column; if the SQL hasn't run yet, list without it */
+  fetch(base.replace('{PT}',',pt'),{headers:H})
+  .then(function(r){if(!r.ok)throw 0;return r.json();})
+  .catch(function(){return fetch(base.replace('{PT}',''),{headers:H}).then(function(r){return r.json();});})
   .then(function(rows){
     if(!rows||!rows.length){$('list').textContent='Nothing saved yet.';return;}
     DOCS={};
     $('list').innerHTML=rows.map(function(r){
-      DOCS[r.slug]=r.doc;
+      DOCS[r.slug]=r.doc; PTREC[r.slug]=r.pt||null;
       return '<div style="padding:8px 0;border-bottom:1px solid var(--rule)">'+
         '<b>'+esc(r.title||r.slug)+'</b> '+
         (r.published?'<span style="color:var(--ok);font-weight:800">live</span>':'<span style="color:var(--gloss);font-weight:800">draft</span>')+
+        '<div class="ptline" id="pts_'+esc(r.slug)+'">\ud83c\udf10 checking translations\u2026</div>'+
         '<br><span class="muted">'+esc(r.slug)+(r.week_of?' \u00b7 week of '+esc(r.week_of):'')+'</span>'+
         (r.updated_at?'<br><span style="color:var(--ok);font-weight:700;font-size:14px">updated '+esc(stamp(r.updated_at))+'</span>':'')+'<br>'+
         '<div class="arow">'+
@@ -1060,9 +1068,13 @@ function loadList(){
         '<a class="btn line" href="?a='+encodeURIComponent(r.slug)+'" style="text-decoration:none">Open</a>'+
         '</div></div>';
     }).join('');
+    ptStatusAll(rows.map(function(r){return r.slug;}));
+    ptRefreshToday();
   }).catch(function(){$('list').textContent='Could not load.';});
 }
 $('list').addEventListener('click',function(e){
+  var fl=e.target.closest('[data-ptfail]');
+  if(fl){var box=$('ptf_'+fl.dataset.ptfail);if(box)box.style.display=box.style.display==='none'?'block':'none';return;}
   var ed=e.target.closest('[data-edit]');
   if(ed){
     $('doc').value=DOCS[ed.dataset.edit]||'';
@@ -1080,6 +1092,104 @@ $('list').addEventListener('click',function(e){
   }
 });
 
+/* ---------- T-359: pre-translate status, one line under each article ----------
+   The record lives on the article (news_articles.pt jsonb, never localStorage):
+   {at, langs, total, saved, failed, hash, done, fails:{key:{lang,text,n}}}.
+   COMPLETE / INCOMPLETE are counted from the saved translations themselves
+   (news_translations, cache READ only, never the proxy), so articles translated
+   before this change show the right state too. */
+var PTREC={};
+function ptHash(texts){return tkey('h',texts.join('\n'));}
+function ptLangsFor(rec){return (rec&&rec.langs&&rec.langs.length)?rec.langs:PT_DEFAULT;}
+function ptSavedKeys(keys,cb){           /* which of these cache keys exist; chunks keep URLs short */
+  var have={},i=0;
+  (function step(){
+    if(i>=keys.length){cb(have);return;}
+    var part=keys.slice(i,i+120);i+=120;
+    fetch(SUPA_URL+'/rest/v1/news_translations?select=key&key=in.('+encodeURIComponent(part.map(function(k){return '"'+k+'"';}).join(','))+')',{headers:H})
+    .then(function(r){return r.ok?r.json():[];}).then(function(rows){(rows||[]).forEach(function(r){have[r.key]=1;});step();})
+    .catch(function(){step();});
+  })();
+}
+function ptWhen(iso){
+  var d=new Date(iso); if(isNaN(d)) return '';
+  return (d.getMonth()+1)+'/'+d.getDate()+'/'+String(d.getFullYear()).slice(2)+', '+d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+}
+function ptStatusAll(slugs){
+  var i=0;
+  (function next(){ if(i>=slugs.length) return; var sl=slugs[i++]; ptStatus(sl,next); })();
+}
+function ptStatus(slug,done){
+  var el=$('pts_'+slug), rec=PTREC[slug], d;
+  try{d=parseDoc(DOCS[slug]||'');}catch(e){d=null;}
+  if(!el||!d){if(done)done();return;}
+  var texts=textsOf(d), langs=ptLangsFor(rec), keys=[], meta={};
+  langs.forEach(function(L){texts.forEach(function(t){var k=tkey(L,t);keys.push(k);meta[k]={lang:L,text:t};});});
+  ptSavedKeys(keys,function(have){
+    /* languages that were actually run = at least one saved line */
+    var runL=langs.filter(function(L){return texts.some(function(t){return have[tkey(L,t)];});});
+    if(!runL.length&&!rec){el.innerHTML='\ud83c\udf10 <span class="muted">Not pre-translated</span>';if(done)done();return;}
+    if(!runL.length) runL=langs;
+    var total=runL.length*texts.length, saved=0, missing=[];
+    runL.forEach(function(L){texts.forEach(function(t){var k=tkey(L,t);if(have[k])saved++;else missing.push(k);});});
+    /* never run here: a few shared lines (directions) saved from other articles don't count */
+    if(!rec&&saved<total/2){el.innerHTML='\ud83c\udf10 <span class="muted">Not pre-translated</span>';if(done)done();return;}
+    var fails=(rec&&rec.fails)||{};
+    var wont=missing.filter(function(k){return fails[k]&&fails[k].n>=2;});
+    var head='\ud83c\udf10 Pre-translated'+(rec&&rec.at?' '+esc(ptWhen(rec.at)):'')+' \u00b7 '+esc(runL.join(', '))+' \u00b7 '+total+' lines';
+    var h;
+    if(rec&&rec.hash&&rec.hash!==ptHash(texts)){
+      h=head+' \u00b7 <b style="color:#b45309">Text changed since \u00b7 run again</b>';
+    } else if(!missing.length){
+      h=head+' \u00b7 <b style="color:var(--ok)">COMPLETE</b>';
+    } else if(wont.length===missing.length){
+      h=head+' \u00b7 '+wont.length+' failed \u00b7 <b style="color:var(--ok)">COMPLETE</b> \u00b7 '+
+        '<a href="#" data-ptfail="'+esc(slug)+'" onclick="return false" style="color:var(--pine);font-weight:700">'+wont.length+' won\u2019t translate \u25be</a>';
+    } else {
+      h=head+' \u00b7 <b style="color:#b45309">INCOMPLETE \u00b7 '+saved+' of '+total+' \u00b7 run again</b>'+
+        (wont.length?' \u00b7 <a href="#" data-ptfail="'+esc(slug)+'" onclick="return false" style="color:var(--pine);font-weight:700">'+wont.length+' won\u2019t translate \u25be</a>':'');
+    }
+    if(wont.length){
+      h+='<div id="ptf_'+esc(slug)+'" style="display:none;margin:6px 0 2px;padding:8px 10px;border:2px solid #2b3a33;border-radius:8px;background:#fff;font-size:14px">'+
+         wont.map(function(k){var f=fails[k]||meta[k]||{};return '<div style="padding:3px 0;border-top:1px solid var(--rule)"><b>'+esc(f.lang||'')+'</b> \u00b7 '+esc(String(f.text||'').slice(0,300))+'</div>';}).join('')+'</div>';
+    }
+    el.innerHTML=h;
+    if(done)done();
+  });
+}
+function ptSaveRec(slug,rec){             /* best effort; a missing column just means no record yet */
+  PTREC[slug]=rec;
+  return fetch(SUPA_URL+'/rest/v1/news_articles?slug=eq.'+encodeURIComponent(slug),{
+    method:'PATCH',headers:Object.assign({},H,{'Prefer':'return=minimal'}),body:JSON.stringify({pt:rec})
+  }).catch(function(){});
+}
+
+/* ---------- T-361: today's count + soft limit (same rules as readings/pretr.js, T-360) ----------
+   Counts translations saved since midnight Pacific in BOTH caches: song_tr (every other page)
+   and news_translations (news). A table without created_at just counts as 0. */
+var PT_SOFT_DEFAULT=1500;
+var PT_REMIND='The translator has a daily limit. On Nov 5 it ran out and every translation on the site stopped until the next day. Leave room for class taps.';
+function ptPacificMidnightISO(){
+  var now=new Date(),p=new Intl.DateTimeFormat('en-US',{timeZone:'America/Los_Angeles',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).formatToParts(now),o={};
+  p.forEach(function(x){o[x.type]=x.value;});
+  var ms=(+o.hour%24)*3600000+(+o.minute)*60000+(+o.second)*1000;
+  return new Date(now.getTime()-ms-now.getMilliseconds()).toISOString();
+}
+function ptCountTable(table){
+  var h=Object.assign({},H,{'Prefer':'count=exact','Range-Unit':'items','Range':'0-0'});
+  return fetch(SUPA_URL+'/rest/v1/'+table+'?select=created_at&created_at=gte.'+encodeURIComponent(ptPacificMidnightISO()),{headers:h})
+    .then(function(r){if(!r.ok)return 0;var cr=r.headers.get('content-range')||'';var n=+(cr.split('/')[1]||NaN);return isNaN(n)?0:n;},function(){return 0;});
+}
+function ptTodayCount(){return Promise.all([ptCountTable('song_tr'),ptCountTable('news_translations')]).then(function(a){return a[0]+a[1];});}
+function ptSoftLimit(){
+  return fetch(SUPA_URL+'/rest/v1/gal_settings?key=eq.pretr_soft&select=value',{headers:H})
+    .then(function(r){return r.ok?r.json():[];}).then(function(rows){var v=rows&&rows[0]&&rows[0].value;var n=+(v&&(v.limit||v.n||v));return n>0?n:PT_SOFT_DEFAULT;},function(){return PT_SOFT_DEFAULT;});
+}
+function ptRefreshToday(){
+  if($('ptRemind'))$('ptRemind').textContent=PT_REMIND;
+  ptTodayCount().then(function(n){if($('ptToday'))$('ptToday').textContent='Today so far: '+n+' translations saved site-wide.';});
+}
+
 /* ---------- pre-translate ---------- */
 var PT_DEFAULT=['Spanish','Mandarin','Arabic','Vietnamese'];   /* T-345: Toby's four; the other 11 boxes stay, unticked */
 (function(){
@@ -1096,7 +1206,7 @@ function textsOf(d){                       /* every string a student might see t
   });});
   (d.qs||[]).forEach(function(q){push(plain(q));var re=/\[\[(.+?)\|(.+?)\]\]/g,m;while((m=re.exec(q))!==null)push(m[1]+' \u2014 '+m[2]);});
   if(d.gram&&d.gram.produce)push(plain(d.gram.produce));
-  push('Sit with a partner. One of you is A, one is B. You each know different things. Ask each other questions until your chart is full. Do not show your screen.');
+  push('Find each answer in the article and type it. Press Check. If you are stuck, you will get a hint.');   /* Find It intro (T-207) */
   if(d.project){push(d.project.intro);d.project.fields.forEach(function(f){push(f.label);});d.project.ifs.forEach(function(f){push(f.text);});}
   return out;
 }
@@ -1105,13 +1215,29 @@ $('ptGo').onclick=function(){
   if(!d.meta.SLUG){alert('Paste or load an article first.');return;}
   var langs=[].map.call(document.querySelectorAll('#ptLangs input:checked'),function(c){return c.value;});
   if(!langs.length){alert('Tick at least one language.');return;}
-  var texts=textsOf(d), jobs=[];
+  var texts=textsOf(d), jobs=[];   /* T-359: texts also feed the status record */
   langs.forEach(function(L){texts.forEach(function(t){jobs.push({lang:L,text:t});});});
   var total=jobs.length,done=0,fails=0,btn=$('ptGo');
+  var slug=d.meta.SLUG, old=PTREC[slug]||{}, oldFails=old.fails||{}, newFails={}, sinceSave=0;
+  function rec(fin){return {at:new Date().toISOString(),langs:langs,total:total,saved:done-fails,failed:fails,
+    hash:ptHash(texts),done:!!fin,fails:newFails};}
   btn.disabled=true;$('ptMsg').textContent='Checking what is already saved\u2026';
   cacheGetMany(jobs,function(){
     var todo=jobs.filter(function(j){return !tcache[j.lang+'|'+j.text];});
     done=total-todo.length;
+    /* a line that was already missing while others in its language were saved = a retry */
+    var savedLang={};jobs.forEach(function(j){if(tcache[j.lang+'|'+j.text])savedLang[j.lang]=1;});
+    if(!todo.length){go();return;}
+    $('ptMsg').textContent='This run will make '+todo.length+' new request'+(todo.length===1?'':'s')+' ('+done+' of '+total+' lines already saved).';
+    Promise.all([ptTodayCount(),ptSoftLimit()]).then(function(a){
+      var today=a[0],soft=a[1];
+      if(today+todo.length>soft&&!window.confirm('Today so far: '+today+' translations saved site-wide. This run adds '+todo.length+', past your soft limit of '+soft+'.\n\n'+PT_REMIND+'\n\nRun anyway?')){
+        btn.disabled=false;$('ptMsg').textContent='Not run. Try after school or tomorrow.';return;
+      }
+      go();
+    });
+    function go(){
+    ptSaveRec(slug,rec(false));
     $('ptBar').style.width=Math.round(done/total*100)+'%';
     var active=0,i=0;
     function next(){
@@ -1119,18 +1245,24 @@ $('ptGo').onclick=function(){
         (function(j){
           active++;
           proxyTranslate(j.text,j.lang,function(v){
-            if(v){tcache[j.lang+'|'+j.text]=v;cachePut(j.lang,j.text,v);}else fails++;
+            if(v){tcache[j.lang+'|'+j.text]=v;cachePut(j.lang,j.text,v);}
+            else{fails++;var k=tkey(j.lang,j.text),prev=(oldFails[k]&&oldFails[k].n)||0;
+              newFails[k]={lang:j.lang,text:j.text,n:Math.max(prev,savedLang[j.lang]?1:0)+1};}
             done++;active--;
+            if(++sinceSave>=20&&done<total){sinceSave=0;ptSaveRec(slug,rec(false));}
             $('ptBar').style.width=Math.round(done/total*100)+'%';
             $('ptMsg').textContent=done+' of '+total+(fails?' \u00b7 '+fails+' failed':'');
-            if(done>=total){btn.disabled=false;$('ptMsg').textContent='Done. '+(total-fails)+' translations saved'+(fails?', '+fails+' failed (run again to retry).':'.');}
+            if(done>=total){btn.disabled=false;$('ptMsg').textContent='Done. '+(total-fails)+' translations saved'+(fails?', '+fails+' failed (run again to retry).':'.');
+              ptSaveRec(slug,rec(true)).then(function(){ptStatus(slug);});ptRefreshToday();}
             else next();
           });
         })(todo[i++]);
       }
-      if(!todo.length){btn.disabled=false;$('ptMsg').textContent='Already done \u2014 everything was saved.';}
+      if(!todo.length){btn.disabled=false;$('ptMsg').textContent='Already done \u2014 everything was saved.';
+        ptSaveRec(slug,rec(true)).then(function(){ptStatus(slug);});}
     }
     next();
+    }
   });
 };
 
