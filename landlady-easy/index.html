@@ -3670,11 +3670,75 @@ function timeNow(){
    so blanks cost marks and a finished guide reads 100%. */
 function reportProgress(){
   try{
-    var pay = collectPayload();
-    window.GAL_SCORE = pay.meta.answered;
-    window.GAL_MAX = pay.meta.total;
-    window.GAL_COMPLETION = { done: pay.meta.answered, total: pay.meta.total };
+    var sc = t253Scores();   /* T-253: the page's own column is Reading only */
+    window.GAL_SCORE = sc.reading.d;
+    window.GAL_MAX = sc.reading.t;
+    window.GAL_COMPLETION = { done: sc.reading.d, total: sc.reading.t };
+    window.GAL_T253 = sc;
+    t253Log(sc);
   }catch(err){}
+}
+
+/* ===== T-253 (Nov 12): three gradebook columns from one page.
+   Reading  = predictions + Parts 1-4      -> this page's own slug (track.js, GAL_SCORE/GAL_MAX)
+   After    = summary (one item, any of its 3 help levels) + "Do you get it?" -> <slug>/after
+   Extras   = every other after-reading activity (optional)               -> <slug>/extras
+   Fair scores: a box counts once it holds an answer, on any try. ctl1 and hl1 never count;
+   hard-only boxes never count in Easier. Extras are their own column and never touch the others. */
+function t253Scores(){
+  var r = { reading:{d:0,t:0}, after:{d:0,t:0}, extras:{d:0,t:0} }, sumDone = false, sumSeen = false;
+  var boxes = document.querySelectorAll("[data-qid]"), i;
+  for(i = 0; i < boxes.length; i++){
+    var b = boxes[i], ta = b.querySelector("textarea"); if(!ta) continue;
+    var q = b.getAttribute("data-qid");
+    if(q === "hl1" || q === "ctl1") continue;
+    if(b.classList.contains("hard-only") && curMode === "easy") continue;
+    var has = !!ta.value.trim();
+    if(b.closest("#act-sum")){ sumSeen = true; if(has) sumDone = true; continue; }
+    var bucket = b.closest(".chunk") ? r.reading : b.closest("#act-comp") ? r.after : b.closest("section.act") ? r.extras : null;
+    if(!bucket) continue;
+    bucket.t++; if(has) bucket.d++;
+  }
+  if(sumSeen){ r.after.t++; if(sumDone) r.after.d++; }
+  return r;
+}
+var t253Last = {}, t253At = {}, t253Timer = {}, t253Reg = {};
+function t253Off(){
+  return !!(window.GAL_NO_AUTOLOG || window.GAL_TV_BLOCKED || /[?&]view=teacher/.test(location.search) ||
+            typeof student === "undefined" || !student || !student.email || !GAL_LOADED);
+}
+function t253Send(part, s, keep){
+  var base = window.GAL_SLUG || "", slug = base + "/" + part, meta = window.GAL_META || {};
+  if(!base) return;
+  var key = student.email + "|" + s.d + "/" + s.t;
+  if(t253Last[part] === key) return;
+  t253Last[part] = key; t253At[part] = Date.now();
+  if(!t253Reg[part]){
+    t253Reg[part] = 1;
+    var title = (meta.title || document.title).replace(/\s*[\u2014-]\s*reading guide.*$/i, "");
+    fetch(SUPA_URL + "/rest/v1/activities?on_conflict=slug", { method:"POST", keepalive:!!keep,
+      headers: headers({ "Prefer": "resolution=merge-duplicates,return=minimal" }),
+      body: JSON.stringify([{ slug: slug,
+        title: part === "after" ? title + " \u00b7 After you read" : "\u2b50 " + title + " \u00b7 Extras (optional)",
+        unit: meta.unit || "Readings", url: location.origin + location.pathname, skills: [],
+        sort_order: (meta.sort_order || 600) + (part === "after" ? 1 : 2), max_score: s.t }]) }).catch(function(){});
+  }
+  fetch(SUPA_URL + "/rest/v1/activity_attempts", { method:"POST", keepalive:!!keep,
+    headers: headers({ "Prefer": "return=minimal" }),
+    body: JSON.stringify([{ email: student.email, slug: slug, score: s.d, max_score: s.t,
+      detail: { path: location.pathname, source: "page", parts: 1, via: "T-253", left: s.t - s.d },
+      completed_at: new Date().toISOString() }]) }).catch(function(){});
+}
+function t253Log(sc, now){
+  if(t253Off()) return;
+  ["after","extras"].forEach(function(part){
+    var s = sc[part]; if(!(s.t > 0) || !(s.d > 0)) return;          /* nothing done: no row, the cell stays blank */
+    if(t253Last[part] === student.email + "|" + s.d + "/" + s.t) return;
+    clearTimeout(t253Timer[part]);
+    var wait = now ? 0 : 60000 - (Date.now() - (t253At[part] || 0));
+    if(wait > 0){ t253Timer[part] = setTimeout(function(){ t253Log(t253Scores()); }, Math.min(wait, 4000) + 500); return; }
+    t253Send(part, s, !!now);
+  });
 }
 
 function collectPayload(){
@@ -3769,12 +3833,13 @@ function queueSave(){
   if(!student) return;
   setStatus("wait", "Saving\u2026");
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(function(){ pushRow(false); }, 2500);
+  saveTimer = setTimeout(function(){ saveTimer = null; pushRow(false); }, 1000);   /* T-253 save as you go */
 }
 
-window.addEventListener("beforeunload", function(){
+function galFlushSave(){
+  try{ if(typeof t253Log === "function") t253Log(t253Scores(), true); }catch(e){}
   if(!student || !saveTimer || !GAL_LOADED) return;
-  clearTimeout(saveTimer);
+  clearTimeout(saveTimer); saveTimer = null;
   var pay = collectPayload();
   try{
     fetch(SUPA_URL + "/rest/v1/" + TABLE + "?on_conflict=email,guide_key", {
@@ -3788,7 +3853,11 @@ window.addEventListener("beforeunload", function(){
       }])
     });
   }catch(e){}
-});
+}
+/* T-253: also save when the student leaves or hides the tab */
+window.addEventListener("beforeunload", galFlushSave);
+window.addEventListener("pagehide", galFlushSave);
+document.addEventListener("visibilitychange", function(){ if(document.visibilityState === "hidden") galFlushSave(); });
 
 /* ---------- pull any work saved from another device ---------- */
 
