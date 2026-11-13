@@ -235,7 +235,8 @@
     return out;
   }
   /* ---- T-393: Mr. Toby's ✓ / ✗ / note on each Your Turn answer (readings/marks.js). Keys "yt.<level>.<i>",
-     the level being the one the Sentence columns show (same rule as summarize). A ✗ needs a note; it takes the
+     the level being the one the Sentence columns show (same rule as summarize). T-394: tiers-dash.js may put
+     GALMARK.controls under its own cells (same #tTable, already bound) and define REEL_TIERS_DASH.markAns(row, key). A ✗ needs a note; it takes the
      point off until the student changes the answer, and the gradebook row is rewritten (RPC eld101_set_score). */
   function ytLevel(r) { var Y = (r.work || {}).yt || {}; return Y[r.level] ? r.level : (r.level === 'C' && Y.B ? 'B' : 'A'); }
   function ytOf(r) { var Y = (r.work || {}).yt || {}; return Y[ytLevel(r)] || []; }
@@ -255,6 +256,8 @@
       var tr = ctl.closest('tr[data-email]'); if (!tr) return null;
       var email = tr.getAttribute('data-email'), r = ROWS.filter(function (x) { return x.email === email; })[0]; if (!r) return null;
       var m = /^yt\.([ABC])\.(\d+)$/.exec(key), ans = m ? ((((r.work || {}).yt || {})[m[1]]) || [])[+m[2]] : '';
+      /* T-394: tier keys ("tB.<id>", "tC.<id>") — tiers-dash.js says what the answer is */
+      if (!m && window.REEL_TIERS_DASH && typeof REEL_TIERS_DASH.markAns === 'function') ans = REEL_TIERS_DASH.markAns(r, key);
       return { table: 'reel_views', ans: ans || '',
                filter: 'email=eq.' + encodeURIComponent(r.email) + '&episode=eq.' + encodeURIComponent(r.episode),
                after: function (marks) {

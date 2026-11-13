@@ -817,6 +817,10 @@
       var i = +ta.getAttribute('data-i');
       items.push({ key: 'yt.' + state.level + '.' + i, box: ta.closest('.prompt') || ta.parentNode, field: ta });
     });
+    /* T-394: the tiers chat's written answers (keys "tB.<id>", "tC.<id>") join the same paint, so there is
+       still ONE arrow: tiers.js defines REEL_TIERS.markItems() -> [{key, box, field}] and calls
+       REEL_HOST.marksPaint() after it draws; it reads marks with REEL_HOST.marks(). */
+    try { if (window.REEL_TIERS && typeof REEL_TIERS.markItems === 'function') items = items.concat(REEL_TIERS.markItems() || []); } catch (e) {}
     GALMARK.paint101(items, MARKS, { tap: function (el, sentence) { wordPop(el, sentence); }, dir: function (root) { showDirections(root); },
       who: MK_WHO[(EP.num || 1) % MK_WHO.length] });
   }
@@ -1426,6 +1430,7 @@
      these handles and loads it; tiers.js adds its own button, section, styles and episode data. ---- */
   window.REEL_HOST = { EP: EP, state: state, me: me, $: $, esc: esc, txt: txt, save: save, touch: touch, score: score,
                        wordPop: wordPop, showDirections: showDirections, spokenWord: spokenWord, pickVoice: pickVoice,
-                       boardState: boardState, R: R, PROXY: PROXY, SUPA_URL: SUPA_URL, TABLE: TABLE, sbHead: sbHead };
+                       boardState: boardState, R: R, PROXY: PROXY, SUPA_URL: SUPA_URL, TABLE: TABLE, sbHead: sbHead,
+                       marksPaint: marksPaint, marks: function () { return MARKS; } };   /* T-394 */
   (function () { var ts = document.createElement('script'); ts.src = '../tiers.js'; document.body.appendChild(ts); })();
 })();
