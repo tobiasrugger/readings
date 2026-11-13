@@ -293,7 +293,9 @@
     var q, t;
     /* D: grammar */
     q = p.querySelector('.gq:not(.done)');
-    if (q) return { say: 'Tap the word that fits in the sentence.', at: q.querySelector('.gtile:not(.gone)') || q };
+    /* T-400: the tiles are shuffled, but an arrow on one of them is still an arrow on an answer —
+       point at the sentence with the blank instead. */
+    if (q) return { say: 'Tap the word that fits in the sentence.', at: q.querySelector('.gs') || q };
     if (p.querySelector('.gq')) {
       t = p.querySelector('.tstep:not(.ok)');
       return t ? { say: 'Next: ' + t.getAttribute('data-en'), at: t } : { say: 'You finished the grammar sets. Nice work.', at: null };
@@ -318,7 +320,8 @@
     if (p.querySelector('.topts')) {
       var right = p.querySelector('.topts .qopt.right');
       if (right) return { say: 'You finished Words and voice. Ask your teacher what to do next.', at: null };
-      return { say: 'Which sentence tells the whole story? Tap it.', at: p.querySelector('.topts .qopt') };
+      /* T-400: point at the QUESTION, never at one of the three answers */
+      return { say: 'Read all three. Which one tells the whole story? Tap it.', at: p.querySelector('.qtext') };
     }
     /* B: paraphrase */
     if (p.querySelector('.rw')) {
@@ -410,6 +413,16 @@
       onProgress: function (ok, total) { tierState().A.read = { ok: ok, total: total }; score(); touch(); guide(); }
     });
   }
+  /* T-400: shuffledIdx refuses the data order on purpose — the ordering chips must never arrive
+     already in the right sequence. For a multiple choice that bias is wrong: with three options
+     it pushes the first option into slot 1 only a fifth of the time. Answer choices use a plain
+     fair shuffle instead. */
+  function fairIdx(n) {
+    var a = [], i, j, t;
+    for (i = 0; i < n; i++) a.push(i);
+    for (i = n - 1; i > 0; i--) { j = Math.floor(Math.random() * (i + 1)); t = a[i]; a[i] = a[j]; a[j] = t; }
+    return a;
+  }
   function shuffledIdx(n) {
     var a = [], i, j, t;
     for (i = 0; i < n; i++) a.push(i);
@@ -488,10 +501,15 @@
   }
   function renderTopic(root) {
     var T = TIERS.topic, tp = tierState().A.topic, h = '';
+    /* T-400: the options used to be drawn in data order, and every episode so far has good: 0 —
+       so the right answer sat first and the arrow pointed straight at it. Shuffle once per
+       student and keep the order (like the ordering chips and the grammar tiles), so a reload
+       never moves them. tp.pick and T.good stay indexes into T.opts, not into the shuffle. */
+    if (!tp.shuf || tp.shuf.length !== T.opts.length) { tp.shuf = fairIdx(T.opts.length); touch(); }
     h += '<p class="lead"><span translate="yes" data-en="A topic sentence tells what the whole story is about.">A topic sentence tells what the whole story is about.</span></p>';
     h += '<p class="qtext" translate="no">' + esc(T.ask) + '</p><div class="topts">';
-    T.opts.forEach(function (o, i) {
-      var cls = tp.pick === i ? (i === T.good ? ' right' : ' wrong') : '';
+    tp.shuf.forEach(function (i) {
+      var o = T.opts[i], cls = tp.pick === i ? (i === T.good ? ' right' : ' wrong') : '';
       h += '<div class="toptrow"><button class="osay" data-k="' + i + '" aria-label="Listen">🔊</button><button class="qopt' + cls + '" data-i="' + i + '" translate="no">' + esc(o) + '</button></div>';
     });
     h += '</div><p class="qmsg" id="topicMsg" translate="yes"' + (tp.pick != null ? ' data-en="' + esc(T.why[tp.pick]) + '">' + esc(T.why[tp.pick]) : '>') + '</p>';
