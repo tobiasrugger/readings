@@ -158,14 +158,19 @@
       pts += A.order.best + tp; max += ordList().length + 1;
     }
     var nB = 0, anyB = false, maxB = 0;
-    TIERS.key.forEach(function (k, i) { if (k.keep) return; maxB++; if (B.rw[i]) anyB = true; if (changedB(i)) nB++; });
+    TIERS.key.forEach(function (k, i) {
+      if (k.keep) return; maxB++;
+      if (B.rw[i]) anyB = true;
+      if (changedB(i) && !markOff('tB.' + i, B.rw[i])) nB++;   /* T-396: sent back = the point is off until it changes */
+    });
     /* tierB_max: ep01 keeps sentence 1 (names and countries), so B is out of 4 there and out of 5 in
        later episodes — the dashboard reads this instead of assuming 4. */
     if (anyB) { out.tierB = nB; out.tierB_max = maxB; pts += nB; max += maxB; }
     if (norm(C.text)) {
       var w = wordsOf(C.text).length, hits = ideaHits(C.text).filter(function (h) { return h.hit; }).length;
       var p = (w >= (TIERS.summary.min || 25) ? 2 : (w >= 10 ? 1 : 0)) + (hits >= 3 ? 2 : (hits >= 1 ? 1 : 0)) + (C.revised ? 1 : 0);
-      out.tierC = { words: w, ideas: hits, checked: C.checked, revised: C.revised, pts: p };
+      var backC = markOff('tC.sum', C.text); if (backC) p = 0;   /* T-396 */
+      out.tierC = { words: w, ideas: hits, checked: C.checked, revised: C.revised, pts: p, sent_back: backC || undefined };
       pts += p; max += 5;
     }
     if (TIERS.grammar && TIERS.grammar.length) {
@@ -218,10 +223,31 @@
     else if (open === 'C') renderTierC($('tpanel'));
     else if (open === 'D') renderTierD($('tpanel'));
     else hideNudge();
+    repaintMarks();
     guide();
     score();
     if (scroll) $('tiers').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
+
+  /* ================= Mr. Toby's marks on the writing (T-396) =================
+     The engine owns the marks for this page (T-393/T-394): it loads readings/marks.js, fetches
+     reel_views.marks, and paints every marked answer in ONE pass so there is ONE arrow. Our part
+     is to say which written answers are ours — markItems() — and to take the points off while an
+     answer is sent back. Keys: "tB.<i>" per Tier B rewrite, "tC.sum" for the paragraph; "yt.*"
+     belongs to the engine. The student page never writes the marks column. */
+  function marksNow() { try { return (H.marks && H.marks()) || null; } catch (e) { return null; } }
+  function markOff(key, ans) { var m = marksNow(); return !!(window.GALMARK && m && GALMARK.off(m, key, ans)); }
+  function markItems() {
+    var p = $('tpanel'), out = [];
+    if (!p) return out;
+    p.querySelectorAll('.rwm textarea').forEach(function (ta) {
+      out.push({ key: 'tB.' + ta.getAttribute('data-i'), box: ta.closest('.rw') || ta.parentNode, field: ta });
+    });
+    var ct = $('cText');
+    if (ct) out.push({ key: 'tC.sum', box: ct.closest('.cwrite') || ct.parentNode, field: ct });
+    return out;
+  }
+  function repaintMarks() { try { if (H.marksPaint) H.marksPaint(); } catch (e) {} }
 
   /* ================= WHAT'S NEXT: one line, one arrow (T-371) =================
      The next action is named in a short line at the top of the open card, and a drawn arrow
@@ -310,6 +336,12 @@
   }
   function updateGuide() {
     var p = $('tpanel');
+    /* marks.js points its own arrow at an answer Mr. Toby sent back — ours stands down so there
+       is still only ONE arrow on screen (body.gm-fixing is set by GALMARK.paint101). */
+    if (document.body.classList.contains('gm-fixing')) {
+      var ln = p && p.querySelector('.gline'); if (ln) ln.remove();
+      hideNudge(); return;
+    }
     if (!p || !$('tiers') || $('tiers').style.display !== 'block') { hideNudge(); return; }
     var step = nextStep();
     var line = p.querySelector('.gline');
@@ -535,7 +567,7 @@
     if (ladderOpen != null) fillLadder(ladderOpen);
     root.querySelectorAll('.osay').forEach(function (b) { b.addEventListener('click', function () { speakPlain(TIERS.key[+b.getAttribute('data-k')].t); }); });
     root.querySelectorAll('textarea').forEach(function (ta) {
-      ta.addEventListener('input', function () { B.rw[+ta.getAttribute('data-i')] = ta.value; score(); touch(); guide(); });
+      ta.addEventListener('input', function () { B.rw[+ta.getAttribute('data-i')] = ta.value; score(); touch(); guide(); repaintMarks(); });
       ta.addEventListener('change', function () { renderTierB(root); });
     });
     $('bTurnIn').addEventListener('click', function () {
@@ -652,7 +684,7 @@
     $('cText').addEventListener('input', function () {
       C.text = this.value; count();
       if (C.checked && norm(C.text) && norm(C.text) !== norm(C.draft1)) C.revised = true;
-      score(); touch(); guide();
+      score(); touch(); guide(); repaintMarks();
     });
     function showFb(fb) {
       var s = '';
@@ -955,6 +987,7 @@
     setTier: applyTier,
     poll: pollTier,
     scores: tierScores,
+    markItems: markItems,          /* T-396: the engine paints these with its own (one arrow) */
     ready: function () { return !!TIERS; }
   };
   if (EP.tiers || window.EP_TIERS) init();
