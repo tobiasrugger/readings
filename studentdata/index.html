@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en" translate="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="google" content="notranslate">
+<title>Student data · one page per student</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* T-392 · readings/studentdata/ — one teacher page per student: that student's own line from every dashboard. */
+:root{--pine:#1b4332;--pine2:#2d6a4f;--moss:#40916c;--sage:#95d5b2;--paper:#f4f5f2;--ink:#1f2421;--muted:#5c6b62;--line:#dfe4dd;--box:#2b3a31;--gold:#d4a017;--rust:#b5451b;--blue:#2f6fd6;
+ --plum:#5B2A6E;--lilac-2:#E2D3EA;--know:#2F8A5B;--know-bg:#DDF1E5;--miss:#C0453A;--idk:#9C8FA3}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:'Nunito',system-ui,sans-serif;background:var(--paper);color:var(--ink);font-size:15px;line-height:1.45}
+#bar{background:var(--pine);color:#fff;padding:10px 16px 10px 150px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#bar .brand{font-weight:800;font-size:1.02rem;margin-right:6px}
+#bar select,#bar button,#bar a,#bar input{font-family:inherit;font-size:.85rem;font-weight:700;background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:8px;padding:6px 10px;text-decoration:none;cursor:pointer}
+#bar select option{color:var(--ink)}
+#bar input::placeholder{color:rgba(255,255,255,.7)}
+#bar .sp{flex:1}
+main{max-width:1180px;margin:0 auto;padding:16px}
+.muted{color:var(--muted)}
+/* ---- the student line at the top ---- */
+#who{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:6px 0 4px}
+#who h1{margin:0;font-size:1.5rem;font-weight:800}
+#who a.em{color:var(--blue);font-weight:700}
+#who .per{color:#8b948f;font-size:1.15rem;font-weight:700}
+#who .crs{color:var(--blue);font-size:1.2rem;font-weight:800}
+#who .kind{font-size:.75rem;font-weight:800;background:#fff1bf;border:1.5px solid #8a6a00;border-radius:999px;padding:1px 9px}
+#glance{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 14px}
+#glance .g{background:#fff;border:2px solid var(--box);border-radius:10px;padding:5px 12px;font-size:.85rem;box-shadow:0 2px 0 rgba(0,0,0,.12)}
+#glance .g b{font-size:1.05rem;color:var(--pine2)}
+#glance a.g{color:var(--pine);font-weight:800;text-decoration:none}
+/* ---- one section = one dashboard's row ---- */
+.sec{background:#fff;border:2px solid var(--box);border-radius:12px;margin:0 0 16px;box-shadow:0 3px 0 rgba(0,0,0,.14);overflow:hidden}
+.sec.moved{animation:flash 1s ease-out}
+@keyframes flash{from{box-shadow:0 0 0 4px var(--gold)}to{box-shadow:0 3px 0 rgba(0,0,0,.14)}}
+@media(prefers-reduced-motion:reduce){.sec.moved{animation:none}}
+.sh{display:flex;align-items:center;gap:10px;padding:8px 10px 8px 14px;border-bottom:2px solid var(--box);background:#eef3ee}
+.sh h2{margin:0;font-size:1.08rem;font-weight:800;flex:1}
+.sh .ns{font-size:.85rem;color:var(--muted);font-weight:700}
+.sec.slim .sh{border-bottom:none;background:#fff}
+@media(max-width:600px){.sh{flex-wrap:wrap}.sh h2{flex-basis:100%}.sh a.open{margin-right:auto}}
+.sh a.open{font-size:.8rem;font-weight:800;color:var(--pine2);white-space:nowrap}
+.mv{display:flex;gap:4px;align-items:center}
+.mv button{border:1.5px solid var(--box);background:#fff;border-radius:7px;cursor:pointer;display:grid;place-items:center;padding:0;color:var(--pine)}
+.mv button.s{width:26px;height:26px}
+.mv button.b{width:34px;height:34px}
+.mv button:hover:not(:disabled){background:var(--sage)}
+.mv button:disabled{opacity:.3;cursor:default}
+.mv button:focus-visible{outline:3px solid var(--gold);outline-offset:1px}
+.sb{overflow-x:auto;padding:4px 6px 8px}
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-size:.72rem;color:var(--muted);font-weight:800;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+.empty{padding:10px 12px;color:var(--muted);font-size:.9rem}
+/* Launch Plus row (same look as launch-plus/dashboard.html) */
+.parts{display:flex;gap:3px}
+.pt{width:28px;height:22px;border-radius:5px;font-size:.68rem;font-weight:800;display:grid;place-items:center;border:1px solid var(--line);color:var(--muted);background:#fff}
+.pt.ok{background:var(--pine2);color:#fff;border-color:var(--pine2)}
+.pt.part{background:var(--sage);color:var(--pine);border-color:var(--sage)}
+.score{font-weight:800}.score.lo{color:var(--rust)}.score.mid{color:var(--gold)}.score.hi{color:var(--pine2)}
+.tag{display:inline-block;font-size:.72rem;font-weight:800;border-radius:999px;padding:1px 8px}
+.tag.in{background:var(--pine2);color:#fff}.tag.no{background:var(--line);color:var(--muted)}
+.wr{font-size:.86rem;white-space:pre-wrap;background:#fafbf8;border-left:4px solid var(--sage);padding:6px 10px;margin:4px 0;border-radius:0 8px 8px 0}
+.wr b{display:block;font-size:.7rem;color:var(--muted)}
+details.more summary{cursor:pointer;color:var(--pine2);font-weight:800;font-size:.8rem;padding:2px 8px}
+/* Daily Basics row (same look as basics/dashboard.html) */
+.cell{display:inline-block;min-width:40px;text-align:center;border-radius:6px;padding:2px 4px;font-weight:800;font-size:.8rem}
+.cell.hi{background:#d8f0e2;color:var(--pine)}.cell.mid{background:#fff1bf;color:#6b5200}.cell.lo{background:#fbeae5;color:#8a2f10}.cell.none{color:#c4ccc6}
+th.day,td.day{text-align:center;font-size:.7rem}
+.strip{display:flex;gap:2px;justify-content:center;margin-top:3px}
+.lv{font-style:normal;font-size:.68rem;font-weight:800;border:1.5px solid #c9d1cb;border-radius:5px;padding:0 3px;color:#9aa59e;background:#fff;line-height:1.4}
+.lv sub{font-size:.58rem;margin-left:1px}
+.lv.open{border-style:dotted;color:#5c6b62}.lv.half{border:1.5px dashed #d4a017;color:#7a5c00}.lv.done{background:#d8f0e2;border-color:#2d6a4f;color:#1b4332}.lv.paper{background:#fff1bf;border-color:#8a6a00;color:#5c4400}
+/* Vocab Pre-Assessment row (same look as vocab/pre/dashboard.html) */
+.meter{display:inline-block;width:80px;height:10px;border-radius:5px;background:var(--lilac-2);vertical-align:middle;overflow:hidden;margin-right:7px}
+.meter i{display:block;height:100%;background:var(--plum)}
+.sq{display:inline-block;width:16px;height:16px;border-radius:3px;margin:0 2px 2px 0;vertical-align:-3px}
+.sq.k{background:var(--know)}.sq.m{background:var(--miss)}.sq.i{background:var(--idk)}.sq.e0{background:#e6e1ea}
+.pill{display:inline-block;padding:1px 9px;border-radius:10px;font-size:.76rem;font-weight:700}
+.pill.done{background:var(--know-bg);color:var(--know)}.pill.going{background:#FBEFD2;color:#8A6310}
+.cls{font-size:.75rem;color:var(--muted)}
+/* gradebook list */
+.band{display:inline-block;min-width:30px;text-align:center;font-weight:800;border-radius:6px;padding:1px 6px;font-size:.8rem}
+.b45,.b4{background:#d8f0e2;color:var(--pine)}.b3{background:#e8f3ee;color:var(--pine2)}.b2{background:#fff1bf;color:#6b5200}.b1,.b0{background:#fbeae5;color:#8a2f10}
+#gbf{font-family:inherit;font-size:.85rem;padding:5px 9px;border:2px solid var(--line);border-radius:8px;margin:6px 6px 2px}
+/* picker (no student chosen) */
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.pbox{background:#fff;border:2px solid var(--box);border-radius:12px;box-shadow:0 3px 0 rgba(0,0,0,.14);padding:8px 12px}
+.pbox h3{margin:2px 0 6px;font-size:1rem}
+.pbox a{display:block;color:var(--ink);text-decoration:none;padding:3px 6px;border-radius:6px;font-weight:700}
+.pbox a:hover{background:var(--sage)}
+.pbox a small{color:var(--muted);font-weight:400}
+#gate{position:fixed;inset:0;background:var(--paper);display:grid;place-items:center;z-index:50}
+#gate .box{background:#fff;border:2px solid var(--box);border-radius:14px;padding:22px;width:min(92vw,360px);box-shadow:0 3px 0 rgba(0,0,0,.14)}
+#gate input{font-family:inherit;font-size:1rem;width:100%;padding:10px;border:2px solid var(--line);border-radius:10px;margin:10px 0}
+.btn{font-family:inherit;font-size:.92rem;font-weight:800;cursor:pointer;border-radius:9px;padding:9px 16px;border:none;background:var(--pine2);color:#fff}
+#msg{min-height:1.2em}
+@media(max-width:700px){#bar{padding-left:16px;padding-top:52px}}
+</style>
+<script src="/readings/grade04.js"></script>
+</head>
+<body>
+<div id="gate"><div class="box"><h2 style="margin:0 0 4px">Student data</h2><div class="muted" style="font-size:.85rem">Dashboard password</div><input id="pw" type="password"><button class="btn" style="width:100%" id="pwGo">Open</button><div id="pwErr" style="color:var(--rust);font-size:.85rem;min-height:1.2em"></div></div></div>
+<div id="bar">
+  <span class="brand">Student data</span>
+  <select id="selPer" aria-label="Period"><option value="">All periods</option><option value="1">Period 1</option><option value="3">Period 3</option><option value="4">Period 4</option><option value="5">Period 5</option><option value="6">Period 6</option><option value="2">Period 2</option><option value="7">Period 7</option></select>
+  <select id="selStu" aria-label="Student"></select>
+  <button id="prev" title="Previous student in this period">◀</button><button id="next" title="Next student in this period">▶</button>
+  <span class="sp"></span>
+  <button id="reload">↻ Refresh</button>
+  <a href="./" id="allStu">All students</a>
+</div>
+<main>
+  <div id="msg" class="muted"></div>
+  <div id="view"></div>
+</main>
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var PASSWORD='galileo2026';
+/* Courses by period, 2026-27: ELD 101 = 1, 4, 6 · ELD 103 = 3, 5. A students.course value wins when it is set. */
+var COURSE_BY_PERIOD={'1':'ELD 101','4':'ELD 101','6':'ELD 101','3':'ELD 103','5':'ELD 103'};
+/* Launch Plus lessons — the same list as launch-plus/dashboard.html (keep in step when a lesson is added). */
+var LESSONS=[
+ {u:'u1-l1',n:'Lesson 1 · People at School',say:'people-at-school'},
+ {u:'u1-l1x',n:'Lesson 1 · Extras',say:'people-at-school-2',parts:[['K','Capitals',1],['M','Match',2],['P','Who?',3],['Z','Where?',4]]},
+ {u:'u1-l2',n:'Lesson 2 · Introductions',say:'introductions',parts:[['S','Story',1],['R','Read again (Dalia)',2],['F','Fix',3],['B','Bigger',4],['Z','Which phrase',5],['W','Write',6]]},
+ {u:'u1-l3',n:'Lesson 3 · From A to Z',say:'from-a-to-z'},
+ {u:'u1-l3x',n:'Lesson 3 · Extras',say:'from-a-to-z',parts:[['K','Capitals',1],['M','Next letter',2],['P','Big or small',3],['Z','ABC order',4]]},
+ {u:'u1-l4',n:'Lesson 4 · 0 to 100',say:'zero-to-one-hundred'},
+ {u:'u1-l5',n:'Lesson 5 · About Me',say:'about-me'},
+ {u:'ts-1',n:'Topic Sentences · Set 1',table:'topic_sentence',parts:[['C','Choose',2],['W','Write',3]]},
+ {u:'ts-2',n:'Topic Sentences · Set 2',table:'topic_sentence',parts:[['C','Choose',2],['W','Write',3]]},
+ {u:'ts-3',n:'Topic Sentences · Set 3',table:'topic_sentence',parts:[['C','Choose',2],['W','Write',3]]},
+ {u:'rev-1',n:'Fix the Paragraph · 1 Capitals',table:'revise',parts:[['A','Para 1',1],['B','Para 2',2],['C','Para 3',3]]},
+ {u:'rev-2',n:'Fix the Paragraph · 2 Capitals & periods',table:'revise',parts:[['A','Para 1',1],['B','Para 2',2],['C','Para 3',3]]},
+ {u:'rev-3',n:'Fix the Paragraph · 3 Run-ons',table:'revise',parts:[['A','Para 1',1],['B','Para 2',2],['C','Para 3',3]]},
+ {u:'rev-4',n:'Fix the Paragraph · 4 Add details',table:'revise',parts:[['A','Para 1',1],['B','Para 2',2],['C','Para 3',3]]},
+ {u:'rev-5',n:'Fix the Paragraph · 5 He/she -s',table:'revise',parts:[['A','Para 1',1],['B','Para 2',2],['C','Para 3',3]]},
+ {u:'rev-6',n:'Fix the Paragraph · 6 Past tense',table:'revise',parts:[['A','Para 1',1],['B','Para 2',2],['C','Para 3',3]]},
+ {u:'wit-101',n:'Sentence Work · ELD 101',table:'wit',parts:[['S','Sort',1],['C','Scramble',2],['F','Sentence or fragment?',3],['B','Because, but, so',5],['W','Write',4]]},
+ {u:'wit-103',n:'Sentence Work · ELD 103',table:'wit',parts:[['S','Sort',1],['C','Scramble',2],['F','Sentence or fragment?',3],['B','Because, but, so',5],['W','Write',4]]}
+];
+var ROSTER=[],STU=null,D={},ORDER=[],ORDER_KEY='studentdata_order';
+
+function $(i){return document.getElementById(i);}
+function H(p){var h={apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY,'Content-Type':'application/json'};if(p)h.Prefer=p;return h;}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function key(e){return String(e||'').trim().toLowerCase().split('@')[0];}
+function get(path){return fetch(SUPA_URL+'/rest/v1/'+path,{headers:H()}).then(function(r){return r.ok?r.json():Promise.reject(new Error(path.split('?')[0]+' '+r.status));});}
+function soft(path){return get(path).catch(function(){return [];});}
+function when(t){if(!t)return '';var d=new Date(t);if(isNaN(d))return '';var m=(Date.now()-d)/60000;if(m<60)return Math.max(0,Math.round(m))+' min ago';if(m<1440)return Math.round(m/60)+' h ago';return d.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' '+d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});}
+function band(p){return (window.GAL04&&GAL04.band)?GAL04.band(p):(p==null?null:p>=95?4.5:p>=76?4:p>=56?3:p>=36?2:p>=15?1:0);}
+function bandHTML(p,title){var b=band(p);if(b==null)return '<span class="muted">—</span>';return '<span class="band b'+String(b).replace('.','')+'" title="'+esc(title||'')+'">'+b+'</span>';}
+function nameOf(s){var n=((s.first_name||'')+' '+(s.last_name||'')).trim();return n||s.name||s.email;}
+function courseOf(s){if(s.course)return /103/.test(s.course)?'ELD 103':/101/.test(s.course)?'ELD 101':s.course;return COURSE_BY_PERIOD[String(s.period||'')]||'';}
+
+/* ---------- password ---------- */
+function tryPw(){if($('pw').value===PASSWORD){try{sessionStorage.setItem('dash_ok','1');}catch(e){}openApp();}else $('pwErr').textContent='Not the right password.';}
+$('pwGo').onclick=tryPw;$('pw').addEventListener('keydown',function(e){if(e.key==='Enter')tryPw();});
+
+/* ---------- roster ---------- */
+function loadRoster(){
+  return get('students?select=email,name,first_name,last_name,period,roster_order,course,kind,home_language&limit=2000')
+   .catch(function(){return soft('students?select=email,name,first_name,last_name,period,roster_order&limit=2000');})
+   .then(function(rows){
+    var by={};(rows||[]).forEach(function(r){var k=key(r.email);if(!k)return;var o=by[k]||{};
+      ['email','name','first_name','last_name','period','roster_order','course','kind','home_language'].forEach(function(f){if(r[f]!=null&&r[f]!==''&&(o[f]==null||o[f]===''))o[f]=r[f];});
+      if(/@s\.sfusd\.edu$/i.test(r.email||''))o.email=r.email;o.k=k;by[k]=o;});
+    ROSTER=Object.keys(by).map(function(k){return by[k];});
+    ROSTER.sort(function(a,b){var pa=+a.period||99,pb=+b.period||99;if(pa!==pb)return pa-pb;var ra=a.roster_order!=null?+a.roster_order:9999,rb=b.roster_order!=null?+b.roster_order:9999;if(ra!==rb)return ra-rb;return nameOf(a).localeCompare(nameOf(b));});
+   });
+}
+function hiddenKind(s){return s.kind&&s.kind!=='student';}
+function fillPicker(){
+  var pd=$('selPer').value,list=ROSTER.filter(function(s){return !pd||String(s.period)===pd;});
+  $('selStu').innerHTML='<option value="">— choose a student —</option>'+list.map(function(s){return '<option value="'+esc(s.k)+'"'+(STU&&STU.k===s.k?' selected':'')+'>'+esc(nameOf(s))+(pd?'':' · P'+esc(s.period||'?'))+(hiddenKind(s)?' ('+esc(s.kind)+')':'')+'</option>';}).join('');
+}
+function neighbours(){var pd=STU?String(STU.period||''):'';var list=ROSTER.filter(function(s){return String(s.period||'')===pd&&!hiddenKind(s);});var i=-1;list.forEach(function(s,j){if(STU&&s.k===STU.k)i=j;});return {prev:i>0?list[i-1]:null,next:i>=0&&i<list.length-1?list[i+1]:null};}
+function go(k){var u=location.pathname+(k?'?u='+encodeURIComponent(k):'');try{history.pushState(null,'',u);}catch(e){}route();}
+$('selPer').onchange=function(){fillPicker();if(!STU)renderPicker();};
+$('selStu').onchange=function(){go(this.value);};
+$('prev').onclick=function(){var n=neighbours();if(n.prev)go(n.prev.k);};
+$('next').onclick=function(){var n=neighbours();if(n.next)go(n.next.k);};
+$('reload').onclick=function(){route(true);};
+$('allStu').onclick=function(e){e.preventDefault();go('');};
+window.addEventListener('popstate',function(){route();});
+
+function renderPicker(){
+  STU=null;document.title='Student data · all students';$('msg').textContent='';fillPicker();
+  var pd=$('selPer').value,by={};ROSTER.forEach(function(s){if(pd&&String(s.period)!==pd)return;var p=s.period||'?';(by[p]=by[p]||[]).push(s);});
+  var html='<p class="muted" style="margin:4px 0 12px">Pick a student. Each page shows that student’s own line from every dashboard.</p><div class="pgrid">'+
+   Object.keys(by).sort(function(a,b){return (+a||99)-(+b||99);}).map(function(p){return '<div class="pbox"><h3>Period '+esc(p)+' <span class="muted" style="font-weight:600">'+esc(COURSE_BY_PERIOD[p]||'')+'</span></h3>'+
+    by[p].map(function(s){return '<a href="?u='+encodeURIComponent(s.k)+'" data-k="'+esc(s.k)+'">'+esc(nameOf(s))+(hiddenKind(s)?' <small>('+esc(s.kind)+')</small>':'')+' <small>'+esc(s.k)+'</small></a>';}).join('')+'</div>';}).join('')+'</div>';
+  $('view').innerHTML=html;
+  Array.prototype.forEach.call($('view').querySelectorAll('a[data-k]'),function(a){a.onclick=function(e){e.preventDefault();go(a.getAttribute('data-k'));};});
+}
+
+/* ---------- section order: shared by every student page, saved in gal_settings so it follows Mr. Toby to any computer ---------- */
+function loadOrder(){
+  try{var c=JSON.parse(localStorage.getItem(ORDER_KEY)||'null');if(Array.isArray(c))ORDER=c;}catch(e){}
+  return soft('gal_settings?key=eq.'+ORDER_KEY+'&select=value').then(function(rows){var v=rows&&rows[0]&&rows[0].value;if(v&&Array.isArray(v.order)){ORDER=v.order;try{localStorage.setItem(ORDER_KEY,JSON.stringify(ORDER));}catch(e){}}});
+}
+function saveOrder(){
+  try{localStorage.setItem(ORDER_KEY,JSON.stringify(ORDER));}catch(e){}
+  fetch(SUPA_URL+'/rest/v1/gal_settings?on_conflict=key',{method:'POST',headers:H('resolution=merge-duplicates,return=minimal'),body:JSON.stringify([{key:ORDER_KEY,value:{order:ORDER},updated_at:new Date().toISOString()}])})
+   .then(function(r){if(!r.ok)throw new Error(r.status);}).catch(function(){$('msg').textContent='Order kept on this computer only (could not reach gal_settings).';});
+}
+/* default places: lessons in book order, then Basics, Pre-Assessments, Story Reel, the whole gradebook */
+function defaultRank(id){if(id.indexOf('lp:')===0){var i=0;LESSONS.forEach(function(l,j){if('lp:'+l.u===id)i=j;});return i;}return {basics:100,pre:101,reel:102,gb:200}[id]||150;}
+function orderSections(ids){
+  /* a section the order has never seen goes where its default rank puts it among the known ones */
+  var known=ORDER.filter(function(x){return ids.indexOf(x)>=0;}),fresh=ids.filter(function(x){return known.indexOf(x)<0;});
+  fresh.sort(function(a,b){return defaultRank(a)-defaultRank(b);}).forEach(function(f){var r=defaultRank(f),at=known.length;for(var i=0;i<known.length;i++){if(ORDER.indexOf(known[i])<0)continue;if(defaultRank(known[i])>r){at=i;break;}}known.splice(at,0,f);});
+  return known;
+}
+function move(id,how){
+  var ids=Array.prototype.map.call($('view').querySelectorAll('.sec'),function(s){return s.getAttribute('data-id');});
+  /* keep sections this student doesn't show in their old places */
+  var full=ORDER.slice();ids.forEach(function(x){if(full.indexOf(x)<0)full.push(x);});
+  var vis=full.filter(function(x){return ids.indexOf(x)>=0;}),i=vis.indexOf(id);if(i<0)return;
+  var j=how==='top'?0:how==='bottom'?vis.length-1:how==='up'?Math.max(0,i-1):Math.min(vis.length-1,i+1);if(j===i)return;
+  vis.splice(i,1);vis.splice(j,0,id);
+  var slots=[];full.forEach(function(x,k){if(ids.indexOf(x)>=0)slots.push(k);});slots.forEach(function(k,n){full[k]=vis[n];});
+  ORDER=full;saveOrder();
+  var view=$('view'),secs={};Array.prototype.forEach.call(view.querySelectorAll('.sec'),function(s){secs[s.getAttribute('data-id')]=s;});
+  vis.forEach(function(x){view.appendChild(secs[x]);});
+  secs[id].classList.remove('moved');void secs[id].offsetWidth;secs[id].classList.add('moved');
+  paintMoveButtons();
+  var b=secs[id].querySelector('[data-how="'+how+'"]');if(b&&!b.disabled)b.focus();
+  if(how==='top'||how==='bottom')secs[id].scrollIntoView({block:'nearest',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
+}
+function paintMoveButtons(){var s=$('view').querySelectorAll('.sec');Array.prototype.forEach.call(s,function(sec,i){sec.querySelector('[data-how="top"]').disabled=sec.querySelector('[data-how="up"]').disabled=i===0;sec.querySelector('[data-how="bottom"]').disabled=sec.querySelector('[data-how="down"]').disabled=i===s.length-1;});}
+var SVG={
+ top:'<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><rect x="3" y="2.5" width="16" height="3" rx="1.5" fill="currentColor"/><path d="M11 7.5 3.5 15h4.5v5h6v-5h4.5z" fill="currentColor"/></svg>',
+ up:'<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 2 1.5 9h3.5v3.5h4V9h3.5z" fill="currentColor"/></svg>',
+ down:'<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 12 1.5 5h3.5V1.5h4V5h3.5z" fill="currentColor"/></svg>',
+ bottom:'<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><rect x="3" y="16.5" width="16" height="3" rx="1.5" fill="currentColor"/><path d="M11 14.5 3.5 7h4.5V2h6v5h4.5z" fill="currentColor"/></svg>'};
+function secHTML(id,title,link,body){
+  var slim=body===EMPTY;
+  return '<section class="sec'+(slim?' slim':'')+'" data-id="'+esc(id)+'"><div class="sh"><h2>'+title+(slim?' <span class="ns">· not started</span>':'')+'</h2>'+(link?'<a class="open" href="'+esc(link)+'" target="_blank" rel="noopener">Full dashboard ↗</a>':'')+
+   '<div class="mv"><button class="b" data-how="top" title="Send to the top" aria-label="Send to the top">'+SVG.top+'</button><button class="s" data-how="up" title="Up one" aria-label="Up one">'+SVG.up+'</button><button class="s" data-how="down" title="Down one" aria-label="Down one">'+SVG.down+'</button><button class="b" data-how="bottom" title="Send to the bottom" aria-label="Send to the bottom">'+SVG.bottom+'</button></div></div>'+
+   (slim?'':'<div class="sb">'+body+'</div>')+'</section>';
+}
+
+/* ---------- load one student ---------- */
+function orEmail(keys,col){col=col||'email';return 'or=('+keys.map(function(k){return col+'.ilike.'+encodeURIComponent(k)+'@*';}).join(',')+')';}
+function loadStudent(k){
+  return soft('student_aliases?select=alias_email,email&or=(email.ilike.'+encodeURIComponent(k)+'@*,alias_email.ilike.'+encodeURIComponent(k)+'@*)').then(function(al){
+    var keys=[k];(al||[]).forEach(function(a){[a.alias_email,a.email].forEach(function(e){var x=key(e);if(x&&keys.indexOf(x)<0)keys.push(x);});});
+    var F=orEmail(keys),sel='select=email,name,period,unit,score,max_score,turned_in,writing,payload,updated_at&order=updated_at.desc&'+F;
+    return Promise.all([
+      Promise.all(['launch_plus','topic_sentence','revise','wit'].map(function(t){return soft(t+'?'+sel);})).then(function(a){return [].concat.apply([],a);}),
+      soft('say_work?select=email,set,scores,updated_at&'+F),
+      soft('basics?select=email,name,period,unit,score,max_score,payload,updated_at&order=unit.desc&limit=2000&'+F),
+      soft('vocab_preassess?select=*&'+F),
+      soft('reel_views?select=*&order=episode&'+F),
+      get('gradebook_best?select=email,slug,unit,title,course,score,max_score,pct,attempts,last_at,completion&limit=5000&'+F)
+    ]).then(function(r){
+      D={keys:keys,lp:r[0],say:r[1],basics:r[2],pre:r[3],reel:r[4],gb:r[5]||[]};
+      var quizzes=[];D.pre.forEach(function(x){if(x.quiz&&quizzes.indexOf(x.quiz)<0)quizzes.push(x.quiz);});
+      return quizzes.length?soft('vocab_preassess?select=quiz,period,items,answers,turned_in&quiz=in.('+quizzes.map(encodeURIComponent).join(',')+')').then(function(c){D.preClass=c;}):null;
+    });
+  });
+}
+
+/* ---------- Launch Plus (copied from launch-plus/dashboard.html) ---------- */
+var EMPTY='<!--empty-->';
+var DEFAULT_PARTS=[['R','Read',1,'r'],['F','Fix',2,'f'],['B','Bigger',3,'b'],['Z','Zoom',4,'z'],['W','Write',5,'w']];
+function lessonParts(l){return (l&&l.parts)?l.parts.map(function(x){return [x[0],x[1],x[2],x[0].toLowerCase()];}):DEFAULT_PARTS;}
+function lpParts(r,l){var A=(r.payload&&r.payload.A)||{},W=r.writing||(r.payload&&r.payload.W)||{},p={};
+  lessonParts(l).forEach(function(d){var k=d[0],pre=d[3];
+   if(k==='W'){var w=['w0','w1','w2'].filter(function(x){return (W[x]||'').trim().length>0;}).length;p.W={n:3,done:w,first:w,label:d[1]};return;}
+   var ids=Object.keys(A).filter(function(x){return x.charAt(0)===pre;});p[k]={n:ids.length,done:ids.filter(function(x){return A[x].done;}).length,first:ids.filter(function(x){return A[x].done&&A[x].first;}).length,label:d[1]};});
+  return p;}
+function pcls(p){return p.done>=p.n&&p.n>0?'ok':p.done>0?'part':'';}
+function lpTitle(l){var n=l.n.replace(' · ',': ');return (l.table?'':'Launch Plus ')+n;}
+function lpSection(l,r){
+  var head='<tr><th>Parts</th><th>Score</th><th>🎙 Record</th><th>🎨 Shades</th><th>Turned in</th><th>Last active</th><th>0–4.5</th></tr>';
+  if(!r)return EMPTY;
+  var p=lpParts(r,l),keys=Object.keys(p),pct=r.max_score?Math.round(100*r.score/r.max_score):0,sc='score '+(pct<60?'lo':pct<80?'mid':'hi');
+  var s=null;if(l.say){D.say.forEach(function(x){if(x.set===l.say&&x.scores&&x.scores.words0){var w=x.scores.words0,o={ok:w.best||w.correct||0,total:w.total||0};if(!s||o.ok>s.ok)s=o;}});}
+  var sh=(r.payload&&r.payload.shades)||[],wm=(r.payload&&r.payload.wordMode)||'',W=r.writing||(r.payload&&r.payload.W)||{};
+  var g=gbFor(function(x){return x.slug==='launch-plus/'+l.u||(x.unit&&x.unit===l.u);});
+  var row='<tr><td><div class="parts">'+keys.map(function(k){return '<span class="pt '+pcls(p[k])+'" title="'+esc(p[k].label+': '+p[k].done+' of '+p[k].n+' done, '+p[k].first+' right first try')+'">'+k+'</span>';}).join('')+'</div></td>'+
+   '<td><span class="'+sc+'">'+r.score+' / '+r.max_score+'</span> <span class="muted">('+pct+'%)</span></td>'+
+   '<td>'+(s?'<span class="score'+(s.ok===s.total?' hi':'')+'">'+s.ok+' / '+s.total+'</span>':'<span class="muted">—</span>')+'</td>'+
+   '<td>'+(sh.length?'<span class="score hi" title="'+esc(sh.map(function(x){return x.base+' → '+x.word;}).join(', '))+'">'+sh.length+'</span>':'<span class="muted">—</span>')+(wm==='shades'?' <span title="last used Shades mode">🎨</span>':'')+'</td>'+
+   '<td>'+(r.turned_in?'<span class="tag in">in</span>':'<span class="tag no">not yet</span>')+'</td><td class="muted">'+when(r.updated_at)+'</td>'+
+   '<td>'+(g?bandHTML(g.pct,g.pct+'% · '+g.attempts+' attempt'+(g.attempts===1?'':'s')):'<span class="muted">—</span>')+'</td></tr>';
+  var wl=['w0','w1','w2'].filter(function(k){return W[k];});
+  var more=(wl.length||sh.length)?'<details class="more"><summary>Writing'+(sh.length?' and bigger words':'')+'</summary>'+wl.map(function(k,i){var lbl=/^wit-/.test(l.u)?['Sentence types','Because, but, so','Pop + revision'][+k.slice(1)]:'Step '+(+k.slice(1)+1);return '<div class="wr"><b>'+lbl+'</b>'+esc(W[k])+'</div>';}).join('')+
+    (sh.length?'<div class="wr"><b>Bigger words tried</b>'+sh.map(function(x){return '<div>'+esc(x.base)+' → <b>'+esc(x.word)+'</b> <span class="muted">'+esc(x.sentence||'')+'</span></div>';}).join('')+'</div>':'')+
+    '<div class="muted" style="font-size:.78rem;padding:2px 8px">Right first try: '+keys.filter(function(k){return k!=='W';}).map(function(k){return p[k].label+' '+p[k].first+'/'+p[k].n;}).join(', ')+'</div></details>':'';
+  return '<table><thead>'+head+'</thead><tbody>'+row+'</tbody></table>'+more;
+}
+
+/* ---------- Daily Basics (copied from basics/dashboard.html) ---------- */
+var LV=['A','B','C'];
+function lvOf(u){var m=String(u||'').match(/-([ABCP])$/);return m?m[1]:'A';}
+function dayOf(u){return String(u||'').replace(/-[ABCP]$/,'');}
+function sumOf(r){var p=r.payload||{},A=p.A||{};if(p.paper){var pp=p.paper,pn=(+pp.warmMax||0)+(+pp.stretchMax||0)||20,ps=(+pp.warm||0)+(+pp.stretch||0);return {n:pn,solved:Math.min(ps,pn),first:ps,done:true,paper:pp};}var n=(p.items&&p.items.length)||r.max_score||12,s=0,f=0;Object.keys(A).forEach(function(k){if(A[k]&&A[k].done){s++;if(A[k].first)f++;}});return {n:n,solved:Math.min(s,n),first:f,done:s>=n};}
+function daily(L){var fin=[],best=0;Object.keys(L).forEach(function(l){var s=L[l],v=20*s.solved/(s.n||12);if(s.done)fin.push(v);if(v>best)best=v;});var g=fin.length?fin.reduce(function(a,b){return a+b;},0)/fin.length:best;return Math.round(g*10)/10;}
+function bcls(sc){return sc>=16.7?'hi':sc>=11.7?'mid':'lo';}
+function stripHTML(L){return '<span class="strip">'+(L.P?'<i class="lv paper" title="Paper: Warm-up '+L.P.paper.warm+'/'+L.P.paper.warmMax+', Stretch '+L.P.paper.stretch+'/'+L.P.paper.stretchMax+'">📝'+L.P.solved+'</i>':'')+LV.map(function(l){var s=L[l];if(!s)return '<i class="lv" title="Level '+l+': not opened">'+l+'</i>';
+  var st=s.done?'done':(s.solved?'half':'open'),star=s.done&&s.first>=11?'⭐':'';return '<i class="lv '+st+'" title="Level '+l+': '+s.solved+'/'+s.n+' solved, '+s.first+' first try">'+l+'<sub>'+(s.solved?s.first:'–')+'</sub>'+star+'</i>';}).join('')+'</span>';}
+function ymd(d){return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);}
+function basicsSection(){
+  var by={};D.basics.forEach(function(r){var d=dayOf(r.unit),l=lvOf(r.unit),x=sumOf(r);by[d]=by[d]||{};var o=by[d][l];if(!o||x.solved>o.solved)by[d][l]=x;});
+  var keys=Object.keys(by);if(!keys.length)return '<div class="empty">No Daily Basics yet.</div>';
+  /* the last 10 school days (weekdays), plus any weekend day the student worked */
+  var ds=[],d=new Date(),guard=0;while(ds.length<10&&guard<40){var s=ymd(d),w=d.getDay();if((w>0&&w<6)||by[s])ds.unshift(s);d.setDate(d.getDate()-1);guard++;}
+  var sum=0;keys.forEach(function(k){sum+=daily(by[k]);});var avg=Math.round(10*sum/keys.length)/10;
+  var head='<tr><th>Days</th><th>Avg</th>'+ds.map(function(x){return '<th class="day">'+x.slice(5).replace('-','/')+'</th>';}).join('')+'</tr>';
+  var row='<tr><td>'+keys.length+'</td><td><b>'+avg+'</b> <span class="muted">/ 20</span></td>'+ds.map(function(x){var L=by[x];if(!L)return '<td class="day"><span class="cell none">·</span></td>';var g=daily(L);return '<td class="day"><span class="cell '+bcls(g)+'" title="daily grade (finished sets averaged)">'+g+'</span>'+stripHTML(L)+'</td>';}).join('')+'</tr>';
+  var older=keys.filter(function(k){return ds.indexOf(k)<0;}).sort().reverse();
+  return '<table><thead>'+head+'</thead><tbody>'+row+'</tbody></table>'+(older.length?'<details class="more"><summary>'+older.length+' earlier day'+(older.length===1?'':'s')+'</summary><div style="padding:4px 8px;display:flex;flex-wrap:wrap;gap:10px">'+older.map(function(k){var g=daily(by[k]);return '<span class="day" style="text-align:center"><span class="muted">'+k.slice(5).replace('-','/')+'</span><br><span class="cell '+bcls(g)+'">'+g+'</span>'+stripHTML(by[k])+'</span>';}).join('')+'</div></details>':'');
+}
+
+/* ---------- Vocab Pre-Assessments (copied from vocab/pre/dashboard.html) ---------- */
+var IDK='__idk';
+function preScore(row){var items=row.items||[],ans=row.answers||{},s={known:0,idk:0,blank:0,total:items.length,byKey:{}};items.forEach(function(it){var a=ans[it.k],st=!a?'e0':a===IDK?'i':a===it.w?'k':'m';s.byKey[it.k]={st:st,chose:a};if(st==='k')s.known++;else if(st==='i')s.idk++;else if(st==='e0')s.blank++;});s.answered=s.total-s.blank;s.pct=s.total?s.known/s.total:0;return s;}
+function preSection(){
+  var by={};D.pre.forEach(function(r){var o=by[r.quiz];if(!o||String(r.updated_at||'')>String(o.updated_at||''))by[r.quiz]=r;});
+  var rows=Object.keys(by).map(function(q){return by[q];}).sort(function(a,b){return String(b.updated_at||'').localeCompare(String(a.updated_at||''));});
+  if(!rows.length)return '<div class="empty">No word checks yet.</div>';
+  var head='<tr><th>Check</th><th>Known</th><th>Answers</th><th>Don’t know</th><th>Status</th><th>Class</th><th>Last active</th></tr>';
+  return '<table><thead>'+head+'</thead><tbody>'+rows.map(function(r){var s=preScore(r),pct=Math.round(100*s.pct);
+    var cl=(D.preClass||[]).filter(function(x){return x.quiz===r.quiz&&x.turned_in;}),cavg=cl.length?Math.round(100*cl.reduce(function(t,x){return t+preScore(x).pct;},0)/cl.length):null;
+    var cells=(r.items||[]).map(function(it){var b=s.byKey[it.k]||{st:'e0'};var res=b.st==='k'?'Right':b.st==='i'?'Chose: I don’t know':b.st==='m'?'Chose: '+b.chose:'Not answered yet';return '<span class="sq '+b.st+'" title="'+esc(it.w+' — '+res)+'"></span>';}).join('');
+    return '<tr><td><b>'+esc(r.quiz_title||r.quiz)+'</b></td><td style="white-space:nowrap"><span class="meter"><i style="width:'+pct+'%"></i></span>'+s.known+'/'+s.total+'</td><td>'+cells+'</td><td>'+s.idk+'</td>'+
+     '<td>'+(r.turned_in?'<span class="pill done">Finished</span>':'<span class="pill going">'+s.answered+' of '+s.total+'</span>')+'</td>'+
+     '<td class="cls">'+(cavg==null?'—':cavg+'% average known<br>'+cl.length+' finished')+'</td><td class="muted">'+when(r.updated_at)+'</td></tr>';}).join('')+'</tbody></table>';
+}
+
+/* ---------- Story Reel (copied from the reel-v2 hub's Teacher tab) ---------- */
+function reelSection(){
+  var by={};D.reel.forEach(function(r){var o=by[r.episode];if(!o||String(r.updated_at||'')>String(o.updated_at||''))by[r.episode]=r;});
+  var eps=Object.keys(by).sort();if(!eps.length)return '<div class="empty">No episodes watched yet.</div>';
+  var head='<tr><th>Episode</th><th>Level</th><th>Finished</th><th>Checks (1st try)</th><th>Your Turn sentences</th><th>Min</th><th>Listens</th><th>Translations</th><th>Turned in</th><th>Last active</th></tr>';
+  return '<table><thead>'+head+'</thead><tbody>'+eps.map(function(e){var r=by[e],w=r.work||{},sc=r.scores||{},L=w.log||{},Wd=L.w||{},ls=0,tr=0;Object.keys(Wd).forEach(function(k){ls+=Wd[k].say||0;tr+=Wd[k].tr||0;});
+    var Y=w.yt||{},yt=Y[r.level]||(r.level==='C'?Y.B:null)||Y.A||[];
+    return '<tr><td><b>'+esc(e)+'</b></td><td>'+esc(r.level||'')+'</td><td>'+(w.done?'<span class="tag in">yes</span>':'<span class="tag no">not yet</span>')+'</td>'+
+     '<td>'+(sc.checks_first_try||0)+' / '+(sc.checks_total||0)+'</td><td style="max-width:320px">'+(yt.length?yt.map(function(x){return '<div>'+esc(x)+'</div>';}).join(''):'<span class="muted">—</span>')+'</td>'+
+     '<td>'+Math.round((w.secs||0)/60)+'</td><td>'+ls+'</td><td>'+tr+(L.lineTr?' + '+L.lineTr+' lines':'')+'</td>'+
+     '<td>'+(r.turned_in?'<span class="tag in">in</span>':'<span class="tag no">no</span>')+'</td><td class="muted">'+when(L.last||r.updated_at)+'</td></tr>';}).join('')+'</tbody></table>';
+}
+
+/* ---------- Everything in the gradebook ---------- */
+function gbFor(fn){var best=null;(D.gb||[]).forEach(function(x){if(fn(x)&&(!best||(+x.pct||0)>(+best.pct||0)))best=x;});return best;}
+function gbRows(){var by={};(D.gb||[]).forEach(function(x){var k=x.slug+'|'+(x.unit||'');var o=by[k];if(!o||(+x.pct||0)>(+o.pct||0))by[k]=x;});return Object.keys(by).map(function(k){return by[k];});}
+var GBF='';
+function gbSection(){
+  var rows=gbRows().sort(function(a,b){return String(b.last_at||'').localeCompare(String(a.last_at||''));});
+  if(!rows.length)return '<div class="empty">Nothing in the gradebook yet.</div>';
+  var f=GBF.toLowerCase(),show=rows.filter(function(x){return !f||((x.title||'')+' '+x.slug).toLowerCase().indexOf(f)>=0;});
+  return '<input id="gbf" placeholder="Filter activities…" value="'+esc(GBF)+'"> <span class="muted" style="font-size:.82rem">'+show.length+' of '+rows.length+' activities, newest first</span>'+
+   '<table><thead><tr><th>Activity</th><th>Score</th><th>%</th><th>0–4.5</th><th>Attempts</th><th>Last</th></tr></thead><tbody>'+show.map(function(x){
+    return '<tr><td><b>'+esc(x.title||x.slug)+'</b><br><span class="muted" style="font-size:.75rem">'+esc(x.slug)+(x.unit?' · '+esc(x.unit):'')+'</span></td><td>'+(x.max_score?esc(x.score)+' / '+esc(x.max_score):'<span class="muted">—</span>')+'</td><td>'+(x.pct==null?'—':Math.round(x.pct)+'%')+'</td><td>'+bandHTML(x.pct)+'</td><td>'+esc(x.attempts||'')+'</td><td class="muted">'+when(x.last_at)+'</td></tr>';}).join('')+'</tbody></table>';
+}
+function bindGb(){var i=$('gbf');if(!i)return;i.oninput=function(){GBF=i.value;var pos=i.selectionStart;var sec=i.closest('.sec');sec.querySelector('.sb').innerHTML=gbSection();bindGb();var j=$('gbf');j.focus();try{j.setSelectionRange(pos,pos);}catch(e){}};}
+
+/* ---------- the page ---------- */
+function renderStudent(){
+  var s=STU,course=courseOf(s),is101=course==='ELD 101';
+  document.title=nameOf(s)+' · Student data';
+  var secs=[];
+  /* Launch Plus: every lesson for ELD 101 (so missing ones show), plus any other unit the student opened */
+  var lpBy={};D.lp.forEach(function(r){var o=lpBy[r.unit];if(!o||String(r.updated_at||'')>String(o.updated_at||''))lpBy[r.unit]=r;});
+  LESSONS.forEach(function(l){var r=lpBy[l.u];if(r||(is101&&!l.table&&!/x$/.test(l.u)))secs.push({id:'lp:'+l.u,title:esc(lpTitle(l)),link:'../launch-plus/dashboard.html',body:lpSection(l,r)});});
+  if(D.basics.length||is101)secs.push({id:'basics',title:'Daily Basics',link:'../basics/dashboard.html',body:basicsSection()});
+  if(D.pre.length)secs.push({id:'pre',title:'Vocab Pre-Assessments',link:'../vocab/pre/dashboard.html',body:preSection()});
+  if(D.reel.length||is101)secs.push({id:'reel',title:'Story Reel',link:'../reel-v2/',body:reelSection()});
+  secs.push({id:'gb',title:'Everything in the gradebook',link:'../gradebook/',body:gbSection()});
+  var byId={};secs.forEach(function(x){byId[x.id]=x;});var ids=orderSections(secs.map(function(x){return x.id;}));
+  /* at a glance */
+  var gb=gbRows(),pcts=gb.filter(function(x){return x.pct!=null;}).map(function(x){return +x.pct;}),avg=pcts.length?Math.round(pcts.reduce(function(a,b){return a+b;},0)/pcts.length):null;
+  var last='';[D.lp,D.basics,D.pre,D.reel].forEach(function(a){a.forEach(function(r){if(String(r.updated_at||'')>last)last=r.updated_at;});});gb.forEach(function(x){if(String(x.last_at||'')>last)last=x.last_at;});
+  var em=s.email||(s.k+'@s.sfusd.edu'),n=neighbours();
+  $('prev').disabled=!n.prev;$('next').disabled=!n.next;
+  $('view').innerHTML='<div id="who"><h1>'+esc(nameOf(s))+'</h1><a class="em" href="mailto:'+esc(em)+'">'+esc(em)+'</a><span class="per">Period '+esc(s.period||'?')+'</span><span class="crs">'+esc(course)+'</span>'+(hiddenKind(s)?'<span class="kind">'+esc(s.kind)+'</span>':'')+'</div>'+
+   '<div id="glance"><span class="g">Gradebook average <b>'+(avg==null?'—':avg+'%')+'</b> '+(avg==null?'':bandHTML(avg))+'</span><span class="g"><b>'+gb.length+'</b> '+(gb.length===1?'activity':'activities')+'</span><span class="g">Last active <b>'+(when(last)||'—')+'</b></span>'+(s.home_language?'<span class="g">Language <b>'+esc(s.home_language)+'</b></span>':'')+
+   '<a class="g" href="../student/?view=teacher&email='+encodeURIComponent(em)+'" target="_blank" rel="noopener">My Page as '+esc((s.first_name||nameOf(s)).split(' ')[0])+' sees it ↗</a></div>'+
+   ids.map(function(id){var x=byId[id];return secHTML(x.id,x.title,x.link,x.body);}).join('');
+  /* remember every id seen, so the order covers it */
+  var changed=false;ids.forEach(function(id){if(ORDER.indexOf(id)<0){var i=ids.indexOf(id),after=ids[i-1],at=after!=null?ORDER.indexOf(after)+1:0;ORDER.splice(at,0,id);changed=true;}});
+  if(changed)try{localStorage.setItem(ORDER_KEY,JSON.stringify(ORDER));}catch(e){}
+  paintMoveButtons();bindGb();
+}
+$('view').addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('.mv button');if(!b)return;move(b.closest('.sec').getAttribute('data-id'),b.getAttribute('data-how'));});
+
+function route(force){
+  var k=key(new URLSearchParams(location.search).get('u')||new URLSearchParams(location.search).get('email')||'');
+  if(!k){renderPicker();return;}
+  STU=ROSTER.filter(function(s){return s.k===k;})[0]||{k:k,email:k+'@s.sfusd.edu'};
+  if(STU.period&&!$('selPer').value)$('selPer').value=String(STU.period);
+  fillPicker();
+  $('msg').textContent='Loading '+nameOf(STU)+'…';$('view').innerHTML='';
+  loadStudent(k).then(function(){$('msg').textContent='';renderStudent();})
+   .catch(function(e){$('msg').innerHTML='<span style="color:var(--rust);font-weight:800">Could not load this student ('+esc(e.message)+'). Tap ↻ Refresh.</span>';});
+}
+function openApp(){$('gate').style.display='none';$('msg').textContent='Loading the roster…';Promise.all([loadRoster(),loadOrder()]).then(function(){route();}).catch(function(e){$('msg').textContent='Could not load the roster ('+e.message+').';});}
+(function(){var ok=false;try{ok=sessionStorage.getItem('dash_ok')==='1';}catch(e){}if(ok)openApp();else $('pw').focus();})();
+</script>
+</body>
+</html>

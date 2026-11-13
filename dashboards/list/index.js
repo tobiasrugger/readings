@@ -70,6 +70,7 @@ window.DASHBOARD_FILES = [
   'songs',
   'spell',
   'student',
+  'studentdata',
   'stand-by-me',
   'survival-english',
   'teacher',
