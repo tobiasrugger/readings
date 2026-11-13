@@ -4,7 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Who finished? — Mr. Toby</title>
-<!-- T-353 (Nov 9): pick an activity and a period; see Finished / Almost / Still working / Not started.
+<!-- T-403 (Nov 13): stories get a Reading / After you read / Extras switch, read from the same three
+     gradebook columns T-253 made (slug, slug/after, slug/extras), so this page and the gradebook agree.
+     "Turned in early" now compares the Turn in press with the Reading part only.
+     T-353 (Nov 9): pick an activity and a period; see Finished / Almost / Still working / Not started.
      Numbers come from the gradebook's own view (gradebook_best), so this page never disagrees
      with the gradebook. The three ELD 103 stories also read their own table, which adds
      "answered / total" and "turned in" — so an early Turn in shows up. -->
@@ -32,6 +35,7 @@ button{font:inherit;font-weight:800;cursor:pointer;border-radius:8px}
 .pers{display:flex;flex-wrap:wrap;gap:6px}
 .pers button{background:#fff;border:2px solid var(--line);padding:6px 11px;min-width:42px}
 .pers button.on{background:#1F4D3D;color:#fff}
+#partRow{margin-top:12px}
 .sum h2{margin:0 0 8px;font-size:1.2rem}
 .stack{display:flex;height:22px;border:2px solid var(--line);border-radius:8px;overflow:hidden;margin:6px 0}
 .stack div{height:100%}
@@ -81,6 +85,14 @@ button{font:inherit;font-weight:800;cursor:pointer;border-radius:8px}
           <div class="pers" id="pers"></div>
         </div>
       </div>
+      <div id="partRow" style="display:none">
+        <span class="lbl">Which part of the story</span>
+        <div class="pers" id="parts">
+          <button data-part="reading">Reading (Parts 1–4)</button>
+          <button data-part="after">After you read</button>
+          <button data-part="extras">⭐ Extras</button>
+        </div>
+      </div>
     </div>
 
     <div class="box sum" id="sum"></div>
@@ -125,7 +137,10 @@ var ALIAS={};
 function galKey(e){return String(e==null?'':e).trim().toLowerCase().split('@')[0].replace(/\s+/g,'');}
 function canon(e){var k=galKey(e);return ALIAS[k]||k;}
 
-var students={}, best=[], acts={}, choices=[], storyRows={}, PER='', ACT='';
+var students={}, best=[], acts={}, choices=[], storyRows={}, PER='', ACT='', PART='reading';
+var PART_NAME={reading:'Reading (Parts 1–4)', after:'After you read', extras:'⭐ Extras'};
+function partSlugs(st){return st.slugs.map(function(s){return PART==='reading'?s:s+'/'+PART;});}
+var STORY_SLUG={};Object.keys(STORIES).forEach(function(id){STORIES[id].slugs.forEach(function(s){STORY_SLUG[s]=STORY_SLUG[s+'/after']=STORY_SLUG[s+'/extras']=1;});});
 
 function gate(){
   if(sessionStorage.getItem('gb_ok')==='1'){open();return;}
@@ -163,7 +178,8 @@ function nameOf(k){var s=students[k]||{};var n=((s.first_name||'')+' '+(s.last_n
 /* Activity list: the three stories first, then everything in the gradebook, most recent first. */
 function buildChoices(){
   var by={};
-  best.forEach(function(c){var b=by[c.slug]||(by[c.slug]={slug:c.slug,title:c.title||(acts[c.slug]||{}).title||c.slug,course:c.course||(acts[c.slug]||{}).course||'',last:'',n:0});
+  best.forEach(function(c){if(STORY_SLUG[c.slug])return; /* stories are the three choices at the top */
+    var b=by[c.slug]||(by[c.slug]={slug:c.slug,title:c.title||(acts[c.slug]||{}).title||c.slug,course:c.course||(acts[c.slug]||{}).course||'',last:'',n:0});
     b.n++; if((c.last_at||'')>b.last)b.last=c.last_at||'';});
   choices=Object.keys(STORIES).map(function(id){return {slug:id,title:STORIES[id].title,course:'103',story:true};})
     .concat(Object.values(by).sort(function(a,b){return b.last<a.last?-1:b.last>a.last?1:0;}));
@@ -186,33 +202,32 @@ function buildPeriods(){
   var box=document.getElementById('pers');
   box.innerHTML=['<button data-p="">All</button>'].concat(ps.map(function(p){return '<button data-p="'+esc(p)+'">'+esc(p)+'</button>';})).join('');
   box.onclick=function(e){var b=e.target.closest('button');if(!b)return;PER=b.dataset.p;show();};
+  document.getElementById('parts').onclick=function(e){var b=e.target.closest('button');if(!b)return;PART=b.dataset.part;show();};
 }
 function readUrl(){var u=new URLSearchParams(location.search);ACT=u.get('a')||'story:landlady';PER=u.get('p')||'';
+  PART=PART_NAME[u.get('part')]?u.get('part'):'reading';
   document.getElementById('act').value=ACT;}
-function writeUrl(){var u=new URLSearchParams();u.set('a',ACT);if(PER)u.set('p',PER);history.replaceState(null,'','?'+u.toString());}
+function writeUrl(){var u=new URLSearchParams();u.set('a',ACT);if(PER)u.set('p',PER);if(STORIES[ACT]&&PART!=='reading')u.set('part',PART);history.replaceState(null,'','?'+u.toString());}
 
 /* Rows for the chosen activity: {key, pct, done, of, last, early} */
 function rowsFor(id){
   if(STORIES[id]){
-    var st=STORIES[id];
-    if(storyRows[id])return Promise.resolve(storyRows[id]);
-    return getAll(st.table+'?select=email,guide_key,answered,total,submitted&guide_key=in.('+st.keys.join(',')+')')
-      .then(function(rows){
-        var by={};
-        rows.forEach(function(r){var k=canon(r.email);if(!k||!r.total)return;var pct=Math.round(100*r.answered/r.total);
-          var cur=by[k];if(!cur||pct>cur.pct)by[k]={key:k,pct:pct,done:r.answered,of:r.total,early:!!r.submitted&&pct<FIN,ver:r.guide_key};});
-        best.forEach(function(c){if(st.slugs.indexOf(c.slug)>=0&&by[c.key]&&(c.last_at||'')>(by[c.key].last||''))by[c.key].last=c.last_at;});
-        return (storyRows[id]=Object.values(by));
-      })
-      .catch(function(){ /* table not readable: fall back to the gradebook numbers */
-        return gbRows(function(c){return st.slugs.indexOf(c.slug)>=0;});});
+    var st=STORIES[id], want=partSlugs(st);
+    var rows=gbRows(function(c){return want.indexOf(c.slug)>=0;});
+    if(PART!=='reading')return Promise.resolve(rows);
+    /* Reading part: add "turned in" from the story's own table (best version per student) */
+    var turned=storyRows[id]?Promise.resolve(storyRows[id]):
+      getAll(st.table+'?select=email,guide_key,submitted&guide_key=in.('+st.keys.join(',')+')')
+        .then(function(t){var m={};t.forEach(function(r){if(r.submitted)m[canon(r.email)]=1;});return (storyRows[id]=m);})
+        .catch(function(){return (storyRows[id]={});});
+    return turned.then(function(m){rows.forEach(function(r){r.early=!!m[r.key]&&r.pct<FIN;});return rows;});
   }
   return Promise.resolve(gbRows(function(c){return c.slug===id;}));
 }
 function gbRows(test){
   var by={};
   best.forEach(function(c){if(!test(c)||c.pct==null)return;var cur=by[c.key];var pct=Math.round(+c.pct);
-    if(!cur||pct>cur.pct)by[c.key]={key:c.key,pct:pct,done:c.score,of:c.max_score,last:c.last_at};});
+    if(!cur||pct>cur.pct)by[c.key]={key:c.key,pct:pct,done:c.score,of:c.max_score,last:c.last_at,slug:c.slug};});
   return Object.values(by);
 }
 
@@ -220,6 +235,9 @@ function show(){
   writeUrl();
   document.querySelectorAll('#pers button').forEach(function(b){b.classList.toggle('on',b.dataset.p===PER);});
   var choice=choices.filter(function(c){return c.slug===ACT;})[0];
+  var isStory=!!STORIES[ACT];
+  document.getElementById('partRow').style.display=isStory?'block':'none';
+  document.querySelectorAll('#parts button').forEach(function(b){b.classList.toggle('on',b.dataset.part===PART);});
   if(!choice){document.getElementById('sum').innerHTML='Pick an activity.';document.getElementById('groups').innerHTML='';return;}
   rowsFor(ACT).then(function(rows){
     rows=rows.filter(function(r){var s=students[r.key];return isReal(s)&&(!PER||String((s||{}).period||'')===PER);});
@@ -227,7 +245,11 @@ function show(){
     /* Not started: real students in a period where at least 3 classmates started this one,
        and (when both are known) in the same course. Keeps ELD 101 out of an ELD 103 list. */
     var started={};rows.forEach(function(r){var p=(students[r.key]||{}).period;if(p)started[p]=(started[p]||0)+1;});
+    /* After you read / Extras: "not started" = students who worked on the Reading but have nothing here yet */
+    var readers=null;
+    if(STORIES[ACT]&&PART!=='reading'){readers={};best.forEach(function(c){if(STORIES[ACT].slugs.indexOf(c.slug)>=0)readers[c.key]=1;});}
     var none=Object.values(students).filter(function(s){
+      if(readers)return isReal(s)&&!!readers[s.key]&&!have[s.key]&&(!PER||String(s.period||'')===PER);
       if(!isReal(s)||!s.period||have[s.key])return false;
       if(PER&&String(s.period)!==PER)return false;
       if((started[s.period]||0)<3)return false;
@@ -235,6 +257,7 @@ function show(){
       return true;}).map(function(s){return {key:s.key,pct:null};});
     var g={fin:[],alm:[],wrk:[],non:none};
     rows.forEach(function(r){(r.pct>=FIN?g.fin:r.pct>=ALM?g.alm:g.wrk).push(r);});
+    GROUPS[3].sub=readers?(PART==='extras'?'read the story, no extras yet (optional)':'read the story, nothing here yet'):'in this class, nothing saved yet';
     paint(choice,g);
   });
 }
@@ -246,11 +269,11 @@ function paint(choice,g){
   var tot=g.fin.length+g.alm.length+g.wrk.length+g.non.length||1;
   var early=g.wrk.concat(g.alm).filter(function(r){return r.early;}).length;
   document.getElementById('sum').innerHTML=
-    '<h2>'+esc(choice.title)+' · '+(PER?'Period '+esc(PER):'all periods')+'</h2>'+
+    '<h2>'+esc(choice.title)+(STORIES[ACT]?' · '+PART_NAME[PART]:'')+' · '+(PER?'Period '+esc(PER):'all periods')+'</h2>'+
     '<div class="stack">'+GROUPS.map(function(G){return '<div style="width:'+(100*g[G.id].length/tot)+'%;background:'+G.color+'"></div>';}).join('')+'</div>'+
     '<div class="counts">'+GROUPS.map(function(G){return '<span><span class="dot" style="background:'+G.color+'"></span>'+g[G.id].length+' '+G.name.toLowerCase()+'</span>';}).join('')+
     (early?'<span style="color:var(--early)">📤 '+early+' turned in early</span>':'')+'</div>'+
-    '<div class="note">Same numbers as the gradebook. Stories count every question on the page, After you read included. <button class="sec" onclick="print()">🖨 Print</button></div>';
+    '<div class="note">Same numbers as the gradebook'+(STORIES[ACT]?'\u2019s '+PART_NAME[PART]+' column (best of the story\u2019s versions)':'')+(STORIES[ACT]&&PART==='extras'?'. Extras are optional.':'.')+' <button class="sec" onclick="print()">🖨 Print</button></div>';
   document.getElementById('groups').innerHTML=GROUPS.map(function(G){
     var list=g[G.id].slice().sort(sorter), body='';
     if(!list.length)body='<div class="empty">Nobody here.</div>';
@@ -267,7 +290,7 @@ function paint(choice,g){
 }
 function rowHtml(G){return function(r){
   var nm='<div class="nm">'+esc(nameOf(r.key))+(r.early?'<span class="tag">📤 turned in at '+r.pct+'%</span>':'')+
-    '<small>'+(r.last?'last '+esc(String(r.last).slice(5,10).replace('-','/')):'')+(r.ver&&r.ver!=='landlady'?' · '+esc(r.ver.replace('landlady_','')):'')+'</small></div>';
+    '<small>'+(r.last?'last '+esc(String(r.last).slice(5,10).replace('-','/')):'')+(r.slug&&/landlady-(easy|hard)/.test(r.slug)?' · '+r.slug.match(/easy|hard/)[0]:'')+'</small></div>';
   if(r.pct==null)return '<div class="row">'+nm+'<div class="bar"><div style="width:0"></div></div><div class="num">—</div></div>';
   var nums=(r.of?r.done+'/'+r.of+' · ':'')+r.pct+'%';
   var badge=window.GAL04&&GAL04.badge?GAL04.badge(r.pct):'';
