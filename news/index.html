@@ -137,7 +137,7 @@
   .credit{background:#fff8e6;border:2px solid #b7791f;border-radius:12px;padding:12px 14px;font-weight:700;margin:0 0 14px}
   .card h3{margin:0 0 8px;font-size:17px}
   label.q{display:block;font-weight:700;margin:18px 0 6px}
-  textarea,input.txt{width:100%;font-family:inherit;font-size:16px;padding:9px 11px;border:1px solid var(--rule);border-radius:9px;background:#fff}
+  textarea,input.txt,select.txt{width:100%;font-family:inherit;font-size:16px;padding:9px 11px;border:1px solid var(--rule);border-radius:9px;background:#fff}
   textarea{min-height:76px;resize:vertical}
   .cloze{display:inline-block;width:110px;font-family:inherit;font-size:16px;padding:3px 7px;border:0;border-bottom:2px solid var(--gram);background:#f4f6fb;border-radius:4px 4px 0 0}
   .cloze.ok{border-bottom-color:var(--ok);background:#eefaf1}
@@ -913,13 +913,38 @@ window.addEventListener('pagehide',function(){saveNow(true);});
 document.addEventListener('visibilitychange',function(){if(document.hidden)saveNow(true);});
 window.__T242=1;
 
+/* T-390: other pages remember the language as vocab_lang (a code like "es", or a name) and the
+   name as gal_student_name. Read those too, so a student coming from another page is not blank. */
+var LANG_CODES={es:'Spanish',spa:'Spanish',yue:'Cantonese','zh-hk':'Cantonese','zh-tw':'Cantonese',cantonese:'Cantonese',
+  zh:'Mandarin','zh-cn':'Mandarin',cmn:'Mandarin',chinese:'Mandarin',mandarin:'Mandarin',ar:'Arabic',ary:'Darija',
+  vi:'Vietnamese',ru:'Russian',ur:'Urdu',tl:'Tagalog',fil:'Tagalog',fr:'French',ko:'Korean',hi:'Hindi',so:'Somali',ne:'Nepali',th:'Thai'};
+function langName(v){
+  v=String(v||'').trim(); if(!v) return '';
+  if(LANGS[v]) return v;
+  var k=v.toLowerCase();
+  if(LANG_CODES[k]) return LANG_CODES[k];
+  for(var n in LANGS){ if(n.toLowerCase()===k||LANGS[n]===v) return n; }
+  if(LANG_CODES[k.split('-')[0]]) return LANG_CODES[k.split('-')[0]];
+  return '';
+}
+function storedLang(){ return langName(localStorage.getItem('gal_lang'))||langName(localStorage.getItem('vocab_lang')); }
+function storedName(){
+  var f=localStorage.getItem('gal_student_first')||'', l=localStorage.getItem('gal_student_last')||'';
+  if(!f||!l){
+    var n=(localStorage.getItem('gal_student_name')||'').trim().split(/\s+/);
+    if(!f&&n[0]) f=n[0];
+    if(!l&&n.length>1) l=n.slice(1).join(' ');
+  }
+  return {first:f,last:l};
+}
 var LANGS={Spanish:'Español',Cantonese:'廣東話',Mandarin:'普通话',Arabic:'العربية',Darija:'الدارجة',Vietnamese:'Tiếng Việt',Russian:'Русский',Urdu:'اردو',Tagalog:'Tagalog',French:'Français',Korean:'한국어',Hindi:'हिन्दी',Somali:'Soomaali',Nepali:'नेपाली',Thai:'ไทย'};
 function showSignin(){
-  $('gFirst').value=ME.first||localStorage.getItem('gal_student_first')||'';
-  $('gLast').value=ME.last||localStorage.getItem('gal_student_last')||'';
+  var sn=storedName();
+  $('gFirst').value=ME.first||sn.first;
+  $('gLast').value=ME.last||sn.last;
   $('gEmail').value=ME.email||localStorage.getItem('gal_student_email')||'';
   $('gPeriod').value=ME.period||localStorage.getItem('gal_period')||localStorage.getItem('gal_student_period')||'';
-  $('gLang').value=ME.lang||localStorage.getItem('gal_lang')||'';
+  $('gLang').value=ME.lang||storedLang();
   $('gErr').textContent='';
   $('gate').style.display='flex';
 }
@@ -984,8 +1009,8 @@ function toast(msg){
   setTimeout(function(){t.remove();},3500);
 }
 (function(){
-  var e=localStorage.getItem('gal_student_email'),f=localStorage.getItem('gal_student_first'),l=localStorage.getItem('gal_student_last'),
-      p=localStorage.getItem('gal_period')||localStorage.getItem('gal_student_period'),lg=localStorage.getItem('gal_lang');
+  var sn=storedName(), e=localStorage.getItem('gal_student_email'),f=sn.first,l=sn.last,
+      p=localStorage.getItem('gal_period')||localStorage.getItem('gal_student_period'),lg=storedLang();
   if(!TV&&e&&f&&l&&p&&lg&&EMAIL_RE.test(e)){
     ME={email:e,first:f,last:l,name:f+' '+l,period:p,lang:lg};
     $('lang').value=lg; chip(); $('gate').style.display='none'; fetchOverride(); setTimeout(checkRecording,800);
@@ -1733,5 +1758,6 @@ var SEED=[
 $('doc').value=SEED;
 boot();
 </script>
+<script src="/readings/std.js"></script><!-- T-390: sign-in standard on the gate too; track.js (gradebook) still waits for an article -->
 </body>
 </html>
