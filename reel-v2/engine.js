@@ -24,6 +24,7 @@
     /* T-293b (Nov 5): save within ~1.5 s of a change, not only on the 20 s timer (project rule T-240) */
     if (soonT) clearTimeout(soonT);
     soonT = setTimeout(function () { soonT = null; if (dirty && loaded && me.email) { dirty = false; save(); } }, 1500);
+    if (typeof coreSoon === 'function') coreSoon();   /* T-399 */
   }
   /* ---- T-147 practice log (Oct 27 2026): saved inside state, so it rides the same reel_views upsert.
      log.w[word] = {say: listens, tr: translations}; replays; slow; secs = active seconds (counted only when
@@ -779,16 +780,12 @@
            '<textarea id="yt' + i + '" data-i="' + i + '" placeholder="' + esc(p.frame) + '" translate="no" spellcheck="false">' + esc(saved[i] || '') + '</textarea></div>';
     });
     h += '<p class="speakit" translate="yes" data-en="' + esc(yt.speak) + '">🗣️ ' + esc(yt.speak) + '</p>';
-    h += '<div class="row"><button class="btn" id="turnIn" translate="yes">' + (state.turned ? 'Turned in. Turn in again' : 'Turn in') + '</button>' +
-         '<button class="btn alt" id="rewatch" translate="yes">Watch again</button><span id="ytMsg"></span></div>';
-    /* what's next: a real activity when the episode has one (EP.next), otherwise back to Google Classroom */
-    var nx = EP.next, gc = 'Done here? Go to Google Classroom for your next activity, or ask your teacher what to do next.';
-    h += '<div class="nextbox"><h3 translate="yes" data-en="What\u2019s next">What\u2019s next</h3>';
-    if (nx && nx.url) {
-      if (nx.why) h += '<p translate="yes" data-en="' + esc(nx.why) + '">' + esc(nx.why) + '</p>';
-      h += '<a class="btn next" href="' + esc(nx.url) + '" translate="yes" data-en="' + esc(nx.title) + '">' + esc(nx.title) + ' \u2192</a>';
-    }
-    h += '<p class="gc" translate="yes" data-en="' + gc + '">' + gc + '</p></div>';
+    /* T-399 (Nov 13): no Turn in button and no "go to Google Classroom" box here any more — students pressed
+       Turn in, read "Done here? Go to Google Classroom" and left before After the story. The page saves within
+       ~1.5 s of every change; turned_in is set by itself when the core path is finished (coreCheck). The only
+       thing under Your Turn is the green "Next: Say it" button (when the episode has After the story); the
+       "What's next" box appears only once the core path is done, at the end of the page. */
+    h += '<div class="row" id="ytNextRow"></div>';
     $('ytBox').innerHTML = h;
     $('yt').style.display = 'block';
     showDirections($('ytBox'));
@@ -796,15 +793,61 @@
       ta.addEventListener('focus', function () { watchCheck(ta); });
       ta.addEventListener('input', function () { saved[+ta.getAttribute('data-i')] = ta.value; highlights(); touch(); marksSoon(); });
     });
-    $('turnIn').addEventListener('click', function () {
-      state.turned = true; save();
-      $('turnIn').textContent = 'Turned in. Turn in again';
-      $('ytMsg').textContent = 'Saved. You can keep editing.';
-    });
-    $('rewatch').addEventListener('click', function () { LOG().replays++; active(); touch(); window.scrollTo(0, 0); start(true); });
+    paintNext();
     if (scroll) $('yt').scrollIntoView({ behavior: 'smooth', block: 'start' });
     if (window.REEL_TIERS) REEL_TIERS.show(false);   /* "After the story" tiers under Your turn */
-    marksPaint();
+    marksPaint(); coreCheck();
+  }
+  /* ================= CORE PATH + WHAT'S NEXT (T-399) =================
+     Core = every Your Turn prompt written (3+ words) and, when the episode has After the story, card A
+     finished (its topic sentence picked right). REEL_TIERS.coreDone(), when the tiers chat adds it
+     (stations, Job C), takes over the tier half. */
+  function tiersOn() { try { return !!(window.REEL_TIERS && REEL_TIERS.ready && REEL_TIERS.ready()); } catch (e) { return false; } }
+  function ytDone() {
+    var ytl = (EP.yourTurn && (EP.yourTurn[state.level] || EP.yourTurn.A)) || {}, np = (ytl.prompts || []).length;
+    var mine = (state.yt && state.yt[state.level]) || [];
+    for (var j = 0; j < np; j++) if (String(mine[j] || '').trim().split(/\s+/).filter(Boolean).length < 3) return false;
+    return np > 0;
+  }
+  function tierCoreDone() {
+    try { if (typeof REEL_TIERS.coreDone === 'function') return !!REEL_TIERS.coreDone(); } catch (e) {}
+    var T = EP.tiers || window.EP_TIERS, tp = state.tiers && state.tiers.A && state.tiers.A.topic;
+    return !!(T && T.topic && tp && tp.pick != null && tp.pick === T.topic.good);
+  }
+  function coreDone() { return ytDone() && (!tiersOn() || tierCoreDone()); }
+  function paintNext() {
+    var row = $('ytNextRow'); if (!row) return;
+    if (!tiersOn() || $('ytNext')) return;
+    row.innerHTML = '<button class="btn next big" id="ytNext" translate="yes" data-en="Next: Say it">Next: Say it \u2192</button>';
+    showDirections(row);
+    $('ytNext').addEventListener('click', function () {
+      if (!state.tiers) state.tiers = {};
+      state.tiers.open = 'A'; touch();
+      try { REEL_TIERS.show(true); } catch (e) {}
+    });
+  }
+  var coreT = null;
+  function coreSoon() { clearTimeout(coreT); coreT = setTimeout(coreCheck, 300); }
+  function coreCheck() {
+    if (!$('ytBox')) return;
+    paintNext();
+    var d = coreDone(), box = $('galDone');
+    if (d && !state.turned) { state.turned = true; touch(); }   /* the dashboard's "Turned in" */
+    if (!d) { if (box) box.remove(); return; }
+    if (box && box.__at === ($('tiers') && $('tiers').style.display === 'block' ? 'tiers' : 'yt')) return;
+    if (box) box.remove();
+    var nx = EP.next, gc = 'Go to Google Classroom for your next activity, or ask your teacher what to do next.', h = '';
+    h += '<h3 translate="yes" data-en="You finished Episode ' + EP.num + '!">You finished Episode ' + EP.num + '! \u2713</h3>';
+    if (nx && nx.url) {
+      if (nx.why) h += '<p translate="yes" data-en="' + esc(nx.why) + '">' + esc(nx.why) + '</p>';
+      h += '<a class="btn next" href="' + esc(nx.url) + '" translate="yes" data-en="' + esc(nx.title) + '">' + esc(nx.title) + ' \u2192</a>';
+    }
+    h += '<p class="gc" translate="yes" data-en="' + gc + '">' + gc + '</p>';
+    box = document.createElement('div'); box.id = 'galDone'; box.className = 'nextbox done'; box.innerHTML = h;
+    var tiers = $('tiers');
+    if (tiers && tiers.style.display === 'block') { box.__at = 'tiers'; (tiers.querySelector('.tiersbox') || tiers).appendChild(box); }
+    else { box.__at = 'yt'; $('ytBox').appendChild(box); }
+    showDirections(box);
   }
   /* ================= MR. TOBY'S MARKS (T-393, readings/marks.js) =================
      reel_views.marks is written ONLY by the teacher dashboard (a PATCH on that one column); the
