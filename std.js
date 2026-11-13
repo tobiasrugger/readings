@@ -176,10 +176,18 @@
      with a small plain "Not ___?" beside it. And Start is never left below the fold (ensureStart). */
   var WHO_CSS = '.gal-std-who{font-size:13.5px;font-weight:700;margin:6px 0 4px;line-height:1.35;color:#4a4256}' +
     '.gal-std-who b{color:#2B2233}' +
-    '.gal-std-row{display:flex;align-items:center;gap:10px;flex-wrap:nowrap;max-width:100%}' +
-    '.gal-std-row > *{margin-top:0;margin-bottom:0}' +
-    '.gal-std-notme{font:inherit;font-size:13px;font-weight:700;background:transparent;border:1px solid #a9a1b3;border-radius:8px;' +
-    'padding:5px 9px;cursor:pointer;color:#5d536a;white-space:nowrap;flex:0 0 auto;width:auto;min-width:0;box-shadow:none}' +
+    /* T-406 (Nov 13): pages style their gate buttons with rules like ".gatebox button{width:100%;background:…}"
+       (about 158 files). That beat .gal-std-notme, so "Not Xi?" went full-width and black and crushed Start
+       to a sliver (Landlady, P3 Chromebook). Now the row and both buttons win against any page rule, and if the
+       row is too narrow "Not ___?" wraps to its own small line UNDER Start, never on top of it. */
+    'div.gal-std-row{display:flex!important;align-items:center!important;gap:8px 10px!important;flex-wrap:wrap!important;max-width:100%!important;width:100%!important}' +
+    'div.gal-std-row > *{margin-top:0;margin-bottom:0}' +
+    'div.gal-std-row > .gal-std-start{flex:1 1 60%!important;min-width:60%!important;width:auto!important;max-width:100%!important}' +
+    'div.gal-std-row > button.gal-std-notme{font-family:inherit!important;font-size:13px!important;font-weight:700!important;letter-spacing:normal!important;' +
+    'text-transform:none!important;background:transparent!important;border:1px solid #a9a1b3!important;border-radius:8px!important;' +
+    'padding:5px 9px!important;cursor:pointer;color:#5d536a!important;white-space:nowrap!important;flex:0 0 auto!important;' +
+    'width:auto!important;min-width:0!important;max-width:40%!important;overflow:hidden!important;text-overflow:ellipsis!important;' +
+    'height:auto!important;line-height:1.3!important;box-shadow:none!important;margin:0!important}' +
     '.gal-compact{padding-top:10px!important;padding-bottom:10px!important;row-gap:6px!important}' +
     '.gal-compact > *{margin-top:5px!important;margin-bottom:5px!important}' +
     '.gal-compact img,.gal-compact figure,.gal-compact picture,.gal-compact svg:not(button svg),.gal-compact .gal-trail-note{display:none!important}';
@@ -369,11 +377,10 @@
     /* T-368: Start and a small "Not ___?" share one row; the line sits directly above that row */
     var row = btn.parentNode && btn.parentNode.classList && btn.parentNode.classList.contains('gal-std-row') ? btn.parentNode : null;
     if (!row) {
-      var wide = btn.parentNode && btn.offsetWidth >= btn.parentNode.clientWidth * 0.8;
       row = document.createElement('div'); row.className = 'gal-std-row';
       btn.parentNode.insertBefore(row, btn); row.appendChild(btn);
-      if (wide) { btn.style.flex = '1 1 auto'; btn.style.minWidth = '0'; }
     }
+    btn.classList.add('gal-std-start');   /* T-406: Start keeps at least 60% of the row */
     var nm = document.createElement('button'); nm.type = 'button'; nm.className = 'gal-std-notme';
     nm.textContent = 'Not ' + first + '?';
     row.appendChild(nm);
