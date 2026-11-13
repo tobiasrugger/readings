@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script src="/readings/saveguard.js"></script><!-- T-170 (Nov 6 rebuild): load before save, first in head -->
+<script src="/readings/saveguard.js"></script>
+<script src="/readings/marks.js"></script><!-- T-395 --><!-- T-170 (Nov 6 rebuild): load before save, first in head -->
 <script src="/readings/gloss.js"></script><!-- T-354: "letter" = letter of the alphabet in every language -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -233,6 +234,9 @@ body.wt #sayMount,body.wt #sayMount *{outline:none;cursor:auto !important} body.
 body.wt .spk,body.wt .numchip,body.wt .gtab,body.wt .btn,body.wt #bar button{cursor:pointer !important}
 body.wt [translate="no"] .spk{outline:none}
 @media (max-width:560px){.anchor{width:46%;margin-left:10px}.trayin{font-size:1.8rem;gap:6px 2px}.numchip b{font-size:1.1rem}}
+
+/* T-395: translated line under a mark box's English */
+.gmk .gmtr{display:block;font-weight:700;color:#2d6a4f;font-size:.92em;margin-top:2px}
 </style>
 <script>
 window.GAL_META={title:'Launch Plus U1-L2: Introductions',unit:'Launch Plus',
@@ -810,12 +814,13 @@ function renderWrite(){
   return '<div class="card"><div class="frame">'+w.frame+'</div>'+(w.prompt?'<div style="font-weight:800">'+w.prompt+' …</div>':'')+
    '<textarea id="ta'+i+'" placeholder="'+w.placeholder+'" oninput="wr('+i+',this.value)">'+v.replace(/</g,'&lt;')+'</textarea><div class="check" id="ck'+i+'"></div></div>';
  }).join('');
+ setTimeout(paintMarks,0); /* T-395 */
  for(var i=0;i<DATA.write.length;i++)checkW(i);
  if(window.Shades){Shades.mark($('writeItems'));Shades.watch(document.querySelectorAll('#writeItems textarea'));}
  /* T-273: barrow/borrow-style tips under each writing box; each tip shown is counted in ST.SP for the dashboard */
  if(window.Spell)Spell.watch(document.querySelectorAll('#writeItems textarea'),{lang:savedLang,tr:function(w,m,lg,cb){trFetch('spell',w,m,lg,cb);},onHit:function(id){ST.SP=ST.SP||{};ST.SP[id]=(ST.SP[id]||0)+1;save();}});
 }
-function wr(i,v){ST.W['w'+i]=v;checkW(i);save();}
+function wr(i,v){ST.W['w'+i]=v;checkW(i);save();paintMarksSoon();}
 function checkW(i){
  var v=(ST.W['w'+i]||'').trim(),el=$('ck'+i);if(!el)return;
  var sents=v.split(/[.!?]+/).filter(function(s){return s.trim().length>1;}).length;
@@ -823,6 +828,27 @@ function checkW(i){
  var need=[1,2,4][i];
  el.innerHTML='<span class="'+(caps?'ok':'')+'">'+(caps?'✓':'○')+' capital letter</span><span class="'+(end?'ok':'')+'">'+(end?'✓':'○')+' period</span><span class="'+(sents>=need?'ok':'')+'">'+(sents>=need?'✓':'○')+' '+need+' sentence'+(need>1?'s':'')+' ('+sents+')</span><span>'+words+' words</span>';
 }
+
+
+/* ===================== T-395: Mr. Toby's ✓ / ✗ / note on the Write step (readings/marks.js) =====================
+   Marks live in launch_plus.marks (the teacher writes them; this page NEVER sends that column).
+   Key = "<unit>.w<i>". A ✗ on an unchanged answer = that box's point off; a changed answer counts again.
+   ELD 101 view: nothing red — a soft "Mr. Toby: try this again ✏️" box with the note (🔊 + tap words),
+   a cast face, the box reopened, the green ➤ and a next-step line. */
+var MARKS=null,MARK_T=null,MARK_JUMPED=false;
+function markKey(i){return UNIT+'.w'+i;}
+function markOff(i,v){return !!(MARKS&&window.GALMARK&&GALMARK.off(MARKS,markKey(i),v));}
+function anySentBack(){if(!MARKS||!window.GALMARK)return false;for(var i=0;i<DATA.write.length;i++){if(markOff(i,ST.W['w'+i]||''))return true;}return false;}
+function loadMarks(){if(!window.GALMARK||!ST.email)return;
+ GALMARK.fetch(TABLE,'unit=eq.'+encodeURIComponent(UNIT),ST.email).then(function(m){if(!m)return;MARKS=m;publishScore();paintMarks();
+  if(anySentBack()&&!MARK_JUMPED&&ST.act!==6){MARK_JUMPED=true;go(6);}});}
+function markDir(el){var lg=lang();if(!lg)return;Array.prototype.forEach.call(el.querySelectorAll('[data-en]'),function(n){if(n.querySelector('.gmtr'))return;
+ var src=n.getAttribute('data-en');trFetch('dir',src,'',lg,function(t){if(!t||n.querySelector('.gmtr'))return;var s=document.createElement('span');s.className='gmtr';s.setAttribute('translate','no');s.textContent=t;n.appendChild(s);});});}
+function paintMarks(){if(!window.GALMARK||!MARKS||!$('ta0'))return;
+ var items=[];for(var i=0;i<DATA.write.length;i++){var ta=$('ta'+i);if(ta)items.push({key:markKey(i),box:ta.parentNode,field:ta});}
+ GALMARK.paint101(items,MARKS,{say:function(t){speak(t);},tap:function(w,sent){var r=w.getBoundingClientRect();if(lang())showWord(w.getAttribute('data-w')||w.textContent,r.left+r.width/2,r.top,sent);},dir:markDir,who:'linh'});}
+function paintMarksSoon(){clearTimeout(MARK_T);MARK_T=setTimeout(paintMarks,350);}
+document.addEventListener('visibilitychange',function(){if(!document.hidden)loadMarks();});
 
 /* ===================== NAV ===================== */
 var PARTS=['Start','Read','Read again','Fix','Bigger','Which phrase','Write','Record','Done'];
@@ -853,7 +879,7 @@ var saveT,dirty=false,pushing=false,pushSeq=0;
 function skills(){var o={};ITEMS.forEach(function(it){var st=state(it.id);if(!st.done)return;if(!o[it.tag])o[it.tag]={n:0,d:0};o[it.tag].d++;if(st.first)o[it.tag].n++;});return o;}
 /* T-238 (Nov 3 2026): gradebook score = items solved on any try + writing boxes with enough sentences. First-try stays in the launch_plus row (score) for the dashboard. */
 function solvedN(){return ITEMS.filter(function(x){return state(x.id).done;}).length;}
-function writeN(){var n=0;[1,2,4].forEach(function(need,i){var v=((ST.W||{})["w"+i]||"").trim();var s=v.split(/[.!?]+/).filter(function(t){return t.trim().length>1;}).length;if(v&&s>=need)n++;});return n;}
+function writeN(){var n=0;[1,2,4].forEach(function(need,i){var v=((ST.W||{})["w"+i]||"").trim();var s=v.split(/[.!?]+/).filter(function(t){return t.trim().length>1;}).length;if(v&&s>=need&&!markOff(i,v))n++;});return n;}
 function publishScore(){window.GAL_SCORE=solvedN()+writeN();window.GAL_MAX=ITEMS.length+3;window.GAL_SKILLS=skills();}
 function save(){
  dirty=true;publishScore();
@@ -864,7 +890,16 @@ function save(){
 }
 function load(){try{var k=localStorage.getItem(LAST_KEY);if(!k)return;var d=JSON.parse(localStorage.getItem(k));if(d)ST=Object.assign(ST,d);}catch(e){}}
 function clean(s){return String(s||'').trim().toLowerCase();}
-function push(force){
+/* T-395: saveguard.js fills any column a save leaves out from the row it loaded (select=*), which would
+   send back a STALE copy of launch_plus.marks and undo Mr. Toby's newer mark. Until saveguard skips "marks"
+   itself, drop that column from its loaded copies before every save. */
+function scrubMarks(){try{var R=window.__SG&&window.__SG.rows;if(!R)return;Object.keys(R).forEach(function(k){if(k.indexOf(TABLE+'|')===0)(R[k]||[]).forEach(function(r){if(r)delete r.marks;});});}catch(e){}}
+var PRIMED={};
+/* make saveguard load this student's row NOW (its own GET), then strip marks from its copy, before the first save */
+function primeGuard(){var em=ST.email;if(!em||PRIMED[em])return PRIMED[em]||Promise.resolve();
+ PRIMED[em]=Promise.race([fetch(SUPA_URL+'/rest/v1/'+TABLE+'?select=*&email=eq.'+encodeURIComponent(em),{headers:hdr()}),new Promise(function(r){setTimeout(r,15000);})]).then(function(){scrubMarks();}).catch(function(){scrubMarks();});
+ return PRIMED[em];}
+function push(force){if(ST.email&&!PRIMED[ST.email]){primeGuard().then(function(){push(force);});return;}scrubMarks();
  if(!ST.email)return;if(!SYNCED){syncFromServer();return;}if(progressOf(ST)<SERVER_P)return;if(!dirty&&!force)return;if(pushing)return;
  pushing=true;dot('busy');var mySeq=++pushSeq;
  setTimeout(function(){if(pushing&&mySeq===pushSeq){pushing=false;dirty=true;dot('err');}},15000);
@@ -927,7 +962,7 @@ function syncFromServer(then){
    var best=null;(rows||[]).forEach(function(row){if(row&&row.payload&&(!best||progressOf(row.payload)>progressOf(best.payload)))best=row;});
    var me={name:ST.name,email:ST.email,period:ST.period};
    if(best){ST=mergeState(ST,best.payload);ST.name=me.name;ST.email=me.email;ST.period=me.period;SERVER_P=progressOf(best.payload);}
-   SYNCED=true;SYNC_WARNED=false;dirty=true;srvBar(false);
+   SYNCED=true;SYNC_WARNED=false;dirty=true;srvBar(false);loadMarks(); /* T-395 */
    refreshAfterSync();if(then)then();
    push(true);})
  .catch(function(){

@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="google" content="notranslate">
 <title>Launch Plus · Teacher dashboard</title>
+<script src="/readings/marks.js"></script><!-- T-395: loads first so render() can draw marks -->
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
 <style>
 :root{--pine:#1b4332;--pine2:#2d6a4f;--moss:#40916c;--sage:#95d5b2;--paper:#f4f5f2;--card:#fff;--ink:#1f2421;--muted:#5c6b62;--line:#dfe4dd;--gold:#d4a017;--rust:#b5451b;--sky:#e8f3ee}
@@ -108,6 +109,20 @@ var LESSONS=[
  {u:'wit-103',n:'Sentence Work · ELD 103',table:'wit',parts:[['S','Sort',1],['C','Scramble',2],['F','Sentence or fragment?',3],['B','Because, but, so',5],['W','Write',4]]}
 ];
 var ROWS=[],SAY={},SORT={k:'name',d:1},OPEN={};
+/* T-395: Mr. Toby's ✓ / ✗ / note on each Write step (readings/marks.js). Key = "<unit>.w<i>".
+   A mark is a PATCH on launch_plus.marks only; then the gradebook row is re-scored with the RPC. */
+var LP_MAX={'u1-l1':30,'u1-l2':32,'u1-l3':27,'u1-l4':46,'u1-l5':29};
+function isMarkable(u){return /^u1-l\d$/.test(u)&&!!window.GALMARK;}
+function lpScore(r,u){var A=(r.payload&&r.payload.A)||{},W=r.writing||(r.payload&&r.payload.W)||{},n=0;
+ Object.keys(A).forEach(function(k){if(A[k]&&A[k].done)n++;});
+ [1,2,4].forEach(function(need,i){var v=(W['w'+i]||'').trim(),c=v.split(/[.!?]+/).filter(function(t){return t.trim().length>1;}).length;
+  if(v&&c>=need&&!GALMARK.off(r.marks||{},u+'.w'+i,v))n++;});
+ var mx=LP_MAX[u]||0;return {score:Math.min(n,mx||n),max:mx};}
+function unmarkedN(r,u){var W=r.writing||(r.payload&&r.payload.W)||{};return GALMARK.unmarked(r.marks||{},['w0','w1','w2'].map(function(k,i){return {key:u+'.w'+i,a:W[k]||''};}));}
+function bindMarks(){var t=$('tbl');if(!window.GALMARK||t._gm395)return;t._gm395=true;
+ GALMARK.bind(t,function(key,ctl){var box=ctl.closest('[data-gmrow]'),r=ROWS[+box.getAttribute('data-gmrow')],u=r.unit,i=+key.slice(-1),W=r.writing||(r.payload&&r.payload.W)||{};
+  return {table:'launch_plus',filter:'email=eq.'+encodeURIComponent(r.email)+'&unit=eq.'+encodeURIComponent(u),ans:W['w'+i]||'',
+   after:function(marks){r.marks=marks;var sc=lpScore(r,u);return GALMARK.setScore(r.email,'launch-plus/'+u,sc.score,sc.max);}};});}
 function $(i){return document.getElementById(i);}
 function H(){return {'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY};}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
@@ -118,7 +133,7 @@ function openApp(){$('pwwrap').style.display='none';$('lesson').innerHTML=LESSON
 function loadAll(){
  $('stats').innerHTML='<div class="muted">Loading…</div>';
  var sel='select=email,name,period,unit,score,max_score,turned_in,writing,payload,updated_at&order=updated_at.desc';
- var q1=Promise.all(['launch_plus','topic_sentence','revise','wit'].map(function(t){return fetch(SUPA_URL+'/rest/v1/'+t+'?'+sel,{headers:H()}).then(function(r){return r.ok?r.json():[];}).catch(function(){return [];});})).then(function(a){return [].concat.apply([],a);});
+ var q1=Promise.all(['launch_plus','topic_sentence','revise','wit'].map(function(t){return fetch(SUPA_URL+'/rest/v1/'+t+'?'+(t==='launch_plus'?sel.replace('payload,','payload,marks,'):sel),{headers:H()}).then(function(r){return r.ok?r.json():[];}).catch(function(){return [];});})).then(function(a){return [].concat.apply([],a);});
  var sets=LESSONS.filter(function(l){return l.say;}).map(function(l){return l.say;}).join(',');
  var q2=fetch(SUPA_URL+'/rest/v1/say_work?select=email,set,scores,updated_at&set=in.('+sets+')',{headers:H()}).then(function(r){return r.ok?r.json():[];}).catch(function(){return [];});
  var q3=fetch(SUPA_URL+'/rest/v1/page_flags?select=slug,period,flags',{headers:H()}).then(function(r){return r.ok?r.json():[];}).catch(function(){return [];});
@@ -171,7 +186,7 @@ function clearFlags(){
  .catch(function(e){$('featMsg').textContent='Could not clear ('+e+').';});
 }
 function render(){
- renderFlags();
+ renderFlags();bindMarks();
  var u=$('lesson').value,pd=$('period').value,lesson=LESSONS.filter(function(l){return l.u===u;})[0]||LESSONS[0];
  var rows=ROWS.filter(function(r){return r.unit===u&&(!pd||String(r.period)===pd);});
  rows.forEach(function(r){r._p=parts(r,lesson);r._say=sayScore(r,lesson);r._sh=(r.payload&&r.payload.shades)||[];r._wm=(r.payload&&r.payload.wordMode)||'';r._pct=r.max_score?Math.round(100*r.score/r.max_score):0;r._keys=Object.keys(r._p);r._done=r._keys.filter(function(k){return r._p[k].done>=r._p[k].n&&r._p[k].n>0;}).length;});
@@ -188,12 +203,12 @@ function render(){
   var p=r._p,W=r.writing||(r.payload&&r.payload.W)||{},id=(r.email||'').replace(/[^a-z0-9]/gi,'_');
   var pct=r._pct,sc='score '+(pct<60?'lo':pct<80?'mid':'hi');
   var sy=r._say?'<span class="'+(r._say.ok===r._say.total?'score hi':'score')+'">'+r._say.ok+' / '+r._say.total+'</span>':'<span class="muted">—</span>';
-  var tr='<tr><td class="nm"><button class="expand" onclick="toggle(\''+id+'\')">'+esc(r.name||r.email)+'</button><small>'+esc(r.email)+'</small></td><td>'+esc(r.period)+'</td>'+
+  var tr='<tr><td class="nm"><button class="expand" onclick="toggle(\''+id+'\')">'+esc(r.name||r.email)+(isMarkable(u)&&unmarkedN(r,u)?' <span title="writing not marked yet" style="color:#9a6a00">\u270e'+unmarkedN(r,u)+'</span>':'')+'</button><small>'+esc(r.email)+'</small></td><td>'+esc(r.period)+'</td>'+
    '<td><div class="parts">'+r._keys.map(function(k){return '<span class="pt '+cls(p[k],p[k].n)+'" title="'+p[k].label+': '+p[k].done+' of '+p[k].n+' done, '+p[k].first+' right first try">'+k+'</span>';}).join('')+'</div></td>'+
    '<td><span class="'+sc+'">'+r.score+' / '+r.max_score+'</span> <span class="muted">('+pct+'%)</span></td><td>'+sy+'</td>'+
    '<td>'+(r._sh.length?'<span class="score hi" title="'+esc(r._sh.map(function(x){return x.base+' \u2192 '+x.word;}).join(', '))+'">'+r._sh.length+'</span>':'<span class="muted">\u2014</span>')+(r._wm==='shades'?' <span class="muted" title="last used Shades mode">\ud83c\udfa8</span>':'')+'</td>'+
    '<td>'+(r.turned_in?'<span class="tag in">in</span>':'<span class="tag no">not yet</span>')+'</td><td class="muted">'+when(r.updated_at)+'</td></tr>';
-  if(OPEN[id]){tr+='<tr><td colspan="8">'+['w0','w1','w2'].map(function(k,i){var lbl=/^wit-/.test(u)?['Sentence types','Because, but, so','Pop + revision'][i]:'Step '+(i+1);return '<div class="wr"><b>'+lbl+'</b>'+(W[k]?esc(W[k]):'<span class="muted">(empty)</span>')+'</div>';}).join('')+
+  if(OPEN[id]){var mk=isMarkable(u);tr+='<tr><td colspan="8"'+(mk?' data-gmrow="'+ROWS.indexOf(r)+'"':'')+'>'+['w0','w1','w2'].map(function(k,i){var lbl=/^wit-/.test(u)?['Sentence types','Because, but, so','Pop + revision'][i]:'Step '+(i+1);return '<div class="wr"><b>'+lbl+'</b>'+(W[k]?esc(W[k]):'<span class="muted">(empty)</span>')+(mk?GALMARK.controls(r.marks||{},u+'.'+k,W[k]||''):'')+'</div>';}).join('')+
    (r._sh.length?'<div class="wr"><b>Bigger words tried</b>'+r._sh.map(function(x){return '<div>'+esc(x.base)+' \u2192 <b>'+esc(x.word)+'</b> <span class="muted">'+esc(x.sentence||'')+'</span></div>';}).join('')+'</div>':'')+
    '<div class="muted" style="font-size:.78rem">Right first try — '+r._keys.filter(function(k){return k!=='W';}).map(function(k){return p[k].label+' '+p[k].first+'/'+p[k].n;}).join(' · ')+'</div></td></tr>';}
   return tr;}).join('')||'<tr><td colspan="8" class="muted">No students yet for this lesson'+(pd?' in period '+pd:'')+'.</td></tr>';
