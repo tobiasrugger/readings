@@ -24,7 +24,9 @@
   var INFRA = /^(students|student_aliases|activity_attempts|skill_attempts|activities|instruction_reveals|page_translation|song_tr|student_work|response_history|class_assignments|excusals|student_profiles|song_lyrics|news_translations|teacher_checks|rpc)$/;
   var KEYCOLS = ['set_slug', 'slug', 'guide_key', 'episode', 'lesson', 'lesson_id', 'page', 'story', 'activity', 'set_id', 'unit',
     'part', 'deck', 'item', 'kind', 'set_key', 'story_id', 'lesson_key', 'quiz', 'chapter', 'text_slug', 'song', 'module', 'section', 'character_slug', 'field_key', 'qid', 'question', 'item_id', 'week'];
-  var SKIPFILL = /^(id|email|student_email|updated_at|created_at|saved_at)$/;
+  /* T-397: marks + tier are written ONLY by Mr. Toby (marks.js PATCH, tier dropdown). A student save must never
+     carry back the copy this page loaded, or an old mark/tier overwrites his newer one. */
+  var SKIPFILL = /^(id|email|student_email|updated_at|created_at|saved_at|marks|tier)$/;
   var KEEP = /^(__sg|gal_|vocab_lang|std_)|lang|_dir$|_tap$|font|theme|textsize|bigtext/i;
 
   function lp(e) { return String(e || '').trim().toLowerCase().split('@')[0]; }
