@@ -632,12 +632,17 @@
     });
     var ytl = (EP.yourTurn && (EP.yourTurn[state.level] || EP.yourTurn.A)) || {}, np = (ytl.prompts || []).length;
     var mine = (state.yt && state.yt[state.level]) || [], wrote = 0, j;
-    for (j = 0; j < np; j++) if (String(mine[j] || '').trim().split(/\s+/).filter(Boolean).length >= 3) wrote++;
-    var o = { checks_first_try: r, checks_solved: solved, checks_total: t, yt_written: wrote, yt_total: np }, k;
+    var off = 0;
+    for (j = 0; j < np; j++) if (String(mine[j] || '').trim().split(/\s+/).filter(Boolean).length >= 3) {
+      /* T-393: an answer Mr. Toby sent back (✗) and the student has not changed does not count */
+      if (window.GALMARK && GALMARK.off(MARKS, 'yt.' + state.level + '.' + j, mine[j])) off++; else wrote++;
+    }
+    var o = { checks_first_try: r, checks_solved: solved, checks_total: t, yt_written: wrote, yt_total: np, yt_off: off }, k;
     var ts = window.REEL_TIERS ? REEL_TIERS.scores() : { pts: 0, max: 0, out: {} };   /* tiers.js (tiers chat) */
     for (k in ts.out) o[k] = ts.out[k];
     var base = solved + wrote, max = t + np;
     window.GAL_SCORE = Math.min(max, base + (ts.pts || 0)); window.GAL_MAX = max;
+    o.tiers_pts = ts.pts || 0; o.gal = window.GAL_SCORE; o.gal_max = max;   /* T-393: the dashboard rescores a ✗ from these */
     return o;
   }
 
@@ -789,7 +794,7 @@
     showDirections($('ytBox'));
     $('ytBox').querySelectorAll('textarea').forEach(function (ta) {
       ta.addEventListener('focus', function () { watchCheck(ta); });
-      ta.addEventListener('input', function () { saved[+ta.getAttribute('data-i')] = ta.value; highlights(); touch(); });
+      ta.addEventListener('input', function () { saved[+ta.getAttribute('data-i')] = ta.value; highlights(); touch(); marksSoon(); });
     });
     $('turnIn').addEventListener('click', function () {
       state.turned = true; save();
@@ -799,7 +804,40 @@
     $('rewatch').addEventListener('click', function () { LOG().replays++; active(); touch(); window.scrollTo(0, 0); start(true); });
     if (scroll) $('yt').scrollIntoView({ behavior: 'smooth', block: 'start' });
     if (window.REEL_TIERS) REEL_TIERS.show(false);   /* "After the story" tiers under Your turn */
+    marksPaint();
   }
+  /* ================= MR. TOBY'S MARKS (T-393, readings/marks.js) =================
+     reel_views.marks is written ONLY by the teacher dashboard (a PATCH on that one column); the
+     student save never sends it, so a student save cannot wipe a mark. Keys: "yt.<level>.<i>". */
+  var MARKS = {}, marksKey = '', marksT = null, MK_WHO = ['linh', 'mateo', 'amira', 'jun', 'paolo'];
+  function marksPaint() {
+    if (!window.GALMARK || !$('ytBox')) return;
+    var items = [];
+    $('ytBox').querySelectorAll('textarea[data-i]').forEach(function (ta) {
+      var i = +ta.getAttribute('data-i');
+      items.push({ key: 'yt.' + state.level + '.' + i, box: ta.closest('.prompt') || ta.parentNode, field: ta });
+    });
+    GALMARK.paint101(items, MARKS, { tap: function (el, sentence) { wordPop(el, sentence); }, dir: function (root) { showDirections(root); },
+      who: MK_WHO[(EP.num || 1) % MK_WHO.length] });
+  }
+  function marksSoon() { clearTimeout(marksT); marksT = setTimeout(function () { marksPaint(); score(); }, 400); }
+  function marksFetch() {
+    if (!window.GALMARK || !me.email || !loaded) return;
+    GALMARK.fetch(TABLE, 'episode=eq.' + encodeURIComponent(EP.id), me.email).then(function (m) {
+      if (!m) return;                                   /* column not there yet, or offline: change nothing */
+      var key = JSON.stringify(m); if (key === marksKey) return; marksKey = key;
+      var before = window.GAL_SCORE;
+      MARKS = m; marksPaint(); score();
+      if (window.GAL_SCORE !== before) touch();         /* the new score reaches the gradebook */
+    });
+  }
+  (function () {
+    var s = document.createElement('script'); s.src = '/readings/marks.js';
+    s.onload = function () { marksPaint(); marksFetch(); };
+    document.head.appendChild(s);
+  })();
+  setInterval(marksFetch, 90000);
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') marksFetch(); });
   /* ---------- T-369: "Wait — did you finish watching the story?" ----------
      The first time a student starts Your Turn before reaching the last line of the episode, ask once, in
      English AND their language, both visible. "Yes" closes it; "I need to watch" scrolls the stage back into
@@ -958,11 +996,13 @@
     }
     n.textContent = msg || '';
   }
-  function save() {
+  function save(leaving) {
     if (!me.email || !loaded) return;          /* T-79: never save before a successful load */
     $('saved').className = 'saving';
+    var body = JSON.stringify(payload());      /* never carries marks (T-393) */
     fetch(SUPA_URL + '/rest/v1/' + TABLE + '?on_conflict=email,episode', {
-      method: 'POST', headers: sbHead('resolution=merge-duplicates,return=minimal'), body: JSON.stringify(payload())
+      method: 'POST', headers: sbHead('resolution=merge-duplicates,return=minimal'), body: body,
+      keepalive: !!leaving && body.length < 60000   /* T-393: a save sent while the tab closes still arrives */
     }).then(function (r) { $('saved').className = r.ok ? '' : 'err'; if (r.ok && window.REEL_TIERS) REEL_TIERS.poll(); })
       .catch(function () { $('saved').className = 'err'; });
   }
@@ -1020,10 +1060,11 @@
       $('again').style.display = '';
     }
     showYourTurn(false);   /* T-369: Your Turn is always open below the story, never behind a button */
-    score(); highlights();
+    score(); highlights(); marksFetch();
   }
   setInterval(function () { if (dirty && loaded) { dirty = false; save(); } }, 20000);
-  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden' && dirty && loaded) { dirty = false; save(); } });
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden' && dirty && loaded) { dirty = false; clearTimeout(soonT); save(true); } });
+  window.addEventListener('pagehide', function () { if (dirty && loaded) { dirty = false; clearTimeout(soonT); save(true); } });
   setInterval(function () { if (me.email && document.visibilityState === 'visible') { state.secs += 10; } }, 10000);
   /* T-147: active practice time — any tap, click or key counts as activity, and so does playback */
   ['pointerdown', 'keydown', 'touchstart'].forEach(function (ev) { document.addEventListener(ev, function () { if (me.email) active(); }, { capture: true, passive: true }); });
