@@ -7,7 +7,7 @@
 <title>Student data · one page per student</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
-/* T-392 · readings/studentdata/ — one teacher page per student: that student's own line from every dashboard. */
+/* T-392 + T-401 (ELD 103 stories, Writing Ladder, news, Story Checks) · readings/studentdata/ — one teacher page per student: that student's own line from every dashboard. */
 :root{--pine:#1b4332;--pine2:#2d6a4f;--moss:#40916c;--sage:#95d5b2;--paper:#f4f5f2;--ink:#1f2421;--muted:#5c6b62;--line:#dfe4dd;--box:#2b3a31;--gold:#d4a017;--rust:#b5451b;--blue:#2f6fd6;
  --plum:#5B2A6E;--lilac-2:#E2D3EA;--know:#2F8A5B;--know-bg:#DDF1E5;--miss:#C0453A;--idk:#9C8FA3}
 *{box-sizing:border-box}
@@ -83,6 +83,16 @@ th.day,td.day{text-align:center;font-size:.7rem}
 .pill{display:inline-block;padding:1px 9px;border-radius:10px;font-size:.76rem;font-weight:700}
 .pill.done{background:var(--know-bg);color:var(--know)}.pill.going{background:#FBEFD2;color:#8A6310}
 .cls{font-size:.75rem;color:var(--muted)}
+/* ELD 103 story rows (same look as landlady/dashboard.html) */
+.spill{display:inline-block;font-size:.74rem;font-weight:800;border-radius:999px;padding:1px 9px;white-space:nowrap}
+.spill.in{background:#d8f0e2;color:var(--pine)}.spill.wip{background:#fff1bf;color:#6b5200}
+.sbar{display:inline-block;width:80px;height:9px;border-radius:5px;background:#e3e8e2;vertical-align:middle;overflow:hidden;margin-right:6px}
+.sbar i{display:block;height:100%;background:var(--pine2)}
+.mk{font-weight:800;font-size:.8rem;white-space:nowrap}.mk .x{color:var(--rust)}.mk .ok{color:var(--pine2)}.mk .pen{color:#7a5c00}
+/* Writing Ladder rungs (same look as write/dashboard.html) */
+.rung{display:inline-block;min-width:44px;text-align:center;border:1.5px solid #c9d1cb;border-radius:6px;padding:1px 4px;margin:0 2px 2px 0;font-size:.72rem;line-height:1.25;vertical-align:top}
+.rung b{display:block;font-size:.66rem;color:var(--muted)}
+.rung.done{background:#e3f6ea;border-color:var(--pine2)}.rung.part{background:#fff6d6;border-color:#d4a017}.rung.optional{background:#f3f3f3;border-style:dashed;color:#8b948f}.rung.excused{background:#f3f3f3;color:#8b948f}
 /* gradebook list */
 .band{display:inline-block;min-width:30px;text-align:center;font-weight:800;border-radius:6px;padding:1px 6px;font-size:.8rem}
 .b45,.b4{background:#d8f0e2;color:var(--pine)}.b3{background:#e8f3ee;color:var(--pine2)}.b2{background:#fff1bf;color:#6b5200}.b1,.b0{background:#fbeae5;color:#8a2f10}
@@ -211,7 +221,7 @@ function saveOrder(){
    .then(function(r){if(!r.ok)throw new Error(r.status);}).catch(function(){$('msg').textContent='Order kept on this computer only (could not reach gal_settings).';});
 }
 /* default places: lessons in book order, then Basics, Pre-Assessments, Story Reel, the whole gradebook */
-function defaultRank(id){if(id.indexOf('lp:')===0){var i=0;LESSONS.forEach(function(l,j){if('lp:'+l.u===id)i=j;});return i;}return {basics:100,pre:101,reel:102,gb:200}[id]||150;}
+function defaultRank(id){if(id.indexOf('lp:')===0){var i=0;LESSONS.forEach(function(l,j){if('lp:'+l.u===id)i=j;});return i;}return {basics:100,pre:101,reel:102,reeltest:103,'story:landlady':110,'story:telltale':111,'story:monkeyspaw':112,'story:omelas':113,write:115,news:120,gb:200}[id]||150;}
 function orderSections(ids){
   /* a section the order has never seen goes where its default rank puts it among the known ones */
   var known=ORDER.filter(function(x){return ids.indexOf(x)>=0;}),fresh=ids.filter(function(x){return known.indexOf(x)<0;});
@@ -259,11 +269,20 @@ function loadStudent(k){
       soft('basics?select=email,name,period,unit,score,max_score,payload,updated_at&order=unit.desc&limit=2000&'+F),
       soft('vocab_preassess?select=*&'+F),
       soft('reel_views?select=*&order=episode&'+F),
-      get('gradebook_best?select=email,slug,unit,title,course,score,max_score,pct,attempts,last_at,completion&limit=5000&'+F)
+      get('gradebook_best?select=email,slug,unit,title,course,score,max_score,pct,attempts,last_at,completion&limit=5000&'+F),
+      Promise.all(STORY_TABLES.map(function(t){return soft(t.table+'?select=*&order=updated_at.desc&'+F).then(function(rows){rows.forEach(function(x){x._t=t.id;});return rows;});})).then(function(a){return [].concat.apply([],a);}),
+      soft('write_work?select=email,slug,score,max_score,turned_in,answers,updated_at&'+F),
+      soft('student_profiles?select=email,ladder_start&'+F),
+      soft('excusals?select=email,slug,rung,status&'+F),
+      soft('news_work?select=email,slug,level,answers,updated_at&order=updated_at.desc&'+F),
+      soft('fluency_runs?select=email,passage_slug,wcpm,created_at&passage_slug=like.news-*&'+F),
+      soft('reel_tests?select=*&order=test_key&'+F)
     ]).then(function(r){
-      D={keys:keys,lp:r[0],say:r[1],basics:r[2],pre:r[3],reel:r[4],gb:r[5]||[]};
+      D={keys:keys,lp:r[0],say:r[1],basics:r[2],pre:r[3],reel:r[4],gb:r[5]||[],story:r[6],write:r[7],prof:r[8],exc:r[9],news:r[10],runs:r[11],rt:r[12]};
+      var ns=[];D.news.forEach(function(x){if(x.slug&&ns.indexOf(x.slug)<0)ns.push(x.slug);});
+      var newsTitles=ns.length?soft('news_articles?select=slug,title&slug=in.('+ns.map(encodeURIComponent).join(',')+')').then(function(a){D.newsTitle={};a.forEach(function(x){D.newsTitle[x.slug]=x.title;});}):Promise.resolve(D.newsTitle={});
       var quizzes=[];D.pre.forEach(function(x){if(x.quiz&&quizzes.indexOf(x.quiz)<0)quizzes.push(x.quiz);});
-      return quizzes.length?soft('vocab_preassess?select=quiz,period,items,answers,turned_in&quiz=in.('+quizzes.map(encodeURIComponent).join(',')+')').then(function(c){D.preClass=c;}):null;
+      return Promise.all([newsTitles,quizzes.length?soft('vocab_preassess?select=quiz,period,items,answers,turned_in&quiz=in.('+quizzes.map(encodeURIComponent).join(',')+')').then(function(c){D.preClass=c;}):null]);
     });
   });
 }
@@ -350,6 +369,75 @@ function reelSection(){
      '<td>'+(r.turned_in?'<span class="tag in">in</span>':'<span class="tag no">no</span>')+'</td><td class="muted">'+when(L.last||r.updated_at)+'</td></tr>';}).join('')+'</tbody></table>';
 }
 
+/* ---------- ELD 103 stories (same columns as landlady/dashboard.html) ---------- */
+var STORY_TABLES=[
+ {id:'landlady',table:'landlady_responses',title:'The Landlady',dash:'../landlady/dashboard.html'},
+ {id:'telltale',table:'telltale_responses',title:'The Tell-Tale Heart',dash:'../telltale/dashboard.html'},
+ {id:'monkeyspaw',table:'monkeyspaw_responses',title:'The Monkey\u2019s Paw',dash:'../monkeyspaw/dashboard.html'},
+ {id:'omelas',table:'omelas_responses',title:'The Ones Who Walk Away from Omelas',dash:'../omelas/dashboard.html'}];
+var GUIDE_NAME={landlady:'The Landlady',landlady_easy:'The Landlady (easier page)',landlady_hard:'The Landlady (harder page)',landlady_investigate:'Investigate',landlady_table:'Table Reader',landlady_test:'Test',landlady_test_practice:'Test practice',landlady_words_solo:'Words on my own',
+ telltale:'The Tell-Tale Heart',monkeyspaw:'The Monkey\u2019s Paw',omelas:'Omelas',omelas_easy:'Omelas (easier page)',omelas_hard:'Omelas (harder page)',thank_you_maam:'Thank You, Ma\u2019am',tyma_compare:'Thank You, Ma\u2019am: compare'};
+/* guide_key -> the page's gradebook slug (T-253: base = Reading, /after, /extras) */
+function guideSlug(g){return String(g).replace(/^landlady_(investigate|table|test|test_practice|words_solo)$/,'landlady/$1').replace(/_(easy|hard)$/,'-$1').replace(/_/g,'-');}
+function storySection(t){
+  var by={};D.story.forEach(function(r){if(r._t!==t.id)return;var o=by[r.guide_key];if(!o||String(r.updated_at||'')>String(o.updated_at||''))by[r.guide_key]=r;});
+  var ks=Object.keys(by);if(!ks.length)return EMPTY;
+  ks.sort(function(a,b){return String(by[b].updated_at||'').localeCompare(String(by[a].updated_at||''));});
+  var head='<tr><th>Page</th><th>Status</th><th>Answered</th><th>Mode</th><th>Words</th><th>Notes</th><th>Mr. Toby</th><th>Reading</th><th>After</th><th>Extras</th><th>Last active</th></tr>';
+  return '<table><thead>'+head+'</thead><tbody>'+ks.map(function(g){var r=by[g],P=r.payload||{},tot=r.total||0,ans=r.answered||0,pct=tot?Math.round(100*ans/tot):0;
+    var v=P.vocab_check,n=P.notes?Object.keys(P.notes).filter(function(k){return String(P.notes[k]||'').trim();}).length:0,hl=P.highlights?Object.keys(P.highlights).length:0;
+    var M=r.marks||{},ok=0,x=0;Object.keys(M).forEach(function(k){if(M[k]&&M[k].m==='x')x++;else if(M[k]&&M[k].m)ok++;});
+    var mode=((P.meta&&P.meta.mode)||r.mode),sl=guideSlug(g);
+    function gcell(s){var b=gbFor(function(y){return y.slug===s;});return b?bandHTML(b.pct,Math.round(b.pct)+'% · '+b.attempts+' attempt'+(b.attempts===1?'':'s')):'<span class="muted">—</span>';}
+    return '<tr><td><b>'+esc(GUIDE_NAME[g]||g)+'</b></td><td>'+(r.submitted?'<span class="spill in">Turned in</span>':'<span class="spill wip">In progress</span>')+'</td>'+
+     '<td style="white-space:nowrap"><span class="sbar"><i style="width:'+pct+'%"></i></span>'+ans+'/'+tot+'</td><td>'+(mode?(mode==='easy'?'Easier':'Harder'):'<span class="muted">—</span>')+'</td>'+
+     '<td>'+(v&&v.total?v.score+'/'+v.total:'<span class="muted">—</span>')+'</td><td>'+(n||hl?(n?n+' note'+(n===1?'':'s'):'')+(n&&hl?', ':'')+(hl?hl+' highlighted':''):'<span class="muted">—</span>')+'</td>'+
+     '<td class="mk">'+(ok||x?(ok?'<span class="ok">✓'+ok+'</span> ':'')+(x?'<span class="x">✗'+x+'</span>':''):'<span class="muted">—</span>')+'</td>'+
+     '<td>'+gcell(sl)+'</td><td>'+gcell(sl+'/after')+'</td><td>'+gcell(sl+'/extras')+'</td><td class="muted">'+when(r.updated_at)+'</td></tr>';}).join('')+'</tbody></table>'+
+   '<div class="muted" style="font-size:.78rem;padding:2px 8px">Answers, notes and marks: open the <a href="'+esc(t.dash)+'?email='+encodeURIComponent(STU.email||'')+'" target="_blank" rel="noopener">story dashboard for '+esc(nameOf(STU).split(' ')[0])+' ↗</a></div>';
+}
+
+/* ---------- Writing Ladder (same rungs as write/dashboard.html) ---------- */
+var LADDER_TITLE={landlady:'The Landlady',telltale:'The Tell-Tale Heart',monkeyspaw:'The Monkey\u2019s Paw',omelas:'Omelas'};
+var RUNGS=['','Words','Sentences','Order','Paraphrase','Paragraph','Revise','Essay','Intros'],NEVER_OPT=[5,6,7];
+function rungStatus(slug,r){var e=null;D.exc.forEach(function(x){if(x.slug===slug&&+x.rung===r)e=x.status;});if(e)return e;var st=(D.prof[0]&&+D.prof[0].ladder_start)||1;return (r<st&&NEVER_OPT.indexOf(r)<0)?'optional':'required';}
+function writeSection(){
+  var by={};D.write.forEach(function(x){var o=by[x.slug];if(!o||String(x.updated_at||'')>String(o.updated_at||''))by[x.slug]=x;});
+  var ks=Object.keys(by);if(!ks.length)return EMPTY;
+  var st=(D.prof[0]&&D.prof[0].ladder_start)||1;
+  return '<table><thead><tr><th>Text</th><th>Rungs <span style="font-weight:600">(start at '+esc(st)+')</span></th><th>Total</th><th>Turned in</th><th>Last active</th></tr></thead><tbody>'+ks.map(function(slug){var x=by[slug],R=(x.answers||{}).R||{},tot=0,max=0,cells='';
+    for(var r=1;r<=8;r++){var s=rungStatus(slug,r),d=R[r]||{p:0,m:0,n10:0,done:false};if(s==='required'){tot+=d.n10||0;max+=10;}
+     cells+='<span class="rung '+(s==='required'?(d.done?'done':d.p?'part':''):s)+'" title="'+esc(r+' '+RUNGS[r]+' · '+s)+'"><b>'+r+' '+RUNGS[r]+'</b>'+(d.m?d.p+'/'+d.m:'—')+'</span>';}
+    return '<tr><td><b>'+esc(LADDER_TITLE[slug]||slug)+'</b></td><td>'+cells+'</td><td><b>'+tot+'</b> / '+max+'</td><td>'+(x.turned_in?'<span class="tag in">in</span>':'<span class="tag no">not yet</span>')+'</td><td class="muted">'+when(x.updated_at)+'</td></tr>';}).join('')+'</tbody></table>';
+}
+
+/* ---------- This Week's Reading (news/dashboard.html: questions, grammar, your turn, Find It, recording) ---------- */
+function newsSection(){
+  var by={};D.news.forEach(function(x){var o=by[x.slug];if(!o||String(x.updated_at||'')>String(o.updated_at||''))by[x.slug]=x;});
+  var ks=Object.keys(by);if(!ks.length)return EMPTY;
+  ks.sort(function(a,b){return String(by[b].updated_at||'').localeCompare(String(by[a].updated_at||''));});
+  return '<table><thead><tr><th>Article</th><th>Level</th><th>Questions</th><th>Grammar</th><th>Your turn</th><th>Find It</th><th>Recording</th><th>0–4.5</th><th>Turned in</th><th>Last active</th></tr></thead><tbody>'+ks.map(function(sl){var w=by[sl],a=w.answers||{};
+    function cnt(re,min){return Object.keys(a).filter(function(k){return re.test(k)&&String(a[k]||'').trim().length>(min||0);}).length;}
+    var runs=D.runs.filter(function(r){return String(r.passage_slug||'').replace(/^news-/,'')===sl;}),best=runs.reduce(function(m,r){return Math.max(m,+r.wcpm||0);},0);
+    var g=gbFor(function(y){return y.slug==='news/'+sl||(y.slug==='news'&&y.unit===sl);});
+    return '<tr><td><b>'+esc((D.newsTitle||{})[sl]||sl)+'</b></td><td>'+esc(w.level||'')+'</td><td>'+cnt(/^q\d+$/,2)+' answered</td><td>'+cnt(/^c\d+$/)+' done</td>'+
+     '<td>'+(String(a.produce||'').trim().length>5?'<span class="tag in">yes</span>':'<span class="muted">—</span>')+'</td><td>'+cnt(/^t\d/)+' found</td>'+
+     '<td>'+(runs.length?runs.length+' · best '+best+' wcpm':'<span class="muted">—</span>')+'</td><td>'+(g?bandHTML(g.pct,Math.round(g.pct)+'%'):'<span class="muted">—</span>')+'</td>'+
+     '<td>'+(a._turnedIn?'<span class="tag in">in</span>':'<span class="tag no">not yet</span>')+'</td><td class="muted">'+when(w.updated_at)+'</td></tr>';}).join('')+'</tbody></table>';
+}
+
+/* ---------- Story Checks (reel-test/epNN/dashboard.html) ---------- */
+function reelTestSection(){
+  var by={};D.rt.forEach(function(r){var o=by[r.test_key];if(!o||String(r.updated_at||'')>String(o.updated_at||''))by[r.test_key]=r;});
+  var ks=Object.keys(by).sort();if(!ks.length)return EMPTY;
+  var cols=[['read','Read aloud'],['words','Words'],['listen','Listen'],['story','Story'],['fix','Fix it'],['gram','Grammar']];
+  return '<table><thead><tr><th>Check</th>'+cols.map(function(c){return '<th>'+c[1]+'</th>';}).join('')+'<th>0–4.5</th><th>Left page</th><th>Turned in</th><th>Last saved</th></tr></thead><tbody>'+ks.map(function(k){var r=by[k],sc=r.scores||{},ep=k.split('-')[0],md=k.slice(ep.length+1),lg=(r.work||{}).log||{};
+    var g=gbFor(function(y){return y.slug==='reel-test/'+ep&&(!y.unit||y.unit===md||y.unit===k);})||gbFor(function(y){return y.slug==='reel-test/'+ep;});
+    return '<tr><td><b>Episode '+esc(+ep.replace(/\D/g,'')||ep)+'</b> <span class="muted">'+esc(md==='test'?'test':'practice')+'</span><br><a class="muted" style="font-size:.75rem" href="../reel-test/'+esc(ep)+'/dashboard.html" target="_blank" rel="noopener">dashboard ↗</a></td>'+
+     cols.map(function(c){var x=sc[c[0]];return '<td>'+(x&&x.max!=null?x.pts+'/'+x.max+(x.total&&x.done<x.total?'<div class="cls">'+x.done+' of '+x.total+' done</div>':''):'<span class="muted">—</span>')+'</td>';}).join('')+
+     '<td>'+(g?bandHTML(g.pct,Math.round(g.pct)+'%'):'<span class="muted">—</span>')+'</td><td>'+(lg.leaves||0)+'</td><td>'+(r.turned_in?'<span class="tag in">in</span>':'<span class="tag no">no</span>')+'</td><td class="muted">'+when(r.updated_at)+'</td></tr>';}).join('')+'</tbody></table>';
+}
+
 /* ---------- Everything in the gradebook ---------- */
 function gbFor(fn){var best=null;(D.gb||[]).forEach(function(x){if(fn(x)&&(!best||(+x.pct||0)>(+best.pct||0)))best=x;});return best;}
 function gbRows(){var by={};(D.gb||[]).forEach(function(x){var k=x.slug+'|'+(x.unit||'');var o=by[k];if(!o||(+x.pct||0)>(+o.pct||0))by[k]=x;});return Object.keys(by).map(function(k){return by[k];});}
@@ -375,11 +463,16 @@ function renderStudent(){
   if(D.basics.length||is101)secs.push({id:'basics',title:'Daily Basics',link:'../basics/dashboard.html',body:basicsSection()});
   if(D.pre.length)secs.push({id:'pre',title:'Vocab Pre-Assessments',link:'../vocab/pre/dashboard.html',body:preSection()});
   if(D.reel.length||is101)secs.push({id:'reel',title:'Story Reel',link:'../reel-v2/',body:reelSection()});
+  if(D.rt.length||is101)secs.push({id:'reeltest',title:'Story Checks',link:'../reel-test/ep04/dashboard.html',body:reelTestSection()});
+  var is103=course==='ELD 103';
+  STORY_TABLES.forEach(function(t){var has=D.story.some(function(r){return r._t===t.id;});if(has||(is103&&t.id!=='omelas'))secs.push({id:'story:'+t.id,title:esc(t.title),link:t.dash,body:storySection(t)});});
+  if(D.write.length||is103)secs.push({id:'write',title:'Writing Ladder',link:'../write/dashboard.html',body:writeSection()});
+  if(D.news.length||is103)secs.push({id:'news',title:'This Week\u2019s Reading (news)',link:'../news/dashboard.html',body:newsSection()});
   secs.push({id:'gb',title:'Everything in the gradebook',link:'../gradebook/',body:gbSection()});
   var byId={};secs.forEach(function(x){byId[x.id]=x;});var ids=orderSections(secs.map(function(x){return x.id;}));
   /* at a glance */
   var gb=gbRows(),pcts=gb.filter(function(x){return x.pct!=null;}).map(function(x){return +x.pct;}),avg=pcts.length?Math.round(pcts.reduce(function(a,b){return a+b;},0)/pcts.length):null;
-  var last='';[D.lp,D.basics,D.pre,D.reel].forEach(function(a){a.forEach(function(r){if(String(r.updated_at||'')>last)last=r.updated_at;});});gb.forEach(function(x){if(String(x.last_at||'')>last)last=x.last_at;});
+  var last='';[D.lp,D.basics,D.pre,D.reel,D.story,D.write,D.news,D.rt].forEach(function(a){a.forEach(function(r){if(String(r.updated_at||'')>last)last=r.updated_at;});});gb.forEach(function(x){if(String(x.last_at||'')>last)last=x.last_at;});
   var em=s.email||(s.k+'@s.sfusd.edu'),n=neighbours();
   $('prev').disabled=!n.prev;$('next').disabled=!n.next;
   $('view').innerHTML='<div id="who"><h1>'+esc(nameOf(s))+'</h1><a class="em" href="mailto:'+esc(em)+'">'+esc(em)+'</a><span class="per">Period '+esc(s.period||'?')+'</span><span class="crs">'+esc(course)+'</span>'+(hiddenKind(s)?'<span class="kind">'+esc(s.kind)+'</span>':'')+'</div>'+

@@ -7,5 +7,5 @@
  * group (Data, Reading, Vocabulary, Speaking, Writing, Grammar, Unit), note.
  */
 window.DASHBOARDS = (window.DASHBOARDS || []).concat([
-{url:'studentdata/',                    name:'Student data (one page per student)', course:'both', group:'Data', note:'Pick a student: their own line from Launch Plus (every lesson), Daily Basics, Vocab Pre-Assessments, Story Reel and the whole gradebook on one page. Move any section up, down, to the top or to the bottom; the order is the same for every student. ?u=username opens one student.'}
+{url:'studentdata/',                    name:'Student data (one page per student)', course:'both', group:'Data', note:'Pick a student: their own line from Launch Plus (every lesson), Daily Basics, Vocab Pre-Assessments, Story Reel, Story Checks, the ELD 103 stories, the Writing Ladder, This Week\u2019s Reading and the whole gradebook on one page. Move any section up, down, to the top or to the bottom; the order is the same for every student. ?u=username opens one student.'}
 ]);
