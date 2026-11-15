@@ -1,4 +1,32 @@
-/* Story Reel: "After the story" tiers (A words and voice, B synonyms and details, C paragraph).
+/* Story Reel: "After the story" — FOUR STATIONS (T-421, Job C).
+   THE STATIONS (they replace the old A/B/C/D cards; the saved keys and the tierA-D score names are
+   unchanged, so old work still loads and the dashboard still reads it):
+     say   Say it      CORE, always      the 5 key sentences out loud (scene decks = extra)
+     para  Paragraph   CORE by default   put the story in order -> pick the topic sentence -> write
+                                         the paragraph, ALL IN ONE PANEL. The order and the topic
+                                         sentence are the PLAN for the writing, not two quizzes:
+                                         the panel carries both into the write box.
+     rw    Paraphrase  EXTRA             say the key sentences a new way
+     gram  Grammar     EXTRA             tap the word that fits (sentences from this episode)
+   An EXTRA can only raise a score, never lower it (fair-scores rule). When Mr. Toby assigns a tier
+   from the dashboard (reel_views.tier) that tier's station becomes THAT student's core instead of
+   the default: A = order + topic, B = Paraphrase, C = the paragraph, D = Grammar. Say it stays core
+   for everyone, because speaking is the medium here, not an extra step at the end.
+
+   WHAT THE ENGINE CAN ASK US FOR (Job C's surface, for its folder tabs):
+     REEL_TIERS.stations() -> [{ id, label, icon, color, core, done, n, of, mount(root) }]
+         one entry per station, in order; mount(root) draws it into any element the engine gives us.
+     REEL_TIERS.nextStep() -> { say:'<one short line>', at:<element or null> } or null
+     REEL_TIERS.onChange(cb) -> cb() runs whenever a station's progress changes.
+     REEL_TIERS.scores() -> { pts, max, coreMax, out } — coreMax is ALWAYS reported, even before the
+         student opens After the story, so stopping after Your Turn no longer shows full marks. The
+         engine adds it to GAL_MAX:  var cm = ts.coreMax || 0;
+                                     window.GAL_MAX = max + cm;
+                                     window.GAL_SCORE = Math.min(max + cm, base + (ts.pts || 0));
+     REEL_TIERS.coreDone() -> true when every core station is done (engine's "You finished" box).
+   If the engine sets window.REEL_HOST.tabs it draws the station row AND the arrow, and we draw
+   neither, so there is still ONE arrow on screen. Until then we draw our own.
+
    Owned by the tiers chat. Loaded by engine.js after it has set window.REEL_HOST; needs no edits
    to episode pages: it adds its own button, section, styles and the say.js scripts, and reads the
    episode's tier data from EP.tiers or from ./tiers-data.js (window.EP_TIERS) beside the episode.
@@ -14,7 +42,7 @@
   var EP = H.EP, state = H.state, me = H.me, $ = H.$, esc = H.esc, txt = H.txt, save = H.save, touch = H.touch, score = H.score,
       wordPop = H.wordPop, showDirections = H.showDirections, spokenWord = H.spokenWord, pickVoice = H.pickVoice,
       boardState = H.boardState, R = H.R, PROXY = H.PROXY, SUPA_URL = H.SUPA_URL, TABLE = H.TABLE, sbHead = H.sbHead;
-  var CSS = '\n.tiers{max-width:1180px;margin:0 auto 50px;padding:0 16px}\n.tiersbox{background:#fff;border-radius:18px;padding:22px 22px 20px;border:2px solid var(--line)}\n.tiersbox h2{margin:0 0 6px;font-size:28px;font-weight:900}\n.tiersbox .lead{margin:0 0 14px;color:var(--soft)}\n.tiersbox .soft{color:var(--soft)}\n.tiersbox .lab{display:block;font-weight:900;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--purple);margin:0 0 4px}\n.tcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:0 0 18px}\n.tcards.one{grid-template-columns:minmax(220px,420px) auto;align-items:center}\n.tcard{text-align:left;background:#faf9fc;border:2px solid var(--line);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:4px;color:var(--plum)}\n.tcard:hover{border-color:var(--purple)}\n.tcard.on{background:#f1e8f6;border-color:var(--purple);box-shadow:0 0 0 3px #e4d3ee}\n.tcard .te{font-size:30px;line-height:1}\n.tcard b{font-size:20px;font-weight:900}\n.tcard .tb{color:var(--soft);font-size:15px;font-weight:700}\n.tcard .tb .dirtr{font-size:1em}\n/* T-414: an empty left gutter the green arrow sits in, so it never lands on a word, a listen button or a choice */\n.tiersbox #tpanel{padding-left:66px}\n@media (max-width:760px){.tiersbox #tpanel{padding-left:50px}}\n.asknext{align-self:center}\n.asknext.on{background:#e3f4e8;border-color:#2d7a47;color:#2d7a47}\n.tsteps{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}\n.tstep{border:2px solid var(--line);background:#fff;border-radius:999px;padding:8px 16px;font-weight:800;color:var(--soft)}\n.tstep.on{background:var(--purple);border-color:var(--purple);color:#fff}\n.tstep .dirtr{display:inline;margin-left:6px;font-size:.9em;color:inherit;opacity:.85}\n.osay{border:0;background:#f1e8f6;border-radius:999px;width:34px;height:34px;font-size:15px;flex:none}\n/* order */\n.ord{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}\n.opool{display:flex;flex-direction:column;gap:10px;min-height:60px;padding:10px;border:2px dashed var(--line);border-radius:14px;background:#faf9fc}\n.ochip{display:flex;align-items:center;gap:10px;background:#fff;border:2px solid var(--line);border-radius:12px;padding:10px 12px;font-weight:700;font-size:19px;line-height:1.3;cursor:pointer;user-select:none}\n.ochip:hover{border-color:var(--purple)}\n.ochip.sel{border-color:var(--orange);box-shadow:0 0 0 3px #fde3c3;background:#fff7ec}\n.ochip.in{flex:1;cursor:grab}\n.oslots{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}\n.oslot{display:flex;align-items:center;gap:12px;min-height:60px;border:2px solid var(--line);border-radius:14px;padding:6px 10px 6px 6px;background:#fff;cursor:pointer}\n.oslot.over,.oslot:hover{border-color:var(--purple)}\n.onum{width:40px;height:40px;border-radius:50%;background:var(--purple);color:#fff;font-weight:900;font-size:20px;display:inline-flex;align-items:center;justify-content:center;flex:none}\n.ohint{color:var(--soft);font-weight:700}\n.oslot.ok{border-color:#3b9b5c;background:#e3f4e8}\n.oslot.bad{border-color:#F8981F;background:#fff3e2}\n.oslot.full .ochip{border-color:transparent;background:transparent;padding:4px 0}\n/* topic sentence */\n.topts{display:flex;flex-direction:column;gap:10px;margin:0 0 10px}\n.toptrow{display:flex;align-items:center;gap:10px}\n.toptrow .qopt{flex:1}\n.tiersbox .qmsg{margin:0;min-height:1.5em}\n/* tier B */\n.rw{display:grid;grid-template-columns:1fr 1fr;gap:16px;border:2px solid var(--line);border-radius:16px;padding:14px 16px;margin:0 0 12px;background:#faf9fc}\n.rw.done{border-color:#3b9b5c;background:#f3faf5}\n.rwo p{margin:0;font-size:21px;font-weight:700;line-height:1.35;display:flex;align-items:center;gap:8px;flex-wrap:wrap}\n.swapw{border:0;background:none;padding:0 2px;font:inherit;font-weight:800;color:var(--plum);box-shadow:inset 0 -3px 0 var(--orange);border-radius:4px;cursor:pointer}\n.swapw:hover{background:#fff1dd}\n.rwm textarea{width:100%;min-height:64px;border:2px solid var(--line);border-radius:12px;padding:10px 12px;font-size:19px;resize:vertical;background:#fff}\n.rwm textarea:focus{border-color:var(--purple);outline:none}\n.rwok{display:block;margin-top:6px;font-weight:800;font-size:15px}\n.rwok.yes{color:#2d7a47}.rwok.no{color:#b2612a}.rwok.keep{color:var(--soft)}\n.ladder{display:none;margin-top:10px;background:#fff;border:2px solid var(--line);border-radius:12px;padding:8px 10px 4px}\n.ladder.on{display:block}\n.rung{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 8px}\n.rlab{font-weight:900;font-size:13px;color:var(--purple);width:100%}\n.rlab .dirtr{display:inline;margin-left:6px}\n.rchip{border:2px solid var(--line);background:#faf9fc;border-radius:999px;padding:5px 12px;font-weight:700;font-size:16px}\n.rchip:hover{border-color:var(--purple);background:#f1e8f6}\n/* tier C */\n.cgrid{display:grid;grid-template-columns:minmax(220px,1fr) minmax(280px,1.3fr);gap:18px;align-items:start}\n.cframes{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-height:70vh;overflow:auto;padding:4px}\n.cframe{background:#fff;border:2px solid var(--line);border-radius:12px;overflow:hidden}\n.cframe svg{display:block;width:100%;height:auto}\n.cframe p{margin:0;padding:6px 8px 8px;font-weight:700;font-size:14px;line-height:1.3}\n.cframe b{color:var(--purple)}\n.cwrite textarea{width:100%;min-height:220px;border:2px solid var(--line);border-radius:12px;padding:12px 14px;font-size:19px;line-height:1.5;resize:vertical}\n.cwrite textarea:focus{border-color:var(--purple);outline:none}\n.cwrite .row{margin:10px 0}\n.wc{font-weight:800;color:var(--soft);margin-right:auto}\n.fb{display:none;border:2px solid var(--line);border-radius:14px;padding:4px 14px 10px;background:#faf9fc}\n.fbrow{padding:10px 0;border-bottom:1px solid var(--line);font-size:16px}\n.fbrow:last-child{border-bottom:0}\n.fbrow ul{margin:6px 0 0;padding-left:20px}\n.fbrow.good b{color:#2d7a47}\n.fbrow.copy b{color:#864D9E}\n.fbrow .hit{color:#2d7a47;font-weight:800;list-style:none;margin-left:-20px}\n.fbrow .miss{color:var(--soft);font-weight:700;list-style:none;margin-left:-20px}\n.fbrow.fix p{margin:6px 0 0;font-size:18px}\n.fbrow.fix s{color:#8a7f95}\n.fbrow.next{font-weight:800;color:var(--purple)}\n.saywrap{--say-accent:#864D9E;--say-soft:#f1e8f6;--say-line:#d9d3e3;--say-radius:14px}\n@media (max-width:760px){\n  .ord,.rw,.cgrid{grid-template-columns:1fr}\n  .tcards.one{grid-template-columns:1fr}\n  .cframes{max-height:40vh}\n}\n';
+  var CSS = '\n.tiers{max-width:1180px;margin:0 auto 50px;padding:0 16px}\n.tiersbox{background:#fff;border-radius:18px;padding:22px 22px 20px;border:2px solid var(--line)}\n.tiersbox h2{margin:0 0 6px;font-size:28px;font-weight:900}\n.tiersbox .lead{margin:0 0 14px;color:var(--soft)}\n.tiersbox .soft{color:var(--soft)}\n.tiersbox .lab{display:block;font-weight:900;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--purple);margin:0 0 4px}\n/* T-414: an empty left gutter the green arrow sits in, so it never lands on a word, a listen button or a choice */\n.tiersbox #tpanel{padding-left:66px}\n@media (max-width:760px){.tiersbox #tpanel{padding-left:50px}}\n.tsteps{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}\n.tstep{border:2px solid var(--line);background:#fff;border-radius:999px;padding:8px 16px;font-weight:800;color:var(--soft)}\n.tstep.on{background:var(--purple);border-color:var(--purple);color:#fff}\n.tstep .dirtr{display:inline;margin-left:6px;font-size:.9em;color:inherit;opacity:.85}\n.osay{border:0;background:#f1e8f6;border-radius:999px;width:34px;height:34px;font-size:15px;flex:none}\n/* order */\n.ord{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}\n.opool{display:flex;flex-direction:column;gap:10px;min-height:60px;padding:10px;border:2px dashed var(--line);border-radius:14px;background:#faf9fc}\n.ochip{display:flex;align-items:center;gap:10px;background:#fff;border:2px solid var(--line);border-radius:12px;padding:10px 12px;font-weight:700;font-size:19px;line-height:1.3;cursor:pointer;user-select:none}\n.ochip:hover{border-color:var(--purple)}\n.ochip.sel{border-color:var(--orange);box-shadow:0 0 0 3px #fde3c3;background:#fff7ec}\n.ochip.in{flex:1;cursor:grab}\n.oslots{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}\n.oslot{display:flex;align-items:center;gap:12px;min-height:60px;border:2px solid var(--line);border-radius:14px;padding:6px 10px 6px 6px;background:#fff;cursor:pointer}\n.oslot.over,.oslot:hover{border-color:var(--purple)}\n.onum{width:40px;height:40px;border-radius:50%;background:var(--purple);color:#fff;font-weight:900;font-size:20px;display:inline-flex;align-items:center;justify-content:center;flex:none}\n.ohint{color:var(--soft);font-weight:700}\n.oslot.ok{border-color:#3b9b5c;background:#e3f4e8}\n.oslot.bad{border-color:#F8981F;background:#fff3e2}\n.oslot.full .ochip{border-color:transparent;background:transparent;padding:4px 0}\n/* topic sentence */\n.topts{display:flex;flex-direction:column;gap:10px;margin:0 0 10px}\n.toptrow{display:flex;align-items:center;gap:10px}\n.toptrow .qopt{flex:1}\n.tiersbox .qmsg{margin:0;min-height:1.5em}\n/* tier B */\n.rw{display:grid;grid-template-columns:1fr 1fr;gap:16px;border:2px solid var(--line);border-radius:16px;padding:14px 16px;margin:0 0 12px;background:#faf9fc}\n.rw.done{border-color:#3b9b5c;background:#f3faf5}\n.rwo p{margin:0;font-size:21px;font-weight:700;line-height:1.35;display:flex;align-items:center;gap:8px;flex-wrap:wrap}\n.swapw{border:0;background:none;padding:0 2px;font:inherit;font-weight:800;color:var(--plum);box-shadow:inset 0 -3px 0 var(--orange);border-radius:4px;cursor:pointer}\n.swapw:hover{background:#fff1dd}\n.rwm textarea{width:100%;min-height:64px;border:2px solid var(--line);border-radius:12px;padding:10px 12px;font-size:19px;resize:vertical;background:#fff}\n.rwm textarea:focus{border-color:var(--purple);outline:none}\n.rwok{display:block;margin-top:6px;font-weight:800;font-size:15px}\n.rwok.yes{color:#2d7a47}.rwok.no{color:#b2612a}.rwok.keep{color:var(--soft)}\n.ladder{display:none;margin-top:10px;background:#fff;border:2px solid var(--line);border-radius:12px;padding:8px 10px 4px}\n.ladder.on{display:block}\n.rung{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 8px}\n.rlab{font-weight:900;font-size:13px;color:var(--purple);width:100%}\n.rlab .dirtr{display:inline;margin-left:6px}\n.rchip{border:2px solid var(--line);background:#faf9fc;border-radius:999px;padding:5px 12px;font-weight:700;font-size:16px}\n.rchip:hover{border-color:var(--purple);background:#f1e8f6}\n/* tier C */\n.cgrid{display:grid;grid-template-columns:minmax(220px,1fr) minmax(280px,1.3fr);gap:18px;align-items:start}\n.cframes{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-height:70vh;overflow:auto;padding:4px}\n.cframe{background:#fff;border:2px solid var(--line);border-radius:12px;overflow:hidden}\n.cframe svg{display:block;width:100%;height:auto}\n.cframe p{margin:0;padding:6px 8px 8px;font-weight:700;font-size:14px;line-height:1.3}\n.cframe b{color:var(--purple)}\n.cwrite textarea{width:100%;min-height:220px;border:2px solid var(--line);border-radius:12px;padding:12px 14px;font-size:19px;line-height:1.5;resize:vertical}\n.cwrite textarea:focus{border-color:var(--purple);outline:none}\n.cwrite .row{margin:10px 0}\n.wc{font-weight:800;color:var(--soft);margin-right:auto}\n.fb{display:none;border:2px solid var(--line);border-radius:14px;padding:4px 14px 10px;background:#faf9fc}\n.fbrow{padding:10px 0;border-bottom:1px solid var(--line);font-size:16px}\n.fbrow:last-child{border-bottom:0}\n.fbrow ul{margin:6px 0 0;padding-left:20px}\n.fbrow.good b{color:#2d7a47}\n.fbrow.copy b{color:#864D9E}\n.fbrow .hit{color:#2d7a47;font-weight:800;list-style:none;margin-left:-20px}\n.fbrow .miss{color:var(--soft);font-weight:700;list-style:none;margin-left:-20px}\n.fbrow.fix p{margin:6px 0 0;font-size:18px}\n.fbrow.fix s{color:#8a7f95}\n.fbrow.next{font-weight:800;color:var(--purple)}\n.saywrap{--say-accent:#864D9E;--say-soft:#f1e8f6;--say-line:#d9d3e3;--say-radius:14px}\n@media (max-width:760px){\n  .ord,.rw,.cgrid{grid-template-columns:1fr}\n  .cframes{max-height:40vh}\n}\n';
   var CSS_D = '.gbox{position:relative;border:2px solid var(--line);border-radius:16px;padding:14px 16px 16px;margin:0 0 16px;background:#faf9fc;box-shadow:0 2px 0 rgba(0,0,0,.06)}' +
     '.gbox:after{content:"";display:block;clear:both}' +
     '.gpic{float:right;width:min(42%,340px);margin:0 0 10px 16px;border:2px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}' +
@@ -80,10 +108,43 @@
     '.cex{margin:4px 0 2px}.cex summary{cursor:pointer;font-weight:800;color:var(--purple);font-size:15px}' +
     '.cex p{margin:4px 0;font-size:17px;font-weight:700;display:flex;gap:8px;align-items:baseline}' +
     '.tstep.ok{border-color:#3b9b5c;color:#2d7a47}' +
+    /* T-421: the station row, and the three chunks of the Paragraph panel */
+    '.sbar{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 18px}' +
+    '.stn{display:flex;align-items:center;gap:10px;border:2px solid #2B2233;background:#fff;border-radius:14px;padding:9px 14px;box-shadow:0 2px 0 rgba(43,34,51,.18);font:inherit;text-align:left;cursor:pointer}' +
+    '.stn .se{font-size:26px;line-height:1;flex:none}' +
+    '.stn b{display:block;font-size:18px;font-weight:900;color:var(--plum)}' +
+    '.stn .sn{display:block;font-weight:800;font-size:14px;color:var(--soft)}' +
+    '.stn .sx{font-weight:900;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:#8a7f95}' +
+    '.stn.on{background:#f1e8f6;box-shadow:0 0 0 3px #e4d3ee,0 2px 0 rgba(43,34,51,.18)}' +
+    '.stn.ok{background:#e3f4e8}.stn.ok .sn{color:#2d7a47}' +
+    '.stn.todo{animation:gshim 1.4s ease-in-out infinite}' +
+    '@media (prefers-reduced-motion:reduce){.stn.todo{animation:none}}' +
+    '.pchunk{border:2px solid #2B2233;border-radius:16px;padding:14px 16px 16px;margin:0 0 16px;background:#fff;box-shadow:0 2px 0 rgba(43,34,51,.18)}' +
+    '.pchunk:after{content:"";display:block;clear:both}' +
+    '.pchunk>.gpic{width:min(34%,280px)}' +
+    '@media (max-width:760px){.pchunk>.gpic{float:none;width:100%;margin:0 0 10px}}' +
+    '.pchunk>h3{margin:0 0 6px;font-size:22px;font-weight:900;display:flex;align-items:center;gap:9px}' +
+    '.pnum{width:30px;height:30px;border-radius:50%;background:var(--purple);color:#fff;font-size:16px;font-weight:900;display:inline-flex;align-items:center;justify-content:center;flex:none}' +
+    '.pchunk.done>h3 .pnum{background:#2d7a47}' +
+    '.plan{border:2px solid #2B2233;border-radius:12px;background:#faf9fc;padding:8px 12px 10px;margin:0 0 12px}' +
+    '.plan .lab{display:block;font-weight:900;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--purple);margin:0 0 4px}' +
+    '.plan ol{margin:0;padding-left:22px}' +
+    '.plan li{font-weight:700;font-size:17px;line-height:1.4;margin:0 0 3px}' +
+    '.plan .ptop{margin:7px 0 0;font-weight:800;font-size:17px;border-top:1px solid #d9d3e3;padding-top:7px}' +
+    '.plan .ptop b{color:var(--purple)}' +
+    '.sayx{border:2px dashed #2B2233;border-radius:12px;background:#faf9fc;padding:8px 12px;margin:0 0 12px;font-weight:800}' +
+    '.sayx p{margin:0}' +
+    /* T-421: the topic sentence never turns red for ELD 101 — the wrong one fades, the right one
+       pulses when it is shown after three misses, and the tick is the only colour that stays. */
+    '.topts .qopt.gone{opacity:.25;text-decoration:line-through;pointer-events:none}' +
+    '.topts .qopt.wrong{background:#faf9fc;border-color:#2B2233}' +
+    '.topts .qopt.right{background:#e3f4e8;border-color:#3b9b5c}' +
+    '.topts .qopt.show{border-color:var(--orange);background:#fff3e2;animation:gpulse 1s ease-in-out infinite}' +
+    '.tiersbox .qmsg .gquip{margin:8px 0 0}' +
     '@media (max-width:760px){.gpic{float:none;width:100%;margin:0 0 10px}.gs{font-size:19px}.gtile{font-size:18px;padding:8px 14px}}' +
     /* Real borders (standing rule): the shared --line is light grey on off-white, which two
        sections cannot be told apart by from across a classroom. Every tier box gets a dark line. */
-    '.tiersbox,.gbox,.gq:not(.done),.rw:not(.done),.cframe,.fb,.gex,.gpic,.tcard:not(.on),.oslot:not(.ok):not(.bad),.opool,.ochip,.ladder,.rwm textarea,.cwrite textarea{border-color:#2B2233}' +
+    '.tiersbox,.gbox,.gq:not(.done),.rw:not(.done),.cframe,.fb,.gex,.gpic,.oslot:not(.ok):not(.bad),.opool,.ochip,.ladder,.rwm textarea,.cwrite textarea{border-color:#2B2233}' +
     '.gbox,.gq,.rw,.tiersbox{box-shadow:0 2px 0 rgba(43,34,51,.18)}';
   function addStyle() { if ($('tiersCss')) return; var st = document.createElement('style'); st.id = 'tiersCss'; st.textContent = CSS + CSS_D; document.head.appendChild(st); }
   function addScript(src, cb) { var s = document.createElement('script'); s.src = src; s.onload = cb || null; s.onerror = cb || null; document.body.appendChild(s); }
@@ -108,22 +169,38 @@
     }
     if ($('tierBtn') && !$('tierBtn').__wired) { $('tierBtn').__wired = true; $('tierBtn').addEventListener('click', function () { showTiers(true); }); }
   }
-  /* ================= AFTER THE STORY: TIERS =================
-     EP.tiers = { ask, key:[{t, swap, rungs, keep, idea, ideas}], topic:{ask, opts, good, why}, summary:{min, hint, teaser} }
-     Tier A  words and voice : read along (say.js) -> order the 5 key sentences -> pick the topic sentence
-     Tier B  synonyms/details: reword the key sentences, one phrase ladder each
-     Tier C  paragraph       : summary from the storyboard, "Check my writing", one revision
-     The teacher assigns a tier from the dashboard (reel_views.tier). With no tier set,
-     the page says "Ask your teacher" and shows the three cards. */
+  /* ================= AFTER THE STORY: THE STATIONS (T-421) =================
+     EP.tiers = { ask, order:[...], key:[{t, swap, rungs, keep, idea, ideas}],
+                  topic:{ask, opts, good, why}, summary:{min, hint, teaser} }
+     grammar:[...] arrives from epNN/grammar-data.js. */
   var TIERS = null;
   var assignedTier = '';                 /* '', 'A', 'B', 'C' or 'D' — written by the dashboard */
-  var TIER_INFO = {
-    A: { name: 'Words and voice', e: '🗣️', blurb: 'Read along. Put the story in order. Pick the topic sentence.' },
-    B: { name: 'Paraphrase', e: '🔁', blurb: 'Say it a new way.' },
-    C: { name: 'Paragraph', e: '✍️', blurb: 'Write a short summary of the story in your own words.' },
-    D: { name: 'Grammar from the story', e: '🧩', blurb: 'Tap the word that fits. The sentences come from this episode.' }
-  };
-  var TIER_KEYS = ['A', 'B', 'C', 'D'];
+  /* the stations, in the order a student meets them */
+  var ST_DEF = [
+    { id: 'say',  label: 'Say it',     icon: '🗣️', color: '#F8981F', blurb: 'Say the five sentences out loud.' },
+    { id: 'para', label: 'Paragraph',  icon: '✍️', color: '#2d7a47', blurb: 'Order the story, pick the topic sentence, then write it.' },
+    { id: 'rw',   label: 'Paraphrase', icon: '🔁', color: '#864D9E', blurb: 'Say the sentences a new way.' },
+    { id: 'gram', label: 'Grammar',    icon: '🧩', color: '#2f6fbd', blurb: 'Tap the word that fits.' }
+  ];
+  /* the old A/B/C/D cards: saved work carries them, and so does the teacher's switch */
+  var LEGACY = { A: 'say', B: 'rw', C: 'para', D: 'gram' };
+  function stIds() {
+    return ST_DEF.filter(function (s) { return s.id !== 'gram' || (TIERS && TIERS.grammar && TIERS.grammar.length); })
+                 .map(function (s) { return s.id; });
+  }
+  function stDef(id) { for (var i = 0; i < ST_DEF.length; i++) if (ST_DEF[i].id === id) return ST_DEF[i]; return ST_DEF[0]; }
+  /* Which stations is THIS student expected to do? Say it always, then the Paragraph — unless Mr.
+     Toby assigned a tier, in which case that tier's station is the core instead. Tier A is the
+     order + topic half of the Paragraph panel, so an A student's core is the panel WITHOUT the
+     writing; everything outside the core is an extra and can only raise a score. */
+  function coreSet() {
+    var c = { say: true, para: false, rw: false, gram: false, write: true };
+    if (!assignedTier || assignedTier === 'C') { c.para = true; return c; }
+    if (assignedTier === 'A') { c.para = true; c.write = false; return c; }
+    c[LEGACY[assignedTier] || 'para'] = true;
+    if (!c.para) c.write = false;              /* "write" only means anything inside the Paragraph panel */
+    return c;
+  }
   function tierState() {
     if (!state.tiers) state.tiers = {};
     var t = state.tiers;
@@ -148,37 +225,114 @@
     (TIERS.key || []).forEach(function (k) { hits.push({ idea: k.idea, hit: !!(k.ideas && k.ideas.test(text)) }); });
     return hits;
   }
-  function tierScores() {
-    var out = {}, pts = 0, max = 0;
-    if (!TIERS) return { out: out, pts: pts, max: max };
-    var t = tierState(), A = t.A, B = t.B, C = t.C;
-    if (A.order.first != null || A.topic.first != null || A.read) {
-      var tp = A.topic.first === true ? 1 : 0;
-      out.tierA = { order: A.order.best, order_first: A.order.first, topic: tp, read: A.read };
-      pts += A.order.best + tp; max += ordList().length + 1;
+  /* ---------- how far along each station is (T-421) ----------
+     say.js counts every deck it was handed (the key sentences AND the scene decks) and only the key
+     sentences are core, but it has no per-deck accessor. So we read that one deck's count off its
+     own chip and remember it in the saved work; when the chip is not on screen the remembered
+     number stands in, and work saved before T-421 is clamped instead of over-counted. */
+  function nKey() { return (TIERS && TIERS.key) ? TIERS.key.length : 0; }
+  function sayKeyOk() {
+    var A = tierState().A, rd = A.read || null;
+    var m = $('sayMount'), chip = m && m.querySelector('.sj-chip[data-deck="key"]');
+    if (chip) {
+      var hit = String(chip.textContent || '').match(/(\d+)\s*\/\s*(\d+)\s*$/);
+      if (hit) {
+        var k = +hit[1];
+        if (!rd) { rd = A.read = { ok: k, total: +hit[2] }; }
+        if (rd.key !== k) { rd.key = k; touch(); }
+        return k;
+      }
     }
-    var nB = 0, anyB = false, maxB = 0;
-    TIERS.key.forEach(function (k, i) {
-      if (k.keep) return; maxB++;
-      if (B.rw[i]) anyB = true;
-      if (changedB(i) && !markOff('tB.' + i, B.rw[i])) nB++;   /* T-396: sent back = the point is off until it changes */
+    if (rd && rd.key != null) return rd.key;
+    return rd ? Math.min(rd.ok || 0, nKey()) : 0;
+  }
+  function sayExtraOk() { var rd = tierState().A.read; return rd ? Math.max(0, (rd.ok || 0) - sayKeyOk()) : 0; }
+  function bChanged() {
+    var B = tierState().B, n = 0, mx = 0, any = false;
+    (TIERS.key || []).forEach(function (k, i) {
+      if (k.keep) return; mx++;
+      if (B.rw[i]) any = true;
+      if (changedB(i) && !markOff('tB.' + i, B.rw[i])) n++;   /* T-396: sent back = the point is off until it changes */
     });
-    /* tierB_max: ep01 keeps sentence 1 (names and countries), so B is out of 4 there and out of 5 in
-       later episodes — the dashboard reads this instead of assuming 4. */
-    if (anyB) { out.tierB = nB; out.tierB_max = maxB; pts += nB; max += maxB; }
-    if (norm(C.text)) {
-      var w = wordsOf(C.text).length, hits = ideaHits(C.text).filter(function (h) { return h.hit; }).length;
-      var p = (w >= (TIERS.summary.min || 25) ? 2 : (w >= 10 ? 1 : 0)) + (hits >= 3 ? 2 : (hits >= 1 ? 1 : 0)) + (C.revised ? 1 : 0);
-      var backC = markOff('tC.sum', C.text); if (backC) p = 0;   /* T-396 */
-      out.tierC = { words: w, ideas: hits, checked: C.checked, revised: C.revised, pts: p, sent_back: backC || undefined };
-      pts += p; max += 5;
+    return { n: n, max: mx, any: any };
+  }
+  function writePts() {
+    var C = tierState().C, text = C.text || '';
+    if (!norm(text)) return { pts: 0, words: 0, ideas: 0, back: false };
+    var w = wordsOf(text).length, hits = ideaHits(text).filter(function (h) { return h.hit; }).length;
+    var p = (w >= (TIERS.summary.min || 25) ? 2 : (w >= 10 ? 1 : 0)) + (hits >= 3 ? 2 : (hits >= 1 ? 1 : 0)) + (C.revised ? 1 : 0);
+    var back = markOff('tC.sum', text); if (back) p = 0;   /* T-396/T-421: a ✗ on the paragraph takes a CORE point */
+    return { pts: p, words: w, ideas: hits, back: back };
+  }
+  function topicRight() { var tp = tierState().A.topic; return !!(TIERS.topic && tp.pick != null && tp.pick === TIERS.topic.good); }
+  /* a paragraph Mr. Toby sent back is not finished — the episode stops saying "You finished" until
+     the student changes it (T-421) */
+  function writeDone() { var wp = writePts(); return !wp.back && wp.words >= ((TIERS.summary && TIERS.summary.min) || 25); }
+  function stProg(id) {
+    var core = coreSet(), o = tierState().A.order, nOrd = ordList().length;
+    if (id === 'say') { var kf = nKey(), k = Math.min(sayKeyOk(), kf); return { n: k, of: kf, done: kf > 0 && k >= kf }; }
+    if (id === 'para') {
+      var wp = writePts(), n = (o.best || 0) + (topicRight() ? 1 : 0), of = nOrd + 1;
+      if (core.write) { n += wp.pts; of += 5; }
+      return { n: n, of: of, done: (o.best || 0) >= nOrd && topicRight() && (!core.write || writeDone()) };
     }
-    if (TIERS.grammar && TIERS.grammar.length) {
-      var g = gSolved();
-      if (g.solved || g.first_try || Object.keys(t.D.ans || {}).length) { out.tierD = g; pts += g.solved; max += g.total; }
-    }
+    if (id === 'rw') { var b = bChanged(); return { n: b.n, of: b.max, done: b.max > 0 && b.n >= b.max }; }
+    if (id === 'gram') { var g = gSolved(); return { n: g.solved, of: g.total, done: g.total > 0 && g.solved >= g.total }; }
+    return { n: 0, of: 0, done: false };
+  }
+  function stDone(id) { return stProg(id).done; }
+  function coreDone() {
+    if (!TIERS) return true;
+    var core = coreSet(), ids = stIds(), i;
+    for (i = 0; i < ids.length; i++) if (core[ids[i]] && !stDone(ids[i])) return false;
+    return true;
+  }
+  /* ---------- the score ----------
+     coreMax is what EVERY student here is expected to do, and it is reported even before the student
+     opens After the story — that is what stops a page showing full marks for Your Turn alone.
+     Extras carry no max of their own, so doing more can only raise the percent; they are capped at a
+     share of the core so that extras can fill in missing points without replacing the core work
+     (grammar alone is ~20 items, and a student who only taps grammar has not done the episode). */
+  var EXTRA_SHARE = 0.4;
+  function tierScores() {
+    var out = {};
+    if (!TIERS) return { out: out, pts: 0, max: 0, coreMax: 0 };
+    var core = coreSet(), t = tierState(), A = t.A, o = A.order, nOrd = ordList().length;
+    var kf = nKey(), k = Math.min(sayKeyOk(), kf), ex = sayExtraOk();
+    var tp = topicRight() ? 1 : 0, wp = writePts(), b = bChanged();
+    var g = (TIERS.grammar && TIERS.grammar.length) ? gSolved() : null;
+    var corePts = 0, coreMax = 0, extra = 0;
+    corePts += k; coreMax += kf; extra += ex;                                  /* Say it: core for everyone */
+    if (core.para) { corePts += (o.best || 0) + tp; coreMax += nOrd + 1; }     /* the plan: order + topic */
+    else extra += (o.best || 0) + tp;
+    if (core.para && core.write) { corePts += wp.pts; coreMax += 5; }          /* the paragraph itself */
+    else extra += wp.pts;
+    if (core.rw) { corePts += b.n; coreMax += b.max; } else extra += b.n;      /* paraphrase */
+    if (g) { if (core.gram) { corePts += g.solved; coreMax += g.total; } else extra += g.solved; }
+    var cap = Math.max(2, Math.round(coreMax * EXTRA_SHARE)), counted = Math.min(extra, cap);
+    /* the old names the dashboard reads (tiers-dash.js), unchanged in shape.
+       T-421: the topic sentence counts on ANY try (fair-scores rule); the first try is kept for the
+       dashboard in topic_first. order_of is new, so the dashboard stops printing "/5" for 4 events. */
+    out.tierA = { order: o.best || 0, order_of: nOrd, order_first: o.first, topic: tp,
+                  topic_first: A.topic.first === true ? 1 : 0, read: A.read || null };
+    out.tierC = { words: wp.words, ideas: wp.ideas, checked: t.C.checked, revised: t.C.revised,
+                  pts: wp.pts, sent_back: wp.back || undefined };
+    /* tierB_max: ep01 keeps sentence 1 (names and countries), so B is out of 4 there and out of 5
+       in later episodes — the dashboard reads this instead of assuming 4. */
+    if (b.any || core.rw) { out.tierB = b.n; out.tierB_max = b.max; }
+    if (g && (g.solved || g.first_try || Object.keys(t.D.ans || {}).length || core.gram)) out.tierD = g;
+    var st = {};
+    stIds().forEach(function (id) { var p = stProg(id); st[id] = p.n + '/' + p.of + (core[id] ? ' core' : ' extra') + (p.done ? ' done' : ''); });
+    out.stations = st;
+    /* core.set and core.cap let the dashboard replay this same sum when a ✗ takes a point off,
+       without keeping its own copy of the rules (tiers-dash.js tierPts). */
+    var cset = [];
+    ['say', 'para', 'rw', 'gram', 'write'].forEach(function (key) { if (core[key]) cset.push(key); });
+    out.core = { pts: corePts, max: coreMax, extra: extra, extra_counted: counted, cap: cap,
+                 set: cset.join(','), done: coreDone(), assigned: assignedTier || '' };
+    out.say = out.tierS = { key: k, key_of: kf, extra: ex, total: (A.read && A.read.ok) || 0 };
     if (t.askNext) out.ask_next = true;
-    return { out: out, pts: pts, max: max };
+    return { out: out, pts: corePts + counted, max: coreMax, coreMax: coreMax };
   }
   function speakPlain(text, rate) {
     if (!window.speechSynthesis) return;
@@ -188,25 +342,56 @@
   }
   function dir(en, tag, cls) { tag = tag || 'p'; return '<' + tag + (cls ? ' class="' + cls + '"' : '') + ' translate="yes" data-en="' + esc(en) + '">' + esc(en) + '</' + tag + '>'; }
 
+  /* which station is open: the saved one (old A/B/C/D included), else the first core station the
+     student has not finished */
+  function openId() {
+    var v = tierState().open || '', ids = stIds(), i;
+    if (LEGACY[v]) v = LEGACY[v];
+    if (ids.indexOf(v) >= 0) return v;
+    var core = coreSet();
+    for (i = 0; i < ids.length; i++) if (core[ids[i]] && !stDone(ids[i])) return ids[i];
+    for (i = 0; i < ids.length; i++) if (!stDone(ids[i])) return ids[i];
+    return ids[0];
+  }
+  function hostTabs() { try { return H.tabs || null; } catch (e) { return null; } }
+  function mountStation(id, root) {
+    if (!root) return;
+    if (id === 'say') renderSay(root);
+    else if (id === 'para') renderPara(root);
+    else if (id === 'rw') renderTierB(root);
+    else if (id === 'gram') renderTierD(root);
+  }
+  function stationList() {
+    var core = coreSet();
+    return stIds().map(function (id) {
+      var d = stDef(id), p = stProg(id);
+      return { id: id, label: d.label, icon: d.icon, color: d.color, blurb: d.blurb,
+               core: !!core[id], done: p.done, n: p.n, of: p.of,
+               mount: function (root) { mountStation(id, root); } };
+    });
+  }
+  /* the next core station that is not finished — what the station row pulses and the arrow aims at */
+  function todoId() {
+    var core = coreSet(), ids = stIds(), i;
+    for (i = 0; i < ids.length; i++) if (core[ids[i]] && !stDone(ids[i])) return ids[i];
+    return '';
+  }
   function showTiers(scroll) {
     if (!TIERS) return;
     var box = $('tiersBox'); if (!box) return;
-    /* T-371: with no tier set the page used to show three closed cards, and students left
-       without opening one. Card A opens by itself, so the microphone is on screen on arrival. */
-    var t = tierState(), open = assignedTier || t.open || 'A', h = '';
+    var open = openId(), tabs = hostTabs(), h = '';
     h += '<h2 translate="yes">After the story</h2>';
-    if (assignedTier) {
-      var inf = TIER_INFO[assignedTier];
-      h += '<div class="tcards one"><div class="tcard on"><span class="te">' + inf.e + '</span><b>' + assignedTier + '. ' + esc(inf.name) + '</b>' + dir(inf.blurb, 'span', 'tb') + '</div>' +
-           '<button class="btn alt asknext' + (t.askNext ? ' on' : '') + '" id="askNext" translate="yes" data-en="' + (t.askNext ? 'Your teacher knows you are ready. Keep working.' : 'Ready for the next one? Ask your teacher.') + '">' +
-           (t.askNext ? '🙋 Your teacher knows you are ready. Keep working.' : '🙋 Ready for the next one? Ask your teacher.') + '</button></div>';
-    } else {
-      h += dir(TIERS.ask, 'p', 'lead');
-      h += '<div class="tcards">';
-      TIER_KEYS.forEach(function (k) {
-        if (k === 'D' && !(TIERS.grammar && TIERS.grammar.length)) return;
-        var inf = TIER_INFO[k];
-        h += '<button class="tcard' + (open === k ? ' on' : '') + '" data-t="' + k + '"><span class="te">' + inf.e + '</span><b>' + k + '. ' + esc(inf.name) + '</b>' + dir(inf.blurb, 'span', 'tb') + '</button>';
+    if (!tabs) {
+      /* T-421: the engine draws its own folder tabs once it has them (REEL_HOST.tabs). Until then
+         this is the station row: one chip per station with its count, a tick when it is finished,
+         and "must do" or "extra" so a student can see what is actually required of them. */
+      var first = todoId();
+      h += '<div class="sbar" id="sbar">';
+      stationList().forEach(function (s) {
+        var tag = s.core ? 'must do' : 'extra';
+        h += '<button class="stn' + (s.id === open ? ' on' : '') + (s.done ? ' ok' : '') + (s.id === first && s.id !== open ? ' todo' : '') + '" data-s="' + s.id + '">' +
+             '<span class="se">' + s.icon + '</span><span><b translate="yes" data-en="' + esc(s.label) + '">' + esc(s.label) + '</b>' +
+             '<span class="sn">' + (s.done ? '✓ ' : '') + s.n + ' / ' + s.of + ' <span class="sx" translate="yes" data-en="' + tag + '">' + tag + '</span></span></span></button>';
       });
       h += '</div>';
     }
@@ -214,15 +399,10 @@
     box.innerHTML = h;
     $('tiers').style.display = 'block';
     showDirections(box);
-    box.querySelectorAll('.tcard[data-t]').forEach(function (b) {
-      b.addEventListener('click', function () { tierState().open = b.getAttribute('data-t'); touch(); showTiers(false); });
+    box.querySelectorAll('.stn[data-s]').forEach(function (b) {
+      b.addEventListener('click', function () { tierState().open = b.getAttribute('data-s'); touch(); showTiers(false); });
     });
-    if ($('askNext')) $('askNext').addEventListener('click', function () { tierState().askNext = !tierState().askNext; touch(); save(); showTiers(false); });
-    if (open === 'A') renderTierA($('tpanel'));
-    else if (open === 'B') renderTierB($('tpanel'));
-    else if (open === 'C') renderTierC($('tpanel'));
-    else if (open === 'D') renderTierD($('tpanel'));
-    else hideNudge();
+    mountStation(open, $('tpanel'));
     repaintMarks();
     guide();
     score();
@@ -276,12 +456,22 @@
     try { v = parseFloat(getComputedStyle(pan).paddingLeft) || 0; } catch (e) {}
     return v || ((window.innerWidth || 1366) <= 760 ? 50 : 66);
   }
-  function pointAt(el) {
+  function pointAt(el, below) {
     if (!el || !el.getBoundingClientRect) { hideNudge(); return; }
     var r = el.getBoundingClientRect();
     if (!r.width && !r.height) { hideNudge(); return; }
     var n = nudgeEl(), W = NW(), H = W, gap = 2;
     var top = r.top + r.height / 2 - H / 2, mode = 'left', left;
+    /* T-421: a station chip sits in the row above the panel, so the arrow goes UNDER it pointing
+       up — beside it there is another chip, and above it the heading. */
+    if (below) {
+      left = Math.max(4, Math.min(r.left + r.width / 2 - W / 2, (window.innerWidth || 1366) - W - 4));
+      n.style.display = 'block';
+      n.style.left = Math.round(left) + 'px';
+      n.style.top = Math.round(r.bottom + gap) + 'px';
+      n.className = 'gnudge down';
+      return;
+    }
     /* T-414: the panel keeps an empty gutter down its left side — the arrow goes THERE, level with
        whatever it points at. Before this it sat just outside the target's own left edge, which on a
        phone left no room and flipped the arrow ABOVE the question, onto the line of text above it.
@@ -306,55 +496,85 @@
     n.style.top = Math.round(top) + 'px';
     n.className = 'gnudge ' + mode;
   }
-  /* what the student should do right now, read off the open panel */
+  /* T-421: when a station is finished the line and the arrow move on to the next station's chip,
+     so a student is never told "ask your teacher" by a page that already knows what comes next. */
+  function stationStep() {
+    var id = todoId(), extra = false, ids, i;
+    if (!id) {
+      ids = stIds();
+      for (i = 0; i < ids.length; i++) if (!stDone(ids[i])) { id = ids[i]; extra = true; break; }
+      if (!id) return { say: 'You finished this part.', at: null };
+    }
+    var d = stDef(id), chip = $('sbar') ? $('sbar').querySelector('.stn[data-s="' + id + '"]') : null;
+    return { say: (extra ? 'Everything you must do is done. Extra practice: ' : 'Next: ') + d.label + '.', at: chip, below: true };
+  }
+  /* what the student should do right now, read off the open station */
   function nextStep() {
     var p = $('tpanel'); if (!p) return null;
-    var q, t;
-    /* D: grammar */
-    q = p.querySelector('.gq:not(.done)');
-    /* T-400: the tiles are shuffled, but an arrow on one of them is still an arrow on an answer —
-       point at the sentence with the blank instead. */
-    if (q) return { say: 'Tap the word that fits in the sentence.', at: q.querySelector('.gs') || q };
-    if (p.querySelector('.gq')) {
+    var open = openId(), q, t;
+    if (open === 'gram') {
+      q = p.querySelector('.gq:not(.done)');
+      /* T-400: the tiles are shuffled, but an arrow on one of them is still an arrow on an answer —
+         point at the sentence with the blank instead. */
+      if (q) return { say: 'Tap the word that fits in the sentence.', at: q.querySelector('.gs') || q };
       t = p.querySelector('.tstep:not(.ok)');
-      return t ? { say: 'Next: ' + t.getAttribute('data-en'), at: t } : { say: 'You finished the grammar sets. Nice work.', at: null };
+      if (t) return { say: 'Next: ' + t.getAttribute('data-en'), at: t };
+      return stationStep();
     }
-    /* A step 1: read along */
-    if ($('sayMount')) {
-      var rd = tierState().A.read;
-      if (rd && rd.ok >= rd.total && rd.total) return { say: 'Next: put the story in order.', at: p.querySelector('.tstep[data-i="1"]') };
-      var mic = $('sayMount').querySelector('button');
-      return { say: rd && rd.ok ? 'Keep going. Listen, then say the next sentence.' : 'Start here \u2014 listen, then say the sentence out loud.', at: mic };
+    if (open === 'say') {
+      if (stDone('say')) return stationStep();
+      var rd = tierState().A.read, mic = $('sayMount') ? $('sayMount').querySelector('button') : null;
+      return { say: (rd && rd.ok) ? 'Keep going. Listen, then say the next sentence.' : 'Start here — listen, then say the sentence out loud.', at: mic };
     }
-    /* A step 2: order */
-    if (p.querySelector('.oslots')) {
-      var pool = p.querySelector('#opool .ochip');
-      if (pool) return { say: 'Tap a sentence. Then tap its place in the list.', at: pool };
-      if (p.querySelector('.oslot.ok') && !p.querySelector('.oslot.bad') && p.querySelectorAll('.oslot.ok').length === p.querySelectorAll('.oslot').length)
-        return { say: 'Next: pick the topic sentence.', at: p.querySelector('.tstep[data-i="2"]') };
-      if (p.querySelector('.oslot.bad')) return { say: 'Move the orange ones. What happened first? What happened last?', at: p.querySelector('.oslot.bad') };
-      return { say: 'Now press Check.', at: $('ordCheck') };
+    if (open === 'rw') {
+      var sw = p.querySelector('.rw:not(.done) .swapw');
+      if (sw) return { say: 'Tap an orange word to see other ways to say it.', at: sw };
+      var ta = p.querySelector('.rw:not(.done) textarea');
+      if (ta) return { say: 'Write the sentence your own way in the box.', at: ta };
+      return stationStep();
     }
-    /* A step 3: topic sentence */
-    if (p.querySelector('.topts')) {
-      var right = p.querySelector('.topts .qopt.right');
-      if (right) return { say: 'You finished Words and voice. Ask your teacher what to do next.', at: null };
+    if (open === 'para') {
+      var nOrd = ordList().length, o = tierState().A.order;
+      if ((o.best || 0) < nOrd) {
+        var pool = p.querySelector('#opool .ochip');
+        if (pool) return { say: 'Tap a sentence. Then tap its place in the list.', at: pool };
+        if (p.querySelector('.oslot.bad')) return { say: 'Move the orange ones. What happened first? What happened last?', at: p.querySelector('.oslot.bad') };
+        return { say: 'Now press Check.', at: $('ordCheck') };
+      }
       /* T-400: point at the QUESTION, never at one of the three answers */
-      return { say: 'Read all three. Which one tells the whole story? Tap it.', at: p.querySelector('.qtext') };
-    }
-    /* B: paraphrase */
-    if (p.querySelector('.rw')) {
-      var open2 = p.querySelector('.rw:not(.done) .swapw');
-      if (open2) return { say: 'Tap an orange word to see other ways to say it.', at: open2 };
-      return { say: 'All five are changed. Press Turn in.', at: $('bTurnIn') };
-    }
-    /* C: paragraph */
-    if ($('cText')) {
-      if (!String($('cText').value || '').trim()) return { say: 'Write 4 or 5 sentences about the story here.', at: $('cText') };
-      if (!tierState().C.checked) return { say: 'Now press Check my writing.', at: $('cCheck') };
-      return { say: 'Change one thing in your summary, then press Turn in.', at: $('cTurnIn') };
+      if (!topicRight()) return { say: 'Read all three. Which one tells the whole story? Tap it.', at: p.querySelector('#pTop .qtext') || p.querySelector('.qtext') };
+      if ($('cText')) {
+        var C = tierState().C;
+        if (!String($('cText').value || '').trim()) return { say: 'Now write your paragraph. Start with your topic sentence.', at: $('cText') };
+        if (!writeDone()) return { say: 'Keep writing. Use the sentences in your plan.', at: $('cText') };
+        if (!C.checked) return { say: 'Now press Check my writing.', at: $('cCheck') };
+        if (!C.revised) return { say: 'Change one thing in your paragraph, then press Turn in.', at: $('cTurnIn') };
+      }
+      return stationStep();
     }
     return null;
+  }
+  /* T-421: the Paragraph panel's three chunks tick themselves off, and the plan box under the
+     write box keeps up with the order and the topic sentence the student has chosen. */
+  function paraMarks() {
+    var a = $('pOrd'); if (!a) return;
+    var nOrd = ordList().length, o = tierState().A.order, b = $('pTop'), c = $('pWr');
+    a.classList.toggle('done', (o.best || 0) >= nOrd);
+    if (b) b.classList.toggle('done', topicRight());
+    if (c) c.classList.toggle('done', writeDone());
+    planFill();
+  }
+  var CBS = [], lastSig = '';
+  function progSig() {
+    var s = '';
+    try { stIds().forEach(function (id) { var p = stProg(id); s += id + p.n + '/' + p.of + (p.done ? 'd' : '') + ';'; }); } catch (e) { return ''; }
+    return s + '|' + assignedTier;
+  }
+  function changed() {
+    var s = progSig();
+    if (!s || s === lastSig) return;
+    lastSig = s;
+    CBS.forEach(function (cb) { try { cb(); } catch (e) {} });
   }
   function updateGuide() {
     var p = $('tpanel');
@@ -365,6 +585,7 @@
       hideNudge(); return;
     }
     if (!p || !$('tiers') || $('tiers').style.display !== 'block') { hideNudge(); return; }
+    paraMarks(); changed();
     var step = nextStep();
     var line = p.querySelector('.gline');
     if (!step) { if (line) line.remove(); hideNudge(); return; }
@@ -378,7 +599,7 @@
       line.innerHTML = '<span class="gpin">\u25B6</span><p translate="yes" data-en="' + esc(step.say) + '">' + esc(step.say) + '</p>';
       showDirections(line);
     }
-    pointAt(step.at);
+    pointAt(step.at, step.below);
   }
   function guide() {
     setTimeout(updateGuide, 30);
@@ -400,21 +621,14 @@
     });
     return decks;
   }
-  function renderTierA(root) {
-    var A = tierState().A, step = A.step || 0, h = '';
-    var steps = ['Read along', 'Put the story in order', 'Pick the topic sentence'];
-    h += '<div class="tsteps">';
-    steps.forEach(function (s, i) { h += '<button class="tstep' + (i === step ? ' on' : '') + '" data-i="' + i + '" translate="yes" data-en="' + esc(s) + '">' + (i + 1) + '. ' + esc(s) + '</button>'; });
-    h += '</div><div id="tstepBody"></div>';
-    root.innerHTML = h;
-    root.querySelectorAll('.tstep').forEach(function (b) { b.addEventListener('click', function () { tierState().A.step = +b.getAttribute('data-i'); touch(); renderTierA(root); }); });
-    showDirections(root);
-    var body = $('tstepBody');
-    if (step === 0) renderRead(body); else if (step === 1) renderOrder(body); else renderTopic(body);
-    guide();
-  }
-  function renderRead(root) {
-    root.innerHTML = dir('Listen to each line. Then say it. The microphone listens and shows a check when it understands you. Start with the Key sentences.', 'p', 'lead') + '<div class="saywrap" id="sayMount"></div>';
+  /* ---------- STATION: Say it (T-421; was Tier A step 1) ----------
+     The Key sentences deck is the core: five sentences, said out loud. The Scene decks that say.js
+     also shows are extra practice and never lower a score. */
+  function renderSay(root) {
+    var kf = nKey();
+    root.innerHTML = dir('Listen to each sentence. Then say it out loud. The microphone shows a check when it understands you.', 'p', 'lead') +
+      '<div class="sayx">' + dir('Do the ' + kf + ' Key sentences first — those are the ones you must do. The Scene lists after them are extra practice.', 'p') + '</div>' +
+      '<div class="saywrap" id="sayMount"></div>';
     showDirections(root);
     if (!window.Say || !window.Say.mount) { $('sayMount').innerHTML = '<p class="soft">The speaking tool did not load. Check your internet and refresh.</p>'; return; }
     if (SAY_CTL) { try { SAY_CTL.destroy(); } catch (e) {} SAY_CTL = null; }
@@ -429,9 +643,65 @@
           if (had == null) el.removeAttribute('data-w'); else el.setAttribute('data-w', had);
         }, 0);
       },
-      onProgress: function (ok, total) { tierState().A.read = { ok: ok, total: total }; score(); touch(); guide(); }
+      onProgress: function (ok, total) {
+        var A = tierState().A, rd = A.read || (A.read = {});
+        rd.ok = ok; rd.total = total;
+        sayKeyOk();                                  /* re-reads the key deck's own count off its chip */
+        score(); touch(); guide();
+      }
+    });
+    guide();
+  }
+  /* ---------- STATION: Paragraph (T-421; was Tier A steps 2-3 + Tier C) ----------
+     One panel, three chunks, no step pills: put the story in order, pick the topic sentence, write
+     the paragraph. The first two are the PLAN for the third — the sentences the student ordered and
+     the topic sentence they picked sit in a bordered box right above the write box, each with its
+     own listen button, so the writing starts from work they have already done. */
+  function renderPara(root) {
+    var core = coreSet(), h = '';
+    /* every chunk gets a picture from the episode's own scenes, floated beside the work (standing
+       rule): the first scene over the ordering, the last one over the topic sentence, and the whole
+       storyboard beside the write box. */
+    var sc = EP.scenes || [], pic = function (i) {
+      var s = sc[i]; return s ? '<div class="gpic">' + R.sceneSVG(boardState(s)) + '</div>' : '';
+    };
+    h += '<div class="pchunk" id="pOrd">' + pic(0) + '<h3><span class="pnum">1</span><span translate="yes" data-en="Put the story in order">Put the story in order</span></h3><div id="pOrdBody"></div></div>';
+    h += '<div class="pchunk" id="pTop">' + pic(sc.length - 1) + '<h3><span class="pnum">2</span><span translate="yes" data-en="Pick the topic sentence">Pick the topic sentence</span></h3><div id="pTopBody"></div></div>';
+    if (core.write) h += '<div class="pchunk" id="pWr"><h3><span class="pnum">3</span><span translate="yes" data-en="Write your paragraph">Write your paragraph</span></h3><div id="pWrBody"></div></div>';
+    root.innerHTML = h;
+    showDirections(root);
+    renderOrder($('pOrdBody'));
+    renderTopic($('pTopBody'));
+    if (core.write) renderTierC($('pWrBody'));
+    paraMarks();
+    guide();
+  }
+  /* the plan box inside chunk 3 */
+  function planFill() {
+    var host = $('cPlan'); if (!host) return;
+    var LIST = ordList(), o = tierState().A.order, T = TIERS.topic, tp = tierState().A.topic;
+    var lines = (o.slots || []).filter(function (v) { return v != null; }).map(function (v) { return LIST[v].t; });
+    var sig = lines.join('|') + '||' + (tp.pick != null ? tp.pick : '') + '||' + (state.lang || '');
+    if (host.getAttribute('data-sig') === sig) return;
+    host.setAttribute('data-sig', sig);
+    var h = '<span class="lab" translate="yes" data-en="Your plan">Your plan</span>';
+    if (!lines.length) h += dir('Put the story in order up above, and your sentences will show up here.', 'p', 'soft');
+    else {
+      h += '<ol>';
+      lines.forEach(function (s) { h += '<li><button class="osay" data-say="' + esc(s) + '" aria-label="Listen">🔊</button> <span translate="no">' + esc(s) + '</span></li>'; });
+      h += '</ol>';
+    }
+    if (tp.pick != null && tp.pick === T.good) {
+      h += '<p class="ptop"><span translate="yes" data-en="Start with this sentence:">Start with this sentence:</span> ' +
+           '<b translate="no">' + esc(T.opts[T.good]) + '</b> <button class="osay" data-say="' + esc(T.opts[T.good]) + '" aria-label="Listen">🔊</button></p>';
+    }
+    host.innerHTML = h;
+    showDirections(host);
+    host.querySelectorAll('.osay').forEach(function (b) {
+      b.addEventListener('click', function (e) { e.stopPropagation(); speakPlain(b.getAttribute('data-say')); });
     });
   }
+
   /* T-400: shuffledIdx refuses the data order on purpose — the ordering chips must never arrive
      already in the right sequence. For a multiple choice that bias is wrong: with three options
      it pushes the first option into slot 1 only a fifth of the time. Answer choices use a plain
@@ -518,6 +788,11 @@
     });
     $('ordReset').addEventListener('click', function () { o.shuf = shuffledIdx(n); o.slots = []; for (var j = 0; j < n; j++) o.slots.push(null); ordSel = null; redraw(); });
   }
+  /* T-421: nothing red in ELD 101. A wrong topic sentence FADES out, a cast member says one line
+     and a hint follows; on the third miss (or when only the right one is left standing) the answer
+     is shown with its sound and the student taps it once for the full point — the standing
+     reveal-after-3-misses rule. Only the green tick is ever shown. Every try is recorded for the
+     dashboard, and the point counts on any try (fair-scores rule). */
   function renderTopic(root) {
     var T = TIERS.topic, tp = tierState().A.topic, h = '';
     /* T-400: the options used to be drawn in data order, and every episode so far has good: 0 —
@@ -525,21 +800,57 @@
        student and keep the order (like the ordering chips and the grammar tiles), so a reload
        never moves them. tp.pick and T.good stay indexes into T.opts, not into the shuffle. */
     if (!tp.shuf || tp.shuf.length !== T.opts.length) { tp.shuf = fairIdx(T.opts.length); touch(); }
+    if (!tp.out) tp.out = [];
+    var right = tp.pick != null && tp.pick === T.good;
     h += '<p class="lead"><span translate="yes" data-en="A topic sentence tells what the whole story is about.">A topic sentence tells what the whole story is about.</span></p>';
     h += '<p class="qtext" translate="no">' + esc(T.ask) + '</p><div class="topts">';
     tp.shuf.forEach(function (i) {
-      var o = T.opts[i], cls = tp.pick === i ? (i === T.good ? ' right' : ' wrong') : '';
-      h += '<div class="toptrow"><button class="osay" data-k="' + i + '" aria-label="Listen">🔊</button><button class="qopt' + cls + '" data-i="' + i + '" translate="no">' + esc(o) + '</button></div>';
+      var cls = '';
+      if (right && i === T.good) cls = ' right';
+      else if (tp.out.indexOf(i) >= 0) cls = ' gone';
+      else if (tp.shown && i === T.good) cls = ' show';
+      h += '<div class="toptrow"><button class="osay" data-k="' + i + '" aria-label="Listen">🔊</button>' +
+           '<button class="qopt' + cls + '" data-i="' + i + '" translate="no"' + (right ? ' disabled' : '') + '>' + esc(T.opts[i]) + '</button></div>';
     });
-    h += '</div><p class="qmsg" id="topicMsg" translate="yes"' + (tp.pick != null ? ' data-en="' + esc(T.why[tp.pick]) + '">' + esc(T.why[tp.pick]) : '>') + '</p>';
+    h += '</div><div class="qmsg" id="topicMsg"></div>';
     root.innerHTML = h;
     showDirections(root);
-    root.querySelectorAll('.osay').forEach(function (b) { b.addEventListener('click', function (e) { e.stopPropagation(); speakPlain(T.opts[+b.getAttribute('data-k')]); }); });
+    function msgRight() {
+      var m = $('topicMsg'); if (!m) return;
+      m.innerHTML = '<span class="gok" translate="yes" data-en="' + esc(T.why[T.good]) + '">✓ ' + esc(T.why[T.good]) + '</span>';
+      showDirections(m);
+    }
+    function msgMiss(i, shown) {
+      var m = $('topicMsg'); if (!m) return;
+      var qp = QUIPS[Math.max(0, tp.tries - 1) % QUIPS.length];
+      var line = shown ? 'Here is the answer. Tap it once, and you still get the point.' : qp.line;
+      m.innerHTML = '<div class="gquip">' + headSVG(qp.who) + '<p translate="yes" data-en="' + esc(line) + '">' + esc(line) + '</p></div>' +
+                    '<p class="ghint" translate="yes" data-en="' + esc(T.why[i]) + '">💡 ' + esc(T.why[i]) + '</p>';
+      showDirections(m);
+    }
+    if (right) msgRight();
+    root.querySelectorAll('.osay').forEach(function (b) {
+      b.addEventListener('click', function (e) { e.stopPropagation(); speakPlain(T.opts[+b.getAttribute('data-k')]); });
+    });
     root.querySelectorAll('.qopt').forEach(function (b) {
       b.addEventListener('click', function () {
         var i = +b.getAttribute('data-i');
+        if (tp.pick != null && tp.pick === T.good) return;
+        if (tp.out.indexOf(i) >= 0) return;
         tp.tries++; if (tp.first == null) tp.first = (i === T.good);
-        tp.pick = i; score(); touch(); save(); renderTopic(root); guide();
+        if (i === T.good) {
+          tp.pick = i; score(); touch(); save();
+          renderTopic(root); msgRight(); paraMarks(); guide();
+          speakPlain(T.opts[i]);
+          return;
+        }
+        tp.out.push(i);
+        b.classList.add('wobble');
+        var standing = T.opts.length - tp.out.length - 1;        /* wrong ones still on screen */
+        var shown = tp.tries >= 3 || standing <= 0;
+        if (shown) { tp.shown = true; speakPlain(T.opts[T.good]); }
+        score(); touch(); save();
+        setTimeout(function () { renderTopic(root); msgMiss(i, shown); guide(); }, 420);
       });
     });
   }
@@ -703,7 +1014,8 @@
     var C = tierState().C, S = TIERS.summary, h = '';
     h += dir(S.hint, 'p', 'lead');
     h += '<div class="cgrid"><div class="cframes" id="cframes"></div><div class="cwrite">' +
-         '<span class="lab" translate="yes" data-en="My summary">My summary</span>' +
+         '<div class="plan" id="cPlan"></div>' +            /* T-421: the order + topic sentence, as the plan */
+         '<span class="lab" translate="yes" data-en="My paragraph">My paragraph</span>' +
          '<textarea id="cText" translate="no" spellcheck="false" placeholder="Linh is ...">' + esc(C.text) + '</textarea>' +
          '<div class="row"><span class="wc" id="cCount"></span><button class="btn" id="cCheck" translate="yes">Check my writing</button><button class="btn alt" id="cTurnIn" translate="yes">Turn in</button><span id="cMsg" translate="yes"></span></div>' +
          '<div class="fb" id="cFb"></div></div></div>';
@@ -716,6 +1028,7 @@
       fh += '<div class="cframe">' + R.sceneSVG(boardState(sc)) + '<p translate="no"><b>' + (si + 1) + '.</b> ' + esc(first ? (first.A || txt(first)) : '') + '</p></div>';
     });
     $('cframes').innerHTML = fh;
+    planFill();
     function count() { var n = wordsOf($('cText').value).length; $('cCount').textContent = n + (n === 1 ? ' word' : ' words'); }
     count();
     $('cText').addEventListener('input', function () {
@@ -983,7 +1296,10 @@
     v = (v || '').toUpperCase(); if (!/^[ABCD]$/.test(v)) v = '';
     if (v === assignedTier) return;
     assignedTier = v;
-    if (assignedTier) { tierState().open = assignedTier; tierState().askNext = false; }
+    /* T-421: the assignment changes which station is this student's core, so forget the saved
+       "open" and let openId() land on the first core station they have not finished. */
+    if (assignedTier) { tierState().open = ''; tierState().askNext = false; }
+    changed();
     if ($('tiers') && $('tiers').style.display === 'block') showTiers(false);
   }
   function pollTier() {
@@ -1025,7 +1341,17 @@
     poll: pollTier,
     scores: tierScores,
     markItems: markItems,          /* T-396: the engine paints these with its own (one arrow) */
-    ready: function () { return !!TIERS; }
+    ready: function () { return !!TIERS; },
+    /* T-421, for the engine's folder tabs */
+    stations: function () { return TIERS ? stationList() : []; },
+    nextStep: function () { return TIERS ? nextStep() : null; },
+    onChange: function (cb) { if (typeof cb === 'function') CBS.push(cb); },
+    coreDone: coreDone,
+    open: function (id) {
+      if (!TIERS) return '';
+      if (id) { tierState().open = LEGACY[id] || id; touch(); if ($('tiers') && $('tiers').style.display === 'block') showTiers(false); }
+      return openId();
+    }
   };
   if (EP.tiers || window.EP_TIERS) init();
   else addScript('tiers-data.js', init);   /* epNN/tiers-data.js beside the episode page */

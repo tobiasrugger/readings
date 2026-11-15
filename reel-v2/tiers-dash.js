@@ -11,7 +11,7 @@
   function $(id) { return document.getElementById(id); }
   var CSS = 'select.tsel{border:2px solid var(--line,#d9d3e3);border-radius:8px;padding:3px 6px;font-weight:800;background:#fff}' +
             'select.tsel.A{background:#fff3e2;border-color:#F8981F}select.tsel.B{background:#f1e8f6;border-color:#864D9E}select.tsel.C{background:#e3f4e8;border-color:#2d7a47}select.tsel.D{background:#e6eefc;border-color:#2f6fbd}' +
-            '.ask{font-size:18px}td.tier{white-space:nowrap}.tnote{margin:10px 0 0;color:#6b5f78;font-size:14px}' +
+            '.ask{font-size:18px}td.tier{white-space:nowrap}td.tcore{white-space:nowrap;font-weight:800}.tnote{margin:10px 0 0;color:#6b5f78;font-size:14px}' +
             '.tsetall{margin-left:auto;font-weight:800;font-size:14px}.tsetall select{width:auto;display:inline-block}' +
             '.tmkbtn{border:2px solid #2B2233;background:#fff;border-radius:8px;padding:1px 7px;font-weight:900;cursor:pointer;font-size:13px}' +
             '.tmkbtn.un{background:#fff3e2;border-color:#F8981F}.tmkbtn:hover{background:#f1e8f6}' +
@@ -25,11 +25,22 @@
             '.tmkbody{flex:1;min-width:0}.tmkbody p{margin:0 0 4px;font-size:16px;line-height:1.4;white-space:pre-wrap}';
   if (!$('tiersDashCss')) { var st = document.createElement('style'); st.id = 'tiersDashCss'; st.textContent = CSS; document.head.appendChild(st); }
 
+  /* T-421: the station a student is on, in words a teacher reads */
+  var STN = { say: 'Say it', para: 'Paragraph', rw: 'Paraphrase', gram: 'Grammar', A: 'Say it', B: 'Paraphrase', C: 'Paragraph', D: 'Grammar' };
   function tierCols(r) {
     var sc = r.scores || {}, w = r.work || {}, t = w.tiers || {}, A = sc.tierA, B = sc.tierB, C = sc.tierC, G = sc.tierD;
+    var S = sc.say || sc.tierS || null, co = sc.core || null;
     return {
       tier: r.tier || '', ask: !!t.askNext, open: t.open || '',
-      a: A ? ('order ' + A.order + '/5' + (A.order_first != null && A.order_first !== A.order ? ' (first ' + A.order_first + ')' : '') + ' · topic ' + (A.topic ? '✓' : '✗') + (A.read ? ' · read ' + A.read.ok + '/' + A.read.total : '')) : '',
+      /* T-421: what this student still owes, in the station words the page uses */
+      core: co ? (co.pts + '/' + co.max + (co.done ? ' ✓ done' : '') + (co.extra_counted ? ' +' + co.extra_counted + ' extra' : '')) : '',
+      stations: sc.stations || null,
+      /* T-421: order_of replaces the hardcoded /5 (the ordering is 4 events), the topic sentence
+         now counts on any try with the first try beside it, and "say" is the Say it station's own
+         key-sentence count — A.read.ok counts the extra scene decks too. */
+      a: A ? ('order ' + A.order + '/' + (A.order_of || 5) + (A.order_first != null && A.order_first !== A.order ? ' (first ' + A.order_first + ')' : '') +
+              ' · topic ' + (A.topic ? '✓' : '✗') + (A.topic && !A.topic_first ? ' (not first try)' : '') +
+              (S ? ' · say ' + S.key + '/' + S.key_of + (S.extra ? ' +' + S.extra + ' extra' : '') : (A.read ? ' · read ' + A.read.ok + '/' + A.read.total : ''))) : '',
       b: (B != null) ? (B + '/' + (sc.tierB_max || 4) + ' changed') : '',
       c: C ? (C.words + ' words · ' + C.ideas + '/5 ideas · checked ' + C.checked + (C.revised ? ' · revised' : '')) : '',
       para: (t.C && t.C.text) || '',
@@ -75,13 +86,25 @@
     return out;
   }
   function unmarkedCount(r) { return GM() ? GM().unmarked(r.marks, writtenItems(r)) : 0; }
-  /* the tier points this row still earns once ✗ marks are taken off */
+  /* the tier points this row still earns once ✗ marks are taken off.
+     T-421: the page splits its points into core and extras, and extras are capped, so a ✗ on an
+     extra may take nothing off at all. core.set and core.cap are saved for exactly this, so the sum
+     below is the page's own sum and not a second copy of the rules. Rows saved before T-421 have no
+     core block and fall back to the old flat sum. */
   function tierPts(r) {
-    var sc = r.scores || {}, G = GM(), A = sc.tierA || {}, off = 0;
+    var sc = r.scores || {}, G = GM(), A = sc.tierA || {}, Dg = sc.tierD || {}, co = sc.core || null, off = 0;
     if (G) rwOf(r).forEach(function (a, i) { if (nz(a) && G.off(r.marks, 'tB.' + i, a)) off++; });
     var b = Math.max(0, (+sc.tierB || 0) - off);
     var c = +((sc.tierC || {}).pts) || 0; if (G && G.off(r.marks, 'tC.sum', sumOf(r))) c = 0;
-    return (+A.order || 0) + (+A.topic || 0) + b + c + (+((sc.tierD || {}).solved) || 0);
+    if (!co || !co.set) return (+A.order || 0) + (+A.topic || 0) + b + c + (+Dg.solved || 0);
+    var set = String(co.set).split(','), has = function (k) { return set.indexOf(k) >= 0; };
+    var S = sc.say || sc.tierS || {}, corePts = +S.key || 0, extra = +S.extra || 0;
+    var ord = (+A.order || 0) + (+A.topic || 0);
+    if (has('para')) corePts += ord; else extra += ord;
+    if (has('write')) corePts += c; else extra += c;
+    if (has('rw')) corePts += b; else extra += b;
+    if (has('gram')) corePts += (+Dg.solved || 0); else extra += (+Dg.solved || 0);
+    return corePts + Math.min(extra, +co.cap || 0);
   }
   /* GALMARK.reelScore still reads the tier points the STUDENT page last saved, so right after a ✗
      on a rewrite or the paragraph the gradebook row would not drop until that student opened the
@@ -124,13 +147,14 @@
     var head = table.querySelector('tr');
     if (head && !head.querySelector('.th-tier')) {
       var ins = head.children[head.children.length - 2] || null;   /* before "Turned in" */
-      ['Tier', 'A', 'B', 'C', 'D'].forEach(function (lab) { var th = document.createElement('th'); th.textContent = lab; if (lab === 'Tier') th.className = 'th-tier'; head.insertBefore(th, ins); });
+      ['Tier', 'Core', 'A', 'B', 'C', 'D'].forEach(function (lab) { var th = document.createElement('th'); th.textContent = lab; if (lab === 'Tier') th.className = 'th-tier'; head.insertBefore(th, ins); });
     }
     table.querySelectorAll('tr[data-email]').forEach(function (tr) {
       if (tr.querySelector('td.tier')) return;
       var r = byEmail[tr.getAttribute('data-email')]; if (!r) return;
       var s = tierCols(r), ins = tr.children[tr.children.length - 2] || null, cells = [];
-      cells.push('<td class="tier">' + tierSel(r) + (s.ask ? ' <span class="ask" title="Ready for the next one?">🙋</span>' : '') + (!s.tier && s.open ? ' <span class="pill no">doing ' + esc(s.open) + '</span>' : '') + '</td>');
+      cells.push('<td class="tier">' + tierSel(r) + (s.ask ? ' <span class="ask" title="Ready for the next one?">🙋</span>' : '') + (s.open ? ' <span class="pill no">at ' + esc(STN[s.open] || s.open) + '</span>' : '') + '</td>');
+      cells.push('<td class="tcore"' + (s.stations ? ' title="' + esc(JSON.stringify(s.stations)) + '"' : '') + '>' + esc(s.core) + '</td>');
       var un = unmarkedCount(r), any = writtenItems(r).length;
       var mk = any ? '<button type="button" class="tmkbtn' + (un ? ' un' : '') + '" title="Mr. Toby\u2019s \u2713 / \u2717 / note on this student\u2019s writing">' + (un ? '\u270e ' + un : '\u2713') + '</button>' : '';
       cells.push('<td>' + esc(s.a) + '</td><td>' + esc(s.b) + '</td><td' + (s.para ? ' title="' + esc(s.para) + '"' : '') + '>' + esc(s.c) + ' ' + mk + '</td><td>' + esc(s.d) + '</td>');
@@ -154,7 +178,7 @@
       lab.innerHTML = 'Set all shown to <select class="txt tsel" id="tAll"><option value="">…</option><option value="">Ask teacher</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select>';
       csv.parentNode.insertBefore(lab, csv.nextSibling);
       var note = document.createElement('p'); note.className = 'tnote';
-      note.textContent = 'Tier: A words and voice · B synonyms and details · C paragraph · D grammar from the story. “Ask teacher” means no tier is set and the student sees all three cards. 🙋 = the student tapped “Ready for the next one?”.';
+      note.textContent = 'Stations (T-421): Say it and Paragraph are what every student must do; Paraphrase and Grammar are extra and can only raise a score. Core = core points out of the core maximum (hover it for every station). Setting a tier changes which station THAT student must do: A = order + topic sentence, B = Paraphrase, C = the paragraph, D = Grammar. “Ask teacher” leaves the default (Say it + Paragraph). A = order, topic sentence and Say it · B = Paraphrase · C = the paragraph · D = Grammar.';
       csv.parentNode.parentNode.insertBefore(note, csv.parentNode.nextSibling);
       $('tAll').addEventListener('change', function () {
         var v = $('tAll').value, per = D.period(), idx = $('tAll').selectedIndex; if (idx === 0) return;
@@ -166,8 +190,8 @@
   }
   window.REEL_TIERS_DASH = {
     decorate: decorate,
-    csvHead: function () { return ['tier', 'asks_next', 'tier_a', 'tier_b', 'tier_c', 'tier_d', 'paragraph', 'tier_points', 'writing_unmarked']; },
-    csvRow: function (r) { var s = tierCols(r); return [s.tier, s.ask, s.a, s.b, s.c, s.d, s.para, tierPts(r), unmarkedCount(r)]; },
+    csvHead: function () { return ['tier', 'core', 'asks_next', 'tier_a', 'tier_b', 'tier_c', 'tier_d', 'paragraph', 'tier_points', 'writing_unmarked']; },
+    csvRow: function (r) { var s = tierCols(r); return [s.tier, s.core, s.ask, s.a, s.b, s.c, s.d, s.para, tierPts(r), unmarkedCount(r)]; },
     markAns: markAns,              /* T-394 hook: the hub asks us what a tier answer says */
     markPts: tierPts
   };
