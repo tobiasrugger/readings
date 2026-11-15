@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard · The Science of Gratitude</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<!-- T-412 (Nov 15 2026). Reads gratitude_work (section main). Score recounted here exactly as the student page counts it (33 parts).
+     Mr. Toby's ✓/✗/note on the 12 written answers (keys gr.<data-k>) via /readings/marks.js; a ✗ takes that point off until the
+     student changes the answer. Marks need gratitude_work.marks (jsonb) — until that SQL runs the page says so and everything else works. -->
+<style>
+:root{--ink:#1d2320;--pine:#1f4d3d;--bg:#f4f1e8}
+*{box-sizing:border-box}
+body{margin:0;font-family:Nunito,system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:16px}
+.bar{position:sticky;top:0;z-index:60;background:var(--pine);color:#fff;padding:10px 14px 10px 150px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.bar h1{font-size:18px;margin:0;flex:1 1 220px;font-weight:900}
+.bar select,.bar input,.bar button{font:inherit;font-size:14px;font-weight:800;border:0;border-radius:8px;padding:7px 10px;background:#e8dfc8;color:var(--pine);cursor:pointer}
+.bar a{color:#fff;font-weight:800;font-size:14px}
+.wrap{max-width:1300px;margin:0 auto;padding:16px}
+.card{background:#fff;border:2px solid var(--ink);border-radius:12px;box-shadow:0 3px 0 rgba(0,0,0,.15);padding:14px 16px;margin:0 0 16px}
+table{width:100%;border-collapse:collapse;font-size:14px;background:#fff}
+th,td{border:1px solid #cdbf9e;padding:6px 8px;text-align:left;vertical-align:top}
+th{background:#e8dfc8;color:var(--pine)}
+td.n{text-align:center;font-weight:800}
+.full{background:#bfe3b0}.part{background:#fdf0d2}.zero{background:#f6f2e6;color:#b0a48a}
+.pen{font:inherit;font-weight:900;border:2px solid var(--ink);border-radius:8px;background:#fff;padding:2px 8px;cursor:pointer}
+.pen.has{background:#fff3c4}
+.detail td{background:#fbfaf6}
+.ans{border:2px solid var(--ink);border-radius:10px;background:#fff;padding:8px 10px;margin:0}
+.ans b{display:block;font-size:13px;color:var(--pine)}
+.small{font-size:13px;color:#5c6b58}
+.warn{border:2px solid #b45309;background:#fff7e6;border-radius:10px;padding:8px 12px;font-weight:800;margin:0 0 12px;display:none}
+.miss{color:#9b1c1c;font-size:13px;margin-top:8px}
+.entry{border:2px solid var(--ink);border-left:6px solid #b8842c;border-radius:10px;background:#fff;padding:6px 10px;margin:6px 0}
+#gate{position:fixed;inset:0;background:rgba(24,38,28,.96);z-index:400;display:flex;align-items:center;justify-content:center;padding:20px}
+#gate .box{background:#fffdf6;border-radius:16px;padding:26px;max-width:420px;width:100%;border:2px solid var(--ink)}
+#gate input{width:100%;font-size:17px;padding:9px;border:2px solid #cdbf9e;border-radius:9px;margin-top:8px}
+.btn{background:var(--pine);color:#fff;border:0;border-radius:10px;padding:9px 16px;font:inherit;font-weight:900;cursor:pointer;margin-top:10px}
+</style>
+<script src="/readings/icon.js" data-teacher></script>
+</head>
+<body>
+<div id="gate"><div class="box">
+  <h2 style="margin-top:0">Teacher sign-in</h2>
+  <p class="small">The Science of Gratitude · ELD 103</p>
+  <input type="password" id="pw" placeholder="Password" autocomplete="off">
+  <button class="btn" id="pwGo">Open</button>
+  <p id="gerr" style="color:#c0392b;font-weight:800;min-height:20px"></p>
+</div></div>
+
+<div class="bar">
+  <h1>🙏 The Science of Gratitude · Dashboard</h1>
+  <select id="per"><option value="">All periods</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select>
+  <input type="search" id="find" name="gr-find-x" placeholder="Find a student" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')">
+  <button id="refresh">Refresh</button>
+  <a href="/readings/gratitude/" target="_blank" rel="noopener">Student page ↗</a>
+</div>
+
+<div class="wrap">
+  <div class="warn" id="warn"></div>
+  <div class="card">
+    <p class="small" style="margin:0">Score = parts finished out of 33: ① Start 2 (mood + one good thing) · ② Read 1 (“I read it”) · ③ Questions 5 · ④ Words 19 (8 pictures, 8 sentences, 3 own sentences) · ⑤ Breathing 3 (five breaths + 2 answers) · ⑥ Journal 1 (one saved entry) · ⑦ Before you go 2. A written answer counts at 3+ words (own sentences 4+). Words count on any try; misses are listed for you. A ✗ takes that point off until the student changes the answer. Moods and “Will it work for you?” are opinions and never marked wrong.</p>
+  </div>
+  <div class="card" style="overflow-x:auto">
+    <table id="tbl"><thead><tr>
+      <th>Student</th><th>P</th><th>Score</th><th>① Start</th><th>② Read</th><th>③ Questions</th><th>④ Words</th><th>⑤ Breathing</th><th>⑥ Journal</th><th>⑦ Go</th><th>Mood</th><th>✎ Writing</th><th>Misses / shown</th><th>Updated</th>
+    </tr></thead><tbody></tbody></table>
+    <p class="small" id="count"></p>
+  </div>
+  <div class="card" id="pretr"></div>
+</div>
+
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var TABLE='gratitude_work',SECTION='main';
+/* must match the student page */
+var MATCH=['breathe','journal','smile','closeeyes','notice','grateful','write','relax'];
+var FIB=['breathe','write','kind','thank','notice','grateful','relax','remember'];
+var WRITE=['warm1','c1','c2','c3','c4','c5','v1','v2','v3','b1','b2','close1'];
+var QTEXT={warm1:'One small good thing this week',c1:'1. What did Lyubomirsky ask people to write?',c2:'2. Which group became happier?',c3:'3. Why did doing it more stop it working?',
+  c4:'4. Hedonic adaptation in your own words + example',c5:'5. A time you were in flow',v1:'Own sentence 1',v2:'Own sentence 2',v3:'Own sentence 3',
+  b1:'How does your body feel now?',b2:'When could slow breathing help?',close1:'Will this work for you? Why?'};
+var ROWS=[],HAS_MARKS=true,OPEN={};
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function key(e){return (window.GAL&&GAL.key)?GAL.key(e):String(e||'').trim().toLowerCase().split('@')[0];}
+function hdr(){return {apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY};}
+function wc(s){return String(s||'').trim().split(/\s+/).filter(Boolean).length;}
+function wOk(A,m,k){var t=A[k]||'';return wc(t)>=(/^v\d$/.test(k)?4:3)&&!(window.GALMARK&&GALMARK.off(m,'gr.'+k,t));}
+function parts(x){
+  var P=x.payload||{},A=P.answers||{},G=P.gx||{},m=x.marks||{},c={};
+  c.start=(A.rateBefore?1:0)+(wOk(A,m,'warm1')?1:0);
+  c.read=G.read?1:0;
+  c.q=['c1','c2','c3','c4','c5'].filter(function(k){return wOk(A,m,k);}).length;
+  c.words=MATCH.filter(function(a,i){return A['m'+i]===a;}).length+FIB.filter(function(a,i){return A['f'+i]===a;}).length+['v1','v2','v3'].filter(function(k){return wOk(A,m,k);}).length;
+  c.breath=(G.breathed?1:0)+(wOk(A,m,'b1')?1:0)+(wOk(A,m,'b2')?1:0);
+  c.journal=(P.entries||[]).length?1:0;
+  c.go=(A.rateAfter?1:0)+(wOk(A,m,'close1')?1:0);
+  c.total=c.start+c.read+c.q+c.words+c.breath+c.journal+c.go;
+  return c;
+}
+function cell(n,of){return '<td class="n '+(n===of?'full':n?'part':'zero')+'">'+n+'/'+of+'</td>';}
+
+function load(){
+  $('warn').style.display='none';
+  var cols='email,name,period,payload,updated_at';
+  function get(c){return fetch(SUPA_URL+'/rest/v1/'+TABLE+'?select='+c+'&section=eq.'+SECTION+'&order=updated_at.desc',{headers:hdr()});}
+  return get(cols+',marks').then(function(r){if(r.status===400){HAS_MARKS=false;return get(cols);}return r;})
+   .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+   .then(function(rows){
+     var by={};rows.forEach(function(x){var k=key(x.email);var cur=by[k];if(!cur||JSON.stringify(x.payload||{}).length>JSON.stringify(cur.payload||{}).length)by[k]=x;});
+     ROWS=Object.keys(by).map(function(k){return by[k];}).filter(function(x){return /@(s\.)?sfusd\.edu$/i.test(x.email||'');});
+     ROWS.sort(function(a,b){return (String(a.period)+(a.name||'')).localeCompare(String(b.period)+(b.name||''));});
+     if(!HAS_MARKS){$('warn').style.display='block';$('warn').textContent='✓/✗ marks are off until the one-line SQL runs (gratitude_work needs a marks column). Everything else works.';}
+     render();
+   }).catch(function(e){$('warn').style.display='block';$('warn').textContent='Could not load student work: '+e.message;});
+}
+function render(){
+  var p=$('per').value,q=$('find').value.trim().toLowerCase(),tb=document.querySelector('#tbl tbody'),h='',n=0;
+  ROWS.forEach(function(x){
+    if(p&&String(x.period)!==p)return;
+    if(q&&(x.name||'').toLowerCase().indexOf(q)<0&&String(x.email).toLowerCase().indexOf(q)<0)return;
+    n++;var P=x.payload||{},A=P.answers||{},G=P.gx||{},VX=G.vx||{},m=x.marks||{},c=parts(x);
+    var misses=0,shown=0;Object.keys(VX).forEach(function(k){misses+=(VX[k].misses||[]).length;if(VX[k].shown)shown++;});
+    var un=window.GALMARK?GALMARK.unmarked(m,WRITE.map(function(k){return {key:'gr.'+k,a:A[k]||''};})):0;
+    var wrote=WRITE.filter(function(k){return wc(A[k])>0;}).length;
+    var mood=(A.rateBefore||'–')+' → '+(A.rateAfter||'–');
+    h+='<tr data-email="'+esc(x.email)+'"><td><b>'+esc(x.name||'')+'</b><br><span class="small">'+esc(x.email)+'</span></td><td class="n">'+esc(x.period)+'</td>'+
+      '<td class="n">'+c.total+'/33</td>'+cell(c.start,2)+cell(c.read,1)+cell(c.q,5)+cell(c.words,19)+cell(c.breath,3)+
+      '<td class="n '+(c.journal?'full':'zero')+'">'+(P.entries||[]).length+' entr'+((P.entries||[]).length===1?'y':'ies')+'</td>'+cell(c.go,2)+
+      '<td class="n">'+esc(mood)+'</td>'+
+      '<td class="n">'+wrote+'/12 '+(wrote||(P.entries||[]).length?'<button class="pen'+(un?' has':'')+'" data-open="'+esc(x.email)+'">✎'+(un?un:'')+'</button>':'')+'</td>'+
+      '<td class="n">'+misses+' / '+shown+'</td>'+
+      '<td class="small">'+(x.updated_at?new Date(x.updated_at).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'')+(x.submitted?'<br>turned in':'')+'</td></tr>';
+    if(OPEN[x.email])h+=detail(x);
+  });
+  tb.innerHTML=h||'<tr><td colspan="14" class="small">No students yet.</td></tr>';
+  $('count').textContent=n+' student'+(n===1?'':'s');
+}
+function detail(x){
+  var P=x.payload||{},A=P.answers||{},G=P.gx||{},VX=G.vx||{},m=x.marks||{};
+  var h='<tr class="detail"><td colspan="14"><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px">';
+  WRITE.forEach(function(k){
+    h+='<div class="ans"><b>'+esc(QTEXT[k])+'</b>'+(esc(A[k]||'')||'<i class="small">(blank)</i>')+'<div class="small">'+wc(A[k])+' words</div>'+
+      (HAS_MARKS&&window.GALMARK?GALMARK.controls(m,'gr.'+k,A[k]||''):'')+'</div>';
+  });
+  h+='</div>';
+  var E=(P.entries||[]).slice().sort(function(a,b){return a.date<b.date?1:-1;});
+  if(E.length){h+='<div style="margin-top:10px"><b>Journal</b>';E.forEach(function(e){h+='<div class="entry"><span class="small">'+esc(e.date)+' · '+esc(e.mode||'')+'</span><ol style="margin:4px 0 4px 18px;padding:0">'+(e.items||[]).map(function(t){return '<li>'+esc(t)+'</li>';}).join('')+'</ol>'+(e.why?'<i>'+esc(e.why)+'</i>':'')+'</div>';});h+='</div>';}
+  var miss=Object.keys(VX).filter(function(k){return (VX[k].misses||[]).length;}).map(function(k){return (k.charAt(0)==='m'?'Picture ':'Sentence ')+(+k.slice(1)+1)+': '+VX[k].misses.map(function(z){return '“'+esc(z.a)+'”';}).join(', ')+(VX[k].shown?' (answer shown)':'');});
+  if(miss.length)h+='<div class="miss"><b>Misses:</b> '+miss.join(' · ')+'</div>';
+  return h+'</td></tr>';
+}
+document.addEventListener('click',function(e){
+  var b=e.target.closest&&e.target.closest('[data-open]');if(!b)return;
+  var em=b.getAttribute('data-open');OPEN[em]=!OPEN[em];render();
+});
+function bindMarks(){
+  if(!window.GALMARK)return;
+  GALMARK.bind($('tbl'),function(k,ctl){
+    var tr=ctl.closest('tr.detail').previousElementSibling,em=tr.getAttribute('data-email'),x=ROWS.filter(function(r){return r.email===em;})[0];
+    if(!x)return null;
+    return {table:TABLE,filter:'section=eq.'+SECTION+'&email=eq.'+encodeURIComponent(em),ans:((x.payload||{}).answers||{})[k.replace('gr.','')]||'',
+      after:function(marks){x.marks=marks;setTimeout(render,0);}};
+  });
+}
+$('per').onchange=render;$('find').oninput=render;$('refresh').onclick=load;
+
+/* 🌐 Pre-translate: directions, next-step lines, the 12 words and the 11 tap-words — read from the live student page.
+   Sentences go to slug "dir", words (sent with a meaning) to "tap:gratitude", exactly where std.js looks first. */
+function pretr(){
+  if(!window.GAL||!GAL.pretr)return;
+  GAL.pretr({host:'#pretr',title:'🌐 Pre-translate the gratitude page',
+    items:[{key:'gratitude',title:'The Science of Gratitude (directions, next steps, 12 words, 11 tap-words)',lines:function(){
+      return fetch('/readings/gratitude/index.html').then(function(r){return r.text();}).then(function(t){
+        var out=[],seen={},m,re;
+        function add(src,slug,meaning){src=src.replace(/&amp;/g,'&').replace(/&quot;/g,'"').trim();var k=slug+'|'+src;if(!src||seen[k])return;seen[k]=1;out.push(meaning?{src:src,slug:slug,meaning:meaning}:{src:src,slug:slug});}
+        re=/data-en="([^"]+)"/g;while((m=re.exec(t)))add(m[1],'dir');
+        re=/ t:'([^']+)'\}/g;while((m=re.exec(t))){var s=m[1].replace(/\\u2019/g,'’');add(/^Start here/.test(s)?s:'Next: '+s,'dir');}
+        add('You finished this part. Press “Turn in”.','dir');
+        re=/\{k:'[a-z]+',\s*w:'([^']+)',\s*d:'([^']+)'/g;while((m=re.exec(t)))add(m[1],'tap:gratitude',m[2]);
+        re=/<span class="g" data-d="([^"]+)">([^<]+)<\/span>/g;while((m=re.exec(t)))add(m[2],'tap:gratitude',m[1]);
+        return out;
+      });
+    }}]
+  });
+}
+(function(){
+  function open(){$('gate').style.display='none';try{sessionStorage.setItem('gal_teacher_ok','1');}catch(e){}load();bindMarks();pretr();}
+  try{if(sessionStorage.getItem('gal_teacher_ok')==='1'){if(document.readyState==='complete')open();else window.addEventListener('load',open);return;}}catch(e){}
+  function chk(){if($('pw').value.trim()==='galileo2026')open();else $('gerr').textContent='Wrong password.';}
+  $('pwGo').onclick=chk;$('pw').onkeydown=function(e){if(e.key==='Enter')chk();};
+})();
+</script>
+<script src="/readings/marks.js"></script>
+<script src="/readings/pretr.js"></script>
+<script src="/readings/grade04.js" data-slugs="gratitude"></script>
+</body>
+</html>
