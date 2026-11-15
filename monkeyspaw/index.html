@@ -4746,5 +4746,117 @@ body.lb-open #lbpanel{ display:flex; }
 })();
 </script>
 
+<style id="t407-css">
+/* T-407 (Nov 15): 🔊 in the word popup (word + meaning) and on every word in the side rail */
+#tip .t407w{ display:flex; align-items:center; gap:.5rem; margin:0 0 .4rem; }
+#tip .t407w .w{ display:inline; margin:0 !important; font-size:.95rem; }
+#tip .t407m{ display:flex; align-items:flex-start; gap:.5rem; }
+#tip .t407m .t407d{ flex:1 1 auto; }
+.t407say{ flex:0 0 auto; min-width:34px; height:34px; padding:0 .35rem; display:inline-flex; align-items:center; justify-content:center;
+  font-size:1.05rem; line-height:1; color:#1a1208; background:#f6d68a; border:2px solid #f6d68a; border-radius:9px;
+  box-shadow:0 2px 0 rgba(0,0,0,.4); cursor:pointer; }
+.t407say:hover{ background:#ffe7a6; border-color:#ffe7a6; }
+.t407say:focus-visible{ outline:3px solid #fff; outline-offset:2px; }
+.t407say.on{ background:#fff; border-color:#fff; }
+#words .rw .k{ display:flex; align-items:center; gap:.35rem; flex-wrap:wrap; }
+#words .t407say{ min-width:32px; height:32px; font-size:.95rem; background:#fff; border-color:#2a2010; box-shadow:0 2px 0 rgba(42,32,16,.25); }
+#words .t407say.on{ background:#f6d68a; }
+@media print{ .t407say{ display:none !important; } }
+</style>
+<script id="t407-js">
+/* T-407 (Nov 15): a tapped word's popup and the side rail had no 🔊, so students could not hear a word again.
+   Adds 🔊 beside the word and beside its English meaning in #tip, and 🔊 on each rail word. Tapping 🔊 keeps the popup open.
+   Uses the page's own voice (window.GAL_SAY) where there is one; otherwise the same US-English voice at the same speed. */
+(function(){
+  if(window.__T407) return; window.__T407 = 1;
+  var VOICE = null;
+  function pick(){
+    try{
+      var vs = speechSynthesis.getVoices().filter(function(v){ return /^en[-_]/i.test(v.lang); });
+      VOICE = vs.filter(function(v){ return /US/i.test(v.lang); })[0] || vs[0] || null;
+    }catch(e){}
+  }
+  if(window.speechSynthesis){ pick(); try{ speechSynthesis.addEventListener("voiceschanged", pick); }catch(e){} }
+  function say(text, btn){
+    if(!text) return;
+    if(typeof window.GAL_SAY === "function"){ window.GAL_SAY(text, btn); return; }
+    if(!window.speechSynthesis) return;
+    try{ speechSynthesis.cancel(); }catch(e){}
+    if(!VOICE) pick();
+    var u = new SpeechSynthesisUtterance(String(text).replace(/_{2,}/g, " blank ").replace(/\bI\b/g, "eye"));
+    try{ if(VOICE) u.voice = VOICE; }catch(e){}
+    u.lang = "en-US"; u.rate = 0.85;
+    if(btn){ btn.classList.add("on"); u.onend = u.onerror = function(){ btn.classList.remove("on"); }; }
+    try{ speechSynthesis.speak(u); }catch(e){}
+  }
+  function btn(text, label){
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "t407say";
+    b.setAttribute("data-say", text); b.setAttribute("aria-label", label); b.title = label;
+    b.setAttribute("translate", "no");
+    b.textContent = "🔊";
+    return b;
+  }
+
+  /* the popup */
+  function decorate(el){
+    var tip = document.getElementById("tip"); if(!tip || tip.querySelector(".t407say")) return;
+    var k = el && el.getAttribute && el.getAttribute("data-k");
+    var g = (typeof GLOSS === "object" && GLOSS && k) ? GLOSS[k] : null;
+    var w = tip.querySelector(".w"); if(!w || !k) return;
+    var row = document.createElement("div"); row.className = "t407w";
+    tip.insertBefore(row, w); row.appendChild(w);
+    row.appendChild(btn(k, "Listen to the word " + k));
+    /* the meaning is the plain text right after the word */
+    var mean = (g && g.d) || "";
+    if(mean){
+      var m = document.createElement("div"); m.className = "t407m";
+      var d = document.createElement("span"); d.className = "t407d";
+      var n = row.nextSibling;
+      while(n && n.nodeType === 3){ var nx = n.nextSibling; d.appendChild(n); n = nx; }
+      if(!d.textContent.trim()) d.textContent = mean;
+      tip.insertBefore(m, n || null);
+      m.appendChild(d); m.appendChild(btn(mean, "Listen to the meaning"));
+    }
+  }
+  if(typeof window.showWord === "function"){
+    var orig = window.showWord;
+    window.showWord = function(el){
+      var r = orig.apply(this, arguments);
+      try{ decorate(el); if(typeof window.placeTip === "function") window.placeTip(el); }catch(e){}
+      lastEl = el; lastAt = Date.now();
+      return r;
+    };
+  }
+  /* Landlady: tapping a word also scrolls its rail row into view, and that page scroll used to close the popup
+     at once. A scroll in the first moment after a tap keeps the popup open (moved back to the word);
+     a student's own scroll later still closes it. */
+  var lastEl = null, lastAt = 0;
+  window.addEventListener("scroll", function(){
+    if(!lastEl || Date.now() - lastAt > 900 || !lastEl.isConnected) return;
+    if(typeof window.placeTip === "function") try{ window.placeTip(lastEl); }catch(e){}
+  }, { passive:true });
+
+  /* the side rail */
+  function rail(){
+    var rows = document.querySelectorAll("#words .rw[data-k]"), i;
+    for(i = 0; i < rows.length; i++){
+      var kd = rows[i].querySelector(".k"); if(!kd || kd.querySelector(".t407say")) continue;
+      var k = rows[i].getAttribute("data-k");
+      kd.appendChild(btn(k, "Listen to the word " + k));
+    }
+  }
+  var box = document.getElementById("words");
+  if(box && window.MutationObserver) new MutationObserver(rail).observe(box, { childList:true });
+  rail();
+
+  /* 🔊 speaks and nothing else: the popup stays open, the rail row does not jump */
+  document.addEventListener("click", function(e){
+    var b = e.target.closest && e.target.closest(".t407say"); if(!b) return;
+    e.preventDefault(); e.stopPropagation();
+    say(b.getAttribute("data-say"), b);
+  }, true);
+})();
+</script>
 </body>
 </html>
