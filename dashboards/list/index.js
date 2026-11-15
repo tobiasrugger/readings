@@ -35,6 +35,7 @@ window.DASHBOARD_FILES = [
   'four-agreements',
   'gradebook',
   'grasshopper-ant',
+  'greater-good',
   'group',
   'groups',
   'health',

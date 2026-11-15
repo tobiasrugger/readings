@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard · Be a Good Friend to Yourself (Greater Good)</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<!-- T-410 (Nov 15 2026). Reads song_work rows with set_slug greater-good-self-compassion.
+     Mr. Toby's ✓/✗/note on the three Write sentences (keys gg.w1..gg.w3) via /readings/marks.js. -->
+<style>
+:root{--ink:#1d2433;--green:#1f7a4d;--bg:#f4f1e8}
+*{box-sizing:border-box}
+body{margin:0;font-family:Nunito,system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:16px}
+.bar{position:sticky;top:0;z-index:60;background:#1F4D3D;color:#fff;padding:10px 14px 10px 150px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.bar h1{font-size:18px;margin:0;flex:1 1 220px;font-weight:900}
+.bar select,.bar input,.bar button{font:inherit;font-size:14px;font-weight:800;border:0;border-radius:8px;padding:7px 10px;background:#e8dfc8;color:#1F4D3D;cursor:pointer}
+.bar a{color:#fff;font-weight:800;font-size:14px}
+.wrap{max-width:1250px;margin:0 auto;padding:16px}
+.card{background:#fff;border:2px solid var(--ink);border-radius:12px;box-shadow:0 3px 0 rgba(0,0,0,.15);padding:14px 16px;margin:0 0 16px}
+table{width:100%;border-collapse:collapse;font-size:14px;background:#fff}
+th,td{border:1px solid #cdbf9e;padding:6px 8px;text-align:left;vertical-align:top}
+th{background:#e8dfc8;color:#1F4D3D}
+td.n{text-align:center;font-weight:800}
+.full{background:#bfe3b0}.part{background:#fdf0d2}.zero{background:#f6f2e6;color:#b0a48a}
+.pen{font:inherit;font-weight:900;border:2px solid var(--ink);border-radius:8px;background:#fff;padding:2px 8px;cursor:pointer}
+.pen.has{background:#fff3c4}
+.detail td{background:#fbfaf6}
+.ans{border:2px solid var(--ink);border-radius:10px;background:#fff;padding:8px 10px;margin:6px 0}
+.ans b{display:block;font-size:13px;color:#1F4D3D}
+.small{font-size:13px;color:#5c6b58}
+.warn{border:2px solid #b45309;background:#fff7e6;border-radius:10px;padding:8px 12px;font-weight:800;margin:0 0 12px;display:none}
+.miss{color:#9b1c1c;font-size:13px}
+#gate{position:fixed;inset:0;background:rgba(24,38,28,.96);z-index:400;display:flex;align-items:center;justify-content:center;padding:20px}
+#gate .box{background:#fffdf6;border-radius:16px;padding:26px;max-width:420px;width:100%;border:2px solid var(--ink)}
+#gate input{width:100%;font-size:17px;padding:9px;border:2px solid #cdbf9e;border-radius:9px;margin-top:8px}
+.btn{background:#1F4D3D;color:#fff;border:0;border-radius:10px;padding:9px 16px;font:inherit;font-weight:900;cursor:pointer;margin-top:10px}
+.links a{margin-right:14px;font-weight:800;color:#1F4D3D}
+</style>
+<script src="/readings/icon.js" data-teacher></script>
+</head>
+<body>
+<div id="gate"><div class="box">
+  <h2 style="margin-top:0">Teacher sign-in</h2>
+  <p class="small">Be a Good Friend to Yourself · Greater Good · ELD 103</p>
+  <input type="password" id="pw" placeholder="Password" autocomplete="off">
+  <button class="btn" id="pwGo">Open</button>
+  <p id="gerr" style="color:#c0392b;font-weight:800;min-height:20px"></p>
+</div></div>
+
+<div class="bar">
+  <h1>💛 Be a Good Friend to Yourself · Dashboard</h1>
+  <select id="per"><option value="">All periods</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select>
+  <input type="search" id="find" name="gg-find-x" placeholder="Find a student" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')">
+  <button id="refresh">Refresh</button>
+  <a href="/readings/greater-good/" target="_blank" rel="noopener">Student page ↗</a>
+</div>
+
+<div class="wrap">
+  <div class="warn" id="warn"></div>
+  <div class="card">
+    <div class="links small"><b>Outside links students use:</b>
+      <a href="https://greatergood.berkeley.edu/quizzes/take_quiz/self_compassion" target="_blank" rel="noopener">Self-compassion quiz ↗</a>
+      <a href="https://greatergood.berkeley.edu/podcasts/item/happiness_break_how_to_be_your_own_best_friend" target="_blank" rel="noopener">Podcast (extra) ↗</a></div>
+    <p class="small" style="margin:6px 0 0">Score = items finished out of 20 (Start 2 · Words 6 · Listen 6 · Quiz 3 · Write 3). A Write sentence counts at 5+ words; a ✗ takes its point off until the student changes it. The quiz score is what the student typed — Greater Good does not send it to us.</p>
+  </div>
+  <div class="card" style="overflow-x:auto">
+    <table id="tbl"><thead><tr>
+      <th>Student</th><th>P</th><th>Score</th><th>① Start</th><th>② Words</th><th>③ Listen</th><th>④ Quiz</th><th>Quiz score</th><th>⑤ Write</th><th>Misses / shown</th><th>Extra</th><th>Updated</th>
+    </tr></thead><tbody></tbody></table>
+    <p class="small" id="count"></p>
+  </div>
+  <div class="card" id="pretr"></div>
+</div>
+
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var TABLE='song_work',SLUG='greater-good-self-compassion';
+var ST={start:['s1','s2'],words:['v1','v2','v3','v4','v5','v6'],listen:['l1a','l1b','l2a','l2b','l3a','l3b'],quiz:['k1','k2','k3'],write:['w1','w2','w3']};
+var FRAMES={w1:'When I make a mistake, my inner critic says…',w2:'But a good friend would tell me…',w3:'Next time I have a hard moment, I will…'};
+var ROWS=[],HAS_MARKS=true,OPEN={};
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function key(e){return String(e||'').trim().toLowerCase().split('@')[0];}
+function hdr(){return {apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY};}
+function wc(s){return String(s||'').trim().split(/\s+/).filter(Boolean).length;}
+function done(a,marks,k){
+  a=a||{};
+  if(k==='k2')return /\d/.test(String(a.quizScore||''));
+  if(/^w\d$/.test(k)){var t=(a.W||{})[k]||'';return wc(t)>=5&&!(window.GALMARK&&GALMARK.off(marks,'gg.'+k,t));}
+  return !!(a.A&&a.A[k]&&a.A[k].final!=null);
+}
+function cnt(a,m,list){return list.filter(function(k){return done(a,m,k);}).length;}
+function cell(n,of){return '<td class="n '+(n===of?'full':n?'part':'zero')+'">'+n+'/'+of+'</td>';}
+
+function load(){
+  $('warn').style.display='none';
+  var cols='email,name,period,answers,updated_at';
+  function get(c){return fetch(SUPA_URL+'/rest/v1/'+TABLE+'?select='+c+'&set_slug=eq.'+SLUG+'&order=updated_at.desc',{headers:hdr()});}
+  return get(cols+',marks').then(function(r){if(r.status===400){HAS_MARKS=false;return get(cols);}return r;})
+   .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+   .then(function(rows){
+     var by={};rows.forEach(function(x){var k=key(x.email);var cur=by[k];if(!cur||JSON.stringify(x.answers||{}).length>JSON.stringify(cur.answers||{}).length)by[k]=x;});
+     ROWS=Object.keys(by).map(function(k){return by[k];}).filter(function(x){return /@(s\.)?sfusd\.edu$/i.test(x.email);});
+     ROWS.sort(function(a,b){return (String(a.period)+a.name).localeCompare(String(b.period)+b.name);});
+     if(!HAS_MARKS){$('warn').style.display='block';$('warn').textContent='Marks are off until the one-line SQL runs (song_work needs a marks column). Everything else works.';}
+     render();
+   }).catch(function(e){$('warn').style.display='block';$('warn').textContent='Could not load student work: '+e.message;});
+}
+function render(){
+  var p=$('per').value,q=$('find').value.trim().toLowerCase(),tb=document.querySelector('#tbl tbody'),h='',n=0;
+  ROWS.forEach(function(x){
+    if(p&&String(x.period)!==p)return;
+    if(q&&(x.name||'').toLowerCase().indexOf(q)<0&&x.email.toLowerCase().indexOf(q)<0)return;
+    n++;var a=x.answers||{},m=x.marks||{},A=a.A||{};
+    var total=0;Object.keys(ST).forEach(function(s){total+=cnt(a,m,ST[s]);});
+    var misses=0,shown=0;Object.keys(A).forEach(function(k){misses+=(A[k].misses||[]).length;if(A[k].shown)shown++;});
+    var W=a.W||{},un=window.GALMARK?GALMARK.unmarked(m,['w1','w2','w3'].map(function(k){return {key:'gg.'+k,a:W[k]||''};})):0;
+    var wrote=['w1','w2','w3'].filter(function(k){return wc(W[k])>0;}).length;
+    h+='<tr data-email="'+esc(x.email)+'"><td><b>'+esc(x.name||'')+'</b><br><span class="small">'+esc(x.email)+'</span></td><td class="n">'+esc(x.period)+'</td>'+
+      '<td class="n">'+total+'/20</td>'+cell(cnt(a,m,ST.start),2)+cell(cnt(a,m,ST.words),6)+cell(cnt(a,m,ST.listen),6)+cell(cnt(a,m,ST.quiz),3)+
+      '<td class="n">'+esc(a.quizScore||'—')+'</td>'+
+      '<td class="n '+(cnt(a,m,ST.write)===3?'full':wrote?'part':'zero')+'">'+cnt(a,m,ST.write)+'/3 '+(wrote?'<button class="pen'+(un?' has':'')+'" data-open="'+esc(x.email)+'">✎'+(un?un:'')+'</button>':'')+'</td>'+
+      '<td class="n">'+misses+' / '+shown+'</td><td class="n">'+(a.pod?'🎧 podcast':'')+'</td>'+
+      '<td class="small">'+(x.updated_at?new Date(x.updated_at).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'')+'</td></tr>';
+    if(OPEN[x.email])h+=detail(x);
+  });
+  tb.innerHTML=h||'<tr><td colspan="12" class="small">No students yet.</td></tr>';
+  $('count').textContent=n+' student'+(n===1?'':'s');
+}
+function detail(x){
+  var a=x.answers||{},W=a.W||{},m=x.marks||{},A=a.A||{},h='<tr class="detail"><td colspan="12"><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px">';
+  ['w1','w2','w3'].forEach(function(k){
+    h+='<div class="ans"><b>'+esc(FRAMES[k])+'</b>'+(esc(W[k]||'')||'<i class="small">(blank)</i>')+'<div class="small">'+wc(W[k])+' words</div>'+
+      (HAS_MARKS&&window.GALMARK?GALMARK.controls(m,'gg.'+k,W[k]||''):'')+'</div>';
+  });
+  h+='</div><div class="small" style="margin-top:6px"><b>Opinions:</b> title guess #'+(A.s1&&A.s1.final!=null?A.s1.final+1:'—')+' · kinder to: '+(['my friends','myself','both','don’t know'][A.k1&&A.k1.final]||'—')+' · after the quiz: '+(['kinder than I thought','harder than I thought','what I expected','want to be kinder'][A.k3&&A.k3.final]||'—')+'</div>';
+  var miss=Object.keys(A).filter(function(k){return (A[k].misses||[]).length;}).map(function(k){return k+': '+A[k].misses.map(function(z){return '“'+esc(z.a)+'”';}).join(', ')+(A[k].shown?' (answer shown)':'');});
+  if(miss.length)h+='<div class="miss"><b>Misses:</b> '+miss.join(' · ')+'</div>';
+  return h+'</td></tr>';
+}
+document.addEventListener('click',function(e){
+  var b=e.target.closest&&e.target.closest('[data-open]');if(!b)return;
+  var em=b.getAttribute('data-open');OPEN[em]=!OPEN[em];render();
+});
+function bindMarks(){
+  if(!window.GALMARK)return;
+  GALMARK.bind($('tbl'),function(k,ctl){
+    var tr=ctl.closest('tr.detail').previousElementSibling,em=tr.getAttribute('data-email'),x=ROWS.filter(function(r){return r.email===em;})[0];
+    if(!x)return null;
+    return {table:TABLE,filter:'set_slug=eq.'+SLUG+'&email=eq.'+encodeURIComponent(em),ans:((x.answers||{}).W||{})[k.replace('gg.','')]||'',
+      after:function(marks){x.marks=marks;setTimeout(render,0);}};
+  });
+}
+$('per').onchange=render;$('find').oninput=render;$('refresh').onclick=load;
+
+/* 🌐 Pre-translate: directions + the six words, read from the live student page */
+function pretr(){
+  if(!window.GAL||!GAL.pretr)return;
+  GAL.pretr({host:'#pretr',title:'🌐 Pre-translate this page',
+    items:[{key:'greater-good',title:'Be a Good Friend to Yourself (directions + 6 words)',lines:function(){
+      return fetch('/readings/greater-good/index.html').then(function(r){return r.text();}).then(function(t){
+        var out=[],seen={},m,re=/data-en="([^"]+)"/g;
+        while((m=re.exec(t))){var s=m[1].replace(/&amp;/g,'&').replace(/&quot;/g,'"');if(!seen[s]){seen[s]=1;out.push({src:s,slug:'dir'});}}
+        var rv=/\{k:'[a-z]+',w:'([^']+)',d:'([^']+)'/g;
+        while((m=rv.exec(t)))out.push({src:m[1],slug:'tap:greater-good',meaning:m[2]});
+        return out;
+      });
+    }}]
+  });
+}
+(function(){
+  function open(){$('gate').style.display='none';try{sessionStorage.setItem('gal_teacher_ok','1');}catch(e){}load();bindMarks();pretr();}
+  try{if(sessionStorage.getItem('gal_teacher_ok')==='1'){if(document.readyState==='complete')open();else window.addEventListener('load',open);return;}}catch(e){}
+  function chk(){if($('pw').value.trim()==='galileo2026')open();else $('gerr').textContent='Wrong password.';}
+  $('pwGo').onclick=chk;$('pw').onkeydown=function(e){if(e.key==='Enter')chk();};
+})();
+</script>
+<script src="/readings/marks.js"></script>
+<script src="/readings/pretr.js"></script>
+<script src="/readings/grade04.js" data-slugs="greater-good"></script>
+</body>
+</html>
