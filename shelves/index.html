@@ -203,6 +203,9 @@ var CHECKS={
  '/readings/question-builder/':{c:'C-16',n:'Question Builder with a period.'},
  '/readings/group/maker.html':{c:'C-19',n:'Make one group deck.'},
  '/readings/reel-test/ep02/':{c:'C-24',n:'On a real Chromebook: does the recording play on the dashboard?'},
+ /* T-420 (Nov 15): Ep 5 Story Check, T-417 */
+ '/readings/reel-test/ep05/':{c:'T-417',n:'Can students tell turn left from turn right in the arrow pictures? Do they confuse G and J in the letter part? How often does \u201canswer shown\u201d appear on the dashboard (https://tobiasrugger.github.io/readings/reel-test/ep05/dashboard.html, pw galileo2026)?'},
+ '/readings/reel-test/ep05/?mode=test':{c:'T-417',n:'Does one try per item feel fair? Do the read-aloud scores need your 0\u20132 on the dashboard?'},
  '/readings/teachme/':{c:'C-25',n:'Teach Mr. Toby with one period.'},
  '/readings/teachme/?set=u1-l1':{c:'C-31',n:'Quiz Mr. Toby with one ELD 101 class.'},
  '/readings/vocab/pre/':{c:'C-32',n:'Are the drawn pictures good enough? Watch: stubborn \ud83d\ude45, office drawing, library \ud83d\udcda.'},
@@ -354,7 +357,11 @@ document.getElementById('repf').onclick=function(){REP_ONLY=!REP_ONLY;this.class
 document.getElementById('tchr').onclick=function(){SHOW_T=!SHOW_T;this.textContent='Teacher pages: '+(SHOW_T?'on':'off');this.classList.toggle('on',!SHOW_T);render();};
 
 function open_(){document.getElementById('gate').style.display='none';document.getElementById('app').style.display='block';
-  render(); load(); setTimeout(render,1500); /* catalog/index.js (T-215) may add pages a moment later */}
+  render(); load();
+  /* T-420: catalog/index.js (T-215) loads the per-folder files a moment later — redraw whenever the list grows (was one redraw at 1.5 s, which missed folder-only pages like reel-test/ep05 on a slow load) */
+  var lastN=(window.CATALOG||[]).length, ticks=0;
+  var iv=setInterval(function(){var n=(window.CATALOG||[]).length; if(n!==lastN){lastN=n;render();} if(++ticks>40)clearInterval(iv);},500);
+  window.addEventListener('load',render);}
 function unlock(){try{sessionStorage.setItem('gal_teacher','1');['gb_ok','gr_ok','rm_ok','dash_ok','teacher_ok'].forEach(function(k){sessionStorage.setItem(k,'1');});}catch(e){}}
 try{ if(sessionStorage.getItem('gal_teacher')==='1') open_(); }catch(e){}
 document.getElementById('go').onclick=function(){
