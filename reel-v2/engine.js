@@ -794,7 +794,7 @@
       ta.addEventListener('input', function () { saved[+ta.getAttribute('data-i')] = ta.value; highlights(); touch(); marksSoon(); });
     });
     paintNext();
-    if (scroll) $('yt').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (scroll) { if (rtOn) rtGo('yt', true); else $('yt').scrollIntoView({ behavior: 'smooth', block: 'start' }); }   /* T-427 */
     if (window.REEL_TIERS) REEL_TIERS.show(false);   /* "After the story" tiers under Your turn */
     marksPaint(); coreCheck();
   }
@@ -823,6 +823,7 @@
     $('ytNext').addEventListener('click', function () {
       if (!state.tiers) state.tiers = {};
       state.tiers.open = 'A'; touch();
+      if (rtOn) { rtGo('say', true); return; }   /* T-427: the Say it folder tab */
       try { REEL_TIERS.show(true); } catch (e) {}
     });
   }
@@ -931,6 +932,7 @@
     $('galWatchYes').addEventListener('click', function () { rec('yes'); ov.remove(); try { ta.focus(); } catch (e) {} });
     $('galWatchNo').addEventListener('click', function () {
       rec('watch'); ov.remove(); try { ta.blur(); } catch (e) {}
+      if (rtOn) rtGo('watch', false);   /* T-427: the player lives on the Watch tab */
       var stg = $('stage'); if (stg) window.scrollTo({ top: Math.max(0, stg.getBoundingClientRect().top + window.pageYOffset - 8), behavior: 'auto' });
       start(false);   /* resume from where they were */
     });
@@ -1107,6 +1109,7 @@
       $('again').style.display = '';
     }
     showYourTurn(false);   /* T-369: Your Turn is always open below the story, never behind a button */
+    rtInit();              /* T-427: folder tabs — Watch · Your turn · the After the story stations */
     score(); highlights(); marksFetch();
   }
   setInterval(function () { if (dirty && loaded) { dirty = false; save(); } }, 20000);
@@ -1214,6 +1217,7 @@
       go(firstStepOf(+f.getAttribute('data-s')));
     });
     $('ytBtn').addEventListener('click', function () {   /* T-369: scroll to it (render first if needed) */
+      if (rtOn) { rtGo('yt', true); return; }   /* T-427: the Your turn folder tab */
       if ($('yt').style.display === 'block') $('yt').scrollIntoView({ behavior: 'smooth', block: 'start' }); else showYourTurn(true);
     });
     $('fsBtn').addEventListener('click', function () {
@@ -1471,9 +1475,247 @@
 
   /* ---- "After the story" tiers live in ../tiers.js (owned by the tiers chat). The engine only hands it
      these handles and loads it; tiers.js adds its own button, section, styles and episode data. ---- */
+  /* ================= FOLDER TABS (T-427, Nov 15 2026) =================
+     Half of one class watched Episode 3, saw nothing telling them what came next, and left with none of
+     the After the story work done. So the page is now coloured folder tabs, ONE panel open at a time:
+       1 Watch (the player, its control bar, a green "Next: Your turn" button under it)
+       2 Your turn (the writing; its green button goes to Say it)
+       3+ the After the story stations from tiers.js (REEL_TIERS.stations(): Say it, Paragraph, Paraphrase,
+          Grammar), each with ✓ when done, its count, and "must do" or "extra"; a green "Next: <tab>" under each.
+     ONE green ➤ on screen: on Watch and Your turn it is ours; inside a station tiers.js points at the exact
+     thing (REEL_TIERS.nextStep()) and ours stands down; when a station is finished ours points at the green
+     Next button. marks.js (body.gm-fixing) beats both. The open tab is saved in state.tab (inside work).
+     tiers.js and tiers-dash.js are the tiers chat's: nothing here edits them; REEL_HOST.tabs tells tiers.js
+     to leave out its own station row. */
+  var rtOn = false, rtTab = 'watch', rtSig = '', rtNudge = null;
+  var RT_FIXED = [
+    { id: 'watch', label: 'Watch', icon: '🎬', color: '#4f6fb3' },
+    { id: 'yt', label: 'Your turn', icon: '✏️', color: '#F8981F' }
+  ];
+  function rtStations() {
+    try { return (window.REEL_TIERS && REEL_TIERS.ready && REEL_TIERS.ready() && REEL_TIERS.stations) ? (REEL_TIERS.stations() || []) : []; } catch (e) { return []; }
+  }
+  function rtIsStation(id) { return id !== 'watch' && id !== 'yt'; }
+  function rtWatched() { return !!state.done || (state.maxPos || 0) >= STEPS.length - 1; }
+  function rtList() {
+    var ytl = (EP.yourTurn && (EP.yourTurn[state.level] || EP.yourTurn.A)) || {}, np = (ytl.prompts || []).length;
+    var mine = (state.yt && state.yt[state.level]) || [], w = 0, j;
+    for (j = 0; j < np; j++) if (String(mine[j] || '').trim().split(/\s+/).filter(Boolean).length >= 3) w++;
+    var out = [
+      { id: 'watch', label: 'Watch', icon: '🎬', color: RT_FIXED[0].color, core: true, done: rtWatched(), sub: rtWatched() ? '' : ((STEPS[state.maxPos || 0] ? STEPS[state.maxPos || 0].si + 1 : 1) + ' / ' + EP.scenes.length) },
+      { id: 'yt', label: 'Your turn', icon: '✏️', color: RT_FIXED[1].color, core: true, done: np > 0 && w >= np, sub: w + ' / ' + np }
+    ];
+    rtStations().forEach(function (s) { out.push({ id: s.id, label: s.label, icon: s.icon, color: s.color || '#864D9E', core: !!s.core, done: !!s.done, sub: s.n + ' / ' + s.of }); });
+    return out;
+  }
+  function rtLabel(id) { var L = rtList(), i; for (i = 0; i < L.length; i++) if (L[i].id === id) return L[i].label; return ''; }
+  /* where the green button at the foot of a panel goes: the next unfinished must-do part after this one,
+     else the next tab in order, else nothing (the "You finished" box takes over) */
+  function rtNext(from) {
+    var L = rtList(), at = -1, i;
+    for (i = 0; i < L.length; i++) if (L[i].id === from) at = i;
+    for (i = at + 1; i < L.length; i++) if (L[i].core && !L[i].done) return L[i].id;
+    for (i = 0; i < at; i++) if (L[i].core && !L[i].done) return L[i].id;
+    return (at >= 0 && at + 1 < L.length) ? L[at + 1].id : '';
+  }
+  function rtCss() {
+    if ($('rtCss')) return;
+    var st = document.createElement('style'); st.id = 'rtCss';
+    st.textContent =
+      '.rtabs{max-width:1180px;width:100%;min-width:0;box-sizing:border-box;margin:6px auto 0;padding:0 16px;display:flex;gap:6px;align-items:flex-end;overflow-x:auto;scrollbar-width:thin}' +
+      '.rtab{flex:none;display:flex;align-items:center;gap:8px;border:2px solid var(--plum);border-bottom:0;border-top:6px solid var(--tc);border-radius:14px 14px 0 0;background:#f6f3f9;padding:8px 14px 9px;font:inherit;font-weight:800;color:var(--plum);cursor:pointer;position:relative;top:2px;opacity:.88}' +
+      '.rtab:hover{opacity:1;background:#fff}' +
+      '.rtab.on{background:#fff;opacity:1;padding-bottom:13px;z-index:2;box-shadow:0 -3px 8px -4px rgba(43,34,51,.35)}' +
+      '.rtab .rn{width:26px;height:26px;border-radius:50%;background:var(--tc);color:#fff;font-weight:900;font-size:15px;display:inline-flex;align-items:center;justify-content:center;flex:none}' +
+      '.rtab.ok .rn{background:#1f7a4d}' +
+      '.rtab .ri{font-size:20px;line-height:1}' +
+      '.rtab .rl{display:flex;flex-direction:column;align-items:flex-start;line-height:1.15;text-align:left}' +
+      '.rtab .rl b{font-size:16px}' +
+      '.rtab .rl .dirtr{display:block;font-size:12px;font-weight:700;color:var(--soft)}' +
+      '.rtab .rs{font-size:12px;font-weight:800;color:var(--soft)}' +
+      '.rtab.ok .rs{color:#1f7a4d}' +
+      '.rtab .rx{font-size:11px;font-weight:900;letter-spacing:.03em;text-transform:uppercase;color:var(--soft);margin-left:4px}' +
+      '.rtab.core .rx{color:var(--purple)}' +
+      '.rtrule{max-width:1180px;margin:0 auto 12px;padding:0 16px}.rtrule div{border-top:2px solid var(--plum)}' +
+      '.rtline{max-width:1180px;margin:0 auto 10px;padding:0 16px 0 82px;display:flex;align-items:center;gap:8px;font-weight:800;font-size:18px;color:#1f7a4d}' +
+      '.rtline p{margin:0}.rtline .dirtr{display:block;font-size:15px;color:#2d6b4c;font-weight:700}' +
+      '.rtline:empty{display:none}' +
+      '.rtfoot{max-width:1180px;margin:0 auto 40px;padding:0 16px 0 82px}' +
+      '#tiers .rtfoot{padding:14px 0 0 66px;margin:0}' +
+      'body.rt-on .ytbox{padding-left:66px}' +
+      'body.rt-on #tierBtn{display:none!important}' +
+      'body.rt-on[data-rtab="watch"] #yt,body.rt-on[data-rtab="watch"] #tiers{display:none!important}' +
+      'body.rt-on[data-rtab="yt"] #player,body.rt-on[data-rtab="yt"] .lead-dir,body.rt-on[data-rtab="yt"] #rtWatchFoot,body.rt-on[data-rtab="yt"] #tiers{display:none!important}' +
+      'body.rt-on[data-rtab="st"] #player,body.rt-on[data-rtab="st"] .lead-dir,body.rt-on[data-rtab="st"] #rtWatchFoot,body.rt-on[data-rtab="st"] #yt{display:none!important}' +
+      'body.rt-on[data-rtab="st"] #tiers{display:block!important}' +
+      '.rtnudge{position:fixed;z-index:60;width:56px;height:56px;pointer-events:none;display:none}' +
+      '.rtnudge svg{width:100%;height:100%;display:block;filter:drop-shadow(0 2px 2px rgba(0,0,0,.25))}' +
+      '.rtnudge.left svg{animation:rtbob 1.6s ease-in-out infinite}' +
+      '.rtnudge.down svg{transform:rotate(90deg);animation:rtbobd 1.6s ease-in-out infinite}' +
+      '.rtnudge.up svg{transform:rotate(-90deg);animation:rtbobu 1.6s ease-in-out infinite}' +
+      '@keyframes rtbob{0%,100%{transform:translateX(0)}50%{transform:translateX(3px)}}' +
+      '@keyframes rtbobd{0%,100%{transform:rotate(90deg) translateX(0)}50%{transform:rotate(90deg) translateX(3px)}}' +
+      '@keyframes rtbobu{0%,100%{transform:rotate(-90deg) translateX(0)}50%{transform:rotate(-90deg) translateX(3px)}}' +
+      '@media (prefers-reduced-motion:reduce){.rtnudge svg{animation:none!important}}' +
+      '@media (max-width:760px){.rtabs{flex-wrap:wrap;overflow:visible;gap:6px;align-items:stretch}.rtab{padding:6px 10px 7px;gap:6px;border-bottom:2px solid var(--plum);border-radius:12px;top:0;flex:1 1 140px}.rtab.on{padding-bottom:7px;box-shadow:0 0 0 3px var(--tc)}.rtab .ri{display:none}.rtab .rl b{font-size:15px}' +
+      '.rtline{padding-left:66px;font-size:16px}.rtfoot{padding-left:66px}#tiers .rtfoot{padding-left:50px}body.rt-on .ytbox{padding-left:50px}.rtnudge{width:42px;height:42px}}';
+    document.head.appendChild(st);
+  }
+  function rtBuild() {
+    var bar = $('rtBar');
+    if (!bar) {
+      bar = document.createElement('nav'); bar.className = 'rtabs'; bar.id = 'rtBar'; bar.setAttribute('aria-label', 'Parts of this episode');
+      var rule = document.createElement('div'); rule.className = 'rtrule'; rule.innerHTML = '<div></div>';
+      var line = document.createElement('div'); line.className = 'rtline'; line.id = 'rtLine'; line.setAttribute('aria-live', 'polite');
+      var anchor = document.querySelector('.lead-dir') || $('player');
+      anchor.parentNode.insertBefore(bar, anchor);
+      anchor.parentNode.insertBefore(rule, anchor);
+      anchor.parentNode.insertBefore(line, anchor);
+      bar.addEventListener('click', function (e) { var b = e.target.closest('.rtab'); if (b) rtGo(b.getAttribute('data-t'), true); });
+    }
+    var L = rtList(), sig = JSON.stringify(L) + '|' + rtTab;
+    if (sig === rtSig) return;
+    rtSig = sig;
+    var h = '';
+    L.forEach(function (t, i) {
+      var tag = rtIsStation(t.id) ? (t.core ? 'must do' : 'extra') : '';
+      h += '<button class="rtab' + (t.id === rtTab ? ' on' : '') + (t.done ? ' ok' : '') + (t.core ? ' core' : '') + '" data-t="' + t.id + '" style="--tc:' + t.color + '"' +
+           (t.id === rtTab ? ' aria-current="page"' : '') + '>' +
+           '<span class="rn">' + (t.done ? '✓' : (i + 1)) + '</span><span class="ri" aria-hidden="true">' + t.icon + '</span>' +
+           '<span class="rl"><b translate="yes" data-en="' + esc(t.label) + '">' + esc(t.label) + '</b>' +
+           '<span class="rs">' + (t.done ? '✓' : esc(t.sub || '')) + (tag ? ' <span class="rx" translate="yes" data-en="' + tag + '">' + tag + '</span>' : '') + '</span></span></button>';
+    });
+    bar.innerHTML = h;
+    showDirections(bar);
+    var on = bar.querySelector('.rtab.on');
+    if (on && on.scrollIntoView && bar.scrollWidth > bar.clientWidth) { try { bar.scrollLeft = Math.max(0, on.offsetLeft - 40); } catch (e) {} }
+    rtFeet();
+  }
+  /* the green "Next: <tab> →" buttons: one under the player, one at the foot of the stations panel */
+  function rtFoot(host, id, before) {
+    var f = $(id);
+    if (!f) {
+      f = document.createElement('div'); f.className = 'rtfoot'; f.id = id;
+      if (before) host.parentNode.insertBefore(f, host.nextSibling); else host.appendChild(f);
+      f.addEventListener('click', function (e) { var b = e.target.closest('[data-go]'); if (b) rtGo(b.getAttribute('data-go'), true); });
+    }
+    return f;
+  }
+  function rtPaintFoot(f, from) {
+    var nx = rtNext(from), key = nx ? nx + '|' + rtLabel(nx) : '';
+    if (f.getAttribute('data-k') === key) return;
+    f.setAttribute('data-k', key);
+    if (!nx) { f.innerHTML = ''; return; }
+    var en = 'Next: ' + rtLabel(nx);
+    f.innerHTML = '<button class="btn next big" data-go="' + nx + '" translate="yes" data-en="' + esc(en) + '">' + esc(en) + ' →</button>';
+    showDirections(f);
+  }
+  function rtFeet() {
+    if ($('player')) rtPaintFoot(rtFoot($('player'), 'rtWatchFoot', true), 'watch');
+    if ($('tiers') && rtIsStation(rtTab)) rtPaintFoot(rtFoot($('tiers'), 'rtStFoot', false), rtTab);
+  }
+  function rtGo(id, scroll) {
+    if (!rtOn) return;
+    var known = rtList().some(function (t) { return t.id === id; });
+    if (!known) id = rtIsStation(id) ? 'yt' : 'watch';   /* a station before tiers.js has loaded: wait on Your turn */
+    if (id !== 'watch' && rtTab === 'watch') { try { setPlaying(false); stopSpeech(); } catch (e) {} }
+    var changed = state.tab !== id;
+    rtTab = id; state.tab = id;
+    document.body.setAttribute('data-rtab', id === 'watch' ? 'watch' : (id === 'yt' ? 'yt' : 'st'));
+    if (id === 'yt' && $('yt').style.display !== 'block') showYourTurn(false);
+    if (rtIsStation(id)) {
+      if ($('yt').style.display !== 'block') showYourTurn(false);
+      try { if (!state.tiers) state.tiers = {}; REEL_TIERS.open(id); REEL_TIERS.show(false); } catch (e) {}
+    }
+    if (id === 'watch') { try { render(pos, true); } catch (e) {} }
+    if (changed) touch();
+    rtSig = ''; rtBuild();
+    rtGuide();
+    if (scroll) { var b = $('rtBar'); if (b) b.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  }
+  function rtArrow() {
+    if (rtNudge && rtNudge.parentNode) return rtNudge;
+    rtNudge = document.createElement('div'); rtNudge.className = 'rtnudge'; rtNudge.id = 'rtNudge'; rtNudge.setAttribute('aria-hidden', 'true');
+    /* the same solid green ➤ as My Page and tiers.js (T-374), drawn, never an emoji */
+    rtNudge.innerHTML = '<svg viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg">' +
+      '<path d="M12 6 C 30 18, 40 24, 48 28 C 40 32, 30 38, 12 50 C 17 38, 19 32, 19 28 C 19 24, 17 18, 12 6 Z" fill="#1f7a4d"/></svg>';
+    document.body.appendChild(rtNudge);
+    return rtNudge;
+  }
+  function rtHide() { if (rtNudge) rtNudge.style.display = 'none'; }
+  function rtPoint(el) {
+    if (!el || !el.getBoundingClientRect) { rtHide(); return; }
+    var r = el.getBoundingClientRect();
+    if (!r.width && !r.height) { rtHide(); return; }
+    var n = rtArrow(), W = (window.innerWidth || 1366) <= 760 ? 42 : 56, gap = 4, left = r.left - W - gap, top = r.top + r.height / 2 - W / 2, mode = 'left';
+    if (left < 4) { left = Math.max(4, r.left + r.width / 2 - W / 2); top = r.top - W - gap; mode = 'down'; if (top < 4) { top = r.bottom + gap; mode = 'up'; } }
+    n.style.display = 'block'; n.style.left = Math.round(left) + 'px'; n.style.top = Math.round(top) + 'px'; n.className = 'rtnudge ' + mode;
+  }
+  function rtSay(text) {
+    var ln = $('rtLine'); if (!ln) return;
+    if (!text) { if (ln.innerHTML) { ln.innerHTML = ''; ln.removeAttribute('data-say'); } return; }
+    if (ln.getAttribute('data-say') === text) return;
+    ln.setAttribute('data-say', text);
+    ln.innerHTML = '<span aria-hidden="true">▶</span><p translate="yes" data-en="' + esc(text) + '">' + esc(text) + '</p>';
+    showDirections(ln);
+  }
+  function rtGuide() {
+    if (!rtOn) return;
+    rtBuild();
+    if (document.body.classList.contains('gm-fixing')) { rtSay(''); rtHide(); return; }   /* marks.js has the arrow */
+    var t = rtTab, at = null, say = '';
+    if (t === 'watch') {
+      if (!rtWatched()) {
+        var cur = $('curtain'), up = cur && getComputedStyle(cur).display !== 'none';
+        if ($('qcard') && $('qcard').style.display === 'block') { say = 'Answer the question.'; at = null; }
+        else if (up) { say = 'Start here — press play and watch the story.'; at = $('bigPlay'); }
+        else say = 'Watch and listen. Tap any word to hear it.';
+      } else { say = 'Next: ' + rtLabel('yt') + '.'; at = $('rtWatchFoot') && $('rtWatchFoot').querySelector('button'); }
+    } else if (t === 'yt') {
+      if (!ytDone()) {
+        var tas = $('ytBox') ? $('ytBox').querySelectorAll('textarea[data-i]') : [], i;
+        for (i = 0; i < tas.length; i++) if (String(tas[i].value || '').trim().split(/\s+/).filter(Boolean).length < 3) { at = tas[i]; break; }
+        say = 'Write your answers. Start with the words in the box.';
+      } else if (tiersOn()) { say = 'Next: ' + (rtLabel('say') || 'Say it') + '.'; at = $('ytNext'); }
+      else say = coreDone() ? 'You finished Episode ' + EP.num + '!' : '';
+    } else {
+      rtSay('');   /* inside a station, tiers.js writes the line at the top of its own panel */
+      var ns = null; try { ns = REEL_TIERS.nextStep(); } catch (e) {}
+      if (ns && ns.at && !ns.below) { var rr = ns.at.getBoundingClientRect ? ns.at.getBoundingClientRect() : null; if (rr && (rr.width || rr.height)) { rtHide(); return; } }
+      var fb = $('rtStFoot') && $('rtStFoot').querySelector('button');
+      rtPoint(coreDone() && !fb ? null : fb);
+      return;
+    }
+    rtSay(say); rtPoint(at);
+  }
+  function rtInit() {
+    if (rtOn || !$('player')) return;
+    rtOn = true;
+    rtCss();
+    document.body.classList.add('rt-on');
+    var id = state.tab || '';
+    if (!id) id = !rtWatched() ? 'watch' : (!ytDone() ? 'yt' : 'yt');
+    rtGo(id, false);
+    /* tiers.js loads after us: once its stations exist, rebuild; land a saved station tab then */
+    var tries = 0, want = state.tab;
+    var w = setInterval(function () {
+      tries++;
+      if (rtStations().length) {
+        clearInterval(w);
+        try { REEL_TIERS.onChange(function () { rtBuild(); rtGuide(); }); } catch (e) {}
+        if (want && rtIsStation(want) && rtTab !== want) rtGo(want, false);
+        else if (rtOn && rtWatched() && ytDone() && rtTab === 'yt' && !want) { var nx = rtNext('yt'); if (nx) rtGo(nx, false); }
+        rtSig = ''; rtBuild(); rtGuide();
+      } else if (tries > 40) clearInterval(w);
+    }, 250);
+    setInterval(rtGuide, 700);
+    window.addEventListener('resize', rtGuide);
+    window.addEventListener('scroll', rtGuide, true);
+  }
   window.REEL_HOST = { EP: EP, state: state, me: me, $: $, esc: esc, txt: txt, save: save, touch: touch, score: score,
                        wordPop: wordPop, showDirections: showDirections, spokenWord: spokenWord, pickVoice: pickVoice,
                        boardState: boardState, R: R, PROXY: PROXY, SUPA_URL: SUPA_URL, TABLE: TABLE, sbHead: sbHead,
-                       marksPaint: marksPaint, marks: function () { return MARKS; } };   /* T-394 */
+                       marksPaint: marksPaint, marks: function () { return MARKS; },   /* T-394 */
+                       tabs: { go: function (id) { rtGo(id, true); }, current: function () { return rtTab; } } };   /* T-427: tiers.js draws no station row and no row arrow */
   (function () { var ts = document.createElement('script'); ts.src = '../tiers.js'; document.body.appendChild(ts); })();
 })();
