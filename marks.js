@@ -26,7 +26,7 @@
      GALMARK.setScore(email, slug, score, max) -> Promise   RPC eld101_set_score (only reel-v2 / launch-plus slugs)
    TEACHER'S DESK ✎
      On /desk/ this file adds ELD 101 counts into GALMARKS.desk[username][slug] (penOf reads that).
-     GALMARK.DESK = [{ table, select, count(row) -> {slug: n} }] — the reel source is built in; another
+     GALMARK.DESK = [{ table, select, filter?, count(row) -> {slug: n} }] — the reel source is built in; another
      page family adds its own entry here (ask the std.js seat, which owns this file). */
 (function () {
   if (window.GALMARK) return;
@@ -284,10 +284,16 @@
     if (n) out['reel-v2/' + r.episode] = n;
     return out;
   } });
+  /* T-411 (Nov 15): ELD 101 Thank You Card (readings/thanks/, gratitude chat T-404). Row = eld103_donow unit thanks;
+     written answers payload.card.to / .for / .you / .feel, marks c.to / c.for / c.you / c.feel. */
+  G.DESK.push({ table: 'eld103_donow', filter: 'unit=eq.thanks', select: 'email,payload,marks', count: function (r) {
+    var c = ((r.payload || {}).card) || {}, n = G.unmarked(r.marks, ['to', 'for', 'you', 'feel'].map(function (k) { return { key: 'c.' + k, a: c[k] }; }));
+    return n ? { thanks: n } : {};
+  } });
   G.loadDesk = function () {
     var out = {};
     return Promise.all(G.DESK.map(function (src) {
-      return fetch(SUPA + '/rest/v1/' + src.table + '?select=' + src.select, { headers: H() })
+      return fetch(SUPA + '/rest/v1/' + src.table + '?select=' + src.select + (src.filter ? '&' + src.filter : ''), { headers: H() })
         .then(function (x) { return x.ok ? x.json() : []; }).catch(function () { return []; })
         .then(function (rows) { (rows || []).forEach(function (r) {
           var k = user(r.email), c = src.count(r); if (!k) return;
