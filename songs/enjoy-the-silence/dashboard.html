@@ -39,7 +39,7 @@ tr.row{cursor:pointer}tr.row:hover{background:#f7f3fb}
   <div style="margin-top:14px;padding-top:10px;border-top:1px solid #e4dccf">
     <div style="font-weight:800;color:#5b3d8a">🌐 Pre-translate for students</div>
     <p class="hl" style="margin:4px 0 8px">Translates every line, direction, question and word card once and saves them, so students load instantly. Run after saving words (and again if you change them).</p>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="btn" id="preMain" type="button">Translate: Chinese · Spanish · Arabic · Vietnamese · Thai · Nepali</button><button class="btn" id="preAll" type="button" style="background:#ece6f6;color:#5b3d8a">All 15 languages</button><span id="preMsg" class="hl"></span></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="btn" id="preMain" type="button">Translate: Chinese · Spanish · Arabic · Vietnamese · Thai · Nepali</button><button class="btn" id="preAll" type="button" style="background:#ece6f6;color:#5b3d8a">All 15 languages</button><button class="btn" id="preSimple" type="button" style="background:#e6f4ee;color:#0F6E56" title="Easy English definitions and shorter sentences, for students who chose Simple English">Simple English</button><span id="preMsg" class="hl"></span></div>
     <div id="preStatus" class="hl" style="margin-top:6px"></div>
   </div>
 </details>
@@ -47,6 +47,7 @@ tr.row{cursor:pointer}tr.row:hover{background:#f7f3fb}
 <table><thead><tr><th data-k="last_name">Student</th><th data-k="period">Per</th><th data-k="lang">Lang</th><th>Answers</th><th>Words</th><th>Notes</th><th>Highlights</th><th>"Like" sorted</th><th>Match</th><th data-k="updated_at">Last save</th><th>Score</th><th>Done</th></tr></thead><tbody id="tb"></tbody></table>
 <div id="detail"></div>
 </main>
+<script src="/readings/pretr.js"></script><!-- T-423: GAL.simpleTr -->
 <script>
 var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
 var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
@@ -123,6 +124,24 @@ function autoWarm(){
 }
 document.getElementById('preMain').addEventListener('click',function(){preTranslate(LANGS_MAIN)});
 document.getElementById('preAll').addEventListener('click',function(){preTranslate(LANGS_ALL)});
+/* T-423: Simple English — saved where simple/simple.js looks (song_tr simple-wk / simple-s) by the shared readings/pretr.js engine */
+document.getElementById('preSimple').addEventListener('click',function(){
+  var msg=document.getElementById('preMsg');
+  if(preRunning) return;
+  if(!window.GAL||!GAL.simpleTr){ msg.textContent='Simple English could not load. Reload the page.'; return; }
+  var it=items(); if(!it.length){ msg.textContent='Paste and save the words first.'; return; }
+  preRunning=true; msg.textContent='Simple English: checking what is already saved…';
+  GAL.simpleTr.have(it.map(function(x){return x[0];})).then(function(h){
+    var todo=it.filter(function(x){return !h[x[0]];}), n=0, bad=0, quota=false;
+    if(!todo.length){ preRunning=false; msg.textContent='Simple English: already done — all '+it.length+' saved.'; return; }
+    (function next(){
+      if(quota||n>=todo.length){ preRunning=false; msg.textContent='Simple English: '+(n-bad)+' of '+todo.length+' saved'+(bad?', '+bad+' failed':'')+(quota?' · daily limit reached, run again tomorrow':'')+'.'; return; }
+      var x=todo[n++];
+      GAL.simpleTr.one(x[0],x[1]).then(function(a){ if(a.quota){quota=true;n--;} else if(!a.ok&&!a.same) bad++;
+        msg.textContent='Simple English… '+n+' / '+todo.length+(bad?' · '+bad+' failed':''); setTimeout(next,100); });
+    })();
+  });
+});
 document.getElementById('lyricsSave').addEventListener('click',saveLyrics);
 document.getElementById('lyricsLoad').addEventListener('click',loadLyrics);
 function load(){ loadLyrics();

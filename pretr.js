@@ -17,10 +17,24 @@
    at the translator's daily limit, and keeps a run record per item in pretr_runs (written every 20 lines, so
    a closed tab still reads INCOMPLETE). Status is computed from the record + the saved cache; it NEVER calls
    the translator just to show a status. Counts are LINES (one text in one language), not words.
+
+   T-423 (Nov 15 2026) — SIMPLE ENGLISH in every box. Every Pre-translate box gets a "Simple English" tick
+   (value 'en-simple', never ticked by default), whatever language list the page passes. It saves where
+   simple/simple.js looks first, NOT under the page's slug:
+     - a 1–2 word line = a tappable word -> an easy definition, song_tr slug 'simple-wk', src lowercased.
+       Simple English Wiktionary first (GAL_SIMPLE.wiktDefine, free, no translator quota), else the proxy
+       with lang "Simple English";
+     - anything longer -> the proxy with lang "Simple English", slug 'simple-s', src as is.
+     - a line whose simpler version is the same English is left alone (students see the English).
+   Rows Mr. Toby fixed by hand on simple/dashboard.html are never overwritten (we only fill what is missing).
+   The same engine is GAL.simpleTr for pages with their own Pre-translate (news, song pages, Table Reader):
+     GAL.simpleTr.keyFor(src) -> {slug, src, word} | null
+     GAL.simpleTr.have(srcs)  -> Promise of {src: 1} for lines already saved (or needing nothing)
+     GAL.simpleTr.one(src, meaning) -> Promise of {ok} | {same} | {fail, quota}
    ============================================================================================ */
 (function () {
   window.GAL = window.GAL || {};
-  if (window.GAL.pretr) return;
+  if (window.GAL.pretr && window.GAL.simpleTr) return;
   var SUPA_URL = 'https://lhmwtfyceilgndpygivj.supabase.co';
   var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
   var PROXY = 'https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
@@ -28,7 +42,9 @@
     ['Russian','Russian'],['Darija','Darija'],['Urdu','Urdu'],['Tagalog','Tagalog'],['French','French'],['Korean','Korean'],
     ['Hindi','Hindi'],['Somali','Somali'],['Thai','Thai'],['Nepali','Nepali']];
   var NAMES = { es: 'Spanish', yue: 'Cantonese', 'zh-HK': 'Cantonese', 'zh-TW': 'Cantonese', zh: 'Mandarin', 'zh-CN': 'Mandarin', cmn: 'Mandarin', ar: 'Arabic', vi: 'Vietnamese',
-    ru: 'Russian', ary: 'Darija', ur: 'Urdu', tl: 'Tagalog', fil: 'Tagalog', fr: 'French', ko: 'Korean', hi: 'Hindi', so: 'Somali', th: 'Thai', ne: 'Nepali' };
+    ru: 'Russian', ary: 'Darija', ur: 'Urdu', tl: 'Tagalog', fil: 'Tagalog', fr: 'French', ko: 'Korean', hi: 'Hindi', so: 'Somali', th: 'Thai', ne: 'Nepali',
+    'en-simple': 'Simple English' };
+  var SIMPLE = 'en-simple', SIMPLE_LABEL = 'Simple English', SIMPLE_LLM = 'Simple English';
   function english(v, label) { return NAMES[v] || NAMES[String(v).split('-')[0]] || label || v; }
   var DEFAULT_TICK = /^(es|zh|zh-CN|cmn|ar|vi)$|^(Spanish|Mandarin|Chinese|Arabic|Vietnamese)\b/i;
   var QUOTA = /too many times|quota|daily limit|limit exceeded|Service invoked/i;
@@ -86,8 +102,14 @@
     return fetch(SUPA_URL + '/rest/v1/pretr_runs?on_conflict=item_key', { method: 'POST', headers: H('resolution=merge-duplicates,return=minimal'), body: JSON.stringify([rec]) })
       .then(function (r) { return r.ok; }, function () { return false; });
   }
-  function savedSet(slugs, langs) {
+  function savedSet(slugs, langs, ls) {
     var have = {}, jobs = [];
+    if (langs.indexOf(SIMPLE) >= 0) {             /* T-423: Simple English lives under simple-wk / simple-s, not the page slug */
+      jobs.push(simpleHave((ls || []).map(function (l) { return l.src; }), true).then(function (h) {
+        (ls || []).forEach(function (l) { if (h[l.src]) have[l.slug + '|' + SIMPLE + '|' + l.src] = 1; });
+      }));
+      langs = langs.filter(function (x) { return x !== SIMPLE; });
+    }
     slugs.forEach(function (slug) {
       langs.forEach(function (lg) {
         jobs.push(new Promise(function (res) {
@@ -121,6 +143,105 @@
     return fetch(SUPA_URL + '/rest/v1/song_tr?on_conflict=slug,lang,src', { method: 'POST', headers: H('resolution=merge-duplicates,return=minimal'),
       body: JSON.stringify([{ slug: line.slug, lang: lg, src: line.src, equiv: v, meaning: '', note: '' }]) }).then(function (r) { return r.ok; }, function () { return false; });
   }
+  /* ---- T-423: Simple English engine (same keys as simple/simple.js) ---- */
+  function sWords(s) { return String(s || '').trim().split(/\s+/).filter(Boolean); }
+  function sBare(s) { return String(s || '').trim().replace(/^[^A-Za-z']+|[^A-Za-z']+$/g, ''); }
+  function sNorm(s) { return String(s || '').toLowerCase().replace(/[^a-z0-9' ]+/g, ' ').replace(/\s+/g, ' ').trim(); }
+  function keyFor(src) {
+    if (window.GAL_SIMPLE && window.GAL_SIMPLE.keyFor) { try { return window.GAL_SIMPLE.keyFor(src); } catch (e) {} }
+    var key = String(src || '').trim(), ws = sWords(key);
+    if (!key) return null;
+    if (ws.length <= 2) {
+      var w = sBare(ws.join(' '));
+      if (w && /^[A-Za-z][A-Za-z' -]*$/.test(w)) return { slug: 'simple-wk', src: w.toLowerCase(), word: w };
+      return null;
+    }
+    return { slug: 'simple-s', src: key, word: '' };
+  }
+  var simpleLoading = null;
+  function loadSimple() {                        /* simple.js gives the Wiktionary definitions; teacher pages may not load it */
+    if (window.GAL_SIMPLE && window.GAL_SIMPLE.wiktDefine) return Promise.resolve(true);
+    if (simpleLoading) return simpleLoading;
+    simpleLoading = new Promise(function (res) {
+      try {
+        var s = document.createElement('script'); s.src = '/readings/simple/simple.js';
+        s.onload = function () { res(!!window.GAL_SIMPLE); }; s.onerror = function () { res(false); };
+        (document.head || document.documentElement).appendChild(s);
+        setTimeout(function () { res(!!window.GAL_SIMPLE); }, 8000);
+      } catch (e) { res(false); }
+    });
+    return simpleLoading;
+  }
+  var simpleHaveP = null;
+  function simpleSaved(fresh) {                   /* every saved Simple English key: {'simple-wk|word':1, 'simple-s|sentence':1} */
+    if (simpleHaveP && !fresh) return simpleHaveP;
+    simpleHaveP = new Promise(function (res) {
+      var have = {}, off = 0;
+      (function page() {
+        getJSON(SUPA_URL + '/rest/v1/song_tr?select=slug,src&lang=eq.' + SIMPLE + '&slug=in.(simple-wk,simple-s)&order=src.asc&limit=1000&offset=' + off)
+          .then(function (rows) { (rows || []).forEach(function (r) { have[r.slug + '|' + r.src] = 1; }); if (rows && rows.length === 1000) { off += 1000; page(); } else res(have); },
+                function () { res(have); });
+      })();
+    });
+    return simpleHaveP;
+  }
+  function simpleHave(srcs, fresh) {
+    return simpleSaved(fresh).then(function (have) {
+      var out = {};
+      (srcs || []).forEach(function (s) { var k = keyFor(s); if (!k || have[k.slug + '|' + k.src]) out[s] = 1; });
+      return out;
+    });
+  }
+  function simpleProxy(src, meaning, isWord) {
+    return new Promise(function (res) {
+      var u = PROXY + '?action=translate&mode=' + (isWord ? 'word' : 'sentence') + '&idiom=' + encodeURIComponent(src) + '&meaning=' + encodeURIComponent(meaning || '') + '&lang=' + encodeURIComponent(SIMPLE_LLM);
+      var x = new XMLHttpRequest(), done = false;
+      function fin(v) { if (!done) { done = true; res(v); } }
+      x.open('GET', u, true); x.timeout = 20000;
+      x.onload = function () {
+        var body = x.responseText || '', d = null; try { d = JSON.parse(body); } catch (e) {}
+        var t = d && d.translation, v = '';
+        if (t && typeof t === 'object') v = isWord ? (t.meaning || t.equiv || '') : (t.equiv || t.meaning || '');
+        else if (typeof t === 'string') v = t;
+        v = String(v || '').trim();
+        if (v) return fin({ v: v });
+        fin({ fail: true, quota: QUOTA.test(d ? String(d.error || d.message || '') : body.slice(0, 400)) });
+      };
+      x.onerror = x.ontimeout = function () { fin({ fail: true }); };
+      x.send();
+    });
+  }
+  function simplePut(k, v, note) {
+    return fetch(SUPA_URL + '/rest/v1/song_tr?on_conflict=slug,lang,src', { method: 'POST', headers: H('resolution=merge-duplicates,return=minimal'),
+      body: JSON.stringify([{ slug: k.slug, lang: SIMPLE, src: k.src, equiv: v, meaning: '', note: note }]) })
+      .then(function (r) { if (r.ok && simpleHaveP) simpleHaveP.then(function (h) { h[k.slug + '|' + k.src] = 1; }); return r.ok; }, function () { return false; });
+  }
+  function simpleOne(src, meaning) {
+    var k = keyFor(src);
+    if (!k) return Promise.resolve({ same: true });
+    if (k.word) {
+      return loadSimple().then(function () {
+        var wk = (window.GAL_SIMPLE && window.GAL_SIMPLE.wiktDefine) ? window.GAL_SIMPLE.wiktDefine(k.word).catch(function () { return ''; }) : Promise.resolve('');
+        return wk.then(function (d) {
+          if (d) return simplePut(k, d, 'simple.wiktionary.org').then(function (ok) { return ok ? { ok: true } : { fail: true }; });
+          return simpleProxy(k.word, meaning, true).then(function (a) {
+            if (!a.v) return a;
+            if (sNorm(a.v) === sNorm(k.word)) return { fail: true };
+            return simplePut(k, a.v, 'proxy Simple English').then(function (ok) { return ok ? { ok: true } : { fail: true }; });
+          });
+        });
+      });
+    }
+    return simpleProxy(k.src, meaning, false).then(function (a) {
+      if (!a.v) return a;
+      if (sNorm(a.v) === sNorm(k.src)) return simplePut(k, k.src, 'same as English').then(function () { return { same: true }; });   /* already simple: saved as itself, so no student asks again */
+      if (/^[a-z' -]{2,30}:\s/i.test(a.v) && a.v.length > k.src.length * 2) return { fail: true };   /* a definition, not a sentence */
+      return simplePut(k, a.v, 'proxy Simple English').then(function (ok) { return ok ? { ok: true } : { fail: true }; });
+    });
+  }
+  window.GAL.simpleTr = { CODE: SIMPLE, LABEL: SIMPLE_LABEL, keyFor: keyFor, have: simpleHave, one: simpleOne };
+  if (window.GAL.pretr) return;
+
   /* ---- status from the record + the cache (no translator calls) ---- */
   function statusHTML(rec, curHash, cov) {
     if (!rec) {
@@ -160,6 +281,7 @@
     /* languages */
     Promise.resolve(typeof opt.langs === 'function' ? opt.langs() : (opt.langs || LANGS15)).then(function (L) {
       L = (L && L.length) ? L : LANGS15;
+      if (opt.simple !== false && !L.some(function (x) { return x[0] === SIMPLE; })) L = L.concat([[SIMPLE, SIMPLE_LABEL]]);   /* T-423 */
       var tick = opt.ticked || DEFAULT_TICK;
       q('.gpt-langs').innerHTML = L.map(function (x) {
         var on = Array.isArray(tick) ? tick.indexOf(x[0]) >= 0 : (tick.test(x[0]) || tick.test(x[1]));
@@ -179,7 +301,7 @@
           if (rec) { el.innerHTML = statusHTML(rec, lineHash(ls)); return; }
           var langs = tickedLangs(); if (!langs.length) { el.innerHTML = statusHTML(null); return; }
           var slugs = {}; ls.forEach(function (l) { slugs[l.slug] = 1; });
-          return savedSet(Object.keys(slugs), langs).then(function (have) {
+          return savedSet(Object.keys(slugs), langs, ls).then(function (have) {
             var n = 0; ls.forEach(function (l) { langs.forEach(function (lg) { if (have[l.slug + '|' + lg + '|' + l.src]) n++; }); });
             el.innerHTML = statusHTML(null, null, { total: ls.length * langs.length, saved: n, langs: langs.map(langLabel) });
           });
@@ -200,7 +322,7 @@
       Promise.all([getLines(it), getRun(it.key), todayCount(), softLimit()]).then(function (r) {
         var ls = r[0], prev = r[1], today = r[2] || 0, soft = r[3], slugs = {};
         ls.forEach(function (l) { slugs[l.slug] = 1; });
-        return savedSet(Object.keys(slugs), langs).then(function (have) {
+        return savedSet(Object.keys(slugs), langs, ls).then(function (have) {
           var jobs = [], total = ls.length * langs.length, savedBefore = 0;
           ls.forEach(function (l) { langs.forEach(function (lg) { if (have[l.slug + '|' + lg + '|' + l.src]) savedBefore++; else jobs.push({ l: l, lg: lg }); }); });
           var prevFailed = {}; ((prev && prev.failed) || []).forEach(function (f) { prevFailed[f.lang + '|' + f.src] = 1; });
@@ -219,8 +341,9 @@
           (function next() {
             if (stop || quota || k >= jobs.length) return end();
             var j = jobs[k++];
-            ask(j.l, j.lg).then(function (a) {
+            (j.lg === SIMPLE ? simpleOne(j.l.src, j.l.meaning) : ask(j.l, j.lg)).then(function (a) {
               if (a.quota) { quota = true; k--; return; }
+              if (a.ok || a.same) { rec.done++; return; }                                 /* T-423: Simple English saved by simpleOne */
               if (a.v) return put(j.l, j.lg, a.v).then(function (ok) { if (ok) rec.done++; else rec.failed.push({ lang: langLabel(j.lg), src: j.l.src }); });
               rec.failed.push({ lang: langLabel(j.lg), src: j.l.src });
             }).then(function () { draw(); return checkpoint(false); }).then(function () { setTimeout(next, 100); });

@@ -64,6 +64,7 @@ var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 var PROXY='https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
 var TABLE='landlady_responses', GUIDE_KEY='landlady_table', TR_SLUG='landlady-reader', BUCKET='fluency-recordings';
 var LANGS=[['es','Spanish'],['zh-CN','Mandarin'],['yue','Cantonese'],['ar','Arabic'],['vi','Vietnamese'],['th','Thai'],['ne','Nepali'],['ary','Darija'],['ru','Russian'],['ur','Urdu'],['tl','Tagalog'],['fr','French'],['ko','Korean'],['hi','Hindi'],['so','Somali']];
+LANGS.push(['en-simple','Simple English']);   /* T-423: easy English for the Table Reader — the translator is asked in "Simple English" */
 var PRIORITY=['es','zh-CN','ar','vi','th','ne'];
 var KEYW={'lodgings':"a room in someone's house that you pay to sleep in",'porter':'a worker at a train station who carries bags','briskly':'moving quickly, like a busy person in a hurry','big shots':'the important, powerful people in a company','head office':'the main office of a company, where the bosses work','swanky':'expensive and fancy-looking','neglect':'when nobody takes care of a thing, so it falls apart','dachshund':'a small dog with a long body and short legs','peculiar':'strange or odd — not what you expected','compulsion':'a strong pull you cannot control','preserved':'kept from rotting, using chemicals','nest':'a home — and also the place where an animal waits'};
 var PARAS=LL_STORY.reduce(function(a,x){return a+x.paras.length;},0);
@@ -170,9 +171,9 @@ $('fill').onclick=function(){
     if(!total){ finish('All '+words.length+' words are already saved in every ticked language.'); return; }
     function step(){
       while(RUN && busy<3 && i<jobs.length){ (function(j){ busy++;
-        var url=PROXY+'?action=translate&mode=word&idiom='+encodeURIComponent(j[1])+'&meaning='+encodeURIComponent(KEYW[j[1]]||'')+'&lang='+encodeURIComponent(j[0]);
+        var url=PROXY+'?action=translate&mode=word&idiom='+encodeURIComponent(j[1])+'&meaning='+encodeURIComponent(KEYW[j[1]]||'')+'&lang='+encodeURIComponent(j[0]==='en-simple'?'Simple English':j[0]);
         fetch(url).then(function(r){return r.json();}).then(function(d){
-          var t=d&&d.translation, v=(t&&typeof t==='object')?(t.equiv||t.meaning||''):(t||''); v=String(v||'').trim();
+          var t=d&&d.translation, v=(t&&typeof t==='object')?(j[0]==='en-simple'?(t.meaning||t.equiv||''):(t.equiv||t.meaning||'')):(t||''); v=String(v||'').trim();
           if(!v){fails++;return;}
           return fetch(SUPA_URL+'/rest/v1/song_tr?on_conflict=slug,lang,src',{method:'POST',headers:H('resolution=merge-duplicates,return=minimal'),
             body:JSON.stringify([{slug:TR_SLUG,lang:j[0],src:j[1],equiv:v,meaning:'',note:'',updated_at:new Date().toISOString()}])});

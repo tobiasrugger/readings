@@ -74,6 +74,8 @@
   function active() { return STUDENT_PAGE && stored() === CODE; }
   function local(e) { return String(e || '').trim().toLowerCase().split('@')[0].replace(/\s+/g, ''); }
   function assigned(email) { var l = local(email); return !!l && SET.emails.indexOf(l) >= 0; }
+  /* T-423: Mr. Toby looking at a student page (?view=teacher) always gets the choice — teacher-facing */
+  function teacherView() { return !!window.GAL_TEACHER_VIEW || /[?&]view=teacher\b/.test(location.search); }
   function signedEmail() { try { return localStorage.getItem('gal_student_email') || ''; } catch (e) { return ''; } }
 
   /* ---------- settings ---------- */
@@ -163,7 +165,7 @@
         } else page.push(sel);
       } catch (e) {}
     }
-    var pageOK = SET.all || active() || want || assigned(signedEmail());
+    var pageOK = SET.all || active() || want || assigned(signedEmail()) || teacherView();
     page.forEach(function (sel) {
       try {
         if (pageOK) addOption(sel);
@@ -173,7 +175,7 @@
     boxed.forEach(function (b) {
       var sel = b[0], mine = b[1];
       try {
-        if (SET.all || mine) {
+        if (SET.all || mine || teacherView()) {
           addOption(sel);
           if (mine && !sel.__galUserPicked) choose(sel);                     /* ticked: chosen for them */
           else if (!sel.value && stored() === CODE) choose(sel);            /* came back: keep last choice */

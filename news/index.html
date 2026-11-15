@@ -1175,7 +1175,8 @@ function ptStatus(slug,done){
   var el=$('pts_'+slug), rec=PTREC[slug], d;
   try{d=parseDoc(DOCS[slug]||'');}catch(e){d=null;}
   if(!el||!d){if(done)done();return;}
-  var texts=textsOf(d), langs=ptLangsFor(rec), keys=[], meta={};
+  var texts=textsOf(d), langs=ptLangsFor(rec).filter(function(L){return L!==PT_SIMPLE;}), keys=[], meta={};
+  if(!langs.length) langs=PT_DEFAULT;
   langs.forEach(function(L){texts.forEach(function(t){var k=tkey(L,t);keys.push(k);meta[k]={lang:L,text:t};});});
   ptSavedKeys(keys,function(have){
     /* languages that were actually run = at least one saved line */
@@ -1206,7 +1207,32 @@ function ptStatus(slug,done){
          wont.map(function(k){var f=fails[k]||meta[k]||{};return '<div style="padding:3px 0;border-top:1px solid var(--rule)"><b>'+esc(f.lang||'')+'</b> \u00b7 '+esc(String(f.text||'').slice(0,300))+'</div>';}).join('')+'</div>';
     }
     el.innerHTML=h;
+    ptSimpleStatus(el,texts);   /* T-423 */
     if(done)done();
+  });
+}
+function ptSimpleStatus(el,texts){        /* T-423: one more line when any Simple English is saved for this article */
+  if(!window.GAL||!GAL.simpleTr||!texts.length) return;
+  GAL.simpleTr.have(texts).then(function(h){
+    var n=texts.filter(function(t){return h[t];}).length; if(!n) return;
+    var x=document.createElement('div'); x.style.cssText='font-size:13px;margin-top:2px';
+    x.innerHTML='\ud83c\udf10 Simple English \u00b7 '+n+' of '+texts.length+' lines \u00b7 '+(n>=texts.length?'<b style="color:var(--ok)">COMPLETE</b>':'<b style="color:#b45309">INCOMPLETE \u00b7 run again</b>');
+    var old=el.querySelector('.pt-simple'); if(old) old.remove(); x.className='pt-simple'; el.appendChild(x);
+  });
+}
+function ptRunSimple(texts,cb){            /* T-423: Simple English first, then the other languages */
+  if(!window.GAL||!GAL.simpleTr){$('ptMsg').textContent='Simple English could not load (pretr.js). Other languages go on.';cb();return;}
+  $('ptMsg').textContent='Simple English: checking what is already saved\u2026';
+  GAL.simpleTr.have(texts).then(function(h){
+    var todo=texts.filter(function(t){return !h[t];}), n=0, bad=0, quota=false;
+    if(!todo.length){$('ptMsg').textContent='Simple English: all '+texts.length+' lines already saved.';cb();return;}
+    (function next(){
+      if(quota||n>=todo.length){$('ptMsg').textContent='Simple English: '+(n-bad)+' of '+todo.length+' saved'+(bad?', '+bad+' failed':'')+(quota?' \u00b7 daily limit reached':'')+'.';setTimeout(cb,600);return;}
+      var t=todo[n++];
+      GAL.simpleTr.one(t,'').then(function(a){if(a.quota){quota=true;n--;}else if(!a.ok&&!a.same)bad++;
+        $('ptBar').style.width=Math.round(n/todo.length*100)+'%';$('ptMsg').textContent='Simple English: '+n+' of '+todo.length+(bad?' \u00b7 '+bad+' failed':'');
+        setTimeout(next,100);});
+    })();
   });
 }
 function ptSaveRec(slug,rec){             /* best effort; a missing column just means no record yet */
@@ -1243,11 +1269,14 @@ function ptRefreshToday(){
 }
 
 /* ---------- pre-translate ---------- */
-var PT_DEFAULT=['Spanish','Mandarin','Arabic','Vietnamese'];   /* T-345: Toby's four; the other 11 boxes stay, unticked */
+var PT_DEFAULT=['Spanish','Mandarin','Arabic','Vietnamese'];
+var PT_SIMPLE='Simple English', PT_SIMPLE_DONE=false;   /* T-423 */   /* T-345: Toby's four; the other 11 boxes stay, unticked */
 (function(){
   $('ptLangs').innerHTML=Object.keys(LANGS).map(function(k){
     return '<label style="font-weight:600"><input type="checkbox" value="'+k+'"'+(PT_DEFAULT.indexOf(k)>=0?' checked':'')+'> '+LANGS[k]+'</label>';
-  }).join('');
+  }).join('')+
+  /* T-423: Simple English — saved where simple/simple.js looks (song_tr simple-wk / simple-s), not in news_translations */
+  '<label style="font-weight:600"><input type="checkbox" value="'+PT_SIMPLE+'"> Simple English</label>';
 })();
 function textsOf(d){                       /* every string a student might see translated */
   var out=[];
@@ -1269,7 +1298,15 @@ $('ptGo').onclick=function(){
   if(!d.meta.SLUG){alert('Paste or load an article first.');return;}
   var langs=[].map.call(document.querySelectorAll('#ptLangs input:checked'),function(c){return c.value;});
   if(!langs.length){alert('Tick at least one language.');return;}
-  var texts=textsOf(d), jobs=[];   /* T-359: texts also feed the status record */
+  var texts=textsOf(d), jobs=[];
+  if(langs.indexOf(PT_SIMPLE)>=0&&!PT_SIMPLE_DONE){   /* T-423: Simple English runs first, then this handler again for the rest */
+    var rest=langs.filter(function(L){return L!==PT_SIMPLE;}), btn0=$('ptGo'); btn0.disabled=true;
+    ptRunSimple(texts,function(){btn0.disabled=false;ptStatus(d.meta.SLUG);
+      if(!rest.length) return;
+      PT_SIMPLE_DONE=true; try{$('ptGo').onclick();}finally{PT_SIMPLE_DONE=false;}});
+    return;
+  }
+  langs=langs.filter(function(L){return L!==PT_SIMPLE;});   /* T-359: texts also feed the status record */
   langs.forEach(function(L){texts.forEach(function(t){jobs.push({lang:L,text:t});});});
   var total=jobs.length,done=0,fails=0,btn=$('ptGo');
   var slug=d.meta.SLUG, old=PTREC[slug]||{}, oldFails=old.fails||{}, newFails={}, sinceSave=0;
@@ -1758,6 +1795,7 @@ var SEED=[
 $('doc').value=SEED;
 boot();
 </script>
+<script src="/readings/pretr.js"></script><!-- T-423: GAL.simpleTr for the Simple English tick -->
 <script src="/readings/std.js"></script><!-- T-390: sign-in standard on the gate too; track.js (gradebook) still waits for an article -->
 </body>
 </html>
