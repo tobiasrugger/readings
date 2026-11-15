@@ -71,6 +71,17 @@ td.num{text-align:right;font-variant-numeric:tabular-nums}
 details{margin-top:10px}
 summary{cursor:pointer;color:#6d736b;font-size:14px}
 .hide{display:none}
+/* T-429 next-step line + arrow */
+#nxLine{position:sticky;z-index:45;border:2px solid #22241f;box-shadow:0 2px 0 rgba(0,0,0,.18);border-radius:10px;background:#f0fdf4;padding:9px 13px;margin:0 0 14px;font-weight:800;font-size:16px;color:#14532d}
+#nxLine .xl{font-weight:700;font-size:14px;color:#3f5b48;margin-top:2px}
+#nxArrow{position:absolute;z-index:40;width:38px;height:38px;pointer-events:none;display:none;animation:nxB 1.6s ease-in-out infinite}
+#nxArrow svg{width:38px;height:38px}
+@media (max-width:560px){#doneBtns{max-width:calc(100% - 92px) !important}}
+#nxArrow.d{--dx:0;--dy:3px} #nxArrow.u{--dx:0;--dy:-3px} #nxArrow.l{--dx:-3px;--dy:0} #nxArrow.r{--dx:3px;--dy:0}
+#nxArrow.l svg{transform:rotate(90deg)} #nxArrow.r svg{transform:rotate(-90deg)} #nxArrow.u svg{transform:rotate(180deg)}
+@keyframes nxB{0%,100%{translate:0 0}50%{translate:var(--dx) var(--dy)}}
+@media (prefers-reduced-motion:reduce){#nxArrow{animation:none !important}}
+#meter.hide{display:none}
 #meter{display:flex;align-items:center;gap:10px;margin-top:12px;font-weight:700;font-size:14px}
 #meter .mbar{flex:1;max-width:260px;height:14px;border:2px solid #22241f;border-radius:8px;background:#fff;overflow:hidden}
 #meter .mbar div{height:100%;width:0;background:#15803d;transition:width .1s}
@@ -91,7 +102,7 @@ summary{cursor:pointer;color:#6d736b;font-size:14px}
   <a href="#" id="navArticle" class="hide">&larr; Back to the article</a>
   <a href="../news/">All readings</a>
   <a href="#" id="navRestart">Start over</a>
-  <a href="../">Home</a>
+  <a href="/readings/student/">&larr; My Page</a>
 </div>
 
 <div id="xlBar" style="display:none;background:#fff8e6;border-bottom:2px solid #e0b64a;padding:8px 14px;font-weight:700;font-size:14px">
@@ -138,6 +149,7 @@ summary{cursor:pointer;color:#6d736b;font-size:14px}
 </div>
 
 <main>
+<div id="nxLine" data-xl=""><span id="nxTxt"></span></div>
 
 <!-- STEP 1 : choose -->
 <section id="s1">
@@ -225,7 +237,7 @@ summary{cursor:pointer;color:#6d736b;font-size:14px}
     <div class="lift" id="rcLift"></div>
     <p id="rcNext" style="font-weight:700;margin:10px 0 0"></p>
   </div>
-  <div style="display:flex;flex-direction:column;gap:10px;max-width:380px;margin:0 auto">
+  <div id="doneBtns" style="display:flex;flex-direction:column;gap:10px;max-width:380px;margin:0 auto">
     <a class="big home" id="doneHome" href="/readings/student/">&larr; My Page</a>
     <button class="big" id="doneAgain">Practice and read it again</button>
     <a class="big line" id="doneArticle" href="../news/">Back to the article</a>
@@ -248,6 +260,7 @@ summary{cursor:pointer;color:#6d736b;font-size:14px}
 </section>
 
 </main>
+<div id="nxArrow" aria-hidden="true"><svg viewBox="-3 0 46 46"><path d="M20 3v28" stroke="#15803d" stroke-width="7" stroke-linecap="round"/><path d="M6 25l14 16 14-16" fill="none" stroke="#15803d" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 3v28" stroke="#4ade80" stroke-width="2.5" stroke-linecap="round" opacity=".7"/></svg></div>
 
 <script>
 var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
@@ -839,6 +852,71 @@ function chart(cold,hot){
   cold.forEach(function(r,i){var x=cold.length>1?pad+(i/(cold.length-1))*(W-pad*2):W/2;var y=Hh-pad-((+r.wcpm||0)/max)*(Hh-pad*2);s+='<circle cx="'+x+'" cy="'+y+'" r="5" fill="#1d4d3f"/>';});
   $('chart').innerHTML=s;
 }
+
+/* ---------- T-429: say what's next, and point at it ---------- */
+function nxVis(id){var e=document.getElementById(id);return e&&!e.classList.contains('hide');}
+function nxPick(){
+  if($('gate')&&$('gate').style.display!=='none') return null;
+  if(nxVis('s1')) return {t:'Start here — read the text, then tap the green button.',el:$('toRead')};
+  if(nxVis('s2')) return recOn?{t:'Read out loud. Tap the button when you finish.',el:$('recBtn')}:{t:'Next: tap Start reading and read out loud 🎤',el:$('recBtn')};
+  if(nxVis('s3')){
+    var mics=[].slice.call(document.querySelectorAll('#pwList .pw:not(.ok) [data-mic], #pwList .pw:not(.ok) [data-ck]'));
+    var m=mics.filter(function(b){return b.offsetParent!==null;})[0];
+    if(m) return {t:'Next: practice your word — tap and say it 🎤',el:m};
+    if(ATTEMPT==='cold') return {t:'Next: read it again. That makes your score 4 of 4.',el:$('again')};
+    return {t:'Next: see your score.',el:$('finish')};
+  }
+  if(nxVis('done')){
+    if($('doneAgain')&&$('doneAgain').style.display!=='none') return {t:'Next: practice and read it again.',el:$('doneAgain')};
+    return {t:'You finished this part. Tap ← My Page.',el:null};
+  }
+  return null;
+}
+var NX_LAST='';
+function nxUpdate(){
+  var p=nxPick(),line=$('nxLine'),ar=$('nxArrow');
+  if(!p){line.style.display='none';ar.style.display='none';return;}
+  line.style.display='';
+  if(p.t!==NX_LAST){
+    NX_LAST=p.t;$('nxTxt').textContent=p.t;line.dataset.xl=p.t;delete line.dataset.done;
+    var x=line.querySelector('.xl');if(x)x.textContent='';
+    try{dualTranslate();}catch(e){}
+  }
+  var el=p.el;
+  if(!el||el.offsetParent===null){ar.style.display='none';return;}
+  try{var bar=document.querySelector('.bar');line.style.top=(bar?bar.offsetHeight:0)+'px';}catch(e){}
+  var r=el.getBoundingClientRect(),G=42,A=38,H=19,vw=document.documentElement.clientWidth;
+  var C=[
+    {c:'l',x:r.right+4,y:r.top+r.height/2-H},      /* right of it, pointing left */
+    {c:'d',x:r.left+Math.min(r.width/2,60)-H,y:r.top-G},   /* above, pointing down */
+    {c:'r',x:r.left-G,y:r.top+r.height/2-H},        /* left of it, pointing right */
+    {c:'u',x:r.left+Math.min(r.width/2,60)-H,y:r.bottom+4} /* below, pointing up */
+  ];
+  ar.style.display='none';
+  var pick=null;
+  for(var i=0;i<C.length&&!pick;i++){var k=C[i];if(k.x<2||k.x+A>vw-2)continue;if(nxClear(k.x,k.y,el))pick=k;}
+  if(!pick)pick=C[1];
+  ar.className=pick.c;ar.style.display='block';
+  ar.style.left=Math.round(pick.x+window.scrollX)+'px';ar.style.top=Math.round(pick.y+window.scrollY)+'px';
+}
+/* a spot is clear when none of its points lands on text, a control, or the target itself */
+function nxClear(x,y,target){
+  var pts=[[19,19],[5,5],[33,5],[5,33],[33,33]];
+  for(var i=0;i<pts.length;i++){
+    var px=x+pts[i][0],py=y+pts[i][1];
+    if(py<0||py>innerHeight)continue;
+    var e=document.elementFromPoint(px,py);if(!e)continue;
+    if(e===target||target.contains(e))return false;
+    if(/^(BUTTON|A|INPUT|SELECT|TEXTAREA|AUDIO|B|STRONG|SPAN|P|H1|H2|H3|LABEL|SUMMARY|LI|SVG|PATH|IMG)$/i.test(e.tagName))return false;
+    if(e.closest('#nxLine,.bar,.nav'))return false;
+    for(var n=e.firstChild;n;n=n.nextSibling){if(n.nodeType===3&&n.textContent.trim())return false;}
+  }
+  return true;
+}
+setInterval(nxUpdate,400);
+document.addEventListener('click',function(){setTimeout(nxUpdate,60);},true);
+window.addEventListener('resize',nxUpdate);
+nxUpdate();
 </script>
 </body>
 </html>
