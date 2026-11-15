@@ -273,7 +273,10 @@
     }
     var tp = sc.tiers_pts;
     if (tp == null) { var A = sc.tierA || {}; tp = (+A.order || 0) + (+A.topic || 0) + (+sc.tierB || 0) + (+((sc.tierC || {}).pts) || 0) + (+((sc.tierD || {}).solved) || 0); }
-    var max = t + np;
+    /* T-425: since T-421 the core of After the story counts in the max (engine saves it as core_max;
+       tiers.js also saves core.max). Rows saved before that have neither and keep their old max. */
+    var cm = sc.core_max != null ? +sc.core_max : (+((sc.core || {}).max) || 0);
+    var max = t + np + cm;
     return { score: Math.min(max, solved + wrote + (+tp || 0)), max: max };
   };
 

@@ -641,9 +641,9 @@
     var o = { checks_first_try: r, checks_solved: solved, checks_total: t, yt_written: wrote, yt_total: np, yt_off: off }, k;
     var ts = window.REEL_TIERS ? REEL_TIERS.scores() : { pts: 0, max: 0, out: {} };   /* tiers.js (tiers chat) */
     for (k in ts.out) o[k] = ts.out[k];
-    var base = solved + wrote, max = t + np;
-    window.GAL_SCORE = Math.min(max, base + (ts.pts || 0)); window.GAL_MAX = max;
-    o.tiers_pts = ts.pts || 0; o.gal = window.GAL_SCORE; o.gal_max = max;   /* T-393: the dashboard rescores a ✗ from these */
+    var base = solved + wrote, max = t + np, cm = (ts.coreMax || 0);   /* T-421/T-425: After the story's core counts in GAL_MAX */
+    window.GAL_SCORE = Math.min(max + cm, base + (ts.pts || 0)); window.GAL_MAX = max + cm;
+    o.tiers_pts = ts.pts || 0; o.core_max = cm; o.gal = window.GAL_SCORE; o.gal_max = max + cm;   /* T-393: the dashboard rescores a ✗ from these */
     return o;
   }
 
