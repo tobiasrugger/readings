@@ -71,7 +71,7 @@ code{background:var(--pine-soft);padding:1px 5px;border-radius:5px;font-size:.92
 
   <div class="panel">
     <h2>Check one page</h2>
-    <p>Type a path and it fetches the page as it is live right now and runs the same nine checks
+    <p>Type a path and it fetches the page as it is live right now and runs the same eleven checks
        the grid uses. Works for any repo on this site &mdash; <code>readings/news/</code>,
        <code>languagelaunch/ll_practice.html</code>, or a full URL.</p>
     <div class="row">
@@ -109,7 +109,7 @@ code{background:var(--pine-soft);padding:1px 5px;border-radius:5px;font-size:.92
 
   <p class="legend" style="margin-bottom:10px">
     <b>Loads first</b> = the page reads the student's saved work before it writes any
-    (saveguard.js, or the story pages' own guard). <b>Robot</b> = the last run of
+    (saveguard.js, or the page's own inline guard). <b>Robot</b> = the last run of
     readings/robot/robot.py, which drives a real browser through three situations:
     a fresh Chromebook with work saved under the other email spelling, the server down,
     and a shared Chromebook. It can't drive recording pages, and a page it has never
@@ -128,7 +128,8 @@ code{background:var(--pine-soft);padding:1px 5px;border-radius:5px;font-size:.92
    The same rules the Python scanner uses, ported so they can run
    against the live site instead of a downloaded copy of the repo.
    One source of truth for "does this page meet the standard?" —
-   if a rule changes, change it here and in audit.py together.
+   if a rule changes, change it here and in readings/audit/tools/
+   (audit.py, gatecheck.py) together; see tools/README.md.
    ──────────────────────────────────────────────────────────────── */
 
 var COLS = ['login','lang','gate','period','trans','tap','canary','track','supa','save','robot'];
@@ -225,10 +226,16 @@ function kindOf(path, t){
   var body0 = t.replace(/<input[^>]*type\s*=\s*["']password["'][^>]*>/gi, '')
                .replace(/<input[^>]*(aria-label\s*=\s*["'][^"']*search|placeholder\s*=\s*["'][^"']*(find|search))[^>]*>/gi, '');
   if (!/<textarea|<input|class="choice|data-q=|data-k=|data-ans=/i.test(body0)) return 'hub';
+  /* episode hubs: students only pick an episode; the inputs belong to the
+     Teacher tab, and the one POST signs a recording URL, not student work */
+  if (['reel/index.html','reel-v2/index.html'].indexOf(low) >= 0) return 'hub';
   if (low.indexOf('dashboard') >= 0 || low.indexOf('teacher') >= 0) return 'teacher';
   if (/positioner|builder|editor|importer|admin/.test(name)) return 'teacher';
   if (['gradebook.html','assign.html','wall.html','report.html'].indexOf(name) >= 0) return 'teacher';
-  if (['gradebook','roadmap'].indexOf(low.split('/')[0]) >= 0) return 'teacher';
+  /* teacher tools whose pages have inputs: gradebook, roadmap, Push an
+     Activity (assign/), Group Grades (groups/), Class Report (reports/),
+     Shelves (shelves/), Student data (studentdata/) */
+  if (['gradebook','roadmap','assign','groups','reports','shelves','studentdata'].indexOf(low.split('/')[0]) >= 0) return 'teacher';
   var title = (t.match(/<title>([^<]{0,120})<\/title>/i) || [,''])[1];
   if (/\bteacher\b/i.test(title)) return 'teacher';
   if (/unit[-_ ]?plan|plans?\.html$/.test(name)) return 'plan';
@@ -306,9 +313,10 @@ function checkText(path, t){
   else if (t.indexOf('localStorage') >= 0) r.supa = ['warn','localStorage only'];
   else r.supa = ['bad','no saving'];
 
-  /* load before save: saveguard.js, or the inline guard the story pages use */
+  /* load before save: saveguard.js, or an inline guard — GAL_LOADED (T-166
+     story pages) or window.__T168 (T-168: Omelas ×3, indigenous, creativity) */
   var guarded = /src\s*=\s*["'][^"']*saveguard\.js["']/i.test(t);
-  var inline  = t.indexOf('GAL_LOADED') >= 0;
+  var inline  = t.indexOf('GAL_LOADED') >= 0 || t.indexOf('__T168') >= 0;
   var writes  = t.indexOf('supabase.co') >= 0 || t.indexOf('/rest/v1/') >= 0;
   if (guarded)      r.save = ['ok','saveguard.js'];
   else if (inline)  r.save = ['ok','loads before it saves'];
@@ -354,6 +362,11 @@ function fetchWithScripts(u){
     if (!srcs.length) return t;
     var dir = u.replace(/[^/]*$/, '');
     var jobs = srcs.slice(0, 8).map(function(s){
+      /* saveguard.js names the shared tables (instruction_reveals,
+         page_translation…) in its own code; reading it would turn Protect
+         and Canary green on any page that loads it. Loads first reads the
+         page's own <script src>, so skipping its text loses nothing. */
+      if (/(^|\/)saveguard\.js$/.test(s)) return Promise.resolve('');
       var su = (s.charAt(0) === '/') ? s : dir + s;
       return fetch(su, {cache:'no-store'})
         .then(function(r){ return r.ok ? r.text() : ''; })
