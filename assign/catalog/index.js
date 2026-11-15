@@ -75,6 +75,7 @@
  "survival-english",
  "teachme",
  "telltale",
+ "thanks",
  "this-is-how",
  "thoughts",
  "thoughts-chain",

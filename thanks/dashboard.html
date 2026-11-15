@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thank You Card · Teacher</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<!-- T-404 (Nov 2026): reads eld103_donow rows with unit = 'thanks'. One row per student (GAL04.key).
+     Mr. Toby's ✓/✗/note on the four card lines (readings/marks.js, keys c.to c.for c.you c.feel).
+     🌐 Pre-translate fills song_tr slug 'thanks', which the student page reads before it calls the translator.
+     🖨 Print a period's cards = one folded card per page, for a class wall or to hand out. -->
+<style>
+:root{--pine:#1b4332;--pine2:#2d6a4f;--ink:#1c2640;--muted:#5c6b62;--paper:#f4f5f2}
+*{box-sizing:border-box}body{margin:0;font-family:'Nunito',system-ui,sans-serif;background:var(--paper);color:var(--ink)}
+header{background:var(--pine);color:#fff;padding:48px 16px 14px 16px}header h1{margin:0;font-size:1.25rem}header p{margin:2px 0 0;font-size:.86rem;opacity:.9}
+header a{color:#f2c230}
+main{max-width:1300px;margin:0 auto;padding:14px}
+.box{background:#fff;border:2px solid var(--ink);border-radius:12px;box-shadow:0 3px 0 var(--ink);padding:12px 14px;margin:0 0 14px}
+.box h2{margin:0 0 6px;font-size:1.05rem;color:var(--pine)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+select,button:not([data-gm]),input{font-family:inherit;font-size:.95rem;font-weight:700;border:2px solid var(--ink);border-radius:8px;padding:6px 10px;background:#fff}
+button:not([data-gm]){cursor:pointer;background:var(--pine2);color:#fff}button.ghost{background:#fff;color:var(--pine)}
+.wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{border:1px solid #b9c4bd;padding:6px 8px;text-align:left;vertical-align:top}
+th{background:#e8f1ec;position:sticky;top:0}
+td.n{text-align:center;font-weight:800}
+.miss{color:#8a4b00;font-weight:800}.shown{background:#fff1bf;border-radius:6px;padding:0 4px;font-weight:800}
+.op{color:#2d4a6b}.muted{color:var(--muted)}
+.cardcell{min-width:330px}.cl{margin:0 0 8px;padding-bottom:6px;border-bottom:1px dashed #cfd6d1}.cl:last-child{border-bottom:0}
+.cl b{display:block}.pen{display:inline-block;background:#fff1bf;border:1px solid #d4a017;border-radius:6px;padding:0 5px;font-weight:900;margin-left:4px}
+#gate{position:fixed;inset:0;background:rgba(27,67,50,.96);display:flex;align-items:center;justify-content:center;z-index:100}
+#gate .gb{background:#fff;border:3px solid var(--ink);border-radius:14px;padding:22px;width:300px;text-align:center}
+#gateErr{color:#b5451b;font-weight:800;min-height:1.2em}
+a{color:var(--pine2);font-weight:800}
+#printArea{display:none}
+@media print{body>*:not(#printArea){display:none!important}#printArea{display:block!important}
+ .pcard{display:flex;height:92vh;border:2px dashed #555;page-break-after:always}
+ .pin,.pfront{flex:1;display:flex;flex-direction:column;justify-content:center;padding:28px}
+ .pin{border-right:1px dashed #999;font-size:22pt;line-height:1.4}.pin p{margin:.25em 0}.pfront svg{width:100%;height:auto}
+ @page{size:landscape;margin:10mm}}
+</style>
+<script src="/readings/thanks/content.js"></script>
+<script src="/readings/marks.js"></script>
+</head>
+<body>
+<div id="gate"><div class="gb"><h2 style="margin:0 0 10px">Teacher</h2>
+ <input id="pw" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')unlock()" style="width:100%">
+ <button onclick="unlock()" style="width:100%;margin-top:10px">Open</button><div id="gateErr"></div></div></div>
+<header><h1>Thank You Card · ELD 101</h1><p>Look · 8 words · read Linh’s card (4) · grammar (4) · my card (4 lines) · say it · print and give (extra) · student page: <a href="./">thanks/</a></p></header>
+<main>
+ <div class="box row">
+  <label>Period <select id="per" onchange="draw()"><option value="">All</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select></label>
+  <label><input type="checkbox" id="onlyPen" onchange="draw()"> only cards with ✎ to read</label>
+  <button onclick="load()">↻ Refresh</button>
+  <button class="ghost" onclick="printAll()">🖨 Print this period’s cards</button>
+  <span id="sum" class="muted"></span>
+ </div>
+ <div class="box"><h2>Who students thanked</h2><div id="who" class="muted">…</div></div>
+ <div class="box wrap"><table><thead><tr><th>Student</th><th>Per.</th><th>Done /23</th><th>0–4</th><th>I see / I wonder</th><th>Words · Read · Grammar (misses)</th>
+  <th class="cardcell">Their card — ✓ / ✗ + note on each line</th><th>Said it</th><th>Gave it</th><th>Saved</th><th></th></tr></thead><tbody id="tb"><tr><td colspan="11">Loading…</td></tr></tbody></table>
+ <p class="muted" style="font-size:.85rem">Misses are wrong taps before the right one; <span class="shown">shown</span> = the page pointed at the answer, still a full point (fair scores). A ✗ needs a note; the student sees a soft “Mr. Toby: try this again ✏️” box and gets the point back when they change the line. 🎤 = the microphone heard at least half the card; ✋ = the student pressed “I read it out loud” after two tries.</p></div>
+ <div class="box"><h2>🌐 Pre-translate</h2><div id="pt"></div></div>
+</main>
+<div id="printArea"></div>
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var PW='galileo2026',ROWS=[],T=window.THANKS,MAX=23,MARKCOL=true;
+var LINES=[['to','c.to','Dear'],['for','c.for','Thank you for'],['you','c.you','You'],['feel','c.feel','Because of you, I feel']];
+var WHO={};T.WHO.forEach(function(w){WHO[w.k]=w.label;});
+function $(i){return document.getElementById(i);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function key(e){return window.GAL04&&GAL04.key?GAL04.key(e):String(e||'').trim().toLowerCase().split('@')[0];}
+function band(pct){return window.GAL04&&GAL04.band?GAL04.band(pct):'';}
+function H(){return {apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY};}
+function unlock(){if($('pw').value===PW){try{sessionStorage.setItem('thanks_pw','1');}catch(e){}$('gate').style.display='none';load();pre();}else $('gateErr').textContent='Not the right password.';}
+/* the full sentence for a card line, exactly as the student page builds it */
+function line(c,k){var v=String((c||{})[k]||'').trim();if(!v)return '';var b=v.replace(/[.!]+$/,'');
+ return k==='to'?'Dear '+v.replace(/^dear\s+/i,'').replace(/,+$/,'')+',':k==='for'?'Thank you for '+b+'.':k==='you'?'You '+b+'.':'Because of you, I feel '+b+'.';}
+function load(){var sel='email,name,period,score,max_score,turned_in,payload,updated_at'+(MARKCOL?',marks':'');
+ fetch(SUPA_URL+'/rest/v1/eld103_donow?unit=eq.thanks&select='+sel+'&order=updated_at.desc',{headers:H()})
+ .then(function(r){if(!r.ok&&MARKCOL){MARKCOL=false;throw 'retry';}return r.json();}).then(function(rows){
+  var by={};(rows||[]).forEach(function(r){var k=key(r.email);if(!by[k]||(r.score||0)>(by[k].score||0))by[k]=r;});
+  ROWS=Object.keys(by).map(function(k){return by[k];});ROWS.sort(function(a,b){return String(a.period).localeCompare(String(b.period))||String(a.name).localeCompare(String(b.name));});draw();
+ }).catch(function(e){if(e==='retry'){$('sum').textContent='⚠ Run the T-404 SQL once: the marks column is missing, so ✓/✗ can’t save yet.';load();return;}$('tb').innerHTML='<tr><td colspan="11">Could not load.</td></tr>';});}
+function items(R,n){R=R||{};var t=0,m=0,s=0,d=0;for(var i=0;i<n;i++){var x=R[i];if(!x)continue;if(x.done)d++;t+=x.tries||0;if(x.tries)m++;if(x.shown)s++;}
+ return d+'/'+n+(t?' <span class="miss">'+t+' miss'+(t>1?'es':'')+'</span>':'')+(s?' <span class="shown">'+s+' shown</span>':'');}
+function pens(r){var c=(r.payload||{}).card||{};return window.GALMARK?GALMARK.unmarked(r.marks||{},LINES.map(function(L){return {key:L[1],a:c[L[0]]};})):0;}
+function cardCell(r){var c=(r.payload||{}).card||{};if(!c.who&&!c.for)return '<span class="muted">not started</span>';
+ var p=pens(r);
+ return '<div class="muted" style="margin-bottom:6px">To: <b>'+esc(WHO[c.who]||'—')+'</b>'+(p?' <span class="pen">✎ '+p+'</span>':'')+'</div>'+LINES.map(function(L){var a=c[L[0]]||'';
+  return '<div class="cl"><b>'+(a?esc(line(c,L[0])):'<span class="muted">'+esc(L[2])+' —</span>')+'</b>'+(a&&window.GALMARK&&MARKCOL?GALMARK.controls(r.marks||{},L[1],a):'')+'</div>';}).join('');}
+function said(s){s=s||{};return s.done?(s.self?'✋':'🎤 '+(s.pct!=null?s.pct+'%':''))+(s.heard?'<br><span class="muted" style="font-size:.8rem">“'+esc(s.heard.slice(0,90))+'”</span>':''):(s.tries?'<span class="miss">'+s.tries+' tries</span>':'<span class="muted">—</span>');}
+function draw(){var p=$('per').value,only=$('onlyPen').checked,list=ROWS.filter(function(r){return (!p||String(r.period)===p)&&(!only||pens(r)>0);});
+ var done=list.filter(function(r){return (r.score||0)>=(r.max_score||MAX);}).length,gave=list.filter(function(r){return (r.payload||{}).gave;}).length;
+ if(MARKCOL)$('sum').textContent=list.length+' students · '+done+' finished · '+gave+' gave their card';
+ $('tb').innerHTML=list.length?list.map(function(r){var P=r.payload||{},R=P.R||{},L=P.look||{},pct=r.max_score?Math.round(100*(r.score||0)/r.max_score):0;
+  return '<tr data-email="'+esc(r.email)+'"><td><b>'+esc(r.name)+'</b><br><span class="muted" style="font-size:.8rem">'+esc(key(r.email))+'</span></td><td class="n">'+esc(r.period)+'</td>'+
+   '<td class="n">'+(r.score||0)+'/'+(r.max_score||MAX)+'</td><td class="n">'+band(pct)+'</td>'+
+   '<td>'+(L.see?'I see <b>'+esc(L.see)+'</b>':'<span class="muted">—</span>')+'<br>'+(L.won?'I wonder why <span class="op">'+esc(L.won)+'</span>'+(L.own?' ✍️':''):'<span class="muted">—</span>')+'</td>'+
+   '<td>Words '+items(R.w,8)+'<br>Read '+items(R.r,4)+'<br>Grammar '+items(R.g,4)+'</td>'+
+   '<td class="cardcell">'+cardCell(r)+'</td><td>'+said(P.say)+'</td>'+
+   '<td>'+(P.gave?'✅ gave it'+(P.reply?'<br><span class="op">“'+esc(P.reply)+'”</span>':''):(P.printed?'🖨 printed':'<span class="muted">—</span>'))+'</td>'+
+   '<td class="muted" style="font-size:.8rem">'+esc(new Date(r.updated_at).toLocaleString())+(P.lion?'<br>🦁 found the lion':'')+'</td>'+
+   '<td><a href="./?view=teacher&email='+encodeURIComponent(r.email)+'" target="_blank">👀 view</a></td></tr>';}).join(''):'<tr><td colspan="11">No work yet.</td></tr>';
+ var w={};list.forEach(function(r){var k=((r.payload||{}).card||{}).who;if(k)w[k]=(w[k]||0)+1;});
+ $('who').innerHTML=Object.keys(w).sort(function(a,b){return w[b]-w[a];}).map(function(k){return esc(WHO[k])+' <b>×'+w[k]+'</b>';}).join(' · ')||'Nobody has chosen yet.';}
+/* ✓ / ✗ / note: marks.js saves the mark; then the row's score is recounted (a ✗ line does not count) */
+function rowScore(r){var P=r.payload||{},R=P.R||{},n=0,L=P.look||{};if(L.see)n++;if(L.won)n++;['w','r','g'].forEach(function(s){var X=R[s]||{};Object.keys(X).forEach(function(i){if(X[i].done)n++;});});
+ var c=P.card||{};LINES.forEach(function(Ln){var v=String(c[Ln[0]]||'').trim();if(Ln[0]==='to')v=v.replace(/^(dear\s+)?(ms|mr|mx|mrs|miss)\.?\s*/i,'');if(v.length>=2&&!GALMARK.off(r.marks||{},Ln[1],c[Ln[0]]))n++;});
+ if(P.say&&P.say.done)n++;return Math.min(MAX,n);}
+GALMARK.bind(document.body,function(k,ctl){var tr=ctl.closest('tr'),email=tr&&tr.getAttribute('data-email');var r=ROWS.filter(function(x){return x.email===email;})[0];if(!r)return null;
+ var c=(r.payload||{}).card||{},L=LINES.filter(function(x){return x[1]===k;})[0];
+ return {table:'eld103_donow',filter:'email=eq.'+encodeURIComponent(r.email)+'&unit=eq.thanks',ans:c[L[0]],after:function(m){r.marks=m;var s=rowScore(r);r.score=s;
+  fetch(SUPA_URL+'/rest/v1/eld103_donow?email=eq.'+encodeURIComponent(r.email)+'&unit=eq.thanks',{method:'PATCH',headers:Object.assign({'Content-Type':'application/json',Prefer:'return=minimal'},H()),body:JSON.stringify({score:s})}).catch(function(){});
+  GALMARK.setScore(r.email,'thanks',s,MAX).catch(function(){});setTimeout(draw,50);}};});
+/* print every card in the period, one folded card per sheet */
+function printAll(){var p=$('per').value,list=ROWS.filter(function(r){var c=(r.payload||{}).card||{};return (!p||String(r.period)===p)&&c.for&&c.you&&c.feel;});
+ if(!list.length){alert('No finished cards'+(p?' in period '+p:'')+' yet.');return;}
+ $('printArea').innerHTML=list.map(function(r){var c=r.payload.card;return '<div class="pcard"><div class="pin">'+['to','for','you','feel'].map(function(k){return '<p>'+esc(line(c,k))+'</p>';}).join('')+
+  '<p>From,<br><b>'+esc(String(r.name||'').split(' ')[0])+'</b></p></div><div class="pfront">'+front(c.col,c.stamp)+'</div></div>';}).join('');setTimeout(function(){window.print();},200);}
+var CC={pink:['#ffe4ec','#d9567f'],yellow:['#fff6cf','#d4a017'],blue:['#e6f0fb','#2f6fbd'],green:['#e5f5ea','#2f7d4f']};
+function front(col,st){var C=CC[col]||CC.pink;var mark={heart:'<path d="M0 4 C-1 -2 -10 -3 -10 4 C-10 10 0 16 0 18 C0 16 10 10 10 4 C10 -3 1 -2 0 4Z" transform="scale(6) translate(0,-8)" fill="'+C[1]+'"/>',
+  sun:'<circle r="40" fill="'+C[1]+'"/>',flower:'<circle r="20" fill="#f2c230"/>'+[0,60,120,180,240,300].map(function(a){return '<ellipse cy="-36" rx="16" ry="26" fill="'+C[1]+'" transform="rotate('+a+')"/>';}).join(''),
+  lion:'<circle r="52" fill="#c9862b"/><circle r="36" fill="#f2c230"/><circle cx="-12" cy="-8" r="5" fill="#3d2c00"/><circle cx="12" cy="-8" r="5" fill="#3d2c00"/>'}[st]||'';
+ return '<svg viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg"><rect width="300" height="400" fill="'+C[0]+'"/><rect x="10" y="10" width="280" height="380" rx="14" fill="none" stroke="'+C[1]+'" stroke-width="5" stroke-dasharray="12 8"/><g transform="translate(150,170)">'+mark+'</g><text x="150" y="345" text-anchor="middle" font-family="Nunito,Arial" font-weight="900" font-size="46" fill="'+C[1]+'">Thank you!</text></svg>';}
+/* 🌐 Pre-translate: every line of the page, saved where the student page looks first (song_tr slug 'thanks') */
+function pre(){if(!window.GAL||!GAL.pretr)return;
+ GAL.pretr({host:'#pt',title:'Pre-translate the Thank You Card',
+  items:[{key:'thanks',title:'Thank You Card · every word, sentence and direction',lines:function(){return T.lines().map(function(s){return {src:s,slug:'thanks',mode:s.split(/\s+/).length<=3?'word':'sentence'};});}}],
+  langs:[['Spanish','Spanish'],['Chinese (Simplified)','Mandarin'],['Cantonese','Cantonese'],['Arabic','Arabic'],['Vietnamese','Vietnamese'],['Thai','Thai'],['Nepali','Nepali'],['Russian','Russian'],
+   ['Darija','Darija'],['Urdu','Urdu'],['Tagalog','Tagalog'],['French','French'],['Korean','Korean'],['Hindi','Hindi'],['Somali','Somali']],
+  ticked:[]});}
+try{if(sessionStorage.getItem('thanks_pw')){$('gate').style.display='none';load();pre();}}catch(e){}
+</script>
+<script src="/readings/pretr.js"></script>
+<script>try{if(sessionStorage.getItem('thanks_pw'))pre();}catch(e){}</script>
+<script src="/readings/grade04.js" data-slugs="thanks"></script>
+</body>
+</html>
