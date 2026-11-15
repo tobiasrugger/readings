@@ -290,6 +290,16 @@
     var c = ((r.payload || {}).card) || {}, n = G.unmarked(r.marks, ['to', 'for', 'you', 'feel'].map(function (k) { return { key: 'c.' + k, a: c[k] }; }));
     return n ? { thanks: n } : {};
   } });
+  /* T-422 (Nov 15): ELD 101 Taste Test (readings/taste/, T-418). Row = eld103_donow unit taste. Marked writing:
+     w.sent = payload.sent · w.par = the paragraph (frame text only when taste/content.js is loaded, as TASTE.parText;
+     otherwise only a word-bank / own paragraph) · food = payload.food.text. "fav" is skipped (it needs the candy list). */
+  G.DESK.push({ table: 'eld103_donow', filter: 'unit=eq.taste', select: 'email,payload,marks', count: function (r) {
+    var p = r.payload || {}, par = p.par || {}, T = window.TASTE;
+    var parA = (T && T.parText) ? T.parText(par) : (par.lvl === 'frame' ? '' : String(par.text || '').trim());
+    var n = G.unmarked(r.marks, [{ key: 'w.sent', a: String(p.sent || '').trim() }, { key: 'w.par', a: parA },
+      { key: 'food', a: ((p.food || {}).text) || '' }]);
+    return n ? { taste: n } : {};
+  } });
   G.loadDesk = function () {
     var out = {};
     return Promise.all(G.DESK.map(function (src) {
