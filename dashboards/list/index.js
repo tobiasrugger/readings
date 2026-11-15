@@ -75,6 +75,7 @@ window.DASHBOARD_FILES = [
   'studentdata',
   'stand-by-me',
   'survival-english',
+  'taste',
   'teacher',
   'teachme',
   'telltale',

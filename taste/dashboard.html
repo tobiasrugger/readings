@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Taste Test · Teacher</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<!-- T-418 (Nov 15 2026): ELD 101 Taste Test dashboard. Reads eld103_donow rows with unit 'taste' (work) and 'taste-photo' (each student's food photo).
+     One row per student (GAL04.key). Mr. Toby's ✓/✗/note on the sentence (w.sent), the paragraph (w.par), the favorite (fav) and the food post (food),
+     via readings/marks.js; a ✗ lowers the gradebook through RPC eld101_set_score (slug 'taste' needs the T-418 SQL once).
+     🍬 Candies: rename them, add your own, or put in a photo of the real candy you bring — saved in gal_settings 'taste_candies', which the student page reads.
+     📽 Class wall: every posted food photo for one period, big, for the projector. 🌐 Pre-translate fills song_tr slug 'taste'. -->
+<style>
+:root{--pine:#1b4332;--pine2:#2d6a4f;--ink:#1c2640;--muted:#5c6b62;--paper:#f4f5f2}
+*{box-sizing:border-box}body{margin:0;font-family:'Nunito',system-ui,sans-serif;background:var(--paper);color:var(--ink)}
+header{background:var(--pine);color:#fff;padding:48px 16px 14px 16px}header h1{margin:0;font-size:1.25rem}header p{margin:2px 0 0;font-size:.86rem;opacity:.9}
+header a{color:#f2c230}
+main{max-width:1400px;margin:0 auto;padding:14px}
+.box{background:#fff;border:2px solid var(--ink);border-radius:12px;box-shadow:0 3px 0 var(--ink);padding:12px 14px;margin:0 0 14px}
+.box h2{margin:0 0 6px;font-size:1.05rem;color:var(--pine)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+select,button:not([data-gm]),input{font-family:inherit;font-size:.95rem;font-weight:700;border:2px solid var(--ink);border-radius:8px;padding:6px 10px;background:#fff}
+button:not([data-gm]){cursor:pointer;background:var(--pine2);color:#fff}button.ghost{background:#fff;color:var(--pine)}
+.wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th,td{border:1px solid #b9c4bd;padding:6px 8px;text-align:left;vertical-align:top}
+th{background:#e8f1ec;position:sticky;top:0}
+td.n{text-align:center;font-weight:800}
+.miss{color:#8a4b00;font-weight:800}.shown{background:#fff1bf;border-radius:6px;padding:0 4px;font-weight:800}
+.muted{color:var(--muted)}.op{color:#2d4a6b}
+.wcell{min-width:320px}.cl{margin:0 0 8px;padding-bottom:6px;border-bottom:1px dashed #cfd6d1}.cl:last-child{border-bottom:0}.cl b{display:block}
+.pen{display:inline-block;background:#fff1bf;border:1px solid #d4a017;border-radius:6px;padding:0 5px;font-weight:900;margin-left:4px}
+.thumb{width:110px;border:2px solid var(--ink);border-radius:8px;display:block;margin-bottom:4px}
+#gate{position:fixed;inset:0;background:rgba(27,67,50,.96);display:flex;align-items:center;justify-content:center;z-index:100}
+#gate .gb{background:#fff;border:3px solid var(--ink);border-radius:14px;padding:22px;width:300px;text-align:center}
+#gateErr{color:#b5451b;font-weight:800;min-height:1.2em}
+a{color:var(--pine2);font-weight:800}
+/* candy setup */
+.cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.cc{border:2px solid var(--ink);border-radius:12px;overflow:hidden;background:#fff}.cc.off{opacity:.45}
+.cc .cp{line-height:0;border-bottom:2px solid var(--ink)}.cc .cp svg,.cc .cp img{width:100%;height:auto;display:block}.cc .cp img{aspect-ratio:5/4;object-fit:cover}
+.cc .cb{padding:8px}.cc .cb input[type=text]{width:100%;margin-bottom:6px}.cc label{font-size:.85rem;font-weight:800;display:inline-flex;gap:4px;align-items:center;margin-right:8px}
+.cc .up{display:inline-block;font-size:.85rem;font-weight:800;border:2px solid var(--ink);border-radius:8px;padding:4px 8px;cursor:pointer;background:#fff;color:var(--pine)}.cc .up input{display:none}
+#cfgMsg{font-weight:800}
+/* class favorites */
+.favs{display:flex;flex-wrap:wrap;gap:10px}.fv{border:2px solid var(--ink);border-radius:10px;padding:6px 10px;background:#fbfcfb}.fv b{color:var(--pine)}
+/* projector wall */
+#wallOv{position:fixed;inset:0;background:#1b4332;z-index:90;display:none;overflow:auto;padding:20px}#wallOv.show{display:block}
+#wallOv h2{color:#fff;font-size:2rem;margin:0 0 14px;display:flex;gap:14px;align-items:center}
+.pwall{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.pp{background:#fff;border:3px solid #1c2640;border-radius:14px;overflow:hidden}.pp img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;border-bottom:3px solid #1c2640}
+.pp .t{padding:10px 14px;font-size:1.25rem}.pp .nm{font-weight:900;color:#1b4332;font-size:1.35rem}.pp .w{color:#5c6b62;font-weight:800;font-size:1rem}
+</style>
+<script src="/readings/taste/content.js"></script>
+<script src="/readings/taste/art.js"></script>
+<script src="/readings/marks.js"></script>
+</head>
+<body>
+<div id="gate"><div class="gb"><h2 style="margin:0 0 10px">Teacher</h2>
+ <input id="pw" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')unlock()" style="width:100%">
+ <button onclick="unlock()" style="width:100%;margin-top:10px">Open</button><div id="gateErr"></div></div></div>
+<header><h1>Taste Test · ELD 101</h1><p>Look · 18 words (listen 12) · practice 14 · Candy Lab (4 candies) · grammar 5 · one sentence · a paragraph · favorite + say it · my food photo (extra) · student page: <a href="./">taste/</a></p></header>
+<main>
+ <div class="box row">
+  <label>Period <select id="per" onchange="draw()"><option value="">All</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select></label>
+  <label><input type="checkbox" id="onlyPen" onchange="draw()"> only students with ✎ to read</label>
+  <button onclick="load()">↻ Refresh</button>
+  <button class="ghost" onclick="openWall()">📽 Class wall (food photos)</button>
+  <span id="sum" class="muted"></span>
+ </div>
+ <details class="box" id="candyBox">
+  <summary style="cursor:pointer"><h2 style="display:inline">🍬 Your candies</h2> <span class="muted">— rename, add your own, or put in a photo of the real candy you bring</span></summary>
+  <p class="muted" style="margin:0 0 8px">These are the candies students describe in the Candy Lab. Change a name, tick “more than one” for plural names (gummy bears <b>are</b>…), put in a photo of the real candy you bring, or switch one off. Add your own at the end. Students see your changes the next time they open the page.</p>
+  <div id="cgrid" class="cgrid"></div>
+  <div class="row" style="margin-top:10px"><button onclick="addCandy()">➕ Add a candy</button><button onclick="saveCfg()">💾 Save candies</button><button class="ghost" onclick="resetCfg()">↺ Back to the drawn candies</button><span id="cfgMsg" class="muted"></span></div>
+ </details>
+ <div class="box"><h2>⭐ Class favorites</h2><div id="favs" class="favs muted">…</div></div>
+ <div class="box wrap"><table><thead><tr><th>Student</th><th>Per.</th><th>Done</th><th>0–4</th><th>Look</th><th>Listen · Practice · Grammar (misses)</th><th>Candy Lab</th>
+  <th class="wcell">Sentence + paragraph — ✓ / ✗ + note</th><th class="wcell">Favorite + said it</th><th>My food ⭐</th><th>Saved</th><th></th></tr></thead><tbody id="tb"><tr><td colspan="12">Loading…</td></tr></tbody></table>
+ <p class="muted" style="font-size:.85rem">Misses are wrong taps before the right one; <span class="shown">shown</span> = the page pointed at the answer, still a full point (fair scores). Candy Lab and favorite are opinions, never wrong. A ✗ needs a note; the student sees a soft “Mr. Toby: try this again ✏️” box and gets the point back when they change the writing. 🎤 = the microphone heard at least half the sentence; ✋ = “I said it out loud” after two tries. My food is extra: it can fill a missing point, never lower a score.</p></div>
+ <div class="box"><h2>🌐 Pre-translate</h2><div id="pt"></div></div>
+</main>
+<div id="wallOv"><h2>Our food 🍲 <select id="wallPer" onchange="drawWall()" style="font-size:1rem"><option value="">All periods</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select>
+ <button onclick="document.getElementById('wallOv').classList.remove('show')" style="margin-left:auto">✕ Close</button></h2><div id="pwall" class="pwall"></div></div>
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var PW='galileo2026',ROWS=[],PHOTOS={},T=window.TASTE,A=window.TASTE_ART,MARKCOL=true,CFG=null,EDIT=[];
+function $(i){return document.getElementById(i);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function key(e){return window.GAL04&&GAL04.key?GAL04.key(e):String(e||'').trim().toLowerCase().split('@')[0];}
+function band(pct){return window.GAL04&&GAL04.band?GAL04.band(pct):'';}
+function H(x){var h={apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY};if(x)for(var k in x)h[k]=x[k];return h;}
+function unlock(){if($('pw').value===PW){try{sessionStorage.setItem('taste_pw','1');}catch(e){}$('gate').style.display='none';start();}else $('gateErr').textContent='Not the right password.';}
+function start(){loadCfg(function(){drawCfg();load();});pre();}
+function candies(){var L=(CFG&&CFG.list&&CFG.list.length)?CFG.list:T.CANDY;return L.filter(function(c){return c&&c.id&&c.name&&!c.off;});}
+function cmap(){var m={};candies().forEach(function(c){m[c.id]=c;});return m;}
+function off(m,k,a){return window.GALMARK?GALMARK.off(m,k,a):false;}
+function scoreOf(r){return T.score(r.payload||{},r.marks||{},candies(),off);}
+
+/* ---------------- candies (gal_settings taste_candies) ---------------- */
+function loadCfg(cb){fetch(SUPA_URL+'/rest/v1/gal_settings?key=eq.'+T.SETTINGS_KEY+'&select=value',{headers:H()}).then(function(r){return r.ok?r.json():[];})
+ .then(function(rows){var v=rows&&rows[0]&&rows[0].value;if(typeof v==='string'){try{v=JSON.parse(v);}catch(e){v=null;}}CFG=v&&v.list?v:null;}).catch(function(){})
+ .then(function(){EDIT=JSON.parse(JSON.stringify((CFG&&CFG.list&&CFG.list.length)?CFG.list:T.CANDY));if(cb)cb();});}
+function cpic(c){if(c.img)return '<img src="'+esc(c.img)+'" alt="">';return A['c_'+c.id]?A['c_'+c.id]():A.shiny();}
+function drawCfg(){$('cgrid').innerHTML=EDIT.map(function(c,i){return '<div class="cc'+(c.off?' off':'')+'"><div class="cp">'+cpic(c)+'</div><div class="cb">'+
+  '<input type="text" value="'+esc(c.name)+'" maxlength="40" oninput="EDIT['+i+'].name=this.value">'+
+  '<label><input type="checkbox"'+(c.pl?' checked':'')+' onchange="EDIT['+i+'].pl=this.checked"> more than one</label>'+
+  '<label><input type="checkbox"'+(c.off?'':' checked')+' onchange="EDIT['+i+'].off=!this.checked;drawCfg()"> use it</label><br>'+
+  '<label class="up">📷 '+(c.img?'new photo':'photo')+'<input type="file" accept="image/*" onchange="cphoto('+i+',this)"></label>'+
+  (c.img?' <button class="ghost" style="font-size:.8rem;padding:3px 8px" onclick="EDIT['+i+'].img=\'\';drawCfg()">drawing</button>':'')+
+  (/^x/.test(c.id)?' <button class="ghost" style="font-size:.8rem;padding:3px 8px" onclick="EDIT.splice('+i+',1);drawCfg()">remove</button>':'')+'</div></div>';}).join('');}
+function cphoto(i,inp){var f=inp.files&&inp.files[0];if(!f)return;var rd=new FileReader();rd.onload=function(){var im=new Image();im.onload=function(){var M=420,s=Math.min(1,M/Math.max(im.width,im.height)),cv=document.createElement('canvas');
+ cv.width=Math.round(im.width*s);cv.height=Math.round(im.height*s);cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);EDIT[i].img=cv.toDataURL('image/jpeg',.72);drawCfg();$('cfgMsg').textContent='Photo in. Press 💾 Save candies.';};im.src=rd.result;};rd.readAsDataURL(f);}
+function addCandy(){var n=1;while(EDIT.some(function(c){return c.id==='x'+n;}))n++;EDIT.push({id:'x'+n,name:'new candy',pl:false});drawCfg();}
+function saveCfg(){var list=EDIT.filter(function(c){return String(c.name||'').trim();}).map(function(c){return {id:c.id,name:String(c.name).trim(),pl:!!c.pl,img:c.img||'',off:!!c.off};});
+ $('cfgMsg').textContent='Saving…';
+ fetch(SUPA_URL+'/rest/v1/gal_settings?on_conflict=key',{method:'POST',headers:H({'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify([{key:T.SETTINGS_KEY,value:{list:list,at:new Date().toISOString()}}])})
+ .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);CFG={list:list};$('cfgMsg').textContent='✓ Saved. Students see it next time they open the page.';draw();}).catch(function(e){$('cfgMsg').textContent='Not saved: '+e.message;});}
+function resetCfg(){if(!confirm('Go back to the 8 drawn candies? Your names and photos will be cleared when you press Save.'))return;EDIT=JSON.parse(JSON.stringify(T.CANDY));drawCfg();$('cfgMsg').textContent='Press 💾 Save candies to keep this.';}
+
+/* ---------------- students ---------------- */
+function load(){var sel='email,name,period,score,max_score,turned_in,payload,updated_at'+(MARKCOL?',marks':'');
+ fetch(SUPA_URL+'/rest/v1/eld103_donow?unit=eq.'+T.UNIT+'&select='+sel+'&order=updated_at.desc',{headers:H()})
+ .then(function(r){if(!r.ok&&MARKCOL){MARKCOL=false;throw 'retry';}return r.json();}).then(function(rows){
+  var by={};(rows||[]).forEach(function(r){var k=key(r.email);if(!by[k]||(r.score||0)>(by[k].score||0))by[k]=r;});
+  ROWS=Object.keys(by).map(function(k){return by[k];});ROWS.sort(function(a,b){return String(a.period).localeCompare(String(b.period))||String(a.name).localeCompare(String(b.name));});draw();
+ }).catch(function(e){if(e==='retry'){$('sum').textContent='⚠ The marks column is missing on eld103_donow, so ✓/✗ can’t save.';load();return;}$('tb').innerHTML='<tr><td colspan="12">Could not load.</td></tr>';});
+ fetch(SUPA_URL+'/rest/v1/eld103_donow?unit=eq.'+T.PHOTO_UNIT+'&select=email,period,payload,updated_at&order=updated_at.desc',{headers:H()}).then(function(r){return r.ok?r.json():[];})
+ .then(function(rows){PHOTOS={};(rows||[]).forEach(function(r){var k=key(r.email);if(!PHOTOS[k])PHOTOS[k]=r;});draw();}).catch(function(){});}
+function items(R,n){R=R||{};var t=0,s=0,d=0;for(var i=0;i<n;i++){var x=R[i];if(!x)continue;if(x.done)d++;t+=x.tries||0;if(x.shown)s++;}
+ return d+'/'+n+(t?' <span class="miss">'+t+' miss'+(t>1?'es':'')+'</span>':'')+(s?' <span class="shown">'+s+' shown</span>':'');}
+function written(r){var P=r.payload||{},s=scoreOf(r),out=[];var st=String(P.sent||'').trim();if(st)out.push({key:'w.sent',a:st});
+ var pt=T.parText(P.par);if(P.par&&P.par.lvl&&pt&&pt.replace(/___/g,'').trim())out.push({key:'w.par',a:pt});if(s.fav)out.push({key:'fav',a:s.fav});if(P.food&&P.food.text)out.push({key:'food',a:P.food.text});return out;}
+function pens(r){return window.GALMARK?GALMARK.unmarked(r.marks||{},written(r)):0;}
+function ctl(r,k,a){return a&&window.GALMARK&&MARKCOL?GALMARK.controls(r.marks||{},k,a):'';}
+var LVLN={frame:'fill in the blanks',bank:'word bank',own:'on my own'};
+function writeCell(r){var P=r.payload||{},st=String(P.sent||'').trim(),pt=T.parText(P.par),p=pens(r);
+ return (p?'<span class="pen">✎ '+p+'</span>':'')+'<div class="cl"><span class="muted">Sentence</span><b>'+(st?esc(st):'<span class="muted">—</span>')+'</b>'+ctl(r,'w.sent',st)+'</div>'+
+  '<div class="cl"><span class="muted">Paragraph'+(P.par&&P.par.lvl?' · '+LVLN[P.par.lvl]:'')+' · '+T.words(pt.replace(/___/g,'')).length+' words</span><b>'+(P.par&&P.par.lvl&&pt?esc(pt):'<span class="muted">—</span>')+'</b>'+(P.par&&P.par.lvl?ctl(r,'w.par',pt):'')+'</div>';}
+function favCell(r){var P=r.payload||{},s=scoreOf(r),y=P.say||{};
+ return s.fav?'<div class="cl"><b>'+esc(s.fav)+'</b>'+ctl(r,'fav',s.fav)+'</div>'+(y.done?(y.self?'✋ said it':'🎤 '+(y.pct!=null?y.pct+'%':''))+(y.heard?'<br><span class="muted" style="font-size:.8rem">“'+esc(y.heard.slice(0,90))+'”</span>':''):(y.tries?'<span class="miss">'+y.tries+' tries</span>':'<span class="muted">not said yet</span>')):'<span class="muted">—</span>';}
+function labCell(r){var P=r.payload||{},s=scoreOf(r),m=cmap(),out=[];Object.keys(P.lab||{}).forEach(function(id){var x=P.lab[id],c=m[id];if(!c)return;var w=[].concat(x.taste||[],x.feel||[],x.look||[],x.smell||[]);if(!w.length&&!x.stars)return;
+  out.push('<b>'+esc(c.name)+'</b>'+(x.stars?' '+'★'.repeat(x.stars):'')+'<br><span class="op">'+esc(w.join(', '))+'</span>');});
+ return '<b>'+s.lab+'</b>/'+s.need+'<br>'+(out.length?'<span style="font-size:.82rem">'+out.join('<br>')+'</span>':'');}
+function foodCell(r){var P=r.payload||{},f=P.food||{},ph=PHOTOS[key(r.email)],img=ph&&ph.payload&&ph.payload.img;
+ if(!img&&!f.text)return '<span class="muted">—</span>';
+ return (img?'<img class="thumb" src="'+esc(img)+'" alt="">':'')+(f.name?'<b>'+esc(f.name)+'</b><br>':'')+(f.text?esc(f.text)+ctl(r,'food',f.text):'')+(f.posted?'<br>📌 on the wall':'');}
+function draw(){if(!ROWS)return;var p=$('per').value,only=$('onlyPen').checked,list=ROWS.filter(function(r){return (!p||String(r.period)===p)&&(!only||pens(r)>0);});
+ var done=list.filter(function(r){var s=scoreOf(r);return s.score>=s.max;}).length;
+ if(MARKCOL)$('sum').textContent=list.length+' students · '+done+' finished';
+ $('tb').innerHTML=list.length?list.map(function(r){var P=r.payload||{},R=P.R||{},L=P.look||{},s=scoreOf(r),pct=s.max?Math.round(100*s.score/s.max):0;
+  return '<tr data-email="'+esc(r.email)+'"><td><b>'+esc(r.name)+'</b><br><span class="muted" style="font-size:.8rem">'+esc(key(r.email))+'</span></td><td class="n">'+esc(r.period)+'</td>'+
+   '<td class="n">'+s.score+'/'+s.max+'</td><td class="n">'+band(pct)+'</td>'+
+   '<td>'+(L.see?'I see <b>'+esc(L.see)+'</b>':'<span class="muted">—</span>')+'<br>'+(L.want?'wants <span class="op">'+esc(L.want)+'</span>':'')+'</td>'+
+   '<td>Listen '+items(R.w,T.LISTEN_N)+'<br>Which one '+items(R.p,T.PAIRS.length)+'<br>Kind of word '+items(R.s,T.SORT.length)+'<br>Grammar '+items(R.g,T.GRAM.length)+'</td>'+
+   '<td>'+labCell(r)+'</td><td class="wcell">'+writeCell(r)+'</td><td class="wcell">'+favCell(r)+'</td><td>'+foodCell(r)+'</td>'+
+   '<td class="muted" style="font-size:.8rem">'+esc(new Date(r.updated_at).toLocaleString())+(P.lion?'<br>🦁 found the lion':'')+'</td>'+
+   '<td><a href="./?view=teacher&email='+encodeURIComponent(r.email)+'" target="_blank">👀 view</a></td></tr>';}).join(''):'<tr><td colspan="12">No work yet.</td></tr>';
+ drawFavs(list);}
+function drawFavs(list){var m=cmap(),st={},fav={},wd={};list.forEach(function(r){var P=r.payload||{};Object.keys(P.lab||{}).forEach(function(id){var x=P.lab[id];if(!m[id])return;
+  if(x.stars){st[id]=st[id]||[];st[id].push(x.stars);}wd[id]=wd[id]||{};[].concat(x.taste||[],x.feel||[],x.look||[],x.smell||[]).forEach(function(w){wd[id][w]=(wd[id][w]||0)+1;});});
+  var f=(P.fav||{}).c;if(f)fav[f]=(fav[f]||0)+1;});
+ var ids=Object.keys(m).filter(function(id){return st[id]||fav[id]||wd[id];});
+ ids.sort(function(a,b){return (fav[b]||0)-(fav[a]||0)||avg(st[b])-avg(st[a]);});
+ $('favs').innerHTML=ids.length?ids.map(function(id){var top=Object.keys(wd[id]||{}).sort(function(a,b){return wd[id][b]-wd[id][a];}).slice(0,3);
+  return '<div class="fv"><b>'+esc(m[id].name)+'</b> '+(fav[id]?'❤ '+fav[id]+' favorite':'')+(st[id]?' · ★ '+avg(st[id]).toFixed(1):'')+(top.length?'<br><span class="muted">'+esc(top.join(', '))+'</span>':'')+'</div>';}).join(''):'No candy described yet.';}
+function avg(a){if(!a||!a.length)return 0;return a.reduce(function(x,y){return x+y;},0)/a.length;}
+
+/* ✓ / ✗ / note: marks.js saves the mark; then the row's score is recounted (a ✗ answer does not count) and the gradebook row follows */
+GALMARK.bind(document.body,function(k,c){var tr=c.closest('tr'),email=tr&&tr.getAttribute('data-email');var r=ROWS.filter(function(x){return x.email===email;})[0];if(!r)return null;
+ var it=written(r).filter(function(x){return x.key===k;})[0];if(!it)return null;
+ return {table:'eld103_donow',filter:'email=eq.'+encodeURIComponent(r.email)+'&unit=eq.'+T.UNIT,ans:it.a,after:function(m){r.marks=m;var s=scoreOf(r);r.score=s.score;
+  fetch(SUPA_URL+'/rest/v1/eld103_donow?email=eq.'+encodeURIComponent(r.email)+'&unit=eq.'+T.UNIT,{method:'PATCH',headers:H({'Content-Type':'application/json',Prefer:'return=minimal'}),body:JSON.stringify({score:s.score})}).catch(function(){});
+  GALMARK.setScore(r.email,'taste',s.score,s.max).catch(function(){});setTimeout(draw,50);}};});
+
+/* ---------------- class wall for the projector ---------------- */
+function openWall(){$('wallPer').value=$('per').value;$('wallOv').classList.add('show');drawWall();}
+function drawWall(){var p=$('wallPer').value,list=Object.keys(PHOTOS).map(function(k){return PHOTOS[k];}).filter(function(r){var P=r.payload||{};return P.img&&P.posted&&(!p||String(r.period)===p);});
+ $('pwall').innerHTML=list.length?list.map(function(r){var P=r.payload,ws=[];Object.keys(P.words||{}).forEach(function(k){ws=ws.concat(P.words[k]||[]);});
+  return '<div class="pp"><img src="'+esc(P.img)+'" alt=""><div class="t"><div class="nm">'+esc(P.first||'')+' · '+esc(P.name||'')+'</div>'+(ws.length?'<div class="w">'+esc(ws.join(' · '))+'</div>':'')+'<div>'+esc(P.text||'')+'</div></div></div>';}).join(''):
+  '<p style="color:#fff;font-size:1.3rem">No food photos posted'+(p?' in period '+p:'')+' yet.</p>';}
+
+/* 🌐 Pre-translate: every line of the page, saved where the student page looks first (song_tr slug 'taste') */
+function pre(){if(!window.GAL||!GAL.pretr)return;
+ GAL.pretr({host:'#pt',title:'Pre-translate the Taste Test',
+  items:[{key:'taste',title:'Taste Test · every word, sentence and direction',lines:function(){return T.lines().map(function(s){return {src:s,slug:'taste',mode:s.split(/\s+/).length<=3?'word':'sentence'};});}}],
+  langs:[['Spanish','Spanish'],['Chinese (Simplified)','Mandarin'],['Cantonese','Cantonese'],['Arabic','Arabic'],['Vietnamese','Vietnamese'],['Thai','Thai'],['Nepali','Nepali'],['Russian','Russian'],
+   ['Darija','Darija'],['Urdu','Urdu'],['Tagalog','Tagalog'],['French','French'],['Korean','Korean'],['Hindi','Hindi'],['Somali','Somali']],
+  ticked:[]});}
+try{if(sessionStorage.getItem('taste_pw')){$('gate').style.display='none';loadCfg(function(){drawCfg();load();});}}catch(e){}
+</script>
+<script src="/readings/pretr.js"></script>
+<script>try{if(sessionStorage.getItem('taste_pw'))pre();}catch(e){}</script>
+<script src="/readings/grade04.js" data-slugs="taste"></script>
+</body>
+</html>
