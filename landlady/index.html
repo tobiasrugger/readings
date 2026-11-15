@@ -7007,5 +7007,37 @@ window.GAL_PRETR = function(){
   }
 })();
 </script>
+<script id="backpill-js">
+/* T-416 Back button = previous pill. A tapped chapter chip or After-you-read button adds #<name>
+   to the address (no reload); T-123's hashchange handler reopens it on Back. An empty hash reopens
+   the pill that was open on arrival. Back also closes the look-back panel (T-327/T-413). */
+(function(){
+  var first = null;
+  function onKey(){ var b = document.querySelector("#chapters .cbtn.on, .cbtn.on"); return b ? b.getAttribute("data-ch") : null; }
+  function closePanels(){
+    try{ if(document.body.classList.contains("lb-open") && window.GAL_LOOKBACK && GAL_LOOKBACK.close) GAL_LOOKBACK.close(); }catch(_){}
+    try{ if(window.hideTip) hideTip(); }catch(_){}
+  }
+  document.addEventListener("click", function(e){
+    if(!e.isTrusted) return;
+    var b = e.target.closest && e.target.closest(".cbtn[data-ch], .actbtn[data-act]"); if(!b) return;
+    var key = b.getAttribute("data-ch") || b.getAttribute("data-act");
+    setTimeout(function(){
+      if(!b.classList.contains("on")) return; /* a locked chip opened nothing */
+      if(location.hash.replace("#","").toLowerCase() === key) return;
+      try{ history.pushState({pill:key}, "", location.pathname + location.search + "#" + key); }catch(_){}
+    }, 0);
+  }, false);
+  window.addEventListener("load", function(){ setTimeout(function(){ first = onKey(); }, 500); });
+  window.addEventListener("hashchange", closePanels);
+  window.addEventListener("popstate", function(){
+    closePanels();
+    if(location.hash) return;
+    var b = first && document.querySelector('.cbtn[data-ch="' + first + '"]');
+    if(b){ b.click(); window.scrollTo(0, 0); }
+  });
+})();
+</script>
+
 </body>
 </html>
