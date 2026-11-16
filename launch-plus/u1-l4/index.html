@@ -885,12 +885,12 @@ function checkW(i){
    Key = "<unit>.w<i>". A ✗ on an unchanged answer = that box's point off; a changed answer counts again.
    ELD 101 view: nothing red — a soft "Mr. Toby: try this again ✏️" box with the note (🔊 + tap words),
    a cast face, the box reopened, the green ➤ and a next-step line. */
-var MARKS=null,MARK_T=null,MARK_JUMPED=false;
+var MARKS=null,MARK_T=null,MARK_JUMPED=false,MARK_JS='',MARK_LATE=false;
 function markKey(i){return UNIT+'.w'+i;}
 function markOff(i,v){return !!(MARKS&&window.GALMARK&&GALMARK.off(MARKS,markKey(i),v));}
 function anySentBack(){if(!MARKS||!window.GALMARK)return false;for(var i=0;i<DATA.write.length;i++){if(markOff(i,ST.W['w'+i]||''))return true;}return false;}
 function loadMarks(){if(!window.GALMARK||!ST.email)return;
- GALMARK.fetch(TABLE,'unit=eq.'+encodeURIComponent(UNIT),ST.email).then(function(m){if(!m)return;MARKS=m;publishScore();paintMarks();
+ GALMARK.fetch(TABLE,'unit=eq.'+encodeURIComponent(UNIT),ST.email).then(function(m){if(!m)return;var js=JSON.stringify(m);if(js===MARK_JS)return;MARK_JS=js;MARKS=m;publishScore();var ae=document.activeElement;if(ae&&ae.tagName==='TEXTAREA'&&/^ta\d+$/.test(ae.id)){MARK_LATE=true;}else paintMarks();
   if(anySentBack()&&!MARK_JUMPED&&ST.act!==5){MARK_JUMPED=true;go(5);}});}
 function markDir(el){var lg=lang();if(!lg)return;Array.prototype.forEach.call(el.querySelectorAll('[data-en]'),function(n){n.setAttribute('translate','no');/* T-443 */if(n.querySelector('.gmtr'))return;
  var src=n.getAttribute('data-en');trFetch('dir',src,'',lg,function(t){if(!t||n.querySelector('.gmtr'))return;var s=document.createElement('span');s.className='gmtr';s.setAttribute('translate','no');s.textContent=t;n.appendChild(s);});});}
@@ -899,6 +899,12 @@ function paintMarks(){if(!window.GALMARK||!MARKS||!$('ta0'))return;
  GALMARK.paint101(items,MARKS,{say:function(t){speak(t);},tap:function(w,sent){var r=w.getBoundingClientRect();if(lang())showWord(w.getAttribute('data-w')||w.textContent,r.left+r.width/2,r.top,sent);},dir:markDir,who:'linh'});}
 function paintMarksSoon(){clearTimeout(MARK_T);MARK_T=setTimeout(paintMarks,350);}
 document.addEventListener('visibilitychange',function(){if(!document.hidden)loadMarks();});
+/* T-445: a ✗ or ✓ from Mr. Toby reaches a student who is already on the page — every 90 s while the tab
+   is showing, and when the window gets focus again. Nothing repaints while the student is typing in a
+   Write box; the new mark paints when they leave the box. */
+setInterval(function(){if(!document.hidden)loadMarks();},90000);
+window.addEventListener('focus',function(){loadMarks();});
+document.addEventListener('focusout',function(ev){if(MARK_LATE&&ev.target&&/^ta\d+$/.test(ev.target.id||'')){MARK_LATE=false;setTimeout(paintMarks,60);}});
 
 /* ===================== NAV ===================== */
 var PARTS=['Start','Read','Fix','Bigger','How many?','Write','Record','Done'];
@@ -938,16 +944,8 @@ function save(){
 }
 function load(){try{var k=localStorage.getItem(LAST_KEY);if(!k)return;var d=JSON.parse(localStorage.getItem(k));if(d)ST=Object.assign(ST,d);}catch(e){}}
 function clean(s){return String(s||'').trim().toLowerCase();}
-/* T-395: saveguard.js fills any column a save leaves out from the row it loaded (select=*), which would
-   send back a STALE copy of launch_plus.marks and undo Mr. Toby's newer mark. Until saveguard skips "marks"
-   itself, drop that column from its loaded copies before every save. */
-function scrubMarks(){try{var R=window.__SG&&window.__SG.rows;if(!R)return;Object.keys(R).forEach(function(k){if(k.indexOf(TABLE+'|')===0)(R[k]||[]).forEach(function(r){if(r)delete r.marks;});});}catch(e){}}
-var PRIMED={};
-/* make saveguard load this student's row NOW (its own GET), then strip marks from its copy, before the first save */
-function primeGuard(){var em=ST.email;if(!em||PRIMED[em])return PRIMED[em]||Promise.resolve();
- PRIMED[em]=Promise.race([fetch(SUPA_URL+'/rest/v1/'+TABLE+'?select=*&email=eq.'+encodeURIComponent(em),{headers:hdr()}),new Promise(function(r){setTimeout(r,15000);})]).then(function(){scrubMarks();}).catch(function(){scrubMarks();});
- return PRIMED[em];}
-function push(force){if(ST.email&&!PRIMED[ST.email]){primeGuard().then(function(){push(force);});return;}scrubMarks();
+/* T-445: the T-395 marks-scrubbing workaround is gone — saveguard.js never fills marks or tier (SKIPFILL, T-397). */
+function push(force){
  if(!ST.email)return;if(!SYNCED){syncFromServer();return;}if(progressOf(ST)<SERVER_P)return;if(!dirty&&!force)return;if(pushing)return;
  pushing=true;dot('busy');var mySeq=++pushSeq;
  setTimeout(function(){if(pushing&&mySeq===pushSeq){pushing=false;dirty=true;dot('err');}},15000);
