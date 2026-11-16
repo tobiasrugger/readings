@@ -16,3 +16,4 @@ Same guide_key across phases, so answers carry forward.
 - **phase-14-before-t407-popup-sound.html** — before T-407 (Nov 15): a 🔊 beside the word and beside its English meaning in the tap-a-word popup, and a 🔊 on every word in the side rail. Tapping 🔊 keeps the popup open. No content or data-qid changed.
 - **phase-15-before-t413-foreshadowing-lookback.html** — before T-413 (Nov 15): Foreshadowing gets "📖 Look back at the story", "Use this clue ➤" on signal marks in the panel, "Quote this ➤" for selected words, and green Find buttons under a1/a2 (filtered to ☀ or ✦); a3 placeholder now asks for the paragraph number. No data-qid changed; no score change.
 - phase-16-before-t416-back-button.html — before T-416 (Nov 15): browser Back button goes to the previous pill.
+- phase-17-before-t439-box-heights.html — before T-439 (Nov 16): answer boxes no longer squash when filled while hidden; no drag corner.
