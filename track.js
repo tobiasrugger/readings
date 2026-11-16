@@ -407,6 +407,25 @@
   }
   window.addEventListener('pagehide', function () { if (softTimer) { clearTimeout(softTimer); softAt = 0; softLog(); } });
 
+  /* ---------- T-440: read one save body (string, or a Blob's text) ---------- */
+  function scanBody(url, body) {
+    var data = null;
+    try { data = JSON.parse(body); } catch (e) {}
+    var rows = Array.isArray(data) ? data : (data ? [data] : []);
+    var tbl = (url.split('/rest/v1/')[1] || '').split('?')[0];
+    for (var i = 0; i < rows.length; i++) {
+      var row = rows[i];
+      if (!row || typeof row !== 'object') continue;
+      var em = row.email || row.student_email || row.user_email;
+      if (em) noteEmail(em, row.name || row.student_name || row.full_name);
+      if (em && (row.period != null || row.class_period != null)) fillPeriod(em, row.period != null ? row.period : row.class_period);   /* T-432 */
+      if (em && !INFRA.test(tbl)) softSchedule(em);
+      if (row.turned_in === true || row.turned_in === 'true') {
+        logAttempt(em || knownEmail, { table: tbl });
+      }
+    }
+  }
+
   /* ---------- the hook ---------- */
   var realFetch = window.fetch.bind(window);
   window.fetch = function (input, init) {
@@ -417,22 +436,12 @@
       if (url.indexOf('/rest/v1/') > -1 && method === 'POST' &&
           url.indexOf('activity_attempts') < 0 && url.indexOf('/students') < 0) {
         var body = init && init.body;
-        if (typeof body === 'string' && body.length < 400000) {
-          var data = null;
-          try { data = JSON.parse(body); } catch (e) {}
-          var rows = Array.isArray(data) ? data : (data ? [data] : []);
-          for (var i = 0; i < rows.length; i++) {
-            var row = rows[i];
-            if (!row || typeof row !== 'object') continue;
-            var em = row.email || row.student_email || row.user_email;
-            if (em) noteEmail(em, row.name || row.student_name || row.full_name);
-            if (em && (row.period != null || row.class_period != null)) fillPeriod(em, row.period != null ? row.period : row.class_period);   /* T-432 */
-            var tbl = (url.split('/rest/v1/')[1] || '').split('?')[0];
-            if (em && !INFRA.test(tbl)) softSchedule(em);
-            if (row.turned_in === true || row.turned_in === 'true') {
-              logAttempt(em || knownEmail, { table: (url.split('/rest/v1/')[1] || '').split('?')[0] });
-            }
-          }
+        if (typeof body === 'string' && body.length < 400000) scanBody(url, body);
+        /* T-440: some pages (reel-test, tyma-vocab, gratitude-letters, stand-by-me/characters)
+           send their save as a Blob. Read a COPY of its text; the page's own fetch still
+           gets the original Blob untouched. */
+        else if (typeof Blob !== 'undefined' && body instanceof Blob && body.size < 400000 && body.text) {
+          body.text().then(function (s) { try { scanBody(url, s); } catch (e) {} }).catch(function () {});
         }
       }
     } catch (e) { /* never break the page's own save */ }
