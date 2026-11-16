@@ -49,7 +49,7 @@
      and a lone I is read as "eye" (never "capital I"). */
   /* T-340: the ONE list the reel uses, applied here before any voice speaks, so it works even
      before std.js loads (std.js keeps the same entries for every other page). */
-  var SAY_AS = { 'Amira': 'Ameera', 'Mateo': 'Matayo', 'ELD': 'E. L. D.', 'hijab': 'hee-jahb', 'hijabs': 'hee-jahbs', 'Hijab': 'Hee-jahb' };
+  var SAY_AS = { 'Amira': 'Ameera', 'ELD': 'E. L. D.', 'hijab': 'hee-jahb', 'hijabs': 'hee-jahbs', 'Hijab': 'Hee-jahb' };
   function spokenWord(tok) {
     var t = String(tok).replace(/_{2,}/g, 'blank').replace(/[\u2014\u2013]/g, '');   /* dashes become a pause (T-340), not a sound */
     for (var k in SAY_AS) t = t.replace(new RegExp('\\b' + k + '\\b', 'g'), SAY_AS[k]);

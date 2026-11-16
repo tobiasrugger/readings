@@ -1,8 +1,8 @@
 /* spell.js — T-273 (Nov 2026). Shared spelling helper. Load with
      <script src="/readings/spell/spell.js"></script>
    Four parts, each usable on its own:
-   1. SAY-AS   The voice gets "Matayo" for Mateo (and "Ameera" for Amira when std.js isn't on the
-               page), and spelled-out letters (C-h-r-i-s, J - U - N) as letter NAMES with commas, so
+   1. SAY-AS   The voice gets "Ameera" for Amira when std.js isn't on the page (Mateo is said
+               as written — T-450, Toby: natural sounds best), and spelled-out letters (C-h-r-i-s, J - U - N) as letter NAMES with commas, so
                they don't run together. Captions are untouched; onboundary charIndex is mapped back.
    2. LETTERS  Spell.letters('L-I-N-H', btn) says one letter per beat. Each letter STARTS on a fixed
                beat (1.3 s, 1.8 s slow) measured from the previous start, not after onend — short
@@ -27,13 +27,13 @@
     k:'kay', l:'ell', m:'em', n:'en', o:'oh', p:'pee', q:'cue', r:'ar', s:'ess', t:'tee', u:'you',
     v:'vee', w:'double you', x:'ex', y:'why', z:'zee' };
   S.letterName = function (ch) { return NAMES[String(ch).toLowerCase()] || ch; };
-  var SAY_AS = { 'Mateo': 'Matayo' };
+  var SAY_AS = {};   /* T-450: no Mateo respelling — the voice says Mateo naturally */
   S.SAY_AS = SAY_AS;
   var LETTERS_RE = /\b([A-Za-z])((?:\s*-\s*[A-Za-z])+)\b/g;
   function swap(text, stdOn) {
     var names = Object.keys(SAY_AS);
     if (!stdOn) names = names.concat(['Amira']);
-    var re = new RegExp('\\b(' + names.join('|') + ')\\b|' + LETTERS_RE.source, 'g');
+    var re = new RegExp((names.length ? '\\b(' + names.join('|') + ')\\b|' : '(?!)()|') + LETTERS_RE.source, 'g');   /* T-450: empty list must not match empty strings */
     var out = '', map = [], last = 0, m, i;
     while ((m = re.exec(text))) {
       for (i = last; i < m.index; i++) map.push(i);

@@ -70,8 +70,8 @@
      longer, so a page's onboundary handler gets charIndex mapped back to ITS text, and word
      highlights don't drift after the name. */
   (function () {
-    /* T-287: Mateo too ("Matayo", same as spell/spell.js from T-273; Toby's pick, Nov 5). */
-    var SAY_AS = { 'Amira': 'Ameera', 'Mateo': 'Matayo', 'ELD': 'E. L. D.', 'hijab': 'hee-jahb', 'hijabs': 'hee-jahbs', 'Hijab': 'Hee-jahb' };   /* T-340: same list as reel-v2/engine.js */
+    /* T-450 (Nov 16): no Mateo respelling — Toby: the voice says "Mateo" best as written. */
+    var SAY_AS = { 'Amira': 'Ameera', 'ELD': 'E. L. D.', 'hijab': 'hee-jahb', 'hijabs': 'hee-jahbs', 'Hijab': 'Hee-jahb' };   /* T-340: same list as reel-v2/engine.js */
     var ss = window.speechSynthesis; if (!ss || ss.__galSayAs) return; ss.__galSayAs = 1;
     var orig = ss.speak, RE = new RegExp('\\b(' + Object.keys(SAY_AS).join('|') + ')\\b', 'g');
     function swap(text) {
