@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>window.__T168=true; /* T-389: this page guards itself — loads the student row first, never saves before (story-page rule) */</script>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thank You, Ma’am</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+[hidden]{display:none!important}*{box-sizing:border-box}body{margin:0;font-family:Nunito,system-ui,sans-serif;background:#f6f1e7;color:#1f1a14;font-size:17px;line-height:1.55}
+button{font-family:inherit}.muted{color:#6b6255;font-size:14px}.grey{color:#888}
+#gate{position:fixed;inset:0;background:#2b2440;display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
+.gbox{background:#fff;border:3px solid #1f1a14;border-radius:16px;box-shadow:0 8px 0 #1f1a14;padding:22px;max-width:430px;width:100%}
+.gbox h1{margin:0 0 4px;font-size:24px}.gbox label{display:block;font-weight:700;margin:10px 0 4px;font-size:14px}
+.gbox input,.gbox select{width:100%;padding:10px;border:2px solid #1f1a14;border-radius:10px;font-size:16px;font-family:inherit;background:#fff;color:#1f1a14}
+#gstart{margin-top:14px;width:100%;padding:12px;background:#1f7a4d;color:#fff;border:0;border-radius:10px;font-size:18px;font-weight:800;cursor:pointer}#gerr{color:#b42318;font-weight:700;min-height:20px}
+header{position:sticky;top:0;z-index:20;background:#fffaf0;border-bottom:3px solid #1f1a14;padding:8px 12px}
+.top{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.top h1{font-size:19px;margin:0;flex:1;min-width:180px}
+.save{font-size:13px;padding:3px 10px;border-radius:20px;border:2px solid #1f1a14}.save.ok{background:#e0f2e8}.save.wait{background:#fff3c4}.save.bad{background:#fde2e0}
+.modes button{border:2px solid #1f1a14;background:#fff;padding:4px 10px;border-radius:8px;font-weight:700;cursor:pointer}.modes button.on{background:#1f1a14;color:#fff}
+#chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.chip{border:2px solid #1f1a14;background:#fff;border-radius:20px;padding:4px 12px;font-weight:700;cursor:pointer;font-size:14px}
+.chip.cur{background:#ffe9a8;box-shadow:0 3px 0 #1f1a14}.chip.full{background:#d8f0e0;border-color:#1f7a4d}.chip.locked{opacity:.55}.ccount{font-weight:600;color:#6b6255}
+#bar{height:10px;background:#e6dccb;border:2px solid #1f1a14;border-radius:8px;margin-top:8px;overflow:hidden}#bar i{display:block;height:100%;background:#1f7a4d;width:0}
+#barlab{font-size:12px;color:#6b6255}
+#next{margin-top:8px;background:#e0f2e8;border:2px solid #1f7a4d;border-radius:10px;padding:6px 10px;font-weight:800;color:#14532d}
+#next .trl{font-weight:600}
+main{max-width:860px;margin:0 auto;padding:14px}
+h2{font-size:24px;margin:8px 0 12px}
+.box,.item,.panel,.story{background:#fff;border:2px solid #1f1a14;border-radius:14px;box-shadow:0 4px 0 #1f1a14;padding:14px;margin:0 0 16px;overflow:hidden}
+.box.warn{background:#fff3c4}.box.lang{background:#eef4ff}.box.extra{background:#fff8e6}
+.clr{clear:both}.pic{float:right;width:200px;max-width:42%;margin:0 0 8px 14px}.pic svg,.panel svg{width:100%;height:auto;display:block;border:2px solid #1f1a14;border-radius:10px}
+.panel{padding:0}.panel svg{border:0;border-radius:12px}
+.ihead{display:flex;gap:6px;align-items:center;margin-bottom:6px;min-height:8px}
+.tag{font-size:11px;font-weight:800;letter-spacing:.04em;border:2px solid #1f1a14;border-radius:6px;padding:1px 6px;background:#fff3c4}
+.tag-infer{background:#e8defc}.tag-predict{background:#dff1ff}.tag-review{background:#e6f4e6}.tag-connect{background:#ffe1ec}.tag-craft{background:#ffe2c6}.tag-x{background:#fff;border-style:dashed}.tag-start{background:#ffd84d}
+.qtext{font-weight:700;margin-bottom:8px}
+body.mode-easy .qh,body.mode-hard .qe{display:none}body.mode-easy .hard-only{display:none}
+.opts{display:flex;flex-direction:column;gap:6px}.opt{text-align:left;border:2px solid #1f1a14;background:#fffdf7;border-radius:10px;padding:8px 12px;font-size:16px;cursor:pointer}
+.opt:hover{background:#fff3c4}.opt.wrong{background:#fde2e0;border-color:#b42318;color:#7a1a12}.opt.right{background:#d8f0e0;border-color:#1f7a4d}.opt.showme{background:#fff3c4;border:3px dashed #1f7a4d;animation:pulse 1.4s infinite}
+.x{color:#b42318;font-weight:800}.ok{color:#1f7a4d;font-weight:800}
+.compact .opts{gap:4px}.compact .opt{font-size:14px;padding:5px 8px}.compact .fb .why{display:none}
+.fb .why,.fb .good,.fb .hint{margin-top:8px;padding:8px 10px;border-radius:8px;font-size:15px}.why{background:#eef7f0}.good{background:#d8f0e0;font-weight:700}.hint{background:#fff3c4}
+textarea{width:100%;min-height:70px;border:2px solid #1f1a14;border-radius:10px;padding:10px;font-family:inherit;font-size:16px;resize:none}
+.wc{font-size:12px;color:#6b6255;text-align:right}.starter summary{cursor:pointer;color:#6b4a00;font-weight:700;font-size:14px}.starter div{padding:6px 10px;background:#fff8e1;border-radius:8px;margin:4px 0 8px}
+.spk{border:0;background:none;cursor:pointer;font-size:16px;padding:0 2px;vertical-align:baseline}
+.trl{font-size:15px;color:#3b4a6b;background:#eef4ff;border-left:4px solid #6b8fd6;padding:3px 8px;margin:4px 0;border-radius:4px;font-weight:600}
+.words{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-bottom:16px}
+.wcard{background:#fff;border:2px solid #1f1a14;border-radius:14px;box-shadow:0 4px 0 #1f1a14;padding:10px}
+.wpic svg{width:100%;height:auto;border:2px solid #1f1a14;border-radius:10px;display:block}.wword{font-size:22px;font-weight:800;margin-top:6px}.wdef{font-size:15px}.wtr{margin-top:4px;font-size:16px}.wsen{font-size:14px;color:#5a4a32;margin-top:4px;font-style:italic}
+.story{padding:10px 14px}.para{display:grid;grid-template-columns:34px 1fr 40px;gap:8px;align-items:start;border-radius:8px;padding:2px 0}
+.para p{margin:4px 0 10px;font-size:18px;line-height:1.7}.pnum{border:2px solid #1f1a14;background:#fff;border-radius:8px;font-weight:800;font-size:13px;cursor:pointer;margin-top:6px;height:28px}
+.hl-y p{background:#fff1a6}.hl-p p{background:#ffd5e5}.hl-b p{background:#d4e9ff}
+.sig{display:flex;flex-direction:column;gap:4px;margin-top:6px}.sg{border:2px solid #bbb;background:#fff;border-radius:8px;cursor:pointer;font-size:15px;opacity:.55}.sg.on{opacity:1;border-color:#1f1a14}.sg-t.on{background:#ffe0d6}.sg-k.on{background:#fff3b0}
+.key{display:flex;gap:16px;flex-wrap:wrap;font-weight:700}.key span{border:2px solid #1f1a14;border-radius:8px;padding:2px 8px;background:#fff}
+.secfoot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0 30px}.need{font-weight:700;color:#6b6255}
+.go{background:#1f7a4d;color:#fff;border:0;border-radius:12px;padding:12px 18px;font-size:17px;font-weight:800;cursor:pointer;text-decoration:none;display:inline-block}
+.nxa{flex:none;vertical-align:middle;margin-right:6px;animation:nx 1s ease-in-out infinite alternate}
+@keyframes nx{from{transform:translateX(-10px);opacity:.5}to{transform:translateX(5px);opacity:1}}
+@keyframes pulse{50%{box-shadow:0 0 0 4px #b8e6c8}}
+@media (prefers-reduced-motion:reduce){.nxa,.opt.showme{animation:none}}
+.ctl{background:#fffbe0}.ctlrow{display:flex;flex-direction:column;gap:6px;margin-top:8px}.ctlt{font-weight:700;cursor:pointer}.ctlt input{width:20px;height:20px;vertical-align:middle}
+.sortcard{margin:8px 0}.card1{font-size:19px;font-weight:800;background:#fffdf7;border:2px dashed #1f1a14;border-radius:12px;padding:12px}
+.bins{display:flex;gap:8px;flex-wrap:wrap}.bin{flex:1;min-width:110px;border:2px solid #1f1a14;border-radius:12px;padding:10px;background:#fff;font-weight:800;cursor:pointer;font-size:16px}
+.bin.wrong{background:#fde2e0;border-color:#b42318}.bin.showme{background:#fff3c4;border:3px dashed #1f7a4d}
+.sorted{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.sbin{border:2px solid #1f1a14;border-radius:10px;padding:6px;background:#faf6ec;font-size:13px}.mini{background:#fff;border:1px solid #999;border-radius:6px;padding:2px 6px;margin-top:4px}
+.gridwrap{overflow-x:auto}table.g{border-collapse:collapse;width:100%;min-width:560px}table.g th,table.g td{border:2px solid #1f1a14;padding:6px;vertical-align:top}table.g th{background:#faf3e3;font-size:15px;text-align:left}
+table.g .item{border:0;box-shadow:none;padding:0;margin:0}
+#flash{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#1f1a14;color:#fff;padding:10px 16px;border-radius:12px;font-weight:700;z-index:60}
+#srv{background:#b42318;color:#fff;font-weight:800;padding:8px;text-align:center}#tvbar{background:#3a1a5c;color:#fff;padding:6px;text-align:center;font-weight:700}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px}.pair figure{margin:0}.pair svg{width:100%;height:auto;border:2px solid #1f1a14;border-radius:10px;display:block}.pair figcaption{font-weight:800;font-size:14px;text-align:center}.poem{font-size:19px;line-height:1.8;padding-left:12px;border-left:4px solid #6b5435}
+@media (max-width:700px){header{position:static}.pic{float:none;width:100%;max-width:100%;margin:0 0 8px}.para{grid-template-columns:30px 1fr 34px}.sorted{grid-template-columns:1fr}}
+</style>
+</head>
+<body class="mode-easy">
+<div id="gate"><div class="gbox">
+ <h1>👜 Thank You, Ma’am</h1><div class="muted dr">Sign in to start. Your work saves by itself.</div>
+ <label for="first">First name</label><input id="first" autocomplete="given-name">
+ <label for="last">Last name</label><input id="last" autocomplete="family-name">
+ <label for="email">School email</label><input id="email" type="email" autocomplete="email" placeholder="you@s.sfusd.edu">
+ <label for="period">Period</label><select id="period"><option value="">Choose…</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select>
+ <label for="lang">Your language / Tu idioma / 你的语言 / لغتك</label>
+ <select id="lang"><option value="">Choose…</option><option value="zh-CN">中文 (普通话) Mandarin</option><option value="yue">廣東話 Cantonese</option><option value="es">Español</option><option value="ar">العربية Arabic</option><option value="vi">Tiếng Việt</option><option value="th">ไทย Thai</option><option value="ne">नेपाली Nepali</option><option value="ary">الدارجة Darija</option><option value="ru">Русский</option><option value="ur">اردو Urdu</option><option value="tl">Tagalog</option><option value="fr">Français</option><option value="ko">한국어</option><option value="hi">हिन्दी Hindi</option><option value="so">Soomaali</option></select>
+ <div id="gerr"></div><button id="gstart">Start →</button>
+</div></div>
+<div id="app" hidden>
+<div id="srv" hidden>⚠ Can’t reach the server — your work is NOT saving. Trying again…</div>
+<div id="tvbar" hidden>👀 Teacher view — nothing you do here is saved.</div>
+<header><div class="top"><h1>👜 Thank You, Ma’am</h1><span class="muted" id="who"></span><span class="modes"><button data-mode="easy" class="on">Easier</button> <button data-mode="hard">Harder</button></span><span id="save" class="save wait">…</span></div>
+<div id="chips"></div><div id="bar"><i></i></div><div id="barlab"></div>
+<div id="next"><span class="ntxt dr"></span></div></header>
+<main id="sections"></main>
+</div>
+<div id="flash" hidden></div>
+<script>/* T-389 drawings for Thank You, Ma'am + the compare page. Flat layered SVG, muted palette. */
+var ART = (function(){
+var SK_D='#6b4226', SK_D2='#5a3620', SK_L='#f1c9a5', SK_L2='#e2b28c', SK_M='#a8714a';
+function svg(w,h,body,label){return '<svg viewBox="0 0 '+w+' '+h+'" role="img" aria-label="'+(label||'')+'" xmlns="http://www.w3.org/2000/svg">'+body+'</svg>';}
+function street(){ /* night city street, 1950s */
+ var s='<rect width="400" height="220" fill="#1d2440"/><rect y="150" width="400" height="70" fill="#3a3a44"/><rect y="146" width="400" height="8" fill="#55555f"/>';
+ s+='<g fill="#2b3155">';for(var i=0;i<6;i++){s+='<rect x="'+(i*70-10)+'" y="'+(40+(i%3)*14)+'" width="62" height="'+(110-(i%3)*14)+'"/>';}s+='</g>';
+ var win='';for(var b=0;b<6;b++)for(var r=0;r<4;r++)for(var c=0;c<3;c++){var lit=((b*7+r*3+c)%4===0);win+='<rect x="'+(b*70-2+c*18)+'" y="'+(60+(b%3)*14+r*20)+'" width="10" height="12" fill="'+(lit?'#f3d27a':'#3b4270')+'"/>';}
+ s+=win+'<circle cx="345" cy="30" r="14" fill="#f7efd0"/><circle cx="351" cy="26" r="12" fill="#1d2440"/>';
+ s+='<rect x="300" y="70" width="5" height="82" fill="#222"/><path d="M290 70h25l-4 10h-17z" fill="#333"/><ellipse cx="302" cy="84" rx="38" ry="10" fill="#f3d27a" opacity=".18"/>';
+ s+='<g opacity=".35" stroke="#888" stroke-width="1">';for(var k=0;k<20;k++)s+='<line x1="'+(k*20)+'" y1="154" x2="'+(k*20+8)+'" y2="220"/>';s+='</g>';
+ return s;}
+function woman(x,y,sc,opt){opt=opt||{};var s='<g transform="translate('+x+' '+y+') scale('+sc+')">';
+ s+='<path d="M-30 40 Q-34 120 -26 150 L26 150 Q34 120 30 40 Q0 28 -30 40Z" fill="'+(opt.coat||'#5b3a5e')+'"/>';
+ s+='<path d="M-30 40 Q-40 60 -42 92" stroke="'+(opt.coat||'#5b3a5e')+'" stroke-width="14" fill="none" stroke-linecap="round"/>';
+ s+='<rect x="-14" y="150" width="10" height="22" fill="'+SK_D+'"/><rect x="5" y="150" width="10" height="22" fill="'+SK_D+'"/><path d="M-18 172h16v6h-18zM3 172h16l2 6h-18z" fill="#2a1a12"/>';
+ s+='<circle cx="0" cy="14" r="20" fill="'+SK_D+'"/><path d="M-20 10 Q-18 -14 0 -12 Q20 -14 21 10 Q12 -2 0 0 Q-10 -2 -20 10Z" fill="#1c120c"/>';
+ s+='<circle cx="-7" cy="14" r="2.2" fill="#140c08"/><circle cx="7" cy="14" r="2.2" fill="#140c08"/>';
+ s+=(opt.stern?'<path d="M-12 7l8 3M12 7l-8 3" stroke="#140c08" stroke-width="2"/><path d="M-6 25h12" stroke="#3a1f12" stroke-width="2.2"/>':'<path d="M-7 23q7 6 14 0" stroke="#3a1f12" stroke-width="2.2" fill="none"/>');
+ s+='<path d="M-8 34 h16 v6 h-16z" fill="#efe6d0"/><circle cx="0" cy="58" r="2" fill="#d9c27a"/><circle cx="0" cy="76" r="2" fill="#d9c27a"/>';
+ if(opt.purse!==false){s+='<path d="M28 70 q14 -22 28 0" stroke="#3a2516" stroke-width="4" fill="none"/><rect x="22" y="70" width="40" height="34" rx="6" fill="#7b4a2a"/><rect x="22" y="70" width="40" height="8" fill="#5e3820"/><circle cx="42" cy="82" r="3" fill="#d9c27a"/><path d="M26 98h32" stroke="#5e3820" stroke-width="2" stroke-dasharray="3 3"/>';}
+ return s+'</g>';}
+function boy(x,y,sc,opt){opt=opt||{};var skin=opt.skin||SK_M;var s='<g transform="translate('+x+' '+y+') scale('+sc+')'+(opt.rot?' rotate('+opt.rot+')':'')+'">';
+ s+='<rect x="-11" y="62" width="9" height="40" fill="'+(opt.pants||'#35507a')+'"/><rect x="3" y="62" width="9" height="40" fill="'+(opt.pants||'#35507a')+'"/>';
+ s+='<path d="M-11 100h12v8h-15zM3 100h12l3 8h-15z" fill="'+(opt.shoes||'#e8e8e8')+'"/><path d="M-13 106h15M3 106h15" stroke="#999" stroke-width="1.5"/>';
+ s+='<path d="M-16 20 Q-18 50 -14 66 L14 66 Q18 50 16 20 Q0 12 -16 20Z" fill="'+(opt.shirt||'#c9b38a')+'"/>';
+ s+='<path d="M-16 24 L-26 '+(opt.armsUp?'-6':'58')+'M16 24 L26 '+(opt.armsUp?'-6':'58')+'" stroke="'+(opt.shirt||'#c9b38a')+'" stroke-width="8" stroke-linecap="round"/>';
+ s+='<circle cx="0" cy="2" r="14" fill="'+skin+'"/><path d="M-14 -2 Q-12 -16 0 -15 Q13 -16 14 -2 Q6 -9 0 -8 Q-7 -9 -14 -2Z" fill="'+(opt.hair||'#1c120c')+'"/>';
+ s+='<circle cx="-5" cy="2" r="1.8" fill="#140c08"/><circle cx="5" cy="2" r="1.8" fill="#140c08"/>';
+ s+=(opt.face==='shock'?'<ellipse cx="0" cy="9" rx="3" ry="4" fill="#3a1f12"/>':opt.face==='sad'?'<path d="M-4 11q4 -4 8 0" stroke="#3a1f12" stroke-width="1.8" fill="none"/>':'<path d="M-4 9q4 3 8 0" stroke="#3a1f12" stroke-width="1.8" fill="none"/>');
+ return s+'</g>';}
+var P={};
+P.part1=svg(400,220,street()+woman(150,92,0.72,{stern:true})+boy(250,150,0.62,{rot:-70,face:'shock',armsUp:true})+'<path d="M196 150 q8 -20 20 -6" stroke="#fff" stroke-width="2" fill="none" opacity=".6"/><path d="M190 140 l-6 -6 M200 136 l0 -8 M210 140 l6 -6" stroke="#f3d27a" stroke-width="2"/>','A large woman on a dark street at night, a boy falling backwards beside her');
+P.part2=svg(400,220,'<rect width="400" height="220" fill="#e9dcc0"/><rect y="168" width="400" height="52" fill="#a07850"/><g stroke="#8a6440" stroke-width="2">'+[0,1,2,3,4,5,6,7].map(function(i){return '<line x1="'+(i*55)+'" y1="168" x2="'+(i*55-20)+'" y2="220"/>';}).join('')+'</g>'+
+ '<rect x="20" y="40" width="80" height="128" fill="#c8b48e" stroke="#6b5435" stroke-width="3"/><rect x="26" y="46" width="68" height="122" fill="#2c2418"/><circle cx="86" cy="108" r="3" fill="#d9c27a"/><text x="36" y="34" font-size="11" fill="#6b5435" font-family="Nunito">door: open</text>'+
+ '<rect x="250" y="96" width="120" height="72" fill="#f4f1ea" stroke="#777" stroke-width="2"/><rect x="262" y="100" width="96" height="30" fill="#cfd8dc" stroke="#777"/><path d="M310 78 v22 h12" stroke="#888" stroke-width="5" fill="none"/><rect x="306" y="74" width="10" height="8" fill="#aaa"/>'+
+ '<rect x="130" y="128" width="100" height="22" rx="6" fill="#7a5b8c"/><rect x="128" y="146" width="104" height="20" fill="#5e4470"/><rect x="132" y="166" width="6" height="10" fill="#3a2a18"/><rect x="222" y="166" width="6" height="10" fill="#3a2a18"/>'+
+ '<rect x="168" y="114" width="32" height="20" rx="4" fill="#7b4a2a"/><path d="M174 114 q10 -12 20 0" stroke="#3a2516" stroke-width="3" fill="none"/>'+
+ '<rect x="140" y="30" width="70" height="50" fill="#b8d4e8" stroke="#6b5435" stroke-width="3"/><line x1="175" y1="30" x2="175" y2="80" stroke="#6b5435" stroke-width="2"/><circle cx="190" cy="44" r="6" fill="#f7efd0"/>'+
+ woman(60,94,0.5,{purse:false})+boy(300,90,0.55,{face:'sad'})+'<path d="M290 60 q4 -8 8 0 M304 58 q3 -8 6 0" stroke="#9ecbe8" stroke-width="2" fill="none"/>','A small furnished room: an open door, a daybed with a purse on it, a sink where the boy washes his face');
+P.part3=svg(400,220,'<rect width="400" height="220" fill="#efe2c4"/><rect y="170" width="400" height="50" fill="#a07850"/>'+
+ '<rect x="70" y="120" width="190" height="10" fill="#7a5530"/><rect x="80" y="130" width="8" height="40" fill="#5e3f22"/><rect x="242" y="130" width="8" height="40" fill="#5e3f22"/>'+
+ '<ellipse cx="120" cy="116" rx="26" ry="6" fill="#fff" stroke="#bbb"/><ellipse cx="120" cy="113" rx="16" ry="4" fill="#c97a6a"/><g fill="#a9c26a">'+[0,1,2,3,4,5].map(function(i){return '<ellipse cx="'+(110+i*4)+'" cy="111" rx="2.4" ry="1.6"/>';}).join('')+'</g>'+
+ '<rect x="170" y="98" width="18" height="20" rx="3" fill="#fff" stroke="#bbb"/><path d="M174 92 q3 -6 0 -10 M182 92 q3 -6 0 -10" stroke="#bbb" stroke-width="1.5" fill="none"/><rect x="172" y="100" width="14" height="6" fill="#7a4a2a"/>'+
+ '<path d="M206 116 h40 l-6 -14 h-28z" fill="#f4d9a8"/><path d="M212 102 h28" stroke="#c79a5a" stroke-width="3"/>'+
+ '<rect x="290" y="30" width="80" height="140" fill="#c8b48e" stroke="#6b5435" stroke-width="3"/><rect x="296" y="36" width="68" height="134" fill="#1d2440"/><circle cx="330" cy="70" r="2" fill="#f7efd0"/><circle cx="345" cy="58" r="1.5" fill="#f7efd0"/>'+
+ '<rect x="290" y="168" width="80" height="8" fill="#888"/>'+boy(330,112,0.48,{face:'sad'})+
+ '<g transform="translate(332 100)"><rect x="-10" y="-8" width="20" height="10" rx="2" fill="#2f8f4e"/><text x="0" y="0" font-size="7" text-anchor="middle" fill="#fff" font-family="Nunito">$10</text></g>','A small table with ham, lima beans, cocoa and cake; an open door to the night with a boy on the stoop');
+/* word pictures 200x160 */
+var W={};
+W.purse=svg(200,160,'<rect width="200" height="160" fill="#f6efe2"/><path d="M60 62 q40 -50 80 0" stroke="#3a2516" stroke-width="7" fill="none"/><rect x="45" y="60" width="110" height="74" rx="12" fill="#7b4a2a"/><rect x="45" y="60" width="110" height="18" fill="#5e3820"/><circle cx="100" cy="86" r="6" fill="#d9c27a"/><path d="M52 124h96" stroke="#5e3820" stroke-width="3" stroke-dasharray="5 4"/><path d="M56 70h88" stroke="#9a6440" stroke-width="2"/>','a large leather purse');
+W.stoop=svg(200,160,'<rect width="200" height="160" fill="#dfe6ee"/><rect x="40" y="10" width="120" height="96" fill="#b45a3c"/><g stroke="#8e4026" stroke-width="2">'+[20,36,52,68,84].map(function(y){return '<line x1="40" y1="'+y+'" x2="160" y2="'+y+'"/>';}).join('')+'</g><rect x="76" y="28" width="48" height="78" fill="#4a2f1c"/><circle cx="114" cy="70" r="3" fill="#d9c27a"/><rect x="62" y="106" width="76" height="12" fill="#999"/><rect x="54" y="118" width="92" height="12" fill="#8a8a8a"/><rect x="46" y="130" width="108" height="12" fill="#7a7a7a"/><rect y="142" width="200" height="18" fill="#5a5a62"/>','stone steps in front of a city building door');
+W.frail=svg(200,160,'<rect width="200" height="160" fill="#eef3e6"/>'+boy(70,48,0.9,{shirt:'#d8ccb4'})+'<g transform="translate(140 40) scale(1.05)"><rect x="-16" y="62" width="14" height="40" fill="#35507a"/><rect x="3" y="62" width="14" height="40" fill="#35507a"/><path d="M-26 18 Q-30 50 -22 66 L22 66 Q30 50 26 18 Q0 8 -26 18Z" fill="#b84a3a"/><circle cx="0" cy="2" r="15" fill="#d9a67e"/><path d="M-15 -2 Q0 -18 15 -2" fill="#3a2a1a"/></g><text x="70" y="156" text-anchor="middle" font-size="14" fill="#333" font-family="Nunito">thin, weak</text><text x="140" y="156" text-anchor="middle" font-size="14" fill="#333" font-family="Nunito">big, strong</text>','a thin, weak boy beside a big strong boy');
+W.halfnelson=svg(200,160,'<rect width="200" height="160" fill="#f3ebe0"/>'+woman(90,30,0.62,{purse:false,stern:true})+boy(112,48,0.62,{face:'shock'})+'<path d="M84 62 Q104 40 120 44" stroke="#5b3a5e" stroke-width="9" fill="none" stroke-linecap="round"/><circle cx="121" cy="44" r="5" fill="'+SK_D+'"/><path d="M150 40 l12 -6 M150 52 l14 0" stroke="#c0392b" stroke-width="2.5"/>','a woman holding a boy around the neck from behind');
+W.shoes=svg(200,160,'<rect width="200" height="160" fill="#eef0fa"/><g transform="translate(20 70)"><path d="M0 40 Q0 10 30 6 L60 4 Q70 20 100 26 Q120 30 120 44 L120 52 L0 52Z" fill="#3e6fd8"/><path d="M0 50 h120 v8 h-120z" fill="#f1f1f1"/><g stroke="#2a4fa8" stroke-width="2">'+[0,1,2,3].map(function(i){return '<line x1="'+(40+i*8)+'" y1="10" x2="'+(46+i*8)+'" y2="22"/>';}).join('')+'</g><g fill="#5d89e8" opacity=".6">'+[0,1,2,3,4,5,6,7].map(function(i){return '<circle cx="'+(14+i*13)+'" cy="'+(36+(i%2)*4)+'" r="1.4"/>';}).join('')+'</g></g><g transform="translate(60 26) scale(.8)"><path d="M0 40 Q0 10 30 6 L60 4 Q70 20 100 26 Q120 30 120 44 L120 52 L0 52Z" fill="#3560c4"/><path d="M0 50 h120 v8 h-120z" fill="#e6e6e6"/></g>','a pair of soft blue suede shoes');
+W.icebox=svg(200,160,'<rect width="200" height="160" fill="#f2efe8"/><rect x="60" y="16" width="80" height="132" rx="10" fill="#e9e4d6" stroke="#9a947f" stroke-width="3"/><line x1="60" y1="62" x2="140" y2="62" stroke="#9a947f" stroke-width="3"/><rect x="122" y="30" width="8" height="22" rx="3" fill="#b8b29b"/><rect x="122" y="76" width="8" height="30" rx="3" fill="#b8b29b"/><rect x="66" y="148" width="10" height="8" fill="#555"/><rect x="124" y="148" width="10" height="8" fill="#555"/><path d="M28 40 l6 6 m0 -6 l-6 6 M22 43 h18 M31 34 v18" stroke="#7ab6d8" stroke-width="2"/>','an old-style refrigerator (icebox)');
+W.presentable=svg(200,160,'<rect width="200" height="160" fill="#f4f4f4"/>'+boy(55,46,0.85,{shirt:'#9c8a6a',face:'sad'})+'<g stroke="#5a4a32" stroke-width="2"><path d="M40 60l6 4M60 70l-5 3M48 84l6 2"/></g><circle cx="44" cy="40" r="3" fill="#7a5a3a" opacity=".7"/>'+boy(145,46,0.85,{shirt:'#e9eef6'})+'<path d="M128 30 l4 -4 M162 30 l-4 -4 M145 22 v-6" stroke="#f1c40f" stroke-width="2.5"/><path d="M20 20 L90 140 M90 20 L20 140" stroke="#c0392b" stroke-width="6" opacity=".55"/>','left: dirty and messy (X); right: clean and neat');
+W.ashamed=svg(200,160,'<rect width="200" height="160" fill="#f6eee6"/><g transform="translate(55 30)"><circle cx="0" cy="30" r="24" fill="'+SK_M+'"/><path d="M-24 26 Q0 -2 24 26 Q10 12 0 14 Q-10 12 -24 26" fill="#1c120c"/><path d="M-10 36 q3 -3 6 0 M4 36 q3 -3 6 0" stroke="#140c08" stroke-width="2" fill="none"/><path d="M-6 46 q6 -4 12 0" stroke="#3a1f12" stroke-width="2" fill="none"/><ellipse cx="-14" cy="40" rx="5" ry="3" fill="#d9665a" opacity=".6"/><ellipse cx="14" cy="40" rx="5" ry="3" fill="#d9665a" opacity=".6"/><path d="M-30 70 Q0 56 30 70 L30 110 L-30 110Z" fill="#c9b38a"/></g><g transform="translate(145 30)"><circle cx="0" cy="30" r="24" fill="'+SK_M+'"/><path d="M-24 26 Q0 -2 24 26 Q10 12 0 14 Q-10 12 -24 26" fill="#1c120c"/><circle cx="-8" cy="30" r="2.4" fill="#140c08"/><circle cx="8" cy="30" r="2.4" fill="#140c08"/><path d="M-8 42 q8 7 16 0" stroke="#3a1f12" stroke-width="2.2" fill="none"/><path d="M-30 70 Q0 56 30 70 L30 110 L-30 110Z" fill="#c9b38a"/></g><path d="M115 15 L175 135 M175 15 L115 135" stroke="#c0392b" stroke-width="6" opacity=".55"/>','left: a boy looking down, face hot, ashamed; right: a proud happy boy with a red X');
+W.trust=svg(200,160,'<rect width="200" height="160" fill="#eef4ee"/><rect x="14" y="20" width="70" height="110" fill="#c8b48e" stroke="#6b5435" stroke-width="3"/><rect x="20" y="26" width="58" height="104" fill="#2c2418" transform="skewY(-8) translate(0 8)"/><text x="49" y="148" text-anchor="middle" font-size="13" font-family="Nunito" fill="#2f6f3e">door open</text><rect x="40" y="96" width="22" height="14" rx="3" fill="#7b4a2a"/><rect x="116" y="20" width="70" height="110" fill="#c8b48e" stroke="#6b5435" stroke-width="3"/><rect x="122" y="26" width="58" height="104" fill="#7a5a3a"/><rect x="170" y="70" width="10" height="18" rx="2" fill="#555"/><circle cx="175" cy="76" r="2" fill="#222"/><path d="M114 18 L188 132 M188 18 L114 132" stroke="#c0392b" stroke-width="6" opacity=".55"/>','left: an open door and a purse left out (trust); right: a locked door with a red X');
+W.latch=svg(200,160,'<rect width="200" height="160" fill="#efe6d6"/><rect x="40" y="20" width="120" height="120" fill="#8a5a36"/><g stroke="#6e4428" stroke-width="2"><line x1="40" y1="60" x2="160" y2="60"/><line x1="40" y1="100" x2="160" y2="100"/></g><rect x="70" y="72" width="60" height="16" rx="3" fill="#b9b9b9" stroke="#666" stroke-width="2"/><rect x="118" y="66" width="18" height="28" rx="3" fill="#888" stroke="#555" stroke-width="2"/><circle cx="80" cy="80" r="5" fill="#666"/>','a metal latch that keeps a door shut');
+W.suede=W.shoes;
+var C={}; /* compare page */
+C.billy=svg(200,160,'<rect width="200" height="160" fill="#dfe8f0"/><rect y="118" width="200" height="42" fill="#8f8f96"/><rect x="10" y="40" width="54" height="78" fill="#cfc2a8"/><rect x="18" y="52" width="14" height="16" fill="#f3d27a"/><rect x="40" y="52" width="14" height="16" fill="#9fb2c6"/><path d="M120 140 Q118 100 124 70 L156 70 Q162 100 160 140Z" fill="#3c4757"/><path d="M134 70 l6 18 l6 -18" fill="#fff"/><path d="M139 74 l2 22 l2 -22z" fill="#8a2b2b"/><circle cx="140" cy="54" r="16" fill="'+SK_L+'"/><path d="M124 50 Q126 34 140 34 Q154 34 156 50 Q148 42 140 43 Q132 42 124 50Z" fill="#7a5a2a"/><circle cx="134" cy="54" r="1.8" fill="#222"/><circle cx="146" cy="54" r="1.8" fill="#222"/><path d="M134 62 q6 4 12 0" stroke="#7a3a2a" stroke-width="1.8" fill="none"/><rect x="164" y="100" width="28" height="22" rx="3" fill="#6b4a2a"/><path d="M172 100 q6 -8 12 0" stroke="#3a2516" stroke-width="2.5" fill="none"/>','a neat young man in a suit with a small suitcase on a cold English street');
+C.roger=svg(200,160,'<rect width="200" height="160" fill="#2a3055"/><rect y="118" width="200" height="42" fill="#45454f"/><rect x="150" y="30" width="5" height="90" fill="#111"/><ellipse cx="152" cy="44" rx="26" ry="8" fill="#f3d27a" opacity=".2"/>'+boy(92,52,0.95,{skin:SK_D,shirt:'#c9b38a',pants:'#35507a',shoes:'#eee'})+'<g fill="#f7efd0"><circle cx="30" cy="20" r="1.5"/><circle cx="60" cy="34" r="1.2"/><circle cx="20" cy="50" r="1"/></g>','a thin teenage boy in tennis shoes and blue jeans on a city street at night');
+C.doors=svg(400,180,'<rect width="400" height="180" fill="#efe6d6"/>'+
+ '<g transform="translate(40 20)"><rect width="90" height="140" fill="#f1e7c9" stroke="#6b5435" stroke-width="3"/><rect x="8" y="8" width="74" height="132" fill="#d9a441"/><circle cx="70" cy="74" r="4" fill="#7a5a2a"/><text x="45" y="-6" text-anchor="middle" font-size="12" font-family="Nunito" fill="#333">Bath, 1959</text><rect x="20" y="30" width="50" height="30" fill="#fff3c4" stroke="#6b5435"/><path d="M28 40 q17 -12 34 0" stroke="#c0392b" fill="none"/></g>'+
+ '<g transform="translate(155 20)"><rect width="90" height="140" fill="#c8b48e" stroke="#6b5435" stroke-width="3"/><path d="M8 8 h74 v132 h-74z" fill="#2c2418"/><text x="45" y="-6" text-anchor="middle" font-size="12" font-family="Nunito" fill="#333">an American city, 1958</text><rect x="30" y="100" width="22" height="14" rx="3" fill="#7b4a2a"/></g>'+
+ '<g transform="translate(270 20)"><rect width="90" height="140" fill="#cde3df" stroke="#6b5435" stroke-width="3"/><rect x="10" y="70" width="70" height="40" rx="8" fill="#b9c96a"/><circle cx="32" cy="58" r="10" fill="'+SK_D+'"/><circle cx="58" cy="62" r="7" fill="'+SK_D+'"/><text x="45" y="-6" text-anchor="middle" font-size="12" font-family="Nunito" fill="#333">a living room, 2013</text></g>','three doors: a cozy closed door, an open dark door with a purse, a living room with a man and a boy on a couch');
+C.couch=svg(200,160,'<rect width="200" height="160" fill="#b97a3e"/><g stroke="#9c6430" stroke-width="2">'+[20,50,80,110,140,170].map(function(x){return '<line x1="'+x+'" y1="0" x2="'+x+'" y2="100"/>';}).join('')+'</g><rect x="14" y="80" width="172" height="44" rx="14" fill="#b9b66a"/><rect x="14" y="110" width="172" height="34" rx="8" fill="#a3a056"/><g><circle cx="70" cy="56" r="14" fill="'+SK_D+'"/><path d="M50 74 h40 v40 h-40z" fill="#7fc2a8"/><circle cx="65" cy="56" r="1.8" fill="#111"/><circle cx="75" cy="56" r="1.8" fill="#111"/><path d="M64 63 h12" stroke="#111" stroke-width="1.6"/><rect x="62" y="70" width="16" height="5" fill="#d9842a"/></g><g><circle cx="130" cy="72" r="10" fill="'+SK_D+'"/><path d="M116 84 h28 v30 h-28z" fill="#7fc2a8"/><circle cx="126" cy="72" r="1.5" fill="#111"/><circle cx="134" cy="72" r="1.5" fill="#111"/><path d="M126 78 h8" stroke="#111" stroke-width="1.4"/><rect x="124" y="82" width="12" height="4" fill="#d9842a"/></g><text x="100" y="156" text-anchor="middle" font-size="12" fill="#fff" font-family="Nunito">frozen, side by side</text>','a man and a boy in matching clothes sitting stiff and still on a couch');
+C.tracks=svg(200,160,'<rect width="200" height="160" fill="#cfe3c4"/><path d="M0 0 h200 v60 h-200z" fill="#bcd6ea"/><path d="M70 160 L96 60 L104 60 L130 160" fill="#9b8a72"/><g stroke="#6b4a2a" stroke-width="4">'+[70,85,100,115,130,145].map(function(y,i){var w=8+i*7;return '<line x1="'+(100-w)+'" y1="'+y+'" x2="'+(100+w)+'" y2="'+y+'"/>';}).join('')+'</g><path d="M74 160 L98 60 M126 160 L102 60" stroke="#666" stroke-width="3"/><g fill="#2e5a2e">'+[10,30,170,186].map(function(x){return '<path d="M'+x+' 60 l-12 30 h24z"/>';}).join('')+'</g>'+[86,96,106,116].map(function(x,i){return '<g transform="translate('+x+' '+(74+(i%2)*3)+') scale(.25)">'+'<rect x="-10" y="20" width="20" height="40" fill="#35507a"/><circle cx="0" cy="8" r="12" fill="'+[SK_L,SK_L2,SK_L,SK_L2][i]+'"/><rect x="-12" y="18" width="24" height="26" fill="'+['#b84a3a','#e0c060','#5a7a3a','#ddd'][i]+'"/></g>';}).join(''),'four small boys walking along railroad tracks into the trees');
+C.hughes=svg(200,160,'<rect width="200" height="160" fill="#f1e6d0"/><rect x="20" y="20" width="160" height="120" fill="#fbf5e8" stroke="#6b5435" stroke-width="3"/><path d="M60 140 Q60 96 100 92 Q140 96 140 140Z" fill="#3a3a44"/><path d="M92 92 l8 16 l8 -16" fill="#fff"/><circle cx="100" cy="68" r="22" fill="'+SK_M+'"/><path d="M78 62 Q80 42 100 42 Q120 42 122 62 Q112 52 100 52 Q88 52 78 62Z" fill="#1c120c"/><path d="M90 76 q10 4 20 0" stroke="#1c120c" stroke-width="3"/><circle cx="92" cy="66" r="2" fill="#140c08"/><circle cx="108" cy="66" r="2" fill="#140c08"/><text x="100" y="34" text-anchor="middle" font-size="11" font-family="Nunito" fill="#6b5435">Harlem · poet</text>','drawing of a writer from Harlem with a small moustache');
+C.dahl=svg(200,160,'<rect width="200" height="160" fill="#e3e8ee"/><rect x="20" y="20" width="160" height="120" fill="#f7f9fb" stroke="#4a5a6a" stroke-width="3"/><path d="M56 140 Q56 94 100 90 Q144 94 144 140Z" fill="#5a6b4a"/><circle cx="100" cy="64" r="24" fill="'+SK_L+'"/><path d="M76 58 Q78 36 100 36 Q122 36 124 58 Q112 46 100 46 Q88 46 76 58Z" fill="#8a7050"/><circle cx="92" cy="64" r="2" fill="#222"/><circle cx="108" cy="64" r="2" fill="#222"/><path d="M92 76 q8 3 16 0" stroke="#7a3a2a" stroke-width="2" fill="none"/><path d="M146 46 l16 -6 l4 6 l-16 6z" fill="#7a8a9a"/><text x="100" y="152" text-anchor="middle" font-size="11" font-family="Nunito" fill="#4a5a6a">Wales · pilot</text>','drawing of a tall writer from Wales, with a small airplane');
+return {P:P,W:W,C:C};
+})();
+</script>
+<script>window.DATA={
+key:'thank_you_maam', title:'Thank You, Ma\u2019am', order:640, storySlug:'tyma-story',
+finalLink:['/readings/thank-you-maam/compare/','Next: compare with The Landlady →'],
+sections:[
+{id:'before',chip:'Before you read',title:'Before you read',blocks:[
+ {t:'ctl',id:'ctl1',html:'<div class="pic">'+ART.P.part1+'</div><p class="dr"><b>Learn the page first.</b> Look at the picture. Press 🔊 to hear any sentence. Tap any word to see it in your language.</p><p>Thank You, Ma\u2019am '+'<button class="spk" data-say="Thank you, ma\u2019am">🔊</button></p><div class="clr"></div>',tasks:['I pressed 🔊 and heard the title.','I tapped one word and saw it in my language.','I looked at the picture: a woman, a boy, a dark street.']},
+ {t:'q',id:'ctl_see',ctl:true,tag:'I SEE / I WONDER',q:'Look at the picture. Write one thing you see and one thing you wonder.',frame:'I see ___. I wonder why ___.'},
+ {t:'html',pic:ART.C.hughes,html:'<h3>About the story <button class="spk" data-say="Langston Hughes wrote this story in 1958. It happens in a big American city, late at night. A woman is walking home alone after work. A teenage boy needs money.">🔊</button></h3><p>Langston Hughes wrote this story in <b>1958</b>. It happens in a big American city, late at night. A woman is walking home alone after work. A teenage boy needs money.</p><p>Hughes was a famous Black American poet from Harlem, in New York City. He wrote about everyday people in his neighborhood: working people, poor people, young people.</p>'},
+ {t:'mc',id:'p1',tag:'PREDICT',opinion:true,q:'Look at the title. Who do you think says \u201cThank you, ma\u2019am\u201d?',opts:['the boy','the woman','a police officer','a store clerk'],think:'What would make someone say thank you to a stranger?'},
+ {t:'mc',id:'p2',tag:'PREDICT',opinion:true,q:'A boy tries to take a woman\u2019s purse. What do you think she will do?',opts:['call the police','run away','grab him and take him home','give him the purse'],think:'What would YOUR grandmother do?'},
+ {t:'html',cls:'lang',html:'<h3>Words first <button class="spk" data-say="Ma\u2019am is a polite word for a woman. A half nelson is a wrestling hold around the neck from behind. Blue suede shoes are soft blue shoes from a famous 1956 song. A hotel beauty shop is where she works, doing women\u2019s hair, until late at night.">🔊</button></h3><p><b>ma\u2019am</b> — a polite word for a woman, like <i>señora</i>. Young people say it to older women.</p><p><b>a half nelson</b> — a wrestling hold: you hold someone around the neck from behind.</p><p><b>blue suede shoes</b> — soft blue shoes. A famous song in 1956 made them the coolest thing a teenager could want.</p><p><b>a hotel beauty shop</b> — where the woman works, doing women\u2019s hair, until late at night.</p>'},
+ {t:'words',words:[
+  {w:'purse',pic:'purse',d:'a bag a woman carries for money and things'},
+  {w:'stoop',pic:'stoop',d:'the stone steps in front of a city building'},
+  {w:'frail',pic:'frail',d:'thin and weak'},
+  {w:'half nelson',pic:'halfnelson',d:'a hold around someone\u2019s neck from behind'},
+  {w:'blue suede shoes',pic:'shoes',d:'soft blue shoes that were very cool in the 1950s'},
+  {w:'icebox',pic:'icebox',d:'an old word for a refrigerator'},
+  {w:'presentable',pic:'presentable',d:'clean and neat enough to be seen'},
+  {w:'ashamed',pic:'ashamed',d:'feeling bad because you did something wrong'},
+  {w:'trust',pic:'trust',d:'to believe someone will do the right thing'},
+  {w:'latch',pic:'latch',d:'a metal piece that keeps a door shut'}]},
+ {t:'html',html:'<h3>When? <button class="spk" data-say="Langston Hughes was born in 1901. In 1956 Blue Suede Shoes was a hit song. In 1958 this story came out. In 1959 The Landlady came out, one year later.">🔊</button></h3><div class="gridwrap"><table class="g"><tr><th>1901</th><th>1920s</th><th>1956</th><th>1958</th><th>1959</th></tr><tr><td>Langston Hughes is born (some books say 1902)</td><td>Hughes becomes famous in Harlem, New York</td><td>\u201cBlue Suede Shoes\u201d is a hit song</td><td><b>Thank You, Ma\u2019am</b> comes out</td><td><b>The Landlady</b> comes out — one year later</td></tr></table></div>'},
+ {t:'mc',id:'b1',tag:'REVIEW',q:'Where and when does the story happen?',opts:['in a big American city, late at night','on a farm, early in the morning','in a school, at lunch','on a train, in the afternoon'],ans:0,why:'The woman is walking home alone, late at night, in a big city.',hint:'Read \u201cAbout the story\u201d again.'}
+]},
+{id:'p1',chip:'Part 1',title:'Part 1 · The purse',blocks:[
+ {t:'panel',svg:ART.P.part1},
+ {t:'html',html:'<p class="dr"><b>Tough or kind?</b> Mrs. Jones is both. Beside each paragraph, tap ✊ when she is tough and ☀ when she is kind. Some paragraphs are both. Tap a paragraph number to colour it.</p><div class="key"><span>✊ tough — grabs, shakes, gives orders</span><span>☀ kind — feeds, trusts, gives</span></div>'},
+ {t:'story',part:1},
+ {t:'mc',id:'a1',tag:'STOP AND THINK',q:'What happens when the boy grabs the purse?',opts:['The strap breaks and he falls down.','He runs away fast with the purse.','The woman hands him the purse.','A police officer catches him.'],ans:0,why:'The purse is too heavy. When the strap breaks, the boy loses his balance and falls on the sidewalk.',hint:'Look at the beginning of Part 1. Does he get away?'},
+ {t:'mc',id:'a2',tag:'INFER',q:'How does the woman act at first?',qe:'At first, the woman is…',opts:['angry and in control','afraid of the boy','happy to see him','sad and tired'],ans:0,why:'She kicks him, picks him up by his shirt and shakes him. She is not afraid — she is the one in charge.',hint:'Is she scared, or is she the boss here?'},
+ {t:'q',id:'a3',tag:'INFER',qe:'Does she call the police? Why do you think she doesn\u2019t?',q:'She could call the police, but she does not. Why not? Use a clue from Part 1.',frame:'I think she does not call the police because ___.'},
+ {t:'q',id:'a4',tag:'CRAFT',hard:true,q:'Her full name is Mrs. Luella Bates Washington Jones. Why might Hughes want us to hear the whole long name?',frame:'Hughes gives her a long name because ___.'},
+ {t:'mc',id:'a5',tag:'PREDICT',opinion:true,q:'She drags the boy to her home. What will happen there?',opts:['She will hurt him.','She will call his mother.','She will feed him.','She will make him work for her.'],think:'Why would someone bring a thief INTO their home?'}
+]},
+{id:'p2',chip:'Part 2',title:'Part 2 · Inside her room',blocks:[
+ {t:'panel',svg:ART.P.part2},
+ {t:'story',part:2},
+ {t:'mc',id:'c1',tag:'REVIEW',q:'What does Mrs. Jones tell Roger to do first in her home?',qe:'At her home, what does she tell Roger to do first?',opts:['wash his face','sit in the corner','call his mother','give back the money'],ans:0,why:'She sends him to the sink. Someone who was going to punish him would not care if his face was clean.',hint:'Look at the picture. What is by the wall?'},
+ {t:'mc',id:'c2',tag:'REVIEW',q:'What did Roger want the money for?',opts:['blue suede shoes','food for his family','a bus ticket','school books'],ans:0,why:'He says he wanted a pair of blue suede shoes.',hint:'Think of the words in \u201cWords first\u201d.'},
+ {t:'mc',id:'c3',tag:'INFER',q:'Mrs. Jones leaves the door open and her purse on the daybed. Why?',opts:['She is giving Roger the choice to stay or run.','She forgot to close the door.','She wants him to steal the purse.','She is going to sleep.'],ans:0,why:'She lets him choose. If he stays without being forced, he shows her — and himself — who he can be.',hint:'Does she seem like a person who forgets things?'},
+ {t:'q',id:'c4',tag:'STOP AND THINK',qe:'Roger could run out the open door. Why does he stay?',q:'The door is open and the purse is close. Roger could run. Why do you think he stays?',frame:'I think Roger stays because ___.'},
+ {t:'q',id:'c5',tag:'CONNECT',q:'Mrs. Jones tells Roger that she also did things when she was young that she will not talk about. Why does she tell him this?',qe:'Mrs. Jones says she did bad things too when she was young. Why does she tell Roger?',frame:'She tells him because she wants Roger to know ___.'},
+ {t:'mc',id:'c6',tag:'INFER',q:'Roger sits on the far side of the room, where she can see him. Why?',opts:['He wants her to trust him now.','He is tired and wants to sleep.','She ties him to a chair.','He wants to watch the TV.'],ans:0,why:'He does not want her to think he will steal again. For the first time, he cares what she thinks.',hint:'What does Roger want her to think of him now?'}
+]},
+{id:'p3',chip:'Part 3',title:'Part 3 · Dinner and the door',blocks:[
+ {t:'panel',svg:ART.P.part3},
+ {t:'story',part:3},
+ {t:'mc',id:'d1',tag:'REVIEW',q:'What do they eat together?',opts:['lima beans, ham and cake','rice and fish','pizza and soda','soup and bread'],ans:0,why:'She heats lima beans and ham, makes cocoa, and shares her cake.',hint:'Look at the table in the picture.'},
+ {t:'mc',id:'d2',tag:'INFER',q:'Mrs. Jones does not ask about Roger\u2019s home or family. Why not?',opts:['She does not want to embarrass him.','She does not care about him.','She already knows his family.','She is too busy eating.'],ans:0,why:'She guesses his home life is hard. Asking would make him feel small, so she talks about her job instead.',hint:'How would Roger feel if she asked?'},
+ {t:'mc',id:'d3',tag:'REVIEW',q:'What does she give Roger at the end?',opts:['ten dollars','a new pair of shoes','a job in the beauty shop','a warm coat'],ans:0,why:'She gives him ten dollars for the shoes — and tells him never to steal again.',hint:'Look at what Roger holds in the picture.'},
+ {t:'q',id:'d4',tag:'STOP AND THINK',q:'At the door, Roger wants to say more than \u201cThank you, ma\u2019am,\u201d but he cannot. Why do you think the words do not come?',qe:'Roger wants to say more than thank you, but he can\u2019t. Why?',frame:'I think Roger cannot say more because ___.'},
+ {t:'mc',id:'d5',tag:'REVIEW',q:'Does Roger ever see Mrs. Jones again?',opts:['No, never.','Yes, the next week.','Yes, she becomes his teacher.','Yes, he works in her shop.'],ans:0,why:'The last line tells us he never saw her again. One night changed him — and then she was gone.',hint:'Read the very last paragraph.'},
+ {t:'q',id:'d6',tag:'PREDICT',q:'Will Roger steal again? What in the story makes you think so?',frame:'I think Roger will / will not steal again because ___.'}
+]},
+{id:'after',chip:'After you read',title:'After you read',blocks:[
+ {t:'html',cls:'extra',html:'<h3>Model: from notes to a summary</h3><p class="dr">Look at how one student did it, then write your own.</p><p><b>Highlight:</b> <span style="background:#fff1a6">the strap breaks, he falls</span> · <span style="background:#ffd5e5">she drags him home</span> · <span style="background:#d4e9ff">she gives him ten dollars</span></p><p><b>Summary:</b> A boy named Roger tries to steal a purse, but <span style="background:#fff1a6">the strap breaks and he falls</span>. The woman, Mrs. Jones, <span style="background:#ffd5e5">drags him to her home</span>, makes him wash, and feeds him. At the end <span style="background:#d4e9ff">she gives him ten dollars</span> for shoes, and he can only say \u201cThank you, ma\u2019am.\u201d</p>'},
+ {t:'q',id:'s1',tag:'SUMMARY',min:20,qe:'Write a summary of the story in 3–5 sentences. Use the word bank: purse, strap, home, wash, dinner, blue suede shoes, ten dollars, door.',q:'Write a summary of the story in 3–5 sentences, in your own words.',frame:'A boy named Roger ___. Mrs. Jones ___. At her home ___. At the end ___.'},
+ {t:'html',cls:'lang',html:'<h3>How talking shows who you are <button class="spk" data-say="Mrs. Jones talks the way real people talk in her neighborhood. Her sentences are short and strong. She gives orders. Hughes writes her words the way she would really say them, not the way a textbook would.">🔊</button></h3><p>Mrs. Jones talks the way real people talk in her neighborhood. Her sentences are short and strong. She gives orders. Hughes writes her words the way she would really say them — not the way a textbook would.</p>'},
+ {t:'mc',id:'e1',tag:'CRAFT',q:'Why does Hughes write Mrs. Jones\u2019s words the way people really talk?',opts:['So she sounds like a real person from her neighborhood.','Because he did not know good English.','To make the story longer.','So students can practice spelling.'],ans:0,why:'Hughes was a famous poet. He chose real speech on purpose, to show her life, her strength and where she comes from.',hint:'Hughes was a famous writer. Was it a mistake?'},
+ {t:'mc',id:'e2',tag:'REVIEW',q:'Which words describe Mrs. Jones best?',opts:['tough and kind','weak and scared','rich and proud','mean and selfish'],ans:0,why:'She grabs and orders (tough), and she feeds, trusts and gives (kind) — often at the same time.',hint:'Look at your ✊ and ☀ marks.'},
+ {t:'mc',id:'e3',tag:'INFER',q:'What does Roger learn that night?',opts:['That someone can trust him, and he can choose to be good.','That stealing is easy.','That old women are weak.','That he should run faster.'],ans:0,why:'She treats him like someone worth trusting. He chooses to stay — the first good choice we see him make.',hint:'What changes between Part 1 and Part 3?'},
+ {t:'mc',id:'e4',tag:'CRAFT',q:'Why is the story called \u201cThank You, Ma\u2019am\u201d?',opts:['Those are the only words Roger can say at the end, but they mean a lot.','Roger says it every time she talks.','It is the name of the beauty shop.','Mrs. Jones says it to the police.'],ans:0,why:'He wants to say much more. The small polite words carry everything he feels.',hint:'Look at the last part again.'},
+ {t:'q',id:'e5',tag:'CHARACTERS',q:'Write one tough ✊ thing and one kind ☀ thing Mrs. Jones does.',frame:'She is tough when she ___. She is kind when she ___.'},
+ {t:'q',id:'x1',extra:true,tag:'CONNECT',q:'Mrs. Jones says shoes you get the wrong way would hurt your feet. What does she mean? Do you agree?',frame:'She means that ___. I agree / disagree because ___.'},
+ {t:'q',id:'x2',extra:true,tag:'CREATE',q:'Ten years later, Roger comes back to her building. What does he say? Write 4–6 sentences.',frame:'Roger knocks on the door. He says, \u201c___.\u201d'}
+]}
+]}
+;</script>
+<script>/* T-389 story engine (Thank You, Ma'am family). One DATA block per page; same engine. */
+(function(){
+var SUPA='https://lhmwtfyceilgndpygivj.supabase.co';
+var KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var PROXY='https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
+var TABLE='landlady_responses';
+var D=window.DATA, $=function(s,r){return (r||document).querySelector(s);}, $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s));};
+function H(x){var h={apikey:KEY,Authorization:'Bearer '+KEY,'Content-Type':'application/json'};if(x)for(var k in x)h[k]=x[k];return h;}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+var Q=new URLSearchParams(location.search), TV=Q.get('view')==='teacher', OPEN=Q.get('open')==='all';
+try{ if(OPEN) localStorage.setItem('gal_open_'+D.key,'1'); if(localStorage.getItem('gal_open_'+D.key)) OPEN=true; }catch(e){}
+var student=null, LOADED=false, saveT=null, dirty=false;
+var S={mc:{},q:{},hl:{},sig:{},mode:'easy',ctl:{},sort:{}};
+window.GAL_META={title:D.title,unit:D.unit||'Thank You, Ma\u2019am',sort_order:D.order||640};
+if(TV) window.GAL_NO_AUTOLOG=true;
+
+/* ---------- speech ---------- */
+function say(t){try{speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(String(t).replace(/_{2,}/g,' blank ').replace(/\bI\b(?=[^']|$)/g,'I'));u.lang='en-US';u.rate=.9;speechSynthesis.resume();speechSynthesis.speak(u);}catch(e){}}
+document.addEventListener('click',function(e){var b=e.target.closest('.spk');if(b){e.preventDefault();e.stopPropagation();say(b.getAttribute('data-say')||b.parentElement.innerText);}});
+function spk(t){return '<button class="spk" data-say="'+esc(t)+'" aria-label="listen" data-no-listen>🔊</button>';}
+
+/* ---------- translation of directions ---------- */
+function lang(){var s=$('#lang');var v=(s&&s.value)||'';if(!v){try{v=localStorage.getItem('vocab_lang')||'';}catch(e){}}return v;}
+var trMem={};
+function trText(text,cb){var lg=lang();if(!lg||lg==='en'){cb('');return;}var k=lg+'|'+text;if(trMem[k]!=null){cb(trMem[k]);return;}
+ fetch(PROXY+'?action=translate&mode=sentence&idiom='+encodeURIComponent(text)+'&meaning=&lang='+encodeURIComponent(lg)).then(function(r){return r.json();}).then(function(d){var t=d&&d.translation;var v=(t&&typeof t==='object')?(t.equiv||t.meaning||''):(t||'');trMem[k]=v;cb(v);}).catch(function(){cb('');});}
+function trWord(word,meaning,cb){var lg=lang();if(!lg){cb('');return;}
+ fetch(PROXY+'?action=translate&idiom='+encodeURIComponent(word)+'&meaning='+encodeURIComponent(meaning)+'&lang='+encodeURIComponent(lg)).then(function(r){return r.json();}).then(function(d){var t=d&&d.translation;cb((t&&(t.equiv||t.meaning))||'');}).catch(function(){cb('');});}
+function translateDirs(root){$$('.dr',root||document).forEach(function(el){if(el.getAttribute('data-trd')===lang())return;el.setAttribute('data-trd',lang());var nx=el.nextElementSibling;if(nx&&nx.classList.contains('trl'))nx.remove();
+ var src=el.getAttribute('data-src')||el.textContent.trim();if(!src)return;trText(src,function(v){if(!v)return;var d=document.createElement('div');d.className='trl';d.setAttribute('translate','no');d.textContent=v;if(/^ar|^ur|^ary/.test(lang()))d.dir='rtl';el.after(d);});});}
+function translateCards(){$$('.wcard').forEach(function(c){var o=c.querySelector('.wtr');if(!o||o.getAttribute('data-l')===lang())return;o.setAttribute('data-l',lang());o.innerHTML='<span class="muted">…</span>';trWord(c.getAttribute('data-w'),c.getAttribute('data-def'),function(v){o.innerHTML=v?'<b><u>'+esc(v)+'</u></b>':'<b><u class="grey">'+esc(c.getAttribute('data-w'))+'</u></b>';});});}
+
+/* ---------- shuffle (stored, no 4-in-a-row same slot) ---------- */
+var lastSlots=[];
+function orderFor(id,n,ans){var m=S.mc[id]=S.mc[id]||{};if(m.order&&m.order.length===n)return m.order;var o,tries=0;
+ do{o=[];for(var i=0;i<n;i++)o.push(i);for(var j=n-1;j>0;j--){var r=Math.floor(Math.random()*(j+1));var t=o[j];o[j]=o[r];o[r]=t;}tries++;}
+ while(ans!=null&&tries<20&&lastSlots.length>=3&&lastSlots.slice(-3).every(function(s){return s===o.indexOf(ans);}));
+ if(ans!=null)lastSlots.push(o.indexOf(ans));m.order=o;return o;}
+
+/* ---------- items, counting ---------- */
+var ITEMS=[];  /* {id, sec, kind, core, label, el} */
+function itemDone(it){if(it.kind==='mc'){var m=S.mc[it.id];return !!(m&&m.done);} if(it.kind==='q'){var a=String(S.q[it.id]||'').trim();return a.split(/\s+/).filter(Boolean).length>=(it.min||3);} if(it.kind==='sort'){return !!(S.sort[it.id]&&S.sort[it.id].done);} if(it.kind==='ctl'){return !!S.ctl[it.id];} return false;}
+function counts(sec){var d=0,t=0;ITEMS.forEach(function(it){if(sec&&it.sec!==sec)return;if(!it.core)return;if(it.hard&&S.mode==='easy')return;if(it.kind==='sort'){t+=it.n;d+=Math.min(it.n,(S.sort[it.id]&&S.sort[it.id].i)||0);return;}t++;if(itemDone(it))d++;});return {d:d,t:t};}
+function scoreAll(){var c=counts(null);var x=0;ITEMS.forEach(function(it){if(!it.core&&it.kind!=='ctl'&&!it.ctl&&itemDone(it))x++;});window.GAL_SCORE=Math.min(c.t,c.d+x);window.GAL_MAX=c.t;return {d:c.d,t:c.t,x:x};}
+
+/* ---------- render blocks ---------- */
+function tagHTML(t){return t?'<span class="tag tag-'+t.replace(/\s+/g,'').toLowerCase()+'">'+t+'</span>':'';}
+function blockMC(b,sec,compact){var id=b.id;var core=!b.extra;ITEMS.push({id:id,sec:sec,kind:'mc',core:core&&!b.hard,hard:b.hard,label:b.label||'Answer the question'});
+ var q=b.q;var html='<div class="item mc'+(compact?' compact':'')+(b.hard?' hard-only':'')+'" data-item="'+id+'">'+(compact?'':'<div class="ihead">'+tagHTML(b.tag)+(b.extra?'<span class="tag tag-x">⭐ Extra</span>':'')+'</div>')+
+ (compact?'':'<div class="qtext"><span class="qe">'+esc(b.qe||q)+'</span><span class="qh">'+esc(q)+'</span> '+spk(q)+'</div>')+'<div class="opts" data-mc="'+id+'"></div><div class="fb" aria-live="polite"></div></div>';return html;}
+function paintMC(b){var box=$('[data-mc="'+b.id+'"]');if(!box)return;var m=S.mc[b.id]=S.mc[b.id]||{};var o=orderFor(b.id,b.opts.length,b.opinion?null:b.ans);
+ box.innerHTML=o.map(function(i){var cls='opt';if(m.wrong&&m.wrong.indexOf(i)>=0)cls+=' wrong';if(m.done&&(b.opinion?m.pick===i:i===b.ans))cls+=' right';if(!m.done&&m.shown&&i===b.ans)cls+=' showme';
+  return '<button class="'+cls+'" data-i="'+i+'">'+esc(b.opts[i])+(cls.indexOf('wrong')>=0?' <span class="x">✗</span>':'')+(cls.indexOf('right')>=0?' <span class="ok">✓</span>':'')+'</button>';}).join('');
+ var fb=box.parentElement.querySelector('.fb');
+ if(m.done){fb.innerHTML=b.opinion?'<div class="good">✅ Good guess! '+esc(b.think||'Keep this idea in mind as you read.')+'</div>':(b.why?'<div class="why"><b>Why:</b> '+esc(b.why)+'</div>':'');}
+ else if(m.shown){fb.innerHTML='<div class="hint">Here is the answer '+spk(b.opts[b.ans])+' Tap it to finish.</div>';}
+ else if(m.wrong&&m.wrong.length){fb.innerHTML='<div class="hint">💡 '+esc((b.hints&&b.hints[m.wrong.length-1])||b.hint||'Look back at the story and try again.')+'</div>';}
+ else fb.innerHTML='';}
+function clickMC(b,i){var m=S.mc[b.id]=S.mc[b.id]||{};if(m.done||TV)return;m.wrong=m.wrong||[];
+ if(b.opinion){m.done=true;m.pick=i;m.first=true;}
+ else if(i===b.ans){m.done=true;if(m.first==null)m.first=!m.wrong.length;}
+ else{if(m.wrong.indexOf(i)<0)m.wrong.push(i);m.first=false;m.misses=(m.misses||0)+1;if(m.wrong.length>=3||m.wrong.length>=b.opts.length-1)m.shown=true;}
+ paintMC(b);changed();}
+function blockQ(b,sec){ITEMS.push({id:b.id,sec:sec,kind:'q',ctl:!!b.ctl,core:!b.extra&&!b.ctl&&!b.hard,hard:b.hard,min:b.min,label:b.label||'Write your answer'});
+ return '<div class="item q'+(b.hard?' hard-only':'')+'" data-item="'+b.id+'"><div class="ihead">'+tagHTML(b.tag)+(b.extra?'<span class="tag tag-x">⭐ Extra</span>':'')+'</div>'+
+ '<div class="qtext"><span class="qe">'+esc(b.qe||b.q)+'</span><span class="qh">'+esc(b.q)+'</span> '+spk(b.q)+'</div>'+
+ (b.frame?'<details class="starter"><summary>💡 Sentence starter</summary><div><span class="qe">'+esc(b.framee||b.frame)+'</span><span class="qh">'+esc(b.frame)+'</span></div></details>':'')+
+ '<textarea data-q="'+b.id+'" rows="3" placeholder="Type here…" '+(TV?'readonly':'')+'></textarea><div class="wc"></div></div>';}
+function blockSort(b,sec){ITEMS.push({id:b.id,sec:sec,kind:'sort',core:!b.extra,n:b.cards.length,label:b.label||'Sort the cards'});
+ return '<div class="item sort" data-item="'+b.id+'"><div class="ihead">'+tagHTML(b.tag||'SORT')+'</div><div class="qtext dr">'+esc(b.q)+'</div><div class="sortcard" data-sort="'+b.id+'"></div><div class="bins" data-bins="'+b.id+'"></div><div class="fb"></div><div class="sorted" data-sorted="'+b.id+'"></div></div>';}
+function paintSort(b){var st=S.sort[b.id]=S.sort[b.id]||{i:0,miss:{},got:{}};var card=$('[data-sort="'+b.id+'"]'),bins=$('[data-bins="'+b.id+'"]'),fb=card.parentElement.querySelector('.fb'),done=$('[data-sorted="'+b.id+'"]');
+ if(!st.order){st.order=b.cards.map(function(_,i){return i;});for(var j=st.order.length-1;j>0;j--){var r=Math.floor(Math.random()*(j+1));var t=st.order[j];st.order[j]=st.order[r];st.order[r]=t;}}
+ done.innerHTML=b.bins.map(function(bn,k){var got=st.order.filter(function(ci,pos){return pos<st.i&&b.cards[ci][1]===k;});return '<div class="sbin"><b>'+esc(bn)+'</b>'+got.map(function(ci){return '<div class="mini">'+esc(b.cards[ci][0])+'</div>';}).join('')+'</div>';}).join('');
+ if(st.i>=b.cards.length){st.done=true;card.innerHTML='<div class="good">✅ All '+b.cards.length+' cards sorted.</div>';bins.innerHTML='';fb.innerHTML='';return;}
+ var c=b.cards[st.order[st.i]];var tries=st.miss[st.i]||0;
+ card.innerHTML='<div class="card1">'+esc(c[0])+' '+spk(c[0])+'</div><div class="muted">Card '+(st.i+1)+' of '+b.cards.length+'</div>';
+ bins.innerHTML=b.bins.map(function(bn,k){var cls='bin'+(st.lastWrong===k?' wrong':'')+(tries>=3&&k===c[1]?' showme':'');return '<button class="'+cls+'" data-bin="'+k+'">'+(b.icons?b.icons[k]+' ':'')+esc(bn)+'</button>';}).join('');
+ fb.innerHTML=tries>=3?'<div class="hint">The answer is <b>'+esc(b.bins[c[1]])+'</b>. Tap it to go on.</div>':tries?'<div class="hint">💡 '+esc(c[2]||'Think about which story this happens in.')+'</div>':'';}
+function clickSort(b,k){var st=S.sort[b.id];if(TV||st.done)return;var c=b.cards[st.order[st.i]];
+ if(k===c[1]){st.got[st.i]=(st.miss[st.i]||0)===0;st.i++;st.lastWrong=null;}else{st.miss[st.i]=(st.miss[st.i]||0)+1;st.lastWrong=k;}
+ paintSort(b);changed();}
+function blockWords(b){return '<div class="words">'+b.words.map(function(w){return '<div class="wcard" data-w="'+esc(w.w)+'" data-def="'+esc(w.d)+'"><div class="wpic">'+(ART.W[w.pic]||'')+'</div><div class="wtext"><div class="wword">'+esc(w.w)+' '+spk(w.w+'. '+w.d)+'</div><div class="wdef">'+esc(w.d)+'</div><div class="wtr" translate="no"></div>'+(w.s?'<div class="wsen">'+esc(w.s)+'</div>':'')+'</div></div>';}).join('')+'</div>';}
+function blockStory(b,sec){return '<div class="story" data-part="'+b.part+'"><div class="muted">Loading the story…</div></div>';}
+function blockCtl(b,sec){ITEMS.push({id:b.id,sec:sec,kind:'ctl',core:false,label:'Try the tools'});
+ return '<div class="item ctl" data-item="'+b.id+'"><div class="ihead"><span class="tag tag-start">START HERE · LEARN THE PAGE</span></div>'+b.html+'<div class="ctlrow">'+b.tasks.map(function(t,i){return '<label class="ctlt"><input type="checkbox" data-ctl="'+b.id+'" data-k="'+i+'"> '+t+'</label>';}).join('')+'</div></div>';}
+function render(){var app=$('#sections');var bar=$('#chips');ITEMS=[];
+ bar.innerHTML=D.sections.map(function(s,i){return '<button class="chip" data-sec="'+s.id+'"><span class="cname">'+s.chip+'</span> <span class="ccount"></span></button>';}).join('');
+ app.innerHTML=D.sections.map(function(s,i){var h='<section class="sec" id="sec-'+s.id+'" hidden><h2>'+s.title+'</h2>';
+  s.blocks.forEach(function(b){if(b.t==='html')h+='<div class="box'+(b.cls?' '+b.cls:'')+'">'+(b.pic?'<div class="pic">'+b.pic+'</div>':'')+b.html+'<div class="clr"></div></div>';
+   else if(b.t==='panel')h+='<div class="panel">'+b.svg+'</div>';
+   else if(b.t==='mc')h+=blockMC(b,s.id);else if(b.t==='q')h+=blockQ(b,s.id);else if(b.t==='sort')h+=blockSort(b,s.id);else if(b.t==='words')h+=blockWords(b);else if(b.t==='story')h+=blockStory(b,s.id);else if(b.t==='ctl')h+=blockCtl(b,s.id);
+   else if(b.t==='grid'){h+='<div class="item grid"><div class="qtext dr">'+esc(b.q)+'</div><div class="gridwrap"><table class="g"><tr><th></th>'+b.cols.map(function(c){return '<th>'+c+'</th>';}).join('')+'</tr>'+b.rows.map(function(r){return '<tr><th>'+esc(r.label)+' '+spk(r.label)+'</th>'+r.cells.map(function(c){return '<td>'+blockMC(c,s.id,true)+'</td>';}).join('')+'</tr>';}).join('')+'</table></div></div>';}});
+  var nx=D.sections[i+1];h+='<div class="secfoot"><span class="need"></span>'+(nx?'<button class="go" data-go="'+nx.id+'">Done — go to '+nx.chip+' →</button>':(D.finalLink?'<a class="go" href="'+D.finalLink[0]+'">'+D.finalLink[1]+'</a>':''))+'</div></section>';return h;}).join('');
+ eachMC(paintMC);eachSort(paintSort);
+ $$('textarea[data-q]').forEach(function(t){t.value=S.q[t.getAttribute('data-q')]||'';wc(t);});
+ $$('input[data-ctl]').forEach(function(c){var v=S.ctl[c.getAttribute('data-ctl')]||{};c.checked=!!(v.k&&v.k[c.getAttribute('data-k')]);});
+ loadStory();applyMode();translateDirs();translateCards();show(S.sec||D.sections[0].id);}
+function eachMC(fn){D.sections.forEach(function(s){s.blocks.forEach(function(b){if(b.t==='mc')fn(b);if(b.t==='grid')b.rows.forEach(function(r){r.cells.forEach(fn);});});});}
+function eachSort(fn){D.sections.forEach(function(s){s.blocks.forEach(function(b){if(b.t==='sort')fn(b);});});}
+function findMC(id){var f=null;eachMC(function(b){if(b.id===id)f=b;});return f;}
+function findSort(id){var f=null;eachSort(function(b){if(b.id===id)f=b;});return f;}
+function wc(t){var n=String(t.value).trim().split(/\s+/).filter(Boolean).length;t.style.height='auto';t.style.height=Math.max(70,t.scrollHeight+4)+'px';var w=t.parentElement.querySelector('.wc');if(w)w.textContent=n?n+' words':'';}
+
+/* ---------- story text (teacher pastes it on the dashboard; saved in song_lyrics) ---------- */
+var STORY=null;
+function loadStory(){if(!D.storySlug)return;var go=function(){paintStory();};if(STORY){go();return;}
+ fetch(SUPA+'/rest/v1/song_lyrics?select=lines,updated_at&slug=eq.'+encodeURIComponent(D.storySlug),{headers:H()}).then(function(r){return r.json();}).then(function(j){STORY=(j&&j[0]&&j[0].lines)||[];go();}).catch(function(){STORY=[];go();});}
+function parts(){var paras=[],brk=[];(STORY||[]).forEach(function(l){if(String(l).trim()==='---'){brk.push(paras.length);}else if(String(l).trim())paras.push(String(l));});
+ var n=paras.length;if(brk.length<2)brk=[Math.round(n/3),Math.round(2*n/3)];return {paras:paras,b:[0,brk[0],brk[1],n]};}
+function paintStory(){var P=parts();$$('.story').forEach(function(el){var p=+el.getAttribute('data-part');
+ if(!P.paras.length){el.innerHTML='<div class="box warn dr">Mr. Toby has not put the story here yet. Read Part '+p+' in your paper copy, then answer the questions.</div>';translateDirs(el);return;}
+ var h='';for(var i=P.b[p-1];i<P.b[p];i++){var n=i+1;var sg=S.sig[n]||'';h+='<div class="para hl-'+(S.hl[n]||'none')+'" data-n="'+n+'"><button class="pnum" data-pn="'+n+'" title="tap to colour">'+n+'</button><p translate="no">'+esc(P.paras[i])+' '+spk(P.paras[i])+'</p><div class="sig"><button class="sg sg-t'+(/t/.test(sg)?' on':'')+'" data-sg="t" data-n="'+n+'" title="tough">✊</button><button class="sg sg-k'+(/k/.test(sg)?' on':'')+'" data-sg="k" data-n="'+n+'" title="kind">☀</button></div></div>';}
+ el.innerHTML=h;});}
+document.addEventListener('click',function(e){var pn=e.target.closest('.pnum');if(pn&&!TV){var n=pn.getAttribute('data-pn');var cyc=['none','y','p','b'];var c=S.hl[n]||'none';S.hl[n]=cyc[(cyc.indexOf(c)+1)%4];if(S.hl[n]==='none')delete S.hl[n];pn.parentElement.className='para hl-'+(S.hl[n]||'none');changed();return;}
+ var sg=e.target.closest('.sg');if(sg&&!TV){var n2=sg.getAttribute('data-n'),k=sg.getAttribute('data-sg');var v=S.sig[n2]||'';v=v.indexOf(k)>=0?v.replace(k,''):v+k;if(v)S.sig[n2]=v;else delete S.sig[n2];sg.classList.toggle('on');changed();return;}
+ var o=e.target.closest('.opt');if(o){var id=o.parentElement.getAttribute('data-mc');clickMC(findMC(id),+o.getAttribute('data-i'));return;}
+ var bn=e.target.closest('.bin');if(bn){clickSort(findSort(bn.parentElement.getAttribute('data-bins')),+bn.getAttribute('data-bin'));return;}
+ var ch=e.target.closest('.chip');if(ch){if(ch.classList.contains('locked')){flash('🔒 Finish the part before this one first.');return;}show(ch.getAttribute('data-sec'));return;}
+ var g=e.target.closest('[data-go]');if(g){var t=g.getAttribute('data-go');var c=$('.chip[data-sec="'+t+'"]');if(c&&c.classList.contains('locked')){flash('Answer a few more first — the line under the chips says what is next.');return;}show(t);window.scrollTo(0,0);return;}
+ var md=e.target.closest('[data-mode]');if(md){S.mode=md.getAttribute('data-mode');applyMode();changed();}});
+document.addEventListener('input',function(e){var t=e.target;if(t.matches('textarea[data-q]')&&!TV){S.q[t.getAttribute('data-q')]=t.value;wc(t);changed();}});
+document.addEventListener('change',function(e){var c=e.target;if(c.matches('input[data-ctl]')&&!TV){var id=c.getAttribute('data-ctl');var v=S.ctl[id]=S.ctl[id]||{k:{}};v.k[c.getAttribute('data-k')]=c.checked;var all=$$('input[data-ctl="'+id+'"]').every(function(x){return x.checked;});if(all)v.done=1;changed();}
+ if(c.id==='lang'){try{localStorage.setItem('vocab_lang',c.value);}catch(e){}translateDirs();translateCards();}});
+function flash(t){var f=$('#flash');f.textContent=t;f.hidden=false;clearTimeout(flash.t);flash.t=setTimeout(function(){f.hidden=true;},2600);}
+function applyMode(){document.body.classList.toggle('mode-easy',S.mode==='easy');document.body.classList.toggle('mode-hard',S.mode!=='easy');$$('[data-mode]').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-mode')===S.mode);});}
+function show(id){S.sec=id;$$('.sec').forEach(function(s){s.hidden=s.id!=='sec-'+id;});$$('.chip').forEach(function(c){c.classList.toggle('cur',c.getAttribute('data-sec')===id);});refresh();}
+
+/* ---------- chips, locks, progress, next step + green arrow ---------- */
+var ARROW='<svg class="nxa" viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><path d="M4 4 L20 12 L4 20 L8 12 Z" fill="#1f7a4d"/></svg>';
+function refresh(){var prevOk=true;D.sections.forEach(function(s,i){var c=counts(s.id),chip=$('.chip[data-sec="'+s.id+'"]');var full=c.t===0||c.d>=c.t;
+  chip.querySelector('.ccount').textContent=c.t?(c.d+'/'+c.t):'';chip.classList.toggle('full',c.t>0&&full);chip.querySelector('.cname').textContent=(full&&c.t?'✓ ':'')+s.chip;
+  var lock=!OPEN&&!TV&&!prevOk;chip.classList.toggle('locked',lock);if(lock&&chip.querySelector('.cname').textContent.indexOf('🔒')<0)chip.querySelector('.cname').textContent='🔒 '+s.chip;
+  prevOk=prevOk&&(c.t===0||c.d/c.t>=0.7);
+  var need=$('#sec-'+s.id+' .need');if(need){var left=Math.max(0,Math.ceil(c.t*0.7)-c.d);need.textContent=left>0?('Answer '+left+' more to continue'):(c.d<c.t?'You can go on — finish the rest later.':'');}});
+ var all=scoreAll();$('#bar i').style.width=(all.t?Math.round(100*all.d/all.t):0)+'%';$('#barlab').textContent=all.d+' / '+all.t+(all.x?' · ⭐ '+all.x+' extra':'');
+ nextStep();}
+function nextStep(){$$('.nxa').forEach(function(a){a.remove();});var line=$('#next');var cur=S.sec;var target=null,txt='';
+ for(var i=0;i<ITEMS.length;i++){var it=ITEMS[i];if(it.sec!==cur||(!it.core&&it.kind!=='ctl'))continue;if(it.hard&&S.mode==='easy')continue;if(!itemDone(it)){target=$('[data-item="'+it.id+'"]');txt=it.kind==='ctl'?'Start here — try the tools in the yellow box':it.kind==='q'?'Next: write your answer':it.kind==='sort'?'Next: sort the cards':'Next: answer the question';break;}}
+ if(!target){var idx=D.sections.findIndex(function(s){return s.id===cur;});var nx=D.sections[idx+1];var allDone=counts(null);
+  if(nx){target=$('#sec-'+cur+' .go');txt='Next: go to '+nx.chip.replace(/<[^>]+>/g,'');}else if(allDone.d<allDone.t){var fs=D.sections.find(function(s){var c=counts(s.id);return c.d<c.t;});target=$('.chip[data-sec="'+fs.id+'"]');txt='Next: finish '+fs.chip;}else{txt='You finished this part.';}}
+ line.querySelector('.ntxt').textContent=txt;line.querySelector('.ntxt').setAttribute('data-src',txt);line.querySelector('.ntxt').removeAttribute('data-trd');translateDirs(line);
+ if(target){var a=document.createElement('span');a.innerHTML=ARROW;var svgEl=a.firstChild;if(target.classList.contains('go')||target.classList.contains('chip')){target.parentElement.insertBefore(svgEl,target);}else{var hd=target.querySelector('.ihead')||target;hd.insertBefore(svgEl,hd.firstChild);}}}
+
+/* ---------- save / load (load first; never save before load) ---------- */
+function payload(){var qs=[];ITEMS.forEach(function(it){if(it.kind==='q')qs.push({id:it.id,a:S.q[it.id]||''});});var sc=scoreAll();
+ return {mc:S.mc,q:S.q,sort:S.sort,hl:S.hl,sig:S.sig,ctl:S.ctl,mode:S.mode,sec:S.sec,questions:qs,meta:{answered:sc.d,total:sc.t,extra:sc.x,lang:lang()}};}
+function row(){var p=payload();return {email:student.email,student_name:student.name,period:student.period,guide_key:D.key,mode:S.mode,lang:lang(),payload:p,answered:p.meta.answered,total:p.meta.total,updated_at:new Date().toISOString()};}
+function status(cls,t){var s=$('#save');s.className='save '+cls;s.textContent=t;}
+function changed(){refresh();if(!student||TV)return;dirty=true;if(!LOADED)return;status('wait','Saving…');clearTimeout(saveT);saveT=setTimeout(push,900);}
+function push(keep){if(!student||!LOADED||TV)return;saveT=null;scoreAll();dirty=false;
+ return fetch(SUPA+'/rest/v1/'+TABLE+'?on_conflict=email,guide_key',{method:'POST',keepalive:!!keep,headers:H({Prefer:'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify([row()])})
+ .then(function(r){if(r.ok)status('ok','Saved '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}));else{dirty=true;status('bad','Not saved — check internet');}}).catch(function(){dirty=true;status('bad','Not saved — check internet');});}
+function flush(){if(saveT||dirty){clearTimeout(saveT);if(student&&LOADED&&!TV)push(true);}}
+window.addEventListener('pagehide',flush);document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')flush();});
+function lp(e){return String(e||'').trim().toLowerCase().split('@')[0];}
+function load(){var l=lp(student.email);status('wait','Loading your work…');
+ return fetch(SUPA+'/rest/v1/'+TABLE+'?select=payload,updated_at&guide_key=eq.'+encodeURIComponent(D.key)+'&email=in.('+encodeURIComponent(l+'@s.sfusd.edu')+','+encodeURIComponent(l+'@sfusd.edu')+')&order=updated_at.desc',{headers:H()})
+ .then(function(r){if(!r.ok)throw new Error('load '+r.status);return r.json();}).then(function(rows){var p=rows&&rows[0]&&rows[0].payload;
+  if(p){['mc','q','sort','hl','sig','ctl'].forEach(function(k){if(p[k]&&typeof p[k]==='object')S[k]=p[k];});if(p.mode)S.mode=p.mode;if(p.sec)S.sec=p.sec;}
+  LOADED=true;$('#srv').hidden=true;status('ok','Ready');render();if(dirty)changed();})
+ .catch(function(){$('#srv').hidden=false;status('bad','Can’t reach the server');setTimeout(load,5000);});}
+
+/* ---------- sign-in ---------- */
+function start(){var f=$('#first').value.trim(),l=$('#last').value.trim(),e=$('#email').value.trim().toLowerCase(),p=$('#period').value,lg=$('#lang').value;var err=$('#gerr');
+ if(!f||!l){err.textContent='Type your first and last name.';return;} if(!/^[^@\s]+@(s\.)?sfusd\.edu$/.test(e)){err.textContent='Use your school email (…@s.sfusd.edu).';return;}
+ if(!p){err.textContent='Pick your period.';return;} if(!lg){err.textContent='Pick your language.';return;}
+ try{localStorage.setItem('vocab_lang',lg);}catch(x){}
+ student={name:f+' '+l,email:e,period:p};$('#gate').hidden=true;$('#app').hidden=false;$('#who').textContent=student.name+' · P'+p;load();}
+window.TYMA={start:start};
+document.addEventListener('DOMContentLoaded',function(){
+ $('#gstart').addEventListener('click',start);$('#gate').addEventListener('keydown',function(e){if(e.key==='Enter')start();});
+ try{var v=localStorage.getItem('vocab_lang');if(v&&$('#lang').querySelector('option[value="'+v+'"]'))$('#lang').value=v;}catch(e){}
+ if(TV&&Q.get('email')){student={name:'(teacher view)',email:Q.get('email'),period:''};$('#gate').hidden=true;$('#app').hidden=false;$('#who').textContent='👀 Teacher view · '+Q.get('email');$('#tvbar').hidden=false;load();}
+});
+})();
+</script>
+<script src="/readings/track.js"></script>
+</body>
+</html>

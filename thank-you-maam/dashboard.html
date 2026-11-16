@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thank You, Ma’am — Teacher dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Nunito,system-ui,sans-serif;background:#f3eee4;color:#1f1a14}
+main{max-width:1150px;margin:0 auto;padding:14px 14px 40px}h1{margin:44px 0 6px;font-size:24px}h2{font-size:19px;margin:0 0 8px}
+.box{background:#fff;border:2px solid #1f1a14;border-radius:14px;box-shadow:0 4px 0 #1f1a14;padding:14px;margin-bottom:18px}
+button{font-family:inherit;border:2px solid #1f1a14;border-radius:10px;background:#fff;padding:6px 12px;font-weight:700;cursor:pointer}button.pri{background:#1f7a4d;color:#fff;border-color:#1f7a4d}
+input,select,textarea{font-family:inherit;font-size:15px;border:2px solid #1f1a14;border-radius:10px;padding:8px}
+#lock{position:fixed;inset:0;background:#3a1a5c;display:flex;align-items:center;justify-content:center;z-index:30}#lock .box{max-width:360px;width:90%}
+textarea#txt{width:100%;min-height:180px}.muted{color:#6b6255;font-size:14px}
+.pv{max-height:420px;overflow:auto;border:2px solid #1f1a14;border-radius:10px;padding:6px;background:#fffdf7}
+.pp{display:grid;grid-template-columns:34px 1fr;gap:8px;padding:3px 0;font-size:14px;border-bottom:1px dotted #ccc}.pp b{color:#6b5435}
+.brk{background:#1f1a14;color:#fff;font-weight:800;padding:4px 8px;border-radius:8px;margin:4px 0;display:flex;gap:8px;align-items:center}.brk button{padding:0 8px;background:#fff;color:#1f1a14}
+table{border-collapse:collapse;width:100%;font-size:14px}th,td{border:2px solid #1f1a14;padding:6px;text-align:left;vertical-align:top}th{background:#faf3e3}tr.s:hover{background:#fff8e1;cursor:pointer}
+.det{background:#fbfaf6}.ans{margin:4px 0;padding:6px;border:1px solid #bbb;border-radius:8px;background:#fff}.ans i{color:#6b6255}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.ok{color:#1f7a4d;font-weight:800}.bad{color:#b42318;font-weight:800}
+</style>
+<script src="/readings/grade04.js"></script>
+<script src="/readings/pretr.js"></script>
+</head><body>
+<div id="lock"><div class="box"><h2>🍎 Thank You, Ma’am — teacher</h2>
+<input type="text" name="username" autocomplete="username" value="teacher" style="display:none">
+<input id="pw" type="password" autocomplete="current-password" placeholder="Password" style="width:100%"><p><button class="pri" id="pwgo">Open</button> <span id="pwerr" class="bad"></span></p></div></div>
+<main>
+<h1>👜 Thank You, Ma’am — dashboard</h1>
+<p class="muted">Student pages: <a href="/readings/thank-you-maam/" target="_blank">https://tobiasrugger.github.io/readings/thank-you-maam/</a> · compare page <a href="/readings/thank-you-maam/compare/" target="_blank">https://tobiasrugger.github.io/readings/thank-you-maam/compare/</a></p>
+
+<div class="box" id="storybox"><h2>📄 Story text</h2>
+<p class="muted">Paste the whole story once, from your class copy. Leave a blank line between paragraphs (if your copy has none, each line becomes a paragraph). Then check where the three parts start and press <b>Save story</b>. Students see it the next time they open the page.</p>
+<p id="cur" class="muted">Loading what is saved…</p>
+<textarea id="txt" placeholder="Paste the story here…"></textarea>
+<div class="row" style="margin:8px 0"><button id="split">Split into paragraphs</button><button class="pri" id="savestory">Save story</button><span id="smsg"></span></div>
+<div id="preview"></div></div>
+
+<div class="box"><h2>Students</h2>
+<div class="row"><select id="per"><option value="">All periods</option></select>
+<input type="search" id="q" placeholder="Find a student" autocomplete="off" name="tyma-find">
+<button id="reload">↻ Reload</button><span class="muted" id="cnt"></span></div>
+<div style="overflow-x:auto;margin-top:10px"><table id="tbl"></table></div></div>
+
+<div class="box" id="ptbox"><h2>🌐 Pre-translate</h2><div id="pt"></div></div>
+</main>
+<script>
+var SUPA='https://lhmwtfyceilgndpygivj.supabase.co',KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var SLUG='tyma-story';
+function H(x){var h={apikey:KEY,Authorization:'Bearer '+KEY,'Content-Type':'application/json'};if(x)for(var k in x)h[k]=x[k];return h;}
+function $(s){return document.querySelector(s);}function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function unlock(){if($('#pw').value.trim()==='galileo2026'){$('#lock').remove();try{sessionStorage.setItem('tyma_t','1');}catch(e){}boot();}else $('#pwerr').textContent='Not right';}
+$('#pwgo').onclick=unlock;$('#pw').onkeydown=function(e){if(e.key==='Enter')unlock();};
+try{if(sessionStorage.getItem('tyma_t')){$('#lock').remove();setTimeout(boot,0);}}catch(e){}
+/* ---- story text ---- */
+var PARAS=[],BRK=[0,0];
+function splitText(t){t=String(t||'').replace(/\r/g,'').trim();var p=t.split(/\n\s*\n+/).map(function(s){return s.replace(/\s*\n\s*/g,' ').trim();}).filter(Boolean);
+ if(p.length<4)p=t.split(/\n+/).map(function(s){return s.trim();}).filter(Boolean);return p;}
+function fromLines(lines){PARAS=[];var b=[];(lines||[]).forEach(function(l){if(String(l).trim()==='---')b.push(PARAS.length);else if(String(l).trim())PARAS.push(String(l));});
+ BRK=b.length>=2?[b[0],b[1]]:[Math.round(PARAS.length/3),Math.round(2*PARAS.length/3)];}
+function preview(){var h='<div class="pv"><div class="brk">Part 1 starts</div>';PARAS.forEach(function(p,i){
+ if(i===BRK[0]||i===BRK[1]){var k=i===BRK[0]?0:1;h+='<div class="brk">Part '+(k+2)+' starts here <button data-mv="'+k+'" data-d="-1">▲</button><button data-mv="'+k+'" data-d="1">▼</button></div>';}
+ h+='<div class="pp"><b>'+(i+1)+'</b><span>'+esc(p.length>220?p.slice(0,220)+'…':p)+'</span></div>';});
+ $('#preview').innerHTML=PARAS.length?h+'</div><p class="muted">'+PARAS.length+' paragraphs. Part 2 should start where Roger is inside her room; Part 3 where they sit down to eat.</p>':'';}
+$('#preview').addEventListener('click',function(e){var b=e.target.closest('[data-mv]');if(!b)return;var k=+b.getAttribute('data-mv'),d=+b.getAttribute('data-d');var v=BRK[k]+d;
+ if(k===0&&v>=1&&v<BRK[1])BRK[0]=v;if(k===1&&v>BRK[0]&&v<PARAS.length)BRK[1]=v;preview();});
+$('#split').onclick=function(){PARAS=splitText($('#txt').value);BRK=[Math.round(PARAS.length/3),Math.round(2*PARAS.length/3)];preview();};
+$('#savestory').onclick=function(){if(!PARAS.length){if($('#txt').value.trim())$('#split').onclick();else{$('#smsg').textContent='Paste the story first.';return;}}
+ var lines=[];PARAS.forEach(function(p,i){if(i===BRK[0]||i===BRK[1])lines.push('---');lines.push(p);});$('#smsg').textContent='Saving…';
+ fetch(SUPA+'/rest/v1/song_lyrics?on_conflict=slug',{method:'POST',headers:H({Prefer:'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify({slug:SLUG,song:'Thank You, Ma\u2019am (story text)',lines:lines,updated_at:new Date().toISOString()})})
+ .then(function(r){$('#smsg').innerHTML=r.ok?'<span class="ok">✓ Saved — '+PARAS.length+' paragraphs, 3 parts.</span>':'<span class="bad">Not saved ('+r.status+')</span>';if(r.ok){$('#txt').value='';$('#cur').textContent='Saved story: '+PARAS.length+' paragraphs.';}});};
+function loadStory(){return fetch(SUPA+'/rest/v1/song_lyrics?select=lines,updated_at&slug=eq.'+SLUG,{headers:H()}).then(function(r){return r.json();}).then(function(j){
+ if(j&&j[0]&&j[0].lines&&j[0].lines.length){fromLines(j[0].lines);$('#cur').innerHTML='<span class="ok">✓ Story saved</span> — '+PARAS.length+' paragraphs, updated '+new Date(j[0].updated_at).toLocaleString()+'. You can move the part breaks and press Save again.';preview();}
+ else $('#cur').innerHTML='<span class="bad">No story yet.</span> Students see “read Part 1 in your paper copy” until you paste it.';}).catch(function(){$('#cur').textContent='Could not load (server).';});}
+/* ---- students ---- */
+var ROWS=[];
+function load(){$('#cnt').textContent='Loading…';fetch(SUPA+'/rest/v1/landlady_responses?select=email,student_name,period,guide_key,payload,answered,total,updated_at&guide_key=in.(thank_you_maam,tyma_compare)&order=updated_at.desc',{headers:H()})
+ .then(function(r){return r.json();}).then(function(rows){ROWS=rows||[];var ps={};ROWS.forEach(function(r){if(r.period!=null&&r.period!=='')ps[String(r.period)]=1;});
+  var sel=$('#per'),cur=sel.value;sel.innerHTML='<option value="">All periods</option>'+Object.keys(ps).sort(function(a,b){return a-b;}).map(function(p){return '<option value="'+p+'">Period '+p+'</option>';}).join('');sel.value=cur;draw();});}
+function key(e){return String(e||'').toLowerCase().split('@')[0];}
+function draw(){var p=$('#per').value,q=$('#q').value.trim().toLowerCase();var by={};
+ ROWS.forEach(function(r){if(p&&String(r.period)!==p)return;var k=key(r.email);if(q&&(String(r.student_name||'')+' '+k).toLowerCase().indexOf(q)<0)return;var s=by[k]=by[k]||{k:k,name:r.student_name,period:r.period,email:r.email};s[r.guide_key]=r;if(!s.t||r.updated_at>s.t)s.t=r.updated_at;});
+ var list=Object.keys(by).map(function(k){return by[k];}).sort(function(a,b){return String(a.name).localeCompare(String(b.name));});
+ $('#cnt').textContent=list.length+' students';
+ function cell(r){if(!r)return '<span class="muted">—</span>';var m=r.payload&&r.payload.meta||{};var pct=r.total?Math.round(100*r.answered/r.total):0;var b=window.GAL04&&GAL04.band?GAL04.band(pct):'';return r.answered+'/'+r.total+' <b>'+b+'</b>'+(m.extra?' · ⭐'+m.extra:'');}
+ $('#tbl').innerHTML='<tr><th>Student</th><th>P</th><th>Story</th><th>Compare</th><th>Last saved</th><th></th></tr>'+list.map(function(s){return '<tr class="s" data-k="'+s.k+'"><td>'+esc(s.name)+'<div class="muted">'+esc(s.k)+'</div></td><td>'+esc(s.period)+'</td><td>'+cell(s.thank_you_maam)+'</td><td>'+cell(s.tyma_compare)+'</td><td>'+new Date(s.t).toLocaleString()+'</td><td><a href="/readings/thank-you-maam/?view=teacher&email='+encodeURIComponent(s.email)+'" target="_blank">👀 story</a> · <a href="/readings/thank-you-maam/compare/?view=teacher&email='+encodeURIComponent(s.email)+'" target="_blank">👀 compare</a></td></tr>';}).join('');
+ window.__by=by;}
+$('#tbl').addEventListener('click',function(e){var tr=e.target.closest('tr.s');if(!tr||e.target.closest('a'))return;var nx=tr.nextElementSibling;if(nx&&nx.classList.contains('det')){nx.remove();return;}
+ var s=window.__by[tr.getAttribute('data-k')];var h='';['thank_you_maam','tyma_compare'].forEach(function(g){var r=s[g];if(!r)return;var P=r.payload||{};h+='<h3>'+(g==='thank_you_maam'?'Story':'Compare')+'</h3>';
+  Object.keys(P.q||{}).forEach(function(id){if(String(P.q[id]).trim())h+='<div class="ans"><i>'+esc(id)+'</i> — '+esc(P.q[id])+'</div>';});
+  var miss=Object.keys(P.mc||{}).filter(function(id){return P.mc[id].misses;}).map(function(id){var m=P.mc[id];return id+' ('+m.misses+(m.shown?', answer shown':'')+')';});
+  if(miss.length)h+='<div class="muted">Missed first: '+esc(miss.join(' · '))+'</div>';
+  var sig=P.sig||{};var nt=Object.keys(sig).filter(function(n){return /t/.test(sig[n]);}),nk=Object.keys(sig).filter(function(n){return /k/.test(sig[n]);});if(nt.length||nk.length)h+='<div class="muted">'+(nt.length?'✊ tough ¶'+nt.join(', ¶'):'')+(nt.length&&nk.length?' · ':'')+(nk.length?'☀ kind ¶'+nk.join(', ¶'):'')+'</div>';});
+ var d=document.createElement('tr');d.className='det';d.innerHTML='<td colspan="6">'+(h||'Nothing yet.')+'</td>';tr.after(d);});
+$('#per').onchange=draw;$('#q').oninput=draw;$('#reload').onclick=load;
+/* Chrome autofill guard (T-388 lesson) */
+setTimeout(function(){var q=$('#q');if(q.value&&q.value.indexOf('@')>0){q.value='';draw();}},800);
+/* ---- pre-translate ---- */
+var WORDS=[['purse','a bag a woman carries for money and things'],['stoop','the stone steps in front of a city building'],['frail','thin and weak'],['half nelson','a hold around someone\u2019s neck from behind'],['blue suede shoes','soft blue shoes that were very cool in the 1950s'],['icebox','an old word for a refrigerator'],['presentable','clean and neat enough to be seen'],['ashamed','feeling bad because you did something wrong'],['trust','to believe someone will do the right thing'],['latch','a metal piece that keeps a door shut']];
+var DIRS=['Sign in to start. Your work saves by itself.','Learn the page first. Look at the picture. Press 🔊 to hear any sentence. Tap any word to see it in your language.','Tough or kind? Mrs. Jones is both. Beside each paragraph, tap ✊ when she is tough and ☀ when she is kind. Some paragraphs are both. Tap a paragraph number to colour it.','Look at how one student did it, then write your own.','Next: answer the question','Next: write your answer','Start here — try the tools in the yellow box','You finished this part.'];
+function boot(){loadStory();load();
+ if(window.GAL&&GAL.pretr)GAL.pretr({host:'#pt',title:'Pre-translate Thank You, Ma\u2019am',
+  langs:[['zh-CN','Mandarin'],['yue','Cantonese'],['es','Spanish'],['ar','Arabic'],['vi','Vietnamese'],['th','Thai'],['ne','Nepali'],['ary','Darija'],['ru','Russian'],['ur','Urdu'],['tl','Tagalog'],['fr','French'],['ko','Korean'],['hi','Hindi'],['so','Somali']],
+  ticked:['es','zh-CN','ar','vi'],
+  items:[{key:'thank-you-maam',title:'Thank You, Ma\u2019am · story, words, directions',lines:function(){return loadStory().then(function(){var L=[];
+   DIRS.forEach(function(t){L.push({src:t,slug:'dir',mode:'sentence'});});PARAS.forEach(function(p){L.push({src:p,slug:'dir',mode:'sentence'});});
+   WORDS.forEach(function(w){L.push({src:w[0],slug:'tap:thank-you-maam',meaning:w[1]});});return L;});}}]});}
+</script>
+</body></html>

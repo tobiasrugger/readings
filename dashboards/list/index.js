@@ -79,6 +79,7 @@ window.DASHBOARD_FILES = [
   'teacher',
   'teachme',
   'telltale',
+  'thank-you-maam',
   'thanks',
   'this-is-how',
   'toolkits',
