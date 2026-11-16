@@ -124,6 +124,61 @@
     }).catch(function () {});
   }
 
+  /* ---------- T-432: a blank period gets the first one the student picks ----------
+     Rule (Toby, Nov 16): if a student has NO period on the class list, the first
+     period they choose at sign-in is saved there. After that only Mr. Toby can
+     change it (gradebook ✏ Edit students). The database function
+     roster_fill_period does the deciding: it fills a blank and never changes a
+     period that is already set, so calling it again is harmless. We ask once per
+     student per tab. Sources: the period a page puts in its own save, and the
+     period std.js remembers when a sign-in box is submitted. */
+  var PFILL_KEY = 'gal_pfill_done';
+  var pfillAsked = {};
+  function pfillNum(p) {
+    var m = String(p == null ? '' : p).trim().match(/^(?:p(?:er(?:iod)?)?\.?\s*)?([1-7])$/i);
+    return m ? +m[1] : 0;
+  }
+  function fillPeriod(email, p) {
+    try {
+      email = clean(email);
+      var n = pfillNum(p);
+      if (!n || !/@(s\.)?sfusd\.edu$/.test(email)) return;
+      if (TEACHERISH.test(location.pathname)) return;
+      if (new URLSearchParams(location.search).get('view') === 'teacher') return;
+      var user = email.split('@')[0];
+      if (pfillAsked[user]) return;
+      try { if ((sessionStorage.getItem(PFILL_KEY) || '').split(',').indexOf(user) > -1) return; } catch (e) {}
+      pfillAsked[user] = 1;
+      realFetch(SUPA_URL + '/rest/v1/rpc/roster_fill_period', {
+        method: 'POST', keepalive: true,
+        headers: H({}),
+        body: JSON.stringify({ p_email: email, p_period: n })
+      }).then(function (r) {
+        if (!r.ok) { pfillAsked[user] = 0; return; }   /* try again on the next save */
+        try {
+          var done = (sessionStorage.getItem(PFILL_KEY) || '').split(',').filter(Boolean);
+          if (done.indexOf(user) < 0) done.push(user);
+          sessionStorage.setItem(PFILL_KEY, done.slice(-20).join(','));
+        } catch (e) {}
+      }).catch(function () { pfillAsked[user] = 0; });
+    } catch (e) {}
+  }
+  window.GAL_fillPeriod = fillPeriod;
+  /* std.js remembers a submitted sign-in box ~60 ms after the click */
+  function pfillFromSignIn(beforeAt) {
+    try {
+      var at = localStorage.getItem('gal_student_at') || '';
+      if (beforeAt !== null && at === beforeAt) return;            /* no sign-in happened */
+      if (!at || Date.now() - +at > 70 * 60 * 1000) return;        /* stale */
+      fillPeriod(localStorage.getItem('gal_student_email'), localStorage.getItem('gal_student_period'));
+    } catch (e) {}
+  }
+  document.addEventListener('click', function () {
+    var before = null;
+    try { before = localStorage.getItem('gal_student_at') || ''; } catch (e) {}
+    setTimeout(function () { pfillFromSignIn(before); }, 400);
+  }, true);
+
   /* ---------- read a score off whatever the page rendered ---------- */
   function readScore() {
     var got = [], seen = {};
@@ -371,6 +426,7 @@
             if (!row || typeof row !== 'object') continue;
             var em = row.email || row.student_email || row.user_email;
             if (em) noteEmail(em, row.name || row.student_name || row.full_name);
+            if (em && (row.period != null || row.class_period != null)) fillPeriod(em, row.period != null ? row.period : row.class_period);   /* T-432 */
             var tbl = (url.split('/rest/v1/')[1] || '').split('?')[0];
             if (em && !INFRA.test(tbl)) softSchedule(em);
             if (row.turned_in === true || row.turned_in === 'true') {
@@ -406,5 +462,7 @@
       var saved = localStorage.getItem('gal_student_email');
       if (saved) knownEmail = clean(saved);
     }
+    /* T-432: a sign-in resumed from earlier in this class period */
+    if (!q) setTimeout(function () { pfillFromSignIn(null); }, 2500);
   } catch (e) {}
 })();
