@@ -662,7 +662,6 @@ th,td{border-bottom:2px solid var(--line-dk)}
       <!-- From Mr. Toby: pushed from /readings/assign/ (class_assignments, area "site"). It sits INSIDE the pulsing band so the page has one place that says "do this". -->
       <div id="pushBox"></div>
       <!-- T-142 v3: work Mr. Toby gave THIS student from the Teacher's Desk (class_assignments period 'extra', email = the student) -->
-      <div id="extraWrap" class="hide"><h3 class="extrahead">&#10133; Extra work for you</h3><div id="extraBox"></div></div>
       <!-- Finish This (Gradebook chat): started-but-not-done work. Lives INSIDE the band so the page has one "do this" place. -->
       <div class="finsec hide" id="finishCard">
         <h2 class="finlabel"><span class="ico">&#9203;</span>Finish this</h2>
@@ -1192,6 +1191,9 @@ function catTitle(path,fallback){
   for(var i=0;i<c.length;i++) if(c[i].p===path) return c[i].t.replace(/\s*\((locked)\)/,'');
   return fallback;
 }
+/* T-435: catalog titles carry the path for the teacher's picker ("Story Reel 1: The New Student (reel-v2/ep01)").
+   Students never see that tail. */
+function cleanTitle(t){ return String(t==null?'':t).replace(/\s*\([a-z0-9\-\/]+\)\s*$/i,''); }
 function prettySlug(x){return String(x||'').replace(/[-_]/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});}
 async function loadReading(email){
   var lp=email.split('@')[0], both='in.('+encodeURIComponent(lp+'@s.sfusd.edu')+','+encodeURIComponent(lp+'@sfusd.edu')+')';
@@ -1334,6 +1336,8 @@ async function classDoing(email,p,pushed){
     if(!path||/\/(student|teacher|assign|reports|dashboards?|atlas)\//.test(path)||/dashboard/.test(path))return;
     /* T-262: word checks (vocab/pre…) are data for Mr. Toby, never "Your class is doing this" — students opened one, signed in again and only saw "finished" */
     if(isDataCheck(k)||/\/vocab\/pre(test)?(\/|$)/.test(path))return;
+    /* T-435: Daily Basics is a daily push, never a class-doing row (T-275 logs it as basics/DATE) */
+    if(/^(readings\/)?basics(\/|$)/.test(String(k))||/^\/readings\/basics(\/|$)/.test(path))return;
     var lp=String(r.email||'').toLowerCase().split('@')[0];
     var b=by[path]||(by[path]={who:{},last:'',k:(t[1]==='slug'?k:'')}); b.who[lp]=1; if((r[t[2]]||'')>b.last)b.last=r[t[2]];
   }); });
@@ -1343,8 +1347,11 @@ async function classDoing(email,p,pushed){
         && !otherCourse(path,'',courseOfPeriod(p));  /* T-269 */
     }).sort(function(a,b){ return by[a].last<by[b].last?1:-1; }).slice(0,CLASS_SHOW)
     .map(function(path){ var n=Object.keys(by[path].who).length;
-      return {href:path, title:by[path].k&&paramUrl(by[path].k)?slugLink(by[path].k).title:catTitle(path, slugLink(path.replace(/^\/readings\//,'')).title), cls:true, created_at:'1970-01-01T00:00:00Z',
-              note:n+' classmates started this', n:n}; });
+      /* T-435: no catalog title = no row (never show a raw slug or a date as a title) */
+      var t=by[path].k&&paramUrl(by[path].k)?slugLink(by[path].k).title:catTitle(path,'');
+      if(!t||/^\d{4}[\s\-]\d{2}[\s\-]\d{2}$/.test(t))return null;
+      return {href:path, title:cleanTitle(t), cls:true, created_at:'1970-01-01T00:00:00Z',
+              note:n+' classmates started this', n:n}; }).filter(Boolean);
 }
 /* ---------- From Mr. Toby ----------
    Activities pushed to a period from /readings/assign/ live in class_assignments
@@ -1404,7 +1411,7 @@ async function myPeriod(email){
    Counts what Mr. Toby pushed to this student's period (and to "all" periods, same course) since GRADE_SINCE,
    expired pushes too. Each push = its best mark out of 4 (gradebook bands: 90/75/60/started); nothing done = 0.
    Done with no number = 4. Launch Plus lessons count items done (T-175). Word checks never count (T-176).
-   "Extra work for you" never lowers the grade: it only shows as a button while it is not done.
+   T-435: work given to one student from the Desk (period 'extra') counts like a period push.
    The letter is a range of two (nearest neighbour), because paper grades are not on the site. */
 /* T-301: semesters and marking periods. Each semester starts fresh (the big cell); each MP gets its own small cell.
    END dates are the last school day of each MP — CHECK against Synergy/TeacherVue; MP dates here were estimated
@@ -1497,12 +1504,13 @@ async function loadGrade(email){
       if(isDataCheck(k.slug,{url:r.href,title:r.title}))return;
       seen[key]=1; var b=gBest(r); items.push({r:r,pct:b.pct,done:b.done,m:b.pct==null?0:g4(b.pct)});
     });
-    var extras=[];
+    /* T-435: work Mr. Toby gave this student alone counts exactly like a period push */
     (ex||[]).forEach(function(r){
       if(!r.href||isQuill(r.href))return; var k=gSlug(r.href), key=k.slug+'|'+k.prefix; if(!k.slug||seen[key])return; seen[key]=1;
       if(isDataCheck(k.slug,{url:r.href,title:r.title}))return;
-      var b=gBest(r); if(!b.done)extras.push({r:r});
+      var b=gBest(r); items.push({r:r,pct:b.pct,done:b.done,m:b.pct==null?0:g4(b.pct)});
     });
+    items.sort(function(a,b){ return String(a.r.created_at).localeCompare(String(b.r.created_at)); });
     if(!items.length){ card.classList.add('hide'); return; }
     /* T-301: each push belongs to the marking period it was pushed in; the big cell = this semester only */
     items.forEach(function(it){ it.mp=mpOf(it.r.created_at); });
@@ -1530,12 +1538,12 @@ async function loadGrade(email){
     items=semItems;
     var todo=items.filter(function(it){ return it.m<3; }).sort(function(a,b){ return a.m-b.m||String(b.r.created_at).localeCompare(String(a.r.created_at)); });
     var btn=function(it,kind){
-      var r=it.r, title=r.source==='classroom'?catTitle(String(r.href).split('?')[0],r.title||r.href).replace(/\s+[\u2014\u00b7|].*$/,''):(r.title||r.href);
+      var r=it.r, title=cleanTitle(r.source==='classroom'?catTitle(String(r.href).split('?')[0],r.title||r.href).replace(/\s+[\u2014\u00b7|].*$/,''):(r.title||r.href));
       var url=r.href+(r.href.indexOf('?')>-1?'&':'?')+'email='+encodeURIComponent(TV_EMAIL||email)+(TV_EMAIL?'&view=teacher':'');
-      var sub=kind==='xtra'?'&#10133; Extra &mdash; can only help':(!it.done?'Not done yet &mdash; Start &rarr;':'Your mark: '+it.m+' &mdash; Try again &rarr;');
+      var sub=(!it.done?'Not done yet &mdash; Start &rarr;':'Your mark: '+it.m+' &mdash; Try again &rarr;');
       return '<a class="gbtn '+(kind==='xtra'?'xtra':!it.done?'miss':'low')+'" href="'+esc(url)+'"><span class="gt">'+esc(title)+'</span><small>'+sub+'</small></a>';
     };
-    var html=todo.slice(0,6).map(function(it){return btn(it,'');}).join('')+extras.slice(0,3).map(function(it){return btn(it,'xtra');}).join('');
+    var html=todo.slice(0,6).map(function(it){return btn(it,'');}).join('');
     document.getElementById('gBtns').innerHTML=html;
     document.getElementById('gRaise').classList.toggle('hide',!html);
     var all=document.getElementById('gAll');
@@ -1558,7 +1566,7 @@ async function loadGrade(email){
     if(TV_EMAIL||READ_ONLY){
       var done=items.filter(function(it){return it.done;}).length;
       t.innerHTML='Teacher view &mdash; this student '+(STUDENT_SEES?'<b>sees</b> this box with the letters':'sees <b>nothing</b> here &mdash; this whole box is hidden from them')+'. <a href="/readings/student/dashboard.html">Change who sees them</a>. ';
-      t.appendChild(document.createTextNode(now.sem+' semester average '+(avg==null?'\u2014':avg.toFixed(2))+' (scale 0\u20134.5, same as the gradebook) over '+items.length+' pushed activities ('+done+' done, '+(items.length-done)+' not done); now = MP'+now.mp+'. Extras are left out of the average. Letters: A 3.5+, B 2.5+, C 1.5+, D 0.5+. MP dates live in MPS in student/index.html.'));
+      t.appendChild(document.createTextNode(now.sem+' semester average '+(avg==null?'\u2014':avg.toFixed(2))+' (scale 0\u20134.5, same as the gradebook) over '+items.length+' pushed activities ('+done+' done, '+(items.length-done)+' not done); now = MP'+now.mp+'. Work given to this student alone from the Desk counts like a period push. Letters: A 3.5+, B 2.5+, C 1.5+, D 0.5+. MP dates live in MPS in student/index.html.'));
       t.classList.remove('hide');
     } else t.classList.add('hide');
     card.classList.remove('hide');
@@ -1568,6 +1576,7 @@ async function loadGrade(email){
 async function loadPushed(email){
   var box=document.getElementById('pushBox');
   DATA.dailyBand=false;   /* T-347 */
+  DATA.bandSlugs={};      /* T-435: in-progress rows the band already shows */
   try{
     var p=await myPeriod(email);
     var per=['all'].concat(p?[p]:[]);
@@ -1578,17 +1587,19 @@ async function loadPushed(email){
     /* T-269: a push to "all" periods skips the other course's pages; a push to this student's own period always stays */
     var scP=courseOfPeriod(p); rows=rows.filter(function(r){ return !(String(r.period)==='all'&&otherCourse(r.href,r.title,scP)); });
     var seen={}; rows=rows.filter(function(r){if(seen[r.href])return false;seen[r.href]=1;return true;});
+    /* T-435 (Toby, Nov 16): work Mr. Toby gives ONE student from the Teacher's Desk (period 'extra') is usually work
+       they missed (a newcomer, a tech problem) — it is NOT extra. It looks and sorts exactly like a period push.
+       The same page pushed to the period too shows once. */
+    var lpx=email.split('@')[0], ex=[];
+    try{ ex=await sb('class_assignments?area=eq.site&period=eq.extra&email=in.('+encodeURIComponent(lpx+'@s.sfusd.edu')+','+encodeURIComponent(lpx+'@sfusd.edu')+')'+
+      '&or=(expires_at.is.null,expires_at.gt.'+encodeURIComponent(now)+')&order=created_at.desc&select=*')||[]; }catch(e){ ex=[]; }
+    ex=ex.filter(function(r){ if(!r.href||seen[r.href])return false; seen[r.href]=1; return true; });
+    rows=rows.concat(ex).sort(function(a,b){ return String(b.created_at||'').localeCompare(String(a.created_at||'')); });
     /* T-135: posts copied from Google Classroom come first, soonest due date first; undated pushes keep their order */
     rows=rows.map(function(r,i){r._i=i;return r;}).sort(function(a,b){
       var da=a.due_at?Date.parse(a.due_at):Infinity, db=b.due_at?Date.parse(b.due_at):Infinity;
       return da!==db?da-db:a._i-b._i; });
     DATA.pushN=rows.length;
-    /* T-142 v3: extras for this student only (period 'extra' never matches the period in (all, N) query above) */
-    var lpx=email.split('@')[0], ex=[];
-    try{ ex=await sb('class_assignments?area=eq.site&period=eq.extra&email=in.('+encodeURIComponent(lpx+'@s.sfusd.edu')+','+encodeURIComponent(lpx+'@sfusd.edu')+')'+
-      '&or=(expires_at.is.null,expires_at.gt.'+encodeURIComponent(now)+')&order=created_at.asc&select=*')||[]; }catch(e){ ex=[]; }
-    ex=ex.filter(function(r){ if(!r.href||seen[r.href])return false; seen[r.href]=1; r.extra=true; return true; });
-    rows=rows.concat(ex);
     /* T-134: what the rest of the class is doing comes in under the teacher's own pushes */
     var cls=[]; try{ cls=await classDoing(email,p,rows); }catch(e){ cls=[]; }
     rows=rows.concat(cls);
@@ -1621,8 +1632,10 @@ async function loadPushed(email){
       (DATA.atts||[]).forEach(function(a){
         var as=String(a.slug||''); if(!(as===slug||(prefix&&as.indexOf(prefix)===0)))return; var when=a.completed_at?new Date(a.completed_at):null;
         if(!when||when<since)return;
-        if(!best||(a.score||0)>(best.score||0)||((a.score||0)===(best.score||0)&&(a.max_score||0)>best.max))best={score:a.score||0,max:a.max_score||0,daily:daily};
+        var pc=a.max_score>0?(a.score||0)/a.max_score:-1, bp=best?(best.max>0?best.score/best.max:-1):-2;
+        if(!best||pc>bp||(pc===bp&&(a.score||0)>best.score))best={score:a.score||0,max:a.max_score||0,daily:daily,slug:as};   /* T-435: best = best PERCENT */
       });
+      if(best&&!daily){ var lpc=lpDone(best.slug); if(lpc!=null)best.lp=lpc; }
       return best;
     }
     box.innerHTML=rows.map(function(r,i){
@@ -1645,18 +1658,26 @@ async function loadPushed(email){
           if(at.max>0&&at.score>=at.max) line='<div class="pp done dailyok">&#10003; Done today &middot; more levels optional</div>';
           else { started=true; line='<div class="pp dailyip">In progress today'+(at.max?' &middot; score '+at.score+' of '+at.max:'')+'</div>'; }
         }
-        else if(at){ line='<div class="pp done">&#10003; Done'+(at.daily?' today':'')+(at.max?' &middot; score '+at.score+' of '+at.max:'')+'</div>'; }
+        else if(at){
+          /* T-435: ✓ Done only at FINISH_AT (the same 90% Finish This uses), so the band and Finish This never disagree.
+             Under that the row stays here with its percent, "Keep going" and a bar; Finish This then skips it (DATA.bandSlugs).
+             A done attempt with no max stays Done. Launch Plus counts items done (lpDone, T-175). */
+          var pc=at.lp!=null?at.lp:(at.max>0?Math.round(100*at.score/at.max):null);
+          if(pc!=null&&pc<FINISH_AT){ started=true; (DATA.bandSlugs=DATA.bandSlugs||{})[at.slug]=1;
+            line='<div class="pp">'+pc+'% &middot; keep going<span class="pbar"><i style="width:'+pc+'%"></i></span></div>'; }
+          else line='<div class="pp done">&#10003; Done'+(at.max?' &middot; score '+at.score+' of '+at.max:'')+'</div>';
+        }
       }
       var quill=isQuill(r.href);  /* T-317 */
       if(quill) line='<div class="pp quillnote">Opens Quill in a new tab. Sign in to Quill the way you always do.</div>';
       var url=quill?r.href:r.href+(r.href.indexOf('?')>-1?'&':'?')+'email='+encodeURIComponent(TV_EMAIL||email)+(TV_EMAIL?'&view=teacher':'');  /* T-285 */
-      return '<div class="pushrow'+(r.cls?' classrow':'')+(r.extra?' extrarow':'')+'"><div><div class="from">'+(/pp done/.test(line)?'&#10003; Done':r.cls?'&#128101; Your class is doing this':r.extra?'&#10133; Just for you':'&#11088; Most important')+(quill?' <span class="quilltag">&#9999;&#65039; Quill</span>':'')+(r.source==='classroom'?' <span class="clstag">from Classroom'+(r.due_at?' &middot; due '+esc(new Date(r.due_at).toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'})):'')+'</span>':'')+'</div><div class="pt">'+esc(quill?(r.title||'Quill practice'):r.source==='classroom'?catTitle(String(r.href).split('?')[0],r.title||r.href).replace(/\s+[\u2014\u00b7|].*$/,''):(r.title||r.href))+'</div>'+
+      return '<div class="pushrow'+(r.cls?' classrow':'')+(r.extra?' extrarow':'')+'"><div><div class="from">'+(/pp done/.test(line)?'&#10003; Done':r.cls?'&#128101; Your class is doing this':'&#11088; Most important')+(quill?' <span class="quilltag">&#9999;&#65039; Quill</span>':'')+(r.source==='classroom'?' <span class="clstag">from Classroom'+(r.due_at?' &middot; due '+esc(new Date(r.due_at).toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'})):'')+'</span>':'')+'</div><div class="pt">'+esc(cleanTitle(quill?(r.title||'Quill practice'):r.source==='classroom'?catTitle(String(r.href).split('?')[0],r.title||r.href).replace(/\s+[\u2014\u00b7|].*$/,''):(r.title||r.href)))+'</div>'+
         (r.note?'<div class="pn">'+esc(r.note)+'</div>':'')+line+'</div>'+
         (quill?'<a class="btn noprint" href="'+esc(url)+'" target="_blank" rel="noopener">Open Quill &#8599;</a></div>':'')+
         (quill?'':'<a class="btn noprint" href="'+esc(url)+'">'+(line.indexOf('Turned in')>-1||line.indexOf('pp done')>-1?'Open &rarr;':started?'Keep going &rarr;':'Start &rarr;')+'</a></div>');
     }).join('');
     sinkDone(); bandMode(true);
-    if(DATA.dailyBand){ try{ renderFinish(); translatePage(); }catch(e){} }   /* T-347: the band owns today's Daily Basics */
+    if(DATA.dailyBand||Object.keys(DATA.bandSlugs||{}).length){ try{ renderFinish(); translatePage(); }catch(e){} }   /* T-347/T-435: the band owns these rows */
   }catch(e){box.innerHTML='';bandMode(false);}
 }
 /* T-317: a Classroom post can link to Quill. Quill rows open Quill in a new tab, never get ?email=, never turn ✓
@@ -1670,12 +1691,9 @@ function toggleDone(){
 }
 function sinkDone(){
   var wrap=document.getElementById('pushDoneWrap'), dest=document.getElementById('pushDone'); if(!dest)return;
-  var xb=document.getElementById('extraBox');
-  if(xb){ [].slice.call(document.querySelectorAll('#pushBox .pushrow.extrarow')).forEach(function(r){ xb.appendChild(r); }); }
   [].slice.call(document.querySelectorAll('#pushBox .pushrow, #extraBox .pushrow')).forEach(function(r){ if(r.querySelector('.pp.done'))dest.appendChild(r); });
   wrap.classList.toggle('hide',!dest.children.length);
   var dc=document.getElementById('doneCount'); if(dc)dc.textContent=dest.children.length;   /* T-325 */
-  if(xb)document.getElementById('extraWrap').classList.toggle('hide',!xb.children.length);
 }
 /* the band says "Do this next" when Mr. Toby pushed something, "Practice Next" otherwise */
 function bandMode(push){
@@ -2223,6 +2241,10 @@ function renderActs(){
   DATA.atts.forEach(function(a){(by[a.slug]=by[a.slug]||[]).push(a);});
   var mine=DATA.acts.filter(function(a){return by[a.slug];});
   var rest=DATA.acts.filter(function(a){return !by[a.slug];});
+  /* T-433 (Toby chose A, Nov 16): "See N more you can try" listed the WHOLE activities table (ELD 103 stories,
+     Lab pages, old dated rows) to every student. Students now see only their finished list; the full list is
+     teacher view only. */
+  var TEACH=!!(TV_EMAIL||READ_ONLY); if(!TEACH){ SHOW_ALL=false; rest=[]; }
   var list=SHOW_ALL?mine.concat(rest):mine;
 
   var hasRead=!!(DATA.read&&DATA.read.length);
@@ -2238,7 +2260,7 @@ function renderActs(){
     SHOW_ALL
       ? '<a href="#" onclick="toggleAll();return false;">Show only my work</a>'
       : (rest.length? mine.length+' finished &middot; <a href="#" onclick="toggleAll();return false;">See '+
-         rest.length+' more you can try</a>' : '');
+         rest.length+' more you can try</a>' : mine.length+' finished');
 
   body.innerHTML=list.map(function(act){
     var l=by[act.slug]||[];
@@ -2329,6 +2351,7 @@ function renderFinish(){
     if(isDataCheck(slug,titleOf[slug]))return;
     /* T-347: today's Daily Basics sits in the band when Mr. Toby pushed it; never list it twice */
     if(DATA.dailyBand&&(slug===DAILY_SLUGS[0]||slug===DAILY_SLUGS[0]+'/'+todayISO()))return;
+    if(DATA.bandSlugs&&DATA.bandSlugs[slug])return;   /* T-435: shown once, in the band */
     var lpc=lpDone(slug);
     if(lpc!=null){ if(lpc>=100)return; best=lpc; }
     /* T-175: turned in again and the score didn't move -> nothing left to earn here; stop asking */
@@ -2492,10 +2515,11 @@ var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'
 function dateTitle(t,slug){
   var m=/^(?:readings\/)?([a-z0-9-]+)\/(\d{4})-(\d{2})-(\d{2})(?:-[a-z])?$/i.exec(String(slug||''));
   t=String(t||'').trim();
+  t=cleanTitle(t);
   if(m&&+m[3]>=1&&+m[3]<=12){ var base=(t&&!/\d/.test(t))?t:(m[1]==='basics'?'Daily Basics':prettySlug(m[1])); return base.replace(/\s*·.*$/,'')+' \u00b7 '+MON[+m[3]-1]+' '+(+m[4]); }
   var d=/^(daily basics|basics|do now)\s*(\d{1,2})\s*[\/ ]\s*(\d{1,2})$/i.exec(t);   /* only dated daily pages; "Ch 3/4" stays */
   if(d&&+d[2]>=1&&+d[2]<=12&&+d[3]>=1&&+d[3]<=31) return d[1].replace(/[\s·-]+$/,'')+' \u00b7 '+MON[+d[2]-1]+' '+(+d[3]);
-  return t;
+  return cleanTitle(t);
 }
 function actTitle(a){
   var t0=dateTitle(a.title,a.slug); if(t0&&t0!==String(a.title||'').trim()) return t0;   /* T-336 */
