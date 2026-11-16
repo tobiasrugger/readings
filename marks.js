@@ -303,6 +303,17 @@
       { key: 'food', a: ((p.food || {}).text) || '' }]);
     return n ? { taste: n } : {};
   } });
+  /* T-446 (Nov 16): Launch Plus Write steps (readings/launch-plus/u1-lN/, T-395/T-445). Row = launch_plus, one per
+     (email, unit). Writing = writing.w0, w1, w2 …; marks <unit>.w<i>; Desk slug launch-plus/<unit>. Extras rows
+     (u1-l1x, u1-l3x) and rows with no writing count 0. */
+  G.DESK.push({ table: 'launch_plus', select: 'email,unit,writing,marks', count: function (r) {
+    var W = r.writing || {}, items = [], out = {};
+    if (!r.unit || typeof W !== 'object') return out;
+    Object.keys(W).forEach(function (k) { var m = /^w(\d+)$/.exec(k); if (m) items.push({ key: r.unit + '.w' + m[1], a: String(W[k] || '').trim() }); });
+    var n = G.unmarked(r.marks, items);
+    if (n) out['launch-plus/' + r.unit] = n;
+    return out;
+  } });
   G.loadDesk = function () {
     var out = {};
     return Promise.all(G.DESK.map(function (src) {
