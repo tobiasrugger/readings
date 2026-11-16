@@ -756,15 +756,48 @@ function render(){
   document.getElementById('grid').innerHTML=h;
   document.getElementById('tally').innerHTML='<div><b>'+rows.length+'</b>students</div><div><b>'+cols.length+'</b>activities</div><div><b>'+done+'</b>scores in view</div><div><b>'+rows.filter(function(s){return !s.period;}).length+'</b>without a period</div>';
   document.querySelectorAll('th.act').forEach(function(th){th.onclick=function(){openCopy(th.dataset.slug);};});
-  document.querySelectorAll('select.per').forEach(function(sel){sel.onchange=function(){setPeriod(sel.dataset.email,sel.value?+sel.value:null);};});
+  document.querySelectorAll('select.per').forEach(function(sel){sel.onchange=function(){setPeriod(sel.dataset.email,sel.value?+sel.value:null,sel);};});
 }
 
-function setPeriod(key,p){
+/* T-434: the row dropdown used to upsert students directly. The T-241 trigger
+   silently reverts period changes that don't come through roster_save, while
+   PostgREST still answers 200 — so the page said "Period saved" and Reload
+   brought the old period back. Now: roster_save (same RPC as ✏ Edit students),
+   then read the row back; only a confirmed change counts. */
+function setPeriod(key,p,sel){
   var st=students[key]; if(!st) return;
-  st.period=p;
-  /* the row is keyed by username, but the database still stores real addresses */
-  fetch(SUPA_URL+'/rest/v1/students?on_conflict=email',{method:'POST',headers:H({Prefer:'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify([{email:(st.mail||signInEmail(st)),period:p,updated_at:new Date().toISOString()}])})
-   .then(function(r){toast(r.ok?'Period saved':'Save failed');}).catch(function(){toast('Save failed');});
+  var old=st.period==null?null:st.period;
+  var want=p==null?'':String(p);
+  if(sel) sel.disabled=true;
+  toast('Saving period…');
+  function undo(msg){
+    st.period=old;
+    if(sel){ sel.value=old==null?'':String(old); sel.disabled=false; }
+    toast(msg);
+  }
+  rpc('roster_save',{
+    p_email: st.mail||signInEmail(st),
+    p_first: st.first_name||'',
+    p_last:  st.last_name||'',
+    p_period:want,
+    p_kind:  st.kind||'student'
+  }).then(function(){
+    return getAll('students?select=email,period').then(function(rows){
+      var got=null, found=false;
+      (rows||[]).forEach(function(r){ if(canon(r.email)===key){ found=true; if(r.period!=null && r.period!=='') got=String(r.period); } });
+      var have=got==null?'':got;
+      if(found && have===want){
+        st.period=p;
+        if(sel) sel.disabled=false;
+        toast(p==null?'Period cleared':'Period '+p+' saved');
+        render();
+      } else {
+        undo('Period did NOT save — use ✏ Edit students');
+      }
+    });
+  }).catch(function(e){
+    undo('Period did NOT save ('+String(e&&e.message||e).slice(0,50)+')');
+  });
 }
 
 /* ---- Synergy column copy ---- */
