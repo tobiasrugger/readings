@@ -1,6 +1,6 @@
 /* =====================================================================
    teachme/lp-sets.js — Teach Mr. Toby word sets for each Launch Plus
-   lesson (u1-l1 … u1-l7; u1-l7 = book Lesson 8, T-477). Loaded after words.js by teachme/index.html
+   lesson (u1-l1 … u1-l7; u1-l7 = book Lesson 8, T-477; u1-l8 = book Lesson 9, T-484). Loaded after words.js by teachme/index.html
    and teachme/dashboard.html. Open a set with ?set=u1-l3.
 
    Same shape as words.js: each word is ONE meaning, pinned by a drawing
@@ -505,6 +505,91 @@ A.homework=svg('<rect width="200" height="128" fill="#f2dfc4"/>'+'<rect x="12" y
  '<path d="M118 96l6-30q2-6 8-6h18q6 0 8 6l6 30z" fill="#2e8b57"/><path d="M128 60q12-12 24 0" fill="none" stroke="#1f5c39" stroke-width="3.5"/><rect x="130" y="74" width="26" height="12" rx="2" fill="#256f45"/>'+
  bk(124,62,12,30,'#3c6ea8',-8)+'<g transform="translate(176 92)"><rect x="-6" y="-14" width="12" height="14" rx="2" fill="#fff" stroke="#8a8f99"/><path d="M6-10q5 2 0 7" stroke="#8a8f99" fill="none" stroke-width="1.6"/><path d="M-3-18q2-4 0-7M2-18q2-4 0-7" stroke="#b9b2a0" fill="none"/></g>');
 
+/* ======================= Lesson 8 · Places at School (book L9, pp. 106–117) · T-484 ======================= */
+function shelf(x,y,w,rows){var s='<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+(rows*22+6)+'" fill="#8d6440"/>';var cols=['#c0504d','#3c6ea8','#2e8b57','#e0a83a','#864D9E','#5b6b7c','#e07a5f','#1f8a7e'];
+ for(var r=0;r<rows;r++){var yy=y+4+r*22,xx=x+4,k=r*3;while(xx<x+w-8){var bw=5+(k%3),bh=14+(k%4);s+='<rect x="'+xx+'" y="'+(yy+18-bh)+'" width="'+bw+'" height="'+bh+'" fill="'+cols[k%8]+'"/><rect x="'+xx+'" y="'+(yy+18-bh+3)+'" width="'+bw+'" height="1.5" fill="#fff" opacity=".45"/>';xx+=bw+1;k++;}
+ s+='<rect x="'+x+'" y="'+(yy+18)+'" width="'+w+'" height="4" fill="#6f4c2e"/>';}return s;}
+function monitor(x,y,c){return '<g transform="translate('+x+' '+y+')"><rect x="-15" y="-22" width="30" height="21" rx="2" fill="#2b2d42"/><rect x="-12" y="-19" width="24" height="15" fill="'+(c||'#9ec2d6')+'"/><path d="M-9-15h12M-9-11h16M-9-7h9" stroke="#fff" stroke-width="1.4"/><path d="M-3-1h6l2 5h-10z" fill="#5d6170"/><rect x="-12" y="5" width="24" height="3" rx="1" fill="#cfd6df"/></g>';}
+function tree(x,y,s){return '<g transform="translate('+x+' '+y+') scale('+(s||1)+')"><rect x="-3" y="0" width="6" height="26" fill="#7a5b3a"/><circle cx="0" cy="-6" r="14" fill="#5c9a4f"/><circle cx="-9" cy="2" r="9" fill="#6fae5c"/><circle cx="9" cy="1" r="10" fill="#4f8a44"/></g>';}
+function signP(x,y,w,txt,c){return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="11" rx="2" fill="'+(c||'#2c4f7c')+'"/>'+T(x+w/2,y+8.5,txt,6.5,'#fff');}
+
+/* bathroom — wash your hands at the sink (soap, mirror, paper towels) */
+A.bathroom=svg('<rect width="200" height="128" fill="#dcebf0"/><path d="M0 20h200M0 40h200M0 60h200M0 80h200M0 100h200" stroke="#c2d6de"/><path d="M20 0v128M60 0v128M100 0v128M140 0v128M180 0v128" stroke="#c2d6de"/>'+TILE+
+ '<rect x="58" y="10" width="64" height="44" rx="4" fill="#cfe2ea" stroke="#9aa3ad" stroke-width="3"/><path d="M66 18l14 14M70 16l16 16" stroke="#fff" stroke-width="2" opacity=".7"/>'+
+ '<rect x="50" y="76" width="80" height="12" rx="3" fill="#f4f6f8" stroke="#9aa3ad"/><ellipse cx="90" cy="80" rx="18" ry="4" fill="#cfd6df"/><path d="M90 62v10q0 3 4 3" stroke="#9aa3ad" stroke-width="3" fill="none"/>'+
+ '<path d="M88 80v4M92 79v6M86 82v3" stroke="#7cc0e8" stroke-width="1.6"/><rect x="118" y="62" width="9" height="14" rx="2" fill="#7fc7b5"/><rect x="120" y="58" width="5" height="5" fill="#5d6170"/>'+
+ '<rect x="150" y="30" width="30" height="32" rx="2" fill="#9aa3ad"/><rect x="154" y="58" width="22" height="16" fill="#fff" stroke="#c8c2b2"/>'+
+ '<g transform="translate(38 62) scale(.9)">'+adult(0,0,{skin:'#d9a27a',hair:'#3b2a20',shirt:'#c0504d',long:true,armR:'out',mood:'smile'})+'</g>'+
+ '<circle cx="72" cy="78" r="4" fill="#fff" opacity=".9"/><circle cx="78" cy="74" r="3" fill="#fff" opacity=".9"/><circle cx="68" cy="72" r="2.5" fill="#fff" opacity=".9"/>'+
+ signP(156,8,28,'WC','#2c4f7c'));
+
+/* gym — a big room for sports: hoop, bleachers, court lines */
+A.gym=svg('<rect width="200" height="128" fill="#efe1c4"/><path d="M0 14h200" stroke="#cdb488" stroke-width="3"/>'+
+ [0,1,2].map(function(i){return '<rect x="0" y="'+(52+i*14)+'" width="70" height="14" fill="'+['#8a6440','#7d5a38','#6f4c2e'][i]+'"/><path d="M0 '+(52+i*14)+'h70" stroke="#a9875e"/>';}).join('')+
+ '<circle cx="14" cy="46" r="5" fill="#d9a27a"/><circle cx="34" cy="46" r="5" fill="#8d5a3b"/><circle cx="52" cy="60" r="5" fill="#f0c8a4"/>'+
+ '<rect x="0" y="118" width="200" height="42" fill="#d9a35b"/><path d="M0 128h200M0 140h200M0 152h200" stroke="#c18a45"/><path d="M120 160q30-30 80-30" stroke="#fff" stroke-width="2" fill="none"/>'+
+ '<rect x="176" y="20" width="4" height="100" fill="#7a7f8a"/><rect x="150" y="18" width="34" height="24" fill="#fff" stroke="#3a3f4a" stroke-width="1.5"/><rect x="160" y="26" width="12" height="10" fill="none" stroke="#c0504d" stroke-width="1.4"/>'+
+ '<path d="M156 42h20" stroke="#e07a2a" stroke-width="2.4"/><path d="M157 43l2 10M162 43v10M167 43v10M172 43l-2 10" stroke="#fff"/>'+
+ '<g transform="translate(108 58) scale(.9)">'+mateo(0,0,{mood:'big',armR:'out'})+'</g>'+ball(132,118,7,'#e07a2a','#7a3a10')+
+ '<rect x="78" y="6" width="44" height="12" rx="2" fill="#c0504d"/>'+T(100,15,'GO LIONS',6.5,'#fff'));
+
+/* hallway — the long walkway between rooms (lockers, doors, room numbers) */
+A.hallway=svg('<rect width="200" height="160" fill="#e4ebe2"/><path d="M0 0L80 52h40L200 0z" fill="#f4f1e6"/><path d="M0 160L80 92h40L200 160z" fill="#d8d3c4"/><path d="M40 160L90 92M160 160L110 92M100 160V92" stroke="#b9b2a0"/>'+
+ '<path d="M0 0L80 52v40L0 160z" fill="#5b7fa6"/><path d="M200 0L120 52v40L200 160z" fill="#c9d6c4"/>'+
+ [0,1,2,3].map(function(i){var x=6+i*16,t=4+i*10.7,b=156-i*17;return '<path d="M'+x+' '+(t+10)+'L'+(x+14)+' '+(t+20)+'V'+(b-26)+'L'+x+' '+(b-16)+'z" fill="none" stroke="#3d4a5c"/>';}).join('')+
+ '<path d="M140 40l20-13v70l-20 12z" fill="#a5774b" stroke="#7d5a38" stroke-width="2"/><path d="M166 24l22-14v86l-22 14z" fill="#a5774b" stroke="#7d5a38" stroke-width="2"/>'+T(150,44,'211',6,'#fff')+T(177,26,'210',7,'#fff')+
+ '<rect x="80" y="52" width="40" height="40" fill="#cfe6f2"/><path d="M100 52v40" stroke="#9aa3ad"/>'+clock(100,26,8,9,15)+
+ '<g transform="translate(82 102) scale(.62)">'+linh(0,0,{mood:'smile'})+'</g><g transform="translate(112 98) scale(.55)">'+jun(0,0,{mood:'smile'})+'</g><g transform="translate(96 82) scale(.32)">'+amira(0,0,{})+'</g>');
+
+/* library — shelves of books; you read and borrow books here */
+A.library=svg('<rect width="200" height="128" fill="#f2e6cf"/>'+shelf(6,8,74,4)+shelf(124,8,70,4)+FLOOR+
+ '<rect x="84" y="14" width="36" height="12" rx="2" fill="#2c4f7c"/>'+T(102,23,'QUIET',7,'#fff')+
+ '<g transform="translate(102 62) scale(.86)">'+amira(0,0,{mood:'smile',armL:'heart',armR:'heart'})+'</g>'+
+ '<rect x="60" y="100" width="84" height="7" rx="2" fill="#a77b4f"/><rect x="66" y="107" width="5" height="22" fill="#7d5a38"/><rect x="134" y="107" width="5" height="22" fill="#7d5a38"/>'+
+ '<path d="M86 98l16-5 16 5v3l-16-4-16 4z" fill="#fffdf6" stroke="#8a8f99"/><path d="M102 93v5" stroke="#8a8f99"/>'+bk(122,90,10,10,'#c0504d',0)+bk(124,82,10,8,'#3c6ea8',0));
+
+/* schoolyard — outside, next to the school: benches, trees, friends */
+A.schoolyard=svg(SKY+'<rect x="40" y="18" width="120" height="56" fill="#d8c6a4" stroke="#8a6d3b" stroke-width="2"/><path d="M34 20l66-16 66 16" fill="#b0503c"/>'+
+ [0,1,2,3,4].map(function(i){return win(48+i*22,30,14,14);}).join('')+'<rect x="92" y="52" width="16" height="22" fill="#7a4a2a"/>'+signP(76,6,48,'GALILEO','#2c4f7c')+
+ '<rect x="0" y="74" width="200" height="86" fill="#c9c2b2"/><path d="M0 74h200" stroke="#5d6170" stroke-width="2"/>'+[0,1,2,3,4,5,6,7,8,9].map(function(i){return '<path d="M'+(i*22)+' 66v8" stroke="#5d6170" stroke-width="1.4"/>';}).join('')+'<path d="M0 92h200" stroke="#b5ad9b"/><circle cx="160" cy="132" r="14" fill="none" stroke="#fff" stroke-width="1.6"/>'+
+ tree(18,70,1)+tree(184,72,.9)+
+ '<rect x="122" y="108" width="50" height="5" fill="#7d5a38"/><rect x="126" y="113" width="3" height="10" fill="#555"/><rect x="165" y="113" width="3" height="10" fill="#555"/>'+
+ '<g transform="translate(60 90) scale(.62)">'+paolo(0,0,{mood:'big',armR:'out'})+'</g><g transform="translate(84 90) scale(.62)">'+linh(0,0,{mood:'big',armL:'out'})+'</g>'+
+ '<g transform="translate(140 84) scale(.55)">'+jun(0,0,{mood:'smile'})+'</g>');
+
+/* computer lab — a room with many computers; students work on them */
+A.computerlab=svg('<rect width="200" height="128" fill="#e3e9f0"/>'+signP(66,6,68,'COMPUTER LAB','#2c4f7c')+
+ '<rect x="10" y="22" width="180" height="28" fill="#c7d2de"/>'+[0,1,2,3,4].map(function(i){return monitor(28+i*36,46,['#9ec2d6','#b9e0c4','#f6d9a8','#9ec2d6','#d9c6ea'][i]);}).join('')+
+ '<rect x="10" y="54" width="180" height="5" fill="#a77b4f"/>'+FLOOR+
+ '<rect x="10" y="98" width="180" height="6" rx="2" fill="#a77b4f"/><rect x="16" y="104" width="5" height="26" fill="#7d5a38"/><rect x="180" y="104" width="5" height="26" fill="#7d5a38"/>'+
+ monitor(52,96,'#9ec2d6')+monitor(148,96,'#b9e0c4')+
+ '<g transform="translate(52 112) scale(.6)">'+amira(0,0,{armL:'out',armR:'out',mood:'smile'})+'</g>'+'<g transform="translate(148 112) scale(.6)">'+mateo(0,0,{armL:'out',armR:'out',mood:'smile'})+'</g>');
+
+/* where — the question word for a PLACE: Linh with a school map, which room? */
+A.where=svg('<rect width="200" height="160" fill="#f6efe0"/>'+
+ '<rect x="70" y="10" width="122" height="110" rx="4" fill="#fffdf6" stroke="#3d4a5c" stroke-width="2"/>'+
+ '<rect x="78" y="18" width="48" height="30" fill="#f6d9a8" stroke="#8a6d3b"/>'+T(102,36,'CAFE',7)+'<rect x="136" y="18" width="48" height="30" fill="#b9e0c4" stroke="#8a6d3b"/>'+T(160,36,'LIBRARY',6.5)+
+ '<rect x="78" y="80" width="48" height="32" fill="#d9c6ea" stroke="#8a6d3b"/>'+T(102,99,'GYM',7)+'<rect x="136" y="80" width="48" height="32" fill="#9ec2d6" stroke="#8a6d3b"/>'+T(160,99,'OFFICE',6.5)+
+ '<rect x="78" y="54" width="106" height="20" fill="#e4ebe2"/>'+T(131,67,'hallway',6,'#5d6170')+
+ '<g transform="translate(106 64)"><path d="M0 8c-6-6-9-10-9-14a9 9 0 0 1 18 0c0 4-3 8-9 14z" fill="#c0392b"/><circle cy="-6" r="3.5" fill="#fff"/></g>'+
+ '<g transform="translate(36 70) scale(.92)">'+linh(0,0,{mood:'o',armR:'point'})+'</g>'+
+ '<g transform="translate(16 22)"><circle r="13" fill="#2c4f7c"/>'+T(0,7,'?',20,'#fff')+'</g>');
+
+/* show — Jun takes Amira to the main office: "I can show you" (lead + point) */
+A.show=svg(HALL+door(146,40,'100','#7a4a2a')+signP(136,24,56,'MAIN OFFICE','#2c4f7c')+TILE+
+ '<g transform="translate(82 66)">'+jun(0,0,{mood:'big',armR:'point'})+'</g>'+'<g transform="translate(38 68) scale(.95)">'+amira(0,0,{mood:'smile'})+'</g>'+
+ '<path d="M106 122q22 6 36-6" stroke="#2e8b57" stroke-width="3" fill="none" stroke-dasharray="5 4"/><path d="M138 112l8 2-4 8" fill="none" stroke="#2e8b57" stroke-width="3" stroke-linecap="round"/>'+
+ bubble(6,4,76,22,T(44,19,'This way!',8.5),'r'));
+
+/* walk — contrast pair: LEFT walk in the hallway (check) · RIGHT run (red X) */
+A.walk=svg('<rect width="200" height="160" fill="#f6efe0"/><path d="M100 8v144" stroke="'+INK+'" stroke-width="2" stroke-dasharray="4 4"/>'+
+ '<rect x="6" y="8" width="88" height="144" rx="8" fill="#e8f5ec"/><rect x="106" y="8" width="88" height="144" rx="8" fill="#f8e6e3"/>'+
+ '<g transform="translate(50 62) scale(.78)">'+paolo(0,0,{mood:'smile'})+'</g>'+
+ '<path d="M24 126l4-2M34 132l4-2M44 126l4-2M54 132l4-2" stroke="#8a8f99" stroke-width="3" stroke-linecap="round"/>'+
+ '<g transform="translate(150 62) scale(.78) rotate(10)">'+paolo(0,0,{mood:'o',armL:'up',armR:'out'})+'</g>'+
+ '<path d="M112 50h-10M114 62h-12M112 74h-10" stroke="#c0504d" stroke-width="2.4" stroke-linecap="round"/>'+sweat(176,30)+
+ CHECK(84,140)+XM(184,140));
+
 TM.LP_ART=A;
 Object.keys(A).forEach(function(k){if(!TM.ART[k])TM.ART[k]=A[k];});
 
@@ -702,6 +787,32 @@ TM.SETS['u1-l7']={title:'Lesson 7 words · Class Acts', short:'Lesson 7', back:B
  W('homework','homework','school work you do at home','work from the teacher that you do at home','I do my homework after school.','homework',['homework','assignment','school work','task'],['housework','chores','cleaning'],
   S([['作业','zuòyè'],['功课','gōngkè']],[['功課','gung1 fo3']],[['tarea','ta-REH-a'],['deberes','deh-BEH-res']],[['واجب منزلي','waajib manzili'],['واجب','waajib']],[['bài tập về nhà','bai tup veh nya']],[['การบ้าน','kan-baan']],[['गृहकार्य','grihakarya'],['होमवर्क','homwark']]))
 ].filter(Boolean)};
-TM.SET_ORDER=['u1','u1-l1','u1-l2','u1-l3','u1-l4','u1-l5','u1-l6','u1-l7'];
+/* T-484: Lesson 8 · Places at School = book Lesson 9 (pp. 106–117): nouns for places, "in the + place",
+   Where do students…? / I can show you where it is. classroom, office and cafeteria reuse their
+   Lesson 1 ids (same meaning). Built before the Launch Plus lesson; its card gets tm:'u1-l8'. */
+TM.SETS['u1-l8']={title:'Lesson 8 words · Places at School', short:'Lesson 8', back:BACK, words:[
+ W('bathroom','bathroom','the room at school with toilets and sinks','a room with a toilet and a sink','A teacher washes her hands in the bathroom.','bathroom',['bathroom','restroom','toilet','washroom','lavatory','WC','toilets'],['bath','bathtub','shower room'],
+  S([['洗手间','xǐshǒujiān'],['厕所','cèsuǒ']],[['洗手間','sai2 sau2 gaan1'],['廁所','ci3 so2']],[['baño','BA-nyo'],['sanitario','sa-nee-TA-ryo']],[['حمّام','hammaam'],['دورة المياه','dawrat al-miyaah']],[['nhà vệ sinh','nya veh sin']],[['ห้องน้ำ','hong-nam']],[['शौचालय','shauchalay'],['ट्वाइलेट','twailet']])),
+ R('classroom','Students learn in the classroom.','classroom'),
+ R('cafeteria','Students eat breakfast and lunch in the cafeteria.','cafeteria'),
+ W('gym','gym','the big room at school for sports and P.E.','a big indoor room where you play sports','Students play basketball in the gym.','gym',['gym','gymnasium','sports hall'],['fitness center','health club','workout'],
+  S([['体育馆','tǐyùguǎn']],[['體育館','tai2 juk6 gun2']],[['gimnasio','heem-NA-syo']],[['صالة الألعاب الرياضية','saalat al-al‘aab ar-riyaadiyya'],['الجيم','al-jim']],[['phòng thể dục','fong teh zook'],['nhà thi đấu','nya tee dow']],[['โรงยิม','rong-yim']],[['व्यायामशाला','vyayamshala'],['जिम','jim']])),
+ W('hallway','hallway','the long walkway between the rooms','a long narrow space with doors to rooms','Students walk in the hallway.','hallway',['hallway','hall','corridor','passage'],['lobby','entrance','great hall'],
+  S([['走廊','zǒuláng']],[['走廊','zau2 long4']],[['pasillo','pa-SEE-yo']],[['ممرّ','mamarr'],['رواق','riwaaq']],[['hành lang','hun lung']],[['ทางเดิน','thang doen'],['ระเบียง','ra-biang']],[['करिडोर','karidor'],['बरन्डा','baranda']])),
+ W('library','library','the room with many books you can read and borrow','a place with many books to read or borrow','Amira reads a book in the library.','library',['library'],['bookstore','bookshop','book shop'],
+  S([['图书馆','túshūguǎn']],[['圖書館','tou4 syu1 gun2']],[['biblioteca','bee-blyo-TEH-ka']],[['مكتبة','maktaba']],[['thư viện','tuh vee-en']],[['ห้องสมุด','hong sa-mut']],[['पुस्तकालय','pustakalay']])),
+ R('office','The principal works in the main office.','office'),
+ W('schoolyard','schoolyard','the outside area of the school','the open space outside, around the school building','Students hang out in the schoolyard.','schoolyard',['schoolyard','school yard','playground','yard','courtyard','campus'],['backyard','garden','park'],
+  S([['操场','cāochǎng'],['校园','xiàoyuán']],[['操場','cou1 coeng4']],[['patio de la escuela','PA-tyo deh la es-KWEH-la'],['patio','PA-tyo']],[['ساحة المدرسة','saahat al-madrasa'],['الملعب','al-mal‘ab']],[['sân trường','sun chuong']],[['สนามโรงเรียน','sa-nam rong-rian']],[['विद्यालयको आँगन','vidyalayako angan']])),
+ W('computerlab','computer lab','a room at school with many computers','a classroom full of computers','Students study in the computer lab.','computer lab',['computer lab','computer room','IT room','lab'],['science lab','laboratory','lab coat'],
+  S([['电脑室','diànnǎo shì'],['机房','jīfáng']],[['電腦室','din6 nou5 sat1']],[['sala de computación','SA-la deh kom-poo-ta-SYON'],['laboratorio de computación','la-bo-ra-TO-ryo deh kom-poo-ta-SYON']],[['مختبر الحاسوب','mukhtabar al-haasoob']],[['phòng máy tính','fong may ting']],[['ห้องคอมพิวเตอร์','hong khom-phiu-toe']],[['कम्प्युटर कक्ष','kampyutar kaksha']])),
+ W('where','where','the question word for a place','you ask "where" to find a place','Where do students eat lunch?','Where',['where','in what place','which place'],['when','what','who','which','wear'],
+  S([['哪里','nǎlǐ'],['在哪儿','zài nǎr']],[['邊度','bin1 dou6']],[['dónde','DON-deh']],[['أين','ayna'],['وين','wein']],[['ở đâu','uh dow']],[['ที่ไหน','thi-nai']],[['कहाँ','kahan']])),
+ W('show','show','take someone there or point so they can see','help someone see or find something','I can show you where it is.','show',['show','guide','lead','take you','point out'],['TV show','program','performance','exhibition','concert'],
+  S([['带你去','dài nǐ qù'],['给你看','gěi nǐ kàn']],[['帶你去','daai3 nei5 heoi3'],['俾你睇','bei2 nei5 tai2']],[['mostrar','mos-TRAR'],['enseñar','en-seh-NYAR']],[['يُري','yuree'],['يدلّ','yadull']],[['chỉ cho','chee chaw'],['dẫn đi','zun dee']],[['พาไปดู','pha pai du'],['ให้ดู','hai du']],[['देखाउनु','dekhaunu']])),
+ W('walk','walk','move on your feet, slowly (not run)','go on foot at a normal speed','Please walk in the hallway. Don’t run!','walk',['walk','go on foot','stroll'],['run','race','jog','a walk (noun)'],
+  S([['走','zǒu'],['走路','zǒulù']],[['行','haang4'],['行路','haang4 lou6']],[['caminar','ka-mee-NAR'],['andar','an-DAR']],[['يمشي','yamshi']],[['đi bộ','dee bo']],[['เดิน','doen']],[['हिँड्नु','hidnu']]))
+].filter(Boolean)};
+TM.SET_ORDER=['u1','u1-l1','u1-l2','u1-l3','u1-l4','u1-l5','u1-l6','u1-l7','u1-l8'];
 if(TM.SETS.u1&&!TM.SETS.u1.short) TM.SETS.u1.short='Unit 1';
 })();
