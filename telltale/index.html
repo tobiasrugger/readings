@@ -2643,11 +2643,7 @@ function buildGateLang(){
     n.value = o.value; n.textContent = o.textContent;
     dst.appendChild(n);
   }
-  if(none){
-    n = document.createElement("option");
-    n.value = "none"; n.textContent = "English only";
-    dst.appendChild(n);
-  }
+  /* T-451: no "English only" in the sign-in box (project rule) */
   if(LANG_SAVED) dst.value = curLang;
 }
 
@@ -4938,7 +4934,7 @@ body.lb-open #lbpanel{ display:flex; }
     document.body.appendChild(arrow);
     var label = function(b){ return ((b.childNodes[0] && b.childNodes[0].textContent) || b.textContent || "").trim(); };
     /* T-444: the chips became folder tabs; point at the tab */
-    var tabOf = function(b){ if(!b) return b; var k = b.getAttribute("data-ch") || b.getAttribute("data-act"), t = k && document.querySelector('#t444tabs .ttab[data-k="' + k + '"]'); return (t && t.offsetParent) ? t : b; };
+    var tabOf = function(b){ if(!b) return b; var k = b.getAttribute("data-ch") || b.getAttribute("data-act"), t = k && document.querySelector('#t444tabs .ttab[data-k="' + k + '"]'); if(t && !t.offsetParent && t.closest && t.closest("#ttafter")){ var tg = document.getElementById("t451tog"); if(tg && tg.offsetParent) return tg; } return (t && t.offsetParent) ? t : b; };
     var pick = function(){
       /* 1. the story in order: the first part that is not finished yet */
       var chips = document.querySelectorAll("#chapters .cbtn[data-ch]"), i, cur = null;
@@ -5899,6 +5895,82 @@ function savePract(){ try{ localStorage.setItem(LKEY + "_pract", JSON.stringify(
     var w = document.createElement("div"); w.className = "t444pair";
     a.parentNode.insertBefore(w, a); w.appendChild(a); w.appendChild(b);
   });
+})();
+</script>
+
+<style id="t451-css">
+/* T-451 (Nov 16): the tabs speak the story's own type (IM Fell / Playfair / Courier Prime, Poe colours), not Story Reel's Nunito.
+   After you read folds away behind one "AFTER YOU READ »" line until Part 3 is started. */
+.ttab{ background:#f6efe0; border-color:#2b2016; }
+.ttab .tl b{ font:400 1.04rem/1.1 'IM Fell English', Georgia, serif !important; letter-spacing:.01em; color:#1a1208; }
+.ttab .tl .dirtr{ font:italic 400 .72rem 'Lora', Georgia, serif !important; color:#6b5d45; }
+.ttab .tn{ font:700 .8rem 'Playfair Display', serif !important; background:#2b2016; }
+.ttab.ok .tn{ background:#2f5b3c; }
+.ttab .ts{ font:400 .7rem 'Courier Prime', monospace !important; color:#7a6a50; }
+.ttab.ok .ts{ color:#2f5b3c; }
+.ttab .tx{ font:400 .6rem 'Courier Prime', monospace !important; letter-spacing:.12em; color:#7a6a50; }
+.ttab.core .tx{ color:var(--blood); }
+.ttab.locked .tn{ background:#9a8f7e; }
+.ttab[data-k="intro"]{ --tc:#4a3a28 !important; }
+.ttab[data-k="p1"], .ttab[data-k="p2"], .ttab[data-k="p3"], .ttab[data-k="p4"]{ --tc:#b07a2a !important; }
+.ttab[data-k="words"]{ --tc:#2f5b3c !important; }
+.ttab.core{ --tc:var(--blood) !important; }
+.ttab[data-k="fore"], .ttab[data-k="chars"], .ttab[data-k="write"], .ttab[data-k="film"]{ --tc:#7a6a50 !important; }
+.ttlab .ttlock{ font:400 .74rem 'Courier Prime', monospace !important; letter-spacing:.04em; color:#6b5d45; }
+#t444lockmsg{ font:italic 500 .95rem 'Lora', Georgia, serif !important; color:#5a2020; border-color:#2b2016; background:#fbf6ea; }
+
+/* the AFTER YOU READ » line: same type as the row label, a link you can open and close */
+#t451tog{ all:unset; cursor:pointer; display:inline-flex; align-items:center; gap:.35rem; font-family:'Courier Prime',monospace;
+  font-size:.78rem; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--blood);
+  padding:.25rem .15rem; border-bottom:1px dashed transparent; flex-wrap:wrap; }
+#t451tog > span[data-dir]{ order:1; }
+#t451tog .chev{ order:2; font-size:1rem; }
+#t451tog > :not(span[data-dir]):not(.chev){ order:3; flex-basis:100%; letter-spacing:0; text-transform:none; }
+#t451tog:hover, #t451tog:focus-visible{ border-bottom-color:var(--blood); }
+#t451tog:focus-visible{ outline:2px solid var(--blood); outline-offset:3px; border-radius:3px; }
+#t451tog .chev{ display:inline-block; transition:transform .2s ease; letter-spacing:0; }
+#ttafter.t451open #t451tog .chev{ transform:rotate(90deg); }
+#ttafter:not(.t451open) .tttabs{ display:none; }
+#ttafter:not(.t451open){ margin-bottom:.3rem; }
+@media (prefers-reduced-motion:reduce){ #t451tog .chev{ transition:none; } }
+</style>
+<script id="t451-js">
+/* T-451: After you read is folded until the student answers any Part 3 question (then it opens by itself).
+   The student can open or close it any time; their choice wins until the page reloads. */
+(function(){
+  var row = document.getElementById("ttafter"); if(!row) return;
+  var lab = row.querySelector(".ttlab"), title = lab && lab.querySelector("span[data-dir]");
+  if(!lab || !title) return;
+  var tog = document.createElement("button"); tog.type = "button"; tog.id = "t451tog";
+  tog.setAttribute("aria-controls", "ttafter");
+  lab.insertBefore(tog, title); tog.appendChild(title);
+  var chev = document.createElement("span"); chev.className = "chev"; chev.setAttribute("aria-hidden", "true"); chev.textContent = "»";
+  tog.appendChild(chev);
+  var userSet = null;
+  function p3Started(){
+    var b = document.querySelector('#chapters .cbtn[data-ch="p3"] .ccnt'), m = b && (b.textContent || "").match(/(\d+)\s*\/\s*(\d+)/);
+    if(m && +m[1] > 0) return true;
+    var qs = document.querySelectorAll('#ch-p3 .qbox[data-qid] textarea, #ch-p3 .qbox[data-qid] input:checked'), i;
+    for(i = 0; i < qs.length; i++){ if(qs[i].type === "radio" || qs[i].type === "checkbox" || (qs[i].value || "").trim()) return true; }
+    return false;
+  }
+  function onAfterTab(){ return !!row.querySelector(".ttab.on"); }
+  function set(){
+    var open = onAfterTab() || (userSet !== null ? userSet : p3Started());
+    if(row.classList.contains("t451open") !== open) row.classList.toggle("t451open", open);
+    tog.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+  tog.addEventListener("click", function(e){
+    e.preventDefault(); e.stopPropagation();
+    userSet = !row.classList.contains("t451open");
+    if(!userSet && onAfterTab()) userSet = true;   /* can't fold away the tab you are on */
+    set();
+  });
+  window.__t451 = { set:set, p3:p3Started, open:function(){ return row.classList.contains("t451open"); } };
+  set();
+  document.addEventListener("input", function(){ setTimeout(set, 40); }, true);
+  document.addEventListener("click", function(){ setTimeout(set, 80); }, true);
+  setInterval(set, 800);
 })();
 </script>
 </body>
