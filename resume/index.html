@@ -591,7 +591,7 @@ document.addEventListener('click',e=>{
 });
 function strings(o){const out=[];(function w(v){if(typeof v==='string')out.push(v);else if(v&&typeof v==='object')Object.values(v).forEach(w);})(o);return out.join(' ').trim();}
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-window.addEventListener('beforeunload',()=>{if(saveTimer){clearTimeout(saveTimer);save();}});
+/* T-475: the leave save lives in the save-on-leave block at the end of the page */
 </script>
 <script src="/readings/track.js"></script>
 
@@ -807,6 +807,51 @@ window.addEventListener('beforeunload',()=>{if(saveTimer){clearTimeout(saveTimer
   fix();
   document.addEventListener('DOMContentLoaded', function(){ setTimeout(fix, 0); setTimeout(fix, 1500); });
   window.addEventListener('load', function(){ setTimeout(fix, 0); });
+})();
+</script>
+<script>/* T-475: save on leave (Nov 17, 2026). When the student closes or hides the tab,
+   anything not yet sent goes out now with keepalive, and a save still on its way is
+   sent again with keepalive, so the last answer is never lost. */
+(function(){
+  var C = {"table": "resume_profiles", "sched": ["queueSave"], "send": "save", "flush": "clearTimeout(saveTimer); save();"};
+  var P = false, inflight = 0, last = null, leaving = false;
+  var RX = new RegExp('/rest/v1/' + C.table + '(\\?|$)');
+  var f0 = window.fetch;
+  window.fetch = function(input, init){
+    var url = typeof input === 'string' ? input : (input && input.url) || '';
+    var m = ((init && init.method) || 'GET').toUpperCase();
+    if (m !== 'POST' || !RX.test(url)) return f0.apply(this, arguments);
+    var i2 = {}; for (var k in (init || {})) i2[k] = init[k];
+    var big = typeof i2.body === 'string' && i2.body.length > 60000;
+    if (leaving && !big) i2.keepalive = true;
+    last = { url: url, init: i2 };
+    inflight++;
+    var p = f0.call(this, input, i2);
+    p.then(function(){ inflight--; }, function(){ inflight--; });
+    return p;
+  };
+  function wrap(name, fn){ var o = window[name]; if (typeof o !== 'function') return;
+    window[name] = function(){ fn(); return o.apply(this, arguments); }; }
+  (C.sched || []).forEach(function(n){ wrap(n, function(){ P = true; }); });
+  wrap(C.send, function(){ P = false; });
+  function pending(){ if (P) return true; try { return !!(C.dirty && window[C.dirty]); } catch(e) { return false; } }
+  function leave(){
+    if (leaving) return;
+    leaving = true;
+    try {
+      if (pending()) { (new Function(C.flush))(); }
+      else if (inflight > 0 && last) {
+        var big = typeof last.init.body === 'string' && last.init.body.length > 60000;
+        var i3 = {}; for (var k in last.init) i3[k] = last.init[k];
+        if (!big) i3.keepalive = true;
+        window.fetch(last.url, i3).catch(function(){});
+      }
+    } catch(e) {}
+    setTimeout(function(){ leaving = false; }, 0);
+  }
+  window.addEventListener('pagehide', leave);
+  document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'hidden') leave(); });
+  window.__t475 = { pending: pending, inflight: function(){ return inflight; } };
 })();
 </script>
 </body>
