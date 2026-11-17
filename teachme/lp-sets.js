@@ -350,6 +350,47 @@ A.question=svg(WALL+board(10,10,100,58,['What is your','name?'],11)+'<path d="M9
  '<path d="M158 18q0-12 14-12t14 12q0 9-11 14v8" stroke="#c0392b" stroke-width="8" fill="none" stroke-linecap="round"/><circle cx="175" cy="52" r="5" fill="#c0392b"/>'+
  linh(60,86,{armR:'up',mood:'o'})+jun(150,86,{mood:'smile'}));
 
+/* ======================= Lesson 6 · School Supplies (T-464) ======================= */
+function calc(x,y,s){return '<g transform="translate('+x+' '+y+') scale('+(s||1)+')"><rect x="-17" y="-24" width="34" height="48" rx="5" fill="#3a3f4a" stroke="#1f232b" stroke-width="1.5"/><rect x="-13" y="-20" width="26" height="11" rx="1.5" fill="#bfe3c4"/>'+T(9,-11,'25',8,'#1e5e3a','end')+
+ [0,1,2,3].map(function(r){return [0,1,2,3].map(function(c){return '<rect x="'+(-13+c*7)+'" y="'+(-5+r*7)+'" width="5.5" height="5" rx="1" fill="'+(c===3?'#e0a83a':'#dfe3e8')+'"/>';}).join('');}).join('')+'</g>';}
+function penD(x,y,r,c){return '<g transform="translate('+x+' '+y+') rotate('+(r||0)+')"><rect x="-3" y="-30" width="6" height="52" rx="2.5" fill="'+(c||'#2f6fbd')+'"/><rect x="-3.5" y="-30" width="7" height="12" rx="2" fill="#1f4f8f"/><path d="M3.5 -28h3v16h-3" fill="none" stroke="#9aa3ad" stroke-width="1.6"/><path d="M-3 22l3 8 3-8z" fill="#e8e1d4"/><path d="M-0.8 28l0.8 3 0.8-3z" fill="#1f4f8f"/></g>';}
+function pencilD(x,y,r){return '<g transform="translate('+x+' '+y+') rotate('+(r||0)+')"><rect x="-3.5" y="-28" width="7" height="46" fill="#f2c94c"/><path d="M-3.5 -28h7v-4h-7z" fill="#c0c4c9"/><rect x="-3.5" y="-38" width="7" height="6" rx="2" fill="#e8909a"/><path d="M-1 -28v46" stroke="#d9ac2f"/><path d="M-3.5 18l3.5 10 3.5-10z" fill="#e8c9a0"/><path d="M-1 25l1 3 1-3z" fill="#333"/></g>';}
+function folderD(x,y,w,c){w=w||60;var h=w*.72;return '<g transform="translate('+x+' '+y+')"><path d="M0 6h'+(w*.38)+'l5-6h'+(w*.62-5)+'v'+h+'H0z" fill="'+(c||'#3c6ea8')+'" opacity=".85"/><rect x="4" y="2" width="'+(w-10)+'" height="'+(h-4)+'" fill="#fffdf6" stroke="#c8c2b2"/><path d="M10 12h'+(w-24)+'M10 19h'+(w-30)+'M10 26h'+(w-22)+'" stroke="#9a9a9a" stroke-width="1.2"/><path d="M0 12h'+w+'v'+(h-6)+'H0z" fill="'+(c||'#3c6ea8')+'"/><path d="M0 12h'+w+'" stroke="#fff" stroke-width="1" opacity=".4"/></g>';}
+function nbD(x,y,c){return '<g transform="translate('+x+' '+y+')"><rect width="34" height="42" rx="2" fill="'+(c||'#c0504d')+'"/>'+[0,1,2,3,4,5].map(function(i){return '<circle cx="2" cy="'+(5+i*6.5)+'" r="2" fill="none" stroke="#aaa" stroke-width="1.2"/>';}).join('')+'<rect x="10" y="8" width="18" height="8" fill="#fff" opacity=".85"/></g>';}
+A.calculator=svg(WALL+board(10,10,82,44,['5 + 20 = ?'],11)+FLOOR+desk(26,100,150)+
+ '<g transform="rotate(-6 96 82)">'+calc(96,82,1.05)+'</g>'+'<path d="M118 64l10-8M122 74h12M118 84l10 6" stroke="#e0a83a" stroke-width="2.4" stroke-linecap="round"/>'+
+ '<g transform="translate(170 54) scale(.72)">'+mateo(0,0,{armL:'point',mood:'big'})+'</g>');
+A.computer=svg('<rect width="200" height="128" fill="#efe3c8"/>'+[0,1].map(function(r){var y=10+r*28,s='<rect x="140" y="'+(y+22)+'" width="56" height="3" fill="#7d5a38"/>';for(var i=0;i<7;i++){s+='<rect x="'+(142+i*7.6)+'" y="'+(y+6+(i%3))+'" width="6" height="'+(16-(i%3))+'" fill="'+['#c0504d','#3c6ea8','#2e8b57','#e0a83a','#864D9E','#5b6b7c','#e07a5f'][(i+r)%7]+'"/>';}return s;}).join('')+FLOOR+
+ desk(18,94,124)+'<rect x="44" y="38" width="64" height="44" rx="3" fill="#2b2d42"/><rect x="48" y="42" width="56" height="34" fill="#9ec2d6"/><path d="M54 50h30M54 57h40M54 64h24" stroke="#fff" stroke-width="2.4"/><circle cx="96" cy="66" r="5" fill="#f2c94c"/>'+
+ '<path d="M70 82h12l3 10H67z" fill="#5d6170"/><rect x="50" y="89" width="50" height="5" rx="1.5" fill="#cfd6df"/><path d="M54 91h42" stroke="#9aa3ad" stroke-dasharray="2 2"/><ellipse cx="112" cy="91" rx="5" ry="3" fill="#cfd6df"/>'+
+ '<g transform="translate(150 70) scale(.75)">'+amira(0,0,{armL:'out',mood:'smile'})+'</g>');
+A.folder=svg('<rect width="200" height="160" fill="#efe3c8"/><rect x="0" y="118" width="200" height="42" fill="#a77b4f"/>'+shadow(100,124,70)+
+ folderD(40,40,120,'#3c6ea8')+'<g transform="rotate(-8 40 30)"><rect x="56" y="16" width="70" height="40" fill="#fffdf6" stroke="#c8c2b2"/><path d="M62 26h56M62 34h48M62 42h52" stroke="#9a9a9a" stroke-width="1.2"/></g>'+
+ '<path d="M150 22v20" stroke="#c0392b" stroke-width="3"/><path d="M144 36l6 8 6-8" fill="#c0392b"/>');
+A.pen=svg('<rect width="200" height="160" fill="#f6efe0"/><path d="M100 8v144" stroke="'+INK+'" stroke-width="2" stroke-dasharray="4 4"/>'+
+ '<rect x="6" y="8" width="88" height="144" rx="8" fill="#e8f5ec"/><rect x="106" y="8" width="88" height="144" rx="8" fill="#f8e6e3"/>'+
+ '<rect x="16" y="88" width="68" height="40" fill="#fff" stroke="#c8c2b2"/><path d="M22 102q8-8 14 0t12 0 12 0" stroke="#1f4f8f" stroke-width="2.2" fill="none"/>'+penD(50,52,24)+T(50,26,'ink',11,'#1f4f8f')+
+ '<rect x="116" y="88" width="68" height="40" fill="#fff" stroke="#c8c2b2"/><path d="M122 102q8-8 14 0t12 0 12 0" stroke="#7d7d7d" stroke-width="2.2" fill="none"/>'+pencilD(150,52,24)+
+ CHECK(84,140)+XM(184,140));
+A.borrow=svg(WALL+FLOOR+linh(48,64,{armR:'out',mood:'smile'})+jun(152,64,{armL:'out',mood:'big'})+
+ pencilD(100,78,90)+'<path d="M74 52q26-18 52 0" stroke="#2e8b57" stroke-width="3" fill="none"/><path d="M122 46l8 7-10 3z" fill="#2e8b57"/>'+
+ '<path d="M126 124q-26 14-52 0" stroke="#e0a83a" stroke-width="2.4" fill="none" stroke-dasharray="4 3"/><path d="M78 118l-8 6 9 4z" fill="#e0a83a"/>'+T(100,146,'later',8,'#8a5a10')+
+ bubble(128,4,66,22,T(161,19,'Could I…?',8),'l'));
+A.need=svg('<rect width="200" height="128" fill="#f4ead6"/>'+board(10,8,70,30,['TEST'],12)+FLOOR+desk(30,96,96)+
+ '<rect x="52" y="86" width="44" height="11" fill="#fff" stroke="#8a8f99" transform="rotate(-3 74 92)"/><path d="M56 90h20M56 93h30" stroke="#6a8fd1" transform="rotate(-3 74 92)"/>'+
+ jun(78,60,{mood:'sad',armL:'out',armR:'out'})+
+ '<path d="M118 22q14-18 38-10q22 8 16 26q-6 14-30 10l-12 8 3-10q-20-8-15-24z" fill="#fff" stroke="'+INK+'" stroke-width="1.6"/>'+pencilD(146,26,60)+'<circle cx="182" cy="62" r="10" fill="#c0392b"/>'+T(182,67,'!',14,'#fff'));
+A.supplies=svg('<rect width="200" height="160" fill="#efe3c8"/><rect x="0" y="104" width="200" height="56" fill="#a77b4f"/><path d="M0 110h200" stroke="#8d6440" stroke-width="2"/>'+
+ '<path d="M14 100l12-62q4-10 14-10h36q10 0 14 10l12 62z" fill="#2e8b57"/><path d="M38 28q14-18 28 0" fill="none" stroke="#1f5c39" stroke-width="5"/><rect x="34" y="62" width="44" height="22" rx="4" fill="#256f45"/>'+
+ nbD(108,62,'#c0504d')+nbD(124,66,'#3c6ea8')+folderD(150,64,40,'#e0a83a')+
+ penD(116,128,80,'#2f6fbd')+pencilD(150,124,72)+pencilD(160,138,80)+calc(62,128,.8)+
+ '<rect x="176" y="120" width="16" height="8" rx="2" fill="#e8909a"/><rect x="92" y="114" width="40" height="5" rx="1" fill="#f6efd9" stroke="#8a6d3b"/>');
+A.takenotes=svg(WALL+board(56,8,92,40,['important','words'],11)+FLOOR+desk(100,96,90)+
+ adult(28,64,{skin:'#e8c09a',hair:'#8a8a86',shirt:'#3d5a80',glasses:true,armR:'point',mood:'smile'})+
+ '<g transform="translate(108 84)"><rect width="46" height="14" fill="#fffdf6" stroke="#8a8f99"/><path d="M4 4h20M4 8h30M4 11h14" stroke="#1f4f8f" stroke-width="1.2"/></g>'+
+ linh(150,62,{armL:'heart',mood:'smile'})+pencilD(140,82,40)+
+ '<path d="M128 56q10 10 16 22" stroke="#e0a83a" stroke-width="2.4" fill="none" stroke-dasharray="3 3"/><path d="M139 76l6 7 2-9z" fill="#e0a83a"/>');
+
 TM.LP_ART=A;
 Object.keys(A).forEach(function(k){if(!TM.ART[k])TM.ART[k]=A[k];});
 
@@ -492,6 +533,32 @@ TM.SETS['u1-l5']={title:'Lesson 5 words · About Me', short:'Lesson 5', back:BAC
  W('question','question','what you ask when you want to know something','a sentence you ask; it ends with ?','Ask your partner three questions.','questions',['question','questions','query','inquiry','ask'],['problem','issue','trouble','doubt','matter'],
   S([['问题','wèntí']],[['問題','man6 tai4']],[['pregunta','preh-GOON-ta']],[['سؤال','su\u2019aal']],[['câu hỏi','kow hoy']],[['คำถาม','kham tham']],[['प्रश्न','prashna'],['सोधाइ','sodhai']]))
 ]};
-TM.SET_ORDER=['u1','u1-l1','u1-l2','u1-l3','u1-l4','u1-l5'];
+/* T-464: Lesson 6 · School Supplies. backpack/book/pencil/notebook reuse their ids (same meaning)
+   so Mr. Toby's practice cards and the class wall stay shared; only the sentence is this lesson's. */
+function R(id,sent,hl){var w=null;Object.keys(TM.SETS).forEach(function(k){(TM.SETS[k].words||[]).forEach(function(x){if(!w&&x.id===id)w=x;});});
+ return w?Object.assign({},w,{sent:sent,hl:hl}):null;}
+TM.SETS['u1-l6']={title:'Lesson 6 words · School Supplies', short:'Lesson 6', back:BACK, words:[
+ R('backpack','Carry them in your backpack.','backpack'),
+ R('book','My calculator is in my backpack, with my book.','book'),
+ W('calculator','calculator','a small machine that does math','a small machine you use to add, take away and multiply','I use a calculator to solve math problems.','calculator',['calculator','pocket calculator','adding machine'],['computer','phone'],
+  S([['计算器','jìsuànqì']],[['計數機','gai3 sou3 gei1']],[['calculadora','ka-koo-la-DO-ra']],[['آلة حاسبة','aala haasiba'],['حاسبة','haasiba']],[['máy tính','may ting'],['máy tính bỏ túi','may ting baw too-ee']],[['เครื่องคิดเลข','khrueang khit lek']],[['क्याल्कुलेटर','kyalkuletar']])),
+ W('computer','computer','a machine with a screen and a keyboard','a machine with a screen, a keyboard and the internet','In the library, Amira uses a computer.','computer',['computer','laptop','pc','desktop'],['calculator','tablet'],
+  S([['电脑','diànnǎo']],[['電腦','din6 nou5']],[['computadora','kom-poo-ta-DO-ra'],['ordenador','or-deh-na-DOR']],[['حاسوب','haasoob'],['كمبيوتر','kombyootar']],[['máy tính','may ting'],['máy vi tính','may vee ting']],[['คอมพิวเตอร์','khom-phiu-toe']],[['कम्प्युटर','kampyutar']])),
+ W('folder','folder','a paper cover that holds your papers','a thin cover you keep papers in','She puts her papers in a blue folder.','folder',['folder','file folder','file','binder','portfolio'],['directory','computer folder'],
+  S([['文件夹','wénjiànjiā']],[['文件夾','man4 gin2 gaap2']],[['carpeta','kar-PEH-ta'],['fólder','FOL-der']],[['ملف','malaff'],['حافظة أوراق','haafidhat awraaq']],[['bìa hồ sơ','bee-a ho sur'],['bìa đựng giấy','bee-a dung zay']],[['แฟ้ม','faem']],[['फोल्डर','pholdar'],['फाइल','phail']])),
+ R('notebook','You take notes in a notebook.','notebook'),
+ W('pen','pen','a thing you write with in ink (you can’t erase it)','a thing you write with; it uses ink','You also need a pen or a pencil.','pen',['pen','ballpoint','ballpoint pen','biro'],['pencil','playpen','pen (for animals)','enclosure'],
+  S([['笔','bǐ'],['圆珠笔','yuánzhūbǐ']],[['原子筆','jyun4 zi2 bat1'],['筆','bat1']],[['bolígrafo','bo-LEE-gra-fo'],['pluma','PLOO-ma'],['lapicero','la-pee-SEH-ro']],[['قلم حبر','qalam hibr'],['قلم','qalam']],[['bút bi','boot bee'],['bút','boot']],[['ปากกา','pak-ka']],[['कलम','kalam'],['पेन','pen']])),
+ R('pencil','I don’t have a pencil. Could I borrow one?','pencil'),
+ W('borrow','borrow','take something now and give it back later','use something that is not yours, then give it back','Could I borrow one?','borrow',['borrow','lend me','can I use','loan'],['lend','give','steal','rent'],
+  S([['借','jiè'],['借用','jièyòng']],[['借','ze3']],[['pedir prestado','peh-DEER pres-TA-do'],['prestar','pres-TAR']],[['يستعير','yasta’eer'],['أستلف','astalif']],[['mượn','moo-un']],[['ยืม','yuem']],[['सापटी लिनु','sapati linu']])),
+ W('need','need','you must have it (you can’t do it without it)','must have something to do a job','You need four notebooks and ten pencils.','need',['need','must have','require','have to have'],['want','wish','would like'],
+  S([['需要','xūyào']],[['需要','seoi1 jiu3']],[['necesitar','neh-seh-see-TAR'],['necesitas','neh-seh-SEE-tas']],[['يحتاج','yahtaaj'],['تحتاج','tahtaaj']],[['cần','kun']],[['ต้องการ','tong-kan'],['ต้องใช้','tong chai']],[['चाहिन्छ','chahinchha']])),
+ W('supplies','supplies','the things you need for school: pens, notebooks, a calculator…','the things you use to do your school work','What school supplies do I need for class?','supplies',['supplies','school supplies','stationery','materials','school things'],['food supply','stock','provisions','supply and demand'],
+  S([['文具','wénjù'],['学习用品','xuéxí yòngpǐn']],[['文具','man4 geoi6']],[['útiles escolares','OO-tee-les es-ko-LA-res'],['materiales','ma-teh-RYA-les']],[['أدوات مدرسية','adawaat madrasiyya'],['أدوات','adawaat']],[['đồ dùng học tập','daw zoong hok tup']],[['อุปกรณ์การเรียน','up-pa-kon kan rian'],['เครื่องเขียน','khrueang khian']],[['स्कूल सामग्री','skul samagri'],['स्टेशनरी','steshanari']])),
+ W('takenotes','take notes','write down the important words while you listen','write the important words so you remember','You take notes in a notebook.','take notes',['take notes','write notes','note down','write down'],['take a note to someone','music notes','money','bank notes'],
+  S([['记笔记','jì bǐjì']],[['抄筆記','caau1 bat1 gei3']],[['tomar apuntes','to-MAR a-POON-tes'],['tomar notas','to-MAR NO-tas']],[['يدوّن ملاحظات','yudawwin mulaahazaat'],['يكتب ملاحظات','yaktub mulaahazaat']],[['ghi chép','ghee chep']],[['จดโน้ต','jot not'],['จดบันทึก','jot ban-tuek']],[['टिपोट लिनु','tipot linu']]))
+].filter(Boolean)};
+TM.SET_ORDER=['u1','u1-l1','u1-l2','u1-l3','u1-l4','u1-l5','u1-l6'];
 if(TM.SETS.u1&&!TM.SETS.u1.short) TM.SETS.u1.short='Unit 1';
 })();

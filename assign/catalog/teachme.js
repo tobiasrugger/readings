@@ -7,5 +7,6 @@
 {"p": "/readings/teachme/?set=u1-l2", "t": "Teach Mr. Toby · Lesson 2 words", "d": "12 Introductions words: students say each one in their language for Mr. Toby", "m": "12 words · 7 languages", "g": "More: other pages", "o": 279},
 {"p": "/readings/teachme/?set=u1-l3", "t": "Teach Mr. Toby · Lesson 3 words", "d": "12 From A to Z words: students say each one in their language for Mr. Toby", "m": "12 words · 7 languages", "g": "More: other pages", "o": 280},
 {"p": "/readings/teachme/?set=u1-l4", "t": "Teach Mr. Toby · Lesson 4 words", "d": "12 0 to 100 words: students say each one in their language for Mr. Toby", "m": "12 words · 7 languages", "g": "More: other pages", "o": 281},
-{"p": "/readings/teachme/?set=u1-l5", "t": "Teach Mr. Toby · Lesson 5 words", "d": "12 About Me words: students say each one in their language for Mr. Toby", "m": "12 words · 7 languages", "g": "More: other pages", "o": 282}
+{"p": "/readings/teachme/?set=u1-l5", "t": "Teach Mr. Toby · Lesson 5 words", "d": "12 About Me words: students say each one in their language for Mr. Toby", "m": "12 words · 7 languages", "g": "More: other pages", "o": 282},
+{"p": "/readings/teachme/?set=u1-l6", "t": "Teach Mr. Toby · Lesson 6 words", "d": "12 School Supplies words: students say each one in their language for Mr. Toby", "m": "12 words · 7 languages", "g": "More: other pages", "o": 283}
 );
