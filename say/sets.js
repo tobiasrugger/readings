@@ -78,5 +78,12 @@ window.SAY_SETS={
     {k:'me', name:'About me', e:'\ud83d\udcac', items:['I am sixteen years old.','I am from Vietnam.','I speak Vietnamese and English.','I go to Galileo Academy.','I am bilingual.']},
     {k:'partner', name:'About my partner', e:'\ud83d\udc65', items:['This is my partner.','She is from Yemen.','He speaks Spanish and English.','They are sixteen years old.','We are bilingual.']},
     {k:'pron', name:'Pronouns', e:'\ud83d\udc46', items:['I','you','he','she','it','we','they']}
+  ] },
+  /* T-460: Launch Plus Lesson 6 · School Supplies (book Lesson 7) */
+  'school-supplies':{ title:'School Supplies', back:'/readings/launch-plus/u1-l6/', decks:[
+    {k:'words', name:'Words', e:'\ud83c\udf92', items:['backpack','book','calculator','computer','folder','notebook','pen','pencil']},
+    {k:'plural', name:'One or more', e:'\u270f\ufe0f', items:['one pencil, two pencils','one notebook, two notebooks','one class, two classes','one box, two boxes','one dictionary, two dictionaries']},
+    {k:'ask', name:'Ask to borrow', e:'\ud83d\ude4b', items:['What school supplies do I need for class?','What else do I need?','I don\u2019t have a pencil.','Could I borrow one?','Sure, you can borrow one!','Thank you for your help.']},
+    {k:'need', name:'I need ___ to ___', e:'\ud83d\udcac', items:['I need a pen to write.','I need a folder to hold my papers.','I need a calculator to solve math problems.','I need a backpack to carry my supplies.','I use a notebook every day.']}
   ] }
 };
