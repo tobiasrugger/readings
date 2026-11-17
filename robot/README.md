@@ -36,3 +36,17 @@ in tap mode, test 1 when the page made no save after the extra tap and nothing c
 write/* ladders, whose text only shows inside an opened rung (every save there kept the work).
 Every run gets its own results file in readings/robot/, and its name is appended to results-index.json
 (later files win). The audit grid and https://tobiasrugger.github.io/readings/audit/check.html read it.
+
+## Slow leave (T-467, Nov 17)
+    python3 readings/robot/robot.py --slow @pages.txt --out results.json -j 4     # page or page:tap / page:type
+The T-455 bug: a page that waits while an earlier save is still on its way loses the last answer if the student
+closes the tab during that wait. This test makes Supabase a REAL local HTTP server (own thread, 1.5 s per write,
+CORS + OPTIONS) that also serves a test copy of the site with the Supabase and github.io URLs rewritten to itself.
+Real clock, no Playwright routes, every other host blocked. The robot signs in, answers two different items less
+than 1 s apart (the second once the first save has left, or after 0.9 s), closes the tab at once, waits 5 s, and
+checks the saved row holds both answers. Typing pages use markers ROBOSLOW1/2; if typing never saves, it falls back
+to tapping. Tap pages: a reference run waits 6 s before closing, the slow run taps the same option texts and
+closes at once; every saved value from the reference must be there.
+Proof: donow/reel-05 at fa65c11 FAILS (the second answer and the score are lost); live reel-05 PASSES.
+Results go in as test "t4" on top of each page's earlier t1–t3 row (results-t467-nov17.json); a t4 fail makes the
+page FAIL. Verdicts: PASS, FAIL, inconclusive, robot-could-not-answer (fewer than 2 boxes / nothing to tap).

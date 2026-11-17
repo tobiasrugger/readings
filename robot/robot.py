@@ -617,7 +617,7 @@ async def tap_rounds(page, rounds=14, per_round=3, last=False):
             except Exception: pass
     return tapped
 
-SKIPLEAF = re.compile(r"(updated|created|saved|_at$|^at$|time|^ts$|secs|seconds|^last|date|visit|opened|seen|order|shuffle|seed|perm|^lang|language|"
+SKIPLEAF = re.compile(r"(updated|created|saved|started|finished|_at$|^at$|time|^ts$|secs|seconds|^last|date|visit|opened|seen|order|shuffle|seed|perm|^lang|language|"
                       r"^name$|student_name|first_name|last_name|period|email|^id$|device|ua$|agent|version|^v$|tab|step|screen|view|scroll|log)", re.I)
 def leaves(o, path="", out=None):
     if out is None: out = {}
@@ -832,14 +832,239 @@ async def run_tap(browser, rel, R):
     R["verdict"] = "FAIL" if False in ps else ("inconclusive" if None in ps else "PASS")
     return R
 
+# ---------------------------------------------------------------- slow leave (T-467)
+# The T-455 bug: a page that WAITS while an earlier save is still on its way (if(pushing) setTimeout(push,600))
+# loses the last answer when the student closes the tab during that wait. To see it, the server must really be
+# slow WHILE the tab closes, so Supabase here is a real local HTTP server in its own thread that answers every
+# write after 1.5 s. (A Playwright route handler that sleeps pauses the test itself and hides the bug.)
+# The same server serves a test copy of the site with the Supabase and github.io URLs rewritten to itself.
+# No Playwright routes and no fake clock in this mode: real time, real keepalive, real pagehide.
+import threading, http.server, socket
+SUPA_URL = "https://lhmwtfyceilgndpygivj.supabase.co"
+SLOW_DELAY = 1.5
+
+class SlowServer:
+    def __init__(self, root, tables=None, delay=SLOW_DELAY):
+        self.db = DB(tables or seeded_students()); self.delay = delay; self.lock = threading.Lock()
+        self.inflight = 0; self.root = root
+        s = socket.socket(); s.bind(("127.0.0.1", 0)); self.port = s.getsockname()[1]; s.close()
+        self.base = "http://127.0.0.1:%d" % self.port
+        me = self
+        class H(http.server.BaseHTTPRequestHandler):
+            protocol_version = "HTTP/1.1"
+            def log_message(self, *a): pass
+            def _cors(self):
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.send_header("Access-Control-Allow-Methods", "GET,POST,PATCH,PUT,DELETE,HEAD,OPTIONS")
+                self.send_header("Access-Control-Allow-Headers", self.headers.get("Access-Control-Request-Headers") or "*")
+                self.send_header("Access-Control-Expose-Headers", "content-range")
+                self.send_header("Access-Control-Max-Age", "600")
+            def _send(self, status, body, ctype="application/json"):
+                self.send_response(status); self._cors()
+                self.send_header("Content-Type", ctype); self.send_header("Content-Length", str(len(body)))
+                self.send_header("Cache-Control", "no-store"); self.end_headers()
+                if self.command != "HEAD": self.wfile.write(body)
+            def do_OPTIONS(self):
+                self.send_response(204); self._cors(); self.send_header("Content-Length", "0"); self.end_headers()
+            def _api(self):
+                n = int(self.headers.get("Content-Length") or 0)
+                body = self.rfile.read(n).decode("utf-8", "replace") if n else None
+                write = self.command in ("POST", "PATCH", "PUT", "DELETE")
+                with me.lock:
+                    if write: me.inflight += 1
+                    st, payload = me.db.handle(self.command, me.base + self.path, {k.lower(): v for k, v in self.headers.items()}, body)
+                try:
+                    if write: time.sleep(me.delay)        # the slow answer
+                    out = b"" if payload is None else json.dumps(payload).encode()
+                    self._send(st, out)
+                except Exception:
+                    pass
+                finally:
+                    if write:
+                        with me.lock: me.inflight -= 1
+            def _static(self):
+                p = urllib.parse.urlparse(self.path).path
+                f = os.path.join(me.root, urllib.parse.unquote(p).lstrip("/"))
+                if os.path.isdir(f): f = os.path.join(f, "index.html")
+                if not os.path.isfile(f): return self._send(404, b"")
+                data = open(f, "rb").read(); ext = os.path.splitext(f)[1]
+                if ext in (".html", ".js", ".css", ".json"):
+                    t = data.decode("utf-8", "replace").replace(SUPA_URL, me.base).replace("https://tobiasrugger.github.io/readings/", me.base + "/readings/")
+                    data = t.encode()
+                self._send(200, data, CTYPES.get(ext, "application/octet-stream"))
+            def _go(self):
+                if self.path.startswith(("/rest/", "/auth/", "/storage/", "/functions/")): return self._api()
+                return self._static()
+            do_GET = do_POST = do_PATCH = do_PUT = do_DELETE = do_HEAD = _go
+        self.httpd = http.server.ThreadingHTTPServer(("127.0.0.1", self.port), H)
+        self.httpd.daemon_threads = True
+        threading.Thread(target=self.httpd.serve_forever, daemon=True).start()
+    def close(self):
+        try: self.httpd.shutdown(); self.httpd.server_close()
+        except Exception: pass
+
+BOX_JS = r"""
+() => {   // answer boxes the robot may type into, visible first (same filter as WORK_JS)
+  const ok = el => { if (el.readOnly || el.disabled) return false;
+    if (el.closest('[id*=gate i],[class*=gate i],[id*=login i],[id*=signin i]')) return false;
+    if (el.tagName === 'TEXTAREA') return true;
+    if (el.tagName === 'INPUT') { const t = (el.type||'text').toLowerCase(); if (!['text',''].includes(t)) return false;
+      const L = (el.id+' '+el.name+' '+el.placeholder+' '+el.className).toLowerCase();
+      return !/mail|name|period|search|lang|password|pw|code|url/.test(L); }
+    return el.isContentEditable; };
+  const vis = el => { const s = getComputedStyle(el); const r = el.getBoundingClientRect(); return s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0; };
+  const all = [...document.querySelectorAll('textarea,input,[contenteditable=true]')].filter(ok);
+  all.sort((a,b) => (vis(b)?1:0) - (vis(a)?1:0));
+  return all.slice(0, 2).map((el, i) => { el.dataset.robotBox = 'b'+i; return 'b'+i; });
+}"""
+TYPE1_JS = r"""([id, txt]) => { const el = document.querySelector('[data-robot-box="'+id+'"]'); if (!el) return false;
+  const fire = t => el.dispatchEvent(new Event(t, {bubbles:true}));
+  el.focus && el.focus(); if (el.isContentEditable) el.textContent = txt; else el.value = txt;
+  ['input','keyup','change'].forEach(fire); el.blur && el.blur(); fire('blur'); return true; }"""
+
+async def slow_new_page(browser):
+    ctx = await browser.new_context(viewport={"width": 1366, "height": 768})
+    page = await ctx.new_page()
+    page.on("dialog", lambda d: asyncio.ensure_future(d.accept("Robo Tester") if d.type == "prompt" else d.accept()))
+    return ctx, page
+
+async def slow_wait_inflight(srv, since_n, limit_s):
+    """wait (real time) until a work write has reached the server after log index since_n, at most limit_s"""
+    t = time.time()
+    while time.time() - t < limit_s:
+        if any(e["method"] in ("POST", "PATCH", "PUT") and "/rest/v1/" in e["url"] and e["table"] not in INFRA
+               and not e["table"].startswith("rpc") for e in srv.db.log[since_n:]): return True
+        await asyncio.sleep(0.05)
+    return False
+
+async def tap_one(page, want=None, used=None):
+    """tap the first untapped option of the topmost choice group (plus a lone Check/Next after it); True if tapped"""
+    gs = (await ev(page, TAPSCAN_JS, NAVRE)) or []
+    NAVG = re.compile(r"^\d+ ?·|\b\d+ ?/ ?\d+\b|^directions$|^name$|reel #|^next\b|use my idea", re.I)
+    used = used if used is not None else set()
+    # pages often redraw after a tap, so a used item is remembered by its option texts, not by a DOM mark
+    ch = sorted([g for g in gs if g["choice"] and not any(NAVG.search(t or "") for t in g["texts"])
+                 and frozenset(g["texts"]) not in used], key=lambda g: g["y"])
+    if not ch:
+        adv = [g for g in gs if g["adv"]]
+        if not adv: return False
+        ch = adv
+    g0 = ch[0]; k = 0
+    if want is not None and want in g0["texts"]: k = g0["texts"].index(want)
+    tid = g0["ids"][k]
+    try:   # a quick JS click: page.click waits for scrolling and would stretch the gap between the two answers
+        ok = await ev(page, "(t) => { const e = document.querySelector('[data-robot-tap=\"'+t+'\"]'); if (!e) return false; e.scrollIntoView({block:'center'}); e.click(); return true; }", tid)
+        if not ok: return False
+    except Exception: return False
+    used.add(frozenset(g0["texts"]))
+    # the whole group is used up, so the second answer goes to the NEXT item, not the same one again
+    await ev(page, "(ids) => ids.forEach(t => { const e = document.querySelector('[data-robot-tap=\"'+t+'\"]'); if (e) e.dataset.robotTapped = '1'; })", g0["ids"])
+    chk = [g for g in gs if g["adv"] and re.search(r"check", " ".join(g["texts"]).lower())]
+    if chk:
+        try: await ev(page, "(t) => { const e = document.querySelector('[data-robot-tap=\"'+t+'\"]'); if (e) e.click(); }", chk[0]["ids"][0])
+        except Exception: pass
+    return g0["texts"][k] or True
+
+async def slow_once(browser, url, mode, wait_before_close, wants=(None, None)):
+    """one sign-in + two answers + close. Returns (server, info). mode 'type' or 'tap'."""
+    srv = SlowServer(ROOT)
+    u = srv.base + "/" + url.split("/", 3)[3] if url.startswith("http") else srv.base + "/" + url.lstrip("/")
+    ctx, page = await slow_new_page(browser)
+    info = {"mode": mode}
+    try:
+        try: await page.goto(u, wait_until="domcontentloaded", timeout=20000)
+        except Exception as ex: info["goto"] = str(ex)[:80]
+        await page.wait_for_timeout(2000)
+        info["gate"] = await fill_gate(page, {"first": "Robo", "last": "Tester", "typed": "robo.tester@s.sfusd.edu"})
+        await page.wait_for_timeout(3500)                      # saved work loads; sign-in saves (if any) finish
+        while srv.inflight: await asyncio.sleep(0.1)
+        before = table_leaves(student_rows(srv.db, "robo.tester"))
+        n0 = len(srv.db.log)
+        if mode == "type":
+            ids = (await ev(page, BOX_JS)) or []
+            info["boxes"] = len(ids)
+            if len(ids) < 2: info["skip"] = "fewer than 2 answer boxes"; return srv, info
+            await ev(page, TYPE1_JS, [ids[0], "ROBOSLOW1"])
+        else:
+            used = set(); t = await tap_one(page, wants[0], used)
+            if not t: info["skip"] = "nothing to tap"; return srv, info
+            info["taps"] = [t]
+        t1 = time.time()
+        await slow_wait_inflight(srv, n0, 0.9)                 # the first answer's save is on its way (or 0.9 s passed)
+        info["inflight_at_leave"] = srv.inflight > 0
+        if mode == "type": await ev(page, TYPE1_JS, [ids[1], "ROBOSLOW2"])
+        else:
+            info["taps"].append(await tap_one(page, wants[1], used))
+            if not info["taps"][1]: info["skip"] = "only one thing to tap"; return srv, info
+        info["gap_s"] = round(time.time() - t1, 2)
+        if wait_before_close: await page.wait_for_timeout(int(wait_before_close * 1000))
+        else: info["inflight_at_leave"] = info["inflight_at_leave"] or srv.inflight > 0
+        try: await page.close(run_before_unload=True)
+        except Exception: pass
+        await asyncio.sleep(5)                                 # the slow server answers what was sent
+        while srv.inflight: await asyncio.sleep(0.2)
+        info["before"] = before
+        info["writes_after_leave"] = len([w for w in srv.db.writes()])
+    finally:
+        try: await ctx.close()
+        except Exception: pass
+    return srv, info
+
+async def run_slow(browser, rel, mode):
+    url = BASE + "/" + rel.lstrip("/")
+    R = {"page": rel, "test": "slow-leave", "mode": mode}
+    if mode == "type":
+        srv, info = await slow_once(browser, url, "type", 0); srv.close()
+        R["detail"] = {k: v for k, v in info.items() if k != "before"}
+        if info.get("skip"):
+            R["verdict"] = "robot-could-not-answer"; return R
+        rows = work_rows(srv.db, "ROBOSLOW")
+        txt = json.dumps(rows)
+        has1, has2 = "ROBOSLOW1" in txt, "ROBOSLOW2" in txt
+        R["saved"] = {"answer1": has1, "answer2": has2, "tables": sorted(rows)}
+        if not has1 and not has2:
+            # did the reference (wait before closing) save anything typed? if not, typing is not what this page saves
+            srv2, info2 = await slow_once(browser, url, "type", 6); srv2.close()
+            t2 = json.dumps(work_rows(srv2.db, "ROBOSLOW"))
+            R["reference_saved"] = {"answer1": "ROBOSLOW1" in t2, "answer2": "ROBOSLOW2" in t2}
+            if "ROBOSLOW2" not in t2:
+                # typing is not what this page saves: answer it by tapping instead
+                T = await run_slow(browser, rel, "tap"); T["typed_first"] = R; return T
+        R["verdict"] = "PASS" if (has1 and has2) else "FAIL"
+        return R
+    # tap: reference run waits 6 s before closing; the slow run closes at once
+    srvR, infoR = await slow_once(browser, url, "tap", 6); srvR.close()
+    if infoR.get("skip"):
+        R["verdict"] = "robot-could-not-answer"; R["detail"] = {k: v for k, v in infoR.items() if k != "before"}; return R
+    ref = {k: v for k, v in table_leaves(student_rows(srvR.db, "robo.tester")).items() if infoR["before"].get(k) != v}
+    srvS, infoS = await slow_once(browser, url, "tap", 0, tuple(infoR.get("taps", [None, None]))); srvS.close()
+    got = {k: v for k, v in table_leaves(student_rows(srvS.db, "robo.tester")).items() if infoS.get("before", {}).get(k) != v}
+    R["detail"] = {"ref": {k: v for k, v in infoR.items() if k != "before"}, "slow": {k: v for k, v in infoS.items() if k != "before"}}
+    if not ref:
+        R["verdict"] = "inconclusive"; R["why"] = "the reference run saved nothing new from two taps"; return R
+    # the slow run taps the same option TEXTS as the reference (options are shuffled), so the saved values must match
+    def same_or_more(a, b):
+        if a == b: return True
+        try: return float(a) >= float(b)
+        except Exception: return False
+    gotv = {(t, p): v for (t, key, p), v in got.items()}
+    missing = sorted([[t, p, v, gotv.get((t, p))] for (t, key, p), v in ref.items() if not same_or_more(gotv.get((t, p)), v)])
+    R["saved"] = {"reference_leaves": len(ref), "slow_kept": len(ref) - len(missing), "missing": missing[:8],
+                  "same_taps": infoR.get("taps") == infoS.get("taps")}
+    R["verdict"] = "PASS" if not missing else ("FAIL" if infoR.get("taps") == infoS.get("taps") else "inconclusive")
+    return R
+
 async def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("pages", nargs="+")
     ap.add_argument("--out", default="results.json")
     ap.add_argument("-j", type=int, default=4)
     ap.add_argument("--tap", action="store_true", help="tap choice buttons when typed text never reaches a save")
+    ap.add_argument("--slow", action="store_true", help="T-467 slow-leave test only (page:type or page:tap; default from earlier results)")
     a = ap.parse_args()
     global TAP; TAP = a.tap
+    if a.slow:
+        return await main_slow(a)
     pages = []
     for p in a.pages:
         if p.startswith("@"): pages += [l.strip() for l in open(p[1:]) if l.strip()]
@@ -858,6 +1083,36 @@ async def main():
                 results.append(r)
                 print(json.dumps({"page": p, "verdict": r.get("verdict"), "t1": (r.get("t1") or {}).get("pass"),
                                   "t2": (r.get("t2") or {}).get("pass"), "t3": (r.get("t3") or {}).get("pass")}), flush=True)
+                json.dump(results, open(a.out, "w"), indent=1)
+        await asyncio.gather(*[one(p) for p in pages])
+        await browser.close()
+    json.dump(results, open(a.out, "w"), indent=1)
+
+async def main_slow(a):
+    # mode per page: an explicit "page:tap" / "page:type", else what the earlier robot runs found
+    here = os.path.dirname(os.path.abspath(__file__)); known = {}
+    try:
+        for f in json.load(open(os.path.join(here, "results-index.json"))):
+            if "slow" in f: continue
+            for r in json.load(open(os.path.join(here, f))): known[r["page"]] = r.get("mode", "type")
+    except Exception: pass
+    pages = []
+    for p in a.pages:
+        pages += ([l.strip() for l in open(p[1:]) if l.strip()] if p.startswith("@") else [p])
+    from playwright.async_api import async_playwright
+    results = []; sem = asyncio.Semaphore(a.j)
+    async with async_playwright() as pw:
+        # nothing leaves the machine: every host but 127.0.0.1 fails at once (fonts, translator, CDNs)
+        browser = await pw.chromium.launch(args=["--autoplay-policy=no-user-gesture-required", "--no-proxy-server",
+                                                  "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1"])
+        async def one(p):
+            page, _, m = p.partition(":")
+            m = m or known.get(page, "type")
+            async with sem:
+                try: r = await asyncio.wait_for(run_slow(browser, page, m), timeout=180)
+                except Exception as ex: r = {"page": page, "test": "slow-leave", "mode": m, "verdict": "robot-error", "error": str(ex)[:200]}
+                results.append(r)
+                print(json.dumps({"page": page, "mode": m, "verdict": r.get("verdict"), "saved": r.get("saved")}), flush=True)
                 json.dump(results, open(a.out, "w"), indent=1)
         await asyncio.gather(*[one(p) for p in pages])
         await browser.close()
