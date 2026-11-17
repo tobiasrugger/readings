@@ -1,6 +1,6 @@
 /* =====================================================================
    teachme/lp-sets.js — Teach Mr. Toby word sets for each Launch Plus
-   lesson (u1-l1 … u1-l5). Loaded after words.js by teachme/index.html
+   lesson (u1-l1 … u1-l7; u1-l7 = book Lesson 8, T-477). Loaded after words.js by teachme/index.html
    and teachme/dashboard.html. Open a set with ?set=u1-l3.
 
    Same shape as words.js: each word is ONE meaning, pinned by a drawing
@@ -391,6 +391,120 @@ A.takenotes=svg(WALL+board(56,8,92,40,['important','words'],11)+FLOOR+desk(100,9
  linh(150,62,{armL:'heart',mood:'smile'})+pencilD(140,82,40)+
  '<path d="M128 56q10 10 16 22" stroke="#e0a83a" stroke-width="2.4" fill="none" stroke-dasharray="3 3"/><path d="M139 76l6 7 2-9z" fill="#e0a83a"/>');
 
+/* ======================= Lesson 7 · Class Acts (book L8, pp. 90–105) · T-477 ======================= */
+function lockers(x,n,cols){var s='';for(var i=0;i<n;i++){var lx=x+i*26,c=cols[i%cols.length];s+='<rect x="'+lx+'" y="20" width="24" height="108" fill="'+c+'" stroke="#3d4a5c" stroke-width="1.5"/>'+
+ '<path d="M'+(lx+5)+' 28h14M'+(lx+5)+' 32h14M'+(lx+5)+' 36h14" stroke="#3d4a5c" stroke-width="1.2"/><rect x="'+(lx+17)+'" y="66" width="3" height="10" rx="1" fill="#c9ced6"/>'+
+ '<path d="M'+(lx+5)+' 92h14M'+(lx+5)+' 96h14" stroke="#3d4a5c" stroke-width="1" opacity=".6"/>';}return s;}
+function bulb(x,y,s){return '<g transform="translate('+x+' '+y+') scale('+(s||1)+')"><circle r="16" fill="#fff6c2" opacity=".7"/><path d="M-9-2a9 9 0 1 1 18 0c0 5-4 7-4 11h-10c0-4-4-6-4-11z" fill="#f6d36b" stroke="#c9a227" stroke-width="1.4"/>'+
+ '<rect x="-5" y="9" width="10" height="3" fill="#9aa3ad"/><rect x="-4" y="12" width="8" height="3" rx="1" fill="#7d858f"/><path d="M-3 4l3-4 3 4" fill="none" stroke="#c9862a" stroke-width="1.2"/>'+
+ '<path d="M-22-6h-6M22-6h6M-16-20l-4-4M16-20l4-4M0-24v-6" stroke="#e0a83a" stroke-width="2" stroke-linecap="round"/></g>';}
+function ball(x,y,r,c1,c2){return '<g transform="translate('+x+' '+y+')"><circle r="'+r+'" fill="'+c1+'" stroke="#3a3f4a" stroke-width="1.2"/><path d="M-'+r+' 0q'+r+' -'+(r*.6)+' '+(2*r)+' 0M0 -'+r+'q-'+(r*.6)+' '+r+' 0 '+(2*r)+'" fill="none" stroke="'+c2+'" stroke-width="1.6"/></g>';}
+function tray(x,y){return '<g transform="translate('+x+' '+y+')"><rect x="-16" y="-4" width="32" height="8" rx="2" fill="#e8a64a" stroke="#b07a2a"/><circle cx="-7" cy="-5" r="5" fill="#f4f0e6" stroke="#b9b2a0"/><path d="M-10-6q3-3 6 0" stroke="#6f9f5c" stroke-width="2" fill="none"/><rect x="3" y="-10" width="6" height="10" rx="1" fill="#5aa0d6"/><rect x="3" y="-10" width="6" height="3" fill="#fff"/></g>';}
+function sweat(x,y){return '<path transform="translate('+x+' '+y+')" d="M0-5q4 6 0 9q-4-3 0-9z" fill="#7cc0e8" stroke="#3a87b8" stroke-width=".8"/>';}
+function lamp(x,y){return '<g transform="translate('+x+' '+y+')"><ellipse cx="0" cy="0" rx="10" ry="3" fill="#3a3f4a"/><path d="M0 0l-6-26l16-10" stroke="#3a3f4a" stroke-width="3" fill="none"/><path d="M4-44l16 4-6 12z" fill="#2f6fbd"/><path d="M14-30l-30 30h40z" fill="#fff6c2" opacity=".55"/></g>';}
+function moon(x,y){return '<path transform="translate('+x+' '+y+')" d="M0-9a9 9 0 1 0 7 15a7 7 0 1 1-7-15z" fill="#f6e6a6"/>';}
+function star(x,y){return '<path transform="translate('+x+' '+y+')" d="M0-3l1 2 3 .4-2 2 .5 3-2.5-1.4-2.5 1.4.5-3-2-2 3-.4z" fill="#fff6c2"/>';}
+
+/* find — Jun opens his locker and there it is: the backpack he was looking for */
+A.find=svg(HALL+lockers(4,7,['#5b7fa6','#6b8fb6','#5b7fa6','#6b8fb6','#5b7fa6','#6b8fb6','#5b7fa6'])+TILE+
+ '<rect x="56" y="20" width="24" height="108" fill="#2a3442"/><path d="M80 20l22 8v92l-22 8z" fill="#7d9cc0" stroke="#3d4a5c" stroke-width="1.5"/><path d="M84 32l14 5M84 36l14 5M84 40l14 5" stroke="#3d4a5c" stroke-width="1"/>'+
+ '<rect x="58" y="44" width="20" height="2" fill="#9aa3ad"/><rect x="60" y="24" width="7" height="18" fill="#c0504d"/><rect x="68" y="26" width="6" height="16" fill="#e0a83a"/>'+
+ '<path d="M59 104l3-38q2-6 7-6h4q5 0 6 6l2 38z" fill="#2e8b57"/><path d="M63 64q6-10 12 0" fill="none" stroke="#1f5c39" stroke-width="3"/><rect x="61" y="82" width="16" height="12" rx="2" fill="#256f45"/>'+
+ '<path d="M48 58l-6-6M88 54l6-7M68 50v-8" stroke="#f2c94c" stroke-width="2.4" stroke-linecap="round"/>'+
+ jun(130,62,{mood:'big',armL:'point'})+
+ '<g transform="translate(168 26)"><circle r="11" fill="none" stroke="#5d6170" stroke-width="3.2"/><circle r="8" fill="#cfe6f2" opacity=".7"/><path d="M8 8l10 10" stroke="#7a5b3a" stroke-width="4.5" stroke-linecap="round"/></g>'+
+ bubble(150,46,44,18,T(172,59,'Yes!',9,'#2e8b57'),'l'));
+
+/* hang out — friends together at lunch, talking and laughing (not class, not work) */
+A.hangout=svg('<rect width="200" height="128" fill="#fbe7c6"/><rect x="0" y="0" width="200" height="16" fill="#e8c88f"/>'+win(10,24,44,34)+win(146,24,44,34)+clock(178,74,9,12,30)+
+ '<path d="M0 92h200" stroke="#d8b77d" stroke-width="3"/>'+TILE+
+ amira(52,58,{mood:'big',armR:'out'})+linh(100,60,{mood:'big',armL:'heart'})+mateo(148,58,{mood:'smile',armL:'out'})+
+ '<rect x="16" y="98" width="168" height="10" rx="3" fill="#6f9fcf"/><rect x="16" y="108" width="168" height="3" fill="#4d7aa8"/><rect x="28" y="111" width="6" height="18" fill="#7a7f8a"/><rect x="166" y="111" width="6" height="18" fill="#7a7f8a"/>'+
+ tray(50,96)+tray(100,96)+tray(150,96)+
+ T(74,14,'ha',9,'#c0504d')+T(86,10,'ha',8,'#c0504d')+T(124,14,'ha!',9,'#c0504d')+
+ '<path d="M64 26q3-4 6 0M134 22q3-4 6 0" stroke="#c0504d" stroke-width="1.6" fill="none"/>');
+
+/* learn — the teacher shows something new; the light goes on for Paolo */
+A.learn=svg(WALL+board(8,8,108,58,['one cat','two cats'],12)+'<path d="M92 50l10-6" stroke="#f2c94c" stroke-width="2"/>'+FLOOR+
+ adult(130,62,{skin:'#e8c09a',hair:'#8a8a86',shirt:'#3d5a80',glasses:true,armL:'point',mood:'smile'})+
+ desk(28,104,64)+'<g transform="translate(46 96)"><rect width="30" height="8" fill="#fffdf6" stroke="#8a8f99"/><path d="M3 3h18M3 6h12" stroke="#1f4f8f"/></g>'+
+ '<g transform="translate(176 72) scale(.72)">'+paolo(0,0,{mood:'big',armR:'up'})+'</g>'+bulb(176,22,.8));
+
+/* play — volleyball in the gym: a game, for fun */
+A.play=svg('<rect width="200" height="128" fill="#f3e6cf"/><path d="M0 18h200" stroke="#d1b98f" stroke-width="2"/><rect x="66" y="4" width="68" height="12" rx="2" fill="#2c4f7c"/>'+T(100,13,'GYM',8,'#fff')+
+ '<rect x="0" y="118" width="200" height="42" fill="#d9a35b"/><path d="M0 128h200M0 140h200M0 152h200" stroke="#c18a45" stroke-width="1"/><path d="M100 118v42" stroke="#fff" stroke-width="2"/><path d="M20 160l14-42M180 160l-14-42" stroke="#fff" stroke-width="2"/>'+
+ '<rect x="98" y="52" width="4" height="70" fill="#5d6170"/><rect x="40" y="52" width="120" height="16" fill="none" stroke="#3a3f4a" stroke-width="1.5"/>'+
+ '<path d="M40 56h120M40 60h120M40 64h120" stroke="#3a3f4a" stroke-width=".6"/><path d="M50 52v16M60 52v16M70 52v16M80 52v16M90 52v16M110 52v16M120 52v16M130 52v16M140 52v16M150 52v16" stroke="#3a3f4a" stroke-width=".6"/><rect x="40" y="50" width="120" height="3" fill="#fff"/>'+
+ '<g transform="translate(52 52) scale(.9)">'+mateo(0,0,{mood:'big',armL:'up',armR:'up'})+'</g>'+'<g transform="translate(150 54) scale(.9)">'+jun(0,0,{mood:'big',armL:'up',shirt:'#c0504d'})+'</g>'+
+ ball(84,22,9,'#fffdf4','#2f6fbd')+'<path d="M58 30q10-14 18-10" stroke="#e0a83a" stroke-width="2" fill="none" stroke-dasharray="3 3"/>');
+
+/* practice — do it again and again to get better: the same shot, Mon Tue Wed */
+A.practice=svg('<rect width="200" height="128" fill="#dbe9f2"/><rect x="0" y="118" width="200" height="42" fill="#c9a77c"/><path d="M0 126h200" stroke="#a9875e"/>'+
+ '<rect x="166" y="10" width="4" height="110" fill="#7a7f8a"/><rect x="144" y="12" width="40" height="28" fill="#fff" stroke="#3a3f4a" stroke-width="1.5"/><rect x="154" y="22" width="16" height="12" fill="none" stroke="#c0504d" stroke-width="1.5"/>'+
+ '<path d="M150 40h22" stroke="#e07a2a" stroke-width="2.4"/><path d="M151 41l3 12M156 41l1 12M161 41v12M166 41l-1 12M171 41l-3 12M152 47h18" stroke="#fff" stroke-width="1"/>'+
+ '<g transform="translate(58 58) scale(.92)">'+mateo(0,0,{mood:'smile',armR:'up'})+'</g>'+
+ '<path d="M70 30q40-40 86 8" stroke="#e07a2a" stroke-width="1.6" fill="none" stroke-dasharray="3 3"/><path d="M70 30q44-30 86 8" stroke="#e07a2a" stroke-width="1.6" fill="none" stroke-dasharray="3 3" opacity=".6"/><path d="M70 30q48-20 86 8" stroke="#e07a2a" stroke-width="1.6" fill="none" stroke-dasharray="3 3" opacity=".35"/>'+
+ ball(158,44,7,'#e07a2a','#7a3a10')+ball(72,26,7,'#e07a2a','#7a3a10')+
+ '<rect x="96" y="80" width="62" height="34" rx="3" fill="#fffdf4" stroke="#8a6d3b" stroke-width="1.5"/>'+['Mon','Tue','Wed'].map(function(d,i){return T(108+i*19,92,d,7)+CHECK(108+i*19,104).replace('r="12"','r="6"').replace('stroke-width="3.4"','stroke-width="2"').replace('M-6 0l4 5 8-9','M-3 0l2 2.5 4-4.5');}).join(''));
+
+/* solve — find the answer to a problem: 12 + 8 = ? → 20 ✓ */
+A.solve=svg(WALL+board(8,8,96,48,['12 + 8 = ?'],13)+FLOOR+desk(36,98,130)+
+ '<g transform="translate(48 84) rotate(-4)"><rect width="58" height="14" fill="#fffdf6" stroke="#8a8f99"/>'+T(29,11,'12 + 8 = 20',8,'#1f4f8f')+'</g>'+CHECK(120,88)+
+ '<g transform="translate(158 62) scale(.9)">'+paolo(0,0,{mood:'big',armL:'point'})+'</g>'+pencilD(36,84,-50)+
+ '<path d="M106 76l-6-6M134 76l6-6M120 72v-8" stroke="#f2c94c" stroke-width="2.4" stroke-linecap="round"/>'+bubble(110,8,46,20,T(133,22,'20!',10,'#2e8b57'),'r'));
+
+/* study — read and review at home to remember for school (lamp, flashcards, night) */
+A.study=svg('<rect width="200" height="128" fill="#d6cbe6"/>'+'<rect x="128" y="10" width="62" height="48" fill="#1f2a4a" stroke="#7a5b3a" stroke-width="3"/>'+moon(170,26)+star(140,22)+star(152,44)+star(182,48)+'<path d="M159 10v48M128 34h62" stroke="#7a5b3a" stroke-width="2"/>'+
+ '<rect x="10" y="12" width="40" height="30" fill="#fff8e6" stroke="#8a6d3b"/>'+T(30,26,'words',7)+'<path d="M16 32h28M16 37h20" stroke="#9a9a9a"/>'+FLOOR+
+ linh(82,62,{mood:'smile',armL:'heart',armR:'heart'})+
+ '<rect x="16" y="96" width="172" height="8" rx="2" fill="#a77b4f"/><rect x="22" y="104" width="6" height="26" fill="#7d5a38"/><rect x="176" y="104" width="6" height="26" fill="#7d5a38"/>'+
+ '<path d="M62 94l20-6 20 6v4l-20-5-20 5z" fill="#fffdf6" stroke="#8a8f99"/><path d="M82 88v6" stroke="#8a8f99"/><path d="M66 92l12-3M86 89l12 3" stroke="#6a8fd1" stroke-width=".8"/>'+
+ lamp(152,96)+
+ '<g transform="translate(118 88)"><rect width="18" height="11" rx="1" fill="#fff" stroke="#c0504d" transform="rotate(-8)"/><rect x="6" y="2" width="18" height="11" rx="1" fill="#fff" stroke="#2f6fbd" transform="rotate(6)"/>'+T(15,10,'learn',5,'#2f6fbd')+'</g>');
+
+/* understand — contrast pair: LEFT "?" lost (red X) · RIGHT "Oh, I get it!" (green check) */
+A.understand=svg('<rect width="200" height="160" fill="#f6efe0"/><path d="M100 8v144" stroke="'+INK+'" stroke-width="2" stroke-dasharray="4 4"/>'+
+ '<rect x="6" y="8" width="88" height="144" rx="8" fill="#f8e6e3"/><rect x="106" y="8" width="88" height="144" rx="8" fill="#e8f5ec"/>'+
+ '<rect x="14" y="16" width="72" height="22" fill="#2f5d47" stroke="#8a6440" stroke-width="2"/>'+T(50,31,'2 + 2',10,'#f4f1e6')+
+ '<rect x="114" y="16" width="72" height="22" fill="#2f5d47" stroke="#8a6440" stroke-width="2"/>'+T(150,31,'2 + 2',10,'#f4f1e6')+
+ '<g transform="translate(50 76) scale(.72)">'+linh(0,0,{mood:'sad',armR:'up'})+'</g>'+T(32,58,'?',16,'#c0392b')+T(70,54,'?',12,'#c0392b')+T(62,70,'?',10,'#c0392b')+
+ '<g transform="translate(150 76) scale(.72)">'+linh(0,0,{mood:'big',armR:'up'})+'</g>'+bubble(150,44,40,18,T(170,57,'= 4',9,'#2e8b57'),'l')+
+ XM(84,140)+CHECK(184,140));
+
+/* ask for help — Amira raises her hand; the teacher comes to her desk */
+A.askforhelp=svg(WALL+board(8,4,86,20,['Write 3 sentences.'],8.5)+FLOOR+desk(16,100,90)+
+ '<g transform="translate(40 92)"><rect width="34" height="10" fill="#fffdf6" stroke="#8a8f99"/><path d="M3 4h14" stroke="#1f4f8f"/></g>'+
+ amira(56,62,{mood:'smile',armR:'up'})+
+ adult(156,64,{skin:'#8d5a3b',hair:'#1b1410',shirt:'#7a3e5a',armL:'out',mood:'smile'})+
+ '<path d="M118 104l-10 0" stroke="#e0a83a" stroke-width="2.4" stroke-dasharray="3 3"/><path d="M110 100l-6 4 6 4" fill="none" stroke="#e0a83a" stroke-width="2.4"/>'+
+ bubble(84,6,72,26,T(120,17,'Can you',8)+T(120,27,'help me?',8),'l'));
+
+/* afraid — a feeling: Jun has to speak in front of the class; his knees shake */
+A.afraid=svg(WALL+board(46,4,108,20,['Speak to the class'],9)+FLOOR+
+ jun(100,64,{mood:'o',armL:'heart',armR:'heart'})+sweat(84,40)+sweat(118,44)+sweat(114,34)+
+ '<path d="M82 112l-5 3 5 3M118 112l5 3-5 3M80 126l-5 3 5 3M120 126l5 3-5 3" stroke="#3a3f4a" stroke-width="1.6" fill="none"/>'+
+ '<path d="M76 54q-6 6 0 12M124 54q6 6 0 12" stroke="#3a3f4a" stroke-width="1.4" fill="none"/>'+
+ [18,44,156,182].map(function(x,i){return '<g transform="translate('+x+' 150)"><ellipse rx="12" ry="14" fill="'+['#2c2f3a','#4a3f55','#3c4a63','#2a1f1a'][i]+'"/><circle cx="-4" cy="-6" r="2.6" fill="#fff"/><circle cx="4" cy="-6" r="2.6" fill="#fff"/><circle cx="-4" cy="-6" r="1.2" fill="#111"/><circle cx="4" cy="-6" r="1.2" fill="#111"/></g>';}).join(''));
+
+/* every day — a whole school week, each day ticked (Mon to Fri, again and again) */
+A.everyday=svg('<rect width="200" height="160" fill="#eef3f7"/><rect x="10" y="12" width="180" height="136" rx="6" fill="#fff" stroke="#3d4a5c" stroke-width="2"/><rect x="10" y="12" width="180" height="26" rx="6" fill="#c0504d"/><rect x="10" y="30" width="180" height="8" fill="#c0504d"/>'+
+ '<circle cx="40" cy="12" r="4" fill="#3d4a5c"/><circle cx="160" cy="12" r="4" fill="#3d4a5c"/>'+T(100,30,'NOVEMBER',10,'#fff')+
+ ['Mon','Tue','Wed','Thu','Fri'].map(function(d,i){var x=14+i*35.4;return '<rect x="'+x+'" y="44" width="32" height="96" rx="3" fill="#fbf7ee" stroke="#c8c2b2"/>'+T(x+16,56,d,8)+
+ '<g transform="translate('+(x+16)+' 78)"><rect x="-9" y="-8" width="18" height="14" rx="1" fill="'+['#c0504d','#3c6ea8','#2e8b57','#e0a83a','#864D9E'][i]+'"/><path d="M0-8v14" stroke="#fff"/></g>'+
+ '<g transform="translate('+(x+16)+' 112)"><circle r="9" fill="#2e8b57"/><path d="M-4 0l3 3.5 5.5-6" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g>';}).join('')+
+ '<path d="M24 132q76 14 152 0" stroke="#e0a83a" stroke-width="2" fill="none"/><path d="M170 128l7 4-7 5" fill="none" stroke="#e0a83a" stroke-width="2"/>');
+
+/* homework — school work you do at home, at night, after school */
+A.homework=svg('<rect width="200" height="128" fill="#f2dfc4"/>'+'<rect x="12" y="10" width="54" height="42" fill="#1f2a4a" stroke="#7a5b3a" stroke-width="3"/>'+moon(48,24)+star(24,20)+star(30,40)+'<path d="M39 10v42M12 31h54" stroke="#7a5b3a" stroke-width="2"/>'+
+ '<path d="M150 8l26 18v22h-52v-22z" fill="#c0504d"/><rect x="132" y="26" width="36" height="22" fill="#e8d6b4" stroke="#7a5b3a"/><rect x="146" y="34" width="8" height="14" fill="#7a5b3a"/><path d="M148 8l2-4" stroke="none"/>'+
+ '<rect x="134" y="28" width="8" height="7" fill="#f6d36b"/><rect x="158" y="28" width="8" height="7" fill="#f6d36b"/>'+
+ '<path d="M0 92h200" stroke="#d8b77d" stroke-width="3"/>'+FLOOR+
+ mateo(70,60,{mood:'smile',armR:'heart',armL:'heart'})+
+ '<rect x="20" y="96" width="164" height="9" rx="2" fill="#b98a58"/><rect x="30" y="105" width="6" height="25" fill="#8d6440"/><rect x="168" y="105" width="6" height="25" fill="#8d6440"/>'+
+ '<g transform="translate(52 82) rotate(-3)"><rect width="46" height="16" fill="#fffdf6" stroke="#8a8f99"/><path d="M4 5h18M4 9h30M4 13h24" stroke="#1f4f8f" stroke-width=".9"/>'+T(40,7,'p. 95',4.5,'#c0392b')+'</g>'+pencilD(92,88,60)+
+ '<path d="M118 96l6-30q2-6 8-6h18q6 0 8 6l6 30z" fill="#2e8b57"/><path d="M128 60q12-12 24 0" fill="none" stroke="#1f5c39" stroke-width="3.5"/><rect x="130" y="74" width="26" height="12" rx="2" fill="#256f45"/>'+
+ bk(124,62,12,30,'#3c6ea8',-8)+'<g transform="translate(176 92)"><rect x="-6" y="-14" width="12" height="14" rx="2" fill="#fff" stroke="#8a8f99"/><path d="M6-10q5 2 0 7" stroke="#8a8f99" fill="none" stroke-width="1.6"/><path d="M-3-18q2-4 0-7M2-18q2-4 0-7" stroke="#b9b2a0" fill="none"/></g>');
+
 TM.LP_ART=A;
 Object.keys(A).forEach(function(k){if(!TM.ART[k])TM.ART[k]=A[k];});
 
@@ -559,6 +673,35 @@ TM.SETS['u1-l6']={title:'Lesson 6 words · School Supplies', short:'Lesson 6', b
  W('takenotes','take notes','write down the important words while you listen','write the important words so you remember','You take notes in a notebook.','take notes',['take notes','write notes','note down','write down'],['take a note to someone','music notes','money','bank notes'],
   S([['记笔记','jì bǐjì']],[['抄筆記','caau1 bat1 gei3']],[['tomar apuntes','to-MAR a-POON-tes'],['tomar notas','to-MAR NO-tas']],[['يدوّن ملاحظات','yudawwin mulaahazaat'],['يكتب ملاحظات','yaktub mulaahazaat']],[['ghi chép','ghee chep']],[['จดโน้ต','jot not'],['จดบันทึก','jot ban-tuek']],[['टिपोट लिनु','tipot linu']]))
 ].filter(Boolean)};
-TM.SET_ORDER=['u1','u1-l1','u1-l2','u1-l3','u1-l4','u1-l5','u1-l6'];
+/* T-477: Lesson 7 · Class Acts = book Lesson 8 (pp. 90–105): school action verbs, present tense,
+   "Don't be afraid to ask for help" (the speech). Built before the Launch Plus lesson exists;
+   the Launch Plus seat adds tm:'u1-l7' to that hub card when it ships. All 12 ids are new. */
+TM.SETS['u1-l7']={title:'Lesson 7 words · Class Acts', short:'Lesson 7', back:BACK, words:[
+ W('find','find','see the thing you were looking for','look for something and then see it','Jun can find his backpack in his locker.','find',['find','found','locate','discover','come across'],['find out','learn','think','believe','I find it hard'],
+  S([['找到','zhǎodào'],['找','zhǎo']],[['搵到','wan2 dou2'],['搵','wan2']],[['encontrar','en-kon-TRAR'],['hallar','a-YAR']],[['يجد','yajid'],['يلاقي','yilaaqi']],[['tìm thấy','tim tay'],['tìm','tim']],[['หาเจอ','haa joe'],['พบ','phop']],[['भेट्टाउनु','bhettaunu'],['पाउनु','paunu']])),
+ W('hangout','hang out','spend free time with friends','spend time with friends, just for fun','Amira and her friends hang out at lunch.','hang out',['hang out','spend time','chill','go out','be together','have fun together'],['hang','hang up','hang a picture','hanging'],
+  S([['一起玩','yìqǐ wán'],['闲逛','xiánguàng']],[['一齊玩','jat1 cai4 waan2'],['蒲','pou4']],[['pasar el rato','pa-SAR el RA-to'],['juntarse','hoon-TAR-seh']],[['يقضي الوقت مع','yaqdi al-waqt ma‘a'],['يتسكّع','yatasakka‘']],[['đi chơi','dee chuh-ee'],['tụ tập','too tup']],[['ไปเที่ยวกับเพื่อน','pai thiao kap phuean'],['แฮงเอาท์','haeng-ao']],[['साथीसँग समय बिताउनु','sathisanga samay bitaunu'],['घुम्नु','ghumnu']])),
+ W('learn','learn','get to know something new','get new knowledge or a new skill','I learn new words from my teacher.','learn',['learn','study','pick up','find out'],['teach','hear about','learnt a lesson'],
+  S([['学','xué'],['学习','xuéxí']],[['學','hok6'],['學習','hok6 zaap6']],[['aprender','a-pren-DER']],[['يتعلّم','yata‘allam']],[['học','hok']],[['เรียน','rian'],['เรียนรู้','rian-ru']],[['सिक्नु','siknu']])),
+ W('play','play','do a game or a sport for fun','have fun in a game or a sport','We play volleyball in the gym.','play',['play','play a game','play sports','have fun'],['play music','play an instrument','a play','theater','show','act'],
+  S([['玩','wán'],['打球','dǎ qiú']],[['玩','waan2'],['打波','daa2 bo1']],[['jugar','hoo-GAR']],[['يلعب','yal‘ab']],[['chơi','chuh-ee']],[['เล่น','len']],[['खेल्नु','khelnu']])),
+ W('practice','practice','do it again and again to get better','do something many times so you get better at it','Mateo practices basketball after school.','practices',['practice','practise','train','rehearse','drill','work on'],['a doctor’s practice','office','custom','habit'],
+  S([['练习','liànxí']],[['練習','lin6 zaap6']],[['practicar','prak-tee-KAR'],['entrenar','en-treh-NAR']],[['يتدرّب','yatadarrab'],['يمارس','yumaaris']],[['luyện tập','lwee-en tup'],['tập','tup']],[['ฝึก','fuek'],['ฝึกซ้อม','fuek-som']],[['अभ्यास गर्नु','abhyas garnu']])),
+ W('solve','solve','find the answer to a problem','work out the right answer','Paolo can solve the math problem.','solve',['solve','work out','figure out','find the answer','answer','resolve'],['dissolve','melt','fix a machine'],
+  S([['解','jiě'],['解决','jiějué'],['解题','jiě tí']],[['解','gaai2'],['解決','gaai2 kyut3']],[['resolver','reh-sol-VER'],['solucionar','so-loo-syo-NAR']],[['يحلّ','yahill']],[['giải','zai'],['giải quyết','zai kwee-et']],[['แก้','gae'],['แก้โจทย์','gae jot']],[['हल गर्नु','hal garnu'],['समाधान गर्नु','samadhan garnu']])),
+ W('study','study','read and review so you remember it','spend time learning, often with books, before a test','I study vocabulary after school.','study',['study','review','learn','revise','read','prepare'],['a study (a room)','office','a research study','research'],
+  S([['学习','xuéxí'],['读书','dúshū'],['复习','fùxí']],[['溫書','wan1 syu1'],['讀書','duk6 syu1']],[['estudiar','es-too-DYAR']],[['يدرس','yadrus'],['يذاكر','yuthaakir']],[['học bài','hok bai'],['ôn bài','on bai']],[['อ่านหนังสือ','an nang-sue'],['ทบทวน','thop-thuan']],[['पढ्नु','padhnu'],['अध्ययन गर्नु','adhyayan garnu']])),
+ W('understand','understand','know what something means','get the meaning in your head','Linh understands two languages.','understands',['understand','get it','know','comprehend','follow'],['agree','hear','stand under'],
+  S([['懂','dǒng'],['明白','míngbai'],['理解','lǐjiě']],[['明','ming4'],['明白','ming4 baak6'],['識','sik1']],[['entender','en-ten-DER'],['comprender','kom-pren-DER']],[['يفهم','yafham']],[['hiểu','hee-ew']],[['เข้าใจ','khao-jai']],[['बुझ्नु','bujhnu']])),
+ W('askforhelp','ask for help','tell someone you need them to help you','say to a person: please help me','Don’t be afraid to ask for help.','ask for help',['ask for help','get help','ask someone to help','request help','seek help'],['help','helper','ask a question','ask for','order'],
+  S([['求助','qiúzhù'],['请人帮忙','qǐng rén bāngmáng']],[['搵人幫手','wan2 jan4 bong1 sau2'],['求助','kau4 zo6']],[['pedir ayuda','peh-DEER a-YOO-da']],[['يطلب المساعدة','yatlub al-musaa‘ada']],[['nhờ giúp đỡ','nyuh zoop duh'],['xin giúp','sin zoop']],[['ขอความช่วยเหลือ','kho khwam chuay luea'],['ขอให้ช่วย','kho hai chuay']],[['मद्दत माग्नु','maddat magnu']])),
+ W('afraid','afraid','feeling scared (you think something bad will happen)','scared; full of fear','Jun is afraid to speak in front of the class.','afraid',['afraid','scared','frightened','nervous','fearful','worried'],['sorry','I’m afraid (= sorry)','unfortunately'],
+  S([['害怕','hàipà'],['怕','pà']],[['驚','geng1'],['怕','paa3']],[['tener miedo','teh-NER MYEH-do'],['miedo','MYEH-do'],['asustado','a-soos-TA-do']],[['خائف','khaa’if'],['يخاف','yakhaaf']],[['sợ','shuh'],['sợ hãi','shuh hai']],[['กลัว','klua']],[['डराउनु','daraunu'],['डर','dar']])),
+ W('everyday','every day','on all the days, Monday, Tuesday, Wednesday…','each day, again and again','I practice English every day.','every day',['every day','each day','daily','all the time','always'],['everyday (= normal)','ordinary','usual','today'],
+  S([['每天','měitiān'],['天天','tiāntiān']],[['每日','mui5 jat6'],['日日','jat6 jat6']],[['todos los días','TO-dos los DEE-as'],['cada día','KA-da DEE-a']],[['كل يوم','kull yawm']],[['mỗi ngày','moy ngai'],['hằng ngày','hung ngai']],[['ทุกวัน','thuk wan']],[['हरेक दिन','harek din'],['दिनहुँ','dinahun']])),
+ W('homework','homework','school work you do at home','work from the teacher that you do at home','I do my homework after school.','homework',['homework','assignment','school work','task'],['housework','chores','cleaning'],
+  S([['作业','zuòyè'],['功课','gōngkè']],[['功課','gung1 fo3']],[['tarea','ta-REH-a'],['deberes','deh-BEH-res']],[['واجب منزلي','waajib manzili'],['واجب','waajib']],[['bài tập về nhà','bai tup veh nya']],[['การบ้าน','kan-baan']],[['गृहकार्य','grihakarya'],['होमवर्क','homwark']]))
+].filter(Boolean)};
+TM.SET_ORDER=['u1','u1-l1','u1-l2','u1-l3','u1-l4','u1-l5','u1-l6','u1-l7'];
 if(TM.SETS.u1&&!TM.SETS.u1.short) TM.SETS.u1.short='Unit 1';
 })();
