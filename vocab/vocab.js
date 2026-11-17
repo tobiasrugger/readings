@@ -1188,7 +1188,7 @@ function reportScore(){
     var n = function(o){ return o ? (o.length !== undefined ? o.length : Object.keys(o).length) : 0; };
     /* T-348: GAL_MAX = the four core steps (Match, Choose, Listen and spell; Words has nothing to score).
        Extras (Word search, Fill the blank, Fix it) add points but the score never passes GAL_MAX. */
-    var games = [[s.match, W, n(state.match)], [s.mc, W, n(state.mc)], [s.spell, W, n(state.spell)]];
+    var games = [[s.words || 0, W, s.words || 0], [s.match, W, n(state.match)], [s.mc, W, n(state.mc)], [s.spell, W, n(state.spell)]];   /* T-474: Words now counts */
     var extra = s.wordsearch + s.cloze + s.fix;
     var got = 0, max = 0, done = 0, i;
     for(i = 0; i < games.length; i++){
@@ -1210,6 +1210,7 @@ function scoreSummary(){
   s.cloze = SET.words.filter(function(w){ return (state.cloze[w.w]||'').trim().toLowerCase()===w.w.toLowerCase(); }).length;
   s.fix = SET.fix.filter(function(f,i){ return norm(state.fix[i])===norm(f.good); }).length;
   s.spell = SET.words.filter(function(w){ return (state.spell[w.w]||'').trim().toLowerCase()===w.w.toLowerCase(); }).length;
+  s.words = SET.words.filter(function(w){ return state.wpick && state.wpick[w.w] && state.wpick[w.w].done; }).length;   /* T-474 */
   s.total_words = SET.words.length;
   return s;
 }
@@ -1691,28 +1692,193 @@ setTimeout(checkTranslation, 4000);
     strip.insertAdjacentHTML('afterbegin', html);
   } else if(strip && !strip.children.length){ strip.style.display = 'none'; }
 
-  /* "Picture only" switch on the Words screen; always starts OFF */
+  /* T-474 (Nov 17): the Words step is one row per word, not a wall of cards.
+     Each row: number, word 🔊, the word in the student's language, the meaning, and three pictures.
+     The student taps the picture that shows the word; the two wrong ones fade away.
+     A wrong tap gets a red ✗ (ELD 103) and a hint; with three pictures, two misses leave only the answer.
+     Saved in state.wpick[word] = {o:[3 words], miss:[...], done:true}. Counts 1 point per word in GAL_MAX. */
   var pw = $('p-words'), fg = $('fcGuess'), fw = $('fcWords'), pg = $('p-guess');
-  if(pw && fg && fw){
-    var bar = document.createElement('div'); bar.className = 'vpicbar';
-    bar.innerHTML = '<button type="button" class="vpic" id="vpic" aria-pressed="false"><span class="vsw"></span> Picture only: <b>off</b></button>' +
-                    '<span class="vpictip" translate="yes">Turn it on to test yourself: say the word, then tap the card.</span>';
-    pw.insertBefore(bar, fw);
-    pw.insertBefore(fg, fw.nextSibling);
-    if(pg && pg.parentNode) pg.parentNode.removeChild(pg);
-    window.galPicOnly = function(on){
-      var b = $('vpic');
-      fw.style.display = on ? 'none' : '';
-      fg.style.display = on ? '' : 'none';
-      if(b){ b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.innerHTML = '<span class="vsw"></span> Picture only: <b>' + (on ? 'on' : 'off') + '</b>'; }
-      if(on) buildCards(fg, true);   /* every word hidden again each time */
-    };
-    $('vpic').addEventListener('click', function(){ galPicOnly(this.getAttribute('aria-pressed') !== 'true'); });
-    galPicOnly(false);
+  if(pg && pg.parentNode) pg.parentNode.removeChild(pg);
+  if(fw) fw.style.display = 'none';
+  var lead = pw && pw.querySelector('p.lead');
+  if(lead){ lead.setAttribute('data-k', 'wpick'); lead.setAttribute('data-en', 'Read the word and what it means. Then tap the picture that shows it.'); lead.textContent = lead.getAttribute('data-en'); }
+  var WP_TXT = {
+    es:'Lee la palabra y lo que significa. Luego toca la imagen que la muestra.',
+    'zh-CN':'读这个词和它的意思。然后点击正确的图片。',
+    yue:'睇下個字同佢嘅意思。然後㉩啱嗰張圖。',
+    ar:'اقرأ الكلمة ومعناها. ثم اضغط على الصورة الصحيحة.',
+    ary:'اقرأ الكلمة ومعناها. ثم اضغط على الصورة الصحيحة.',
+    vi:'Đọc từ và nghĩa của nó. Sau đó chạm vào hình đúng.',
+    th:'อ่านคำและความหมาย แล้วแตะรูปที่ถูกต้อง',
+    ne:'शब्द र यसको अर्थ पढ्नुहोस्। त्यसपछि सही चित्र थिच्नुहोस्।',
+    ru:'Прочитай слово и его значение. Потом нажми на правильную картинку.',
+    tl:'Basahin ang salita at ang kahulugan nito. Pagkatapos, pindutin ang tamang larawan.',
+    fr:'Lis le mot et son sens. Puis touche la bonne image.',
+    ko:'단어와 뜻을 읽으세요. 그다음 맞는 그림을 누르세요.',
+    hi:'शब्द और उसका अर्थ पढ़ें। फिर सही चित्र पर टैप करें।',
+    ur:'لفظ اور اس کا مطلب پڑھیں۔ پھر صحیح تصویر پر ٹیپ کریں۔',
+    so:'Akhri erayga iyo macnihiisa. Kadib taabo sawirka saxda ah.'
+  };
+  try{ Object.keys(WP_TXT).forEach(function(k){ if(TXT[k]) TXT[k].wpick = WP_TXT[k]; }); }catch(e){}
+
+  var WP_NAME = {es:'Spanish','zh-CN':'Chinese (Simplified)',yue:'Chinese (Traditional)',ar:'Arabic',ary:'Arabic',vi:'Vietnamese',
+    ru:'Russian',ur:'Urdu',tl:'Tagalog',fr:'French',ko:'Korean',hi:'Hindi',so:'Somali',ne:'Nepali',th:'Thai'};
+  var WP_SLUG = 'vocab:' + SET.slug, wpTr = {}, wpLoaded = {};
+  function wpHdr(pref){ var h = {apikey:SUPA_KEY, Authorization:'Bearer '+SUPA_KEY, 'Content-Type':'application/json'}; if(pref) h.Prefer = pref; return h; }
+  /* translations: the shared song_tr cache first (one row per word per language, shared by every student),
+     then the translator only for words nobody has looked up yet, and the answer is saved for the next student */
+  function wpLoad(lg){
+    if(wpLoaded[lg]) return wpLoaded[lg];
+    wpLoaded[lg] = fetch(SUPA_URL + '/rest/v1/song_tr?select=src,equiv,meaning&slug=eq.' + encodeURIComponent(WP_SLUG) + '&lang=eq.' + encodeURIComponent(lg), {headers: wpHdr()})
+      .then(function(r){ return r.ok ? r.json() : []; })
+      .then(function(rows){ (rows || []).forEach(function(r){ var v = r.equiv || r.meaning; if(v) wpTr[lg + '|' + r.src] = v; }); })
+      .catch(function(){});
+    return wpLoaded[lg];
+  }
+  function wpFill(){
+    var code = $('lang').value, lg = WP_NAME[code] || '';
+    var rows = document.querySelectorAll('#wpRows .wptr');
+    Array.prototype.forEach.call(rows, function(el){ el.textContent = ''; el.style.display = lg ? '' : 'none'; el.setAttribute('dir', RTL[code] ? 'rtl' : 'ltr'); });
+    if(!lg) return;
+    wpLoad(lg).then(function(){
+      var q = [];
+      SET.words.forEach(function(w){
+        var v = wpTr[lg + '|' + w.w];
+        if(v) paint(w.w, v); else q.push(w);
+      });
+      (function next(){
+        var w = q.shift(); if(!w) return;
+        if($('lang').value !== code) return;            /* language changed: stop */
+        paint(w.w, '…');
+        fetch(PROXY + '?action=translate&mode=word&idiom=' + encodeURIComponent(w.w) + '&meaning=' + encodeURIComponent(w.def) + '&lang=' + encodeURIComponent(lg))
+          .then(function(r){ return r.json(); })
+          .then(function(d){
+            var v = d && d.ok && d.translation ? (typeof d.translation === 'string' ? d.translation : (d.translation.equiv || d.translation.meaning || '')) : '';
+            if(v && v.toLowerCase() !== w.w.toLowerCase()){
+              wpTr[lg + '|' + w.w] = v;
+              fetch(SUPA_URL + '/rest/v1/song_tr?on_conflict=slug,lang,src', {method:'POST', headers: wpHdr('resolution=merge-duplicates,return=minimal'),
+                body: JSON.stringify([{slug: WP_SLUG, lang: lg, src: w.w, equiv: v, meaning: '', note: '', updated_at: new Date().toISOString()}])}).catch(function(){});
+            }
+            if($('lang').value === code) paint(w.w, v || '');
+          })
+          .catch(function(){ paint(w.w, ''); })
+          .then(function(){ setTimeout(next, 150); });
+      })();
+    });
+    function paint(word, v){
+      var el = document.querySelector('#wpRows .wprow[data-w="' + word.replace(/"/g, '') + '"] .wptr');
+      if(el) el.textContent = v;
+    }
+  }
+
+  function wpShuffle(a){ a = a.slice(); for(var i = a.length - 1; i > 0; i--){ var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  /* three pictures per word, correct one never in the same slot more than twice in a row; saved per student */
+  function wpOrders(){
+    state.wpick = state.wpick || {};
+    var prev = [];
+    SET.words.forEach(function(w){
+      var r = state.wpick[w.w];
+      if(r && r.o && r.o.length === 3 && r.o.indexOf(w.w) >= 0){ prev.push(r.o.indexOf(w.w)); return; }
+      var others = wpShuffle(SET.words.filter(function(x){ return x.w !== w.w; })).slice(0, 2).map(function(x){ return x.w; });
+      var o, tries = 0;
+      do { o = wpShuffle([w.w].concat(others)); tries++; }
+      while(tries < 20 && prev.length >= 2 && prev[prev.length-1] === o.indexOf(w.w) && prev[prev.length-2] === o.indexOf(w.w));
+      prev.push(o.indexOf(w.w));
+      state.wpick[w.w] = {o: o, miss: [], done: false};
+    });
+  }
+  var WP_HINT = ['Look again — read the meaning one more time.', 'Not that one. Which picture matches the meaning?', 'Close! Look at the details in each picture.'];
+  function wpBuild(){
+    if(!pw) return;
+    wpOrders();
+    var box = $('wpRows');
+    if(!box){ box = document.createElement('div'); box.id = 'wpRows'; box.setAttribute('translate', 'no'); pw.insertBefore(box, fw); }
+    var byW = {}; SET.words.forEach(function(w){ byW[w.w] = w; });
+    box.innerHTML = '<div class="wpcount" id="wpCount"></div>';
+    SET.words.forEach(function(w, i){
+      var st = state.wpick[w.w], row = document.createElement('div');
+      row.className = 'wprow' + (st.done ? ' done' : ''); row.setAttribute('data-w', w.w);
+      var h = '<div class="wpn">' + (i + 1) + '</div><div class="wpinfo">' +
+        '<div class="wpw"><button type="button" class="wpspk" aria-label="Hear it">🔊</button><span class="tword">' + esc(w.w) + '</span></div>' +
+        '<div class="wptr"></div><div class="wpd">' + esc(w.def) + '</div><div class="wpfb"></div></div><div class="wpopts">';
+      st.o.forEach(function(k){
+        var gone = st.done ? (k !== w.w) : st.miss.indexOf(k) >= 0;
+        h += '<button type="button" class="wpo' + (st.done && k === w.w ? ' ok' : '') + (gone ? (st.done ? ' gone' : ' no') : '') + '" data-k="' + esc(k) + '"' + (gone ? ' disabled' : '') + '>' + pic(byW[k]) + '</button>';
+      });
+      row.innerHTML = h + '</div>';
+      row.querySelector('.wpspk').addEventListener('click', function(){ speak(w.w); });
+      row.querySelector('.tword').addEventListener('click', function(){ speak(w.w); });
+      Array.prototype.forEach.call(row.querySelectorAll('.wpo'), function(b){
+        b.addEventListener('click', function(){
+          if(st.done || b.disabled) return;
+          var k = b.getAttribute('data-k'), fb = row.querySelector('.wpfb');
+          if(k === w.w){
+            st.done = true; b.classList.add('ok'); row.classList.add('done');
+            Array.prototype.forEach.call(row.querySelectorAll('.wpo'), function(o){ if(o !== b){ o.classList.add('gone'); o.disabled = true; } });
+            fb.className = 'wpfb good'; fb.textContent = '✓ Yes! ' + w.w;
+            speak(w.w);
+          } else {
+            if(st.miss.indexOf(k) < 0) st.miss.push(k);
+            b.classList.add('no'); b.disabled = true;
+            fb.className = 'wpfb bad'; fb.textContent = '✗ ' + WP_HINT[(st.miss.length - 1) % WP_HINT.length];
+          }
+          touch(); wpMark();
+        });
+      });
+      box.appendChild(row);
+    });
+    wpMark(); wpFill();
+  }
+  /* "Start here" sits on the first word not done yet; the count says how far along the student is */
+  function wpMark(){
+    var rows = document.querySelectorAll('#wpRows .wprow'), n = 0, first = null;
+    Array.prototype.forEach.call(rows, function(r){
+      r.classList.remove('cur');
+      if(r.classList.contains('done')) n++; else if(!first) first = r;
+    });
+    if(first) first.classList.add('cur');
+    var c = $('wpCount');
+    if(c) c.textContent = n >= rows.length ? '✓ All ' + rows.length + ' words done! Next: ② Match' : n + ' of ' + rows.length + ' words done';
+  }
+  if(pw){
+    var _restore = restore;
+    restore = function(){ _restore(); wpBuild(); };
+    wpBuild();
+    $('lang').addEventListener('change', wpFill);
+    try{ applyLeads(); }catch(e){}
   }
 
   var css = document.createElement('style');
   css.textContent =
+    /* T-474: Words rows */
+    '#wpRows{display:grid;gap:12px}' +
+    '.wpcount{font:900 .9rem/1.2 Nunito,sans-serif;color:#3C3489}' +
+    '.wprow{display:grid;grid-template-columns:44px minmax(180px,1fr) auto;gap:12px;align-items:center;background:#fff;border:2px solid #241d12;border-radius:12px;padding:12px;box-shadow:0 2px 4px rgba(0,0,0,.12)}' +
+    '.wprow.cur{border-color:#3C3489;box-shadow:0 0 0 3px #c9c4f5}' +
+    '.wprow.cur .wpn:after{content:"Start here";display:block;font:900 .62rem/1.1 Nunito,sans-serif;color:#3C3489;margin-top:4px;letter-spacing:.03em}' +
+    '.wprow.done{border-color:#17915a;background:#f3faf6}' +
+    '.wpn{font:900 1.6rem/1 Nunito,sans-serif;color:#3C3489;text-align:center}' +
+    '.wprow.done .wpn{color:#17915a}' +
+    '.wpw{display:flex;align-items:center;gap:8px;font:800 1.5rem/1.2 Lora,Georgia,serif;color:#241d12}' +
+    '.wpw .tword{cursor:pointer}' +
+    '.wpspk{font-size:1.05rem;border:2px solid #241d12;border-radius:8px;background:#f7ecd8;padding:2px 7px;cursor:pointer;flex:none}' +
+    '.wptr{font:800 1.05rem/1.3 Nunito,sans-serif;color:#1f4f8a;text-decoration:underline;text-underline-offset:3px;margin-top:2px;min-height:1.2em}' +
+    '.wpd{font-size:1rem;color:#3a3020;margin-top:4px}' +
+    '.wpfb{font:800 .88rem/1.3 Nunito,sans-serif;margin-top:6px;min-height:1.1em}' +
+    '.wpfb.good{color:#17915a}.wpfb.bad{color:#b0452f}' +
+    '.wpopts{display:flex;gap:8px}' +
+    '.wpo{position:relative;width:128px;padding:4px;border:2px solid #8a7f6c;border-radius:10px;background:#fff;cursor:pointer;transition:opacity .6s,transform .6s,filter .6s}' +
+    '.wpo:hover{border-color:#3C3489}' +
+    '.wpo .pic{font-size:3rem;line-height:1.3;display:block}' +
+    '.wpo .pic.drawn svg{border:0;border-radius:7px}' +
+    '.wpo.no{opacity:.35;filter:grayscale(1);cursor:default}' +
+    '.wpo.no:after{content:"\u2717";position:absolute;top:2px;right:6px;font:900 1.4rem/1 Nunito,sans-serif;color:#c1442f}' +
+    '.wpo.ok{border:3px solid #17915a;box-shadow:0 0 0 3px #bfe8cf;cursor:default}' +
+    '.wpo.ok:after{content:"\u2713";position:absolute;top:2px;right:6px;font:900 1.4rem/1 Nunito,sans-serif;color:#17915a}' +
+    '.wpo.gone{opacity:0;transform:scale(.85);pointer-events:none}' +
+    '@media(prefers-reduced-motion:reduce){.wpo{transition:none}}' +
+    '@media(max-width:700px){.wprow{grid-template-columns:34px 1fr}.wpopts{grid-column:1 / -1;justify-content:center}.wpo{width:31%;max-width:128px}.wpw{font-size:1.3rem}}' +
+    '@media print{.wpo.gone{opacity:1}}' +
     '.vpicbar{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin:0 0 12px}' +
     /* T-466: a sliding switch, so it never looks like one more tab */
     '.vpic{display:inline-flex;align-items:center;gap:8px;font:800 .86rem/1.2 Nunito,sans-serif;border:0;background:none;color:#241d12;padding:3px 0;cursor:pointer}' +
