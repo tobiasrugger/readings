@@ -34,6 +34,15 @@ thead th{position:sticky;top:0;background:var(--pine-soft);z-index:3;vertical-al
 thead th.act{cursor:pointer}
 thead th.act:hover{background:#d7e5dd}
 thead th small{display:block;color:var(--muted);font-weight:400}
+.automerge{display:block;margin-top:2px;font-weight:400;font-size:.66rem;color:#777}
+.automerge button{font:inherit;font-size:.64rem;padding:0 5px;margin-left:4px;border:1px solid #bbb;border-radius:5px;background:#fff;cursor:pointer}
+#tray{margin-top:14px;background:#fff;border:2px solid #b07d1a;border-radius:12px;padding:10px 12px;box-shadow:0 2px 6px rgba(0,0,0,.08)}
+#tray h3{margin:0 0 6px;font-size:.92rem;color:#7a5410}
+#tray p.why{margin:0 0 8px;font-size:.74rem;color:var(--muted)}
+#tray .ti{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:6px 0;border-top:1px solid var(--edge);font-size:.8rem}
+#tray .ti b{min-width:150px}#tray .ti small{color:var(--muted)}
+#tray select,#tray button{font:inherit;font-size:.76rem;padding:2px 6px;border-radius:6px;border:1px solid #bbb;background:#fff}
+#tray button{cursor:pointer}#tray button.go{background:var(--pine);color:#fff;border-color:var(--pine)}
 thead th .pushtag{display:inline-block;margin-top:3px;padding:0 5px;border:1px solid var(--pine);border-radius:6px;font-size:.62rem;font-weight:700;color:var(--pine);background:#fff}
 tbody th{position:sticky;left:0;background:#fff;z-index:2;text-align:left;font-weight:700}
 tbody th.p{left:0}
@@ -177,6 +186,7 @@ dialog .row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
     </div>
     <div class="tally" id="tally"></div>
     <div class="gridwrap"><table id="grid"></table></div>
+    <div id="tray" style="display:none"></div>
     <p class="legend">Cell = best attempt as a mark out of 4 (4 = 90%+, 3 = 75–89, 2 = 60–74, 1 = anything started, 0 = nothing right; ✓ = done but the activity reports no number). Press <b>Show percents</b> to switch back. A dotted outline means a completion score: parts done over parts on the page, for activities with no quiz number. Hover a cell for attempts and date. <b>Click an activity header</b> to copy that column for Synergy in roster order. Change a student's period with the dropdown in their row; it saves. Sort order inside a period = roster order if set, else last name.</p>
   </div>
 </div>
@@ -294,7 +304,8 @@ function getAll(path){ // page through PostgREST
 }
 
 var students={}, cells=[], activities={}, view=[];
-var PUSHES=[];   // T-453: whole-period pushes (class_assignments), so a pushed column shows before anyone has done it
+var PUSHES=[];
+var T459={known:[],auto:{}}, AUTOTAG={}, TRAY=[], T459_NEW=[];   // T-459 auto-merge   // T-453: whole-period pushes (class_assignments), so a pushed column shows before anyone has done it
 
 function gate(){
   if(sessionStorage.getItem('gb_ok')==='1'){open();return;}
@@ -313,8 +324,10 @@ function load(){
     getAll('gradebook_best?select=email,slug,unit,title,course,score,max_score,pct,attempts,last_at,completion'),
     getAll('activities?select=slug,title,unit,course,level,sort_order,url'),
     getAll('student_aliases?select=alias_email,email').catch(function(){return [];}),
-    getAll('class_assignments?select=area,period,href,title,created_at,expires_at&area=in.(site,vocab)&period=neq.extra').catch(function(){return [];})
+    getAll('class_assignments?select=area,period,href,title,created_at,expires_at&area=in.(site,vocab)&period=neq.extra').catch(function(){return [];}),
+    getAll('gal_settings?key=eq.gradebook_t459&select=value').catch(function(){return [];})
   ]).then(function(r){
+    T459=t459Norm(r[5]&&r[5][0]&&r[5][0].value);
     PUSHES=pushCols(r[4]||[]);
     /* aliases first: every later canon() call needs them */
     ALIAS={};
@@ -322,12 +335,14 @@ function load(){
       var from=galKey(a.alias_email), to=galKey(a.email);
       if(from && to && from!==to) ALIAS[from]=to;
     });
+    t459Detect(r[0], r[1]);          // T-459: may add to ALIAS before anything is keyed
     students={}; SPELLINGS={};
     r[0].forEach(function(s){
       var e=canon(s.email); var cur=students[e]||{email:e, mail:String(s.email||'').trim().toLowerCase()};
       // keep the most complete profile across @s.sfusd.edu / @sfusd.edu twins
-      ['first_name','last_name','period','roster_order','course','kind'].forEach(function(k){ if(s[k]!=null && s[k]!=='') cur[k]=s[k]; });
       var raw=String(s.email||'').trim().toLowerCase();
+      var own=galKey(raw)===e;      // T-459: a folded-in row only fills gaps, never overwrites the roster row
+      ['first_name','last_name','period','roster_order','course','kind'].forEach(function(k){ if(s[k]!=null && s[k]!=='' && (own || cur[k]==null || cur[k]==='')) cur[k]=s[k]; });
       if(!cur.mail || (galKey(raw)===e && (galKey(cur.mail)!==e || raw.indexOf('@s.sfusd.edu')>0))) cur.mail=raw;
       students[e]=cur;
       noteSpelling(e, s.email);
@@ -347,7 +362,9 @@ function load(){
     activities={}; r[2].forEach(function(a){activities[a.slug]=a;});
     var units={}; cells.forEach(function(c){var u=c.unit||(activities[c.slug]&&activities[c.slug].unit)||'(untagged)';units[u]=1;});
     var us=document.getElementById('unit'); var keep=us.value; us.innerHTML='<option value="">All</option>'+Object.keys(units).sort().map(function(u){return '<option'+(u===keep?' selected':'')+'>'+esc(u)+'</option>';}).join('');
+    TRAY.forEach(function(k){ if(students[k]) students[k].tray=true; });
     render(); toast('Loaded '+Object.keys(students).length+' students, '+cells.length+' scores');
+    t459Persist();
   }).catch(function(e){toast('Load failed: '+e);});
 }
 
@@ -690,6 +707,111 @@ function doMerge(keep,drop){
     .catch(function(e){ toast('Merge failed \u2014 has the T-227 SQL been run? ('+String(e.message||e).slice(0,60)+')'); });
 }
 
+/* ---------- T-459: fold obvious duplicates, tray the rest ----------
+   A sign-in with a mistyped email (xichen49@ for xichen@) makes a second row.
+   "On the roster" = a students row with roster_order (Toby's printout), or kind
+   ta/teacher/test. Any other username (not already an alias) is checked:
+     its typed name (lowercase, no punctuation, word order ignored) and period
+     match EXACTLY ONE roster student  -> folded in (ALIAS), alias written to
+                                          student_aliases (both domains), grey tag + Undo
+     zero or 2+ matches, or no name     -> not a row; listed in "Needs a look"
+   gal_settings gradebook_t459 = {known:[usernames kept as their own row],
+                                   auto:{from: to}} so Undo and "new student" stick. */
+function t459Norm(v){ v=v||{}; return {known:(v.known||[]).map(String), auto:(v.auto&&typeof v.auto==='object')?v.auto:{}}; }
+function t459Name(a,b){ return String((a||'')+' '+(b||'')).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')
+  .replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(Boolean).sort().join(' '); }
+function t459Detect(rowsS, rowsC){
+  AUTOTAG={}; TRAY=[]; T459_NEW=[];
+  /* auto merges saved earlier (in case the alias row itself didn't save) */
+  Object.keys(T459.auto).forEach(function(f){ if(T459.known.indexOf(f)<0 && !ALIAS[f]) ALIAS[f]=T459.auto[f]; });
+  var G={};                                   // key -> {rows:[], roster:bool}
+  (rowsS||[]).forEach(function(s){ var k=canon(s.email); if(!k) return; var g=G[k]||(G[k]={rows:[],roster:false}); g.rows.push(s);
+    if((s.roster_order!=null&&s.roster_order!=='') || /^(ta|teacher|test)$/.test(String(s.kind||''))) g.roster=true; });
+  (rowsC||[]).forEach(function(c){ var k=canon(c.email); if(k && !G[k]) G[k]={rows:[],roster:false}; });
+  /* safety: a period where fewer than half the students have a roster_order isn't
+     kept on the printout list — everyone there counts as on the roster */
+  var perN={}, perRO={};
+  Object.keys(G).forEach(function(k){ var g=G[k], per='', ro=false, kind='';
+    g.rows.forEach(function(s){ if(s.period!=null&&s.period!=='') per=String(s.period); if(s.roster_order!=null&&s.roster_order!=='') ro=true; if(s.kind) kind=s.kind; });
+    if(!per || (kind && kind!=='student')) return; g.per=per; perN[per]=(perN[per]||0)+1; if(ro) perRO[per]=(perRO[per]||0)+1; });
+  Object.keys(G).forEach(function(k){ var g=G[k]; if(g.per && (perRO[g.per]||0)*2 < perN[g.per]) g.roster=true; });
+  var rosterBy={};                            // normalised name -> [{key, period}]
+  Object.keys(G).forEach(function(k){ var g=G[k]; if(!g.roster) return;
+    var kind=''; g.rows.forEach(function(s){ if(s.kind) kind=s.kind; }); if(kind && kind!=='student' && kind!=='ta') return;
+    g.rows.forEach(function(s){ var n=t459Name(s.first_name,s.last_name); if(!n) return;
+      var per=String(s.period==null?'':s.period); (rosterBy[n]=rosterBy[n]||[]);
+      if(!rosterBy[n].some(function(x){return x.key===k;})) rosterBy[n].push({key:k, period:per}); }); });
+  Object.keys(G).forEach(function(k){
+    var g=G[k]; if(g.roster || T459.known.indexOf(k)>=0) return;
+    var kind=''; g.rows.forEach(function(s){ if(s.kind) kind=s.kind; });
+    if(kind && kind!=='student') return;      // test / teacher / TA are left alone
+    var name='', per=''; g.rows.forEach(function(s){ var n=t459Name(s.first_name,s.last_name); if(n&&!name) name=n; if(s.period!=null&&s.period!==''&&!per) per=String(s.period); });
+    var hits=(name&&rosterBy[name]||[]).filter(function(x){ return !per || !x.period || x.period===per; });
+    if(hits.length===1 && hits[0].key!==k){
+      ALIAS[k]=hits[0].key;
+      if(!T459.auto[k]) T459_NEW.push({from:k, to:hits[0].key});
+      T459.auto[k]=hits[0].key;
+    } else TRAY.push(k);
+  });
+  Object.keys(T459.auto).forEach(function(f){ var to=T459.auto[f]; if(ALIAS[f]===to && T459.known.indexOf(f)<0) (AUTOTAG[to]=AUTOTAG[to]||[]).push(f); });
+}
+function t459Save(){
+  return fetch(SUPA_URL+'/rest/v1/gal_settings?on_conflict=key',{method:'POST',headers:H({Prefer:'resolution=merge-duplicates,return=minimal'}),
+    body:JSON.stringify([{key:'gradebook_t459',value:T459,updated_at:new Date().toISOString()}])})
+    .then(function(r){ if(!r.ok) throw new Error('settings '+r.status); });
+}
+function t459Persist(){
+  if(!T459_NEW.length) return;
+  var rows=[]; T459_NEW.forEach(function(m){ var to=(students[m.to]&&students[m.to].mail)||(m.to+'@s.sfusd.edu');
+    rows.push({alias_email:m.from+'@s.sfusd.edu', email:to}, {alias_email:m.from+'@sfusd.edu', email:to}); });
+  var n=T459_NEW.length; T459_NEW=[];
+  fetch(SUPA_URL+'/rest/v1/student_aliases?on_conflict=alias_email',{method:'POST',headers:H({Prefer:'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify(rows)})
+    .then(function(r){ if(!r.ok) throw new Error('aliases '+r.status); return t459Save(); })
+    .then(function(){ toast('Auto-merged '+n+' duplicate row'+(n===1?'':'s')+' (grey tag; Undo puts one back)'); })
+    .catch(function(e){ t459Save().catch(function(){}); toast('Auto-merged '+n+' here, but the alias did not save ('+String(e.message||e).slice(0,40)+')'); });
+}
+function t459Undo(from){
+  var to=T459.auto[from]||ALIAS[from];
+  if(!confirm('Make '+from+'@ its own row again?\n\nIt will stay separate from now on. You can still merge it by hand in ✏ Edit students.')) return;
+  toast('Undoing…');
+  fetch(SUPA_URL+'/rest/v1/student_aliases?alias_email=in.('+encodeURIComponent(from+'@s.sfusd.edu')+','+encodeURIComponent(from+'@sfusd.edu')+')',
+        {method:'DELETE',headers:H({Prefer:'return=minimal'})})
+    .then(function(r){ if(!r.ok) throw new Error('aliases '+r.status);
+      delete T459.auto[from]; if(T459.known.indexOf(from)<0) T459.known.push(from); return t459Save(); })
+    .then(function(){ toast('Undone. Reloading…'); load(); })
+    .catch(function(e){ toast('Undo failed ('+String(e.message||e).slice(0,50)+')'); });
+}
+function t459Keep(key){
+  if(T459.known.indexOf(key)<0) T459.known.push(key);
+  toast('Saving…');
+  t459Save().then(function(){ toast('Kept as a new student. Reloading…'); load(); })
+    .catch(function(e){ toast('Did not save ('+String(e.message||e).slice(0,50)+')'); });
+}
+function renderTray(per){
+  var el=document.getElementById('tray'); if(!el) return;
+  var list=TRAY.map(function(k){return students[k];}).filter(function(s){
+    if(!s) return false;
+    if(per==='none') return !s.period;
+    return !per || !s.period || String(s.period)===per; });
+  if(!list.length){ el.style.display='none'; el.innerHTML=''; return; }
+  var roster=sortStudents(Object.values(students).filter(function(s){ return !s.tray && s.kind!=='test'; }));
+  var h='<h3>🔎 Needs a look ('+list.length+')</h3><p class="why">These sign-ins match no one on the class list, or more than one person. They are not in the grades until you choose: merge into a student, or keep as a new student.</p>';
+  list.forEach(function(s){
+    var n=0; cells.forEach(function(c){ if(c.email===s.email) n++; });
+    var opts=roster.filter(function(r){ return !s.period || !r.period || String(r.period)===String(s.period); })
+      .map(function(r){ return '<option value="'+esc(r.email)+'">'+esc(studentName(r))+(r.period?' (P'+esc(r.period)+')':'')+'</option>'; }).join('');
+    h+='<div class="ti"><b>'+esc(studentName(s)||'(no name typed)')+'</b><small>'+esc(signInEmail(s))+(s.period?' · P'+esc(s.period):' · no period')+' · '+n+' score'+(n===1?'':'s')+'</small>'+
+       '<select data-tmerge="'+esc(s.email)+'"><option value="">Merge into…</option>'+opts+'</select>'+
+       '<button class="go" data-tgo="'+esc(s.email)+'">Merge</button>'+
+       '<button data-tkeep="'+esc(s.email)+'">New student — keep</button></div>';
+  });
+  el.innerHTML=h; el.style.display='';
+  el.querySelectorAll('button[data-tgo]').forEach(function(b){ b.onclick=function(){
+    var sel=el.querySelector('select[data-tmerge="'+b.dataset.tgo+'"]'); if(!sel||!sel.value){ toast('Pick who it is first'); return; }
+    doMerge(sel.value, b.dataset.tgo); }; });
+  el.querySelectorAll('button[data-tkeep]').forEach(function(b){ b.onclick=function(){ t459Keep(b.dataset.tkeep); }; });
+}
+
 /* ---------- T-453: a column for every whole-period push ----------
    A push (class_assignments, area site or vocab, period 1-7 or 'all') makes a
    column even before anyone has done it, so a missing assignment can't hide.
@@ -731,13 +853,14 @@ function pushCols(rows){
 }
 
 function render(){
-  if(EDIT) return renderEdit();
+  if(EDIT){ var tr=document.getElementById('tray'); if(tr) tr.style.display='none'; return renderEdit(); }
   var per=document.getElementById('period').value, course=document.getElementById('course').value, unit=document.getElementById('unit').value;
   var since=+document.getElementById('since').value, q=document.getElementById('q').value.trim().toLowerCase(), hide=document.getElementById('hideempty').checked;
   var cutoff=since?Date.now()-since*864e5:0;
 
   var rows=sortStudents(Object.values(students).filter(function(s){
     if(!SHOWHIDDEN && (s.kind==='test'||s.kind==='teacher')) return false;   // not real students
+    if(s.tray) return false;                                                  // T-459: in the Needs a look tray
     if(per==='none'&&s.period)return false;
     if(per&&per!=='none'&&String(s.period)!==per)return false;
     if(q&&studentName(s).toLowerCase().indexOf(q)<0&&s.email.indexOf(q)<0&&String(s.mail||'').indexOf(q)<0)return false;
@@ -753,7 +876,10 @@ function render(){
     return true;
   });
   var byCell={}, colSet={};
-  use.forEach(function(c){byCell[c.email+'|'+c.slug]=c; if(rowSet[c.email])colSet[c.slug]=1;});
+  /* T-459: two usernames folded into one student can both have a score — keep the best */
+  use.forEach(function(c){var k=c.email+'|'+c.slug, o=byCell[k];
+    if(!o || (c.pct!=null&&(o.pct==null||+c.pct>+o.pct)) || (c.pct==o.pct&&String(c.last_at||'')>String(o.last_at||''))) byCell[k]=c;
+    if(rowSet[c.email])colSet[c.slug]=1;});
   var colMap=hide?colSet:use.reduce(function(m,c){m[c.slug]=1;return m;},{});
   /* T-453: pushed to a period in view (or to all), inside the Since window -> always a column */
   var pushed={};
@@ -803,7 +929,8 @@ function render(){
     var avgRaw=n?(sum/n):null;
     var bonus=avgRaw!=null?extrasBonus(s,cols,n):0;
     var avg=avgRaw!=null?Math.min(100,Math.round(avgRaw+bonus)):null;
-    h+='<tr><th>'+esc(studentName(s))+'<br><span style="font-weight:400;color:var(--muted);font-size:.7rem">'+esc(signInEmail(s))+'</span></th>'+
+    h+='<tr><th>'+esc(studentName(s))+'<br><span style="font-weight:400;color:var(--muted);font-size:.7rem">'+esc(signInEmail(s))+'</span>'+
+       (AUTOTAG[s.email]||[]).map(function(f){return '<span class="automerge">auto-merged from '+esc(f)+'@<button data-undo="'+esc(f)+'" title="Make '+esc(f)+'@ its own row again">Undo</button></span>';}).join('')+'</th>'+
        '<td><select class="per" data-email="'+esc(s.email)+'"><option value="">–</option>'+[1,2,3,4,5,6,7].map(function(p){return '<option'+(s.period==p?' selected':'')+'>'+p+'</option>';}).join('')+'</select></td>'+
        '<td class="avg" title="'+esc(avgRaw!=null?(Math.round(avgRaw)+'% from '+n+' graded column'+(n==1?'':'s')+
             (bonus>0.05?' · +'+(Math.round(bonus*10)/10)+' from optional extras':'')):'')+
@@ -814,6 +941,8 @@ function render(){
   document.getElementById('tally').innerHTML='<div><b>'+rows.length+'</b>students</div><div><b>'+cols.length+'</b>activities</div><div><b>'+done+'</b>scores in view</div><div><b>'+rows.filter(function(s){return !s.period;}).length+'</b>without a period</div>';
   document.querySelectorAll('th.act').forEach(function(th){th.onclick=function(){openCopy(th.dataset.slug);};});
   document.querySelectorAll('select.per').forEach(function(sel){sel.onchange=function(){setPeriod(sel.dataset.email,sel.value?+sel.value:null,sel);};});
+  document.querySelectorAll('button[data-undo]').forEach(function(b){b.onclick=function(ev){ev.stopPropagation();t459Undo(b.dataset.undo);};});
+  renderTray(per);
 }
 
 /* T-434: the row dropdown used to upsert students directly. The T-241 trigger
