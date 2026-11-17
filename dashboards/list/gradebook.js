@@ -9,5 +9,6 @@
  * group (Data, Reading, Vocabulary, Speaking, Writing, Grammar, Unit), note.
  */
 window.DASHBOARDS = (window.DASHBOARDS || []).concat([
-{url:'gradebook/',              name:'Gradebook — all scores',       course:'both', group:'Data', note:'Every student, every activity, 0\u20134. Synergy export lives here.'}
+{url:'gradebook/',              name:'Gradebook — all scores',       course:'both', group:'Data', note:'Every student, every activity, 0\u20134. Synergy export lives here.'},
+{url:'gradebook/synergy.html',  name:'Synergy typing view',          course:'both', group:'Data', note:'T-489: marks laid out like Synergy (its columns, its student order), one column at a time, \u2713 Entered in Synergy. Gold = changed.'}
 ]);

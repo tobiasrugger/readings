@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en" translate="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="google" content="notranslate">
+<title>Synergy typing view · Gradebook</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+<!--
+  T-489 (Nov 17 2026) — Synergy typing view.
+  Mr. Toby types the site's marks into Synergy by hand. This page lays the
+  marks out EXACTLY like Synergy's Grade Book: Synergy's columns in Synergy's
+  left-to-right order, Synergy's students in Synergy's order, so his eyes go
+  straight across.
+
+  Server only (never localStorage), so both of his computers see the same thing:
+    synergy_layout     one row per period: columns (Synergy name, date, linked
+                       site slug), students (Synergy name, linked username, the
+                       marks Synergy showed when pasted), screenshots logged
+                       (file name + time; the image itself is never kept — Toby chose B).
+    synergy_col_marks  the same append-only stamp table as the gradebook's
+                       per-column "✓ In Synergy" (T-457). The whole-view
+                       "✓ Entered in Synergy" button writes one row per mark.
+
+  A cell's baseline = the NEWER of (its last stamp) and (what Synergy showed in
+  the last paste). Same as baseline -> grey (already in Synergy). Different ->
+  gold "old → new". No baseline at all -> bold (new).
+  Marks use the gradebook's 0–4.5 scale (BANDS, same as gradebook/index.html
+  and grade04.js); a page that reports no number counts as done = 4.5, the
+  same rule as "What changed".
+-->
+<style>
+:root{
+  --pine:#1F4D3D; --pine-soft:#e8f0ec; --ink:#16241f; --muted:#5f6f68;
+  --edge:#c9d5cf; --paper:#f6f8f7; --line:#2b3b35;
+  --gold:#7a5600; --gold-bg:#ffe9a8; --gold-edge:#c9930a;
+  --hl:#d6ecff;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:Nunito,system-ui,sans-serif;background:var(--paper);color:var(--ink)}
+header{background:var(--pine);color:#fff;padding:14px 22px 14px 170px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+header h1{margin:0;font-size:1.2rem}
+header a{color:#fff;opacity:.9;font-size:.82rem}
+.wrap{padding:14px 18px 80px}
+.gate{max-width:360px;margin:60px auto;background:#fff;border:2px solid var(--line);border-radius:12px;padding:22px;box-shadow:0 2px 0 rgba(0,0,0,.12)}
+.gate input{width:100%;padding:10px;border:1px solid var(--edge);border-radius:8px;font:inherit;margin:8px 0}
+.btn{background:var(--pine);color:#fff;border:0;border-radius:8px;padding:7px 12px;font:inherit;font-weight:700;cursor:pointer;font-size:.86rem}
+.btn.sec{background:#fff;color:var(--pine);border:1px solid var(--pine)}
+.btn.big{font-size:1rem;padding:9px 16px}
+.btn:disabled{opacity:.5;cursor:default}
+select,input[type=text]{padding:6px 8px;border:1px solid var(--edge);border-radius:8px;font:inherit;font-size:.86rem;background:#fff}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 12px}
+.tabs{display:flex;gap:6px}
+.tabs button{background:#fff;border:2px solid var(--line);border-radius:10px 10px 0 0;border-bottom-width:0;padding:7px 14px;font:inherit;font-weight:800;cursor:pointer;color:var(--ink)}
+.tabs button.on{background:var(--pine);color:#fff;border-color:var(--pine)}
+.box{background:#fff;border:2px solid var(--line);border-radius:12px;box-shadow:0 2px 0 rgba(0,0,0,.12);padding:12px 14px;margin:0 0 14px}
+.box h2{margin:0 0 6px;font-size:1rem}
+.lbl{font-size:.72rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:0 0 4px}
+.note{font-size:.82rem;color:var(--muted);margin:4px 0}
+.warnline{background:#fff4d6;border:2px solid var(--gold-edge);border-radius:10px;padding:8px 12px;margin:0 0 12px;font-size:.88rem}
+.tally{display:flex;gap:8px;flex-wrap:wrap}
+.tally div{background:#fff;border:2px solid var(--line);border-radius:10px;padding:5px 10px;font-size:.76rem}
+.tally b{font-size:1.05rem;margin-right:4px}
+
+/* ---------- typing grid: NO inner scroll box — the page itself scrolls,
+   so only Chrome's own scrollbars exist. Sticky header row + names column. */
+table.ty{border-collapse:separate;border-spacing:0;background:#fff;border:2px solid var(--line)}
+table.ty th,table.ty td{border-bottom:1px solid #d4ddd8;border-right:1px solid #e3e9e6}
+table.ty thead th{position:sticky;top:0;z-index:3;background:#e8f0ec;font-size:.76rem;vertical-align:bottom;padding:6px 6px;min-width:84px;max-width:130px;text-align:center;border-bottom:2px solid var(--line)}
+table.ty thead th.nm{left:0;z-index:5;text-align:left;min-width:220px}
+table.ty thead th .t{display:block;font-weight:800;line-height:1.15}
+table.ty thead th .d{display:block;font-weight:400;color:var(--muted);font-size:.7rem;margin-top:2px}
+table.ty thead th .cb{margin-top:5px;font-size:.7rem;padding:3px 7px}
+table.ty thead th.off{background:#eceeed;color:#8b9591}
+table.ty tbody th{position:sticky;left:0;z-index:2;background:#fff;text-align:left;padding:7px 10px;font-size:.95rem;white-space:nowrap;border-right:2px solid var(--line)}
+table.ty tbody tr:nth-child(even) th,table.ty tbody tr:nth-child(even) td{background:#f1f5f3}
+table.ty tbody tr.hl th,table.ty tbody tr.hl td{background:var(--hl)}
+table.ty tbody tr{cursor:pointer}
+table.ty td.m{text-align:center;font-size:1.45rem;padding:4px 6px;font-variant-numeric:tabular-nums;white-space:nowrap}
+td.m.off{background:#eceeed !important}
+td.m.ent{color:#9aa39f;font-weight:400}
+td.m.new{color:var(--ink);font-weight:800}
+td.m.chg{font-weight:800}
+td.m.chg span{background:var(--gold-bg);outline:2px solid var(--gold-edge);border-radius:7px;padding:0 6px;color:var(--gold)}
+td.m.chg small{font-size:.8rem;font-weight:700;color:#9a7a2a}
+th .flag{display:inline-block;font-size:.7rem;font-weight:800;color:#8c2418;background:#fde3de;border:1px solid #c66;border-radius:6px;padding:0 5px;margin-left:6px}
+.legend{font-size:.8rem;color:var(--muted);margin:8px 0}
+.legend .e{color:#9aa39f}.legend .n{font-weight:800;color:var(--ink)}
+.legend .g{background:var(--gold-bg);outline:2px solid var(--gold-edge);border-radius:6px;padding:0 5px;color:var(--gold);font-weight:800}
+
+/* ---------- one column at a time ---------- */
+.one{background:#fff;border:2px solid var(--line);border-radius:12px;box-shadow:0 2px 0 rgba(0,0,0,.12);max-width:620px}
+.one .hd{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 12px;border-bottom:2px solid var(--line);background:#e8f0ec;position:sticky;top:0;z-index:3;border-radius:10px 10px 0 0}
+.one .hd h2{margin:0;font-size:1.05rem;flex:1 1 220px}
+.one ol{list-style:none;margin:0;padding:0}
+.one li{display:flex;align-items:center;gap:12px;padding:8px 14px;border-bottom:1px solid #d4ddd8;cursor:pointer;font-size:1.15rem}
+.one li:nth-child(even){background:#f1f5f3}
+.one li.hl{background:var(--hl)}
+.one li .n{color:var(--muted);font-size:.85rem;width:1.8em;text-align:right}
+.one li .s{flex:1}
+.one li .v{font-size:1.9rem;min-width:3.4em;text-align:right;font-variant-numeric:tabular-nums}
+.one li .v.ent{color:#9aa39f;font-weight:400}
+.one li .v.new{font-weight:800}
+.one li .v.chg span{background:var(--gold-bg);outline:2px solid var(--gold-edge);border-radius:8px;padding:0 7px;color:var(--gold);font-weight:800}
+.one li .v.chg small{font-size:.9rem;color:#9a7a2a;font-weight:700}
+
+/* ---------- set up ---------- */
+textarea#paste{width:100%;min-height:110px;font:inherit;font-size:.8rem;border:1px solid var(--edge);border-radius:8px;padding:8px}
+.drop{border:2px dashed var(--edge);border-radius:10px;padding:10px;text-align:center;font-size:.84rem;color:var(--muted);margin-top:8px}
+.drop.on{border-color:var(--pine);background:var(--pine-soft)}
+table.lst{border-collapse:collapse;width:100%;font-size:.88rem}
+table.lst td,table.lst th{border-bottom:1px solid #dfe6e2;padding:5px 6px;text-align:left;vertical-align:middle}
+table.lst th{font-size:.72rem;text-transform:uppercase;color:var(--muted)}
+.chip{display:inline-block;border-radius:999px;padding:1px 9px;font-size:.72rem;font-weight:800;white-space:nowrap}
+.chip.ok{background:#cfeedd;color:#0f5c34}
+.chip.guess{background:var(--gold-bg);color:var(--gold);border:1px solid var(--gold-edge)}
+.chip.none{background:#e7ebe9;color:#5f6f68}
+.chip.bad{background:#fde3de;color:#8c2418;border:1px solid #c66}
+.mini{background:#fff;border:1px solid var(--edge);border-radius:6px;cursor:pointer;font:inherit;font-size:.8rem;padding:1px 6px}
+.toast{position:fixed;bottom:14px;right:14px;background:var(--pine);color:#fff;padding:8px 13px;border-radius:8px;font-size:.84rem;opacity:0;transition:opacity .3s;max-width:460px;z-index:50;pointer-events:none}
+.toast.on{opacity:1}.toast.bad{background:#b3261e}
+.hide{display:none !important}
+@media print{header,.bar,.tabs,.legend,#setup,.cb{display:none !important} table.ty thead th,table.ty tbody th{position:static}}
+</style>
+</head>
+<body>
+<header>
+  <h1>⌨ Synergy typing view</h1>
+  <a href="./">Back to the gradebook</a>
+</header>
+
+<div class="gate" id="gate">
+  <h2 style="margin:0 0 6px;font-size:1.05rem">Teacher password</h2>
+  <input type="password" id="pw" autocomplete="current-password">
+  <button class="btn" id="go">Open</button>
+  <p id="pwmsg" class="note"></p>
+</div>
+
+<div class="wrap hide" id="app">
+  <div class="bar">
+    <label>Period <select id="period"></select></label>
+    <div class="tabs" role="tablist">
+      <button id="tabType" class="on">Type</button>
+      <button id="tabSetup">Set up</button>
+    </div>
+    <span id="laywhen" class="note"></span>
+  </div>
+
+  <!-- ================= TYPE ================= -->
+  <section id="type">
+    <div id="needsetup" class="warnline hide"></div>
+    <div class="bar">
+      <label><input type="radio" name="mode" value="grid" checked> Whole grid</label>
+      <label><input type="radio" name="mode" value="one"> One column at a time</label>
+      <label title="Hide students with nothing to type"><input type="checkbox" id="onlytype"> only students with marks to type</label>
+      <div class="tally" id="tally"></div>
+      <button class="btn big" id="stampAll" title="Saves every mark on screen as entered in Synergy (value and time), for both computers">✓ Entered in Synergy</button>
+    </div>
+    <p class="legend"><span class="e">grey 3</span> = already in Synergy &nbsp;·&nbsp; <span class="n">bold 3</span> = new, never entered &nbsp;·&nbsp; <span class="g">2 → 4</span> = changed since you entered it &nbsp;·&nbsp; greyed column = not on the site. Click a row to highlight it; ↑ ↓ move the highlight.</p>
+    <div id="gridhost"></div>
+    <div id="onehost" class="hide"></div>
+  </section>
+
+  <!-- ================= SET UP ================= -->
+  <section id="setup" class="hide">
+    <div class="box">
+      <h2>1 · Paste from Synergy</h2>
+      <p class="note">In Synergy open this period's <b>Grade Book Main</b>, press <b>Ctrl+A</b>, then <b>Ctrl+C</b>, then click in the box below and press <b>Ctrl+V</b>. The page reads the period, the columns in Synergy's order, the students in Synergy's order, and the marks Synergy has now. Matches you already made are kept.</p>
+      <textarea id="paste" placeholder="Paste Synergy's Grade Book here…"></textarea>
+      <div class="bar" style="margin:8px 0 0">
+        <button class="btn" id="readPaste">Read it</button>
+        <span id="pasteMsg" class="note"></span>
+      </div>
+      <div class="drop" id="drop">📷 Screenshot? Drop the file here, <label style="text-decoration:underline;cursor:pointer">choose it<input type="file" id="shotFile" accept="image/*" class="hide"></label>, or Ctrl+V it into the box above. Only its <b>file name</b> and the time are saved, never the picture. The page can't read a picture — copy the text too (or paste the screenshot into the gradebook chat).</div>
+      <div id="shots" class="note"></div>
+    </div>
+
+    <div class="box">
+      <h2>2 · Columns, in Synergy's order</h2>
+      <p class="note">Match each Synergy column to the site activity once; it is saved. A <span class="chip guess">guess</span> is the page's best match — pick from the list to confirm it. Choose "not on the site" for a column you grade by hand; it shows greyed and blank.</p>
+      <div id="colsHost"></div>
+    </div>
+
+    <div class="box">
+      <h2>3 · Students, in Synergy's order</h2>
+      <p class="note">Each Synergy name is linked to a student once (by username) and saved. <span class="chip bad">no match</span> means pick the student. Use ↑ ↓ to fix the order.</p>
+      <div id="studsHost"></div>
+      <div id="notInSyn" class="note"></div>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var PASS='galileo2026';
+function H(x){var h={apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY,'Content-Type':'application/json'};if(x)for(var k in x)h[k]=x[k];return h;}
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function toast(t,bad){var s=$('toast');s.textContent=t;s.classList.toggle('bad',!!bad);s.classList.add('on');clearTimeout(toast._t);toast._t=setTimeout(function(){s.classList.remove('on');},bad?7000:2600);}
+function getAll(path){
+  var out=[],from=0,step=1000;
+  function next(){return fetch(SUPA_URL+'/rest/v1/'+path,{headers:H({Range:from+'-'+(from+step-1),'Range-Unit':'items'})})
+    .then(function(r){ if(!r.ok) return r.text().then(function(t){throw new Error(r.status+' '+t.slice(0,80));}); return r.json(); })
+    .then(function(rows){out=out.concat(rows);if(rows.length===step){from+=step;return next();}return out;});}
+  return next();
+}
+/* username is the ID (T-299/T-304): same rule as the gradebook */
+var ALIAS={};
+function galKey(e){ return String(e==null?'':e).trim().toLowerCase().split('@')[0].replace(/\s+/g,''); }
+function canon(e){ var k=galKey(e); return ALIAS[k]||k; }
+
+/* the 0–4.5 scale — identical to BANDS in gradebook/index.html and GAL04.BANDS */
+var BANDS=[[95,4.5],[76,4],[56,3],[36,2],[15,1],[0,0]];
+function band(p){ if(p==null) return null; p=Math.round(p); for(var i=0;i<BANDS.length;i++) if(p>=BANDS[i][0]) return BANDS[i][1]; return 0; }
+function synTime(iso){
+  try{ var d=new Date(iso);
+    return d.toLocaleDateString('en-US',{month:'short',day:'numeric',timeZone:'America/Los_Angeles'})+' · '+
+           d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Los_Angeles'}); }
+  catch(e){ return String(iso||'').slice(0,16); }
+}
+
+var STUD={};        // username -> {key, first_name, last_name, period, roster_order, kind}
+var BEST={};        // username|slug -> best gradebook_best row
+var ACTS={};        // slug -> {slug,title}
+var STAMP={};       // username|slug -> newest synergy_col_marks row
+var LAYS={};        // period -> layout row
+var PER='';         // current period (string)
+var HL=-1;          // highlighted row index (in the shown list)
+var ONECOL=0;       // column index in one-column mode
+var MISSING='0';    // what "never did it" shows as — Synergy holds 0 for those
+
+/* ---------------- gate + load ---------------- */
+function gate(){
+  if(sessionStorage.getItem('gb_ok')==='1'){ openApp(); return; }
+  $('go').onclick=function(){ if($('pw').value===PASS){ sessionStorage.setItem('gb_ok','1'); openApp(); } else $('pwmsg').textContent='Not it.'; };
+  $('pw').addEventListener('keydown',function(e){ if(e.key==='Enter') $('go').click(); });
+}
+function openApp(){ $('gate').classList.add('hide'); $('app').classList.remove('hide'); load(); }
+
+function load(){
+  toast('Loading…');
+  return Promise.all([
+    getAll('students?select=email,first_name,last_name,period,roster_order,kind'),
+    getAll('gradebook_best?select=email,slug,title,score,max_score,pct,last_at'),
+    getAll('activities?select=slug,title').catch(function(){return [];}),
+    getAll('student_aliases?select=alias_email,email').catch(function(){return [];}),
+    getAll('synergy_col_marks?select=slug,email,shown,pct,entered_at&order=entered_at').catch(function(){return null;}),
+    getAll('synergy_layout?select=*').catch(function(){return null;})
+  ]).then(function(r){
+    ALIAS={};
+    (r[3]||[]).forEach(function(a){ var f=galKey(a.alias_email), t=galKey(a.email); if(f&&t&&f!==t) ALIAS[f]=t; });
+    STUD={};
+    r[0].forEach(function(s){
+      var k=canon(s.email), own=galKey(s.email)===k, cur=STUD[k]||{key:k};
+      ['first_name','last_name','period','roster_order','kind'].forEach(function(f){ if(s[f]!=null && s[f]!=='' && (own || cur[f]==null || cur[f]==='')) cur[f]=s[f]; });
+      STUD[k]=cur;
+    });
+    ACTS={}; r[2].forEach(function(a){ ACTS[a.slug]={slug:a.slug,title:a.title||a.slug}; });
+    BEST={};
+    r[1].forEach(function(c){
+      var k=canon(c.email)+'|'+c.slug, o=BEST[k];
+      if(!ACTS[c.slug]) ACTS[c.slug]={slug:c.slug,title:c.title||c.slug};
+      if(!o || (c.pct!=null && (o.pct==null || +c.pct>+o.pct)) || (c.pct==o.pct && String(c.last_at||'')>String(o.last_at||''))) BEST[k]=c;
+    });
+    loadStamps(r[4]||[]);
+    LAYS={}; (r[5]||[]).forEach(function(l){ LAYS[String(l.period)]=fixLay(l); });
+    if(r[5]===null) toast('Can\'t read synergy_layout — has the T-489 SQL been run?',true);
+    else if(r[4]===null) toast('Can\'t read synergy_col_marks — has the T-457 SQL been run?',true);
+    else toast('Loaded');
+    fillPeriods();
+    draw();
+  }).catch(function(e){ toast('Load failed: '+e.message,true); });
+}
+function loadStamps(rows){
+  STAMP={};
+  rows.forEach(function(r){ var k=canon(r.email)+'|'+r.slug, o=STAMP[k]; if(!o || String(r.entered_at)>String(o.entered_at)) STAMP[k]=r; });
+}
+function fixLay(l){
+  l.cols=Array.isArray(l.cols)?l.cols:[]; l.studs=Array.isArray(l.studs)?l.studs:[];
+  l.shots=Array.isArray(l.shots)?l.shots:[]; l.opts=(l.opts&&typeof l.opts==='object')?l.opts:{};
+  return l;
+}
+
+/* ---------------- periods ---------------- */
+function fillPeriods(){
+  var set={}; Object.keys(STUD).forEach(function(k){ var p=STUD[k].period; if(p!=null&&p!=='') set[String(p)]=1; });
+  Object.keys(LAYS).forEach(function(p){ set[p]=1; });
+  var ps=Object.keys(set).filter(function(p){return /^\d+$/.test(p);}).sort(function(a,b){return a-b;});
+  var want=(location.hash.match(/p=(\d+)/)||[])[1] || PER || ps.filter(function(p){return LAYS[p];})[0] || ps[0] || '1';
+  if(ps.indexOf(want)<0) ps.push(want);
+  $('period').innerHTML=ps.map(function(p){ return '<option value="'+p+'"'+(p===want?' selected':'')+'>Period '+p+(LAYS[p]?'':' (not set up)')+'</option>'; }).join('');
+  PER=want;
+}
+$('period').onchange=function(){ PER=this.value; HL=-1; ONECOL=0; history.replaceState(null,'','#p='+PER); draw(); };
+
+/* ---------------- the layout for this period ---------------- */
+function rosterOf(p){
+  return Object.keys(STUD).map(function(k){return STUD[k];}).filter(function(s){
+    return String(s.period)===String(p) && s.kind!=='test' && s.kind!=='teacher';
+  }).sort(function(a,b){ var ra=a.roster_order||9999, rb=b.roster_order||9999; if(ra!==rb) return ra-rb; return nameOf(a).localeCompare(nameOf(b)); });
+}
+function nameOf(s){ return ((s.last_name||'')+(s.last_name&&s.first_name?', ':'')+(s.first_name||'')) || s.key; }
+function lay(){
+  var L=LAYS[PER];
+  if(L) return L;
+  /* not set up yet: students from roster_order, no columns until a paste */
+  return {period:PER, cols:[], studs:rosterOf(PER).map(function(s){ return {name:nameOf(s), key:s.key, sure:true}; }), shots:[], opts:{}, fresh:true};
+}
+
+/* ---------------- marks ---------------- */
+function markOf(key,slug){
+  var c=BEST[key+'|'+slug];
+  if(!c) return {v:MISSING, pct:null, has:false};
+  var p = c.pct!=null ? +c.pct : ((+c.max_score>0 && c.score!=null) ? 100*c.score/c.max_score : 100);   // done, no number = full (same as "What changed")
+  return {v:String(band(p)), pct:Math.round(p), has:true};
+}
+function normShown(x){
+  x=String(x==null?'':x).trim();
+  if(x==='' ) return MISSING;
+  if(x==='✓') return '4.5';
+  var m=x.match(/^(\d+(?:\.\d+)?)%$/); if(m) return String(band(+m[1]));
+  if(/^\d+(\.\d+)?$/.test(x)) return String(+x);
+  return x;
+}
+/* baseline = the newer of (last stamp) and (what Synergy showed in the last paste) */
+function baseOf(i,j,key,slug){
+  var L=lay(), st=key?STAMP[key+'|'+slug]:null, s=L.studs[i]||{}, pv=(s.syn&&s.syn[j]!=null)?s.syn[j]:null;
+  var fromStamp = st ? {v:normShown(st.shown), at:st.entered_at, src:'entered here'} : null;
+  var fromPaste = (pv!=null && L.pasted_at) ? {v:(String(pv).trim()===''?'–':normShown(pv)), at:L.pasted_at, src:'Synergy paste'} : null;   // a blank Synergy cell is not a 0
+  if(fromStamp && fromPaste) return String(fromStamp.at)>=String(fromPaste.at) ? fromStamp : fromPaste;
+  return fromStamp || fromPaste;
+}
+function cellState(i,j){
+  var L=lay(), c=L.cols[j], s=L.studs[i];
+  if(!c || !c.slug) return {off:true};
+  if(!s || !s.key) return {off:true, nokey:true};
+  var m=markOf(s.key,c.slug), b=baseOf(i,j,s.key,c.slug);
+  var st = !b ? 'new' : (b.v===m.v ? 'ent' : 'chg');
+  return {v:m.v, pct:m.pct, has:m.has, st:st, base:b};
+}
+function cellHTML(x){
+  if(x.off) return '';
+  if(x.st==='chg') return '<small>'+esc(x.base.v)+' → </small><span>'+esc(x.v)+'</span>';
+  return esc(x.v);
+}
+function cellTip(x,L,i,j){
+  if(x.off) return x.nokey?'This Synergy name is not linked to a student yet (Set up, step 3)':'Not on the site';
+  var t='Site: '+(x.has?(x.pct+'% → '+x.v):'never did it → '+x.v);
+  if(x.base) t+='\nSynergy: '+x.base.v+' ('+x.base.src+', '+synTime(x.base.at)+')';
+  else t+='\nNever entered';
+  return t;
+}
+
+/* ---------------- draw ---------------- */
+function draw(){
+  var L=lay();
+  MISSING = (L.opts && L.opts.missing!=null) ? String(L.opts.missing) : '0';
+  $('laywhen').textContent = L.fresh ? 'Not set up yet — use Set up' :
+    'Synergy pasted '+(L.pasted_at?synTime(L.pasted_at):'never')+(L.shots.length?' · last screenshot: '+L.shots[L.shots.length-1].file:'');
+  drawType(); drawSetup();
+}
+
+function shownRows(){
+  var L=lay(), out=[];
+  L.studs.forEach(function(s,i){
+    if($('onlytype').checked){
+      var any=false; L.cols.forEach(function(c,j){ var x=cellState(i,j); if(!x.off && x.st!=='ent') any=true; });
+      if(!any) return;
+    }
+    out.push(i);
+  });
+  return out;
+}
+function counts(rows){
+  var L=lay(), n={chg:0,neu:0,ent:0};
+  rows.forEach(function(i){ L.cols.forEach(function(c,j){ var x=cellState(i,j); if(x.off) return; if(x.st==='chg') n.chg++; else if(x.st==='new') n.neu++; else n.ent++; }); });
+  return n;
+}
+function drawType(){
+  var L=lay(), ns=$('needsetup');
+  var unlinkedS=L.studs.filter(function(s){return !s.key;}).length, guessC=L.cols.filter(function(c){return c.slug&&!c.sure;}).length;
+  if(!L.cols.length){ ns.innerHTML='Period '+esc(PER)+' has no Synergy columns yet. Open <b>Set up</b> and paste this period\'s Grade Book from Synergy.'; ns.classList.remove('hide'); }
+  else if(unlinkedS||guessC){ ns.innerHTML=(unlinkedS?unlinkedS+' Synergy name'+(unlinkedS>1?'s are':' is')+' not linked to a student':'')+(unlinkedS&&guessC?' · ':'')+(guessC?guessC+' column match'+(guessC>1?'es are guesses':' is a guess'):'')+' — check them in <b>Set up</b>.'; ns.classList.remove('hide'); }
+  else ns.classList.add('hide');
+
+  var rows=shownRows(), n=counts(rows);
+  $('tally').innerHTML='<div><b style="color:var(--gold)">'+n.chg+'</b>changed</div><div><b>'+n.neu+'</b>new</div><div><b style="color:#9aa39f">'+n.ent+'</b>already in</div>';
+  $('stampAll').disabled=!rows.length || !L.cols.some(function(c){return c.slug;});
+  var one=document.querySelector('input[name=mode]:checked').value==='one';
+  $('gridhost').classList.toggle('hide',one); $('onehost').classList.toggle('hide',!one);
+  if(one) drawOne(rows); else drawGrid(rows);
+}
+function drawGrid(rows){
+  var L=lay();
+  if(!L.cols.length){ $('gridhost').innerHTML=''; return; }
+  var h='<table class="ty" id="ty"><thead><tr><th class="nm">Student <span class="note" style="font-weight:400">('+rows.length+')</span></th>';
+  L.cols.forEach(function(c,j){
+    h+='<th class="'+(c.slug?'':'off')+'" title="'+esc(c.slug?('Site: '+((ACTS[c.slug]||{}).title||c.slug)):'Not on the site')+'"><span class="t">'+esc(c.name)+'</span><span class="d">'+esc(c.date||'')+'</span>'+
+       (c.slug?'<button class="btn sec cb" data-col="'+j+'" title="Mark only this column as entered in Synergy">✓ this column</button>':'')+'</th>';
+  });
+  h+='</tr></thead><tbody>';
+  rows.forEach(function(i,r){
+    var s=L.studs[i];
+    h+='<tr data-r="'+r+'"'+(r===HL?' class="hl"':'')+'><th>'+esc(s.name)+(s.key?'':'<span class="flag">not linked</span>')+'</th>';
+    L.cols.forEach(function(c,j){ var x=cellState(i,j);
+      h+='<td class="m '+(x.off?'off':x.st)+'" title="'+esc(cellTip(x,L,i,j))+'">'+cellHTML(x)+'</td>'; });
+    h+='</tr>';
+  });
+  h+='</tbody></table>';
+  $('gridhost').innerHTML=h;
+}
+function drawOne(rows){
+  var L=lay(), cols=L.cols.map(function(c,j){return j;}).filter(function(j){return L.cols[j].slug;});
+  if(!cols.length){ $('onehost').innerHTML='<p class="note">No column is matched to a site activity yet.</p>'; return; }
+  if(cols.indexOf(ONECOL)<0) ONECOL=cols[0];
+  var c=L.cols[ONECOL], pos=cols.indexOf(ONECOL);
+  var h='<div class="one"><div class="hd"><button class="btn sec" id="prevCol"'+(pos<=0?' disabled':'')+'>◀</button>'+
+    '<select id="oneSel">'+cols.map(function(j){ return '<option value="'+j+'"'+(j===ONECOL?' selected':'')+'>'+esc(L.cols[j].name)+'</option>'; }).join('')+'</select>'+
+    '<button class="btn sec" id="nextCol"'+(pos>=cols.length-1?' disabled':'')+'>▶</button>'+
+    '<h2>'+esc(c.name)+' <span class="note" style="font-weight:400">'+esc(c.date||'')+'</span></h2>'+
+    '<button class="btn" data-col="'+ONECOL+'">✓ Entered this column</button></div><ol>';
+  rows.forEach(function(i,r){
+    var s=L.studs[i], x=cellState(i,ONECOL);
+    h+='<li data-r="'+r+'"'+(r===HL?' class="hl"':'')+' title="'+esc(cellTip(x,L,i,ONECOL))+'"><span class="n">'+(i+1)+'</span><span class="s">'+esc(s.name)+(s.key?'':' <span class="chip bad">not linked</span>')+'</span>'+
+       '<span class="v '+(x.off?'':x.st)+'">'+cellHTML(x)+'</span></li>';
+  });
+  h+='</ol></div>';
+  $('onehost').innerHTML=h;
+  $('oneSel').onchange=function(){ ONECOL=+this.value; drawType(); };
+  $('prevCol').onclick=function(){ ONECOL=cols[pos-1]; drawType(); };
+  $('nextCol').onclick=function(){ ONECOL=cols[pos+1]; drawType(); };
+}
+
+/* row highlight: click a row; ↑ ↓ move it (no redraw of the whole table) */
+function setHL(r){
+  HL=r;
+  document.querySelectorAll('#ty tbody tr, #onehost li').forEach(function(el){ el.classList.toggle('hl', +el.getAttribute('data-r')===HL); });
+  var el=document.querySelector('#ty tbody tr.hl, #onehost li.hl');
+  if(el && el.scrollIntoView){ var b=el.getBoundingClientRect(); if(b.top<90||b.bottom>innerHeight-20) el.scrollIntoView({block:'center'}); }
+}
+document.addEventListener('click',function(e){
+  var b=e.target.closest('button[data-col]'); if(b){ stampCols([+b.getAttribute('data-col')]); return; }
+  var tr=e.target.closest('#ty tbody tr, #onehost li'); if(tr){ var r=+tr.getAttribute('data-r'); setHL(HL===r?-1:r); }
+});
+document.addEventListener('keydown',function(e){
+  if($('type').classList.contains('hide') || /INPUT|SELECT|TEXTAREA/.test((e.target.tagName||''))) return;
+  var n=document.querySelectorAll('#ty tbody tr, #onehost:not(.hide) li').length; if(!n) return;
+  if(e.key==='ArrowDown'){ e.preventDefault(); setHL(Math.min(n-1,HL+1)); }
+  else if(e.key==='ArrowUp'){ e.preventDefault(); setHL(Math.max(0,HL-1)); }
+});
+document.querySelectorAll('input[name=mode]').forEach(function(r){ r.onchange=function(){ HL=-1; drawType(); }; });
+$('onlytype').onchange=function(){ HL=-1; drawType(); };
+
+/* ---------------- stamping ---------------- */
+$('stampAll').onclick=function(){
+  var L=lay(), cols=L.cols.map(function(c,j){return j;}).filter(function(j){return L.cols[j].slug;});
+  stampCols(cols, true);
+};
+function stampCols(cols, whole){
+  var L=lay(), rows=shownRows(), body=[], before={}, slugs={};
+  rows.forEach(function(i){ var s=L.studs[i]; if(!s.key) return;
+    cols.forEach(function(j){ var c=L.cols[j]; if(!c.slug) return; var x=cellState(i,j);
+      var k=s.key+'|'+c.slug, st=STAMP[k]; before[k]=st?String(st.entered_at):''; slugs[c.slug]=1;
+      body.push({slug:c.slug, email:s.key, period:String(PER), shown:x.v, pct:x.pct}); });
+  });
+  if(!body.length){ toast('Nothing on screen to mark.',true); return; }
+  var what = whole ? ('all '+body.length+' marks on screen ('+rows.length+' students × '+Object.keys(slugs).length+' columns)') :
+                     ('"'+L.cols[cols[0]].name+'" for '+body.length+' students');
+  if(!confirm('Mark '+what+' as entered in Synergy, Period '+PER+'?')) return;
+  toast('Saving…');
+  fetch(SUPA_URL+'/rest/v1/synergy_col_marks',{method:'POST',headers:H({Prefer:'return=minimal'}),body:JSON.stringify(body)})
+    .then(function(r){ if(!r.ok) return r.text().then(function(t){ throw new Error(r.status+' '+t.slice(0,80)); }); })
+    .then(function(){ return getAll('synergy_col_marks?select=slug,email,shown,pct,entered_at&slug=in.('+Object.keys(slugs).map(function(s){return '"'+s.replace(/"/g,'')+'"';}).join(',')+')&order=entered_at'); })
+    .then(function(got){
+      var newest={}; got.forEach(function(r){ var k=canon(r.email)+'|'+r.slug; if(!newest[k] || String(r.entered_at)>String(newest[k].entered_at)) newest[k]=r; });
+      Object.keys(newest).forEach(function(k){ STAMP[k]=newest[k]; });
+      var miss=body.filter(function(b){ var n=newest[b.email+'|'+b.slug]; return !n || !(String(n.entered_at)>before[b.email+'|'+b.slug]); });
+      drawType();
+      var any=newest[body[0].email+'|'+body[0].slug];
+      if(miss.length) toast(miss.length+' of '+body.length+' marks did NOT save. Press again.',true);
+      else toast('Saved '+body.length+' marks as entered · '+(any?synTime(any.entered_at):''));
+    })
+    .catch(function(e){ toast('Not saved — '+String(e.message||e).slice(0,90),true); });
+}
+
+/* ---------------- Synergy paste reader ----------------
+   Copying Synergy's Grade Book Main (Ctrl+A, Ctrl+C) gives, in this order:
+     "Current Focus: … / P3"                      -> period
+     "Balam Vazquez, John<TAB>76.0%C"             -> students, Synergy order
+     "<name>" "MAX:100.00" "PTS:1.00" "11/13/2026" -> one block per column, left to right
+     then the marks, ONE PER LINE, student by student (row 1's columns, row 2's…),
+     a blank cell as " <TAB>". Checked Nov 17 on Toby's P3 copy: each student's
+     marks average out to Synergy's own percent (all zeros = 50%).          */
+function parseSynergy(text){
+  var lines=String(text||'').replace(/\r/g,'').split('\n');
+  var out={period:null, cols:[], studs:[], vals:[]};
+  var m=String(text).match(/Current Focus:[^\n]*?\/\s*P(\d+)/i); if(m) out.period=m[1];
+  lines.forEach(function(l){
+    var s=l.match(/^\s*([^\t,]+,[^\t]+?)\t\s*\d+(?:\.\d+)?%/); if(s) out.studs.push(s[1].trim());
+  });
+  var maxIdx=[]; lines.forEach(function(l,i){ if(/^\s*MAX\s*:/i.test(l)) maxIdx.push(i); });
+  maxIdx.forEach(function(i){
+    var t=i-1; while(t>=0 && !lines[t].trim()) t--;
+    var name=t>=0?lines[t].trim():'?', date='';
+    for(var k=i+1;k<Math.min(lines.length,i+5);k++){ var d=lines[k].match(/(\d{1,2}\/\d{1,2}\/\d{2,4})/); if(d){ date=d[1]; break; } }
+    out.cols.push({name:name, date:date});
+  });
+  if(!out.cols.length || !out.studs.length) return {err:'Couldn\'t find Synergy\'s '+(!out.studs.length?'student names':'columns')+'. Copy Grade Book Main with Ctrl+A, Ctrl+C.'};
+  /* marks start after the last column block's category line ("…Sort Direction") */
+  var i=maxIdx[maxIdx.length-1]+1, stop=Math.min(lines.length,i+6);
+  for(;i<stop;i++){ if(/sort direction/i.test(lines[i])){ i++; break; } }
+  var raw=[];
+  for(;i<lines.length;i++){
+    var l=lines[i];
+    if(l==='') continue;                                  // a truly empty line is not a cell
+    var v=l.match(/^\s*(\d+(?:\.\d+)?)?\s*$/);
+    if(!v) break;
+    raw.push(v[1]!=null?String(+v[1]):'');
+  }
+  var want=out.studs.length*out.cols.length;
+  var cnt=(String(text).match(/(\d+)\s+student\(s\)/i)||[])[1];
+  if(cnt && +cnt!==out.studs.length) return {err:'Synergy says '+cnt+' students but '+out.studs.length+' names were found. Copy again.'};
+  if(raw.length!==want) return {err:'Found '+raw.length+' marks; '+out.studs.length+' students × '+out.cols.length+' columns needs '+want+'. Copy the whole page again.'};
+  for(var s=0;s<out.studs.length;s++) out.vals.push(raw.slice(s*out.cols.length,(s+1)*out.cols.length));
+  return out;
+}
+
+/* name match: lowercase, accents off, word order ignored (same idea as T-459) */
+function nkey(n){ return String(n||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z\s]/g,' ').split(/\s+/).filter(Boolean).sort().join(' '); }
+function matchName(syn, per, taken){
+  var w=nkey(syn), all=Object.keys(STUD).map(function(k){return STUD[k];}).filter(function(s){ return s.kind!=='test'&&s.kind!=='teacher' && !taken[s.key]; });
+  var exact=all.filter(function(s){ return nkey((s.first_name||'')+' '+(s.last_name||''))===w; });
+  var inP=exact.filter(function(s){ return String(s.period)===String(per); });
+  if(inP.length===1) return {key:inP[0].key, sure:true};
+  if(exact.length===1) return {key:exact[0].key, sure:false, why:'other period'};
+  /* looser: every word of the site name is in the Synergy name (or the reverse), in this period */
+  var ws=w.split(' ');
+  var loose=all.filter(function(s){ if(String(s.period)!==String(per)) return false;
+    var sw=nkey((s.first_name||'')+' '+(s.last_name||'')).split(' ').filter(Boolean); if(!sw.length) return false;
+    return sw.every(function(x){return ws.indexOf(x)>=0;}) || ws.every(function(x){return sw.indexOf(x)>=0;}); });
+  if(loose.length===1) return {key:loose[0].key, sure:false, why:'close name'};
+  return null;
+}
+/* column guess. Tokens from Synergy's name vs the site title + slug, with
+   two hard signals: the lesson / episode CODE (u1l3, ep03) must agree, and
+   "extras" / "practice" / "test" must be on both sides or neither — so
+   "Launch Plus U1-L3" never grabs launch-plus/u1-l3x. Always shown as a
+   "guess" until Toby confirms it. */
+var STOP=['the','a','an','of','to','and','do','we','have','what','now'];
+function toks(s){
+  s=String(s||'').toLowerCase()
+    .replace(/\b(u\d+)[\s-]*(l\d+)(x?)\b/g,function(m,u,l,x){ return ' '+u+l+(x?' extras':'')+' '; })
+    .replace(/\b(?:reel|episode|ep|check)\s*0*(\d{1,2})\b/g,function(m,n){ return m.replace(/\d+$/,'')+' ep'+(n.length<2?'0':'')+n+' '; })
+    .replace(/\bep0*(\d{1,2})\b/g,function(m,n){ return 'ep'+(n.length<2?'0':'')+n; });
+  var out={}; s.replace(/[^a-z0-9]+/g,' ').split(' ').forEach(function(t){ if(t && STOP.indexOf(t)<0) out[t]=1; });
+  return out;
+}
+function slugToks(sl){
+  var last=sl.split('/').pop(), t=toks(sl.replace(/[\/-]+/g,' '));
+  if(/-practice$/.test(last)) t.practice=1;
+  if(/-test$/.test(last)) t.test=1;
+  delete t.v2; if(!/-test$/.test(last)) delete t.test;     // "reel-test" is a folder, not a test
+  return t;
+}
+var MARK=['extras','practice','test'];
+function guessCol(name){
+  var a=toks(name), ak=Object.keys(a), best=null, second=-1;
+  var codes=ak.filter(function(t){ return /^(u\d+l\d+|ep\d\d)$/.test(t); });
+  Object.keys(ACTS).forEach(function(sl){
+    var b=toks(ACTS[sl].title), st=slugToks(sl); for(var t in st) b[t]=1;
+    var bk=Object.keys(b), inter=ak.filter(function(t){return b[t];}).length;
+    var sc=2*inter/(ak.length+bk.length);
+    if(codes.some(function(c){ return !b[c]; })) sc-=.5;
+    MARK.forEach(function(m){ if(!!a[m]!==!!b[m]) sc-=.5; });
+    if(!best || sc>best.sc){ second=best?best.sc:-1; best={slug:sl,sc:sc}; } else if(sc>second) second=sc;
+  });
+  return (best && best.sc>=.4 && best.sc-second>=.05) ? best.slug : null;
+}
+
+$('readPaste').onclick=function(){
+  var p=parseSynergy($('paste').value), msg=$('pasteMsg');
+  if(p.err){ msg.textContent='⚠ '+p.err; msg.style.color='#8c2418'; return; }
+  var per=p.period||PER;
+  if(p.period && p.period!==PER && !confirm('This copy is from Period '+p.period+' (you have Period '+PER+' open). Save it as Period '+p.period+'?')) return;
+  var old=LAYS[per]||{cols:[],studs:[],shots:[],opts:{}};
+  var oldCol={}; (old.cols||[]).forEach(function(c){ oldCol[c.name]=c; });
+  var oldStu={}; (old.studs||[]).forEach(function(s){ oldStu[s.name]=s; });
+  var cols=p.cols.map(function(c){ var o=oldCol[c.name]; if(o) return {name:c.name,date:c.date||o.date,slug:o.slug||null,sure:!!o.sure,none:!!o.none};
+    var g=guessCol(c.name); return {name:c.name,date:c.date,slug:g,sure:false}; });
+  var taken={}; p.studs.forEach(function(n){ var o=oldStu[n]; if(o&&o.key) taken[o.key]=1; });
+  var studs=p.studs.map(function(n,i){ var o=oldStu[n];
+    if(o && o.key) return {name:n,key:o.key,sure:!!o.sure,syn:p.vals[i]};
+    var m=matchName(n,per,taken); if(m) taken[m.key]=1;
+    return {name:n,key:m?m.key:null,sure:m?m.sure:false,why:m&&m.why||'',syn:p.vals[i]}; });
+  var L={period:per, cols:cols, studs:studs, shots:old.shots||[], opts:old.opts||{}, pasted_at:new Date().toISOString()};
+  saveLay(L).then(function(ok){ if(!ok) return;
+    PER=per; history.replaceState(null,'','#p='+PER); fillPeriods();
+    var nl=studs.filter(function(s){return !s.key;}).length, ng=cols.filter(function(c){return !c.sure;}).length;
+    msg.style.color=''; msg.textContent='✓ Period '+per+': '+studs.length+' students × '+cols.length+' columns read and saved.'+(nl?' '+nl+' name(s) need a link.':'')+(ng?' Check '+ng+' column match(es).':'');
+    $('paste').value=''; draw();
+  });
+};
+/* a screenshot pasted into the box: keep only its name and the time (Toby chose B) */
+$('paste').addEventListener('paste',function(e){
+  var f=[].slice.call((e.clipboardData&&e.clipboardData.files)||[]).filter(function(x){return /^image\//.test(x.type);})[0];
+  if(f){ e.preventDefault(); logShot(f); return; }
+  setTimeout(function(){ if(/MAX\s*:/i.test($('paste').value)) $('readPaste').click(); },50);
+});
+$('shotFile').onchange=function(){ if(this.files[0]) logShot(this.files[0]); this.value=''; };
+var drop=$('drop');
+['dragenter','dragover'].forEach(function(t){ drop.addEventListener(t,function(e){ e.preventDefault(); drop.classList.add('on'); }); });
+['dragleave','drop'].forEach(function(t){ drop.addEventListener(t,function(e){ e.preventDefault(); drop.classList.remove('on'); }); });
+drop.addEventListener('drop',function(e){ var f=e.dataTransfer.files[0]; if(f&&/^image\//.test(f.type)) logShot(f); });
+function logShot(f){
+  var L=JSON.parse(JSON.stringify(lay())); delete L.fresh;
+  var name=(f.name && f.name!=='image.png') ? f.name : ('pasted image (no file name) '+synTime(new Date().toISOString()));
+  L.shots=(L.shots||[]).concat([{file:name, at:new Date().toISOString(), size:f.size||null}]).slice(-30);
+  saveLay(L).then(function(ok){ if(ok){ toast('Logged screenshot "'+name+'" for Period '+PER+' — the picture itself was not kept.'); draw(); } });
+}
+
+/* ---------------- save the layout (server only) ---------------- */
+function saveLay(L){
+  var row={period:String(L.period), cols:L.cols, studs:L.studs, shots:L.shots||[], opts:L.opts||{}, pasted_at:L.pasted_at||null, updated_at:new Date().toISOString()};
+  return fetch(SUPA_URL+'/rest/v1/synergy_layout?on_conflict=period',{method:'POST',headers:H({Prefer:'resolution=merge-duplicates,return=representation'}),body:JSON.stringify([row])})
+    .then(function(r){ if(!r.ok) return r.text().then(function(t){ throw new Error(r.status+' '+t.slice(0,90)); }); return r.json(); })
+    .then(function(back){ LAYS[row.period]=fixLay(back&&back[0]?back[0]:row); return true; })
+    .catch(function(e){ toast('Not saved — has the T-489 SQL been run? ('+String(e.message||e).slice(0,70)+')',true); return false; });
+}
+var saveT=null;
+function editLay(fn){
+  var L=JSON.parse(JSON.stringify(lay())); delete L.fresh; fn(L);
+  LAYS[PER]=fixLay(L); draw();
+  clearTimeout(saveT); saveT=setTimeout(function(){ saveLay(LAYS[PER]).then(function(ok){ if(ok) toast('Saved'); }); },500);
+}
+
+/* ---------------- set up screen ---------------- */
+function actOptions(sel){
+  var per=PER, used={};
+  Object.keys(BEST).forEach(function(k){ var p=k.split('|'); var s=STUD[p[0]]; if(s && String(s.period)===String(per)) used[p.slice(1).join('|')]=1; });
+  var list=Object.keys(ACTS).sort(function(a,b){ return (used[b]?1:0)-(used[a]?1:0) || ACTS[a].title.localeCompare(ACTS[b].title); });
+  var h='<option value="">— pick the site activity —</option><option value="__none"'+(sel==='__none'?' selected':'')+'>— not on the site (grey) —</option>';
+  var split=false;
+  list.forEach(function(sl){ if(!used[sl] && !split){ split=true; h+='<option disabled>── not done by this period ──</option>'; }
+    h+='<option value="'+esc(sl)+'"'+(sl===sel?' selected':'')+'>'+esc(ACTS[sl].title)+' · '+esc(sl)+'</option>'; });
+  return h;
+}
+function stuOptions(sel){
+  var inP=rosterOf(PER), others=Object.keys(STUD).map(function(k){return STUD[k];}).filter(function(s){ return String(s.period)!==String(PER) && s.kind!=='test' && s.kind!=='teacher'; }).sort(function(a,b){return nameOf(a).localeCompare(nameOf(b));});
+  var h='<option value="">— pick the student —</option>';
+  inP.forEach(function(s){ h+='<option value="'+esc(s.key)+'"'+(s.key===sel?' selected':'')+'>'+esc(nameOf(s))+' · '+esc(s.key)+'</option>'; });
+  h+='<option disabled>── other periods ──</option>';
+  others.forEach(function(s){ h+='<option value="'+esc(s.key)+'"'+(s.key===sel?' selected':'')+'>'+esc(nameOf(s))+' · '+esc(s.key)+' (P'+esc(s.period||'?')+')</option>'; });
+  return h;
+}
+function drawSetup(){
+  var L=lay();
+  $('shots').innerHTML = L.shots.length ? '<b>Screenshots logged:</b> '+L.shots.slice().reverse().slice(0,6).map(function(s){ return esc(s.file)+' <span style="opacity:.7">('+synTime(s.at)+')</span>'; }).join(' · ') : '';
+  if(!L.cols.length) $('colsHost').innerHTML='<p class="note">Paste from Synergy first.</p>';
+  else $('colsHost').innerHTML='<table class="lst"><tr><th>#</th><th>Synergy column</th><th>Date</th><th>Site activity</th><th></th></tr>'+
+    L.cols.map(function(c,j){
+      var chip = c.none ? '<span class="chip none">not on the site</span>' : !c.slug ? '<span class="chip bad">pick one</span>' : c.sure ? '<span class="chip ok">✓ set</span>' : '<span class="chip guess">guess</span>';
+      return '<tr><td>'+(j+1)+'</td><td><b>'+esc(c.name)+'</b></td><td>'+esc(c.date||'')+'</td><td><select data-colpick="'+j+'" style="max-width:420px">'+actOptions(c.none?'__none':(c.slug||''))+'</select></td><td>'+chip+(c.slug&&!c.sure?' <button class="mini" data-colok="'+j+'">it\'s right</button>':'')+'</td></tr>';
+    }).join('')+'</table>';
+  $('studsHost').innerHTML='<table class="lst"><tr><th></th><th>#</th><th>Synergy name</th><th>Student on the site</th><th></th></tr>'+
+    L.studs.map(function(s,i){
+      var chip = !s.key ? '<span class="chip bad">no match</span>' : s.sure ? '<span class="chip ok">✓ linked</span>' : '<span class="chip guess">guess'+(s.why?' · '+esc(s.why):'')+'</span>';
+      return '<tr><td style="white-space:nowrap"><button class="mini" data-up="'+i+'"'+(i?'':' disabled')+'>↑</button> <button class="mini" data-dn="'+i+'"'+(i<L.studs.length-1?'':' disabled')+'>↓</button></td><td>'+(i+1)+'</td><td><b>'+esc(s.name)+'</b></td><td><select data-stupick="'+i+'" style="max-width:360px">'+stuOptions(s.key||'')+'</select></td><td>'+chip+(s.key&&!s.sure?' <button class="mini" data-stuok="'+i+'">it\'s right</button>':'')+'</td></tr>';
+    }).join('')+'</table>';
+  var linked={}; L.studs.forEach(function(s){ if(s.key) linked[s.key]=1; });
+  var notIn=rosterOf(PER).filter(function(s){ return !linked[s.key]; });
+  $('notInSyn').innerHTML = (L.cols.length && notIn.length) ? '<b>On the site in Period '+esc(PER)+' but not in Synergy\'s list:</b> '+notIn.map(function(s){return esc(nameOf(s));}).join(', ') : '';
+}
+document.addEventListener('change',function(e){
+  var t=e.target;
+  if(t.hasAttribute('data-colpick')){ var j=+t.getAttribute('data-colpick'), v=t.value;
+    editLay(function(L){ var c=L.cols[j]; c.none=(v==='__none'); c.slug=(v&&v!=='__none')?v:null; c.sure=!!v; }); }
+  if(t.hasAttribute('data-stupick')){ var i=+t.getAttribute('data-stupick'), k=t.value;
+    editLay(function(L){ L.studs.forEach(function(s,x){ if(x!==i && k && s.key===k){ s.key=null; s.sure=false; } }); L.studs[i].key=k||null; L.studs[i].sure=!!k; L.studs[i].why=''; }); }
+});
+document.addEventListener('click',function(e){
+  var t=e.target;
+  if(t.hasAttribute('data-colok')){ var j=+t.getAttribute('data-colok'); editLay(function(L){ L.cols[j].sure=true; }); }
+  if(t.hasAttribute('data-stuok')){ var i=+t.getAttribute('data-stuok'); editLay(function(L){ L.studs[i].sure=true; L.studs[i].why=''; }); }
+  if(t.hasAttribute('data-up')||t.hasAttribute('data-dn')){ var a=+(t.getAttribute('data-up')||t.getAttribute('data-dn')), b=t.hasAttribute('data-up')?a-1:a+1;
+    editLay(function(L){ var x=L.studs[a]; L.studs[a]=L.studs[b]; L.studs[b]=x; }); }
+});
+
+/* ---------------- tabs + the other computer ---------------- */
+$('tabType').onclick=function(){ $('tabType').classList.add('on'); $('tabSetup').classList.remove('on'); $('type').classList.remove('hide'); $('setup').classList.add('hide'); };
+$('tabSetup').onclick=function(){ $('tabSetup').classList.add('on'); $('tabType').classList.remove('on'); $('setup').classList.remove('hide'); $('type').classList.add('hide'); };
+/* coming back to this tab (maybe after typing on the other computer): fetch fresh stamps + layouts */
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState!=='visible' || $('app').classList.contains('hide')) return;
+  Promise.all([getAll('synergy_col_marks?select=slug,email,shown,pct,entered_at&order=entered_at'), getAll('synergy_layout?select=*')])
+    .then(function(r){ loadStamps(r[0]); LAYS={}; r[1].forEach(function(l){ LAYS[String(l.period)]=fixLay(l); }); draw(); }).catch(function(){});
+});
+
+gate();
+</script>
+<script src="https://tobiasrugger.github.io/readings/grade04.js"></script>
+</body>
+</html>
