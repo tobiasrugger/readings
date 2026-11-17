@@ -313,6 +313,8 @@ function load(){try{var k=localStorage.getItem(LAST_KEY);if(!k)return;var d=JSON
 var dirty=false,pushing=false,pushSeq=0;
 function publishScore(){var n=ITEMS.filter(function(x){return state(x.id).done;}).length;window.GAL_SCORE=n;window.GAL_MAX=ITEMS.length;} /* T-170: fair score, any try */
 function dot(c){var d=$('saveDot');if(d)d.className=c;}
+/* T-483 save fix: leaving never waits — a save still on its way is sent again NOW with keepalive. */
+function leaveSave(){if(!ST.email||!SYNCED)return;if(dirty||pushing){pushing=false;push(true);}}
 function push(force){
  if(!ST.email)return;if(!SYNCED){pullServer();return;}if(!dirty&&!force)return;if(pushing)return; /* T-170 */
  pushing=true;dot('busy');var mySeq=++pushSeq;
@@ -474,8 +476,8 @@ function boot(){
  if(!ST.email||!L)askName();else pullServer(); /* T-170 */
  setTimeout(checkCanary,2500);setInterval(checkCanary,20000);
  setInterval(function(){push(false);},20000);
- document.addEventListener('visibilitychange',function(){if(document.hidden)push(false);});
- window.addEventListener('pagehide',function(){push(false);});
+ document.addEventListener('visibilitychange',function(){if(document.hidden)leaveSave();});
+ window.addEventListener('pagehide',leaveSave);
 }
 document.addEventListener('DOMContentLoaded',boot);
 </script>

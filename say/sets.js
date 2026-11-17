@@ -85,5 +85,11 @@ window.SAY_SETS={
     {k:'plural', name:'One or more', e:'\u270f\ufe0f', items:['one pencil, two pencils','one notebook, two notebooks','one class, two classes','one box, two boxes','one dictionary, two dictionaries']},
     {k:'ask', name:'Ask to borrow', e:'\ud83d\ude4b', items:['What school supplies do I need for class?','What else do I need?','I don\u2019t have a pencil.','Could I borrow one?','Sure, you can borrow one!','Thank you for your help.']},
     {k:'need', name:'I need ___ to ___', e:'\ud83d\udcac', items:['I need a pen to write.','I need a folder to hold my papers.','I need a calculator to solve math problems.','I need a backpack to carry my supplies.','I use a notebook every day.']}
+  ] },
+  'class-acts':{ title:'Class Acts', back:'/readings/launch-plus/u1-l7/', decks:[
+    {k:'words', name:'Words', e:'\ud83c\udfc3', items:['find','hang out','learn','play','practice','solve','study','understand']},
+    {k:'he', name:'He or I?', e:'\ud83d\udc64', items:['I play. She plays.','I study. He studies.','I practice. Mateo practices.','We solve. Jun solves.','They hang out. Amira hangs out.']},
+    {k:'ask', name:'What do you do?', e:'\ud83d\udcac', items:['What do you do at school?','I play soccer and read books at school.','What else do you do at school?','I also hang out with friends and practice English.']},
+    {k:'help', name:'Ask for help', e:'\ud83d\ude4b', items:['Don\u2019t be afraid to ask for help.','I don\u2019t understand the problem.','Can you help me, please?','Now I understand!','I do many things at school every day.']}
   ] }
 };

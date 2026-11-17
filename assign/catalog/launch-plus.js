@@ -14,6 +14,7 @@
 {"p": "/readings/launch-plus/u1-l4/", "t": "Launch Plus · Unit 1 Lesson 4 · 0 to 100", "d": "0 to 100", "m": "", "g": "More: Launch Plus (ELD 101)", "o": 123},
 {"p": "/readings/launch-plus/u1-l5/", "t": "Launch Plus · Unit 1 Lesson 5 · About Me", "d": "About Me", "m": "", "g": "More: Launch Plus (ELD 101)", "o": 124},
 {"p": "/readings/launch-plus/u1-l6/", "t": "Launch Plus · Unit 1 Lesson 6 · School Supplies", "d": "School supplies, plurals (-s, -es, -ies), Could I borrow one?, I need ___ to ___", "m": "", "g": "More: Launch Plus (ELD 101)", "o": 124.5},
+{"p": "/readings/launch-plus/u1-l7/", "t": "Launch Plus · Unit 1 Lesson 7 · Class Acts", "d": "Action words (learn, study, practice, solve…), he plays / I play, What do you do at school?, Don’t be afraid to ask for help", "m": "", "g": "More: Launch Plus (ELD 101)", "o": 124.6},
 {"p": "/readings/launch-plus/weekend/", "t": "What did you do this weekend?", "d": "What did you do this weekend?", "m": "", "g": "More: Launch Plus (ELD 101)", "o": 125},
 {"p": "/readings/launch-plus/weekend/game.html", "t": "Last Weekend: Word Game", "d": "2–5 players type answers in 4 rounds: what is happening, use it in a sentence, past tense, past tense in a sentence.", "m": "", "g": "More: Launch Plus (ELD 101)", "o": 128},
 {"p": "/readings/launch-plus/weekend/board.html", "t": "Last Weekend: Board Game (old version)", "d": "The saved board-game version: roll, land, say it in the past.", "m": "", "g": "More: Launch Plus (ELD 101)", "o": 129}
