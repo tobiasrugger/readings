@@ -116,6 +116,20 @@ body.teacher{--tcols:150px}
 .what .t{font-weight:700;line-height:1.35}
 .what .meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
 .book{display:inline-flex;gap:4px;align-items:center;border:2px dashed var(--ink);border-radius:6px;padding:0 7px;font-size:.78rem;font-weight:700}
+.bl{display:inline-flex;align-items:center;gap:3px;border:2px solid var(--c101);color:var(--c101);background:var(--c101s);border-radius:6px;padding:0 6px;font-size:.76rem;font-weight:700;cursor:pointer;white-space:nowrap}
+.bl:hover{filter:brightness(1.08)}
+#blsel{padding:8px 10px;border:2px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit;font-weight:700;max-width:100%}
+table.bf{border-collapse:separate;border-spacing:3px;width:100%;font-size:.82rem}
+table.bf th{font-size:.72rem;color:var(--muted);font-weight:700;text-align:center;white-space:nowrap;padding:2px 3px}
+table.bf th.ln{text-align:left}
+table.bf td.ln{white-space:nowrap;font-weight:700;padding-right:8px}
+table.bf td.ln small{display:block;font-weight:400;color:var(--muted);font-size:.72rem}
+table.bf td.c{min-width:34px;height:34px;text-align:center;border:2px solid var(--rule);border-radius:6px;font-weight:700;cursor:pointer;color:var(--ink)}
+table.bf td.c.z{cursor:default;color:var(--faint)}
+table.bf td.c.now{outline:2px solid var(--today);outline-offset:1px}
+table.bf td.sum{white-space:nowrap;font-size:.76rem;color:var(--muted);padding-left:8px}
+.bfkey{display:flex;gap:14px;flex-wrap:wrap;padding:10px 16px;border-top:1px solid var(--rule);font-size:.85rem;color:var(--muted)}
+.bfkey b{color:var(--ink)}
 .links{display:flex;flex-wrap:wrap;gap:5px;min-width:0}
 .lk{display:inline-flex;align-items:center;gap:4px;max-width:100%;border:2px solid var(--line);border-radius:8px;padding:2px 8px;font-size:.84rem;text-decoration:none;background:var(--card);overflow-wrap:anywhere}
 .lk:hover{background:var(--accent-s)}
@@ -199,7 +213,7 @@ ol.flow li{margin:4px 0;max-width:90ch}
   .lk{border:1px solid #666;font-size:8.5pt;padding:0 4px}
   .lk::after{content:""}
   .monthh{break-after:avoid;font-size:15pt}
-  #scope,#august,#flow,#doors{break-before:page}
+  #scope,#bookflow,#august,#flow,#doors{break-before:page}
   .row.kclass{background:none;border-left:4px solid #000}
   a{text-decoration:none}
 }
@@ -219,6 +233,7 @@ ol.flow li{margin:4px 0;max-width:90ch}
     </div>
     <button class="tbtn" id="theme" title="Light or dark">◐</button>
     
+    <button class="tbtn" id="csv" title="Download every row as a spreadsheet file">CSV</button>
     <button class="tbtn" id="print">Print</button>
   </div>
 </header>
@@ -237,15 +252,17 @@ ol.flow li{margin:4px 0;max-width:90ch}
     <div class="printhead"><h1 style="font-size:16pt">Galileo ELD — the year so far</h1><div id="printsub"></div></div>
     <div id="err" class="hide"></div>
     <nav class="nav" aria-label="Sections">
-      <a href="#weeks">Week by week</a><a href="#scope">Scope &amp; sequence</a><a href="#august">August plan</a><a href="#flow">Workflow</a><a href="#doors">Teacher front doors</a>
+      <a href="#weeks">Week by week</a><a href="#scope">Scope &amp; sequence</a><a href="#bookflow">Book flow</a><a href="#august">August plan</a><a href="#flow">Workflow</a><a href="#doors">Teacher front doors</a>
     </nav>
     <div class="bar">
       <input id="q" type="search" placeholder="Search a story, a lesson, a Do Now…" autocomplete="off">
       <div class="seg" role="group" aria-label="Kind"><button data-k="" class="on">All</button><button data-k="class">In class</button><button data-k="site">On the site</button></div>
+      <select id="blsel" aria-label="Book lesson"></select>
       <div class="strands" id="strands"></div>
     </div>
     <section id="weeks"></section>
     <section id="scope"></section>
+    <section id="bookflow"></section>
     <section id="august"></section>
     <section id="flow"></section>
     <section id="doors"></section>
@@ -267,7 +284,7 @@ var TEACHER = MODE==='teacher';
 var Y=window.YEAR, ROWS=Y.rows;
 var SITE='https://tobiasrugger.github.io/readings/';
 var STRANDS=[['words','Words'],['grammar','Grammar'],['reading','Reading'],['writing','Writing'],['speaking','Speaking'],['assessment','Assessment'],['tools','Tools & data']];
-var COURSE='both', KIND='', Q='', OFF={}, SHELF={}, COUNTS=null, COUNTS_FAILED=false;
+var BL=0, COURSE='both', KIND='', Q='', OFF={}, SHELF={}, COUNTS=null, COUNTS_FAILED=false;
 var TEACHER_RE=/\/readings\/(dashboards|gradebook|assign|groups|atlas|roadmap|desk|skills|checks|shelves|teacher|reports|audit)\//;
 var DEFAULT_SHELF={'/readings/launch-plus/weekend/board.html':'retired','/readings/landlady-easy/':'retired','/readings/landlady-hard/':'retired'};
 var SHELF_EMO={lab:'🧪 Lab',trying:'🔧 Trying',ready:'✅ Ready',retired:'📦 Retired'};
@@ -347,6 +364,7 @@ function show(r){
   if(COURSE!=='both' && r.course!==COURSE && r.course!=='both') return false;
   if(KIND && r.kind!==KIND && !(KIND==='site'&&r.kind==='pre')) return false;
   if(OFF[r.strand]) return false;
+  if(BL && (r.bl||[]).indexOf(BL)<0) return false;
   if(Q){ var hay=(r.title+' '+r.label+' '+r.book+' '+r.strand+' '+r.digital.concat(r.paper).map(function(l){return l[0]+' '+l[1];}).join(' ')).toLowerCase();
     if(!Q.split(/\s+/).every(function(w){return hay.indexOf(w)>-1;})) return false; }
   return true;
@@ -374,7 +392,7 @@ function rowHtml(r){
   var h='<div class="row k'+r.kind+'" data-id="'+r.id+'">'+thumbHtml(r)+
     '<div class="date">'+esc(r.label)+'<span class="k">'+kindTxt+'</span></div>'+
     '<div class="cp"><span class="cpill c'+r.course+'">'+(r.course==='both'?'Both':r.course)+'</span></div>'+
-    '<div class="what"><div class="t">'+esc(r.title)+'</div><div class="meta"><span class="chip" style="--sc:var(--'+r.strand+')">'+strandName(r.strand)+'</span>'+(r.book?'<span class="book">📖 '+esc(r.book)+'</span>':'')+'</div></div>'+
+    '<div class="what"><div class="t">'+esc(r.title)+'</div><div class="meta"><span class="chip" style="--sc:var(--'+r.strand+')">'+strandName(r.strand)+'</span>'+(r.book?'<span class="book">📖 '+esc(r.book)+'</span>':'')+(r.bl||[]).map(function(n){var b=bookOf(n);return '<button class="bl" data-bl="'+n+'" title="Book Lesson '+n+(b?': '+esc(b.t)+', pp. '+b.p:'')+'">📗 L'+n+(b?' '+esc(b.t):'')+'</button>';}).join('')+'</div></div>'+
     '<div class="links dig">'+dig+'</div><div class="links pap">'+pap+'</div>';
   if(TEACHER){
     var sites=r.digital.filter(function(l){return isSite(l[1]) && !TEACHER_RE.test(l[1]) && !/\/(group\/maker\.html|landlady\/test\/preview\.html)/.test(l[1]);});
@@ -409,7 +427,7 @@ function renderWeeks(){
     var rs=vis.filter(function(r){return r.week===w;}).sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:(a.kind===b.kind?0:(a.kind==='class'?-1:1));});
     var end=addDays(w,6), cls=rs.filter(function(r){return r.kind==='class';}).length, st=rs.length-cls;
     h+='<div class="box" id="w-'+w+'"><div class="boxh"><span class="when">Week of '+nice(w)+'–'+(parse(end).getUTCMonth()===parse(w).getUTCMonth()?parse(end).getUTCDate():nice(end))+'</span><h3>'+esc(WEEKTITLE[w]||'')+'</h3><span class="n">'+cls+' in class · '+st+' on the site</span></div>';
-    if(!rs.length) h+='<div class="empty">'+(Q||KIND||COURSE!=='both'||Object.keys(OFF).some(function(k){return OFF[k];})?'Nothing here matches the filters.':'Nothing logged for this week yet.')+'</div>';
+    if(!rs.length) h+='<div class="empty">'+(Q||KIND||COURSE!=='both'||Object.keys(OFF).some(function(k){return OFF[k];})||BL?'Nothing here matches the filters.':'Nothing logged for this week yet.')+'</div>';
     else {
       h+='<div class="rows">'+headHtml();
       var placed=false;
@@ -460,7 +478,41 @@ function renderScope(){
     Y.doors.map(function(d){return '<tr><td>'+esc(d[0])+'</td><td>'+esc(d[1])+'</td><td><a href="'+d[2]+'" target="_blank" rel="noopener" data-pv="'+d[2]+'" data-pvt="'+esc(d[0])+'">'+d[2]+'</a></td></tr>';}).join('')+'</tbody></table></div></div>';
   $('foot').innerHTML='Built from the Claude Doc <a href="'+Y.source[1]+'" target="_blank" rel="noopener">'+esc(Y.source[0])+'</a>. Dates are when a page went live, not when you taught it. '+(TEACHER?'Share a copy without student numbers: <a href="'+SITE+'year/share.html">'+SITE+'year/share.html</a>':'');
 }
-function renderAll(){ renderRibbon(); renderStrands(); renderWeeks(); renderScope();
+/* ---------- book flow (T-476): which book lesson was touched which week ---------- */
+function bookOf(n){ for(var i=0;i<(Y.book||[]).length;i++) if(Y.book[i].l===n) return Y.book[i]; return null; }
+function renderBlSel(){
+  var h='<option value="0">📗 All book lessons</option>'+(Y.book||[]).map(function(b){return '<option value="'+b.l+'"'+(BL===b.l?' selected':'')+'>📗 L'+b.l+' '+esc(b.t)+'</option>';}).join('');
+  $('blsel').innerHTML=h; $('blsel').value=String(BL);
+}
+function furthest(re){ var m=0; ROWS.forEach(function(r){ if(r.digital.some(function(l){return re.test(l[1]);})) (r.bl||[]).forEach(function(n){ if(n>m) m=n; }); }); return m; }
+function renderBookFlow(){
+  var el=$('bookflow'); if(!el) return;
+  if(COURSE==='103'){ el.innerHTML='<h2 class="monthh">Book flow <small>book lessons are ELD 101 only — switch to ELD 101 or Both</small></h2>'; return; }
+  var rows=ROWS.filter(function(r){ return (r.bl||[]).length && (!KIND||r.kind===KIND) && !OFF[r.strand]; });
+  var max=1, grid={}, first={}, last={}, tot={};
+  rows.forEach(function(r){ r.bl.forEach(function(n){ var k=n+'|'+r.week; (grid[k]=grid[k]||[]).push(r); if(grid[k].length>max) max=grid[k].length;
+    if(!first[n]||r.week<first[n]) first[n]=r.week; if(!last[n]||r.week>last[n]) last[n]=r.week; tot[n]=(tot[n]||0)+1; }); });
+  var h='<h2 class="monthh">Book flow <small>each row is a book lesson; each square is a week; the number is how many things that week spiral that lesson (Launch Plus, Story Reel, Do Nows, Story Checks, word sets). Tap a square to see them.</small></h2><div class="box"><div class="scroll pad"><table class="bf"><thead><tr><th class="ln">Book lesson</th>'+
+    WEEKS.map(function(w){return '<th'+(w===TODAYMON?' style="color:var(--today)"':'')+'>'+nice(w)+'</th>';}).join('')+'<th class="ln">First · last · total</th></tr></thead><tbody>';
+  (Y.book||[]).forEach(function(b){
+    h+='<tr><td class="ln">L'+b.l+' '+esc(b.t)+'<small>pp. '+b.p+(b.lp?' · '+b.lp:' · no Launch Plus yet')+'</small></td>';
+    WEEKS.forEach(function(w){ var list=grid[b.l+'|'+w]||[], n=list.length, a=n?(0.18+0.72*n/max):0;
+      h+='<td class="c'+(n?'':' z')+(w===TODAYMON?' now':'')+'"'+(n?' data-bfl="'+b.l+'" data-bfw="'+w+'" title="'+esc(list.map(function(r){return r.label+' · '+r.title;}).join('\n'))+'" style="background:color-mix(in srgb, var(--c101) '+Math.round(a*100)+'%, var(--card));'+(a>0.55?'color:#fff':'')+'"':'')+'>'+(n||'·')+'</td>'; });
+    h+='<td class="sum">'+(tot[b.l]?nice(first[b.l])+' · '+nice(last[b.l])+' · '+tot[b.l]:'not yet')+'</td></tr>';
+  });
+  var lp=furthest(/launch-plus\/u1-l/), rl=furthest(/reel(-v2)?\/ep\d/);
+  h+='</tbody></table></div><div class="bfkey"><span>Launch Plus (book order) has reached <b>L'+lp+(bookOf(lp)?' '+esc(bookOf(lp).t):'')+'</b></span><span>Story Reel has reached <b>L'+rl+(bookOf(rl)?' '+esc(bookOf(rl).t):'')+'</b></span><span>Gap: <b>'+Math.max(0,rl-lp)+' lessons</b> — the reel previews what the book will teach.</span></div></div>';
+  el.innerHTML=h;
+}
+function csvDownload(){
+  var q=function(v){ v=String(v==null?'':v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
+  var lines=[['date','end','week','course','strand','kind','book_lessons','book_pages','title','digital','paper'].join(',')];
+  ROWS.filter(show).forEach(function(r){ lines.push([r.date,r.end||'',r.week,r.course,r.strand,r.kind,(r.bl||[]).map(function(n){return 'L'+n;}).join(' '),r.book,r.title,
+    r.digital.map(function(l){return l[1];}).join(' '),r.paper.map(function(l){return l[1];}).join(' ')].map(q).join(',')); });
+  var blob=new Blob(['﻿'+lines.join('\n')],{type:'text/csv'}), a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download='galileo-eld-year-'+TODAY+'.csv'; document.body.appendChild(a); a.click(); setTimeout(function(){URL.revokeObjectURL(a.href); a.remove();},500);
+}
+function renderAll(){ renderRibbon(); renderStrands(); renderBlSel(); renderWeeks(); renderScope(); renderBookFlow();
   $('sub').textContent='Galileo ELD · Aug 17 to '+nice(TODAY)+' · '+ROWS.filter(show).length+' things';
   $('printsub').textContent=(COURSE==='both'?'ELD 101 and ELD 103':'ELD '+COURSE)+' · printed '+nice(TODAY)+', 2026'; }
 
@@ -499,6 +551,8 @@ document.addEventListener('keydown',function(e){ if(e.key==='Escape'){PV.style.d
 document.addEventListener('click',function(e){
   var th=e.target.closest('.thumb[data-pv]'); if(th){ pvShow(th,e,true); return; }
   var wk=e.target.closest('.wk'); if(wk){ var t=$('w-'+wk.getAttribute('data-w')); if(t) t.scrollIntoView({behavior:'smooth',block:'start'}); return; }
+  var bt=e.target.closest('.bl[data-bl]'); if(bt){ BL=+bt.getAttribute('data-bl'); renderAll(); var w1=document.querySelector('#weeks .row'); if(w1) w1.scrollIntoView({behavior:'smooth',block:'center'}); return; }
+  var bc=e.target.closest('[data-bfl]'); if(bc){ BL=+bc.getAttribute('data-bfl'); renderAll(); var t=$('w-'+bc.getAttribute('data-bfw')); if(t) t.scrollIntoView({behavior:'smooth',block:'start'}); return; }
   var sb=e.target.closest('[data-s]'); if(sb){ var s=sb.getAttribute('data-s'); OFF[s]=!OFF[s]; renderAll(); return; }
   var pb=e.target.closest('[data-push]'); if(pb){ pushFor(pb); return; }
   if(!e.target.closest('.pushmenu')) document.querySelectorAll('.pushmenu').forEach(function(m){m.remove();});
@@ -524,6 +578,8 @@ document.querySelectorAll('.seg [data-k]').forEach(function(b){ b.onclick=functi
   document.querySelectorAll('.seg [data-k]').forEach(function(x){x.classList.toggle('on',x===b);}); renderAll(); }; });
 $('q').addEventListener('input',function(){ Q=this.value.trim().toLowerCase(); renderAll(); });
 $('print').onclick=function(){ window.print(); };
+$('csv').onclick=csvDownload;
+$('blsel').addEventListener('change',function(){ BL=+this.value; renderAll(); });
 $('theme').onclick=function(){ var d=document.documentElement, cur=d.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
   var nx=cur==='dark'?'light':'dark'; d.setAttribute('data-theme',nx); try{localStorage.setItem('year_theme',nx);}catch(e){} };
 try{ var th=localStorage.getItem('year_theme'); if(th) document.documentElement.setAttribute('data-theme',th);}catch(e){}

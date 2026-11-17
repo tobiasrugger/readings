@@ -10,14 +10,15 @@
  *   title   what happened / what landed     kind  'class' (in class, beside the site) | 'site' (landed on the site) | 'pre' (before August)
  *   digital [[label, url], …]  site pages + other web tools (Quill, YouTube, GitHub)
  *   paper   [[label, url], …]  Google Docs / Sheets / Slides / Drive — the paper side
- *   book    book pages, e.g. 'pp. 38–47'    shot  optional screenshot name in shots/ (default: from the first readings URL)
+ *   book    book pages, e.g. 'pp. 38–47'
+ *   bl      book lessons this row spirals (ELD 101 only), e.g. [7] or [10,11] — numbers from YEAR.book below (T-476)    shot  optional screenshot name in shots/ (default: from the first readings URL)
  */
 (function(){
 var R='https://tobiasrugger.github.io/readings/';
 var GD='https://docs.google.com/document/d/', GS='https://docs.google.com/spreadsheets/d/', GP='https://docs.google.com/presentation/d/';
 var QUILL='https://www.quill.org/assign/diagnostic';
-function r(date,label,course,strand,kind,title,digital,paper,book,end){
-  return {date:date,end:end||null,label:label,course:course,strand:strand,kind:kind,title:title,digital:digital||[],paper:paper||[],book:book||''};
+function r(date,label,course,strand,kind,title,digital,paper,book,end,bl){
+  return {date:date,end:end||null,label:label,course:course,strand:strand,kind:kind,title:title,digital:digital||[],paper:paper||[],book:book||'',bl:bl||[]};
 }
 var rows=[
 /* ---------- Before August: the spring starter kit ---------- */
@@ -169,7 +170,7 @@ r('2026-10-23','Oct 23–30','both','reading','class','Holidays + Monsters; Hall
 /* ---------- Week of Oct 26 ---------- */
 r('2026-10-26','Oct 26','both','tools','site','The Atlas (pw galileo2026)',[['atlas',R+'atlas/']]),
 r('2026-10-27','Oct 27','both','tools','site','Teacher\u2019s Desk (piles per period); Skill Map; Read-aloud Check (all pw galileo2026)',[['desk',R+'desk/dashboard.html'],['skills',R+'skills/dashboard.html'],['checks',R+'checks/dashboard.html']]),
-r('2026-10-27','Oct 27','101','assessment','site','Ep 2 Story Check; Teach Mr. Toby',[['reel-test/ep02',R+'reel-test/ep02/'],['teachme',R+'teachme/']]),
+r('2026-10-27','Oct 27','101','assessment','site','Ep 2 Story Check; Teach Mr. Toby (12-word sets for Launch Plus Lessons 1\u20135)',[['reel-test/ep02',R+'reel-test/ep02/'],['teachme',R+'teachme/']]),
 r('2026-10-28','Oct 28','both','tools','site','Load-before-save on 100+ pages (saveguard), robot save test of 166 pages, safety trigger on 85 tables, Quiz Mr. Toby (behind the scenes)'),
 
 /* ---------- Week of Nov 2 ---------- */
@@ -180,7 +181,46 @@ r('2026-11-02','Nov 2','101','words','site','Weekend Word Game (2–5 players, p
 r('2026-11-02','Nov 2','103','writing','site','Who Answers Whom? Homelessness (op-ed + letters)',[['voices/homelessness',R+'voices/homelessness/']]),
 r('2026-11-02','Nov 2','103','writing','site','Dear Lion advice letters (levels A/B/C)',[['advice',R+'advice/'],['advice/kitchen',R+'advice/kitchen/']]),
 r('2026-11-02','Nov 2','103','reading','site','News story sets (\u201cSmall Animals, Big Surprises\u201d) + Find It',[['news',R+'news/']]),
-r('2026-11-02','Nov 2','both','tools','site','Push catalog split per folder; Shelves (Lab / Trying / Ready) (pw galileo2026)',[['assign',R+'assign/'],['shelves',R+'shelves/']])
+r('2026-11-02','Nov 2','both','tools','site','Push catalog split per folder; Shelves (Lab / Trying / Ready) (pw galileo2026)',[['assign',R+'assign/'],['shelves',R+'shelves/']]),
+/* ---------- Nov 3 onward (T-476: added from git history + task archive, Nov 17) ---------- */
+r('2026-11-03','Nov 3','both','tools','site','Grades save while students work; teacher view of any student page (?view=teacher); username box with a fixed @s.sfusd.edu; tab icons; this Year calendar (pw galileo2026)',[['year',R+'year/'],['gradebook',R+'gradebook/']]),
+r('2026-11-04','Nov 4','101','grammar','site','Daily Basics levels A/B/C (school map on C), “Sentence or fragment? Why?”; spelling helper (spell long words in parts)',[['basics',R+'basics/'],['spell (teacher preview)',R+'spell/']]),
+r('2026-11-05','Nov 5','101','reading','site','Story Reel 3 “What Class Do We Have Now?” — subjects and the schedule, a “why did…?” question, Your Turn written to a character',[['reel-v2/ep03',R+'reel-v2/ep03/']],[],'',null,[10,11]),
+r('2026-11-05','Nov 5','101','speaking','site','Story Reel: 🎤 Read it to Mr. Toby (a line in your language) and 🎧 Listen again — no words',[['reel-v2',R+'reel-v2/']]),
+r('2026-11-05','Nov 5','both','tools','site','Health page (refused saves), practice log (minutes, 🔊 listens, translations), English - simple (all pw galileo2026)',[['health',R+'health/dashboard.html'],['practice',R+'practice/dashboard.html'],['simple',R+'simple/dashboard.html']]),
+r('2026-11-06','Nov 6','101','words','site','Practice the words you missed — opens after a word check with misses',[['missed',R+'missed/'],['vocab/pre',R+'vocab/pre/']]),
+r('2026-11-06','Nov 6','101','grammar','site','Daily Basics Stretch (8 harder items), paper sheets with paper scores, help sheet in 6 languages',[['basics/print',R+'basics/print/'],['basics/ref',R+'basics/ref/']]),
+r('2026-11-06','Nov 6','both','words','site','Vocab sets get levels A/B/C and four core steps (Words, Match, Choose, Listen and spell); story sets link back to the exact part',[['vocab',R+'vocab/'],['vocab/landlady-1',R+'vocab/landlady-1/']]),
+r('2026-11-06','Nov 6','103','reading','site','Landlady: 📖 Look back at the story beside the writing; 🌐 Pre-translate on all three story dashboards',[['landlady',R+'landlady/'],['telltale',R+'telltale/'],['monkeyspaw',R+'monkeyspaw/']]),
+r('2026-11-06','Nov 6','both','tools','site','My Page grade box (0–4.5) and Quill links from Google Classroom; dashboard list split per folder',[['student',R+'student/'],['dashboards',R+'dashboards/']]),
+r('2026-11-09','Nov 9','101','reading','site','Do Now for Story Reel 3 (warm-up before the episode)',[['donow/reel-03',R+'donow/reel-03/']],[],'',null,[10,11]),
+r('2026-11-09','Nov 9','101','grammar','site','Daily Basics Stretch plurals: one picture / two pictures, the voice says “one class, two classes”, the screen keeps the blank',[['basics',R+'basics/']],[],'',null,[7]),
+r('2026-11-09','Nov 9','both','tools','site','Who finished? — one page per assignment (pw galileo2026)',[['finished',R+'finished/dashboard.html']]),
+r('2026-11-12','Nov 12','101','reading','site','Story Reel 4 “What’s for Lunch Today?” — the cafeteria, the steps for lunch, First/Then/Next',[['reel-v2/ep04',R+'reel-v2/ep04/']],[],'',null,[12]),
+r('2026-11-12','Nov 12','101','reading','site','Story Reel 5 “Where Is Room 318?” — directions and reading a school map',[['reel-v2/ep05',R+'reel-v2/ep05/']],[],'',null,[13]),
+r('2026-11-12','Nov 12','101','reading','site','Do Nows for Story Reels 4 and 5',[['donow/reel-04',R+'donow/reel-04/'],['donow/reel-05',R+'donow/reel-05/']],[],'',null,[12,13]),
+r('2026-11-12','Nov 12','101','tools','site','Story Reel ↔ book map: which book lesson each episode spirals, with live counts (pw galileo2026)',[['reel-v2/bookmap',R+'reel-v2/bookmap/']]),
+r('2026-11-12','Nov 12','103','reading','site','The Tell-Tale Heart upgrade: Start here opener, highlight practice, foreshadowing, characters, perspective writing, the 1953 film + Venn; three gradebook columns and Mr. Toby’s ✓/✗ on writing for all three stories',[['telltale',R+'telltale/']]),
+r('2026-11-12','Nov 12','both','reading','site','News set “The Science of Happiness” with a set intro and Try it yourself links',[['news',R+'news/']]),
+r('2026-11-13','Nov 13','101','assessment','site','Story Checks 3 and 4 (practice + test)',[['reel-test/ep03',R+'reel-test/ep03/'],['reel-test/ep04',R+'reel-test/ep04/']],[],'',null,[10,11,12]),
+r('2026-11-13','Nov 13','103','reading','site','The Monkey’s Paw gets the full Tell-Tale kit (opener, highlight practice, foreshadowing, characters, perspective writing, film + Venn)',[['monkeyspaw',R+'monkeyspaw/']]),
+r('2026-11-13','Nov 13','both','tools','site','Student data (one page per student); Mr. Toby’s ✓/✗/note on Story Reel and Launch Plus writing (pw galileo2026)',[['studentdata',R+'studentdata/'],['desk',R+'desk/dashboard.html']]),
+r('2026-11-15','Nov 15','101','assessment','site','Story Check 5',[['reel-test/ep05',R+'reel-test/ep05/']],[],'',null,[13]),
+r('2026-11-15','Nov 15','101','writing','site','Story Reel “After the story”: folder tabs and four stations (Say it, Paragraph, Paraphrase, Grammar), must-do vs extra',[['reel-v2/ep05',R+'reel-v2/ep05/']]),
+r('2026-11-15','Nov 15','101','words','site','Taste Test: 18 food words, Candy Lab, sentence + paragraph, my-food photo',[['taste',R+'taste/']]),
+r('2026-11-15','Nov 15','101','writing','site','Thank You Card: eight thank-you words, Linh’s card, write your own',[['thanks',R+'thanks/']]),
+r('2026-11-15','Nov 15','103','reading','site','The Science of Gratitude rebuilt (score /33, 25 drawn pictures, 🔊 everywhere, next-step arrow)',[['gratitude',R+'gratitude/']]),
+r('2026-11-15','Nov 15','103','reading','site','Greater Good: Be a Good Friend to Yourself (self-compassion)',[['greater-good',R+'greater-good/']]),
+r('2026-11-15','Nov 15','both','tools','site','Simple English in every 🌐 Pre-translate box; broken addresses fix themselves (lion “page not found” → My Page)',[['news',R+'news/']]),
+r('2026-11-16','Nov 16','103','reading','site','Thank You, Ma’am (Langston Hughes): tough ✊ / kind ☀ marks, 10 picture words, three parts; Two Boys, Two Doors compares Roger and Billy. Direct link only',[['thank-you-maam',R+'thank-you-maam/'],['compare',R+'thank-you-maam/compare/']]),
+r('2026-11-16','Nov 16','both','tools','site','Teacher’s Desk “Give to some students”; My Page shows ✓ Done only at 90%',[['desk',R+'desk/dashboard.html'],['student',R+'student/']]),
+r('2026-11-17','Nov 17','101','reading','site','Launch Plus L6 School Supplies: Jun, Linh, Amira and Mateo borrow and find supplies; 8 picture words, plurals (-s / -es / -ies), 3 write steps, Say set',[['u1-l6',R+'launch-plus/u1-l6/']],[],'L6 pp. 78–89',null,[7]),
+r('2026-11-17','Nov 17','101','words','site','Teach Mr. Toby: 12-word set for Lesson 6 (calculator, folder, borrow, take notes…)',[['teachme u1-l6',R+'teachme/?set=u1-l6']],[],'',null,[7]),
+r('2026-11-17','Nov 17','101','assessment','site','Story Check 1 “The New Student”: describing people, is/has, both/but',[['reel-test/ep01',R+'reel-test/ep01/']],[],'',null,[1,6]),
+r('2026-11-17','Nov 17','101','reading','site','Do Nows for Story Reels 1 and 2 (describing words; school things and places)',[['donow/reel-01',R+'donow/reel-01/'],['donow/reel-02',R+'donow/reel-02/']],[],'',null,[1,6,7,9]),
+r('2026-11-17','Nov 17','103','reading','site','Mother to Son (Langston Hughes): 🔊 every line, staircase pictures, writing at three levels, joined to Thank You, Ma’am',[['thank-you-maam/poem',R+'thank-you-maam/poem/']]),
+r('2026-11-17','Nov 17','103','reading','site','The Tell-Tale Heart: old-book tabs, calm ☀ / crazy ✦ key with faces, After you read folds away until Part 3',[['telltale',R+'telltale/']]),
+r('2026-11-17','Nov 17','both','tools','site','Gradebook: pushed columns, ✓ In Synergy, auto-merge of duplicate sign-ins; every sign-in asks “Is this you?”, no “English only”, Chrome translate off, faster first 🔊 (pw galileo2026)',[['gradebook',R+'gradebook/'],['audit',R+'audit/']])
 ];
 
 /* Weeks: Monday of each school week, with the doc's own words for what the week was about. */
@@ -196,31 +236,34 @@ var weeks=[
  ['2026-10-12','Paragraphs, Extras, the 103 story set'],
  ['2026-10-19','Questions, My Page, one front door'],
  ['2026-10-26','The Atlas, Desk, skills, checks, saving safely'],
- ['2026-11-02','Testing The Landlady, new voices for ELD 103']
+ ['2026-11-02','Testing The Landlady, new ELD 103 voices, Story Reel 3'],
+ ['2026-11-09','Reels 4 and 5, Story Checks, the spooky trio grows up'],
+ ['2026-11-16','Langston Hughes, Lesson 6 School Supplies, every reel set complete']
 ];
 var months={
  '2026-08':'The year opened Aug 17 with writing assessments and Quill ELL diagnostics, then two identity projects: My Favorite Things posters in ELD 101 and the Where I\u2019m From poem in ELD 103.',
  '2026-09':'September\u2019s job was getting every unit onto one site and putting tracking on all of it (track.js went on every page Sept 15). Many units moved in on Sept 13\u201314 were written earlier and are listed by move-in date.',
  '2026-10':'October turned separate pages into a system: every page signs in the same way, saves to Supabase, scores 0\u20134, and shows up on the student\u2019s own page and your dashboards.',
- '2026-11':'Nov 2 was the busiest single day of the year: a full Landlady assessment kit plus three new ELD 103 formats.'
+ '2026-11':'November moved the book forward one lesson (Launch Plus Lesson 6 = book Lesson 7, School Supplies) while Story Reel ran ahead to book Lessons 10\u201313; by Nov 17 Episodes 1\u20135 each had their Do Now and Story Check. ELD 103 gave Tell-Tale and Monkey\u2019s Paw the full Landlady kit, then turned to Langston Hughes and the science of happiness.'
 };
 
 /* Scope & sequence by strand. Cells use [label](url) for links. */
 var scope={
  '101':[
   ['Sounds + letters','reading','[Phonics]('+R+'phonics/c-and-g/) six lessons','[Alphabet]('+R+'alphabet/), spell your name in [u1-l3]('+R+'launch-plus/u1-l3/)','\u2014'],
-  ['Words','words','Topic sets ([colors]('+R+'vocab/colors/), foods\u2026), [pre-test]('+R+'vocab/pretest-ll12/), [word checks]('+R+'vocab/pre/)','[Shades]('+R+'shades/), [Tricky Words]('+R+'exceptions/), [Teach Mr. Toby]('+R+'teachme/)','[Weekend Word Game]('+R+'launch-plus/weekend/game.html)'],
-  ['Grammar','grammar','[Verbs present/past]('+R+'verbs/present/), [grammar pool]('+R+'grammar/)','[Pronouns]('+R+'pronouns/), [Daily Basics]('+R+'basics/) (am/is/are, he/she/they, has/have), [verb drills]('+R+'verbs/drill/)','past tense in the Weekend game'],
-  ['Book lessons (Launch Plus)','reading','\u2014','[L1]('+R+'launch-plus/u1-l1/) \u2192 [L2]('+R+'launch-plus/u1-l2/) \u2192 [L3]('+R+'launch-plus/u1-l3/) \u2192 [L4]('+R+'launch-plus/u1-l4/) \u2192 [L5]('+R+'launch-plus/u1-l5/) + Extras','Unit 1 continues'],
-  ['Reading + stories','reading','[Arrival]('+R+'arrival/), [Fables]('+R+'fables/), [VETS]('+R+'easy-true/), [Reel Ep 1]('+R+'reel/ep01/)','[Reel Ep 2]('+R+'reel-v2/ep02/) + [Story Check]('+R+'reel-test/ep02/), [Brothers in Arms]('+R+'brothers-in-arms/), [Holidays]('+R+'holidays/)','\u2014'],
-  ['Writing','writing','[Favorites]('+R+'favorites/)','[Topic Sentences]('+R+'topic-sentence/), [Revise]('+R+'revise/), [WIT]('+R+'wit/), Write step in each lesson','\u2014'],
-  ['Speaking + listening','speaking','[Speaking interviews]('+R+'speaking/), [Describe a Classmate]('+R+'describe/)','[Say]('+R+'say/), [Find Someone Who]('+R+'launch-plus/find/), [Weekend]('+R+'launch-plus/weekend/)','\u2014']
+  ['Words','words','Topic sets ([colors]('+R+'vocab/colors/), foods\u2026), [pre-test]('+R+'vocab/pretest-ll12/), [word checks]('+R+'vocab/pre/)','[Shades]('+R+'shades/), [Tricky Words]('+R+'exceptions/), [Teach Mr. Toby]('+R+'teachme/)','[Missed words]('+R+'missed/), [Taste Test]('+R+'taste/), [Teach Mr. Toby L1\u2013L6]('+R+'teachme/?set=u1-l6'+'), [Weekend Word Game]('+R+'launch-plus/weekend/game.html)'],
+  ['Grammar','grammar','[Verbs present/past]('+R+'verbs/present/), [grammar pool]('+R+'grammar/)','[Pronouns]('+R+'pronouns/), [Daily Basics]('+R+'basics/) (am/is/are, he/she/they, has/have), [verb drills]('+R+'verbs/drill/)','Daily Basics levels A/B/C + [Stretch]('+R+'basics/print/) (plurals -s/-es/-ies), past tense in the Weekend game'],
+  ['Book lessons (Launch Plus)','reading','\u2014','[L1]('+R+'launch-plus/u1-l1/) \u2192 [L2]('+R+'launch-plus/u1-l2/) \u2192 [L3]('+R+'launch-plus/u1-l3/) \u2192 [L4]('+R+'launch-plus/u1-l4/) \u2192 [L5]('+R+'launch-plus/u1-l5/) + Extras','[L6 School Supplies]('+R+'launch-plus/u1-l6/) (book L7, pp. 78\u201389)'],
+  ['Reading + stories','reading','[Arrival]('+R+'arrival/), [Fables]('+R+'fables/), [VETS]('+R+'easy-true/), [Reel Ep 1]('+R+'reel/ep01/)','[Reel Ep 2]('+R+'reel-v2/ep02/) + [Story Check]('+R+'reel-test/ep02/), [Brothers in Arms]('+R+'brothers-in-arms/), [Holidays]('+R+'holidays/)','[Reel 3]('+R+'reel-v2/ep03/), [Reel 4]('+R+'reel-v2/ep04/), [Reel 5]('+R+'reel-v2/ep05/), each with a [Do Now]('+R+'donow/) and a [Story Check]('+R+'reel-test/ep05/)'],
+  ['Story Reel set (episode + Do Now + Story Check)','reading','[Ep 1]('+R+'reel/ep01/)','[Ep 2]('+R+'reel-v2/ep02/) + [Story Check 2]('+R+'reel-test/ep02/)','[Ep 3\u20135]('+R+'reel-v2/ep05/), Do Nows 1\u20135, Story Checks 1\u20135 \u2014 all five sets complete Nov 17'],
+  ['Writing','writing','[Favorites]('+R+'favorites/)','[Topic Sentences]('+R+'topic-sentence/), [Revise]('+R+'revise/), [WIT]('+R+'wit/), Write step in each lesson','Reel After the story stations (paragraph, paraphrase), [Thank You Card]('+R+'thanks/), Lesson 6 write steps'],
+  ['Speaking + listening','speaking','[Speaking interviews]('+R+'speaking/), [Describe a Classmate]('+R+'describe/)','[Say]('+R+'say/), [Find Someone Who]('+R+'launch-plus/find/), [Weekend]('+R+'launch-plus/weekend/)','\ud83c\udfa4 Read it to Mr. Toby + Say it station on the Reel, Taste Test \u201csay it\u201d']
  ],
  '103':[
-  ['Literature','reading','Moved in: [Romeo and Juliet]('+R+'romeo-juliet/), [Manzanar]('+R+'manzanar/), [Maus]('+R+'maus/), [Seedfolks]('+R+'seedfolks/); new [Landlady]('+R+'landlady/) + [Omelas]('+R+'omelas/)','Spooky trio: [Landlady]('+R+'landlady/) \u2192 [Tell-Tale Heart]('+R+'telltale/) \u2192 [Monkey\u2019s Paw]('+R+'monkeyspaw/), [Investigate]('+R+'landlady/investigate/)','[Landlady test]('+R+'landlady/test/), [Read it together]('+R+'landlady/table/)'],
-  ['Vocabulary','words','[Thank You Ma\u2019am words]('+R+'tyma-vocab/)','12-word sets per story ([landlady-1]('+R+'vocab/landlady-1/), [omelas-1]('+R+'vocab/omelas-1/), [telltale-1]('+R+'vocab/telltale-1/)), [False Friends]('+R+'false-friends/)','[Table Word Game]('+R+'wordgame/landlady/), [solo]('+R+'wordgame/landlady/solo/)'],
+  ['Literature','reading','Moved in: [Romeo and Juliet]('+R+'romeo-juliet/), [Manzanar]('+R+'manzanar/), [Maus]('+R+'maus/), [Seedfolks]('+R+'seedfolks/); new [Landlady]('+R+'landlady/) + [Omelas]('+R+'omelas/)','Spooky trio: [Landlady]('+R+'landlady/) \u2192 [Tell-Tale Heart]('+R+'telltale/) \u2192 [Monkey\u2019s Paw]('+R+'monkeyspaw/), [Investigate]('+R+'landlady/investigate/)','[Landlady test]('+R+'landlady/test/), [Read it together]('+R+'landlady/table/); full kit on [Tell-Tale]('+R+'telltale/) + [Monkey\u2019s Paw]('+R+'monkeyspaw/); [Thank You, Ma\u2019am]('+R+'thank-you-maam/) + [Mother to Son]('+R+'thank-you-maam/poem/)'],
+  ['Vocabulary','words','[Thank You Ma\u2019am words]('+R+'tyma-vocab/)','12-word sets per story ([landlady-1]('+R+'vocab/landlady-1/), [omelas-1]('+R+'vocab/omelas-1/), [telltale-1]('+R+'vocab/telltale-1/)), [False Friends]('+R+'false-friends/)','[Table Word Game]('+R+'wordgame/landlady/), [solo]('+R+'wordgame/landlady/solo/); vocab sets at levels A/B/C'],
   ['Writing','writing','[ELD 103 Ch 3]('+R+'eld103/), [R\u00e9sum\u00e9]('+R+'resume/)','[Unit 1 paragraphs]('+R+'eld103/unit1/), Writing Ladders ([Landlady]('+R+'write/landlady/), [Tell-Tale]('+R+'write/telltale/), [Monkey\u2019s Paw]('+R+'write/monkeyspaw/))','Letter to the editor in [voices]('+R+'voices/homelessness/), advice in [Dear Lion]('+R+'advice/)'],
-  ['Nonfiction + news','reading','[9/11]('+R+'sept11/), [Psychology]('+R+'psychology/), [This Week\u2019s Reading]('+R+'news/), [Four Agreements]('+R+'four-agreements/)','[Indigenous Peoples\u2019 Day]('+R+'indigenous/), [Creativity]('+R+'creativity/)','News story sets + Find It, [Who Answers Whom?]('+R+'voices/homelessness/)'],
+  ['Nonfiction + news','reading','[9/11]('+R+'sept11/), [Psychology]('+R+'psychology/), [This Week\u2019s Reading]('+R+'news/), [Four Agreements]('+R+'four-agreements/)','[Indigenous Peoples\u2019 Day]('+R+'indigenous/), [Creativity]('+R+'creativity/)','News sets (Small Animals; [Science of Happiness]('+R+'news/)), [Gratitude]('+R+'gratitude/), [Greater Good]('+R+'greater-good/), [Who Answers Whom?]('+R+'voices/homelessness/)'],
   ['Questions + talk','speaking','[Stand By Me]('+R+'stand-by-me/) agree/disagree','[Question Practice]('+R+'questions/), [Question Builder]('+R+'question-builder/)','Class wall votes in [Dear Lion]('+R+'advice/)']
  ],
  both:'[Fluency Tracker]('+R+'fluency/), [Do Nows]('+R+'donow/), [songs]('+R+'songs/), [Respect reflection]('+R+'eld101/respect/), and each student\u2019s [My Page]('+R+'student/).'
@@ -257,10 +300,28 @@ var doors=[
  ['Year calendar','This page \u2014 the year so far',R+'year/']
 ];
 
+/* book lessons for rows written before T-476 (matched by title start) */
+var BL_OLD=[
+ ['Language Launch Day 1',[4]],['Story Reel Episode 1',[1,6]],['Pronouns with Toolkit',[5]],
+ ['Launch Plus L1 People at School',[1,2,6]],['Alphabet; Indigenous',[3]],['Launch Plus L3 From A to Z',[3]],
+ ['Launch Plus L4 0 to 100',[4]],['Launch Plus L5',[5]],['Find Someone Who (mingle); Reel Ep 2',[7,9]],
+ ['Ep 2 Story Check',[3,7,9]],['Speaking: meet and greet',[2,3]],['Past-tense weekend',[7,8]]
+];
+rows.forEach(function(x){ if(x.bl.length) return; for(var i=0;i<BL_OLD.length;i++) if(x.title.indexOf(BL_OLD[i][0])===0){ x.bl=BL_OLD[i][1].slice(); break; } });
+
 /* fill in week (Monday) and a stable id */
 function monday(iso){var d=new Date(iso+'T12:00:00Z');var w=(d.getUTCDay()+6)%7;d.setUTCDate(d.getUTCDate()-w);return d.toISOString().slice(0,10);}
 rows.forEach(function(x,i){ x.week = x.kind==='pre' ? 'pre' : monday(x.date); x.id='r'+i; });
 
-window.YEAR={start:'2026-08-17',rows:rows,weeks:weeks,months:months,scope:scope,augustPlan:augustPlan,workflow:workflow,doors:doors,
+/* Language Launch Unit 1 lessons (same list as reel-v2/bookmap/). lp = the Launch Plus lesson built on it. */
+var book=[
+ {l:1,t:'Welcome to School',p:'6\u201315',lp:'LP L1'},{l:2,t:'Meet and Greet',p:'16\u201329',lp:'LP L2'},{l:3,t:'From A to Z',p:'30\u201337',lp:'LP L3'},
+ {l:4,t:'From 0 to 100',p:'38\u201347',lp:'LP L4'},{l:5,t:'About Me',p:'48\u201363',lp:'LP L5'},{l:6,t:'People at School',p:'64\u201377',lp:'LP L1'},
+ {l:7,t:'School Supplies',p:'78\u201389',lp:'LP L6'},{l:8,t:'Class Acts',p:'90\u2013105'},{l:9,t:'Places at School',p:'106\u2013117'},
+ {l:10,t:'School Subjects',p:'118\u2013131'},{l:11,t:'School Schedule',p:'132\u2013145'},{l:12,t:'In the Cafeteria',p:'146\u2013159'},
+ {l:13,t:'Getting Around School',p:'160\u2013171'},{l:14,t:'Project',p:'172\u2013183'}
+];
+
+window.YEAR={book:book,updated:'2026-11-17',start:'2026-08-17',rows:rows,weeks:weeks,months:months,scope:scope,augustPlan:augustPlan,workflow:workflow,doors:doors,
   source:['Galileo ELD \u2014 Year So Far (Claude Doc)','https://claude.ai/artifact/5MYycEAC1P9reDLBAtqd8K']};
 })();
