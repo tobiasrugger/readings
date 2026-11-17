@@ -249,6 +249,7 @@
   function startButton(box) {
     var bs = box.querySelectorAll('button, input[type=submit]'), best = null;
     for (var i = 0; i < bs.length; i++) {
+      if (bs[i].closest && bs[i].closest('.gal-wy')) continue;   /* T-458: "Is this you?" buttons are never Start */
       var t = (bs[i].textContent || bs[i].value || '');
       if (/start|sign|log ?in|enter|go|begin|continue|let.?s|empez|开始/i.test(t)) return bs[i];
       best = bs[i];
@@ -1360,6 +1361,131 @@
     }, true);
   }
 
+  /* ========== 9b. "Is this you?" for an email the class list doesn't know (T-458, Nov 17 2026) ==========
+     A student typed or autofilled the wrong email (xichen instead of xichen49), sign-in took it, and
+     the gradebook grew a second row Mr. Toby had to merge by hand every day. Now, in every student
+     sign-in box, once an email AND a period AND a name are in (or when Start is pressed):
+       - the username (GAL.key) is looked up in students and student_aliases; known -> nothing happens;
+       - unknown -> students rows in the chosen period whose name matches the typed name (lowercase,
+         no punctuation, any order, so "Xiaofeng Chen" = "Chen, Xiaofeng"):
+           exactly one -> a small box in the sign-in box: "Is this you? <roster email>" [✓ Yes, that's me]
+             [✗ No], translated, with 🔊. Yes puts the roster email in the email box and records
+             student_aliases (alias = typed, email = roster, both domains). No leaves it as typed;
+           none, or two or more -> a yellow line "Check your email — Mr. Toby doesn't have this one".
+       - Sign-in is never blocked and Start is never pressed for them (T-136/T-167). Once per email per
+         page load; a failed lookup shows nothing.
+     ⚠ T-430: this needs anon SELECT on students + student_aliases and anon INSERT on student_aliases.
+     A later RLS lockdown must keep those (or move this to a SECURITY DEFINER rpc). */
+  var WY_DONE = {};
+  function wyNorm(s) { return String(s || '').toLowerCase().replace(/[^a-zÀ-ɏЀ-ӿ؀-ۿ一-鿿\s]/g, ' ').split(/\s+/).filter(Boolean).sort().join(' '); }
+  function wyGet(path) {
+    return fetch(SUPA_URL + '/rest/v1/' + path, { headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY } })
+      .then(function (r) { if (!r.ok) throw new Error(path + ' ' + r.status); return r.json(); });
+  }
+  function wyBoth(u) { return encodeURIComponent('("' + u + '@sfusd.edu","' + u + '@s.sfusd.edu")'); }
+  function wyName(box) {
+    var els = box.querySelectorAll('input'), parts = [];
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i]; if (el.type === 'hidden' || el.type === 'password') continue;
+      if (fieldKind(el, box) === 'name' && String(el.value || '').trim()) parts.push(el.value);
+    }
+    return parts.join(' ');
+  }
+  function wyNote(box) {
+    var n = box.querySelector('.gal-wy');
+    if (!n) {
+      n = document.createElement('div'); n.className = 'gal-wy';
+      var f = pfFields(box), at = f.email && (f.email.closest('.gal-un') || f.email);
+      if (at && at.parentNode && box.contains(at)) at.parentNode.insertBefore(n, at.nextSibling); else box.appendChild(n);
+    }
+    return n;
+  }
+  function wyClear(box) { var n = box.querySelector('.gal-wy'); if (n) n.remove(); }
+  function wyLine(el, en) {
+    /* English (never touched by Chrome's own translate) + 🔊 + the student's language under it */
+    el.innerHTML = '<span class="gal-wy-en" translate="no"></span> <button type="button" class="gal-wy-say" aria-label="Listen">🔊</button><span class="gal-wy-tr" translate="no"></span>';
+    el.querySelector('.gal-wy-en').textContent = en;
+    el.querySelector('.gal-wy-say').addEventListener('click', function (e) { e.preventDefault(); speakEn(en.replace(/@s?\.?sfusd\.edu/g, '')); });
+    var want = listenLang(), out = el.querySelector('.gal-wy-tr');
+    if (want && want !== 'en') proxyTranslate(en.replace(/\S+@\S+/g, '').trim(), 'sentence', function (v) { if (v && listenLang() === want) { out.textContent = v; out.dir = 'auto'; } });
+  }
+  function wyAsk(box, typed, roster) {
+    var n = wyNote(box); n.className = 'gal-wy gal-wy-ask'; n.innerHTML = '';
+    var q = document.createElement('p'); n.appendChild(q);
+    wyLine(q, 'Is this you? ' + roster);
+    var row = document.createElement('div'); row.className = 'gal-wy-row';
+    row.innerHTML = '<button type="button" class="gal-wy-yes" translate="no">✓ Yes, that’s me</button><button type="button" class="gal-wy-no" translate="no">✗ No</button>';
+    n.appendChild(row);
+    row.querySelector('.gal-wy-yes').addEventListener('click', function (e) {
+      e.preventDefault();
+      var f = pfFields(box);
+      if (f.email) { f.email.value = roster; pfFire(f.email); }
+      WY_DONE[GAL.key(roster)] = 1;
+      var tu = GAL.key(typed), rows = ['@s.sfusd.edu', '@sfusd.edu'].map(function (d) { return { alias_email: tu + d, email: roster }; });
+      fetch(SUPA_URL + '/rest/v1/student_aliases', { method: 'POST', keepalive: true,
+        headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json', Prefer: 'return=minimal,resolution=ignore-duplicates' },
+        body: JSON.stringify(rows) }).catch(function () {});
+      n.className = 'gal-wy gal-wy-ok'; n.innerHTML = ''; var p = document.createElement('p'); n.appendChild(p);
+      wyLine(p, '✓ Thank you! Now press Start.');
+    });
+    row.querySelector('.gal-wy-no').addEventListener('click', function (e) { e.preventDefault(); wyClear(box); });
+  }
+  function wyWarn(box) {
+    var n = wyNote(box); n.className = 'gal-wy gal-wy-warn'; n.innerHTML = '';
+    var p = document.createElement('p'); n.appendChild(p);
+    wyLine(p, 'Check your email — Mr. Toby doesn’t have this one.');
+  }
+  function wyCheck(box) {
+    if (!pfStudentBox(box) || TV) return;
+    var f = pfFields(box); if (!f.email || !f.period) return;
+    var em = emailVal(f.email).toLowerCase(), u = GAL.key(em), per = String(f.period.value || '').replace(/[^0-9]/g, ''), nm = wyNorm(wyName(box));
+    if (!PF_EMAIL.test(em) || !per || !nm) return;
+    if (WY_DONE[u]) return; WY_DONE[u] = 1;
+    Promise.all([
+      wyGet('students?email=in.' + wyBoth(u) + '&select=email'),
+      wyGet('student_aliases?alias_email=in.' + wyBoth(u) + '&select=email')
+    ]).then(function (r) {
+      if ((r[0] && r[0].length) || (r[1] && r[1].length)) { wyClear(box); return; }        /* known: nothing to do */
+      return wyGet('students?select=email,name,first_name,last_name,period,kind').then(function (all) {
+        var hits = (all || []).filter(function (s) {
+          if (s.kind && s.kind !== 'student') return false;
+          if (String(s.period == null ? '' : s.period).replace(/[^0-9]/g, '') !== per) return false;
+          var names = [s.name, (s.first_name || '') + ' ' + (s.last_name || '')].map(wyNorm);
+          return names.indexOf(nm) >= 0;
+        });
+        var seen = {}; hits = hits.filter(function (s) { var k = GAL.key(s.email); if (!k || seen[k]) return false; seen[k] = 1; return true; });
+        if (hits.length === 1 && GAL.key(hits[0].email) !== u) wyAsk(box, em, String(hits[0].email).trim().toLowerCase());
+        else wyWarn(box);
+      });
+    }).catch(function () { delete WY_DONE[u]; });                                           /* offline: show nothing, try again later */
+  }
+  function wyBoot() {
+    var css = document.createElement('style');
+    css.textContent =
+      '.gal-wy{margin:8px 0;padding:8px 10px;border:2px solid #2b2233;border-radius:12px;font-weight:700;line-height:1.35;text-align:left}' +
+      '.gal-wy p{margin:0}.gal-wy-tr{display:block;font-weight:600;color:#5a4a6b;font-size:.92em}' +
+      '.gal-wy-ask{background:#eef7f1;border-color:#1f7a4d}.gal-wy-ok{background:#eef7f1;border-color:#1f7a4d;color:#1f5a3a}' +
+      '.gal-wy-warn{background:#fff6d6;border-color:#b8860b}' +
+      '.gal-wy-say{border:0;background:none;cursor:pointer;font-size:1.05em;padding:0 2px;width:auto!important}' +
+      '.gal-wy-row{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}' +
+      '.gal-wy-row button{width:auto!important;flex:0 0 auto;padding:6px 12px;border-radius:10px;border:2px solid #2b2233;font-weight:800;cursor:pointer;font-family:inherit;font-size:.95em}' +
+      '.gal-wy-yes{background:#1f7a4d;color:#fff}.gal-wy-no{background:#fff;color:#2b2233}';
+    document.head.appendChild(css);
+    function boxOf(t) { return t && t.closest && t.closest('[data-gal-std]'); }
+    var deb = null;
+    ['change', 'focusout'].forEach(function (ev) {
+      document.addEventListener(ev, function (e) {
+        var box = boxOf(e.target); if (!box) return;
+        clearTimeout(deb); deb = setTimeout(function () { wyCheck(box); }, 400);
+      }, true);
+    });
+    /* Start pressed: run the check too, but never hold sign-in for it */
+    window.addEventListener('click', function (e) {
+      var btn = e.target && e.target.closest && e.target.closest('button, input[type=submit]');
+      var box = boxOf(btn); if (box && startButton(box) === btn) wyCheck(box);
+    }, true);
+  }
+
 
   /* ================= T-245 TEACHER VIEW (Nov 3 2026) =================
      A student page opened with ?view=teacher&email=X shows X's own saved work, READ ONLY:
@@ -2304,6 +2430,7 @@
     listenBoot();
     myPageBoot();
     pfBoot();
+    wyBoot();   /* T-458 */
     tvBoot();
     try { updBoot(); } catch (e) {}                  /* T-272 */
     try { plBoot(); } catch (e) {}                   /* T-148 practice log */
