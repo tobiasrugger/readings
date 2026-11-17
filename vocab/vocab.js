@@ -1910,3 +1910,29 @@ setTimeout(checkTranslation, 4000);
   var ex = document.querySelectorAll('#p-search h2.pt, #p-cross h2.pt, #p-fix h2.pt, #p-cloze h2.pt');
   Array.prototype.forEach.call(ex, function(h){ h.insertAdjacentHTML('beforeend', ' <span style="font:800 .8rem Nunito,sans-serif;color:#7A5A05;border:1.5px solid #c8892a;border-radius:999px;padding:2px 8px;vertical-align:middle">Extra</span>'); });
 })();
+
+/* T-474 v2 (Nov 17, Toby chose "A + C"): the Extra practice box stays hidden while the student works
+   on the 4 steps, and appears once every word in Listen and spell has an answer.
+   It also shows when the student is on an extra screen, or arrives with ?tab=search|cross|fix|cloze
+   (the links on the story's Part screens open one extra directly). */
+(function(){
+  var gx = document.querySelector('nav.tabs .vgx'); if(!gx) return;
+  var lab = gx.querySelector('.vglab');
+  var XP = {search:'p-search', cross:'p-cross', fix:'p-fix', cloze:'p-cloze', match:'p-match', mc:'p-mc', spell:'p-spell', words:'p-words'};
+  function spellDone(){ return SET.words.every(function(w){ return String(state.spell[w.w] || '').trim() !== ''; }); }
+  function onExtra(){ var on = document.querySelector('section.pane.on'); return !!on && /^p-(search|cross|fix|cloze)$/.test(on.id); }
+  function upd(){
+    var done = spellDone();
+    gx.style.display = (done || onExtra()) ? '' : 'none';
+    if(lab) lab.textContent = done ? '⭐ You finished the 4 steps! Extra practice:' : '⭐ Extra practice';
+  }
+  window.galExtrasUpd = upd;
+  var _r = restore; restore = function(){ _r(); upd(); };
+  ['click','input','change'].forEach(function(t){ document.addEventListener(t, function(){ setTimeout(upd, 30); }, true); });
+  try{
+    var t = new URLSearchParams(location.search).get('tab');
+    var b = t && XP[t] && document.querySelector('nav.tabs button[data-pane="' + XP[t] + '"]');
+    if(b) b.click();
+  }catch(e){}
+  upd();
+})();
