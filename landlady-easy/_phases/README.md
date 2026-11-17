@@ -16,3 +16,4 @@ Same guide_key across phases, so answers carry forward.
 - **phase-14-before-t413-foreshadowing-lookback.html** — before T-413 (Nov 15): Foreshadowing gets "📖 Look back at the story", "Use this clue ➤" on signal marks in the panel, "Quote this ➤" for selected words, and green Find buttons under a1/a2 (filtered to ☀ or ✦); a3 placeholder now asks for the paragraph number. No data-qid changed; no score change.
 - phase-15-before-t416-back-button.html — before T-416 (Nov 15): browser Back button goes to the previous pill.
 - phase-16-before-t439-box-heights.html — before T-439 (Nov 16): answer boxes no longer squash when filled while hidden; no drag corner.
+- phase-17-before-t462-no-english-only.html — before T-462 (Nov 17): sign-in language list no longer offers "English only".

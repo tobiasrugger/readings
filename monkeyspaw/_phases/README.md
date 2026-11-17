@@ -10,3 +10,4 @@ Same guide_key across phases, so answers carry forward.
 - **phase-10-before-t407-popup-sound.html** — before T-407 (Nov 15): a 🔊 beside the word and beside its English meaning in the tap-a-word popup, and a 🔊 on every word in the side rail. Tapping 🔊 keeps the popup open. No content or data-qid changed.
 - phase-11-before-t416-back-button.html — before T-416 (Nov 15): browser Back button goes to the previous pill.
 - phase-12-before-t439-box-heights.html — before T-439 (Nov 16): answer boxes no longer squash when filled while hidden; no drag corner.
+- phase-13-before-t462-no-english-only.html — before T-462 (Nov 17): sign-in language list no longer offers "English only".
