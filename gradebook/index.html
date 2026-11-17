@@ -34,6 +34,7 @@ thead th{position:sticky;top:0;background:var(--pine-soft);z-index:3;vertical-al
 thead th.act{cursor:pointer}
 thead th.act:hover{background:#d7e5dd}
 thead th small{display:block;color:var(--muted);font-weight:400}
+thead th .pushtag{display:inline-block;margin-top:3px;padding:0 5px;border:1px solid var(--pine);border-radius:6px;font-size:.62rem;font-weight:700;color:var(--pine);background:#fff}
 tbody th{position:sticky;left:0;background:#fff;z-index:2;text-align:left;font-weight:700}
 tbody th.p{left:0}
 th.corner{z-index:4;left:0}
@@ -293,6 +294,7 @@ function getAll(path){ // page through PostgREST
 }
 
 var students={}, cells=[], activities={}, view=[];
+var PUSHES=[];   // T-453: whole-period pushes (class_assignments), so a pushed column shows before anyone has done it
 
 function gate(){
   if(sessionStorage.getItem('gb_ok')==='1'){open();return;}
@@ -310,8 +312,10 @@ function load(){
     getAll('students?select=email,first_name,last_name,period,roster_order,course,kind'),
     getAll('gradebook_best?select=email,slug,unit,title,course,score,max_score,pct,attempts,last_at,completion'),
     getAll('activities?select=slug,title,unit,course,level,sort_order,url'),
-    getAll('student_aliases?select=alias_email,email').catch(function(){return [];})
+    getAll('student_aliases?select=alias_email,email').catch(function(){return [];}),
+    getAll('class_assignments?select=area,period,href,title,created_at,expires_at&area=in.(site,vocab)&period=neq.extra').catch(function(){return [];})
   ]).then(function(r){
+    PUSHES=pushCols(r[4]||[]);
     /* aliases first: every later canon() call needs them */
     ALIAS={};
     (r[3]||[]).forEach(function(a){
@@ -686,6 +690,46 @@ function doMerge(keep,drop){
     .catch(function(e){ toast('Merge failed \u2014 has the T-227 SQL been run? ('+String(e.message||e).slice(0,60)+')'); });
 }
 
+/* ---------- T-453: a column for every whole-period push ----------
+   A push (class_assignments, area site or vocab, period 1-7 or 'all') makes a
+   column even before anyone has done it, so a missing assignment can't hide.
+   period 'extra' (one student's work from the Desk) never makes a column.
+   The slug is what track.js logs for that page:
+     /readings/x/y/index.html -> x/y   (vocab pushes are relative to /readings/vocab/)
+     reel-test/epNN  -> reel-test/epNN-practice, or -test with ?mode=test
+     basics (bare)   -> basics/<push day>    (Daily Basics logs one slug a day)
+     teachme ?set=X  -> teachme/X            news ?a=X -> news/X
+   Bare news/, fluency/ and group/ pushes make no column: students pick their own
+   article / passage / deck there, so no single column could ever fill. */
+function pacificDay(iso){
+  try{ return new Date(iso).toLocaleDateString('en-CA',{timeZone:'America/Los_Angeles'}); }
+  catch(e){ return String(iso||'').slice(0,10); }
+}
+function pushSlug(row){
+  var h=String(row.href||'').trim(); if(!h) return '';
+  if(row.area==='vocab' && !/^(https?:)?\//.test(h)) h='/readings/vocab/'+h.replace(/^\.\//,'');
+  var q=(h.split('#')[0].split('?')[1]||''), qs=new URLSearchParams(q);
+  var p=h.split('#')[0].split('?')[0].replace(/^https?:\/\/[^/]+/,'').replace(/^\/?readings\//,'')
+         .replace(/\/index\.html?$/,'').replace(/\.html?$/,'').replace(/\/+$/,'');
+  if(!p) return '';
+  if(/^reel-test\/ep\d+$/.test(p)) return p+(qs.get('mode')==='test'?'-test':'-practice');
+  if(p==='basics') return 'basics/'+pacificDay(row.created_at);
+  if(p==='teachme'){ var st=qs.get('set'); return st&&st!=='u1'?'teachme/'+st:'teachme'; }
+  if(p==='news'){ var a=qs.get('a'); return a?'news/'+a:''; }
+  if(p==='fluency'||p==='group') return '';
+  return p;
+}
+function pushCols(rows){
+  var out=[];
+  rows.forEach(function(r){
+    var per=String(r.period==null?'':r.period).trim().toLowerCase();
+    if(per!=='all' && !/^[1-7]$/.test(per)) return;
+    var slug=pushSlug(r); if(!slug) return;
+    out.push({slug:slug, period:per, title:r.title||'', at:r.created_at||''});
+  });
+  return out;
+}
+
 function render(){
   if(EDIT) return renderEdit();
   var per=document.getElementById('period').value, course=document.getElementById('course').value, unit=document.getElementById('unit').value;
@@ -710,7 +754,19 @@ function render(){
   });
   var byCell={}, colSet={};
   use.forEach(function(c){byCell[c.email+'|'+c.slug]=c; if(rowSet[c.email])colSet[c.slug]=1;});
-  var cols=Object.keys(hide?colSet:use.reduce(function(m,c){m[c.slug]=1;return m;},{}));
+  var colMap=hide?colSet:use.reduce(function(m,c){m[c.slug]=1;return m;},{});
+  /* T-453: pushed to a period in view (or to all), inside the Since window -> always a column */
+  var pushed={};
+  PUSHES.forEach(function(x){
+    if(per==='none' ? x.period!=='all' : (per && x.period!=='all' && x.period!==per)) return;
+    if(cutoff && x.at && Date.parse(x.at)<cutoff) return;
+    var a=activities[x.slug]||{};
+    if(course&&(a.course||'both')!==course) return;
+    if(unit&&(a.unit||'(untagged)')!==unit) return;
+    pushed[x.slug]=x.title||pushed[x.slug]||'';
+  });
+  Object.keys(pushed).forEach(function(k){ colMap[k]=1; });
+  var cols=Object.keys(colMap);
   cols.sort(function(x,y){var ax=activities[x]||{},ay=activities[y]||{};var u=(ax.unit||x).localeCompare(ay.unit||y);if(u)return u;return (ax.sort_order||600)-(ay.sort_order||600)||x.localeCompare(y);});
   buildReqMax();
   view={rows:rows,cols:cols,byCell:byCell};
@@ -718,7 +774,8 @@ function render(){
   var h='<thead><tr><th class="corner">Student</th><th class="corner" style="left:auto">Per.</th><th>Avg</th>';
   cols.forEach(function(s){var a=activities[s]||{}, x=isExtras(s);
     h+='<th class="act'+(x?' xcol':'')+'" data-slug="'+esc(s)+'" title="'+esc(x?(s+' — optional work; not part of the average'):(s+' — click to copy for Synergy'))+'">'+
-       esc(a.title||s)+'<small>'+esc(a.unit||'')+'</small>'+(x?'<em>optional \u00b7 not in the average</em>':'')+'</th>';});
+       esc(a.title||pushed[s]||s)+'<small>'+esc(a.unit||'')+'</small>'+(x?'<em>optional \u00b7 not in the average</em>':'')+
+       (s in pushed?'<span class="pushtag" title="Pushed to this period from the Push page">pushed</span>':'')+'</th>';});
   h+='</tr></thead><tbody>';
   var done=0,total=0;
   rows.forEach(function(s){
