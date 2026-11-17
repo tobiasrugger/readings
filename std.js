@@ -617,6 +617,30 @@
       clone: function () { return fakeRes(equiv); }
     };
   }
+  /* ================= T-488 ONE-WORD LABELS (Nov 17 2026) =================
+     A tab or button label sent alone ("Watch") reaches the translator with no context, and a
+     capitalised lone word comes back as the NOUN: "Watch" -> "Reloj" (a wristwatch). That answer
+     was then cached in song_tr (slug dir) and shown on every page in every language.
+     Labels here are ACTIONS, so they get a fixed verb, checked by hand, before the cache or the
+     translator is asked. Only requests with no meaning/definition (directions, tabs, buttons) —
+     a vocabulary word (mode=word, or sent with its definition) still goes to the translator, so "watch" the
+     noun in a word list is untouched. Add a label here when another one comes back as a noun. */
+  var LABEL_FIX = {
+    watch:  { es: 'Mirar', 'zh-CN': '观看', yue: '睇', ar: 'شاهِد', vi: 'Xem', th: 'ดู', ne: 'हेर्नुहोस्',
+              ary: 'تفرّج', ru: 'Смотреть', ur: 'دیکھیں', tl: 'Panoorin', fr: 'Regarder', ko: '보기',
+              hi: 'देखें', so: 'Daawo' },
+    record: { es: 'Grabar', 'zh-CN': '录音', yue: '錄音', ar: 'سجِّل', vi: 'Ghi âm', th: 'อัดเสียง',
+              ne: 'रेकर्ड गर्नुहोस्', ary: 'سجّل', ru: 'Записать', ur: 'ریکارڈ کریں', tl: 'I-record',
+              fr: 'Enregistrer', ko: '녹음하기', hi: 'रिकॉर्ड करें', so: 'Duub' }
+  };
+  function labelFix(text, lg) {
+    var k = String(text || '').replace(/^[\s\u{1F300}-\u{1FAFF}☀-➿️]+|[\s.!:]+$/gu, '').toLowerCase();
+    var row = LABEL_FIX[k]; if (!row) return '';
+    var c = codeOf(lg, lg) || lg;
+    return row[c] || '';
+  }
+  window.GAL_LABEL_FIX = labelFix;
+
   function wrapFetch() {
     if (!window.fetch || window.__GAL_TRWRAP__) return;
     window.__GAL_TRWRAP__ = true;
@@ -628,6 +652,7 @@
       url.replace(/[?&]([^=&]+)=([^&]*)/g, function (_, k, v) { q[k] = decodeURIComponent(v.replace(/\+/g, ' ')); return ''; });
       var src = q.idiom || '', lg = q.lang || '';
       if (!src || !lg) return real.apply(this, arguments);
+      if (!q.meaning && q.mode !== 'word') { var fx = labelFix(src, lg); if (fx) return Promise.resolve(fakeRes(fx)); }   /* T-488 */
       var slug = q.meaning ? PAGE_SLUG : 'dir';
       var hit = tcache[ckey(slug, src, lg)] || tcache[ckey('dir', src, lg)] || tcache[ckey(PAGE_SLUG, src, lg)];
       if (hit) return Promise.resolve(fakeRes(hit));

@@ -653,6 +653,8 @@
      want = 'equiv' for a single word (context steers it: "boy" -> "chico", not "Boy!"),
      want = 'line' for a whole sentence. cb('') when nothing came back. */
   function translate(text, lang, cb, context, want) {
+    /* T-488: a one-word action label ("Watch") gets std.js's fixed verb, never "Reloj" */
+    if (!context && want !== 'equiv' && window.GAL_LABEL_FIX) { var fx = window.GAL_LABEL_FIX(text, lang); if (fx) { cb(fx, false); return; } }
     var key = lang + '|' + text + '|' + (context || '') + '|' + (want || '');
     if (tcache[key]) { cb(tcache[key]); return; }
     /* mode=word -> plain one-to-one dictionary translation; mode=sentence -> plain translation.
