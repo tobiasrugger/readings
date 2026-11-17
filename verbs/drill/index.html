@@ -678,8 +678,11 @@ function boot(){
   if(S.set && CONJ.set(S.set)) render(); else renderSetPicker();
 }
 document.addEventListener('DOMContentLoaded',function(){
-  var opts=LANGS.map(function(l){return '<option value="'+l[0]+'">'+esc(l[1])+(l[0]!=='none'&&l[1]!==l[0]?' ('+l[0]+')':'')+'</option>'}).join('');
-  $('inLang').innerHTML=opts; $('langSel').innerHTML=opts;
+  var optFor=function(list){ return list.map(function(l){ return '<option value="'+l[0]+'">'+esc(l[1])+(l[0]!=='none'&&l[1]!==l[0]?' ('+l[0]+')':'')+'</option>'; }).join(''); };
+  /* the sign-in box never offers English only; the toolbar picker still does */
+  $('inLang').innerHTML = '<option value="" disabled selected>Choose your language\u2026</option>'+
+    optFor(LANGS.filter(function(l){ return l[0]!=='none'; }));
+  $('langSel').innerHTML = optFor(LANGS);
   var qs=new URLSearchParams(location.search), qset=qs.get('set');
   var FROM={'u1-l1':'People at School','u1-l2':'Introductions','u1-l3':'From A to Z','u1-l4':'0 to 100'};
   var from=qs.get('from');
@@ -693,11 +696,11 @@ document.addEventListener('DOMContentLoaded',function(){
   try{
     var c=JSON.parse(localStorage.getItem(LSKEY)||'null');
     if(c&&c.email){
-      $('inName').value=c.name||''; $('inEmail').value=c.email||''; $('inPeriod').value=c.period||''; $('inLang').value=c.lang||'none';
+      $('inName').value=c.name||''; $('inEmail').value=c.email||''; $('inPeriod').value=c.period||''; if(c.lang&&c.lang!=='none') $('inLang').value=c.lang;
       S.level=c.level||'std'; S.mode=c.mode||'grid'; S.scores=c.scores||{}; S.set=c.set||'';
     } else {
       var saved=localStorage.getItem('gal_student_email'); if(saved) $('inEmail').value=saved;
-      var vl=localStorage.getItem('vocab_lang'); if(vl) $('inLang').value=vl;
+      var vl=localStorage.getItem('vocab_lang'); if(vl&&vl!=='none') $('inLang').value=vl;
     }
   }catch(e){}
   if(qset && CONJ.set(qset)) S.set=qset;
@@ -707,6 +710,7 @@ document.addEventListener('DOMContentLoaded',function(){
     if(!n){ $('loginErr').textContent='Write your name.'; return $('inName').focus(); }
     if(!EMAIL_RE.test(em)){ $('loginErr').textContent='Use your school email: name@s.sfusd.edu'; return $('inEmail').focus(); }
     if(!p){ $('loginErr').textContent='Choose your class period.'; return $('inPeriod').focus(); }
+    if(!$('inLang').value){ $('loginErr').textContent='Choose your language.'; return $('inLang').focus(); }
     var canon=canonical(em);
     if(S.email&&S.email!==canon) S.scores={};
     S.name=n; S.email=canon; S.period=p; S.lang=$('inLang').value;

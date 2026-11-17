@@ -1401,18 +1401,21 @@ function boot(){
   renderNav(); renderStage();
 }
 document.addEventListener('DOMContentLoaded', function(){
-  var opts = LANGS.map(function(l){ return '<option value="'+l[0]+'">'+esc(l[1])+(l[0]!=='none'&&l[1]!==l[0]?' ('+l[0]+')':'')+'</option>'; }).join('');
-  $('inLang').innerHTML = opts; $('langSel').innerHTML = opts;
+  var optFor=function(list){ return list.map(function(l){ return '<option value="'+l[0]+'">'+esc(l[1])+(l[0]!=='none'&&l[1]!==l[0]?' ('+l[0]+')':'')+'</option>'; }).join(''); };
+  /* the sign-in box never offers English only; the toolbar picker still does */
+  $('inLang').innerHTML = '<option value="" disabled selected>Choose your language\u2026</option>'+
+    optFor(LANGS.filter(function(l){ return l[0]!=='none'; }));
+  $('langSel').innerHTML = optFor(LANGS);
   try{
     var c = JSON.parse(localStorage.getItem(LSKEY)||'null');
     if(c && c.email){
-      $('inName').value=c.name||''; $('inEmail').value=c.email||''; $('inPeriod').value=c.period||''; $('inLang').value=c.lang||'none';
+      $('inName').value=c.name||''; $('inEmail').value=c.email||''; $('inPeriod').value=c.period||''; if(c.lang&&c.lang!=='none') $('inLang').value=c.lang;
       S.level=c.level||'std'; S.unit=c.unit||'was'; S.act=c.act||'learn'; S.scores=c.scores||{};
     } else {
       var p = JSON.parse(localStorage.getItem(LSKEY_PRESENT)||'null');   // carry name, period, language over from present tense
-      if(p && p.email){ $('inName').value=p.name||''; $('inEmail').value=p.email||''; $('inPeriod').value=p.period||''; $('inLang').value=p.lang||'none'; S.level=p.level||'std'; }
+      if(p && p.email){ $('inName').value=p.name||''; $('inEmail').value=p.email||''; $('inPeriod').value=p.period||''; if(p.lang&&p.lang!=='none') $('inLang').value=p.lang; S.level=p.level||'std'; }
       else { var saved = localStorage.getItem('gal_student_email'); if(saved) $('inEmail').value = saved;
-             var vl = localStorage.getItem('vocab_lang'); if(vl) $('inLang').value = vl; }
+             var vl = localStorage.getItem('vocab_lang'); if(vl&&vl!=='none') $('inLang').value = vl; }
     }
   }catch(e){}
 
@@ -1421,6 +1424,7 @@ document.addEventListener('DOMContentLoaded', function(){
     if(!n){ $('loginErr').textContent='Write your name.'; return $('inName').focus(); }
     if(!EMAIL_RE.test(em)){ $('loginErr').textContent='Use your school email: name@s.sfusd.edu'; return $('inEmail').focus(); }
     if(!p){ $('loginErr').textContent='Choose your class period.'; return $('inPeriod').focus(); }
+    if(!$('inLang').value){ $('loginErr').textContent='Choose your language.'; return $('inLang').focus(); }
     var canon = canonical(em);
     if(S.email && S.email!==canon) S.scores = {};
     S.name=n; S.email=canon; S.period=p; S.lang=$('inLang').value;
