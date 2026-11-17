@@ -644,6 +644,7 @@ function save(){
     try{
       localStorage.setItem(KEY, JSON.stringify(state));
       flash("Saved");
+      if(window.SBM_STD&&window.SBM_STD.queue) window.SBM_STD.queue(); /* T-481: to the server too */
     }catch(e){ flash("Could not save — storage is full or blocked"); }
   },350);
 }
@@ -968,5 +969,17 @@ applyFilter();
 </script>
 <script src="/readings/track.js"></script>
 <script src="sbm_std.js" data-slug="sbm-anticipation"></script>
+<script>
+/* T-481 save on leave: send the whole work right away (keepalive) when the student leaves; never wait on an earlier save */
+/* T-481: picks, reasons and the plan go in the server row (sbm_std.js), and come back on a new Chromebook */
+window.SBM_EXTRA=function(){return {answers:state.answers,plan:state.plan,mode:state.mode,level:state.level};};
+window.SBM_RESTORE=function(p){
+  if(!p||!p.answers||!Object.keys(p.answers).length) return;
+  if(Object.keys(state.answers||{}).length) return;   /* this computer already has work: keep it */
+  state.answers=p.answers; if(p.plan) state.plan=p.plan; if(p.mode) state.mode=p.mode; if(p.level) state.level=p.level;
+  try{localStorage.setItem(KEY, JSON.stringify(state));}catch(e){}
+  location.reload();
+};
+</script>
 </body>
 </html>

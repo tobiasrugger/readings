@@ -416,18 +416,18 @@ function load(){
   }catch(e){}
 }
 var t=null;
-function queue(){ save(); if(t) clearTimeout(t); t=setTimeout(push,2500); }
+function queue(){ save(); if(t) clearTimeout(t); t=setTimeout(push,900); window.T481_DIRTY=true; }
 function setDot(c){document.getElementById('dot').className='dot '+c;}
 function msg(s){document.getElementById('msg').textContent=s;}
 
-function push(turned){
+function push(turned){window.T481_DIRTY=false;
   var f=fields(); if(!f.name||!f.email){setDot('');return;}
   setDot('busy');
   var c=0; for(var k in results){ if(results[k]) c++; }
   var row={email:f.email,student_name:f.name,period:f.period,page:PAGE,data:{ans:ans,results:results},score:c,updated_at:new Date().toISOString()};
   if(turned===true) row.turned_in=true;
   fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email,page',{
-    method:'POST',
+    method:'POST',keepalive:true,
     headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
     body:JSON.stringify([row])
   }).then(function(r){ if(r.ok){setDot('ok');} else {setDot('err'); r.text().then(function(x){msg('Save problem: '+x);});} })
@@ -661,6 +661,11 @@ pullRJ(rjFill);
   setInterval(checkTranslation, 20000);
   setTimeout(checkTranslation, 4000);
 })();
+</script>
+<script>
+/* T-481 save on leave: send the whole work right away (keepalive) when the student leaves; never wait on an earlier save */
+(function(){function leave(){if(window.T481_DIRTY){clearTimeout(t);push();}}
+window.addEventListener('pagehide',leave);document.addEventListener('visibilitychange',function(){if(document.hidden)leave();});})();
 </script>
 </body>
 </html>

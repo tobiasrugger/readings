@@ -497,7 +497,7 @@ function queueSave(){
   saveLocal();
   flag('editing…',false);
   clearTimeout(saveTimer);
-  saveTimer=setTimeout(pushSave,1200);
+  saveTimer=setTimeout(pushSave,900); window.T481_DIRTY=true;
 }
 
 /* T-330: load before save. Nothing is written for a student until their saved row has been read
@@ -508,8 +508,8 @@ function pushSave(turnIn){
   if(!S.name||!S.period){flag('type your name to save',false);return Promise.resolve()}
   if(PULLED!==pk()){pullSave();return Promise.resolve();}
   if(!turnIn&&!Object.keys(S.answers).length) return Promise.resolve(); /* nothing typed yet: no empty row */
-  if(saving) return Promise.resolve();
-  saving=true; flag('saving…',false);
+  if(saving){window.T481_AGAIN=true;return Promise.resolve();}
+  saving=true; window.T481_DIRTY=false; flag('saving…',false);
   var body=[{
     student_name:S.name.trim().toLowerCase(),
     display_name:S.name.trim(),
@@ -524,14 +524,14 @@ function pushSave(turnIn){
   }];
   if(turnIn) S.turned=true;
   return fetch(SUPA_URL+'/rest/v1/maus_progress?on_conflict=student_name,class_period,activity',{
-    method:'POST',
+    method:'POST',keepalive:true,
     headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json',
              'Prefer':'resolution=merge-duplicates,return=minimal'},
     body:JSON.stringify(body)
   }).then(function(r){
-    saving=false;
+    saving=false; if(window.T481_AGAIN){window.T481_AGAIN=false;setTimeout(pushSave,0);}
     if(r.ok){flag(turnIn?'turned in ✓':'saved ✓',true)} else {flag('saved on this device',false)}
-  }).catch(function(){saving=false;flag('saved on this device',false)});
+  }).catch(function(){saving=false;window.T481_DIRTY=true;flag('saved on this device',false)});
 }
 
 function pullSave(){
@@ -782,5 +782,10 @@ function pageBoot(){ refresh() }
 </script>
 <script src="/readings/track.js"></script>
 <script src="maus_std.js" data-slug="maus-assessment"></script>
+<script>
+/* T-481 save on leave: send the whole work right away (keepalive) when the student leaves; never wait on an earlier save */
+(function(){function leave(){if(window.T481_DIRTY||window.T481_AGAIN){clearTimeout(saveTimer);window.T481_AGAIN=false;saving=false;pushSave();}}
+window.addEventListener('pagehide',leave);document.addEventListener('visibilitychange',function(){if(document.hidden)leave();});})();
+</script>
 </body>
 </html>

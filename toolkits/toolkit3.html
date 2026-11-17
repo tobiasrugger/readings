@@ -475,16 +475,17 @@ function queueSave(){
   try{localStorage.setItem(LS,JSON.stringify(data));}catch(e){}
   if(!student){setDot('','saved on this device');return;}
   setDot('saving','saving...');
-  clearTimeout(saveTimer); saveTimer=setTimeout(push,2200);
+  clearTimeout(saveTimer); saveTimer=setTimeout(push,900); window.T481_DIRTY=true;
 }
 function push(submitted){
   if(!student) return;
+  window.T481_DIRTY=false;
   var row={email:student.email,name:student.name,period:student.period,section:SECTION,
            payload:{answers:collect(),venn:(window.collectVenns?collectVenns():{})},
            updated_at:new Date().toISOString()};
   if(submitted) row.submitted=true;
   return fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email,section',{
-    method:'POST',
+    method:'POST',keepalive:true,
     headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json',
              'Prefer':'resolution=merge-duplicates,return=minimal'},
     body:JSON.stringify([row])
@@ -967,6 +968,11 @@ function restoreVenns(){
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', attempt);
   else attempt();
 })();
+</script>
+<script>
+/* T-481 save on leave: send the whole work right away (keepalive) when the student leaves; never wait on an earlier save */
+(function(){function leave(){if(window.T481_DIRTY){clearTimeout(saveTimer);push();}}
+window.addEventListener('pagehide',leave);document.addEventListener('visibilitychange',function(){if(document.hidden)leave();});})();
 </script>
 </body>
 </html>

@@ -92,18 +92,20 @@ function gather(){
     if(e.type==='checkbox'||e.type==='radio'){ if(e.checked)o[e.id]=e.value||'1'; }
     else if(e.value) o[e.id]=e.value;
   }
+  /* T-481: a page whose answers live in its own state (not in id'd boxes) hands them over here */
+  if(typeof window.SBM_EXTRA==='function'){try{o._page=window.SBM_EXTRA();}catch(x){}}
   return o;
 }
 function save(){
   if(!me.email)return;
   var ans=gather(),s=JSON.stringify(ans);
   if(s===last)return; last=s;
-  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email,slug',{method:'POST',
+  fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email,slug',{method:'POST',keepalive:true,
     headers:head('resolution=merge-duplicates,return=minimal'),
     body:JSON.stringify([{email:me.email,slug:SLUG,student_name:me.name,period:me.period,
       answers:ans,updated_at:new Date().toISOString()}])}).catch(function(){});
 }
-function queue(){clearTimeout(timer);timer=setTimeout(save,1200);}
+function queue(){clearTimeout(timer);timer=setTimeout(save,900);}
 function restore(){
   if(!me.email)return;
   fetch(SUPA_URL+'/rest/v1/'+TABLE+'?email=eq.'+encodeURIComponent(me.email)+
@@ -112,6 +114,7 @@ function restore(){
     .then(function(rows){
       if(!rows||!rows.length||!rows[0].answers)return;
       var a=rows[0].answers,k;
+      if(a._page&&typeof window.SBM_RESTORE==='function'){try{window.SBM_RESTORE(a._page);}catch(x){}}
       for(k in a){var e=document.getElementById(k);if(!e)continue;
         if(e.type==='checkbox'||e.type==='radio')e.checked=true;else e.value=a[k];}
     }).catch(function(){});
@@ -279,8 +282,11 @@ function build(){
   setInterval(check,20000);setTimeout(check,4000);
   setInterval(save,15000);
   window.addEventListener('beforeunload',save);
+  /* T-481 save on leave: send the whole work right away (keepalive) when the student leaves; never wait on an earlier save */
+  window.addEventListener('pagehide',function(){clearTimeout(timer);save();});
+  document.addEventListener('visibilitychange',function(){if(document.hidden){clearTimeout(timer);save();}});
 }
 
-window.SBM_STD={save:save,checkTranslation:check,me:function(){return me;}};
+window.SBM_STD={save:save,queue:queue,checkTranslation:check,me:function(){return me;}};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',build);else build();
 })();

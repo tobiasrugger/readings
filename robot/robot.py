@@ -910,7 +910,7 @@ BOX_JS = r"""
     if (el.tagName === 'TEXTAREA') return true;
     if (el.tagName === 'INPUT') { const t = (el.type||'text').toLowerCase(); if (!['text',''].includes(t)) return false;
       const L = (el.id+' '+el.name+' '+el.placeholder+' '+el.className).toLowerCase();
-      return !/mail|name|period|search|lang|password|pw|code|url/.test(L); }
+      return !/mail|name|period|search|lang|password|pw|code|url|_new\b|add your|add a /.test(L+' '+(el.id||'')); }
     return el.isContentEditable; };
   const vis = el => { const s = getComputedStyle(el); const r = el.getBoundingClientRect(); return s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0; };
   const all = [...document.querySelectorAll('textarea,input,[contenteditable=true]')].filter(ok);

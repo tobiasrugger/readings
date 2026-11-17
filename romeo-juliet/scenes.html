@@ -685,7 +685,7 @@ function after(){
     b.className = (n===state.cur?'on':'') + (sceneDone(n)?' done':'');
   });
   if(timer) clearTimeout(timer);
-  timer = setTimeout(push, 2500);
+  timer = setTimeout(push, 900); window.T481_DIRTY=true;
 }
 
 function total(){ var t=0; for(var i=0;i<SCENES.length;i++) t += SCENES[i].qs.length; return t; }
@@ -759,7 +759,7 @@ function setDot(c){ document.getElementById('dot').className = 'dot ' + c; }
 function push(turned){
   var f = fields();
   if(!f.name || !f.email){ setDot(''); return; }
-  setDot('busy');
+  setDot('busy'); window.T481_DIRTY=false;
   var body = [{
     email: f.email,
     student_name: f.name,
@@ -772,7 +772,7 @@ function push(turned){
   }];
   if(body[0].turned_in === undefined) delete body[0].turned_in;
   fetch(SUPA_URL + '/rest/v1/' + TABLE + '?on_conflict=email,page', {
-    method:'POST',
+    method:'POST', keepalive:true,
     headers:{
       'apikey': SUPA_KEY,
       'Authorization': 'Bearer ' + SUPA_KEY,
@@ -1049,6 +1049,11 @@ pullRJ(rjFill);
   setInterval(checkTranslation, 20000);
   setTimeout(checkTranslation, 4000);
 })();
+</script>
+<script>
+/* T-481 save on leave: send the whole work right away (keepalive) when the student leaves; never wait on an earlier save */
+(function(){function leave(){if(window.T481_DIRTY){clearTimeout(timer);push();}}
+window.addEventListener('pagehide',leave);document.addEventListener('visibilitychange',function(){if(document.hidden)leave();});})();
 </script>
 </body>
 </html>

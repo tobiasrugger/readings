@@ -448,7 +448,7 @@ function fill(d){
   preview();
 }
 function mark(){dirty=true;$('#saveState').textContent='Not saved yet…';clearTimeout(saveTimer);
-  saveTimer=setTimeout(function(){save(true);},1200);preview();}
+  saveTimer=setTimeout(function(){save(true);},900);preview();}
 
 async function save(silent){
   try{localStorage.setItem('galileo_my_song',JSON.stringify(collect()));}catch(e){}
@@ -699,6 +699,13 @@ function check(){
 window.fsCheckTranslation=check;
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',build);else build();
 })();
+</script>
+<script>
+/* T-481 save on leave: send the whole work right away (keepalive) when the student leaves; never wait on an earlier save */
+(function(){function leave(){if(!dirty||!meReady())return;clearTimeout(saveTimer);
+  try{var d=collect();localStorage.setItem('galileo_my_song',JSON.stringify(d));
+    fetch(SUPA_URL+'/rest/v1/song_entries?on_conflict=email',{method:'POST',keepalive:true,headers:sbHeaders({'Prefer':'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify(d)});dirty=false;}catch(e){}}
+window.addEventListener('pagehide',leave);document.addEventListener('visibilitychange',function(){if(document.hidden)leave();});})();
 </script>
 </body>
 </html>
