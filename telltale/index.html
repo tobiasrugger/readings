@@ -5306,6 +5306,34 @@ body.lb-open #lbpanel{ display:flex; }
 })();
 </script>
 
+<script id="t487-js">
+/* T-487: Back steps back one screen, whatever opened it. T-416 only saw taps ON a chip or activity button;
+   Tell-Tale's folder tabs (T-444) and every "Done - go to Part N" button press those in code, so no history
+   step was added and Back skipped screens. Now any tap a student makes that changes the open screen adds
+   #<screen> (T-123's hashchange reopens it on Back). Same rule as T-416: never twice for the same screen. */
+(function(){
+  function cur(){
+    var a = document.querySelector("section.act.on");
+    if(a && a.id) return a.id.replace(/^act-/, "");
+    var b = document.querySelector(".cbtn.on[data-ch]");
+    return b ? b.getAttribute("data-ch") : null;
+  }
+  var before = null;
+  document.addEventListener("click", function(e){ if(e.isTrusted) before = cur(); }, true);
+  document.addEventListener("click", function(e){
+    if(!e.isTrusted) return;
+    var was = before;
+    function check(){
+      var k = cur(); if(!k || k === was) return;
+      if(location.hash.replace("#","").toLowerCase() === k) return;
+      try{ history.pushState({pill:k}, "", location.pathname + location.search + "#" + k); }catch(_){}
+    }
+    setTimeout(check, 0); setTimeout(check, 120);
+  }, false);
+  window.__t487 = { cur: cur };
+})();
+</script>
+
 <style id="t439-css">
 /* T-439: no drag corner on student boxes; police-form boxes never squash below their row count */
 textarea{ resize:none !important; }
