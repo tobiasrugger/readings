@@ -146,6 +146,17 @@ select.per:hover{border-color:var(--edge);background:#fff}
 }
 .toast{position:fixed;bottom:14px;right:14px;background:var(--pine);color:#fff;padding:7px 12px;border-radius:8px;font-size:.78rem;opacity:0;transition:opacity .3s;max-width:420px}
 .toast.on{opacity:1}
+.toast.bad{background:#b3261e}
+/* T-457: ✓ In Synergy row above the titles, gold = new since that press */
+thead tr.synrow th{top:0;height:40px;padding:3px 5px;vertical-align:middle;background:#eef3f0}
+thead tr.titles th{top:40px}
+thead tr.synrow th.corner{z-index:4}
+button.synbtn{font:inherit;font-size:.66rem;font-weight:700;padding:2px 6px;border:1px solid var(--pine);border-radius:6px;background:#fff;color:var(--pine);cursor:pointer;white-space:nowrap}
+button.synbtn:hover{background:var(--pine);color:#fff}
+.synwhen{display:block;font-size:.6rem;color:var(--muted);margin-top:1px;white-space:nowrap}
+.synwhen.mixed{color:#9a6b00;font-weight:700}
+td.c.gold span{color:#9a6b00 !important;font-weight:900;outline:2px solid #c9930a;outline-offset:1px;border-radius:4px}
+.goldkey{display:inline-block;padding:0 6px;color:#9a6b00;font-weight:900;outline:2px solid #c9930a;border-radius:4px;background:#fff}
 .legend{font-size:.74rem;color:var(--muted);margin:6px 0 0}
 dialog{border:1px solid var(--edge);border-radius:12px;padding:18px;max-width:560px;font-size:.86rem}
 dialog textarea{width:100%;min-height:200px;font:12px/1.4 ui-monospace,monospace;border:1px solid var(--edge);border-radius:8px;padding:8px}
@@ -175,6 +186,7 @@ dialog .row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
       <label>Since <select id="since"><option value="14">2 weeks</option><option value="42">6 weeks</option><option value="90" selected>Quarter</option><option value="0">All time</option></select></label>
       <input id="q" placeholder="find student…" style="min-width:160px">
       <label><input type="checkbox" id="hideempty" checked> hide activities nobody in view did</label>
+      <label title="Only columns where a score came in after you pressed ✓ In Synergy"><input type="checkbox" id="onlynew"> only columns with new scores</label>
       <button class="btn" id="chg">What changed</button>
       <button class="btn" id="cmp">📄 Compare sheet</button>
       <button class="btn sec" id="scl" title="One-time: marks that moved only because the scale changed">⚠ Scale changed Nov 5</button>
@@ -187,7 +199,7 @@ dialog .row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
     <div class="tally" id="tally"></div>
     <div class="gridwrap"><table id="grid"></table></div>
     <div id="tray" style="display:none"></div>
-    <p class="legend">Cell = best attempt as a mark out of 4 (4 = 90%+, 3 = 75–89, 2 = 60–74, 1 = anything started, 0 = nothing right; ✓ = done but the activity reports no number). Press <b>Show percents</b> to switch back. A dotted outline means a completion score: parts done over parts on the page, for activities with no quiz number. Hover a cell for attempts and date. <b>Click an activity header</b> to copy that column for Synergy in roster order. Change a student's period with the dropdown in their row; it saves. Sort order inside a period = roster order if set, else last name.</p>
+    <p class="legend">Cell = best attempt as a mark out of 4 (4 = 90%+, 3 = 75–89, 2 = 60–74, 1 = anything started, 0 = nothing right; ✓ = done but the activity reports no number). Press <b>Show percents</b> to switch back. A dotted outline means a completion score: parts done over parts on the page, for activities with no quiz number. Hover a cell for attempts and date. <b>Click an activity header</b> to copy that column for Synergy in roster order. Change a student's period with the dropdown in their row; it saves. Sort order inside a period = roster order if set, else last name. <span class="goldkey">Gold</span> = new since you pressed <b>✓ In Synergy</b> for that column.</p>
   </div>
 </div>
 
@@ -295,7 +307,7 @@ var ALIAS={};   // username -> the username it really belongs to
 function galKey(e){ return String(e==null?'':e).trim().toLowerCase().split('@')[0].replace(/\s+/g,''); }
 function canon(e){ var k=galKey(e); return ALIAS[k]||k; }
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
-function toast(t){var s=document.getElementById('toast');s.textContent=t;s.classList.add('on');setTimeout(function(){s.classList.remove('on');},2200);}
+function toast(t,bad){var s=document.getElementById('toast');s.textContent=t;s.classList.toggle('bad',!!bad);s.classList.add('on');clearTimeout(toast._t);toast._t=setTimeout(function(){s.classList.remove('on');},bad?6000:2200);}
 function getAll(path){ // page through PostgREST
   var out=[],from=0,step=1000;
   function next(){return fetch(SUPA_URL+'/rest/v1/'+path,{headers:H({Range:from+'-'+(from+step-1),'Range-Unit':'items'})})
@@ -305,6 +317,7 @@ function getAll(path){ // page through PostgREST
 
 var students={}, cells=[], activities={}, view=[];
 var PUSHES=[];
+var STAMP={};   // T-457: email|slug -> newest synergy_col_marks row {shown,pct,entered_at}
 var T459={known:[],auto:{}}, AUTOTAG={}, TRAY=[], T459_NEW=[];   // T-459 auto-merge   // T-453: whole-period pushes (class_assignments), so a pushed column shows before anyone has done it
 
 function gate(){
@@ -325,7 +338,8 @@ function load(){
     getAll('activities?select=slug,title,unit,course,level,sort_order,url'),
     getAll('student_aliases?select=alias_email,email').catch(function(){return [];}),
     getAll('class_assignments?select=area,period,href,title,created_at,expires_at&area=in.(site,vocab)&period=neq.extra').catch(function(){return [];}),
-    getAll('gal_settings?key=eq.gradebook_t459&select=value').catch(function(){return [];})
+    getAll('gal_settings?key=eq.gradebook_t459&select=value').catch(function(){return [];}),
+    getAll('synergy_col_marks?select=slug,email,shown,pct,entered_at&order=entered_at').catch(function(){return [];})
   ]).then(function(r){
     T459=t459Norm(r[5]&&r[5][0]&&r[5][0].value);
     PUSHES=pushCols(r[4]||[]);
@@ -363,6 +377,7 @@ function load(){
     var units={}; cells.forEach(function(c){var u=c.unit||(activities[c.slug]&&activities[c.slug].unit)||'(untagged)';units[u]=1;});
     var us=document.getElementById('unit'); var keep=us.value; us.innerHTML='<option value="">All</option>'+Object.keys(units).sort().map(function(u){return '<option'+(u===keep?' selected':'')+'>'+esc(u)+'</option>';}).join('');
     TRAY.forEach(function(k){ if(students[k]) students[k].tray=true; });
+    loadStamps(r[6]||[]);
     render(); toast('Loaded '+Object.keys(students).length+' students, '+cells.length+' scores');
     t459Persist();
   }).catch(function(e){toast('Load failed: '+e);});
@@ -707,6 +722,71 @@ function doMerge(keep,drop){
     .catch(function(e){ toast('Merge failed \u2014 has the T-227 SQL been run? ('+String(e.message||e).slice(0,60)+')'); });
 }
 
+/* ---------- T-457: ✓ In Synergy per column, gold = new since then ----------
+   synergy_col_marks is append-only history: one row per student per press
+   (slug, email = the grid's row key, period, shown, pct, entered_at). The newest
+   row per email|slug counts. A cell whose attempt (last_at) is later than that
+   stamp is NEW: gold until the button is pressed again. */
+function loadStamps(rows){
+  STAMP={};
+  (rows||[]).forEach(function(r){ var k=canon(r.email)+'|'+r.slug, o=STAMP[k];
+    if(!o || String(r.entered_at)>String(o.entered_at)) STAMP[k]=r; });
+}
+function isNewCell(email,slug,c){
+  var st=STAMP[email+'|'+slug]; if(!st || !c || !c.last_at) return false;
+  return Date.parse(c.last_at) > Date.parse(st.entered_at);
+}
+function synTime(iso){
+  try{ var d=new Date(iso);
+    return d.toLocaleDateString('en-US',{month:'short',day:'numeric',timeZone:'America/Los_Angeles'})+' · '+
+           d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Los_Angeles'}).replace(/\s?[AP]M$/,''); }
+  catch(e){ return String(iso||'').slice(0,16); }
+}
+function goldTip(email,slug,c){
+  var st=STAMP[email+'|'+slug]; if(!st) return '';
+  var same=(st.pct!=null && c.pct!=null && +st.pct===+c.pct);
+  return 'NEW since you entered it in Synergy on '+synTime(st.entered_at)+' — Synergy has '+(st.shown||'blank')+(same?' (same mark)':'');
+}
+function stampWhen(rows,slug){
+  var seen={}, n=0;
+  rows.forEach(function(s){ var st=STAMP[s.email+'|'+slug]; var k=st?synTime(st.entered_at):'none'; if(!seen[k]){seen[k]=1;n++;} });
+  var ks=Object.keys(seen);
+  if(!ks.length || (ks.length===1 && ks[0]==='none')) return 'not yet';
+  if(ks.length>1) return 'mixed';
+  return ks[0];
+}
+function shownFor(c){
+  if(!c) return '';
+  if(isExtras(c.slug)) return String(c.score!=null?+c.score:0)+' done';
+  if(c.pct==null) return '✓';
+  return SHOW04?String(band(c.pct)):c.pct+'%';
+}
+function stampColumn(slug){
+  if(!view || !view.rows) return;
+  var rows=view.rows.slice(), a=activities[slug]||{}, title=a.title||slug;
+  var per=document.getElementById('period').value, q=document.getElementById('q').value.trim();
+  var where=per==='none'?'Unassigned':(per?'Period '+per:'All periods')+(q?' · filter "'+q+'"':'');
+  if(!rows.length){ toast('No students on screen to mark.',true); return; }
+  if(!confirm('Mark "'+title+'" as entered in Synergy for these '+rows.length+' students ('+where+')?')) return;
+  var before={}; rows.forEach(function(s){ var st=STAMP[s.email+'|'+slug]; before[s.email]=st?String(st.entered_at):''; });
+  var body=rows.map(function(s){ var c=view.byCell[s.email+'|'+slug];
+    return {slug:slug, email:s.email, period:s.period==null?null:String(s.period), shown:shownFor(c), pct:(c&&c.pct!=null)?Math.round(+c.pct):null}; });
+  toast('Saving…');
+  fetch(SUPA_URL+'/rest/v1/synergy_col_marks',{method:'POST',headers:H({Prefer:'return=minimal'}),body:JSON.stringify(body)})
+    .then(function(r){ if(!r.ok) return r.text().then(function(t){ throw new Error(r.status+' '+t.slice(0,80)); }); })
+    .then(function(){ return getAll('synergy_col_marks?select=slug,email,shown,pct,entered_at&slug=eq.'+encodeURIComponent(slug)+'&order=entered_at'); })
+    .then(function(got){
+      var newest={}; (got||[]).forEach(function(r){ var k=canon(r.email); if(!newest[k] || String(r.entered_at)>String(newest[k].entered_at)) newest[k]=r; });
+      var miss=rows.filter(function(s){ var n=newest[s.email]; return !n || !(String(n.entered_at)>before[s.email]); });
+      Object.keys(newest).forEach(function(k){ STAMP[k+'|'+slug]=newest[k]; });
+      render();
+      var any=rows.map(function(s){return newest[s.email];}).filter(Boolean)[0];
+      if(miss.length) toast(miss.length+' of '+rows.length+' did NOT save ('+miss.slice(0,3).map(studentName).join(', ')+(miss.length>3?'…':'')+'). Press again.',true);
+      else toast('Saved for '+rows.length+' students · '+(any?synTime(any.entered_at):''));
+    })
+    .catch(function(e){ toast('Not saved — has the synergy_col_marks SQL been run? ('+String(e.message||e).slice(0,60)+')',true); });
+}
+
 /* ---------- T-459: fold obvious duplicates, tray the rest ----------
    A sign-in with a mistyped email (xichen49@ for xichen@) makes a second row.
    "On the roster" = a students row with roster_order (Toby's printout), or kind
@@ -894,16 +974,24 @@ function render(){
   Object.keys(pushed).forEach(function(k){ colMap[k]=1; });
   var cols=Object.keys(colMap);
   cols.sort(function(x,y){var ax=activities[x]||{},ay=activities[y]||{};var u=(ax.unit||x).localeCompare(ay.unit||y);if(u)return u;return (ax.sort_order||600)-(ay.sort_order||600)||x.localeCompare(y);});
+  /* T-457: only columns with a score newer than its ✓ In Synergy stamp */
+  if(document.getElementById('onlynew') && document.getElementById('onlynew').checked){
+    cols=cols.filter(function(sl){ return rows.some(function(s){ return isNewCell(s.email,sl,byCell[s.email+'|'+sl]); }); });
+  }
   buildReqMax();
   view={rows:rows,cols:cols,byCell:byCell};
 
-  var h='<thead><tr><th class="corner">Student</th><th class="corner" style="left:auto">Per.</th><th>Avg</th>';
+  var h='<thead><tr class="synrow"><th class="corner"></th><th class="corner" style="left:auto"></th><th></th>';
+  cols.forEach(function(sl){ var w=stampWhen(rows,sl);
+    h+='<th class="syn" data-slug="'+esc(sl)+'"><button class="synbtn" data-syn="'+esc(sl)+'" title="Press after you type this column into Synergy">\u2713 In Synergy</button>'+
+       '<span class="synwhen'+(w==='mixed'?' mixed':'')+'">'+esc(w)+'</span></th>'; });
+  h+='</tr><tr class="titles"><th class="corner">Student</th><th class="corner" style="left:auto">Per.</th><th>Avg</th>';
   cols.forEach(function(s){var a=activities[s]||{}, x=isExtras(s);
     h+='<th class="act'+(x?' xcol':'')+'" data-slug="'+esc(s)+'" title="'+esc(x?(s+' — optional work; not part of the average'):(s+' — click to copy for Synergy'))+'">'+
        esc(a.title||pushed[s]||s)+'<small>'+esc(a.unit||'')+'</small>'+(x?'<em>optional \u00b7 not in the average</em>':'')+
        (s in pushed?'<span class="pushtag" title="Pushed to this period from the Push page">pushed</span>':'')+'</th>';});
   h+='</tr></thead><tbody>';
-  var done=0,total=0;
+  var done=0,total=0,newN=0;
   rows.forEach(function(s){
     var sum=0,n=0;
     var line='';
@@ -915,7 +1003,8 @@ function render(){
         /* optional: no band, no average — just how far they got */
         var left=EXTRA_LEFT[s.email+'|'+slug];
         var dn=(c.score!=null?+c.score:0);
-        line+='<td class="c xcol" title="'+esc('optional extras — not in the average; adds to it when done · '+
+        var gx=isNewCell(s.email,slug,c); if(gx) newN++;
+        line+='<td class="c xcol'+(gx?' gold':'')+'" title="'+esc((gx?goldTip(s.email,slug,c)+' \u00b7 ':'')+'optional extras — not in the average; adds to it when done · '+
               dn+(c.max_score?' / '+c.max_score:'')+' · '+c.attempts+' attempt'+(c.attempts==1?'':'s')+' · '+(c.last_at||'').slice(0,10))+
               '"><span class="xtra">'+dn+' done'+(left!=null?' · '+left+' left':'')+'</span></td>';
         return;
@@ -924,7 +1013,8 @@ function render(){
       var label=c.pct!=null?(SHOW04?String(b):c.pct+'%'):'✓';
       var pcttip=(c.pct!=null?c.pct+'% · mark '+b+' · ':'');
       if(c.pct!=null){sum+=+c.pct;n++;}
-      line+='<td class="c" title="'+esc(pcttip+(c.score!=null?c.score+' / '+(c.max_score||'?'):'')+(c.completion?' · completion (parts done / parts on the page)':'')+' · '+c.attempts+' attempt'+(c.attempts==1?'':'s')+' · '+(c.last_at||'').slice(0,10))+'"><span class="'+(SHOW04?bandClass(b):grade(c.pct))+(c.completion?' cmp':'')+'">'+label+'</span></td>';
+      var gd=isNewCell(s.email,slug,c); if(gd) newN++;
+      line+='<td class="c'+(gd?' gold':'')+'" title="'+esc((gd?goldTip(s.email,slug,c)+' \u00b7 ':'')+pcttip+(c.score!=null?c.score+' / '+(c.max_score||'?'):'')+(c.completion?' · completion (parts done / parts on the page)':'')+' · '+c.attempts+' attempt'+(c.attempts==1?'':'s')+' · '+(c.last_at||'').slice(0,10))+'"><span class="'+(SHOW04?bandClass(b):grade(c.pct))+(c.completion?' cmp':'')+'">'+label+'</span></td>';
     });
     var avgRaw=n?(sum/n):null;
     var bonus=avgRaw!=null?extrasBonus(s,cols,n):0;
@@ -938,10 +1028,11 @@ function render(){
   });
   h+='</tbody>';
   document.getElementById('grid').innerHTML=h;
-  document.getElementById('tally').innerHTML='<div><b>'+rows.length+'</b>students</div><div><b>'+cols.length+'</b>activities</div><div><b>'+done+'</b>scores in view</div><div><b>'+rows.filter(function(s){return !s.period;}).length+'</b>without a period</div>';
+  document.getElementById('tally').innerHTML='<div><b>'+rows.length+'</b>students</div><div><b>'+cols.length+'</b>activities</div><div><b>'+done+'</b>scores in view</div><div><b>'+rows.filter(function(s){return !s.period;}).length+'</b>without a period</div>'+(newN?'<div style="border-color:#c9930a"><b style="color:#9a6b00">'+newN+'</b>new since Synergy</div>':'');
   document.querySelectorAll('th.act').forEach(function(th){th.onclick=function(){openCopy(th.dataset.slug);};});
   document.querySelectorAll('select.per').forEach(function(sel){sel.onchange=function(){setPeriod(sel.dataset.email,sel.value?+sel.value:null,sel);};});
   document.querySelectorAll('button[data-undo]').forEach(function(b){b.onclick=function(ev){ev.stopPropagation();t459Undo(b.dataset.undo);};});
+  document.querySelectorAll('button[data-syn]').forEach(function(b){b.onclick=function(ev){ev.stopPropagation();stampColumn(b.dataset.syn);};});
   renderTray(per);
 }
 
@@ -1505,7 +1596,7 @@ document.getElementById('mgdo').onclick=function(){
 };
 document.getElementById('showhidden').onchange=function(){ SHOWHIDDEN=this.checked; render(); };
 
-['period','course','unit','since','hideempty'].forEach(function(id){document.getElementById(id).addEventListener('change',render);});
+['period','course','unit','since','hideempty','onlynew'].forEach(function(id){document.getElementById(id).addEventListener('change',render);});
 document.getElementById('q').addEventListener('input',render);
 document.getElementById('reload').onclick=load;
 gate();
