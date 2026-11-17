@@ -704,8 +704,10 @@ function boot(){
  resumeLogin();showWhoBar();
  if(!ST.email||!L)askName();else loadServer(ST.email,function(){go(ST.act||1);});
  setTimeout(checkCanary,2500);setInterval(checkCanary,20000);setInterval(function(){push(false);},20000);
- document.addEventListener('visibilitychange',function(){if(document.hidden){clearTimeout(saveT);push(false);}});
- window.addEventListener('pagehide',function(){clearTimeout(saveT);push(false);});
+ /* T-455 save fix: leaving sends the whole snapshot NOW with keepalive, even if an earlier save is still in flight (it used to wait and be lost) */
+ function leaveSave(){clearTimeout(saveT);if(dirty){pushing=false;push(true);}}
+ document.addEventListener('visibilitychange',function(){if(document.hidden)leaveSave();});
+ window.addEventListener('pagehide',leaveSave);
 }
 document.addEventListener('DOMContentLoaded',boot);
 </script>
