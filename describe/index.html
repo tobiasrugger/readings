@@ -226,7 +226,7 @@ var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 var TABLE='describe_work', BUCKET='describe-recordings';
 var PROXY='https://script.google.com/macros/s/AKfycbwbFr3oopIITlxKDhI5wGhEZdomWc3tmB5ZSK6NpBVisPAz-CMA4uKiruXDkCEU3T0Q/exec';
 var H={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};
-var LANGS=[['none','English only'],['Spanish','Español'],['Cantonese','廣東話'],['Mandarin','中文 (普通话)'],['Arabic','العربية'],['Darija','الدارجة'],['Vietnamese','Tiếng Việt'],['Russian','Русский'],['Urdu','اردو'],['Tagalog','Tagalog'],['French','Français'],['Korean','한국어'],['Hindi','हिन्दी'],['Somali','Soomaali'],['Nepali','नेपाली'],['Thai','ไทย']];
+var LANGS=[['none','English only'] /* toolbar only (T-461) */,['Spanish','Español'],['Cantonese','廣東話'],['Mandarin','中文 (普通话)'],['Arabic','العربية'],['Darija','الدارجة'],['Vietnamese','Tiếng Việt'],['Russian','Русский'],['Urdu','اردو'],['Tagalog','Tagalog'],['French','Français'],['Korean','한국어'],['Hindi','हिन्दी'],['Somali','Soomaali'],['Nepali','नेपाली'],['Thai','ไทย']];
 var EMAIL_RE=/^[^@\s]+@(s\.)?sfusd\.edu$/;
 function canon(e){ return e.trim().toLowerCase().split('@')[0]+'@s.sfusd.edu'; }
 function $(id){ return document.getElementById(id); }
@@ -1081,10 +1081,10 @@ function load(){
 }
 
 /* ============ SIGN-IN ============ */
-function langOpts(){ return LANGS.map(function(l){ return '<option value="'+l[0]+'">'+esc(l[1])+(l[0]!=='none'&&l[1]!==l[0]?' ('+l[0]+')':'')+'</option>'; }).join(''); }
-$('lang').innerHTML=langOpts(); $('siLang').innerHTML=langOpts();
+function langOpts(g){ return (g?'<option value="">Choose your language…</option>':'')+LANGS.filter(function(l){ return !g||l[0]!=='none'; }).map(function(l){ return '<option value="'+l[0]+'">'+esc(l[1])+(l[0]!=='none'&&l[1]!==l[0]?' ('+l[0]+')':'')+'</option>'; }).join(''); }
+$('lang').innerHTML=langOpts(); $('siLang').innerHTML=langOpts(1);   /* T-461 */
 $('lang').onchange=function(){ ME.lang=this.value; $('siLang').value=ME.lang; localStorage.setItem('gal_student_lang',ME.lang); dirty=true; };
-function showSignin(){ $('siName').value=ME.name||localStorage.getItem('gal_student_name')||''; $('siEmail').value=ME.email||localStorage.getItem('gal_student_email')||''; $('siPeriod').value=ME.period||localStorage.getItem('gal_student_period')||''; $('siLang').value=ME.lang||localStorage.getItem('gal_student_lang')||'none'; $('siErr').textContent=''; $('signin').style.display='flex'; }
+function showSignin(){ $('siName').value=ME.name||localStorage.getItem('gal_student_name')||''; $('siEmail').value=ME.email||localStorage.getItem('gal_student_email')||''; $('siPeriod').value=ME.period||localStorage.getItem('gal_student_period')||''; $('siLang').value=ME.lang||localStorage.getItem('gal_student_lang')||''; if($('siLang').selectedIndex<0)$('siLang').value=''; $('siErr').textContent=''; $('signin').style.display='flex'; }
 $('who').onclick=showSignin;
 $('siGo').onclick=function(){
   var n=$('siName').value.trim(), raw=$('siEmail').value.trim().toLowerCase(), p=$('siPeriod').value;
@@ -1108,5 +1108,40 @@ $('siGo').onclick=function(){
 })();
 </script>
 <script src="https://tobiasrugger.github.io/readings/track.js"></script>
+<script>/* T-461: the sign-in box needs a language (it never offers "English only"),
+   and the student's choice is remembered as vocab_lang for the word-practice pages */
+(function(){
+  var C = {"gate": "siLang", "btn": "#siGo", "err": "siErr", "bar": "lang"};
+  function keep(v){ if (v && !/^(none|en|english)$/i.test(v)) { try { localStorage.setItem('vocab_lang', v); } catch(e){} } }
+  function gs(){ return document.getElementById(C.gate); }
+  function fix(){
+    var s = gs(); if (!s) return;
+    if (s.selectedIndex < 0) s.value = '';
+    if (!s.value) { try { var v = localStorage.getItem('vocab_lang');
+      if (v && [].some.call(s.options, function(o){ return o.value === v; })) s.value = v; } catch(e){} }
+  }
+  document.addEventListener('click', function(ev){
+    var b = document.querySelector(C.btn);
+    if (!b || !ev.target || !(ev.target === b || b.contains(ev.target))) return;
+    var s = gs(); if (!s) return;
+    if (!s.value) {
+      ev.preventDefault(); ev.stopImmediatePropagation();
+      var e = C.err && document.getElementById(C.err);
+      if (!e) { e = document.getElementById('t461Err'); if (!e) { e = document.createElement('div'); e.id = 't461Err';
+        e.style.cssText = 'color:#8a4b00;font-weight:700;margin:6px 0'; s.parentNode.insertBefore(e, s.nextSibling); } }
+      e.textContent = 'Please choose your language.'; e.style.display = 'block';
+      s.focus(); return;
+    }
+    keep(s.value);
+  }, true);
+  document.addEventListener('change', function(ev){
+    var t = ev.target; if (!t) return;
+    if (t.id === C.gate || (C.bar && t.id === C.bar)) keep(t.value);
+  }, true);
+  fix();
+  document.addEventListener('DOMContentLoaded', function(){ setTimeout(fix, 0); setTimeout(fix, 1500); });
+  window.addEventListener('load', function(){ setTimeout(fix, 0); });
+})();
+</script>
 </body>
 </html>

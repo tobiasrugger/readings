@@ -130,13 +130,13 @@ table.chain input{width:100%;border:none;font-family:inherit;font-size:1rem;padd
     </select>
     <label for="glang">Your language · Tu idioma · 你的语言</label>
     <select id="glang">
+      <option value="">Choose your language…</option>
       <option value="Spanish">Español — Spanish</option>
       <option value="Chinese (Simplified)">简体中文 — Chinese</option>
       <option value="Arabic">العربية — Arabic</option>
       <option value="Vietnamese">Tiếng Việt — Vietnamese</option>
       <option value="Thai">ไทย — Thai</option>
       <option value="Nepali">नेपाली — Nepali</option>
-      <option value="English">English only</option>
     </select>
     <button id="gbtn">Start</button>
     <div class="err" id="gerr">Please use your school email ending in sfusd.edu.</div>
@@ -809,5 +809,40 @@ wire();
 </script>
 
 <script src="/readings/track.js"></script>
+<script>/* T-461: the sign-in box needs a language (it never offers "English only"),
+   and the student's choice is remembered as vocab_lang for the word-practice pages */
+(function(){
+  var C = {"gate": "glang", "btn": "#gbtn", "err": "gerr", "bar": "lang"};
+  function keep(v){ if (v && !/^(none|en|english)$/i.test(v)) { try { localStorage.setItem('vocab_lang', v); } catch(e){} } }
+  function gs(){ return document.getElementById(C.gate); }
+  function fix(){
+    var s = gs(); if (!s) return;
+    if (s.selectedIndex < 0) s.value = '';
+    if (!s.value) { try { var v = localStorage.getItem('vocab_lang');
+      if (v && [].some.call(s.options, function(o){ return o.value === v; })) s.value = v; } catch(e){} }
+  }
+  document.addEventListener('click', function(ev){
+    var b = document.querySelector(C.btn);
+    if (!b || !ev.target || !(ev.target === b || b.contains(ev.target))) return;
+    var s = gs(); if (!s) return;
+    if (!s.value) {
+      ev.preventDefault(); ev.stopImmediatePropagation();
+      var e = C.err && document.getElementById(C.err);
+      if (!e) { e = document.getElementById('t461Err'); if (!e) { e = document.createElement('div'); e.id = 't461Err';
+        e.style.cssText = 'color:#8a4b00;font-weight:700;margin:6px 0'; s.parentNode.insertBefore(e, s.nextSibling); } }
+      e.textContent = 'Please choose your language.'; e.style.display = 'block';
+      s.focus(); return;
+    }
+    keep(s.value);
+  }, true);
+  document.addEventListener('change', function(ev){
+    var t = ev.target; if (!t) return;
+    if (t.id === C.gate || (C.bar && t.id === C.bar)) keep(t.value);
+  }, true);
+  fix();
+  document.addEventListener('DOMContentLoaded', function(){ setTimeout(fix, 0); setTimeout(fix, 1500); });
+  window.addEventListener('load', function(){ setTimeout(fix, 0); });
+})();
+</script>
 </body>
 </html>

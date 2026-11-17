@@ -250,8 +250,8 @@ function uniqSkills(t){var s=[];t.items.forEach(function(i){if(s.indexOf(i.skill
   var ps='<option value="">Choose your period</option>';
   for(var p=1;p<=7;p++)ps+='<option value="'+p+'">Period '+p+'</option>';
   $('inPeriod').innerHTML=ps;
-  var ls='<option value="">English only</option>'+LANGS.map(function(l){return '<option value="'+l[0]+'">'+l[1]+'</option>';}).join('');
-  $('inLang').innerHTML=ls; $('qLang').innerHTML=ls;
+  var ls='<option value="">English only</option>'+LANGS.map(   /* toolbar only (T-461) */function(l){return '<option value="'+l[0]+'">'+l[1]+'</option>';}).join('');
+  $('inLang').innerHTML='<option value="">Choose your language…</option>'+ls.slice(ls.indexOf('</option>')+9); $('qLang').innerHTML=ls;   /* T-461 */
   $('qLang').addEventListener('change',function(){
     $('inLang').value=$('qLang').value; ME.lang=$('qLang').value;
     try{localStorage.setItem('gal_student_lang',ME.lang);}catch(e){}
@@ -729,6 +729,41 @@ function save(){
   window.checkTranslation=checkTranslation;
   setInterval(checkTranslation, 20000);
   setTimeout(checkTranslation, 4000);
+})();
+</script>
+<script>/* T-461: the sign-in box needs a language (it never offers "English only"),
+   and the student's choice is remembered as vocab_lang for the word-practice pages */
+(function(){
+  var C = {"gate": "inLang", "btn": "[onclick=\"signIn()\"]", "err": "siErr", "bar": "qLang"};
+  function keep(v){ if (v && !/^(none|en|english)$/i.test(v)) { try { localStorage.setItem('vocab_lang', v); } catch(e){} } }
+  function gs(){ return document.getElementById(C.gate); }
+  function fix(){
+    var s = gs(); if (!s) return;
+    if (s.selectedIndex < 0) s.value = '';
+    if (!s.value) { try { var v = localStorage.getItem('vocab_lang');
+      if (v && [].some.call(s.options, function(o){ return o.value === v; })) s.value = v; } catch(e){} }
+  }
+  document.addEventListener('click', function(ev){
+    var b = document.querySelector(C.btn);
+    if (!b || !ev.target || !(ev.target === b || b.contains(ev.target))) return;
+    var s = gs(); if (!s) return;
+    if (!s.value) {
+      ev.preventDefault(); ev.stopImmediatePropagation();
+      var e = C.err && document.getElementById(C.err);
+      if (!e) { e = document.getElementById('t461Err'); if (!e) { e = document.createElement('div'); e.id = 't461Err';
+        e.style.cssText = 'color:#8a4b00;font-weight:700;margin:6px 0'; s.parentNode.insertBefore(e, s.nextSibling); } }
+      e.textContent = 'Please choose your language.'; e.style.display = 'block';
+      s.focus(); return;
+    }
+    keep(s.value);
+  }, true);
+  document.addEventListener('change', function(ev){
+    var t = ev.target; if (!t) return;
+    if (t.id === C.gate || (C.bar && t.id === C.bar)) keep(t.value);
+  }, true);
+  fix();
+  document.addEventListener('DOMContentLoaded', function(){ setTimeout(fix, 0); setTimeout(fix, 1500); });
+  window.addEventListener('load', function(){ setTimeout(fix, 0); });
 })();
 </script>
 </body>

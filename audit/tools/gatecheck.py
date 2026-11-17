@@ -109,6 +109,10 @@ EO_SCRIPT = [
 ]
 EO_FIRST_ONLY = re.compile(r"""===\s*0\s*\?\s*['"]<option[^>]*>\s*English only""")  # only the toolbar picker
 MIRROR_SELECT = re.compile(r'<select[^>]*lang', re.I)
+# T-461c: a mirror that drops "English only" when it copies the toolbar picker
+EO_MIRROR_FIXED = re.compile(r'/english only/i\.test\(o\.textContent\)')
+# T-461c: a script line marked "toolbar only" builds the toolbar picker, not the sign-in list
+EO_TOOLBAR_ONLY = 'toolbar only'
 
 
 def eo_check(t):
@@ -123,6 +127,9 @@ def eo_check(t):
             parent[c] = p
     # pages that copy the toolbar picker into #gate-lang: its options ARE the sign-in options
     mirror = 'gate-lang' in t and bool(MIRROR_SELECT.search(t) or LANGS_ARRAY.search(t))
+    mirror_fixed = mirror and bool(EO_MIRROR_FIXED.search(t))
+    if mirror_fixed:
+        mirror = False
 
     def in_gate(el):
         n = parent.get(el)
@@ -144,6 +151,8 @@ def eo_check(t):
         for o in s.iter(HTML_NS + 'option'):
             if EO_TEXT.match(''.join(o.itertext())):
                 return ['bad', 'sign-in offers English only']
+    if not gate_picker and mirror_fixed:
+        return ['ok', 'no English only (sign-in copy drops it)']
     if not gate_picker:
         return ['na', 'no picker in the sign-in box']
     scripts = '\n'.join(''.join(sc.itertext()) for sc in root.iter(HTML_NS + 'script') if not sc.get('src'))
@@ -151,8 +160,38 @@ def eo_check(t):
         for m in rx.finditer(scripts):
             if EO_FIRST_ONLY.search(scripts[max(0, m.start() - 40):m.end()]):
                 continue
+            ls = scripts.rfind('\n', 0, m.start()) + 1
+            le = scripts.find('\n', m.end())
+            if EO_TOOLBAR_ONLY in scripts[ls:le if le >= 0 else len(scripts)]:
+                continue
             return ['bad', 'sign-in list includes English only']
     return ['ok', 'no English only']
+
+
+# ── "Chrome translate off" (T-470) ───────────────────────────────────────
+# Chrome's own page translation must stay off on student pages (T-463/T-468):
+# <html translate="no">, <meta name="google" content="notranslate">, or track.js
+# (which sets both when the page loads). Only the page's own HTML counts.
+CT_HTML = re.compile(r'<html\b[^>]*>', re.I)
+CT_NO = re.compile(r'\btranslate\s*=\s*["\']?no\b', re.I)
+CT_META = re.compile(r'<meta[^>]*name\s*=\s*["\']google["\'][^>]*content\s*=\s*["\']notranslate', re.I)
+CT_TEACHER = re.compile(r'dashboard|teacher|(^|/)(wall|preview|handout|share|check|404)\.html$|_archive/|(^|/)print/|^atlas/', re.I)
+CT_TRACK = re.compile(r'<script[^>]+src\s*=\s*["\'][^"\']*track\.js', re.I)
+
+
+def ct_check(t):
+    """Return [status, detail] exactly as check.html's ctCheck(t) does."""
+    page = t.split('\n/* included */\n', 1)[0]
+    if re.search(r'http-equiv\s*=\s*["\']refresh', page, re.I):
+        return ['na', 'redirect stub']
+    h = CT_HTML.search(page)
+    if h and CT_NO.search(h.group(0)):
+        return ['ok', 'translate="no" on <html>']
+    if CT_META.search(page):
+        return ['ok', 'meta notranslate']
+    if CT_TRACK.search(page):
+        return ['ok', 'track.js turns it off']
+    return ['bad', 'Chrome can translate the page']
 
 
 if __name__ == '__main__':

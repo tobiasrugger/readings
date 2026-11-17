@@ -100,7 +100,7 @@ code{background:var(--pine-soft);padding:1px 5px;border-radius:5px;font-size:.92
   <div class="tablewrap" id="tablewrap" hidden>
     <table>
       <thead><tr>
-        <th>Page</th><th>Login</th><th>Languages</th><th>At sign-in</th><th>No English only</th><th>Period</th>
+        <th>Page</th><th>Login</th><th>Languages</th><th>At sign-in</th><th>No English only</th><th>Chrome translate off</th><th>Period</th>
         <th>Protect</th><th>Tap words</th><th>Canary</th><th>Tracker</th><th>Saving</th><th>Loads first</th><th>Robot</th>
       </tr></thead>
       <tbody id="body"></tbody>
@@ -111,6 +111,8 @@ code{background:var(--pine-soft);padding:1px 5px;border-radius:5px;font-size:.92
     <b>No English only</b> = the language list in the sign-in box has no "English only"
     choice (project rule). Toolbar pickers outside the box, "Instructions: English only"
     toggles and the "You chose English only" message don't count.
+    <b>Chrome translate off</b> = Chrome's own page translation can't change the English
+    (translate="no" on &lt;html&gt;, the notranslate meta, or track.js); teacher pages are n/a.
     <b>Loads first</b> = the page reads the student's saved work before it writes any
     (saveguard.js, or the page's own inline guard). <b>Robot</b> = the last run of
     readings/robot/robot.py, which drives a real browser through three situations:
@@ -135,7 +137,7 @@ code{background:var(--pine-soft);padding:1px 5px;border-radius:5px;font-size:.92
    (audit.py, gatecheck.py) together; see tools/README.md.
    ──────────────────────────────────────────────────────────────── */
 
-var COLS = ['login','lang','gate','eo','period','trans','tap','canary','track','supa','save','robot'];
+var COLS = ['login','lang','gate','eo','ct','period','trans','tap','canary','track','supa','save','robot'];
 var MARK = {ok:'\u2713', warn:'~', bad:'\u2717', na:'N/A'};
 
 var LANG_NAMES = {es:'Spanish','zh-CN':'Chinese','zh-TW':'Chinese',yue:'Chinese',zh:'Chinese',
@@ -240,6 +242,9 @@ function eoCheck(t){
   if (!doc) return ['warn','could not read the page'];
   /* pages that copy the toolbar picker into #gate-lang: its options ARE the sign-in options */
   var mirror = t.indexOf('gate-lang') >= 0 && (/<select[^>]*lang/i.test(t) || /LANGS\s*=\s*\[/.test(t));
+  /* T-461c: a mirror that drops "English only" from its copy is fine */
+  var mirrorFixed = mirror && /\/english only\/i\.test\(o\.textContent\)/.test(t);
+  if (mirrorFixed) mirror = false;
   var sels = doc.querySelectorAll('select'), gatePicker = false;
   for (var j = 0; j < sels.length; j++) {
     var s = sels[j];
@@ -255,6 +260,7 @@ function eoCheck(t){
     var os = s.querySelectorAll('option');
     for (var k = 0; k < os.length; k++) if (EO_TEXT.test(os[k].textContent)) return ['bad','sign-in offers English only'];
   }
+  if (!gatePicker && mirrorFixed) return ['ok','no English only (sign-in copy drops it)'];
   if (!gatePicker) return ['na','no picker in the sign-in box'];
   var scripts = Array.prototype.map.call(doc.querySelectorAll('script:not([src])'),
                   function(sc){ return sc.textContent; }).join('\n');
@@ -263,10 +269,25 @@ function eoCheck(t){
     rx.lastIndex = 0;
     while ((m = rx.exec(scripts))) {
       if (EO_FIRST_ONLY.test(scripts.slice(Math.max(0, m.index - 40), m.index + m[0].length))) continue;
+      /* T-461c: a line marked "toolbar only" builds the toolbar picker, not the sign-in list */
+      var ls = scripts.lastIndexOf('\n', m.index - 1) + 1, le = scripts.indexOf('\n', m.index + m[0].length);
+      if (scripts.slice(ls, le >= 0 ? le : scripts.length).indexOf('toolbar only') >= 0) continue;
       return ['bad','sign-in list includes English only'];
     }
   }
   return ['ok','no English only'];
+}
+
+/* "Chrome translate off" (T-470): Chrome's own page translation stays off on
+   student pages (T-463/T-468). Only the page's own HTML counts. */
+function ctCheck(t){
+  var page = t.split('\n/* included */\n')[0];
+  if (/http-equiv\s*=\s*["']refresh/i.test(page)) return ['na','redirect stub'];
+  var h = page.match(/<html\b[^>]*>/i);
+  if (h && /\btranslate\s*=\s*["']?no\b/i.test(h[0])) return ['ok','translate="no" on <html>'];
+  if (/<meta[^>]*name\s*=\s*["']google["'][^>]*content\s*=\s*["']notranslate/i.test(page)) return ['ok','meta notranslate'];
+  if (/<script[^>]+src\s*=\s*["'][^"']*track\.js/i.test(page)) return ['ok','track.js turns it off'];
+  return ['bad','Chrome can translate the page'];
 }
 
 function kindOf(path, t){
@@ -319,6 +340,7 @@ function checkText(path, t){
 
   r.gate = gateCheck(t);
   r.eo = eoCheck(t);
+  r.ct = ctCheck(t);
 
   var p = periodInfo(t);
   if (p.type === 'select' && p.nums.join() === '1,2,3,4,5,6,7') r.period = ['ok','1-7'];
@@ -387,6 +409,9 @@ function checkText(path, t){
     r.track = ['na','n/a']; r.gate = ['na','n/a']; r.eo = ['na','n/a'];
     r.save = ['na','n/a']; r.robot = ['na','n/a'];
   }
+  if ((r.kind !== 'student' && r.kind !== 'hub') ||
+      /dashboard|teacher|(^|\/)(wall|preview|handout|share|check|404)\.html$|_archive\/|(^|\/)print\/|^atlas\//i.test(path))
+    r.ct = ['na','teacher page (left open on purpose)'];
   return r;
 }
 
@@ -450,7 +475,7 @@ document.getElementById('goOne').addEventListener('click', function(){
   });
 });
 function label(c){
-  return {login:'Login', lang:'Languages', gate:'At sign-in', eo:'No English only', period:'Period', trans:'Protect',
+  return {login:'Login', lang:'Languages', gate:'At sign-in', eo:'No English only', ct:'Chrome translate off', period:'Period', trans:'Protect',
           tap:'Tap words', canary:'Canary', track:'Tracker', supa:'Saving',
           save:'Loads first', robot:'Robot'}[c];
 }

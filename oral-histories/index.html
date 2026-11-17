@@ -202,7 +202,7 @@ body.tap-on .wt-tap:hover{background:#eef5f1}
     <option>Period 1</option><option>Period 2</option><option>Period 3</option><option>Period 4</option><option>Period 5</option><option>Period 6</option><option>Period 7</option>
   </select>
     <label>Your home language (for translation)</label>
-    <select id="gLang" class="inl"><option value="">English only</option><option value="es">Español</option><option value="zh">中文</option><option value="ar">العربية</option><option value="vi">Tiếng Việt</option><option value="ru">Русский</option><option value="ur">اردو</option><option value="tl">Tagalog</option><option value="fr">Français</option><option value="ko">한국어</option><option value="hi">हिन्दी</option><option value="so">Soomaali</option><option value="ne">नेपाली</option><option value="th">ไทย</option></select>
+    <select id="gLang" class="inl"><option value="">Choose your language…</option><option value="es">Español</option><option value="zh">中文</option><option value="ar">العربية</option><option value="vi">Tiếng Việt</option><option value="ru">Русский</option><option value="ur">اردو</option><option value="tl">Tagalog</option><option value="fr">Français</option><option value="ko">한국어</option><option value="hi">हिन्दी</option><option value="so">Soomaali</option><option value="ne">नेपाली</option><option value="th">ไทย</option></select>
     <button class="go" id="gGo">Start</button>
     <div class="err" id="gErr">Please fill in your name, email, and period.</div>
     <button class="skip" id="gSkip">Working on paper / no account &mdash; just open it</button>
@@ -1546,7 +1546,10 @@ function startApp(){
   if(window.__paintSketch) window.__paintSketch();
   renderCats(); renderBank();
   scoreAll(); countWords(); updateProgress();
-  if(STU.lang){ $('#langSel').value = STU.lang; }
+  if(STU.lang){   /* T-461: hand the sign-in code (vi) to the picker, which uses names (Vietnamese) */
+    var LMAP = {es:'Spanish', zh:'Chinese (Simplified)', ar:'Arabic', vi:'Vietnamese', th:'Thai', ne:'Nepali'};
+    $('#langSel').value = LMAP[STU.lang] || STU.lang; if($('#langSel').selectedIndex < 0) $('#langSel').value = '';
+  }
   var slug = ANS.__slug || 'oh_story1';
   $('#storyPick').value = slug;
   loadStory(slug);
@@ -1759,6 +1762,41 @@ $('#gSkip').addEventListener('click', function(){ startApp(); });
   window.checkTranslation=checkTranslation;
   setInterval(checkTranslation, 20000);
   setTimeout(checkTranslation, 4000);
+})();
+</script>
+<script>/* T-461: the sign-in box needs a language (it never offers "English only"),
+   and the student's choice is remembered as vocab_lang for the word-practice pages */
+(function(){
+  var C = {"gate": "gLang", "btn": "#gGo", "err": "gErr", "bar": "langSel"};
+  function keep(v){ if (v && !/^(none|en|english)$/i.test(v)) { try { localStorage.setItem('vocab_lang', v); } catch(e){} } }
+  function gs(){ return document.getElementById(C.gate); }
+  function fix(){
+    var s = gs(); if (!s) return;
+    if (s.selectedIndex < 0) s.value = '';
+    if (!s.value) { try { var v = localStorage.getItem('vocab_lang');
+      if (v && [].some.call(s.options, function(o){ return o.value === v; })) s.value = v; } catch(e){} }
+  }
+  document.addEventListener('click', function(ev){
+    var b = document.querySelector(C.btn);
+    if (!b || !ev.target || !(ev.target === b || b.contains(ev.target))) return;
+    var s = gs(); if (!s) return;
+    if (!s.value) {
+      ev.preventDefault(); ev.stopImmediatePropagation();
+      var e = C.err && document.getElementById(C.err);
+      if (!e) { e = document.getElementById('t461Err'); if (!e) { e = document.createElement('div'); e.id = 't461Err';
+        e.style.cssText = 'color:#8a4b00;font-weight:700;margin:6px 0'; s.parentNode.insertBefore(e, s.nextSibling); } }
+      e.textContent = 'Please choose your language.'; e.style.display = 'block';
+      s.focus(); return;
+    }
+    keep(s.value);
+  }, true);
+  document.addEventListener('change', function(ev){
+    var t = ev.target; if (!t) return;
+    if (t.id === C.gate || (C.bar && t.id === C.bar)) keep(t.value);
+  }, true);
+  fix();
+  document.addEventListener('DOMContentLoaded', function(){ setTimeout(fix, 0); setTimeout(fix, 1500); });
+  window.addEventListener('load', function(){ setTimeout(fix, 0); });
 })();
 </script>
 </body>
