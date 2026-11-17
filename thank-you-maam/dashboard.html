@@ -25,7 +25,8 @@ table{border-collapse:collapse;width:100%;font-size:14px}th,td{border:2px solid 
 <input id="pw" type="password" autocomplete="current-password" placeholder="Password" style="width:100%"><p><button class="pri" id="pwgo">Open</button> <span id="pwerr" class="bad"></span></p></div></div>
 <main>
 <h1>👜 Thank You, Ma’am — dashboard</h1>
-<p class="muted">Student pages: <a href="/readings/thank-you-maam/" target="_blank">https://tobiasrugger.github.io/readings/thank-you-maam/</a> · compare page <a href="/readings/thank-you-maam/compare/" target="_blank">https://tobiasrugger.github.io/readings/thank-you-maam/compare/</a></p>
+<!-- T-452: + Mother to Son column, ✓/✗/note marks on written answers, Pre-translate slug tyma -->
+<p class="muted">Student pages: <a href="/readings/thank-you-maam/" target="_blank">https://tobiasrugger.github.io/readings/thank-you-maam/</a> · compare page <a href="/readings/thank-you-maam/compare/" target="_blank">https://tobiasrugger.github.io/readings/thank-you-maam/compare/</a> · poem <a href="/readings/thank-you-maam/poem/" target="_blank">https://tobiasrugger.github.io/readings/thank-you-maam/poem/</a></p>
 
 <div class="box" id="storybox"><h2>📄 Story text</h2>
 <p class="muted">Paste the whole story once, from your class copy. Leave a blank line between paragraphs (if your copy has none, each line becomes a paragraph). Then check where the three parts start and press <b>Save story</b>. Students see it the next time they open the page.</p>
@@ -72,7 +73,7 @@ function loadStory(){return fetch(SUPA+'/rest/v1/song_lyrics?select=lines,update
  else $('#cur').innerHTML='<span class="bad">No story yet.</span> Students see “read Part 1 in your paper copy” until you paste it.';}).catch(function(){$('#cur').textContent='Could not load (server).';});}
 /* ---- students ---- */
 var ROWS=[];
-function load(){$('#cnt').textContent='Loading…';fetch(SUPA+'/rest/v1/landlady_responses?select=email,student_name,period,guide_key,payload,answered,total,updated_at&guide_key=in.(thank_you_maam,tyma_compare)&order=updated_at.desc',{headers:H()})
+function load(){$('#cnt').textContent='Loading…';fetch(SUPA+'/rest/v1/landlady_responses?select=id,email,student_name,period,guide_key,payload,marks,answered,total,updated_at&guide_key=in.(thank_you_maam,tyma_compare,tyma_poem)&order=updated_at.desc',{headers:H()})
  .then(function(r){return r.json();}).then(function(rows){ROWS=rows||[];var ps={};ROWS.forEach(function(r){if(r.period!=null&&r.period!=='')ps[String(r.period)]=1;});
   var sel=$('#per'),cur=sel.value;sel.innerHTML='<option value="">All periods</option>'+Object.keys(ps).sort(function(a,b){return a-b;}).map(function(p){return '<option value="'+p+'">Period '+p+'</option>';}).join('');sel.value=cur;draw();});}
 function key(e){return String(e||'').toLowerCase().split('@')[0];}
@@ -81,27 +82,50 @@ function draw(){var p=$('#per').value,q=$('#q').value.trim().toLowerCase();var b
  var list=Object.keys(by).map(function(k){return by[k];}).sort(function(a,b){return String(a.name).localeCompare(String(b.name));});
  $('#cnt').textContent=list.length+' students';
  function cell(r){if(!r)return '<span class="muted">—</span>';var m=r.payload&&r.payload.meta||{};var pct=r.total?Math.round(100*r.answered/r.total):0;var b=window.GAL04&&GAL04.band?GAL04.band(pct):'';return r.answered+'/'+r.total+' <b>'+b+'</b>'+(m.extra?' · ⭐'+m.extra:'');}
- $('#tbl').innerHTML='<tr><th>Student</th><th>P</th><th>Story</th><th>Compare</th><th>Last saved</th><th></th></tr>'+list.map(function(s){return '<tr class="s" data-k="'+s.k+'"><td>'+esc(s.name)+'<div class="muted">'+esc(s.k)+'</div></td><td>'+esc(s.period)+'</td><td>'+cell(s.thank_you_maam)+'</td><td>'+cell(s.tyma_compare)+'</td><td>'+new Date(s.t).toLocaleString()+'</td><td><a href="/readings/thank-you-maam/?view=teacher&email='+encodeURIComponent(s.email)+'" target="_blank">👀 story</a> · <a href="/readings/thank-you-maam/compare/?view=teacher&email='+encodeURIComponent(s.email)+'" target="_blank">👀 compare</a></td></tr>';}).join('');
+ $('#tbl').innerHTML='<tr><th>Student</th><th>P</th><th>Story</th><th>Compare</th><th>Poem</th><th>✎</th><th>Last saved</th><th></th></tr>'+list.map(function(s){return '<tr class="s" data-k="'+s.k+'"><td>'+esc(s.name)+'<div class="muted">'+esc(s.k)+'</div></td><td>'+esc(s.period)+'</td><td>'+cell(s.thank_you_maam)+'</td><td>'+cell(s.tyma_compare)+'</td><td>'+cell(s.tyma_poem)+'</td><td>'+(unm(s)?'<b class="bad">✎ '+unm(s)+'</b>':'')+'</td><td>'+new Date(s.t).toLocaleString()+'</td><td><a href="/readings/thank-you-maam/?view=teacher&email='+encodeURIComponent(s.email)+'" target="_blank">👀 story</a> · <a href="/readings/thank-you-maam/compare/?view=teacher&email='+encodeURIComponent(s.email)+'" target="_blank">👀 compare</a> · <a href="/readings/thank-you-maam/poem/?view=teacher&email='+encodeURIComponent(s.email)+'" target="_blank">👀 poem</a></td></tr>';}).join('');
  window.__by=by;}
 $('#tbl').addEventListener('click',function(e){var tr=e.target.closest('tr.s');if(!tr||e.target.closest('a'))return;var nx=tr.nextElementSibling;if(nx&&nx.classList.contains('det')){nx.remove();return;}
- var s=window.__by[tr.getAttribute('data-k')];var h='';['thank_you_maam','tyma_compare'].forEach(function(g){var r=s[g];if(!r)return;var P=r.payload||{};h+='<h3>'+(g==='thank_you_maam'?'Story':'Compare')+'</h3>';
-  Object.keys(P.q||{}).forEach(function(id){if(String(P.q[id]).trim())h+='<div class="ans"><i>'+esc(id)+'</i> — '+esc(P.q[id])+'</div>';});
+ var s=window.__by[tr.getAttribute('data-k')];var h='';['thank_you_maam','tyma_compare','tyma_poem'].forEach(function(g){var r=s[g];if(!r)return;var P=r.payload||{};h+='<h3>'+NAMES[g]+'</h3>';
+  Object.keys(P.q||{}).forEach(function(id){if(String(P.q[id]).trim()&&!/^ctl/.test(id))h+=ctlHTML(r,id,P.q[id]);else if(String(P.q[id]).trim())h+='<div class="ans"><i>'+esc(id)+'</i> — '+esc(P.q[id])+'</div>';});
+  var rec=P.rec||{};Object.keys(rec).forEach(function(id){h+='<div class="ans">🎤 <a href="'+SUPA+'/storage/v1/object/public/fluency-recordings/'+rec[id].path+'" target="_blank">Listen to the recording</a></div>';});
   var miss=Object.keys(P.mc||{}).filter(function(id){return P.mc[id].misses;}).map(function(id){var m=P.mc[id];return id+' ('+m.misses+(m.shown?', answer shown':'')+')';});
   if(miss.length)h+='<div class="muted">Missed first: '+esc(miss.join(' · '))+'</div>';
   var sig=P.sig||{};var nt=Object.keys(sig).filter(function(n){return /t/.test(sig[n]);}),nk=Object.keys(sig).filter(function(n){return /k/.test(sig[n]);});if(nt.length||nk.length)h+='<div class="muted">'+(nt.length?'✊ tough ¶'+nt.join(', ¶'):'')+(nt.length&&nk.length?' · ':'')+(nk.length?'☀ kind ¶'+nk.join(', ¶'):'')+'</div>';});
- var d=document.createElement('tr');d.className='det';d.innerHTML='<td colspan="6">'+(h||'Nothing yet.')+'</td>';tr.after(d);});
+ var d=document.createElement('tr');d.className='det';d.innerHTML='<td colspan="8">'+(h||'Nothing yet.')+'</td>';tr.after(d);});
+/* ---- T-452: Mr. Toby's marks on written answers (✓ / ✗ + note). marks[qid]={m:'ok'|'x',note,a,at}, the same shape as landlady/marks.js.
+   Students' own saves never send the marks column. A ✗ answer the student has not changed stops counting on their next save. ---- */
+var NAMES={thank_you_maam:'Story',tyma_compare:'Compare',tyma_poem:'Mother to Son'};
+function nrm(a){return String(a==null?'':a).replace(/\s+/g,' ').trim();}
+function mst(mk,a){a=nrm(a);if(!mk||!mk.m||!a)return 'none';var same=nrm(mk.a)===a;if(mk.m==='x')return same?'x':'fixed';return same?'ok':'changed';}
+function unm(s){var n=0;['thank_you_maam','tyma_compare','tyma_poem'].forEach(function(g){var r=s[g];if(!r)return;var q=(r.payload||{}).q||{},m=r.marks||{};Object.keys(q).forEach(function(id){if(/^ctl/.test(id)||!nrm(q[id]))return;var st=mst(m[id],q[id]);if(st!=='ok'&&st!=='x')n++;});});return n;}
+function ctlHTML(r,id,a){var mk=(r.marks||{})[id]||{},st=mst(mk,a),lab={none:'not marked',ok:'✓ marked',x:'✗ marked',fixed:'✏️ changed after ✗ — check again',changed:'✏️ changed after ✓ — check again'}[st];
+ return '<div class="ans gmk" data-row="'+r.id+'" data-g="'+r.guide_key+'" data-q="'+esc(id)+'"><i>'+esc(id)+'</i> — '+esc(a)+'<div class="row" style="margin-top:6px"><button data-m="ok">✓</button><button data-m="x">✗</button><input placeholder="note (needed for ✗)" value="'+esc(mk.note||'')+'" style="flex:1;min-width:160px"><button data-m="clear">clear</button><span class="muted st">'+lab+'</span></div></div>';}
+document.addEventListener('click',function(e){var b=e.target.closest('.gmk [data-m]');if(!b)return;var box=b.closest('.gmk'),what=b.getAttribute('data-m'),note=nrm(box.querySelector('input').value),st=box.querySelector('.st');
+ if(what==='x'&&!note){st.textContent='Write a short note first — the student sees it.';st.className='bad st';box.querySelector('input').focus();return;}
+ var id=box.getAttribute('data-q'),rid=box.getAttribute('data-row');st.textContent='Saving…';
+ fetch(SUPA+'/rest/v1/landlady_responses?select=marks,payload&id=eq.'+encodeURIComponent(rid),{headers:H()}).then(function(x){if(!x.ok)throw new Error('HTTP '+x.status);return x.json();}).then(function(rows){
+  var cur=(rows[0]&&rows[0].marks)||{},q=((rows[0]&&rows[0].payload)||{}).q||{};if(what==='clear')delete cur[id];else cur[id]={m:what,note:note,a:q[id]||'',at:new Date().toISOString()};
+  return fetch(SUPA+'/rest/v1/landlady_responses?id=eq.'+encodeURIComponent(rid),{method:'PATCH',headers:H({Prefer:'return=minimal'}),body:JSON.stringify({marks:cur})}).then(function(x){if(!x.ok)throw new Error('HTTP '+x.status);
+   ROWS.forEach(function(r){if(String(r.id)===String(rid))r.marks=cur;});var r0=ROWS.filter(function(r){return String(r.id)===String(rid);})[0];box.outerHTML=ctlHTML(r0,id,q[id]||'');});
+ }).catch(function(err){st.textContent='Not saved: '+err.message;st.className='bad st';});});
 $('#per').onchange=draw;$('#q').oninput=draw;$('#reload').onclick=load;
 /* Chrome autofill guard (T-388 lesson) */
 setTimeout(function(){var q=$('#q');if(q.value&&q.value.indexOf('@')>0){q.value='';draw();}},800);
 /* ---- pre-translate ---- */
 var WORDS=[['purse','a bag a woman carries for money and things'],['stoop','the stone steps in front of a city building'],['frail','thin and weak'],['half nelson','a hold around someone\u2019s neck from behind'],['blue suede shoes','soft blue shoes that were very cool in the 1950s'],['icebox','an old word for a refrigerator'],['presentable','clean and neat enough to be seen'],['ashamed','feeling bad because you did something wrong'],['trust','to believe someone will do the right thing'],['latch','a metal piece that keeps a door shut']];
 var DIRS=['Sign in to start. Your work saves by itself.','Learn the page first. Look at the picture. Press 🔊 to hear any sentence. Tap any word to see it in your language.','Tough or kind? Mrs. Jones is both. Beside each paragraph, tap ✊ when she is tough and ☀ when she is kind. Some paragraphs are both. Tap a paragraph number to colour it.','Look at how one student did it, then write your own.','Next: answer the question','Next: write your answer','Start here — try the tools in the yellow box','You finished this part.'];
+var POEM=['Well, son, I\u2019ll tell you:','Life for me ain\u2019t been no crystal stair.','It\u2019s had tacks in it,','And splinters,','And boards torn up,','And places with no carpet on the floor --','Bare.','But all the time','I\u2019se been a-climbin\u2019 on,','And reachin\u2019 landin\u2019s,','And turnin\u2019 corners,','And sometimes goin\u2019 in the dark','Where there ain\u2019t been no light.','So boy, don\u2019t you turn back.','Don\u2019t you set down on the steps','\u2019Cause you finds it\u2019s kinder hard.','Don\u2019t you fall now --','For I\u2019se still goin\u2019, honey,','I\u2019se still climbin\u2019,','And life for me ain\u2019t been no crystal stair.'];
+var PDIRS=['Learn the page first. Look at the two stairs. Press 🔊 to hear a sentence. Tap any word to see it in your language.','The mother talks the way people talked at home in her neighborhood. Hughes wrote her words the way she would really say them. Here is what they mean:','The stair is not a real stair. It is her life. Look at each picture. What does it mean in the poem?','Find these moments in Thank You, Ma\u2019am. The numbers are the paragraph numbers.','Read the question below. Then look at how one student answered a different question, about the dark.','Pick your help. All three are worth the same.','No help. Write it your own way.','Now read the poem out loud yourself and record it. One good try is enough.'];
+var PWORDS=[['crystal stair','a stair made of shining glass: smooth, clean and beautiful'],['tacks','small sharp nails that can hurt your feet'],['splinters','small sharp pieces of broken wood'],['landing','the flat place where a stair turns'],['in the dark','with no light, so you cannot see where you are going'],['set down','sit down']];
 function boot(){loadStory();load();
  if(window.GAL&&GAL.pretr)GAL.pretr({host:'#pt',title:'Pre-translate Thank You, Ma\u2019am',
   langs:[['zh-CN','Mandarin'],['yue','Cantonese'],['es','Spanish'],['ar','Arabic'],['vi','Vietnamese'],['th','Thai'],['ne','Nepali'],['ary','Darija'],['ru','Russian'],['ur','Urdu'],['tl','Tagalog'],['fr','French'],['ko','Korean'],['hi','Hindi'],['so','Somali']],
   ticked:['es','zh-CN','ar','vi'],
   items:[{key:'thank-you-maam',title:'Thank You, Ma\u2019am · story, words, directions',lines:function(){return loadStory().then(function(){var L=[];
-   DIRS.forEach(function(t){L.push({src:t,slug:'dir',mode:'sentence'});});PARAS.forEach(function(p){L.push({src:p,slug:'dir',mode:'sentence'});});
-   WORDS.forEach(function(w){L.push({src:w[0],slug:'tap:thank-you-maam',meaning:w[1]});});return L;});}}]});}
+   DIRS.forEach(function(t){L.push({src:t,slug:'tyma',mode:'sentence'});});PARAS.forEach(function(p){L.push({src:p,slug:'tyma',mode:'sentence'});});
+   WORDS.forEach(function(w){L.push({src:w[0],slug:'tap:thank-you-maam',meaning:w[1]});});  /* words: std.js's tap cache for this page */return L;});}},
+   {key:'thank-you-maam/poem',title:'Mother to Son · poem lines, words, directions',lines:function(){var L=[];
+   PDIRS.forEach(function(t){L.push({src:t,slug:'tyma',mode:'sentence'});});POEM.forEach(function(t){L.push({src:t,slug:'tyma',mode:'sentence'});});
+   PWORDS.forEach(function(w){L.push({src:w[0],slug:'tap:thank-you-maam',meaning:w[1]});});  /* words: std.js's tap cache for this page */return L;}}]});}
 </script>
 </body></html>
