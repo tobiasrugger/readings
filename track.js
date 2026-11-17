@@ -22,6 +22,58 @@
   if (window.__GAL_TRACK__) return;
   window.__GAL_TRACK__ = true;
 
+  /* ---------------------------------------------------------------
+     T-463 (Nov 17 2026): Chrome's own page translation is OFF on every
+     page that loads track.js. Students turned on "Translate to 中文" and
+     Chrome rewrote the whole page, English included (seen on landlady/
+     and launch-plus/u1-l3/). Pages give their own translations under
+     the English, so Chrome's is never needed.
+       - <html translate="no"> + class notranslate: Chrome skips the page,
+         even if "always translate English" is on.
+       - <meta name="google" content="notranslate">: no translate offer.
+       - any old translate="yes" (vocab sets) becomes "no", or it would
+         switch Chrome back on for that part.
+     A tab Chrome already translated goes back to English on reload.
+     --------------------------------------------------------------- */
+  try {
+    var R = document.documentElement;
+    R.setAttribute('translate', 'no');
+    R.classList.add('notranslate');
+    var hd = document.head || R;
+    if (!document.querySelector('meta[name="google"][content="notranslate"]')) {
+      var m = document.createElement('meta');
+      m.name = 'google'; m.content = 'notranslate';
+      hd.insertBefore(m, hd.firstChild);
+    }
+    var noYes = function () {
+      var ys = document.querySelectorAll('[translate="yes"]');
+      for (var i = 0; i < ys.length; i++) ys[i].setAttribute('translate', 'no');
+    };
+    noYes();
+    document.addEventListener('DOMContentLoaded', noYes);
+    window.addEventListener('load', noYes);
+    /* pages (landlady, reel tiers, vocab sets) keep stamping translate="yes"
+       on new directions as students move around; turn each one back */
+    if (window.MutationObserver) {
+      new MutationObserver(function (ms) {
+        for (var i = 0; i < ms.length; i++) {
+          var mu = ms[i];
+          if (mu.type === 'attributes') {
+            if (mu.target.getAttribute('translate') === 'yes') mu.target.setAttribute('translate', 'no');
+          } else if (mu.addedNodes.length) {
+            for (var j = 0; j < mu.addedNodes.length; j++) {
+              var nd = mu.addedNodes[j];
+              if (nd.nodeType !== 1) continue;
+              if (nd.getAttribute('translate') === 'yes') nd.setAttribute('translate', 'no');
+              if (nd.querySelector && nd.querySelector('[translate="yes"]')) noYes();
+            }
+          }
+        }
+        if (R.getAttribute('translate') !== 'no') R.setAttribute('translate', 'no');
+      }).observe(R, { subtree: true, childList: true, attributes: true, attributeFilter: ['translate'] });
+    }
+  } catch (e) {}
+
   /* the student page standard (language in every sign-in box, readable dropdowns) */
   try {
     var stdFrom = document.currentScript && document.currentScript.src;
