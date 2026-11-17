@@ -9,6 +9,7 @@
  * group (Data, Reading, Vocabulary, Speaking, Writing, Grammar, Unit), note.
  */
 window.DASHBOARDS = (window.DASHBOARDS || []).concat([
+{url:'reel-test/ep01/dashboard.html',      name:'Story Check 1: The New Student (read-aloud + test)', course:'101', group:'Speaking', note:'Practice and test versions of the Ep 1 check (describing people, is/has, both/but). Listen to every read-aloud and set 0\u20132 per sentence; set 0\u20134 on the extras; your numbers go to the gradebook.'},
 {url:'reel-test/ep02/dashboard.html',      name:'Story Check 2: The Backpack (read-aloud + test)', course:'101', group:'Speaking', note:'Practice and test versions of the Ep 2 check. Listen to every read-aloud and set 0\u20132 per sentence; set 0\u20134 on the extras; your numbers go to the gradebook.'},
 {url:'reel-test/ep03/dashboard.html',      name:'Story Check 3: What Class Do We Have Now? (read-aloud + test)', course:'101', group:'Speaking', note:'Practice and test versions of the Ep 3 check (subjects, schedule, on/at/in). Listen to every read-aloud and set 0\u20132 per sentence; set 0\u20134 on the extras; your numbers go to the gradebook.'},
 {url:'reel-test/ep04/dashboard.html',      name:'Story Check 4: What\u2019s for Lunch Today? (read-aloud + test)', course:'101', group:'Speaking', note:'Practice and test versions of the Ep 4 check (lunch steps, sequence words). Listen to every read-aloud and set 0\u20132 per sentence; set 0\u20134 on the extras; your numbers go to the gradebook.'},
