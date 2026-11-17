@@ -858,7 +858,7 @@ $('gateForm').addEventListener('submit',function(ev){
   fetch(SUPA_URL+'/rest/v1/students?on_conflict=email',{method:'POST',headers:H('resolution=ignore-duplicates,return=minimal'),body:JSON.stringify([{email:me.email,first_name:first,last_name:last,period:per}])}).catch(function(){});
   if(em.alias!==em.canon)fetch(SUPA_URL+'/rest/v1/student_aliases?on_conflict=alias_email',{method:'POST',headers:H('resolution=merge-duplicates,return=minimal'),body:JSON.stringify([{alias_email:em.alias,email:em.canon}])}).catch(function(){});
   if(window.track){try{track({page:'brothers-in-arms',email:me.email,name:first+' '+last,period:per});}catch(e){}}
-  loadWork().then(function(){ensureOrders();fromHash();render();setInterval(function(){if(dirty)save();},20000);});
+  loadWork().then(function(){ensureOrders();fromHash();render();setInterval(function(){if(dirty&&!inFlight)save();},1500);});
 });
 function setLang(l){
   lang=normLang(l)||l; $('lang').value=lang; $('gLang').value=lang;
@@ -876,18 +876,26 @@ function loadWork(){
    .catch(function(){});
 }
 var lastLogged=null;
-function save(){
+/* T-480 save as you go: ~1 s after every answer; leaving sends the whole work NOW with keepalive, even if an earlier save is still on its way */
+var inFlight=0,soonT=null;
+function save(keep){
   if(!me)return Promise.resolve(false);
   var sc=score();
   var body={email:me.email,guide_key:GUIDE_KEY,name:me.first+' '+me.last,period:String(me.period),level:work.lv,lang:lang,answers:work,score:sc.s,max_score:sc.m,turned_in:afterDone(),updated_at:new Date().toISOString()};
-  return fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email,guide_key',{method:'POST',headers:H('resolution=merge-duplicates,return=minimal'),body:JSON.stringify(body)})
-   .then(function(r){if(r.ok){dirty=false;flash('Saved ✓');if(sc.s!==lastLogged){lastLogged=sc.s;try{if(window.GAL_logAttempt)GAL_logAttempt({score:sc.s,max_score:sc.m,detail:{source:'page',progress:true}});}catch(e){}}return true;}flash('Not saved ('+r.status+')');return false;})
-   .catch(function(){flash('Offline');return false;});
+  var str=JSON.stringify(body),snap=JSON.stringify(work);
+  var opts={method:'POST',headers:H('resolution=merge-duplicates,return=minimal'),body:str};
+  if(keep&&str.length<60000)opts.keepalive=true;
+  inFlight++;
+  return fetch(SUPA_URL+'/rest/v1/'+TABLE+'?on_conflict=email,guide_key',opts)
+   .then(function(r){inFlight--;if(r.ok){if(JSON.stringify(work)===snap)dirty=false;flash('Saved ✓');if(sc.s!==lastLogged){lastLogged=sc.s;try{if(window.GAL_logAttempt)GAL_logAttempt({score:sc.s,max_score:sc.m,detail:{source:'page',progress:true}});}catch(e){}}return true;}flash('Not saved ('+r.status+')');return false;})
+   .catch(function(){inFlight--;flash('Offline');return false;});
 }
 function flash(t){var s=$('saved');s.textContent=t;setTimeout(function(){if(s.textContent===t)s.textContent='';},2500);}
-function mark(){dirty=true;score();}
-window.addEventListener('beforeunload',function(){if(dirty&&me){try{save();}catch(e){}}});
-document.addEventListener('visibilitychange',function(){if(document.hidden&&dirty)save();});
+function soon(){clearTimeout(soonT);soonT=setTimeout(function(){soonT=null;if(dirty)save();},1000);}
+function mark(){dirty=true;score();soon();}
+function leaveSave(){clearTimeout(soonT);if(dirty&&me){try{save(true);}catch(e){}}}
+window.addEventListener('pagehide',leaveSave);
+document.addEventListener('visibilitychange',function(){if(document.hidden)leaveSave();});
 
 /* ---------------- answer order: shuffled once, stored, no 4-in-a-row ---------------- */
 function ensureOrders(){
