@@ -110,6 +110,57 @@
     };
   })();
 
+  /* T-469 (Nov 17): the voice starts quickly. Toby: the first 🔊 on Story Reel "Say it" and the
+     Landlady pages took ~10 s. Two causes on Chromebooks:
+     1. The speech engine only starts the first time a page asks it to talk. So on the student's
+        first tap anywhere (usually Start on the sign-in), we say nothing at volume 0 to wake it.
+        getVoices() is also called right away so the voice list starts loading.
+     2. "Google US English" (and the other Google voices) are NETWORK voices: every sentence goes
+        to Google's servers. Pages that pick "the first US voice" often get one. If an English
+        sentence is about to use a network voice (or no voice at all) and the Chromebook has an
+        on-device English voice, the sentence uses the on-device voice instead — the same rule
+        reel-v2/engine.js has used since T-109. Other languages are never touched. */
+  (function () {
+    var ss = window.speechSynthesis; if (!ss || ss.__galVoice) return; ss.__galVoice = 1;
+    var LOCAL = null;
+    function pick() {
+      try {
+        var vs = ss.getVoices() || [], loc = vs.filter(function (v) { return v.localService && /^en/i.test(v.lang); });
+        var us = loc.filter(function (v) { return /^en[-_]US/i.test(v.lang); });
+        LOCAL = us.filter(function (v) { return /US English/i.test(v.name); })[0] || us[0] || loc[0] || null;
+      } catch (e) {}
+    }
+    pick();
+    try { ss.addEventListener('voiceschanged', pick); } catch (e) {}
+    function english(u) {
+      var l = String((u.voice && u.voice.lang) || u.lang || '').toLowerCase();
+      return !l || /^en/.test(l);
+    }
+    var orig = ss.speak;
+    ss.speak = function (u) {
+      try {
+        if (!LOCAL) pick();
+        if (u && LOCAL && english(u) && (!u.voice || !u.voice.localService)) {
+          u.voice = LOCAL; if (!u.lang) u.lang = LOCAL.lang;
+        }
+      } catch (e) {}
+      return orig.apply(this, arguments);
+    };
+    var woke = false;
+    function wake() {
+      if (woke) return; woke = true;
+      ['pointerdown', 'keydown', 'touchstart'].forEach(function (t) { document.removeEventListener(t, wake, true); });
+      try {
+        if (ss.speaking || ss.pending) return;
+        var u = new SpeechSynthesisUtterance(' ');
+        u.volume = 0; u.rate = 2; u.__galWake = 1;
+        ss.speak(u);
+      } catch (e) {}
+    }
+    ['pointerdown', 'keydown', 'touchstart'].forEach(function (t) { document.addEventListener(t, wake, true); });
+    window.GAL_VOICE = { local: function () { if (!LOCAL) pick(); return LOCAL; }, woke: function () { return woke; } };
+  })();
+
   /* code, label shown, words that mean this language on other pickers */
   var LANGS = [
     ['es',    'Español',            'es|spanish|español|espanol'],
