@@ -35,10 +35,10 @@ import urllib.request
 import zipfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from gatecheck import gate_check  # noqa: E402
+from gatecheck import gate_check, eo_check  # noqa: E402
 
 REPOS = ['readings', 'comicdialogue', 'eld1assessment', 'eldadventure', 'galileohub', 'languagelaunch']
-COLS = ['login', 'lang', 'gate', 'period', 'trans', 'tap', 'canary', 'track', 'supa', 'save', 'robot']
+COLS = ['login', 'lang', 'gate', 'eo', 'period', 'trans', 'tap', 'canary', 'track', 'supa', 'save', 'robot']
 
 # ── which .html files are pages ────────────────────────────────────────────
 # _phases/ are frozen backups of live pages; audit/ is this tool; the rest
@@ -206,6 +206,7 @@ def check_text(path, t, robot):
         r['lang'] = ['bad', 'no language picker']
 
     r['gate'] = gate_check(t)
+    r['eo'] = eo_check(t)
 
     ptype, nums = period_info(t)
     if ptype == 'select' and nums == [1, 2, 3, 4, 5, 6, 7]:
@@ -293,7 +294,7 @@ def check_text(path, t, robot):
             r['robot'] = ['warn', str(v)]
 
     if r['kind'] != 'student':
-        for c in ('track', 'gate', 'save', 'robot'):
+        for c in ('track', 'gate', 'eo', 'save', 'robot'):
             r[c] = ['na', 'n/a']
     return r
 
@@ -388,7 +389,7 @@ def scan(repo_dirs):
                    'dir': repo + ('/' + rel_dir if rel_dir else ''),
                    'file': f, 'bytes': len(text), 'kind': r['kind']}
             for k in ('login', 'langs', 'lang', 'missing', 'period', 'trans', 'tap', 'canary',
-                      'gate', 'save', 'robot', 'track', 'supa'):
+                      'gate', 'eo', 'save', 'robot', 'track', 'supa'):
                 out[k] = r[k]
             out['repo'] = repo
             rows.append(out)
@@ -438,6 +439,11 @@ def summary(rows):
     lines.append('Robot, student pages: %d pass / %d fail / %d inconclusive / %d never driven'
                  % (rob.get('ok', 0), rob.get('bad', 0), rob.get('warn', 0), rob.get('na', 0)))
     return '\n'.join(lines)
+
+
+def eo_list(rows):
+    return [r['repo'] + '/' + r['path'] for r in rows
+            if r['kind'] == 'student' and r['eo'][0] == 'bad']
 
 
 def red_list(rows):
@@ -531,6 +537,11 @@ def main():
         print('Readings pages still red on Loads first (%d):' % len(reds))
         for p in reds:
             print('   ', p)
+
+    eo = eo_list(rows)
+    print('Sign-in boxes still offering "English only" (%d):' % len(eo))
+    for p in eo:
+        print('   ', p)
 
     if a.json:
         with open(a.json, 'w', encoding='utf-8') as f:

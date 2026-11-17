@@ -71,7 +71,7 @@ code{background:var(--pine-soft);padding:1px 5px;border-radius:5px;font-size:.92
 
   <div class="panel">
     <h2>Check one page</h2>
-    <p>Type a path and it fetches the page as it is live right now and runs the same eleven checks
+    <p>Type a path and it fetches the page as it is live right now and runs the same twelve checks
        the grid uses. Works for any repo on this site &mdash; <code>readings/news/</code>,
        <code>languagelaunch/ll_practice.html</code>, or a full URL.</p>
     <div class="row">
@@ -100,7 +100,7 @@ code{background:var(--pine-soft);padding:1px 5px;border-radius:5px;font-size:.92
   <div class="tablewrap" id="tablewrap" hidden>
     <table>
       <thead><tr>
-        <th>Page</th><th>Login</th><th>Languages</th><th>At sign-in</th><th>Period</th>
+        <th>Page</th><th>Login</th><th>Languages</th><th>At sign-in</th><th>No English only</th><th>Period</th>
         <th>Protect</th><th>Tap words</th><th>Canary</th><th>Tracker</th><th>Saving</th><th>Loads first</th><th>Robot</th>
       </tr></thead>
       <tbody id="body"></tbody>
@@ -108,6 +108,9 @@ code{background:var(--pine-soft);padding:1px 5px;border-radius:5px;font-size:.92
   </div>
 
   <p class="legend" style="margin-bottom:10px">
+    <b>No English only</b> = the language list in the sign-in box has no "English only"
+    choice (project rule). Toolbar pickers outside the box, "Instructions: English only"
+    toggles and the "You chose English only" message don't count.
     <b>Loads first</b> = the page reads the student's saved work before it writes any
     (saveguard.js, or the page's own inline guard). <b>Robot</b> = the last run of
     readings/robot/robot.py, which drives a real browser through three situations:
@@ -132,7 +135,7 @@ code{background:var(--pine-soft);padding:1px 5px;border-radius:5px;font-size:.92
    (audit.py, gatecheck.py) together; see tools/README.md.
    ──────────────────────────────────────────────────────────────── */
 
-var COLS = ['login','lang','gate','period','trans','tap','canary','track','supa','save','robot'];
+var COLS = ['login','lang','gate','eo','period','trans','tap','canary','track','supa','save','robot'];
 var MARK = {ok:'\u2713', warn:'~', bad:'\u2717', na:'N/A'};
 
 var LANG_NAMES = {es:'Spanish','zh-CN':'Chinese','zh-TW':'Chinese',yue:'Chinese',zh:'Chinese',
@@ -221,6 +224,51 @@ function gateCheck(t){
   return ['warn','picker is after sign-in'];
 }
 
+/* "No English only" (T-461): the sign-in box's language list must not offer
+   "English only". Port of eo_check() in tools/gatecheck.py — same rules. */
+var EO_TEXT = /^\s*(?:language\s*:\s*)?english only\s*$/i;
+var EO_SCRIPT = [
+  /\[\s*['"](?:none|en|english|)['"]\s*,\s*['"]English only['"]\s*\]/gi,   /* LANGS row */
+  /textContent\s*=\s*['"]English only['"]/g,                                 /* built option */
+  /['"]<option[^>]*>\s*(?:Language:\s*)?English only\s*<\/option>/gi         /* option string */
+];
+var EO_FIRST_ONLY = /===\s*0\s*\?\s*['"]<option[^>]*>\s*English only/;     /* only the toolbar picker */
+
+function eoCheck(t){
+  var doc;
+  try { doc = new DOMParser().parseFromString(t, 'text/html'); } catch (e) { doc = null; }
+  if (!doc) return ['warn','could not read the page'];
+  /* pages that copy the toolbar picker into #gate-lang: its options ARE the sign-in options */
+  var mirror = t.indexOf('gate-lang') >= 0 && (/<select[^>]*lang/i.test(t) || /LANGS\s*=\s*\[/.test(t));
+  var sels = doc.querySelectorAll('select'), gatePicker = false;
+  for (var j = 0; j < sels.length; j++) {
+    var s = sels[j];
+    var sid = (s.id || '') + ' ' + (s.className || '') + ' ' + (s.getAttribute('name') || '');
+    if (!/lang/i.test(sid)) continue;
+    var inGate = mirror;
+    for (var n = s.parentElement; n && !inGate; n = n.parentElement) {
+      var pid = (n.id || '') + ' ' + (typeof n.className === 'string' ? n.className : '');
+      if (GATEISH.test(pid)) inGate = true;
+    }
+    if (!inGate) continue;
+    gatePicker = true;
+    var os = s.querySelectorAll('option');
+    for (var k = 0; k < os.length; k++) if (EO_TEXT.test(os[k].textContent)) return ['bad','sign-in offers English only'];
+  }
+  if (!gatePicker) return ['na','no picker in the sign-in box'];
+  var scripts = Array.prototype.map.call(doc.querySelectorAll('script:not([src])'),
+                  function(sc){ return sc.textContent; }).join('\n');
+  for (var x = 0; x < EO_SCRIPT.length; x++) {
+    var rx = EO_SCRIPT[x], m;
+    rx.lastIndex = 0;
+    while ((m = rx.exec(scripts))) {
+      if (EO_FIRST_ONLY.test(scripts.slice(Math.max(0, m.index - 40), m.index + m[0].length))) continue;
+      return ['bad','sign-in list includes English only'];
+    }
+  }
+  return ['ok','no English only'];
+}
+
 function kindOf(path, t){
   var low = path.toLowerCase(), name = low.split('/').pop();
   var body0 = t.replace(/<input[^>]*type\s*=\s*["']password["'][^>]*>/gi, '')
@@ -270,6 +318,7 @@ function checkText(path, t){
   } else r.lang = ['bad','no language picker'];
 
   r.gate = gateCheck(t);
+  r.eo = eoCheck(t);
 
   var p = periodInfo(t);
   if (p.type === 'select' && p.nums.join() === '1,2,3,4,5,6,7') r.period = ['ok','1-7'];
@@ -335,7 +384,7 @@ function checkText(path, t){
   }
 
   if (r.kind !== 'student') {
-    r.track = ['na','n/a']; r.gate = ['na','n/a'];
+    r.track = ['na','n/a']; r.gate = ['na','n/a']; r.eo = ['na','n/a'];
     r.save = ['na','n/a']; r.robot = ['na','n/a'];
   }
   return r;
@@ -401,7 +450,7 @@ document.getElementById('goOne').addEventListener('click', function(){
   });
 });
 function label(c){
-  return {login:'Login', lang:'Languages', gate:'At sign-in', period:'Period', trans:'Protect',
+  return {login:'Login', lang:'Languages', gate:'At sign-in', eo:'No English only', period:'Period', trans:'Protect',
           tap:'Tap words', canary:'Canary', track:'Tracker', supa:'Saving',
           save:'Loads first', robot:'Robot'}[c];
 }

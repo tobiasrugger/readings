@@ -7,7 +7,7 @@ chat's container and were lost; now they live here so any chat can re-run them.
 | File | What it does |
 |---|---|
 | `audit.py` | Downloads (or reads) the six repos, scans every page, prints the counts, and rewrites `audit/index.html`. |
-| `gatecheck.py` | The "At sign-in" column. Parses the page as a browser would (html5lib) and asks whether the language picker sits inside the sign-in screen. `audit.py` imports it; it also runs on its own for one file. |
+| `gatecheck.py` | The "At sign-in" and "No English only" columns. Parses the page as a browser would (html5lib) and asks whether the language picker sits inside the sign-in screen. `audit.py` imports it; it also runs on its own for one file. |
 
 **One rule set, two engines.** The live checker
 (https://tobiasrugger.github.io/readings/audit/check.html, password galileo2026)
@@ -60,6 +60,7 @@ show N/A on the grid.
 | **Login** | email field + sfusd check + alias table or remembered email | email but no alias/prefill, or no sfusd check | name only, or no sign-in |
 | **Languages** | all 13 required (Spanish, Chinese, Arabic, Vietnamese, Russian, Urdu, Tagalog, French, Korean, Hindi, Somali, Nepali, Thai) | has Nepali and Thai, others missing | missing Nepali or Thai, or no picker |
 | **At sign-in** | picker is in the sign-in screen (own markup, the shared gate engine, or std.js adding it) | picker exists but after sign-in, or no sign-in screen | no picker |
+| **No English only** | the sign-in box's language list has no "English only" choice | — | it offers one (N/A = no picker in the box; At sign-in flags that). Toolbar pickers outside the box, "Instructions: English only" toggles, "Glossary: English only" and the "You chose English only" message don't count. A page that mirrors its toolbar picker into `#gate-lang` counts the toolbar's options. Checked Nov 17, 2026 against a real-browser scan of all 268 readings student pages: same 30 pages. |
 | **Period** | dropdown 1–7 | other range, or a free-text box | none |
 | **Protect** | `translate="no"` on content + a directions/mode toggle | one of the two | neither |
 | **Tap words** | tap-to-translate through the Apps Script proxy | tap UI on a local dictionary | none |
