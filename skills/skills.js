@@ -71,6 +71,7 @@
     ['favorites',             ['s.present', 'w.sentence']],
     ['teachme',               ['s.pron', 's.present']],
     /* Launch Plus and daily practice */
+    ['launch-plus/u1-l6',     ['r.text', 'r.vocab', 'w.sentence', 'w.expand', 'w.paragraph', 's.pron', 'h.nouns', 'h.verbs']],
     ['launch-plus/u1-l5',     ['r.text', 'r.vocab', 'w.sentence', 'w.expand', 's.pron', 'h.nouns']],
     ['launch-plus',           ['r.text', 'r.vocab', 'w.sentence', 'w.expand', 's.pron', 'h.verbs']],
     ['basics',                ['r.vocab', 'w.sentence', 'h.verbs']],
