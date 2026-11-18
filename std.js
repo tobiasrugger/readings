@@ -578,8 +578,12 @@
      "dir" is past that), and every caller waits for the same load instead of racing past it. */
   function cacheLoad(lg) {
     if (!lg) return Promise.resolve();
-    if (loadedLang[lg]) return loadedLang[lg];
-    var base = SUPA_URL + '/rest/v1/song_tr?select=slug,src,equiv,meaning&lang=eq.' + encodeURIComponent(lg) +
+    var L = canonLg(lg);                       /* T-490: Chinese rows under every old name load as "Chinese (Simplified)" */
+    if (loadedLang[L]) return loadedLang[L];
+    var langQ = L === 'Chinese (Simplified)'
+      ? 'lang=in.(' + ZH_NAMES.map(function (n) { return '"' + n + '"'; }).join(',') + ')'
+      : 'lang=eq.' + L;
+    var base = SUPA_URL + '/rest/v1/song_tr?select=slug,src,equiv,meaning,lang&' + encodeURI(langQ).replace(/#/g, '%23') +
                '&or=(slug.eq.dir,slug.eq.' + encodeURIComponent(PAGE_SLUG) + ')&order=slug.asc,src.asc';
     var STEP = 1000;
     function page(from) {
@@ -588,14 +592,15 @@
         .then(function (r) { return r.ok ? r.json() : []; })
         .then(function (rows) {
           (rows || []).forEach(function (r) {
-            var v = r.equiv || r.meaning || '';
-            if (v) tcache[ckey(r.slug, r.src, lg)] = v;
+            var v = r.equiv || r.meaning || '', k = ckey(r.slug, r.src, L);
+            if (!v || isErr(v)) return;
+            if (r.lang === L || !tcache[k]) tcache[k] = v;   /* the standard name wins */
           });
-          if (rows && rows.length === STEP && from < 30000) return page(from + STEP);
+          if (rows && rows.length === STEP && from < 40000) return page(from + STEP);
         });
     }
-    loadedLang[lg] = page(0).catch(function () {});
-    return loadedLang[lg];
+    loadedLang[L] = page(0).catch(function () {});
+    return loadedLang[L];
   }
   function cacheSave(slug, src, lg, val) {
     if (!val) return;
@@ -617,29 +622,120 @@
       clone: function () { return fakeRes(equiv); }
     };
   }
-  /* ================= T-488 ONE-WORD LABELS (Nov 17 2026) =================
-     A tab or button label sent alone ("Watch") reaches the translator with no context, and a
-     capitalised lone word comes back as the NOUN: "Watch" -> "Reloj" (a wristwatch). That answer
-     was then cached in song_tr (slug dir) and shown on every page in every language.
-     Labels here are ACTIONS, so they get a fixed verb, checked by hand, before the cache or the
-     translator is asked. Only requests with no meaning/definition (directions, tabs, buttons) —
-     a vocabulary word (mode=word, or sent with its definition) still goes to the translator, so "watch" the
-     noun in a word list is untouched. Add a label here when another one comes back as a noun. */
+  /* ================= T-488 / T-490 TRANSLATION GUARDS (Nov 17–18 2026) =================
+     Audit of all 9,927 saved translations (Toby's song_tr export, Nov 18) found:
+       - one-word labels sent alone came back as the wrong word: "Watch" → reloj (a wristwatch),
+         "Tap" → grifo (a faucet), "Match" → cerilla, "Present" → regalo, "Tense" → tenso (nervous),
+         "Saved" → 救了 (rescued). LABEL_FIX gives these a hand-checked word in every language.
+       - names translated as words: "Jun" → junio, "Dahl" → lentils, "ELD" → old age, "Bath" → bathroom.
+         KEEP returns them exactly as written. Single letters (B, M, P…) are kept too: "P" came back as 便便.
+       - the translator's ERROR messages saved and shown as translations ("Error: Input is not an English
+         word", 错误输入, no es una palabra…): isErr() — never saved, never shown.
+       - text with no English in it (a page's own Chinese/Thai translation line) sent to be translated
+         again: never sent. Numbers, blanks (_) and "…" are shown as they are, never translated.
+       - English echoed back as a Chinese/Arabic/Thai "translation": treated as no translation.
+       - long dictionary definitions saved for one word ("school" → "to reprimand someone"): shown once,
+         never saved.
+     Only requests with no meaning/definition and mode≠word count as labels; LABEL_FIX and KEEP also need a
+     capital first letter, so a tapped lowercase word in a story is untouched. Add a word to LABEL_FIX
+     when another label comes back wrong. */
   var LABEL_FIX = {
     watch:  { es: 'Mirar', 'zh-CN': '观看', yue: '睇', ar: 'شاهِد', vi: 'Xem', th: 'ดู', ne: 'हेर्नुहोस्',
               ary: 'تفرّج', ru: 'Смотреть', ur: 'دیکھیں', tl: 'Panoorin', fr: 'Regarder', ko: '보기',
               hi: 'देखें', so: 'Daawo' },
     record: { es: 'Grabar', 'zh-CN': '录音', yue: '錄音', ar: 'سجِّل', vi: 'Ghi âm', th: 'อัดเสียง',
               ne: 'रेकर्ड गर्नुहोस्', ary: 'سجّل', ru: 'Записать', ur: 'ریکارڈ کریں', tl: 'I-record',
-              fr: 'Enregistrer', ko: '녹음하기', hi: 'रिकॉर्ड करें', so: 'Duub' }
+              fr: 'Enregistrer', ko: '녹음하기', hi: 'रिकॉर्ड करें', so: 'Duub' },
+    match:  { es: 'Unir', 'zh-CN': '配对', yue: '配對', ar: 'طابِق', vi: 'Nối', th: 'จับคู่', ne: 'मिलाउनुहोस्',
+              ary: 'طابق', ru: 'Сопоставить', ur: 'ملائیں', tl: 'Itugma', fr: 'Associer', ko: '짝 맞추기', hi: 'मिलाएँ' },
+    tap:    { es: 'Toca', 'zh-CN': '点击', yue: '㩒', ar: 'اضغط', vi: 'Chạm', th: 'แตะ', ne: 'थिच्नुहोस्',
+              ru: 'Нажмите', ur: 'ٹیپ کریں', tl: 'I-tap', fr: 'Touchez', ko: '탭하기', hi: 'टैप करें' },
+    play:   { es: 'Reproducir', 'zh-CN': '播放', yue: '播放', ar: 'تشغيل', vi: 'Phát', th: 'เล่น', ne: 'बजाउनुहोस्',
+              ru: 'Воспроизвести', ur: 'چلائیں', tl: 'I-play', fr: 'Lire', ko: '재생', hi: 'चलाएँ' },
+    present:{ es: 'Presente', 'zh-CN': '现在时', yue: '現在式', ar: 'المضارع', vi: 'Hiện tại', th: 'ปัจจุบัน',
+              ne: 'वर्तमान', ru: 'Настоящее время', ur: 'حال', tl: 'Kasalukuyan', fr: 'Présent', ko: '현재', hi: 'वर्तमान' },
+    tense:  { es: 'Tiempo verbal', 'zh-CN': '时态', yue: '時態', ar: 'زمن الفعل', vi: 'Thì', th: 'กาล', ne: 'काल',
+              ru: 'Время глагола', ur: 'زمانہ', tl: 'Panahunan', fr: 'Temps', ko: '시제', hi: 'काल' },
+    saved:  { es: 'Guardado', 'zh-CN': '已保存', yue: '已儲存', ar: 'تم الحفظ', vi: 'Đã lưu', th: 'บันทึกแล้ว',
+              ne: 'सुरक्षित भयो', ru: 'Сохранено', ur: 'محفوظ ہو گیا', tl: 'Na-save', fr: 'Enregistré', ko: '저장됨', hi: 'सहेजा गया' },
+    saving: { es: 'Guardando', 'zh-CN': '正在保存', yue: '儲存緊', ar: 'جارٍ الحفظ', vi: 'Đang lưu', th: 'กำลังบันทึก',
+              ne: 'सुरक्षित गर्दै', ru: 'Сохранение', ur: 'محفوظ ہو رہا ہے', tl: 'Sine-save', fr: 'Enregistrement', ko: '저장 중', hi: 'सहेजा जा रहा है' },
+    drill:  { es: 'Práctica', 'zh-CN': '练习', yue: '練習', ar: 'تدريب', vi: 'Luyện tập', th: 'ฝึก', ne: 'अभ्यास',
+              ru: 'Упражнение', ur: 'مشق', tl: 'Pagsasanay', fr: 'Exercice', ko: '연습', hi: 'अभ्यास' },
+    key:    { es: 'Clave', 'zh-CN': '图例', yue: '圖例', ar: 'مفتاح الرموز', vi: 'Chú giải', th: 'คำอธิบายสัญลักษณ์',
+              ne: 'सङ्केत', ru: 'Условные обозначения', ur: 'علامتوں کی وضاحت', tl: 'Gabay', fr: 'Légende', ko: '범례', hi: 'संकेत सूची' },
+    guide:  { es: 'Guía', 'zh-CN': '指南', yue: '指南', ar: 'دليل', vi: 'Hướng dẫn', th: 'คู่มือ', ne: 'मार्गदर्शन',
+              ru: 'Руководство', ur: 'رہنما', tl: 'Gabay', fr: 'Guide', ko: '안내', hi: 'मार्गदर्शिका' },
+    fixed:  { es: 'Corregido', 'zh-CN': '已改正', yue: '已改正', ar: 'تم التصحيح', vi: 'Đã sửa', th: 'แก้แล้ว',
+              ne: 'सच्याइयो', ru: 'Исправлено', ur: 'درست کر دیا', tl: 'Naitama', fr: 'Corrigé', ko: '고침', hi: 'ठीक किया' },
+    clear:  { es: 'Borrar', 'zh-CN': '清除', yue: '清除', ar: 'مسح', vi: 'Xóa', th: 'ล้าง', ne: 'हटाउनुहोस्',
+              ru: 'Очистить', ur: 'صاف کریں', tl: 'Burahin', fr: 'Effacer', ko: '지우기', hi: 'साफ़ करें' },
+    highlight:{ es: 'Resaltar', 'zh-CN': '标记', yue: '標記', ar: 'تظليل', vi: 'Tô sáng', th: 'ไฮไลต์', ne: 'हाइलाइट',
+              ru: 'Выделить', ur: 'نمایاں کریں', tl: 'I-highlight', fr: 'Surligner', ko: '강조 표시', hi: 'हाइलाइट करें' },
+    great:  { es: '¡Excelente!', 'zh-CN': '太棒了', yue: '好叻', ar: 'رائع', vi: 'Tuyệt vời', th: 'เยี่ยม', ne: 'उत्कृष्ट',
+              ru: 'Отлично', ur: 'بہت خوب', tl: 'Magaling', fr: 'Super', ko: '훌륭해요', hi: 'बहुत बढ़िया' },
+    wrong:  { es: 'Incorrecto', 'zh-CN': '不对', yue: '唔啱', ar: 'خطأ', vi: 'Sai', th: 'ผิด', ne: 'गलत',
+              ru: 'Неверно', ur: 'غلط', tl: 'Mali', fr: 'Faux', ko: '틀림', hi: 'गलत' },
+    tip:    { es: 'Consejo', 'zh-CN': '提示', yue: '提示', ar: 'نصيحة', vi: 'Mẹo', th: 'เคล็ดลับ', ne: 'सुझाव',
+              ru: 'Совет', ur: 'مشورہ', tl: 'Payo', fr: 'Astuce', ko: '팁', hi: 'सुझाव' },
+    due:    { es: 'Fecha de entrega', 'zh-CN': '截止日期', yue: '截止日期', ar: 'موعد التسليم', vi: 'Hạn nộp', th: 'กำหนดส่ง',
+              ne: 'बुझाउने मिति', ru: 'Срок сдачи', ur: 'آخری تاریخ', tl: 'Takdang petsa', fr: 'À rendre', ko: '마감', hi: 'नियत तिथि' },
+    picture:{ es: 'Imagen', 'zh-CN': '图片', yue: '圖片', vi: 'Hình ảnh', fr: 'Image' },
+    craft:  { es: 'Técnica del autor', 'zh-CN': '写作手法', yue: '寫作手法', ar: 'أسلوب الكاتب', vi: 'Kỹ thuật viết',
+              th: 'กลวิธีการเขียน', ne: 'लेखन शैली', ru: 'Мастерство автора', ur: 'مصنف کا فن', fr: "Procédés d'écriture",
+              ko: '작가의 기법', hi: 'लेखन कौशल' },
+    mechanics:{ es: 'Ortografía y puntuación', 'zh-CN': '拼写与标点', yue: '拼寫同標點', ar: 'الإملاء وعلامات الترقيم',
+              vi: 'Chính tả và dấu câu', th: 'การสะกดและเครื่องหมายวรรคตอน', ne: 'हिज्जे र चिह्न', ru: 'Орфография и пунктуация',
+              ur: 'املا اور اوقاف', tl: 'Baybay at bantas', fr: 'Orthographe et ponctuation', ko: '맞춤법과 문장부호', hi: 'वर्तनी और विराम चिह्न' },
+    pick:   { es: 'Elegir', 'zh-CN': '选择', yue: '揀', ar: 'اختر', vi: 'Chọn', th: 'เลือก', ne: 'छान्नुहोस्',
+              ru: 'Выбрать', ur: 'چنیں', tl: 'Pumili', fr: 'Choisir', ko: '고르기', hi: 'चुनें' },
+    unit:   { es: 'Unidad', 'zh-CN': '单元', yue: '單元', vi: 'Bài' }
   };
+  /* Names and titles: shown exactly as written, never translated */
+  var KEEP = { jun: 1, dahl: 1, roald: 1, eld: 1, bath: 1, temple: 1, rugger: 1, lee: 1, launch: 1, reel: 1 };
+  var NONLAT = { 'zh-CN': 1, yue: 1, ar: 1, ary: 1, th: 1, ne: 1, ru: 1, ur: 1, ko: 1, hi: 1 };
+  function labelKey(text) {
+    return String(text || '').replace(/^[\s\u{1F300}-\u{1FAFF}☀-➿️]+|[\s.!:]+$/gu, '');
+  }
   function labelFix(text, lg) {
-    var k = String(text || '').replace(/^[\s\u{1F300}-\u{1FAFF}☀-➿️]+|[\s.!:]+$/gu, '').toLowerCase();
+    var t = labelKey(text);
+    if (!/^[A-Z]/.test(t)) return '';                    /* labels start with a capital */
+    var k = t.toLowerCase();
+    if (KEEP[k]) return t;
+    if (/^[B-HJ-Z]$/.test(t)) return t;                  /* a letter of the alphabet (A and I are words) */
     var row = LABEL_FIX[k]; if (!row) return '';
     var c = codeOf(lg, lg) || lg;
     return row[c] || '';
   }
   window.GAL_LABEL_FIX = labelFix;
+  var ERR_RX = /(^\s*error\b|not an? (standard |valid |recognized |real |dictionary )?(english )?word|not a word|输入错误|错误输入|错误：|不是.{0,3}英文|不是一个词|不是单词|no es una palabra|no target language|is not english)/i;
+  function isErr(v) { return !!v && ERR_RX.test(String(v)); }
+  /* the language name the cache keeps: Chinese is always "Chinese (Simplified)" (Toby, Nov 18) */
+  var ZH_NAMES = ['Chinese (Simplified)', 'zh-CN', 'Mandarin', 'zh'];
+  function canonLg(lg) {
+    if (/tradi|hant|繁/i.test(lg || '')) return lg;
+    return codeOf(lg, lg) === 'zh-CN' ? 'Chinese (Simplified)' : lg;
+  }
+  /* what to do before asking anyone: a string to show, or null = go ahead and translate */
+  function preAnswer(src, lg, q) {
+    var s = String(src || '').trim();
+    if (!/[A-Za-z]/.test(s)) {
+      if (/[^\s\d.,:;!?\/()#%$+\-–—_…'"“”‘’*×=<>]/.test(s)) return '';   /* no English in it: never translate */
+      return s;                                                            /* numbers, blanks, … : as they are */
+    }
+    if (!q.meaning && q.mode !== 'word') { var fx = labelFix(s, lg); if (fx) return fx; }
+    return null;
+  }
+  function badAnswer(src, lg, v) {
+    if (!v) return true;
+    if (isErr(v)) return true;
+    var c = codeOf(lg, lg) || lg;
+    if (NONLAT[c] && String(v).trim().toLowerCase() === String(src).trim().toLowerCase()) return true;   /* English echoed */
+    return false;
+  }
+  function defLike(src, v) {   /* a dictionary definition, not a translation: show, never save */
+    return String(src).trim().split(/\s+/).length <= 2 && (String(v).length > 40 || /;\s/.test(v));
+  }
 
   function wrapFetch() {
     if (!window.fetch || window.__GAL_TRWRAP__) return;
@@ -652,23 +748,29 @@
       url.replace(/[?&]([^=&]+)=([^&]*)/g, function (_, k, v) { q[k] = decodeURIComponent(v.replace(/\+/g, ' ')); return ''; });
       var src = q.idiom || '', lg = q.lang || '';
       if (!src || !lg) return real.apply(this, arguments);
-      if (!q.meaning && q.mode !== 'word') { var fx = labelFix(src, lg); if (fx) return Promise.resolve(fakeRes(fx)); }   /* T-488 */
+      var pre = preAnswer(src, lg, q);                                   /* T-488 / T-490 */
+      if (pre !== null) return Promise.resolve(fakeRes(pre));
+      var L = canonLg(lg);                                                /* T-490: one name for Chinese */
       var slug = q.meaning ? PAGE_SLUG : 'dir';
-      var hit = tcache[ckey(slug, src, lg)] || tcache[ckey('dir', src, lg)] || tcache[ckey(PAGE_SLUG, src, lg)];
+      function look() {
+        var h = tcache[ckey(slug, src, L)] || tcache[ckey('dir', src, L)] || tcache[ckey(PAGE_SLUG, src, L)];
+        return h && !isErr(h) ? h : '';   /* a saved name kept as written ("Zhu") is fine; only errors are skipped */
+      }
+      var hit = look();
       if (hit) return Promise.resolve(fakeRes(hit));
       var args = arguments, self = this;
       return cacheLoad(lg).then(function () {
-        var again = tcache[ckey(slug, src, lg)] || tcache[ckey('dir', src, lg)] || tcache[ckey(PAGE_SLUG, src, lg)];   /* T-358 */
+        var again = look();   /* T-358 */
         if (again) return fakeRes(again);
         return real.apply(self, args).then(function (res) {
-          try {
-            var clone = res.clone();
-            clone.json().then(function (d) {
-              var t = d && d.translation ? (d.translation.equiv || d.translation.meaning || '') : '';
-              if (t) { tcache[ckey(slug, src, lg)] = t; cacheSave(slug, src, lg, t); }
-            }).catch(function () {});
-          } catch (e) {}
-          return res;
+          var clone;
+          try { clone = res.clone(); } catch (e) { return res; }
+          return clone.json().then(function (d) {
+            var t = d && d.translation ? (d.translation.equiv || d.translation.meaning || '') : '';
+            if (t && badAnswer(src, lg, t)) return fakeRes('');            /* T-490: an error is never shown or saved */
+            if (t && !defLike(src, t)) { tcache[ckey(slug, src, L)] = t; cacheSave(slug, src, L, t); }
+            return res;
+          }, function () { return res; });
         });
       });
     };
