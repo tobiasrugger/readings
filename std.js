@@ -578,11 +578,10 @@
      "dir" is past that), and every caller waits for the same load instead of racing past it. */
   function cacheLoad(lg) {
     if (!lg) return Promise.resolve();
-    var L = canonLg(lg);                       /* T-490: Chinese rows under every old name load as "Chinese (Simplified)" */
+    var L = canonLg(lg);                       /* T-490: Chinese always loads and saves as "Chinese (Simplified)" */
     if (loadedLang[L]) return loadedLang[L];
-    var langQ = L === 'Chinese (Simplified)'
-      ? 'lang=in.(' + ZH_NAMES.map(function (n) { return '"' + n + '"'; }).join(',') + ')'
-      : 'lang=eq.' + L;
+    /* T-491: the Nov 18 SQL copied every zh-CN / Mandarin row to "Chinese (Simplified)", so one name is enough */
+    var langQ = 'lang=eq.' + L;
     var base = SUPA_URL + '/rest/v1/song_tr?select=slug,src,equiv,meaning,lang&' + encodeURI(langQ).replace(/#/g, '%23') +
                '&or=(slug.eq.dir,slug.eq.' + encodeURIComponent(PAGE_SLUG) + ')&order=slug.asc,src.asc';
     var STEP = 1000;
@@ -689,7 +688,20 @@
               ur: 'املا اور اوقاف', tl: 'Baybay at bantas', fr: 'Orthographe et ponctuation', ko: '맞춤법과 문장부호', hi: 'वर्तनी और विराम चिह्न' },
     pick:   { es: 'Elegir', 'zh-CN': '选择', yue: '揀', ar: 'اختر', vi: 'Chọn', th: 'เลือก', ne: 'छान्नुहोस्',
               ru: 'Выбрать', ur: 'چنیں', tl: 'Pumili', fr: 'Choisir', ko: '고르기', hi: 'चुनें' },
-    unit:   { es: 'Unidad', 'zh-CN': '单元', yue: '單元', vi: 'Bài' }
+    unit:   { es: 'Unidad', 'zh-CN': '单元', yue: '單元', vi: 'Bài' },
+    /* T-491 (Toby, Nov 18): a lone capital "Period" is the class period (dropdowns); lowercase "periods"
+       in a rubric still goes to the translator as punctuation. Type / Enter = type your answer.
+       Answer on its own is a button = answer it. Turn = your turn / turn in. */
+    period: { es: 'Período (clase)', 'zh-CN': '课节', yue: '堂', ar: 'الحصة', vi: 'Tiết học', th: 'คาบเรียน',
+              ne: 'पिरियड (कक्षा)', ru: 'Урок', ur: 'پیریڈ (کلاس)', tl: 'Klase (period)', fr: 'Cours', ko: '교시', hi: 'पीरियड (कक्षा)' },
+    type:   { es: 'Escribe', 'zh-CN': '输入', yue: '輸入', ar: 'اكتب', vi: 'Gõ', th: 'พิมพ์', ne: 'टाइप गर्नुहोस्',
+              ru: 'Напечатайте', ur: 'ٹائپ کریں', tl: 'I-type', fr: 'Tapez', ko: '입력하기', hi: 'टाइप करें' },
+    enter:  { es: 'Escribe', 'zh-CN': '输入', yue: '輸入', ar: 'أدخل', vi: 'Nhập', th: 'ป้อน', ne: 'लेख्नुहोस्',
+              ru: 'Ввести', ur: 'درج کریں', tl: 'Ilagay', fr: 'Saisir', ko: '입력', hi: 'दर्ज करें' },
+    answer: { es: 'Responder', 'zh-CN': '回答', yue: '回答', ar: 'أجب', vi: 'Trả lời', th: 'ตอบ', ne: 'जवाफ दिनुहोस्',
+              ru: 'Ответить', ur: 'جواب دیں', tl: 'Sumagot', fr: 'Répondre', ko: '답하기', hi: 'जवाब दें' },
+    turn:   { es: 'Turno', 'zh-CN': '轮到你', yue: '輪到你', ar: 'دورك', vi: 'Lượt', th: 'ตาของคุณ', ne: 'पालो',
+              ru: 'Ваша очередь', ur: 'باری', tl: 'Iyong turn', fr: 'Tour', ko: '차례', hi: 'बारी' }
   };
   /* Names and titles: shown exactly as written, never translated */
   var KEEP = { jun: 1, dahl: 1, roald: 1, eld: 1, bath: 1, temple: 1, rugger: 1, lee: 1, launch: 1, reel: 1 };
@@ -711,7 +723,6 @@
   var ERR_RX = /(^\s*error\b|not an? (standard |valid |recognized |real |dictionary )?(english )?word|not a word|输入错误|错误输入|错误：|不是.{0,3}英文|不是一个词|不是单词|no es una palabra|no target language|is not english)/i;
   function isErr(v) { return !!v && ERR_RX.test(String(v)); }
   /* the language name the cache keeps: Chinese is always "Chinese (Simplified)" (Toby, Nov 18) */
-  var ZH_NAMES = ['Chinese (Simplified)', 'zh-CN', 'Mandarin', 'zh'];
   function canonLg(lg) {
     if (/tradi|hant|繁/i.test(lg || '')) return lg;
     return codeOf(lg, lg) === 'zh-CN' ? 'Chinese (Simplified)' : lg;
