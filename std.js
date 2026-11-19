@@ -1759,23 +1759,70 @@
     var u = new URL(location.href); u.searchParams.delete('view'); u.searchParams.delete('email');
     return u.toString();
   }
+  /* T-492 (Nov 19 2026): when the teacher opened this student from Class Data (/readings/teacher/), that page
+     left sessionStorage gal_tv_list = {label, back, list:[{e,n}]} — the students on screen, in the order shown.
+     The bar then says "Period 3 students · 4 of 22", has ◀ Previous / Next ▶ (same page, next student;
+     location.replace, so the browser's Back still goes to Class Data), and Exit returns to Class Data with
+     the period, search and sort as they were. Opened from anywhere else, the bar works exactly as before. */
+  function tvList() {
+    try {
+      var d = JSON.parse(sessionStorage.getItem('gal_tv_list') || 'null');
+      if (!d || !d.list || !d.list.length) return null;
+      var me = GAL.key ? GAL.key(TV.email) : TV.email.split('@')[0];
+      for (var i = 0; i < d.list.length; i++) {
+        var k = GAL.key ? GAL.key(d.list[i].e) : String(d.list[i].e).split('@')[0].toLowerCase();
+        if (k === me) { d.i = i; return d; }
+      }
+    } catch (e) {}
+    return null;
+  }
+  function tvGo(email) {
+    var u = new URL(location.href);
+    u.searchParams.set('email', email); u.searchParams.set('view', 'teacher');
+    location.replace(u.toString());
+  }
+  function tvBtn(id, label, title, off) {
+    return '<button type="button" id="' + id + '"' + (off ? ' disabled' : '') + ' title="' + title + '" style="font:inherit;font-size:15px;background:#fff;color:#2B2233;border:2px solid #2B2233;border-radius:999px;padding:4px 14px;cursor:' + (off ? 'default;opacity:.4' : 'pointer') + '">' + label + '</button>';
+  }
   function tvBar(name) {
     var b = document.getElementById('galTvBar');
     if (!b) {
       b = document.createElement('div'); b.id = 'galTvBar'; b.setAttribute('translate', 'no'); b.className = 'notranslate';
-      b.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:2147483645;display:flex;align-items:center;gap:12px;justify-content:center;flex-wrap:wrap;' +
+      b.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:2147483645;display:flex;align-items:center;gap:8px 12px;justify-content:center;flex-wrap:wrap;' +
         'background:#ffe066;color:#2B2233;border-bottom:3px solid #2B2233;box-shadow:0 4px 12px rgba(0,0,0,.25);padding:8px 14px;' +
         'font:800 17px/1.35 Nunito,system-ui,-apple-system,Segoe UI,Arial,sans-serif';
       document.body.appendChild(b);
-      document.documentElement.style.scrollPaddingTop = '60px';
-      document.body.style.paddingTop = (parseInt(getComputedStyle(document.body).paddingTop, 10) + 54) + 'px';
+      b.setAttribute('data-pad', String(parseInt(getComputedStyle(document.body).paddingTop, 10) || 0));
     }
-    b.innerHTML = '<span>\ud83d\udc40 Teacher view: <b class="gal-tv-name"></b> \u2014 read only, nothing saves</span>' +
-      '<button type="button" id="galTvExit" style="font:inherit;font-size:15px;background:#fff;color:#2B2233;border:2px solid #2B2233;border-radius:999px;padding:4px 14px;cursor:pointer">Exit</button>';
+    var L = tvList();
+    var html = '<span>👀 Teacher view: <b class="gal-tv-name"></b> — read only, nothing saves</span>';
+    if (L) {
+      var n = L.list.length;
+      html += '<span style="display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+        tvBtn('galTvPrev', '◀ Previous', L.i > 0 ? L.list[L.i - 1].n || L.list[L.i - 1].e : 'first student', L.i === 0) +
+        '<span class="gal-tv-who" style="font-weight:700;font-size:15px"></span>' +
+        tvBtn('galTvNext', 'Next ▶', L.i < n - 1 ? L.list[L.i + 1].n || L.list[L.i + 1].e : 'last student', L.i === n - 1) +
+        '</span>';
+    }
+    html += tvBtn('galTvExit', L ? 'Exit to Class Data' : 'Exit', 'Leave teacher view', false);
+    b.innerHTML = html;
     b.querySelector('.gal-tv-name').textContent = name || TV.email;
+    if (L) {
+      b.querySelector('.gal-tv-who').textContent = L.label + ' · ' + (L.i + 1) + ' of ' + L.list.length;
+      if (L.i > 0) document.getElementById('galTvPrev').onclick = function () { tvGo(L.list[L.i - 1].e); };
+      if (L.i < L.list.length - 1) document.getElementById('galTvNext').onclick = function () { tvGo(L.list[L.i + 1].e); };
+    }
+    /* the bar can wrap to two lines on a narrow screen: push the page down by its real height */
+    var pad = function () {
+      var h = b.offsetHeight || 54;
+      document.body.style.paddingTop = ((parseInt(b.getAttribute('data-pad'), 10) || 0) + h) + 'px';
+      document.documentElement.style.scrollPaddingTop = (h + 6) + 'px';
+    };
+    pad(); if (!b.__galPad) { b.__galPad = 1; window.addEventListener('resize', pad); }
     document.getElementById('galTvExit').onclick = function () {
       tvRestore();
       try { sessionStorage.removeItem('gal_tv_snap'); } catch (e) {}
+      if (L && L.back) { location.href = L.back; return; }
       var back = /\/readings\/(student|desk)\//.test(document.referrer || '');
       if (back && history.length > 1) history.back(); else location.href = tvExitUrl();
     };

@@ -484,6 +484,46 @@ window.addEventListener('scroll',hideTip,true);
 /* ============ STATE ============ */
 var STUD={}, ROWS=[], PERIOD='', SORT={key:'name',dir:1};
 
+/* T-492 (Nov 19 2026): the period, search box and sort survive leaving this page. They live in the URL
+   (?period=3&q=an) and in sessionStorage gal_teacher_state, so Back, Exit and "Class Data" in the yellow
+   teacher-view bar all land on the same filtered list. */
+var SHOWN_ROWS=[];
+(function(){
+  try{
+    var q=new URLSearchParams(location.search), st={};
+    try{ st=JSON.parse(sessionStorage.getItem('gal_teacher_state')||'{}')||{}; }catch(e){}
+    PERIOD=q.has('period')?String(q.get('period')||''):String(st.period||'');
+    var term=q.has('q')?String(q.get('q')||''):String(st.q||'');
+    if(term&&document.getElementById('search'))document.getElementById('search').value=term;
+    if(st.sort&&st.sort.key)SORT={key:String(st.sort.key),dir:st.sort.dir<0?-1:1};
+  }catch(e){}
+})();
+function saveTeacherState(){
+  try{
+    var term=(($('search')||{}).value||'').trim();
+    sessionStorage.setItem('gal_teacher_state',JSON.stringify({period:PERIOD,q:term,sort:SORT}));
+    var u=new URL(location.href);
+    if(PERIOD)u.searchParams.set('period',PERIOD); else u.searchParams.delete('period');
+    if(term)u.searchParams.set('q',term); else u.searchParams.delete('q');
+    if(u.toString()!==location.href)history.replaceState(history.state,'',u.pathname+u.search+u.hash);
+  }catch(e){}
+}
+/* Clicking a name hands the yellow bar (std.js) the list on screen, in the order shown:
+   sessionStorage gal_tv_list = {label:"Period 3 students"|"All students", back:<this page's URL>, list:[{e,n}]}.
+   The password was already given here, so std.js does not ask again (gal_tv_ok). */
+function handTvList(){
+  try{
+    saveTeacherState();
+    var term=(($('search')||{}).value||'').trim();
+    var label=(PERIOD?'Period '+PERIOD+' students':'All students')+(term?' matching “'+term+'”':'');
+    sessionStorage.setItem('gal_tv_list',JSON.stringify({label:label,back:location.href,
+      list:SHOWN_ROWS.map(function(r){return {e:r.email,n:r.name};})}));
+    sessionStorage.setItem('gal_tv_ok','1');
+  }catch(e){}
+}
+document.addEventListener('click',function(e){ if(e.target.closest&&e.target.closest('a.sname'))handTvList(); },true);
+document.addEventListener('auxclick',function(e){ if(e.target.closest&&e.target.closest('a.sname'))handTvList(); },true);
+
 function fmtDate(d){var x=new Date(d);if(isNaN(x))return '';
   return (x.getMonth()+1)+'/'+x.getDate();}
 function band(v){return v==null?'n':v>=90?'g':v>=80?'l':v>=70?'y':v>=60?'o':'r';}
@@ -661,6 +701,7 @@ function sortBy(key){
 }
 function render(){
   var cols=COLS.filter(function(c){return c.on;});
+  saveTeacherState();
   var rows=shown().slice();
   TIPS=[]; hideTip();
 
@@ -679,9 +720,10 @@ function render(){
       ' onclick="sortBy(\''+esc(c.id)+'\')">'+esc(c.label)+
       (SORT.key===c.id?(SORT.dir>0?' &#9650;':' &#9660;'):'')+'</th>';}).join('')+'</tr>';
 
+  SHOWN_ROWS=rows;
   $('tbody').innerHTML=rows.map(function(r){
     return '<tr><td class="nm"><a class="sname" href="../student/?email='+
-      encodeURIComponent(r.email)+'">'+esc(r.name)+'</a><span class="semail">'+esc(r.email)+'</span></td>'+
+      encodeURIComponent(r.email)+'&view=teacher">'+esc(r.name)+'</a><span class="semail">'+esc(r.email)+'</span></td>'+
       cols.map(function(c){
         var cls=c.grpstart?' class="grpstart"':'';
         if(c.html)return '<td'+cls+'>'+c.html(r)+'</td>';
