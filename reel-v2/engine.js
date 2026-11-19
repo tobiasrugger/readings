@@ -721,6 +721,7 @@
     var r = el.getBoundingClientRect();
     pop.style.left = Math.max(8, Math.min(window.innerWidth - 262, r.left + window.scrollX)) + 'px';
     pop.style.top = (r.top + window.scrollY - pop.offsetHeight - 10) + 'px';
+    if (r.top - pop.offsetHeight - 10 < 4) pop.style.top = (r.bottom + window.scrollY + 10) + 'px';   /* T-493: a word near the top opens its box below */
     $('popSay').addEventListener('click', function () { sayWord(w); logWord(w, true, false); });
     sayWord(w);
     logWord(w, true, !!state.lang);     /* T-147: a word tap = heard (+ translated when a language is set) */
@@ -1228,6 +1229,7 @@
     });
     document.addEventListener('keydown', function (e) {
       var t = e.target.tagName;
+      if (lbOpen) { if (e.key === 'Escape') { e.preventDefault(); lbClose(); } return; }   /* T-493: the video never starts from look-back */
       if (t === 'TEXTAREA' || t === 'INPUT' || t === 'SELECT') return;
       if (e.key === ' ') { e.preventDefault(); togglePlay(); }
       else if (e.key === 'ArrowRight') next(false);
@@ -1573,6 +1575,7 @@
       anchor.parentNode.insertBefore(bar, anchor);
       anchor.parentNode.insertBefore(rule, anchor);
       anchor.parentNode.insertBefore(line, anchor);
+      lbMount(anchor);   /* T-493: 📖 Look back row + ↩ way-back bar */
       bar.addEventListener('click', function (e) { var b = e.target.closest('.rtab'); if (b) rtGo(b.getAttribute('data-t'), true); });
     }
     var L = rtList(), sig = JSON.stringify(L) + '|' + rtTab;
@@ -1621,6 +1624,9 @@
     var known = rtList().some(function (t) { return t.id === id; });
     if (!known) id = rtIsStation(id) ? 'yt' : 'watch';   /* a station before tiers.js has loaded: wait on Your turn */
     if (id !== 'watch' && rtTab === 'watch') { try { setPlaying(false); stopSpeech(); } catch (e) {} }
+    if (id === 'watch' && rtTab !== 'watch' && $('rtBar')) backRemember(rtTab);   /* T-493 part 2 */
+    if (id !== 'watch' && state.back) { state.back = null; touch(); }             /* they went back: the bar goes */
+    if (lbOpen) lbClose(true);
     var changed = state.tab !== id;
     rtTab = id; state.tab = id;
     document.body.setAttribute('data-rtab', id === 'watch' ? 'watch' : (id === 'yt' ? 'yt' : 'st'));
@@ -1632,6 +1638,7 @@
     if (id === 'watch') { try { render(pos, true); } catch (e) {} }
     if (changed) touch();
     rtSig = ''; rtBuild();
+    backPaint();
     rtGuide();
     if (scroll) { var b = $('rtBar'); if (b) b.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
   }
@@ -1663,7 +1670,8 @@
   }
   function rtGuide() {
     if (!rtOn) return;
-    rtBuild();
+    rtBuild(); backPaint();
+    if (lbOpen) { rtHide(); return; }   /* T-493: look-back open = no arrow on the work */
     if (document.body.classList.contains('gm-fixing')) { rtSay(''); rtHide(); return; }   /* marks.js has the arrow */
     var t = rtTab, at = null, say = '';
     if (t === 'watch') {
@@ -1714,10 +1722,222 @@
     window.addEventListener('resize', rtGuide);
     window.addEventListener('scroll', rtGuide, true);
   }
+  /* ================= LOOK BACK AT THE STORY (T-493, Nov 19 2026) =================
+     Ep 3: students working in Your turn and the After the story tabs couldn't find their way back to the
+     story (Watch → Storyboard → a frame jumped the video and closed the board). Toby had to show one by hand.
+     Part 1: a "📖 Look back at the story" row in the same spot at the top of every tab except Watch. It
+       opens a side panel (40% wide on a Chromebook, the whole screen under 760 px): every scene's picture,
+       its number and ALL its lines with the speaker, each line 🔊 (and 🌐 at Level A), every word
+       tap-to-translate, vocab keeps its orange underline. Comprehension questions are left out. The video
+       never starts. A big green "✓ Back to my work" (or Esc) closes it: same tab, same scroll, same item.
+       No arrow on the work while it is open; it comes back on close.
+       REEL_HOST.lookBack(i) opens it at scene i+1 with a short highlight (the tiers chat calls it).
+       Logged in work.log.lb = {n, scenes:{i:count}, tabs:{tab:count}} — never scored.
+     Part 2: a student who goes back to 🎬 Watch after starting a work tab gets a green
+       "↩ Back to <tab>: <next step>" bar above the stage until they go back (state.back, saved). */
+  var lbOpen = false, lbSy = 0, lbFocus = null, lbSpeakId = 0;
+  function lbCss() {
+    if ($('lbCss')) return;
+    var st = document.createElement('style'); st.id = 'lbCss';
+    st.textContent =
+      '.lbrow{max-width:1180px;margin:0 auto 10px;padding:0 16px 0 82px;display:flex}' +
+      'body.rt-on[data-rtab="watch"] .lbrow,body:not(.rt-on) .lbrow{display:none}' +
+      '.lbbtn{display:inline-flex;align-items:center;gap:10px;border:2px solid var(--plum);background:#fff;color:var(--plum);border-radius:12px;padding:7px 14px 7px 10px;font:inherit;font-weight:900;font-size:16px;cursor:pointer;box-shadow:0 2px 0 var(--plum);text-align:left}' +
+      '.lbbtn:hover{background:#fff7ea}.lbbtn:active{transform:translateY(1px);box-shadow:none}' +
+      '.lbbtn svg{width:34px;height:28px;flex:none}' +
+      '.lbbtn .dirtr{display:block;font-size:13px;font-weight:700;color:var(--soft)}' +
+      '.lbpanel{position:fixed;top:0;right:0;bottom:0;width:40%;min-width:380px;max-width:620px;z-index:45;background:#fbf8f3;border-left:3px solid var(--plum);box-shadow:-10px 0 28px rgba(43,34,51,.28);display:none;flex-direction:column}' +
+      'body.lb-open .lbpanel{display:flex}' +
+      'body.lb-open .rtnudge,body.lb-open .gnudge{display:none!important}' +
+      '.lbhead{padding:12px 14px 10px;border-bottom:2px solid var(--plum);background:#fff;display:flex;flex-direction:column;gap:8px}' +
+      '.lbclose{border:0;background:#1f7a4d;color:#fff;border-radius:999px;padding:12px 20px;font:inherit;font-weight:900;font-size:19px;cursor:pointer;box-shadow:0 3px 0 #155536;text-align:center}' +
+      '.lbclose:hover{background:#1a6a43}.lbclose .dirtr{display:block;font-size:14px;color:#e4f5ec;font-weight:700}' +
+      '.lbtitle{margin:0;font-size:18px;font-weight:900;color:var(--plum)}.lbtitle .dirtr{display:block;font-size:14px;color:var(--soft);font-weight:700}' +
+      '.lbscroll{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:12px 14px 40px}' +
+      '.lbscene{background:#fff;border:2px solid var(--plum);border-radius:14px;box-shadow:0 3px 0 rgba(43,34,51,.25);margin:0 0 14px;overflow:hidden;transition:box-shadow .3s}' +
+      '.lbscene.flash{box-shadow:0 0 0 5px var(--orange),0 3px 0 rgba(43,34,51,.25)}' +
+      '.lbpic{position:relative;border-bottom:2px solid var(--plum)}.lbpic svg{display:block;width:100%;height:auto}' +
+      '.lbnum{position:absolute;left:8px;top:8px;background:var(--plum);color:#fff;font-weight:900;border-radius:999px;min-width:32px;height:32px;padding:0 9px;display:flex;align-items:center;justify-content:center;font-size:17px}' +
+      '.lbl{display:flex;gap:8px;align-items:flex-start;padding:8px 12px;border-top:1px solid #e3dbe9;font-size:18px;line-height:1.4;font-weight:600}' +
+      '.lbl:first-of-type{border-top:0}' +
+      '.lbl .lbt{flex:1;min-width:0}.lbl.thought .lbw{font-style:italic}' +
+      '.lbl .lbwho{display:inline-block;border-radius:999px;color:#fff;font-weight:900;font-size:13px;padding:2px 9px;margin-right:6px;vertical-align:2px}' +
+      '.lbl .lbtr{display:block;color:var(--purple);font-weight:700;font-size:16px;margin-top:3px}.lbl .lbtr:empty{display:none}' +
+      '.lbl.now{background:#fff1dc}' +
+      '.lbl .lbic{flex:none;width:36px;height:36px;border-radius:50%;border:2px solid var(--plum);background:#fff;font-size:16px;cursor:pointer;padding:0}' +
+      '.lbl .lbic:hover{background:#f1e8f6}' +
+      '.lbl .w.key{box-shadow:inset 0 -3px 0 var(--orange)}' +
+      '.rtback{max-width:1180px;margin:0 auto 10px;padding:0 16px 0 82px;display:none}' +
+      'body.rt-on[data-rtab="watch"] .rtback.on{display:block}' +
+      '.rtback button{border:0;background:#1f7a4d;color:#fff;border-radius:14px;padding:10px 18px;font:inherit;font-weight:900;font-size:18px;cursor:pointer;box-shadow:0 3px 0 #155536;text-align:left;max-width:100%}' +
+      '.rtback button:hover{background:#1a6a43}.rtback .dirtr{display:block;font-size:15px;color:#e4f5ec;font-weight:700}' +
+      '@media (max-width:760px){.lbpanel{width:100%;min-width:0;max-width:none;border-left:0}.lbrow,.rtback{padding-left:66px}.lbl{font-size:17px}}' +
+      '@media (prefers-reduced-motion:reduce){.lbscene{transition:none}}';
+    document.head.appendChild(st);
+  }
+  /* a drawn open book, the same on every tab */
+  var LB_ICON = '<svg viewBox="0 0 34 28" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">' +
+    '<path d="M17 6 C12 2.5 6 2 2 3.5 V24 C6 22.5 12 23 17 26.5 Z" fill="#fff7ea" stroke="#2B2233" stroke-width="2" stroke-linejoin="round"/>' +
+    '<path d="M17 6 C22 2.5 28 2 32 3.5 V24 C28 22.5 22 23 17 26.5 Z" fill="#fff7ea" stroke="#2B2233" stroke-width="2" stroke-linejoin="round"/>' +
+    '<path d="M5.5 8.5 C8.5 8 11.5 8.5 14 10 M5.5 12.5 C8.5 12 11.5 12.5 14 14 M5.5 16.5 C8.5 16 11 16.5 13 17.5" stroke="#864D9E" stroke-width="1.6" fill="none" stroke-linecap="round"/>' +
+    '<path d="M20 10 C22.5 8.5 25.5 8 28.5 8.5 M20 14 C22.5 12.5 25.5 12 28.5 12.5" stroke="#864D9E" stroke-width="1.6" fill="none" stroke-linecap="round"/>' +
+    '<rect x="21" y="15" width="7" height="6" rx="1" fill="#F8981F" stroke="#2B2233" stroke-width="1.2"/></svg>';
+  function lbMount(anchor) {
+    lbCss();
+    if (!$('lbRow')) {
+      var row = document.createElement('div'); row.className = 'lbrow'; row.id = 'lbRow';
+      row.innerHTML = '<button type="button" class="lbbtn" id="lbBtn" aria-haspopup="dialog">' + LB_ICON +
+        '<span><span translate="yes" data-en="Look back at the story">Look back at the story</span></span></button>';
+      anchor.parentNode.insertBefore(row, $('rtLine') || anchor);
+      $('lbBtn').addEventListener('click', function () { lbOpenAt(-1, 'btn'); });
+      showDirections(row);
+    }
+    if (!$('rtBack')) {
+      var bk = document.createElement('div'); bk.className = 'rtback'; bk.id = 'rtBack'; bk.setAttribute('aria-live', 'polite');
+      anchor.parentNode.insertBefore(bk, $('rtLine') || anchor);   /* the same top spot as 📖 on the work tabs */
+      bk.addEventListener('click', function (e) {
+        var b = e.target.closest('button'); if (!b || !state.back) return;
+        var to = state.back.tab; state.back = null; touch();
+        rtGo(to, true);
+      });
+    }
+    if (!$('lbPanel')) {
+      var pn = document.createElement('aside'); pn.className = 'lbpanel'; pn.id = 'lbPanel';
+      pn.setAttribute('role', 'dialog'); pn.setAttribute('aria-label', 'Look back at the story');
+      pn.innerHTML = '<div class="lbhead"><button type="button" class="lbclose" id="lbClose"><span translate="yes" data-en="✓ Back to my work">✓ Back to my work</span></button>' +
+        '<p class="lbtitle"><span translate="yes" data-en="📖 Look back at the story">📖 Look back at the story</span></p></div>' +
+        '<div class="lbscroll" id="lbScroll"></div>';
+      document.body.appendChild(pn);
+      $('lbClose').addEventListener('click', function () { lbClose(); });
+      $('lbScroll').addEventListener('click', lbClick);
+      showDirections(pn.querySelector('.lbhead'));
+    }
+  }
+  function lbWords(text) {
+    return String(text).split(/(\s+)/).map(function (tok) {
+      if (!tok || /^\s+$/.test(tok)) return tok;
+      var core = tok.replace(/[^A-Za-z'’-]/g, '').toLowerCase().replace(/’/g, "'");
+      if (!core) return esc(tok);
+      return '<span class="w' + (VOCAB[core] ? ' key' : '') + '" data-w="' + esc(core) + '">' + esc(tok) + '</span>';
+    }).join('');
+  }
+  function lbBuild() {
+    var h = '';
+    EP.scenes.forEach(function (sc, si) {
+      var lines = '';
+      sc.lines.forEach(function (ln, li) {
+        if (ln.type === 'q') return;          /* comprehension questions stay in the video */
+        var t = txt(ln); if (!String(t).trim()) return;
+        var p = person(ln.who), nar = !ln.who || ln.who === 'narrator';
+        lines += '<div class="lbl' + (ln.thought ? ' thought' : '') + '" data-s="' + si + '" data-l="' + li + '">' +
+          '<button type="button" class="lbic" data-act="say" aria-label="Listen">🔊</button>' +
+          '<div class="lbt" translate="no">' + (nar ? '' : '<span class="lbwho" style="background:' + esc(p.color || '#864D9E') + '">' + esc(p.name) + (ln.thought ? ' thinks' : '') + '</span>') +
+          '<span class="lbw">' + lbWords(t) + '</span><span class="lbtr"></span></div>' +
+          (state.level === 'A' ? '<button type="button" class="lbic" data-act="tr" aria-label="Translate">🌐</button>' : '') + '</div>';
+      });
+      var pic = ''; try { pic = R.sceneSVG(boardState(sc)); } catch (e) { pic = ''; }
+      h += '<section class="lbscene" id="lbS' + si + '" data-s="' + si + '"><div class="lbpic">' + pic + '<span class="lbnum">' + (si + 1) + '</span></div>' + lines + '</section>';
+    });
+    $('lbScroll').innerHTML = h;
+  }
+  function lbLine(el) { var s = +el.getAttribute('data-s'), l = +el.getAttribute('data-l'); return EP.scenes[s] && EP.scenes[s].lines[l]; }
+  function lbClick(e) {
+    var w = e.target.closest('.w'), row = e.target.closest('.lbl'), act = e.target.closest('[data-act]');
+    if (w && row) { var ln0 = lbLine(row); wordPop(w, ln0 ? txt(ln0) : ''); return; }
+    if (!act || !row) return;
+    var ln = lbLine(row); if (!ln) return;
+    if (act.getAttribute('data-act') === 'say') lbSay(row, ln);
+    else lbTr(row, ln);
+  }
+  /* 🔊 one line in its speaker's voice. Never through the player: the video does not move. */
+  function lbSay(row, ln) {
+    if (!window.speechSynthesis) return;
+    stopSpeech();
+    var my = ++lbSpeakId, p = person(ln.who);
+    var spoken = txt(ln).split(/(\s+)/).map(function (t) { return /^\s+$/.test(t) ? t : spokenWord(t); }).join('');
+    var u = new SpeechSynthesisUtterance(spoken), v = pickVoice(p.voice);
+    if (v) { try { u.voice = v; } catch (e) {} }
+    u.lang = 'en-US'; u.rate = (p.rate || 1) * (state.slow ? 0.72 : 0.9); u.pitch = p.pitch || 1;
+    var all = $('lbScroll').querySelectorAll('.lbl.now'), i; for (i = 0; i < all.length; i++) all[i].classList.remove('now');
+    row.classList.add('now');
+    u.onend = u.onerror = function () { if (my === lbSpeakId) row.classList.remove('now'); };
+    speechSynthesis.speak(u);
+    active(); touch();
+  }
+  function lbTr(row, ln) {
+    var out = row.querySelector('.lbtr');
+    if (!state.lang) { out.textContent = 'Choose your language at the top first.'; return; }
+    out.textContent = 'Translating…';
+    translate(txt(ln), state.lang, function (v, failed) {
+      out.textContent = v || (failed ? 'Couldn’t reach the translator. Tap 🌐 to try again.' : 'No translation came back. Tap 🌐 again.');
+    }, '', 'line');
+    var L = LOG(); L.lb = L.lb || { n: 0, scenes: {}, tabs: {} }; L.lb.tr = (L.lb.tr || 0) + 1; active(); touch();
+  }
+  function lbOpenAt(si, how) {
+    if (!$('lbPanel')) { if (!$('player')) return; lbMount(document.querySelector('.lead-dir') || $('player')); }
+    try { setPlaying(false); } catch (e) {}
+    stopSpeech(); closePop();
+    var wasOpen = lbOpen;
+    if (!wasOpen) {
+      lbSy = window.scrollY || window.pageYOffset || 0;
+      lbFocus = document.activeElement;
+      lbBuild();
+      lbOpen = true;
+      document.body.classList.add('lb-open');
+      rtHide();
+      /* log: who looks back, from which tab, at which scene — data for Mr. Toby, never scored */
+      if (me.email) { var L = LOG(); L.lb = L.lb || { n: 0, scenes: {}, tabs: {} }; L.lb.n++; L.lb.tabs[rtTab] = (L.lb.tabs[rtTab] || 0) + 1; }
+    }
+    var sc = EP.scenes[si] ? $('lbS' + si) : null, box = $('lbScroll');
+    if (sc) {
+      if (me.email) { var L2 = LOG(); L2.lb = L2.lb || { n: 0, scenes: {}, tabs: {} }; L2.lb.scenes[si] = (L2.lb.scenes[si] || 0) + 1; }
+      box.scrollTop = Math.max(0, sc.offsetTop - box.offsetTop - 8);
+      sc.classList.remove('flash'); void sc.offsetWidth; sc.classList.add('flash');
+      setTimeout(function () { sc.classList.remove('flash'); }, 1800);
+    } else if (!wasOpen) box.scrollTop = 0;
+    if (me.email) { active(); touch(); }
+    try { $('lbClose').focus({ preventScroll: true }); } catch (e) {}
+    window.scrollTo(0, lbSy);
+  }
+  function lbClose(quiet) {
+    if (!lbOpen) return;
+    lbOpen = false; ++lbSpeakId;
+    try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) {}
+    closePop();
+    document.body.classList.remove('lb-open');
+    if (quiet) return;
+    window.scrollTo(0, lbSy);
+    try { if (lbFocus && lbFocus.focus && document.body.contains(lbFocus)) lbFocus.focus({ preventScroll: true }); } catch (e) {}
+    window.scrollTo(0, lbSy);
+    rtGuide();   /* the arrow comes back to where it was */
+  }
+  /* Part 2: remember the work tab (and its next step) when a student goes back to Watch */
+  function backRemember(tab) {
+    var step = '';
+    if (tab === 'yt') step = ytDone() ? '' : 'Write your answers.';
+    else { try { var ns = REEL_TIERS.nextStep(); step = (ns && ns.say) || ''; } catch (e) {} }
+    if (/finished this part|^Everything you must do/i.test(step)) step = '';
+    state.back = { tab: tab, step: step };
+    touch();
+  }
+  function backPaint() {
+    var bk = $('rtBack'); if (!bk) return;
+    var b = state.back, on = !!(b && b.tab && rtTab === 'watch' && rtList().some(function (t) { return t.id === b.tab; }));
+    bk.classList.toggle('on', on);
+    if (!on) { if (bk.innerHTML) { bk.innerHTML = ''; bk.removeAttribute('data-k'); } return; }
+    var en = 'Back to ' + rtLabel(b.tab) + (b.step ? ': ' + b.step : '');
+    if (bk.getAttribute('data-k') === en) return;
+    bk.setAttribute('data-k', en);
+    bk.innerHTML = '<button type="button"><span aria-hidden="true">↩ </span><span translate="yes" data-en="' + esc(en) + '">' + esc(en) + '</span></button>';
+    showDirections(bk);
+  }
   window.REEL_HOST = { EP: EP, state: state, me: me, $: $, esc: esc, txt: txt, save: save, touch: touch, score: score,
                        wordPop: wordPop, showDirections: showDirections, spokenWord: spokenWord, pickVoice: pickVoice,
                        boardState: boardState, R: R, PROXY: PROXY, SUPA_URL: SUPA_URL, TABLE: TABLE, sbHead: sbHead,
                        marksPaint: marksPaint, marks: function () { return MARKS; },   /* T-394 */
-                       tabs: { go: function (id) { rtGo(id, true); }, current: function () { return rtTab; } } };   /* T-427: tiers.js draws no station row and no row arrow */
+                       tabs: { go: function (id) { rtGo(id, true); }, current: function () { return rtTab; } },
+                       /* T-493: lookBack(sceneIndex) opens the 📖 panel at that scene (0-based); the video never moves */
+                       lookBack: function (si) { lbOpenAt(+si, 'call'); }, lookBackClose: function () { lbClose(); },
+                       lookBackOpen: function () { return lbOpen; } };   /* T-427: tiers.js draws no station row and no row arrow */
   (function () { var ts = document.createElement('script'); ts.src = '../tiers.js'; document.body.appendChild(ts); })();
 })();
