@@ -1361,11 +1361,11 @@
     ss('gal_last_done', '1');
     var b = document.getElementById('galMyPage');
     if (!b) return;                                   /* didn't come from My Page: just record it */
-    if (MYPAGE_PINNED) { b.classList.add('done'); b.textContent = '\u2713 Done \u2014 back to My Page \u2192'; return; }
-    b.textContent = '\u2713 Done \u2014 back to My Page';
+    if (MYPAGE_PINNED) { b.classList.add('done'); b.textContent = '\u2713 Done \u2014 back to Assignments \u2192'; return; }
+    b.textContent = '\u2713 Done \u2014 back to Assignments';
     if (!document.getElementById('galMyDone')) {
       var d = document.createElement('a');
-      d.id = 'galMyDone'; d.href = b.getAttribute('href'); d.textContent = '\u2713 Done \u2014 back to My Page \u2192';
+      d.id = 'galMyDone'; d.href = b.getAttribute('href'); d.textContent = '\u2713 Done \u2014 back to Assignments \u2192';
       d.setAttribute('data-no-listen', ''); d.setAttribute('translate', 'no');
       document.body.appendChild(d);
     }
@@ -1383,7 +1383,7 @@
       var prev = el.previousElementSibling;
       if (prev && prev.classList && prev.classList.contains('gal-mypage-inline')) continue;
       var a = document.createElement('a');
-      a.className = 'gal-mypage-inline'; a.href = home; a.textContent = 'My Page';
+      a.className = 'gal-mypage-inline'; a.href = home; a.textContent = 'Assignments';   /* T-495: page renamed */
       a.setAttribute('data-no-listen', ''); a.setAttribute('translate', 'no');
       el.parentNode.insertBefore(a, el);
     }
@@ -1402,7 +1402,7 @@
     var home = myPageHome();
     if (home && !document.getElementById('galMyPage')) {
       var b = document.createElement('a');
-      b.id = 'galMyPage'; b.href = home; b.textContent = '\u2190 My Page';
+      b.id = 'galMyPage'; b.href = home; b.textContent = '\u2190 Assignments';
       b.setAttribute('data-no-listen', ''); b.setAttribute('translate', 'no');
       if (MYPAGE_PINNED) document.body.appendChild(b);
       else {
