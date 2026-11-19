@@ -536,7 +536,10 @@ function seenLines(lines, end){
 function parseSynergy(text){
   var lines=String(text||'').replace(/\r/g,'').split('\n');
   var out={period:null, cols:[], studs:[], vals:[]};
-  var m=String(text).match(/Current Focus:[^\n]*?\/\s*P(\d+)/i); if(m) out.period=m[1];
+  /* T-497: the class period is the number in brackets after the course name,
+     "ELD Advanced(5) SEC:1062 / P3". The "/ P3" at the end is Synergy's grading
+     term, not the class period (Toby's P5 copy, Nov 19). Old "/ Pn" only as a fallback. */
+  var m=String(text).match(/Current Focus:[^\n]*?\((\d)\)\s*SEC/i) || String(text).match(/Current Focus:[^\n]*?\/\s*P(\d+)/i); if(m) out.period=m[1];
   var maxIdx=[]; lines.forEach(function(l,i){ if(/^\s*MAX\s*:/i.test(l)) maxIdx.push(i); });
   out.studs=findStuds(lines, maxIdx.length?maxIdx[0]:lines.length, String(text));
   maxIdx.forEach(function(i){
@@ -546,6 +549,7 @@ function parseSynergy(text){
     out.cols.push({name:name, date:date});
   });
   if(!out.studs.length) return {err:'Couldn\'t find Synergy\'s student names. Copy Grade Book Main with Ctrl+A (Cmd+A on a Mac), then Ctrl+C.', seen:seenLines(lines, maxIdx.length?maxIdx[0]:lines.length)};
+  if(!out.cols.length && /no data to display/i.test(text)) return {err:'Synergy found '+out.studs.length+' students but showed NO assignments ("There is no data to display for your current filters"). In Synergy, open Grade Book Options and set the filter to the grading period that has your assignments (or all of them), then copy again.'};
   if(!out.cols.length || !out.studs.length) return {err:'Couldn\'t find Synergy\'s '+(!out.studs.length?'student names':'columns')+'. Copy Grade Book Main with Ctrl+A, Ctrl+C.'};
   /* marks start after the last column block's category line ("…Sort Direction") */
   var i=maxIdx[maxIdx.length-1]+1, stop=Math.min(lines.length,i+6);
