@@ -134,6 +134,13 @@
     '.plan .ptop b{color:var(--purple)}' +
     '.sayx{border:2px dashed #2B2233;border-radius:12px;background:#faf9fc;padding:8px 12px;margin:0 0 12px;font-weight:800}' +
     '.sayx p{margin:0}' +
+    /* T-494: the "Look in scene N" button in a first-miss hint. Not red, not the green arrow —
+       it is a thing to read, not the next step. */
+    '.lbbtn{display:inline-flex;align-items:center;gap:6px;margin:8px 8px 0 0;border:2px solid #2B2233;background:#fff;border-radius:999px;padding:6px 14px;font:inherit;font-weight:800;font-size:15px;color:var(--plum);cursor:pointer}' +
+    '.lbbtn:hover{background:#f1e8f6}' +
+    '.lbbtn .dirtr{display:inline;margin-left:4px;font-size:.92em;opacity:.85}' +
+    '.ghint+.lbbtn{margin-top:6px}' +
+    '.rwm .lbbtn{margin-top:6px;font-size:14px;padding:5px 12px}' +
     /* T-421: the topic sentence never turns red for ELD 101 — the wrong one fades, the right one
        pulses when it is shown after three misses, and the tick is the only colour that stays. */
     '.topts .qopt.gone{opacity:.25;text-decoration:line-through;pointer-events:none}' +
@@ -214,6 +221,92 @@
   function norm(s) { return String(s || '').toLowerCase().replace(/\u2019/g, "'").replace(/[^a-z0-9' ]+/g, ' ').replace(/\s+/g, ' ').trim(); }
   function wordsOf(s) { var n = norm(s); return n ? n.split(' ') : []; }
   function sentenceOk(s) { s = String(s || '').trim(); return wordsOf(s).length >= 3 && /^[A-Z]/.test(s) && /[.!?]$/.test(s); }
+  /* ---------- T-494: "📖 Look in scene N" (reel look-back, part 3) ----------
+     The engine (T-493) opens a reading panel at one scene: REEL_HOST.lookBack(i), 0-based, so
+     "scene N" as a student counts it = lookBack(N-1). It never moves or plays the video, and while
+     it is open the engine hides our green arrow, then redraws it when the panel closes. An older
+     engine in a student's browser has no lookBack at all, and then no button is drawn anywhere.
+
+     Which scene? Never a guess. In order of trust:
+       1. the data says so — a grammar set's scene:, or sc: N (1-based) on an ordering or key item;
+       2. the item's sentence matches ONE scene's own lines on its telling words — names, numbers
+          and the longer content words. Grammar sentences are verbatim from the episode, so they
+          land exactly; the ordering events and key sentences are written for the tiers, so they
+          match on content or not at all.
+     Fewer than two telling words in common, or two scenes equally close, and there is no button: a
+     wrong scene number sends a student to the wrong place, which is worse than sending them nowhere.
+
+     A tap is recorded on the item as lb:true for the teacher dashboard. It changes no score — the
+     whole point is that looking back is free. */
+  function lbReady() { try { return typeof H.lookBack === 'function'; } catch (e) { return false; } }
+  var LB_STOP = ('a an the and or but so then next first finally also too very is are was were am be been being ' +
+    'do does did to of in on at for with from by it its this that these those he she they we you i me him her them ' +
+    'his their my your our not no yes here there what where when who why how can could cannot will would says say ' +
+    'said asks ask goes go went get gets got has have had one two three four five').split(' ');
+  function lbWords(s) {
+    var seen = {}, out = [];
+    wordsOf(s).forEach(function (w) {
+      if (w.length < 3 && !/^\d+$/.test(w)) return;
+      if (LB_STOP.indexOf(w) >= 0 || seen[w]) return;
+      seen[w] = 1; out.push(w);
+    });
+    return out;
+  }
+  var LB_TEXT = null;
+  function sceneTexts() {
+    if (LB_TEXT) return LB_TEXT;
+    LB_TEXT = (EP.scenes || []).map(function (sc) {
+      var out = [];
+      ((sc && sc.lines) || []).forEach(function (ln) {
+        if (!ln || ln.type === 'q') return;          /* an embedded question is not a story line */
+        ['A', 'B', 't', 'say'].forEach(function (k) { if (typeof ln[k] === 'string') out.push(ln[k]); });
+        try { var t = txt(ln); if (typeof t === 'string') out.push(t); } catch (e) {}
+      });
+      return ' ' + norm(out.join(' ')) + ' ';
+    });
+    return LB_TEXT;
+  }
+  function sceneOf(text) {
+    if (!lbReady()) return -1;
+    var want = lbWords(text); if (want.length < 2) return -1;
+    var best = -1, bestN = 0, tie = false;
+    sceneTexts().forEach(function (body, i) {
+      if (!body || body.length < 3) return;
+      var n = 0;
+      want.forEach(function (w) { if (body.indexOf(' ' + w + ' ') >= 0) n++; });
+      if (n > bestN) { bestN = n; best = i; tie = false; }
+      else if (n === bestN && n > 0) tie = true;
+    });
+    return (bestN < 2 || tie) ? -1 : best;
+  }
+  /* an item in the data may name its own scene: sc: 1..n as a student counts them. That wins. */
+  function sceneFor(it, text) {
+    var s = it && it.sc, n = (EP.scenes || []).length;
+    if (s != null && +s >= 1 && +s <= n) return +s - 1;
+    return sceneOf(text);
+  }
+  /* a grammar set already carries scene: <index into EP.scenes> (every episode so far sets it),
+     so the sentence itself is only the fallback */
+  function gScene(set, it) {
+    var n = (EP.scenes || []).length;
+    if (set && set.scene != null && +set.scene >= 0 && +set.scene < n) return +set.scene;
+    return sceneOf((it && it.p) || '');
+  }
+  function lbBtn(i, label) {
+    if (!(i >= 0) || !lbReady()) return '';
+    var en = label || ('Look in scene ' + (i + 1));
+    return '<button class="lbbtn" data-lb="' + i + '" translate="yes" data-en="' + esc(en) + '">📖 ' + esc(en) + '</button>';
+  }
+  function lbWire(root, mark) {
+    if (!root || !root.querySelectorAll) return;
+    root.querySelectorAll('.lbbtn[data-lb]').forEach(function (b) {
+      if (b.__lb) return; b.__lb = 1;
+      b.addEventListener('click', function () {
+        if (mark) { try { mark(); touch(); } catch (e) {} }
+        try { H.lookBack(+b.getAttribute('data-lb')); } catch (e) {}
+      });
+    });
+  }
   function changedB(i) {
     if (!TIERS) return false;
     var k = TIERS.key[i], rw = (tierState().B.rw[i] || '');
@@ -331,6 +424,16 @@
     out.core = { pts: corePts, max: coreMax, extra: extra, extra_counted: counted, cap: cap,
                  set: cset.join(','), done: coreDone(), assigned: assignedTier || '' };
     out.say = out.tierS = { key: k, key_of: kf, extra: ex, total: (A.read && A.read.ok) || 0 };
+    /* T-494: who looked back at the story, for the teacher dashboard only. It is deliberately
+       outside every sum above — looking back is free, and a student who uses it is doing the thing
+       we asked for. */
+    var lbr = {}, gl = 0;
+    Object.keys(t.D.ans || {}).forEach(function (k2) { if (t.D.ans[k2] && t.D.ans[k2].lb) gl++; });
+    if (o.lb) lbr.order = true;
+    if (A.topic.lb) lbr.topic = true;
+    if (t.B.lb) lbr.rw = true;
+    if (gl) lbr.grammar = gl;
+    if (Object.keys(lbr).length) out.lb = lbr;
     if (t.askNext) out.ask_next = true;
     return { out: out, pts: corePts + counted, max: coreMax, coreMax: coreMax };
   }
@@ -750,6 +853,7 @@
     }
     h += '</ol></div>';
     h += '<div class="row"><button class="btn" id="ordCheck" translate="yes">Check</button><button class="btn alt" id="ordReset" translate="yes">Start over</button><span id="ordMsg" translate="yes"></span></div>';
+    h += '<div id="ordLb"></div>';           /* T-494: the look-back button after a miss */
     root.innerHTML = h;
     showDirections(root);
     function redraw() { touch(); renderOrder(root); guide(); }   /* T-374: the line keeps up with each placement */
@@ -784,6 +888,23 @@
       o.tries++; if (o.first == null) o.first = right; if (right > o.best) o.best = right;
       var msg = right === n ? 'Yes! That is the story, 1 to ' + n + '.' : right + ' of ' + n + ' are in a good place. Move the orange ones. What happened first? What happened last?';
       $('ordMsg').setAttribute('data-en', msg); $('ordMsg').textContent = msg; showDirections(root);
+      /* T-494: after a miss, ONE way back — the first misplaced event the episode's own lines can
+         place. One button, because one thing to do; none at all if nothing matches. */
+      var lbh = '';
+      if (right < n) {
+        var L = ordList();
+        for (var bi = 0; bi < n; bi++) {
+          var bk = o.slots[bi];
+          if (bk == null || ordRight(bk, bi, n)) continue;
+          var bs = sceneFor(L[bk], L[bk].t);
+          if (bs >= 0) { lbh = lbBtn(bs); break; }
+        }
+      }
+      if ($('ordLb')) {
+        $('ordLb').innerHTML = lbh;
+        showDirections($('ordLb'));
+        lbWire($('ordLb'), function () { o.lb = true; });
+      }
       score(); touch(); save(); guide();
     });
     $('ordReset').addEventListener('click', function () { o.shuf = shuffledIdx(n); o.slots = []; for (var j = 0; j < n; j++) o.slots.push(null); ordSel = null; redraw(); });
@@ -825,8 +946,11 @@
       var qp = QUIPS[Math.max(0, tp.tries - 1) % QUIPS.length];
       var line = shown ? 'Here is the answer. Tap it once, and you still get the point.' : qp.line;
       m.innerHTML = '<div class="gquip">' + headSVG(qp.who) + '<p translate="yes" data-en="' + esc(line) + '">' + esc(line) + '</p></div>' +
-                    '<p class="ghint" translate="yes" data-en="' + esc(T.why[i]) + '">💡 ' + esc(T.why[i]) + '</p>';
+                    '<p class="ghint" translate="yes" data-en="' + esc(T.why[i]) + '">💡 ' + esc(T.why[i]) + '</p>' +
+                    /* T-494: a topic sentence is about the whole story, so it opens at the start */
+                    lbBtn((EP.scenes || []).length ? 0 : -1, 'Look at the whole story');
       showDirections(m);
+      lbWire(m, function () { tp.lb = true; });
     }
     if (right) msgRight();
     root.querySelectorAll('.osay').forEach(function (b) {
@@ -883,13 +1007,33 @@
       else if (ok) st = '<span class="rwok yes" translate="yes" data-en="Changed. It still makes sense.">✓ Changed. It still makes sense.</span>';
       else if (norm(rw) && norm(rw) === norm(k.t)) st = '<span class="rwok no" translate="yes" data-en="This is the same as the original. Change at least one word.">This is the same as the original. Change at least one word.</span>';
       else if (norm(rw) && !sentenceOk(rw)) st = '<span class="rwok no" translate="yes" data-en="Start with a capital letter and end with a period.">Start with a capital letter and end with a period.</span>';
-      h += '<div class="rw' + (ok ? ' done' : '') + '"><div class="rwo"><span class="lab" translate="yes" data-en="Original">Original</span><p translate="no">' + orig + '<button class="osay" data-k="' + i + '" aria-label="Listen">🔊</button></p>' +
+      /* T-494: a first try that is not right yet gets the scene this sentence came from. A kept
+         sentence and a finished one get nothing: there is no miss to help with. */
+      var lb = (!k.keep && !ok && norm(rw)) ? lbBtn(sceneFor(k, k.t)) : '';
+      h += '<div class="rw' + (ok ? ' done' : '') + '" data-i="' + i + '"><div class="rwo"><span class="lab" translate="yes" data-en="Original">Original</span><p translate="no">' + orig + '<button class="osay" data-k="' + i + '" aria-label="Listen">🔊</button></p>' +
            (k.swap ? '<div class="ladder' + (ladderOpen === i ? ' on' : '') + '" id="lad' + i + '"></div>' : '') + '</div>' +
-           '<div class="rwm"><span class="lab" translate="yes" data-en="Your sentence">Your sentence</span><textarea data-i="' + i + '" translate="no" spellcheck="false">' + esc(rw) + '</textarea>' + st + '</div></div>';
+           '<div class="rwm"><span class="lab" translate="yes" data-en="Your sentence">Your sentence</span><textarea data-i="' + i + '" translate="no" spellcheck="false">' + esc(rw) + '</textarea><span class="rwfb">' + st + lb + '</span></div></div>';
     });
     h += '<div class="row"><button class="btn" id="bTurnIn" translate="yes">Turn in</button><span id="bMsg" translate="yes"></span></div>';
     root.innerHTML = h;
     showDirections(root);
+    lbWire(root, function () { var B = tierState().B; B.lb = true; });   /* T-494 */
+    /* T-494: one row's status and its look-back button, recomputed when the student leaves the box.
+       It used to be drawn once and never again, so "Change at least one word" and the 📖 button
+       only showed up after a reload. Blur, not input: nobody wants to be corrected mid-word. */
+    function rwFb(i) {
+      var k = TIERS.key[i], box = root.querySelector('.rw[data-i="' + i + '"]');
+      var host = box && box.querySelector('.rwfb'); if (!host) return;
+      var rw = tierState().B.rw[i] || '', ok = changedB(i), st2 = '';
+      if (k.keep) st2 = '<span class="rwok keep" translate="yes" data-en="Keep this one. Names and countries stay the same.">Keep this one. Names and countries stay the same.</span>';
+      else if (ok) st2 = '<span class="rwok yes" translate="yes" data-en="Changed. It still makes sense.">✓ Changed. It still makes sense.</span>';
+      else if (norm(rw) && norm(rw) === norm(k.t)) st2 = '<span class="rwok no" translate="yes" data-en="This is the same as the original. Change at least one word.">This is the same as the original. Change at least one word.</span>';
+      else if (norm(rw) && !sentenceOk(rw)) st2 = '<span class="rwok no" translate="yes" data-en="Start with a capital letter and end with a period.">Start with a capital letter and end with a period.</span>';
+      host.innerHTML = st2 + ((!k.keep && !ok && norm(rw)) ? lbBtn(sceneFor(k, k.t)) : '');
+      box.classList.toggle('done', !!ok);
+      showDirections(host);
+      lbWire(host, function () { tierState().B.lb = true; });
+    }
     var labels = ['Small change', 'A step further', 'Freer, more detail'];
     function fillLadder(i) {
       var k = TIERS.key[i], el = $('lad' + i); if (!el) return;
@@ -916,6 +1060,7 @@
     root.querySelectorAll('.osay').forEach(function (b) { b.addEventListener('click', function () { speakPlain(TIERS.key[+b.getAttribute('data-k')].t); }); });
     root.querySelectorAll('textarea').forEach(function (ta) {
       ta.addEventListener('input', function () { B.rw[+ta.getAttribute('data-i')] = ta.value; score(); touch(); guide(); repaintMarks(); });
+      ta.addEventListener('blur', function () { rwFb(+ta.getAttribute('data-i')); guide(); });   /* T-494 */
       ta.addEventListener('change', function () { renderTierB(root); });
     });
     $('bTurnIn').addEventListener('click', function () {
@@ -1271,14 +1416,15 @@
           if (r.tries >= 3 || left === 0) {
             r.shown = true;
             fb.innerHTML = '<div class="gquip">' + headSVG(qp.who) + '<p translate="yes" data-en="' + esc('Here is the answer. Tap it once, and you still get the point.') + '">Here is the answer. Tap it once, and you still get the point.</p></div>' +
-                           '<p class="ghint" translate="yes" data-en="' + esc(hint) + '">💡 ' + esc(hint) + '</p>';
+                           '<p class="ghint" translate="yes" data-en="' + esc(hint) + '">💡 ' + esc(hint) + '</p>' + lbBtn(gScene(set, it));   /* T-494 */
             q.querySelectorAll('.gtile').forEach(function (b2) { if (b2.getAttribute('data-o') === it.a) { b2.classList.add('show'); b2.classList.remove('gone'); b2.disabled = false; } });
             speakPlain(it.a);
           } else {
             fb.innerHTML = '<div class="gquip">' + headSVG(qp.who) + '<p translate="yes" data-en="' + esc(qp.line) + '">' + esc(qp.line) + '</p></div>' +
-                           '<p class="ghint" translate="yes" data-en="' + esc(hint) + '">💡 ' + esc(hint) + '</p>';
+                           '<p class="ghint" translate="yes" data-en="' + esc(hint) + '">💡 ' + esc(hint) + '</p>' + lbBtn(gScene(set, it));   /* T-494 */
           }
           showDirections(q);
+          lbWire(fb, function () { r.lb = true; });          /* T-494: recorded, never scored */
           score(); touch(); save();
         });
       });
