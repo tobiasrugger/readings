@@ -817,13 +817,6 @@ window.CATALOG=[
 "g": "More: Grasshopper and the Ant"
 },
 {
-"p": "/readings/launch-plus/",
-"t": "ELD 101 · Practice",
-"d": "",
-"m": "",
-"g": "More: Launch Plus (ELD 101)"
-},
-{
 "p": "/readings/launch-plus/book/",
 "t": "Seven Ways to School",
 "d": "Seven Ways to School",

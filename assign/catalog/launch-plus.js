@@ -4,7 +4,6 @@
 (window.CATALOG = window.CATALOG || []).push(
 {"p": "/readings/launch-plus/u1-l1/", "t": "Launch Plus · People at School", "d": "Stretch practice for Language Launch Unit 1 Lesson 1: a real paragraph, fix-the-sentence grammar, bigger words, the people who work at a school, and a paragraph to write.", "m": "ELD 101 · Unit 1 Lesson 1 · 5 parts", "g": "Vocabulary", "o": 57},
 {"p": "/readings/launch-plus/u1-l2/", "t": "Launch Plus · Introductions", "d": "Stretch practice for Language Launch Unit 1 Lesson 2: a first-day story, fix-the-sentence grammar (is/are, capital I, he/she -s), word families, formal and casual greetings, and a paragraph about your first day.", "m": "ELD 101 · Unit 1 Lesson 2 · 5 parts", "g": "Vocabulary", "o": 58},
-{"p": "/readings/launch-plus/", "t": "ELD 101 · Practice", "d": "", "m": "", "g": "More: Launch Plus (ELD 101)", "o": 116},
 {"p": "/readings/launch-plus/book/", "t": "Seven Ways to School", "d": "Seven Ways to School", "m": "", "g": "More: Launch Plus (ELD 101)", "o": 117},
 {"p": "/readings/launch-plus/find/", "t": "Find Someone Who", "d": "Find Someone Who…", "m": "", "g": "More: Launch Plus (ELD 101)", "o": 118},
 {"p": "/readings/launch-plus/find/wall.html", "t": "Find Someone Who · Class wall", "d": "Find Someone Who", "m": "", "g": "More: Launch Plus (ELD 101)", "o": 119},
