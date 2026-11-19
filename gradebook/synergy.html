@@ -166,12 +166,13 @@ table.lst th{font-size:.72rem;text-transform:uppercase;color:var(--muted)}
   <section id="setup" class="hide">
     <div class="box">
       <h2>1 · Paste from Synergy</h2>
-      <p class="note">In Synergy open this period's <b>Grade Book Main</b>, press <b>Ctrl+A</b>, then <b>Ctrl+C</b>, then click in the box below and press <b>Ctrl+V</b>. The page reads the period, the columns in Synergy's order, the students in Synergy's order, and the marks Synergy has now. Matches you already made are kept.</p>
+      <p class="note">In Synergy open this period's <b>Grade Book Main</b>, press <b>Ctrl+A</b>, then <b>Ctrl+C</b> (on a Mac: <b>Cmd+A</b>, <b>Cmd+C</b>), then click in the box below and paste. The page reads the period, the columns in Synergy's order, the students in Synergy's order, and the marks Synergy has now. Matches you already made are kept.</p>
       <textarea id="paste" placeholder="Paste Synergy's Grade Book here…"></textarea>
       <div class="bar" style="margin:8px 0 0">
         <button class="btn" id="readPaste">Read it</button>
         <span id="pasteMsg" class="note"></span>
       </div>
+      <pre id="pasteSeen" class="hide" style="white-space:pre-wrap;font-size:12px;border:2px solid #333;border-radius:8px;padding:8px;margin:8px 0 0;max-height:320px;overflow:auto;background:#fff"></pre>
       <div class="drop" id="drop">📷 Screenshot? Drop the file here, <label style="text-decoration:underline;cursor:pointer">choose it<input type="file" id="shotFile" accept="image/*" class="hide"></label>, or Ctrl+V it into the box above. Only its <b>file name</b> and the time are saved, never the picture. The page can't read a picture — copy the text too (or paste the screenshot into the gradebook chat).</div>
       <div id="shots" class="note"></div>
     </div>
@@ -494,20 +495,57 @@ function stampCols(cols, whole){
      then the marks, ONE PER LINE, student by student (row 1's columns, row 2's…),
      a blank cell as " <TAB>". Checked Nov 17 on Toby's P3 copy: each student's
      marks average out to Synergy's own percent (all zeros = 50%).          */
+/* T-497: student names, forgiving. The Nov 17 P3 copy had "Last, First<TAB>76.0%C"
+   on one line; a Mac Cmd+A copy (P5, Nov 19) did not. Now a name is any
+   "Last, First" cell ABOVE the first column block, and its grade may sit in the
+   same line (any later cell) or on the next line, as a percent, a letter, or N/A.
+   Tiers, strictest first; Synergy's own "N student(s)" count picks the tier
+   when it is there (so the teacher's own "Rugger, Tobias" in the header never
+   counts as a student). */
+var NAME_RE=/^[A-Za-zÀ-ÖØ-öø-ÿ'’.\- ]+,\s*[A-Za-zÀ-ÖØ-öø-ÿ'’.\- ]+(?:\s*\([^)]*\))?$/;
+var PCT_RE=/^\d+(?:\.\d+)?\s*%/;
+var GRADE_RE=/^(?:\d+(?:\.\d+)?\s*%.*|N\/?A|-{1,2}|[A-F][+-]?|\d+(?:\.\d+)?)$/i;
+function findStuds(lines, end, text){
+  var cands=[];
+  for(var i=0;i<end;i++){
+    var cells=lines[i].split('\t').map(function(c){return c.trim();});
+    for(var j=0;j<cells.length;j++){
+      if(!NAME_RE.test(cells[j])) continue;
+      var g='';
+      for(var k=j+1;k<cells.length;k++) if(cells[k]){ g=cells[k]; break; }
+      if(!g){ for(var n=i+1;n<Math.min(end,i+3);n++){ var t=lines[n].split('\t').map(function(c){return c.trim();}).filter(Boolean)[0]; if(t){ g=t; break; } } }
+      cands.push({name:cells[j].replace(/\s*\([^)]*\)\s*$/,'').replace(/\s+/g,' '), pct:PCT_RE.test(g), grade:GRADE_RE.test(g)});
+      break;
+    }
+  }
+  var tiers=[cands.filter(function(c){return c.pct;}), cands.filter(function(c){return c.grade;})];
+  var cnt=(String(text).match(/(\d+)\s+student\(s\)/i)||[])[1];
+  if(cnt){ cnt=+cnt;
+    for(var t=0;t<tiers.length;t++) if(tiers[t].length===cnt) return tiers[t].map(function(c){return c.name;});
+    if(cands.length>=cnt) return cands.slice(-cnt).map(function(c){return c.name;});
+  }
+  var best=tiers[0].length?tiers[0]:tiers[1];
+  return best.map(function(c){return c.name;});
+}
+/* if names still aren't found, show Toby the lines above the columns (tabs as →),
+   on his screen only — nothing is saved or sent */
+function seenLines(lines, end){
+  return lines.slice(0,end).filter(function(l){return l.trim();}).slice(0,25)
+    .map(function(l){return l.replace(/\t/g,' → ').slice(0,90);}).join('\n');
+}
 function parseSynergy(text){
   var lines=String(text||'').replace(/\r/g,'').split('\n');
   var out={period:null, cols:[], studs:[], vals:[]};
   var m=String(text).match(/Current Focus:[^\n]*?\/\s*P(\d+)/i); if(m) out.period=m[1];
-  lines.forEach(function(l){
-    var s=l.match(/^\s*([^\t,]+,[^\t]+?)\t\s*\d+(?:\.\d+)?%/); if(s) out.studs.push(s[1].trim());
-  });
   var maxIdx=[]; lines.forEach(function(l,i){ if(/^\s*MAX\s*:/i.test(l)) maxIdx.push(i); });
+  out.studs=findStuds(lines, maxIdx.length?maxIdx[0]:lines.length, String(text));
   maxIdx.forEach(function(i){
     var t=i-1; while(t>=0 && !lines[t].trim()) t--;
     var name=t>=0?lines[t].trim():'?', date='';
     for(var k=i+1;k<Math.min(lines.length,i+5);k++){ var d=lines[k].match(/(\d{1,2}\/\d{1,2}\/\d{2,4})/); if(d){ date=d[1]; break; } }
     out.cols.push({name:name, date:date});
   });
+  if(!out.studs.length) return {err:'Couldn\'t find Synergy\'s student names. Copy Grade Book Main with Ctrl+A (Cmd+A on a Mac), then Ctrl+C.', seen:seenLines(lines, maxIdx.length?maxIdx[0]:lines.length)};
   if(!out.cols.length || !out.studs.length) return {err:'Couldn\'t find Synergy\'s '+(!out.studs.length?'student names':'columns')+'. Copy Grade Book Main with Ctrl+A, Ctrl+C.'};
   /* marks start after the last column block's category line ("…Sort Direction") */
   var i=maxIdx[maxIdx.length-1]+1, stop=Math.min(lines.length,i+6);
@@ -582,7 +620,10 @@ function guessCol(name){
 
 $('readPaste').onclick=function(){
   var p=parseSynergy($('paste').value), msg=$('pasteMsg');
-  if(p.err){ msg.textContent='⚠ '+p.err; msg.style.color='#8c2418'; return; }
+  var seen=$('pasteSeen'); seen.textContent=''; seen.classList.add('hide');
+  if(p.err){ msg.textContent='⚠ '+p.err; msg.style.color='#8c2418';
+    if(p.seen){ seen.textContent='What the page saw above the columns (first 25 lines, → = a tab). Screenshot this for Claude:\n\n'+p.seen; seen.classList.remove('hide'); }
+    return; }
   var per=p.period||PER;
   if(p.period && p.period!==PER && !confirm('This copy is from Period '+p.period+' (you have Period '+PER+' open). Save it as Period '+p.period+'?')) return;
   var old=LAYS[per]||{cols:[],studs:[],shots:[],opts:{}};
