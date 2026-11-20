@@ -9,5 +9,6 @@
  * group (Data, Reading, Vocabulary, Speaking, Writing, Grammar, Unit), note.
  */
 window.DASHBOARDS = (window.DASHBOARDS || []).concat([
-{url:'telltale/dashboard.html',         name:'The Tell-Tale Heart',           course:'103', group:'Reading'}
+{url:'telltale/dashboard.html',         name:'The Tell-Tale Heart',           course:'103', group:'Reading'},
+{url:'telltale/words/dashboard.html', name:'The Tell-Tale Heart: 12 words, one row each', course:'103', group:'Vocabulary', note:'Standalone page (not linked from the story): pick the picture, say it (🎤 or ✋), use it in the right sentence. Give the link to one student.'}
 ]);

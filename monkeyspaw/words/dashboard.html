@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>12 words · The Monkey’s Paw · Teacher</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<!-- T-500 (Nov 20 2026): dashboard for monkeyspaw/words/ (12 words, one row each: pick · say · use). Reads eld103_donow unit 'monkeyspaw-wordrows'.
+     One row per student (GAL04.key). Built from tools/build_words.py. No written answers, so no ✓/✗ marks; 🎤 = speech recognition heard the word,
+     ✋ = the student tapped "I said it" (after 2 tries or on a computer that can't listen). -->
+<style>
+:root{--pine:#2a2318;--pine2:#5b3a29;--ink:#1f1a14;--muted:#6b6152;--paper:#f6f1e7}
+*{box-sizing:border-box}body{margin:0;font-family:'Nunito',system-ui,sans-serif;background:var(--paper);color:var(--ink)}
+header{background:var(--pine);color:#fff;padding:48px 16px 14px 16px}header h1{margin:0;font-size:1.25rem}header p{margin:2px 0 0;font-size:.86rem;opacity:.9}header a{color:#f2c230}
+main{max-width:1500px;margin:0 auto;padding:14px}
+.box{background:#fff;border:2px solid var(--ink);border-radius:12px;box-shadow:0 3px 0 var(--ink);padding:12px 14px;margin:0 0 14px}
+.box h2{margin:0 0 6px;font-size:1.05rem;color:var(--pine2)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+select,button,input{font-family:inherit;font-size:.95rem;font-weight:700;border:2px solid var(--ink);border-radius:8px;padding:6px 10px;background:#fff}
+button{cursor:pointer;background:var(--pine2);color:#fff}button.ghost{background:#fff;color:var(--pine2)}
+.wrap{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:.84rem}
+th,td{border:1px solid #c9bfae;padding:5px 6px;text-align:center;vertical-align:top}th{background:#f1e9da;position:sticky;top:0}
+td.l{text-align:left}.muted{color:var(--muted)}
+.c{font-weight:900;white-space:nowrap}.c i{font-style:normal;color:#8a4b00;font-weight:800;font-size:.78rem}
+.full{background:#e8f7ee}.part{background:#fff8dc}
+#gate{position:fixed;inset:0;background:rgba(42,35,24,.96);display:flex;align-items:center;justify-content:center;z-index:100}
+#gate .gb{background:#fff;border:3px solid var(--ink);border-radius:14px;padding:22px;width:300px;text-align:center}#gateErr{color:#b5451b;font-weight:800;min-height:1.2em}
+a{color:var(--pine2);font-weight:800}
+</style>
+<script src="/readings/monkeyspaw/words/data.js"></script>
+</head>
+<body>
+<div id="gate"><div class="gb"><h2 style="margin:0 0 10px">Teacher</h2>
+ <input id="pw" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')unlock()" style="width:100%">
+ <button onclick="unlock()" style="width:100%;margin-top:10px">Open</button><div id="gateErr"></div></div></div>
+<header><h1>12 words, one row each · The Monkey’s Paw</h1><p>Standalone page (not linked from the story this year): give the link to one student. Each word = 3 points: <b>P</b> pick the picture · <b>S</b> say it (🎤 heard / ✋ I said it) · <b>U</b> use it in the right sentence. Student page: <a href="./">monkeyspaw/words/</a> · <a href="../dashboard.html">story dashboard</a></p></header>
+<main>
+ <div class="box"><div class="row">
+  <label>Period <select id="per" onchange="draw()"><option value="">All</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select></label>
+  <button class="ghost" onclick="load()">↻ Reload</button><span id="sum" class="muted"></span></div></div>
+ <div class="box"><h2>Hardest words (misses on pick + use)</h2><div id="hard" class="muted">…</div></div>
+ <div class="box wrap"><table><thead id="th"></thead><tbody id="tb"><tr><td>Loading…</td></tr></tbody></table>
+ <p class="muted" style="font-size:.85rem">Each cell: P S U for that word (✓ done, · not yet), small number = misses. 🎤 = the computer heard the word; ✋ = the student tapped “I said it”. Hover a 🎤 cell to see what the computer heard.</p></div>
+ <div class="box"><h2>🌐 Pre-translate</h2><div id="pt"></div></div>
+</main>
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var PW='galileo2026',ROWS=[],T=window.WR,PWK='wr_monkeyspaw_pw';
+function $(i){return document.getElementById(i);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function key(e){return window.GAL04&&GAL04.key?GAL04.key(e):String(e||'').trim().toLowerCase().split('@')[0];}
+function band(pct){return window.GAL04&&GAL04.band?GAL04.band(pct):'';}
+function H(){return {apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY};}
+function unlock(){if($('pw').value===PW){try{sessionStorage.setItem(PWK,'1');}catch(e){}$('gate').style.display='none';start();}else $('gateErr').textContent='Not the right password.';}
+function start(){load();pre();}
+function load(){fetch(SUPA_URL+'/rest/v1/eld103_donow?unit=eq.'+T.UNIT+'&select=email,name,period,score,max_score,payload,updated_at&order=updated_at.desc',{headers:H()})
+ .then(function(r){return r.json();}).then(function(rows){var by={};(rows||[]).forEach(function(r){var k=key(r.email);if(!by[k]||(r.score||0)>(by[k].score||0))by[k]=r;});
+  ROWS=Object.keys(by).map(function(k){return by[k];});ROWS.sort(function(a,b){return String(a.period).localeCompare(String(b.period))||String(a.name).localeCompare(String(b.name));});draw();})
+ .catch(function(){$('tb').innerHTML='<tr><td>Could not load.</td></tr>';});}
+function cell(x){if(!x)return '<td class="c muted">· · ·</td>';var n=(x.p&&x.p.done?1:0)+(x.s&&x.s.done?1:0)+(x.u&&x.u.done?1:0);
+ function m(st){return st&&st.tries?'<i>'+st.tries+'</i>':'';}
+ var s=x.s&&x.s.done?(x.s.how==='mic'?'🎤':'✋'):'·';var heard=(x.s&&x.s.heard||[]).join(' / ');
+ return '<td class="c '+(n===3?'full':n?'part':'')+'"'+(heard?' title="heard: '+esc(heard)+'"':'')+'>'+(x.p&&x.p.done?'✓':'·')+m(x.p)+' '+s+(x.s&&x.s.tries?'<i>'+x.s.tries+'</i>':'')+' '+(x.u&&x.u.done?'✓':'·')+m(x.u)+'</td>';}
+function draw(){var p=$('per').value,list=ROWS.filter(function(r){return !p||String(r.period)===p;});
+ $('th').innerHTML='<tr><th>Student</th><th>Per.</th><th>Done</th><th>0–4</th>'+T.WORDS.map(function(w){return '<th>'+esc(w.w)+'</th>';}).join('')+'<th>Saved</th><th></th></tr>';
+ var fin=list.filter(function(r){var s=T.score(r.payload||{});return s.score>=s.max;}).length;$('sum').textContent=list.length+' students · '+fin+' finished';
+ $('tb').innerHTML=list.length?list.map(function(r){var P=r.payload||{},s=T.score(P),pct=s.max?Math.round(100*s.score/s.max):0,W=P.W||[];
+  return '<tr><td class="l"><b>'+esc(r.name)+'</b><br><span class="muted" style="font-size:.78rem">'+esc(key(r.email))+'</span></td><td>'+esc(r.period)+'</td><td><b>'+s.score+'/'+s.max+'</b></td><td>'+band(pct)+'</td>'+
+   T.WORDS.map(function(_,i){return cell(W[i]);}).join('')+'<td class="muted" style="font-size:.76rem">'+esc(new Date(r.updated_at).toLocaleString())+(P.lion?'<br>🦁':'')+(P.browserTranslated?'<br>⚠ Chrome translate':'')+'</td>'+
+   '<td><a href="./?view=teacher&email='+encodeURIComponent(r.email)+'" target="_blank">👀</a></td></tr>';}).join(''):'<tr><td colspan="'+(T.WORDS.length+6)+'">No work yet.</td></tr>';
+ var st=T.WORDS.map(function(w,i){var miss=0,n=0;list.forEach(function(r){var x=((r.payload||{}).W||[])[i];if(!x)return;n++;miss+=(x.p&&x.p.tries||0)+(x.u&&x.u.tries||0);});return {w:w.w,miss:miss,n:n};}).filter(function(x){return x.n;});
+ st.sort(function(a,b){return b.miss-a.miss;});$('hard').innerHTML=st.length?st.slice(0,6).map(function(x){return '<div><b>'+esc(x.w)+'</b> · '+x.miss+' misses ('+x.n+' students)</div>';}).join(''):'No answers yet.';}
+function pre(){if(!window.GAL||!GAL.pretr)return;
+ GAL.pretr({host:'#pt',title:'Pre-translate “12 words” · The Monkey’s Paw',
+  items:[{key:T.SLUG,title:'12 words · The Monkey’s Paw · every word, meaning, sentence and direction',lines:function(){return T.lines().map(function(s){return {src:s,slug:T.SLUG,mode:s.split(/\s+/).length<=3?'word':'sentence'};});}}],
+  langs:[['Spanish','Spanish'],['Chinese (Simplified)','Mandarin'],['Cantonese','Cantonese'],['Arabic','Arabic'],['Vietnamese','Vietnamese'],['Thai','Thai'],['Nepali','Nepali'],['Russian','Russian'],
+   ['Darija','Darija'],['Urdu','Urdu'],['Tagalog','Tagalog'],['French','French'],['Korean','Korean'],['Hindi','Hindi'],['Somali','Somali']],
+  ticked:['Spanish','Chinese (Simplified)','Arabic','Vietnamese']});}
+try{if(sessionStorage.getItem(PWK)){$('gate').style.display='none';load();}}catch(e){}
+</script>
+<script src="/readings/pretr.js"></script>
+<script>try{if(sessionStorage.getItem(PWK))pre();}catch(e){}</script>
+<script src="/readings/grade04.js" data-slugs="monkeyspaw-wordrows"></script>
+</body>
+</html>

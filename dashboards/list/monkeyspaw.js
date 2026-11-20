@@ -9,5 +9,6 @@
  * group (Data, Reading, Vocabulary, Speaking, Writing, Grammar, Unit), note.
  */
 window.DASHBOARDS = (window.DASHBOARDS || []).concat([
-{url:'monkeyspaw/dashboard.html',       name:'The Monkey\u2019s Paw',         course:'103', group:'Reading'}
+{url:'monkeyspaw/dashboard.html',       name:'The Monkey\u2019s Paw',         course:'103', group:'Reading'},
+{url:'monkeyspaw/words/dashboard.html', name:'The Monkey\u2019s Paw: 12 words, one row each', course:'103', group:'Vocabulary', note:'Standalone page (not linked from the story): pick the picture, say it (🎤 or ✋), use it in the right sentence. Give the link to one student.'}
 ]);
