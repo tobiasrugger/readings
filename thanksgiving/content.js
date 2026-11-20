@@ -87,6 +87,54 @@
     { k: 'q6', q: 'What do you like to eat on this important holiday in your country?', st: 'On ___, I like to eat ___.', need: null }
   ];
 
+
+  /* ---------- Word search (Mr. Toby's worksheet "Thanksgiving word search", Nov 20 2026) ----------
+     Picture words first (cards, then listen-and-tap), then the puzzle. Left out on purpose: pilgrims, native American,
+     agreement, hunting (history words that need context the reading does not give). Turkey + pumpkin pie are review. */
+  T.VWORDS = [
+    { w: 'Mayflower', d: 'the ship that came to America in 1620', art: 'mayflower' },
+    { w: 'autumn', d: 'the season after summer; leaves fall (also: fall)', art: 'autumn' },
+    { w: 'pilgrim hat', d: 'a tall black hat with a buckle', art: 'pilgrimhat' },
+    { w: 'harvest', d: 'the time to pick and bring in food from the farm', art: 'harvest' },
+    { w: 'dinner', d: 'the big meal in the evening', art: 'dinner' },
+    { w: 'acorn', d: 'a small nut from an oak tree', art: 'acorn' },
+    { w: 'corn', d: 'a yellow vegetable on a cob', art: 'corn' },
+    { w: 'wreath', d: 'a circle of leaves on a door', art: 'wreath' },
+    { w: 'pudding', d: 'a soft, sweet dessert', art: 'pudding' },
+    { w: 'wheat', d: 'a plant; we make bread from it', art: 'wheat' },
+    { w: 'bread', d: 'food made from flour; you make toast with it', art: 'bread' },
+    { w: 'scarecrow', d: 'a person made of straw on a farm; it scares birds', art: 'scarecrow' },
+    { w: 'gravy', d: 'a hot brown sauce for turkey and potatoes', art: 'gravy' },
+    { w: 'cornucopia', d: 'a horn-shaped basket full of food', art: 'cornucopia' }
+  ];
+  T.WS_WORDS = T.VWORDS.map(function (x) { return { w: x.w, art: x.art }; }).concat([{ w: 'turkey', art: 'turkey' }, { w: 'pumpkin pie', art: 'pie' }]);
+  T.WS_N = 13;
+  /* the same grid for everyone (seeded), across and down only, read left-to-right / top-to-bottom */
+  T.grid = function () {
+    if (T._grid) return T._grid;
+    for (var seed = 1120; seed < 1220; seed++) {
+      var s = seed; function rnd() { s = (s * 1103515245 + 12345) % 2147483648; return s / 2147483648; }
+      var N = T.WS_N, g = [], ok = true, place = {};
+      for (var r = 0; r < N; r++) { g.push([]); for (var c = 0; c < N; c++) g[r].push(''); }
+      var list = T.WS_WORDS.slice().sort(function (a, b) { return b.w.length - a.w.length; });
+      for (var i = 0; i < list.length && ok; i++) {
+        var W = list[i].w.toUpperCase().replace(/[^A-Z]/g, ''), done = false;
+        for (var t = 0; t < 400 && !done; t++) {
+          var down = rnd() < 0.5, r0 = Math.floor(rnd() * (down ? N - W.length + 1 : N)), c0 = Math.floor(rnd() * (down ? N : N - W.length + 1)), fit = true;
+          for (var k = 0; k < W.length; k++) { var ch = g[down ? r0 + k : r0][down ? c0 : c0 + k]; if (ch && ch !== W[k]) { fit = false; break; } }
+          if (!fit) continue;
+          for (k = 0; k < W.length; k++) g[down ? r0 + k : r0][down ? c0 : c0 + k] = W[k];
+          place[list[i].w] = { r: r0, c: c0, down: down, len: W.length }; done = true;
+        }
+        if (!done) ok = false;
+      }
+      if (!ok) continue;
+      var AB = 'ABCDEFGHIKLMNOPRSTUVWY';
+      for (r = 0; r < N; r++) for (c = 0; c < N; c++) if (!g[r][c]) g[r][c] = AB[Math.floor(rnd() * AB.length)];
+      T._grid = { g: g, place: place, seed: seed }; return T._grid;
+    }
+  };
+
   /* Part C interview: extra (fills a missing point, never lowers the score) */
   T.IV = ['What is an important holiday in your country?', 'What do you like to do on this important holiday?', 'What do you like to eat on this important holiday in your country?'];
 
@@ -97,6 +145,9 @@
     r1: 'Read the story. Tap 🔊 to listen. Tap a word to see it in your language.',
     r2: 'Answer the questions. Look back at the story.',
     b1: 'Answer in complete sentences. Write at least 4 words.',
+    v1: 'More Thanksgiving words. Look at each picture. Tap 🔊 and listen.',
+    v2: 'Tap the big 🔊. Then tap the picture you heard.',
+    s1: 'Find the words in the puzzle. Tap the first letter, then tap the last letter. Words go across → or down ↓.',
     c1: 'Find somebody who speaks a different language and comes from a different country. Ask the questions. Write what they said.',
     d1: 'You finished the Thanksgiving reading. Happy Thanksgiving!'
   };
@@ -107,16 +158,18 @@
   T.ivOk = function (x) { return !!(x && String(x.who || '').trim() && words(x.a).length >= 2); };
 
   /* fair score: every item solved on any try = 1 point; written answers count unless Mr. Toby marked ✗ and it is unchanged */
-  T.MAX = 2 + T.WORDS.length + T.MC_IDS.length + T.QS.length;
+  T.MAX = 2 + T.WORDS.length + T.MC_IDS.length + T.QS.length + T.VWORDS.length + T.WS_WORDS.length;
   T.score = function (p, marks, off) {
     p = p || {}; marks = marks || {}; off = off || function () { return false; };
-    var L = p.look || {}, R = p.R || {}, look = (L.see ? 1 : 0) + (L.won ? 1 : 0), w = 0, m = 0, b = 0, c = 0;
+    var L = p.look || {}, R = p.R || {}, look = (L.see ? 1 : 0) + (L.won ? 1 : 0), w = 0, m = 0, b = 0, c = 0, v = 0, f = 0;
+    for (var j = 0; j < T.VWORDS.length; j++) if (R.v && R.v[j] && R.v[j].done) v++;
+    T.WS_WORDS.forEach(function (x) { if (p.ws && p.ws.found && p.ws.found.indexOf(x.w) >= 0) f++; });
     for (var i = 0; i < T.WORDS.length; i++) if (R.w && R.w[i] && R.w[i].done) w++;
     T.MC_IDS.forEach(function (id) { if (R.m && R.m[id] && R.m[id].done) m++; });
     T.QS.forEach(function (q) { var a = (p.qa || {})[q.k]; if (T.qOk(q, a) && !off(marks, q.k, a)) b++; });
     (p.iv || []).forEach(function (x) { if (T.ivOk(x)) c++; });
-    var core = look + w + m + b;
-    return { look: look, w: w, m: m, b: b, iv: Math.min(3, c), core: core, max: T.MAX, score: Math.min(T.MAX, core + Math.min(3, c)) };
+    var core = look + w + m + b + v + f;
+    return { look: look, w: w, m: m, b: b, v: v, f: f, iv: Math.min(3, c), core: core, max: T.MAX, score: Math.min(T.MAX, core + Math.min(3, c)) };
   };
 
   /* every line a student can see, for 🌐 Pre-translate */
@@ -127,7 +180,7 @@
     T.PARTS.forEach(function (P) { add(P.title); P.paras.forEach(function (pp) { pp.forEach(add); }); (P.after || []).forEach(add); });
     Object.keys(T.MC).forEach(function (k) { T.MC[k].forEach(function (x) { add(x.q); x.o.forEach(add); x.h.forEach(add); }); });
     T.QS.forEach(function (q) { add(q.q); add(q.st); if (q.hint) add(q.hint); });
-    T.IV.forEach(add); Object.keys(T.DIR).forEach(function (k) { add(T.DIR[k]); });
+    T.VWORDS.forEach(function (x) { add(x.w); add(x.d); }); T.IV.forEach(add); Object.keys(T.DIR).forEach(function (k) { add(T.DIR[k]); });
     T.LOOK.see.forEach(add); T.LOOK.won.forEach(add); add(T.LOOK.think);
     return out;
   };

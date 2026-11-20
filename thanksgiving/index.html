@@ -9,7 +9,7 @@
 <!-- T-498 (Nov 20 2026): ELD 101 Thanksgiving reading, from Mr. Toby's worksheet "Thanksgiving in the United States" (word for word).
      Look (opinion, never wrong) · 10 words (cards, then listen-and-tap) · read 4 parts (Thanksgiving, Mark, the Lee family, Andre), each with
      a drawn scene, 🔊 per sentence and per paragraph, and 3 check questions · Part B: 6 written answers (Mr. Toby's ✓/✗ via marks.js, keys q1..q6)
-     · Part C: talk to a classmate (extra) · finish. Saves to eld103_donow, unit 'thanksgiving' (no new table). Words and score rule in content.js,
+     · Part C: talk to a classmate (extra) · 14 more picture words · word search (16 words, same seeded grid for all) · finish. Saves to eld103_donow, unit 'thanksgiving' (no new table). Words and score rule in content.js,
      drawings in art.js, both shared with dashboard.html. Translations cached in song_tr slug 'thanksgiving'. -->
 <style>
 :root{--pine:#1b4332;--pine2:#2d6a4f;--moss:#40916c;--sage:#95d5b2;--paper:#f4f5f2;--ink:#1c2640;--muted:#5c6b62;--gold:#d4a017;--sky:#eef5ff}
@@ -151,6 +151,19 @@ body.wt [translate="no"] , body.wt .dir{cursor:help}
 details.st{margin-top:6px}details.st summary{cursor:pointer;font-weight:800;color:var(--pine2)}
 details.st .frame{border:2px dashed var(--pine2);border-radius:10px;padding:6px 10px;margin-top:6px;font-weight:700;background:#f1faf4}
 .extra{display:inline-block;background:#e9f0ff;border:2px solid #2f6aa8;color:#2f6aa8;border-radius:16px;padding:2px 10px;font-weight:900;font-size:.85rem;margin-left:6px}
+/* word search */
+.wsw{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}
+.wsg{display:grid;gap:3px;touch-action:none;user-select:none;-webkit-user-select:none;flex:0 1 auto;max-width:100%}
+.wsg button{font-family:inherit;font-weight:900;font-size:1.15rem;width:38px;height:38px;padding:0;border:2px solid #9aa6b0;border-radius:8px;background:#fff;color:var(--ink);cursor:pointer}
+.wsg button.sel{background:#fff1bf;border-color:var(--gold)}.wsg button.start{background:var(--gold);color:#3d2c00;border-color:#8a6a1a}
+.wsg button.found{background:var(--c,#d8f0e2);border-color:#2f7d4f;color:#123}
+.wsg button.flash{animation:pulse 0.6s 4;border-color:#2f6aa8;border-width:3px}
+.wsg button.fade{animation:fadeback .6s}@keyframes fadeback{0%{opacity:.3}100%{opacity:1}}
+.wsl{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px;flex:1 1 260px}
+.wsc{border:2px solid var(--ink);border-radius:10px;overflow:hidden;background:#fff;cursor:pointer;text-align:center;font-weight:800;font-size:.95rem}
+.wsc .pic{line-height:0;border-bottom:2px solid var(--ink)}.wsc .pic svg{width:100%;height:auto}.wsc .l{padding:3px 4px}
+.wsc.ok{background:#e8f7ee;border-color:#2f7d4f}.wsc.ok .l::before{content:'✓ ';color:#2f7d4f}
+@media (max-width:560px){.wsg{gap:2px}.wsg button{width:calc((100vw - 96px) / 13);height:calc((100vw - 96px) / 13);font-size:.85rem;border-radius:5px;border-width:1.5px}.wsl{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:560px){.foods{grid-template-columns:repeat(2,minmax(0,1fr))}.para{font-size:1.12rem}}
 </style>
 <script src="/readings/marks.js"></script>
@@ -160,7 +173,7 @@ details.st .frame{border:2px dashed var(--pine2);border-radius:10px;padding:6px 
 <div id="canary" aria-hidden="true">the quick brown fox jumps over the lazy dog</div>
 <div id="bar">
   <a class="home" href="/readings/student/" title="Assignments">&#8592; Assignments</a>
-  <div class="brand">Thanksgiving in the United States<small>look · words · read · questions · talk</small></div>
+  <div class="brand">Thanksgiving in the United States<small>look · words · read · questions · talk · word search</small></div>
   <button onclick="askName()"><span id="saveDot"></span>Name</button>
   <select id="lang" onchange="setLang(this.value)" aria-label="Your language">
     <option value="">Language…</option>
@@ -240,11 +253,40 @@ details.st .frame{border:2px dashed var(--pine2);border-radius:10px;padding:6px 
     <input id="ivWho" maxlength="40" oninput="ivWho(this.value)" translate="no">
     <div id="ivQs"></div>
   </div>
-  <div class="nextrow"><button class="btn ghost" onclick="go(7)">← Back</button><button class="btn" onclick="go(9)">Next: finish →</button></div>
+  <div class="nextrow"><button class="btn ghost" onclick="go(7)">← Back</button><button class="btn" onclick="go(9)">Next: more words →</button></div>
 </section>
 
-<!-- 9 · DONE -->
+<!-- 9 · MORE WORDS (before the word search) -->
 <section class="act" id="a9">
+  <div class="box" id="vCardsBox">
+    <h2>9 · More Thanksgiving words</h2>
+    <p class="dir" data-dir="v1"></p>
+    <div class="words" id="vCards" translate="no"></div>
+    <div id="vReadyRow"><button class="btn" onclick="startHearV()">I'm ready: listen and tap →</button></div>
+  </div>
+  <div class="box" id="vHearBox">
+    <h2>Listen and tap</h2>
+    <p class="dir" data-dir="v2"></p>
+    <div id="hearV" translate="no"></div>
+    <p style="margin:10px 0 0"><button class="btn ghost" onclick="ST.vCheck=false;renderVWords();save();">👀 Look at the word cards again</button></p>
+  </div>
+  <div class="nextrow"><button class="btn ghost" onclick="go(8)">← Back</button><button class="btn" onclick="go(10)">Next: word search →</button></div>
+</section>
+
+<!-- 10 · WORD SEARCH -->
+<section class="act" id="a10">
+  <div class="box"><div class="side" id="sidePuz"></div>
+    <h2>10 · Word search</h2>
+    <p class="dir" data-dir="s1"></p>
+    <p style="margin:4px 0 10px"><b id="wsCount" translate="no"></b> <button class="btn ghost" style="margin:0 0 0 8px;padding:6px 12px" onclick="wsHelp()">💡 Help me find one</button></p>
+    <div class="wsw"><div class="wsg" id="wsGrid" translate="no"></div><div class="wsl" id="wsList" translate="no"></div></div>
+    <div class="fb" id="fbS"></div>
+  </div>
+  <div class="nextrow"><button class="btn ghost" onclick="go(9)">← Back</button><button class="btn" onclick="go(11)">Next: finish →</button></div>
+</section>
+
+<!-- 11 · DONE -->
+<section class="act" id="a11">
   <div class="box">
     <div class="side" id="sideDone"></div>
     <h2 id="goT">Happy Thanksgiving!</h2>
@@ -287,9 +329,9 @@ var P=new URLSearchParams(location.search);
 var TV=P.get('view')==='teacher'&&!!P.get('email'),TV_EMAIL=TV?String(P.get('email')).toLowerCase():'';
 var CAST=[['Linh','#d9567f'],['Mateo','#2f6fbd'],['Amira','#1f8a7e'],['Jun','#6f7d8c'],['Paolo','#864D9E']];
 var QUIPS=['Almost! Look again.','Hmm, not that one. Try again.','Good try. Here is a clue.','So close! Read it one more time.','Keep going. You can do it.'];
-var WORDS=T.WORDS,PARTS=T.PARTS,MARKS={};
+var VW=T.VWORDS,WORDS=T.WORDS,PARTS=T.PARTS,MARKS={};
 /* ===================== STATE ===================== */
-var ST={name:'',email:'',period:'',act:1,look:{},R:{w:{},m:{}},qa:{},iv:[],ivWho:'',tools:{spk:false,tap:false},lion:false,finished:null,log:[],browserTranslated:false};
+var ST={name:'',email:'',period:'',act:1,look:{},R:{w:{},m:{},v:{}},ws:{found:[],help:0},qa:{},iv:[],ivWho:'',tools:{spk:false,tap:false},lion:false,finished:null,log:[],browserTranslated:false};
 var LOADED=false,ROW_EMAIL='';
 function $(i){return document.getElementById(i);}
 function clean(s){return String(s||'').trim().toLowerCase();}
@@ -323,6 +365,8 @@ function mcOf(id){var a=id.split('.');return T.MC[a[0]][+a[1]];}
 function ensureOrders(){var i;
  if(!ST.R.w[0]||!ST.R.w[0].ord){var ow=orders(WORDS.length,3);for(i=0;i<WORDS.length;i++){ST.R.w[i]=ST.R.w[i]||blankR();ST.R.w[i].ord=ow[i];
    var others=shuffle(WORDS.map(function(_,k){return k;}).filter(function(k){return k!==i;})).slice(0,2);ST.R.w[i].opts=[i].concat(others);}}
+ if(!ST.R.v[0]||!ST.R.v[0].ord){var ov=orders(VW.length,3);for(i=0;i<VW.length;i++){ST.R.v[i]=ST.R.v[i]||blankR();ST.R.v[i].ord=ov[i];
+   var oth=shuffle(VW.map(function(_,k){return k;}).filter(function(k){return k!==i;})).slice(0,2);ST.R.v[i].opts=[i].concat(oth);}}
  var om=orders(T.MC_IDS.length,3);T.MC_IDS.forEach(function(id,j){ST.R.m[id]=ST.R.m[id]||blankR();if(!ST.R.m[id].ord)ST.R.m[id].ord=om[j];});}
 
 /* ===================== SCORE (fair: shared rule in content.js) ===================== */
@@ -351,7 +395,7 @@ function push(force){
  .catch(function(){pushing=false;dirty=true;dot('err');});}
 function getJSON(path){return fetch(SUPA_URL+'/rest/v1/'+path,{headers:hdr()}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();});}
 function workOf(p){try{return T.score(p,{},null).score;}catch(e){return 0;}}
-function resetState(){ST.look={};ST.R={w:{},m:{}};ST.qa={};ST.iv=[];ST.ivWho='';ST.wCheck=false;ST.tools={spk:false,tap:false};ST.lion=false;ST.finished=null;ST.log=[];ST.act=1;MARKS={};}
+function resetState(){ST.look={};ST.R={w:{},m:{},v:{}};ST.ws={found:[],help:0};ST.vCheck=false;ST.qa={};ST.iv=[];ST.ivWho='';ST.wCheck=false;ST.tools={spk:false,tap:false};ST.lion=false;ST.finished=null;ST.log=[];ST.act=1;MARKS={};}
 function loadServer(email,then){
  LOADED=false;ROW_EMAIL='';var gone=false,t=setTimeout(fail,12000);
  function fail(){if(gone)return;gone=true;srvBar(true);dot('err');}
@@ -359,8 +403,8 @@ function loadServer(email,then){
  .then(function(rows){if(gone)return;clearTimeout(t);gone=true;
   var best=null;(rows||[]).forEach(function(r){if(r.payload&&(!best||workOf(r.payload)>workOf(best.payload)))best=r;});
   resetState();
-  if(best){var p=best.payload;ROW_EMAIL=best.email;['look','qa','iv','ivWho','tools','log'].forEach(function(k){if(p[k]!=null)ST[k]=p[k];});
-   ST.R={w:(p.R&&p.R.w)||{},m:(p.R&&p.R.m)||{}};ST.wCheck=!!p.wCheck;ST.lion=!!p.lion;ST.finished=p.finished||null;ST.act=p.act||1;ST.browserTranslated=!!p.browserTranslated;}
+  if(best){var p=best.payload;ROW_EMAIL=best.email;['look','qa','iv','ivWho','tools','log','ws'].forEach(function(k){if(p[k]!=null)ST[k]=p[k];});
+   ST.R={w:(p.R&&p.R.w)||{},m:(p.R&&p.R.m)||{},v:(p.R&&p.R.v)||{}};ST.wCheck=!!p.wCheck;ST.vCheck=!!p.vCheck;ST.ws=ST.ws||{found:[],help:0};ST.ws.found=ST.ws.found||[];ST.lion=!!p.lion;ST.finished=p.finished||null;ST.act=p.act||1;ST.browserTranslated=!!p.browserTranslated;}
   ensureOrders();LOADED=true;srvBar(false);dot('on');setGal();if(then)then();refreshMarks();
  }).catch(fail);}
 
@@ -490,25 +534,83 @@ function renderIV(){$('ivWho').value=ST.ivWho||'';if(TV)$('ivWho').readOnly=true
 function ivWho(v){if(TV)return;ST.ivWho=v;ST.iv=T.IV.map(function(_,i){var x=ST.iv[i]||{};return {who:v,a:x.a||''};});document.querySelectorAll('.ivn').forEach(function(e){e.textContent=v||'___';});save();}
 function typeIV(i,v){if(TV)return;ST.iv=T.IV.map(function(_,j){var x=ST.iv[j]||{};return {who:ST.ivWho,a:j===i?v:(x.a||'')};});clearTimeout(qT);qT=setTimeout(function(){save();},400);}
 
-/* ===================== 9 · DONE ===================== */
+/* ===================== 9 · MORE WORDS (cards, then listen-and-tap; the word is not written before it is solved) ===================== */
+function vCard(w){return '<div class="wc"><div class="pic">'+ART[w.art]()+'</div><div class="tx">'+
+ '<div class="w">'+esc(w.w)+spk(w.w,'spk')+'</div><div class="def">'+esc(w.d)+' '+spk(w.d)+'</div><span class="trn" data-tw="'+esc(w.w)+'"></span></div></div>';}
+function vDone(){return SC().v;}
+function nextV(){for(var i=0;i<VW.length;i++)if(!ST.R.v[i].done)return i;return -1;}
+function renderVWords(){var all=vDone()>=VW.length,chk=!!ST.vCheck&&!all;
+ $('vCardsBox').style.display=chk?'none':'';$('vHearBox').style.display=(chk||all)?'':'none';$('vReadyRow').style.display=(chk||all)?'none':'';
+ $('vCards').innerHTML=VW.map(vCard).join('');fillTrans($('vCards'));renderHearV();showDirections();updateNext();}
+function startHearV(){ST.vCheck=true;renderVWords();save();var i=nextV();if(i>=0)setTimeout(function(){speak(VW[i].w,.85);},300);}
+function renderHearV(){var host=$('hearV'),i=nextV();
+ if(i<0){host.innerHTML='<p class="ok">✓ All '+VW.length+' words. Now find them in the word search!</p>';return;}
+ var st=ST.R.v[i];
+ host.innerHTML='<div class="qnum">Word '+(vDone()+1)+' of '+VW.length+'</div>'+
+  '<div class="heardrow"><button type="button" class="heardbtn" id="bigHearV" onclick="heardV('+i+',.85)" aria-label="Listen">🔊</button><button type="button" class="slow" onclick="heardV('+i+',.55)">🐢 Slow</button></div>'+
+  '<div class="opts three">'+st.ord.map(function(k,slot){var gone=st.gone.indexOf(k)>=0;
+   return '<button type="button" class="opt pic'+(gone?' gone':'')+(st.shown&&k===0?' point':'')+'" data-k="'+k+'" aria-label="picture '+(slot+1)+'" onclick="pickV('+i+','+k+',this)">'+ART[VW[st.opts[k]].art]()+'</button>';}).join('')+'</div><div class="fb" id="fbV"></div>';
+ if(st.shown)$('fbV').innerHTML='<div class="hint">👉 This one. Listen again 🔊 and tap it.</div>';}
+function heardV(i,r){ST.R.v[i].heard=true;speak(VW[i].w,r);updateNext();}
+function pickV(i,k,btn){if(TV)return;var st=ST.R.v[i];if(st.done||btn.classList.contains('gone'))return;var fb=$('fbV');st.heard=true;
+ if(k===0){st.done=true;if(st.first===null)st.first=(st.tries===0);btn.classList.add('right');btn.classList.remove('point');
+  fb.innerHTML='<span class="ok">✓ '+esc(VW[i].w)+'</span> '+spk(VW[i].w);speak(VW[i].w);burst(btn,8);save();push(true);
+  setTimeout(function(){if(ST.act===9){renderVWords();var n=nextV();if(n>=0)setTimeout(function(){speak(VW[n].w,.85);},300);updateNext();}},1200);return;}
+ st.tries++;if(st.first===null)st.first=false;if(st.gone.indexOf(k)<0)st.gone.push(k);btn.classList.add('gone');ST.log.push(['v',i,VW[st.opts[k]].w,Date.now()]);
+ if(st.tries>=2&&!st.shown){st.shown=true;var r=btn.parentNode.querySelector('[data-k="0"]');if(r)r.classList.add('point');
+  fb.innerHTML=quip(st.tries)+'<div class="hint">👉 This one: <b>'+esc(VW[i].w)+'</b>. Listen 🔊, then tap it.</div>';speak(VW[i].w,.7);}
+ else{fb.innerHTML=quip(st.tries)+'<div class="hint">Listen again, slowly. 🐢</div>';setTimeout(function(){speak(VW[i].w,.55);},300);}
+ save();}
+
+/* ===================== 10 · WORD SEARCH (tap the first letter, then the last; across or down; same grid for everyone) ===================== */
+var WSA=null,WSCOL=['#ffe0b3','#d8f0e2','#dbe9ff','#f8d7e3','#efe3ff','#fff1bf','#d4f1f4','#ffd9cc'];
+function wsFound(){return (ST.ws&&ST.ws.found)||[];}
+function wsKey(w){return w.toUpperCase().replace(/[^A-Z]/g,'');}
+function wsCells(){var G=T.grid(),m={};T.WS_WORDS.forEach(function(x,j){if(wsFound().indexOf(x.w)<0)return;var sp=(ST.ws.place||{})[x.w],p=sp?{r:sp[0],c:sp[1],down:sp[1]===sp[3]&&sp[0]!==sp[2],len:Math.max(sp[2]-sp[0],sp[3]-sp[1])+1}:G.place[x.w];for(var k=0;k<p.len;k++)m[(p.down?p.r+k:p.r)+'_'+(p.down?p.c:p.c+k)]=WSCOL[j%WSCOL.length];});return m;}
+function renderWS(){var G=T.grid(),N=T.WS_N,fc=wsCells(),h='';$('wsGrid').style.gridTemplateColumns='repeat('+N+',auto)';
+ for(var r=0;r<N;r++)for(var c=0;c<N;c++){var k=r+'_'+c;h+='<button type="button" data-r="'+r+'" data-c="'+c+'" class="'+(fc[k]?'found':'')+'"'+(fc[k]?' style="--c:'+fc[k]+'"':'')+' onclick="wsTap('+r+','+c+')">'+G.g[r][c]+'</button>';}
+ $('wsGrid').innerHTML=h;
+ $('wsList').innerHTML=T.WS_WORDS.map(function(x){var ok=wsFound().indexOf(x.w)>=0;return '<div class="wsc'+(ok?' ok':'')+'" onclick="toolUsed(\'spk\');speak(\''+q1(x.w)+'\')"><div class="pic">'+ART[x.art]()+'</div><div class="l">'+esc(x.w)+'</div></div>';}).join('');
+ $('wsCount').textContent=wsFound().length+' / '+T.WS_WORDS.length+' words found';WSA=null;updateNext();}
+function wsBtn(r,c){return document.querySelector('#wsGrid button[data-r="'+r+'"][data-c="'+c+'"]');}
+function wsTap(r,c){if(TV)return;var fb=$('fbS');
+ if(!WSA){WSA=[r,c];var b=wsBtn(r,c);if(b)b.classList.add('start');fb.innerHTML='<div class="hint" translate="no">Now tap the LAST letter of the word.</div>';updateNext();return;}
+ var a=WSA;WSA=null;document.querySelectorAll('#wsGrid .start').forEach(function(e){e.classList.remove('start');});
+ if(a[0]===r&&a[1]===c){fb.innerHTML='';updateNext();return;}
+ var G=T.grid(),txt='',cells=[];
+ if(a[0]===r){var c0=Math.min(a[1],c),c1=Math.max(a[1],c);for(var x=c0;x<=c1;x++){txt+=G.g[r][x];cells.push([r,x]);}}
+ else if(a[1]===c){var r0=Math.min(a[0],r),r1=Math.max(a[0],r);for(var y=r0;y<=r1;y++){txt+=G.g[y][c];cells.push([y,c]);}}
+ var hit=null;T.WS_WORDS.forEach(function(w){if(wsFound().indexOf(w.w)<0&&wsKey(w.w)===txt)hit=w;});
+ if(hit){ST.ws.found.push(hit.w);if(!ST.ws.place)ST.ws.place={};ST.ws.place[hit.w]=cells[0].concat(cells[cells.length-1]);
+  /* where the student found it may differ from where it was hidden (corn is in cornucopia too): show the cells they chose */
+  var col=WSCOL[T.WS_WORDS.indexOf(hit)%WSCOL.length];renderWS();cells.forEach(function(p){var b=wsBtn(p[0],p[1]);if(b){b.classList.add('found');b.style.setProperty('--c',col);}});
+  speak(hit.w);burst($('wsGrid'),10);fb.innerHTML='<span class="ok">✓ '+esc(hit.w)+'</span> '+spk(hit.w)+(wsFound().length>=T.WS_WORDS.length?' <b>🎉 You found them all!</b>':'');save();push(true);return;}
+ ST.ws.miss=(ST.ws.miss||0)+1;cells.forEach(function(p){var b=wsBtn(p[0],p[1]);if(b){b.classList.remove('fade');void b.offsetWidth;b.classList.add('fade');}});
+ fb.innerHTML=quip(ST.ws.miss)+'<div class="hint" translate="no">'+(cells.length?'That is not one of the words. Look at the pictures and try again.':'Words go across → or down ↓. Tap a letter in the same row or column.')+'</div>';save();}
+function wsHelp(){var G=T.grid(),left=T.WS_WORDS.filter(function(w){return wsFound().indexOf(w.w)<0;});if(!left.length)return;
+ var w=left[0],p=G.place[w.w];ST.ws.help=(ST.ws.help||0)+1;var b=wsBtn(p.r,p.c);
+ if(b){b.classList.remove('flash');void b.offsetWidth;b.classList.add('flash');b.scrollIntoView({block:'center',behavior:'smooth'});}
+ speak(w.w);$('fbS').innerHTML='<div class="hint" translate="no">Look for <b>'+esc(w.w)+'</b> '+spk(w.w)+'. It starts at the blue letter '+(p.down?'and goes down ↓.':'and goes across →.')+'</div>';save();}
+
+/* ===================== 11 · DONE ===================== */
 function renderGo(){var s=SC();
  $('goT').textContent=s.core>=MAXALL?'Happy Thanksgiving! 🎉':'Almost done!';
  $('goSum').innerHTML='<p style="font-size:1.3rem;font-weight:900;margin:.2em 0">'+s.score+' / '+s.max+' done</p>';
  var left=[];if(s.look<2)left.push(['1 · Look',1]);if(s.w<WORDS.length)left.push(['2 · Words',2]);
  PARTS.forEach(function(Pt,n){if(partDone(Pt.id)<T.MC[Pt.id].length)left.push([(n+3)+' · '+Pt.title.replace(/^Family #\d: /,''),n+3]);});
- if(s.b<T.QS.length)left.push(['7 · Questions',7]);
+ if(s.b<T.QS.length)left.push(['7 · Questions',7]);if(s.v<VW.length)left.push(['9 · More words',9]);if(s.f<T.WS_WORDS.length)left.push(['10 · Word search',10]);
  $('leftBtns').innerHTML=left.length?'<p style="font-weight:800">Not finished yet:</p>'+left.map(function(l){return '<button class="btn ghost" onclick="go('+l[1]+')">'+esc(l[0])+'</button>';}).join(''):'';}
 
 /* ===================== SCREENS ===================== */
-var NACT=9;
+var NACT=11;
 var STEPS=[[1,'1 · Look',function(){return [lookDone(),2];}],[2,'2 · Words',function(){return [wDone(),WORDS.length];}]]
  .concat(PARTS.map(function(Pt,n){return [n+3,(n+3)+' · '+['Thanksgiving','Mark','The Lees','Andre'][n],function(){return [partDone(Pt.id),T.MC[Pt.id].length];}];}))
- .concat([[7,'7 · Questions',function(){return [qDone(),T.QS.length];}],[8,'8 · Talk ⭐',function(){return [SC().iv,3];}],[9,'✓ Finish',function(){return [SC().core>=MAXALL?1:0,1];}]]);
+ .concat([[7,'7 · Questions',function(){return [qDone(),T.QS.length];}],[8,'8 · Talk ⭐',function(){return [SC().iv,3];}],[9,'9 · More words',function(){return [SC().v,VW.length];}],[10,'10 · Word search',function(){return [SC().f,T.WS_WORDS.length];}],[11,'Finish',function(){return [SC().core>=MAXALL?1:0,1];}]]);
 function go(n){stopRead();try{speechSynthesis.cancel();}catch(e){}ST.act=n;for(var i=1;i<=NACT;i++)$('a'+i).classList.toggle('show',i===n);
- if(n===1)renderLook();else if(n===2)renderWords();else if(n>=3&&n<=6)renderPart(n-3);else if(n===7)renderQs();else if(n===8)renderIV();else renderGo();
+ if(n===1)renderLook();else if(n===2)renderWords();else if(n>=3&&n<=6)renderPart(n-3);else if(n===7)renderQs();else if(n===8)renderIV();else if(n===9)renderVWords();else if(n===10)renderWS();else renderGo();
  drawSteps();drawProg();showDirections();updateNext();if(LOADED&&!TV)save();window.scrollTo(0,0);}
 function drawSteps(){var nextSet=false;$('steps').innerHTML=STEPS.map(function(s){var c=s[2](),full=c[0]>=c[1],nx=false;if(s[0]!==8){if(!full&&!nextSet&&ST.act!==s[0]){nx=true;nextSet=true;}if(!full&&ST.act===s[0])nextSet=true;}
- return '<button class="stepb'+(ST.act===s[0]?' cur':'')+(full?' ok':'')+(nx?' next':'')+'" onclick="go('+s[0]+')">'+(full?'✓ ':'')+esc(s[1])+(s[0]<9?' '+c[0]+'/'+c[1]:'')+'</button>';}).join('');}
+ return '<button class="stepb'+(ST.act===s[0]?' cur':'')+(full?' ok':'')+(nx?' next':'')+'" onclick="go('+s[0]+')">'+(full?'✓ ':'')+esc(s[1])+(s[0]<11?' '+c[0]+'/'+c[1]:'')+'</button>';}).join('');}
 function drawProg(){$('progI').style.width=Math.round(100*doneAll()/MAXALL)+'%';}
 
 /* ===================== WHAT'S NEXT: one line + one drawn arrow at the thing itself ===================== */
@@ -528,9 +630,16 @@ function nextTarget(){var a=ST.act;
   return {t:a<6?'Next: read about the next family.':'Next: answer the questions.',el:q('#a'+a+' .nextrow .btn:last-child')};}
  if(a===7){for(var b=0;b<T.QS.length;b++){var qq=T.QS[b];if(!T.qOk(qq,ST.qa[qq.k]))return {t:'Write your answer to question '+(b+1)+'.',el:q('#ta_'+qq.k)};}
   return {t:'Next: talk to a classmate (extra).',el:q('#a7 .nextrow .btn:last-child')};}
- if(a===8){if(!String(ST.ivWho||'').trim())return {t:'Find a classmate from a different country. Write their name.',el:q('#ivWho')};
+ if(a===8){if(!String(ST.ivWho||'').trim())return {t:'Extra: find a classmate from a different country. Write their name.',el:q('#ivWho')};
   for(var v=0;v<T.IV.length;v++)if(!T.ivOk(ST.iv[v]))return {t:'Ask question '+(v+1)+'. Write what they said.',el:q('#iv_'+v)};
-  return {t:'Next: finish.',el:q('#a8 .nextrow .btn:last-child')};}
+  return {t:'Next: more words.',el:q('#a8 .nextrow .btn:last-child')};}
+ if(a===9){if(SC().v>=VW.length)return {t:'Next: the word search.',el:q('#a9 .nextrow .btn:last-child')};
+  if(!ST.vCheck)return {t:'Look at each picture and tap 🔊. Then tap “I’m ready”.',el:q('#vReadyRow .btn')};
+  var iv=nextV();if(!ST.R.v[iv].heard)return {t:'Tap the big 🔊 and listen.',el:q('#bigHearV')};
+  return {t:'Tap the picture you heard.',el:q('#hearV .opts')};}
+ if(a===10){if(SC().f>=T.WS_WORDS.length)return {t:'Next: finish.',el:q('#a10 .nextrow .btn:last-child')};
+  if(WSA)return {t:'Now tap the last letter of the word.',el:null};
+  return {t:'Find a word. Tap its first letter.',el:q('#wsGrid')};}
  if(SC().core<MAXALL)return {t:'Almost done! Finish the parts with no ✓.',el:q('#leftBtns .btn')};
  return {t:'You finished this part. Happy Thanksgiving!',el:null};}
 var NX=null,NX_EN='';
@@ -622,7 +731,7 @@ var SENT_T='';function checkCanary(){var c=$('canary'),got=c?(c.textContent||'')
 /* ===================== BOOT ===================== */
 function boot(){
  document.body.classList.add('wt');$('wtBtn').classList.add('on');fillDirs();
- $('artA').innerHTML=ART.table();$('sideQs').innerHTML=ART.qs();$('sideTalk').innerHTML=ART.talk();$('sideDone').innerHTML=ART.done();
+ $('artA').innerHTML=ART.table();$('sideQs').innerHTML=ART.qs();$('sideTalk').innerHTML=ART.talk();$('sideDone').innerHTML=ART.done();$('sidePuz').innerHTML=ART.puzzle();
  ensureOrders();setGal();
  var L=savedLang();if(L){$('lang').value=L;DIR_ON=true;$('dirBtn').classList.add('on');}
  if(TV){ST.email=TV_EMAIL;$('tvBar').innerHTML='👀 Teacher view: '+esc(TV_EMAIL)+' — read only, nothing saves.';$('tvBar').classList.add('show');
