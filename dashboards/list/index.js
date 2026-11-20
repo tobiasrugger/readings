@@ -81,6 +81,7 @@ window.DASHBOARD_FILES = [
   'telltale',
   'thank-you-maam',
   'thanks',
+  'thanksgiving',
   'this-is-how',
   'toolkits',
   'trail',
