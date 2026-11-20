@@ -82,6 +82,7 @@ window.DASHBOARD_FILES = [
   'thank-you-maam',
   'thanks',
   'thanksgiving',
+  'thanksgiving-103',
   'this-is-how',
   'toolkits',
   'trail',

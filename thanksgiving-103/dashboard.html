@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thanksgiving ELD 103 · Teacher</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<!-- T-499 (Nov 20 2026): dashboard for the ELD 103 Thanksgiving reading (readings/thanksgiving-103/). Reads eld103_donow rows with unit
+     'thanksgiving-103', one row per student (GAL04.key). ✓/✗/note on the six written answers (y2 y3 y4 q1 q2 q3) via readings/marks.js.
+     🌐 Pre-translate fills song_tr slug 'thanksgiving-103' (Spanish, Mandarin, Arabic, Vietnamese ticked). -->
+<style>
+:root{--pine:#1b4332;--pine2:#2d6a4f;--ink:#1c2640;--muted:#5c6b62;--paper:#f4f5f2}
+*{box-sizing:border-box}body{margin:0;font-family:'Nunito',system-ui,sans-serif;background:var(--paper);color:var(--ink)}
+header{background:var(--pine);color:#fff;padding:48px 16px 14px 16px}header h1{margin:0;font-size:1.25rem}header p{margin:2px 0 0;font-size:.86rem;opacity:.9}
+header a{color:#f2c230}
+main{max-width:1400px;margin:0 auto;padding:14px}
+.box{background:#fff;border:2px solid var(--ink);border-radius:12px;box-shadow:0 3px 0 var(--ink);padding:12px 14px;margin:0 0 14px}
+.box h2{margin:0 0 6px;font-size:1.05rem;color:var(--pine)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+select,button:not([data-gm]),input{font-family:inherit;font-size:.95rem;font-weight:700;border:2px solid var(--ink);border-radius:8px;padding:6px 10px;background:#fff}
+button:not([data-gm]){cursor:pointer;background:var(--pine2);color:#fff}button.ghost{background:#fff;color:var(--pine)}
+.wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th,td{border:1px solid #b9c4bd;padding:6px 8px;text-align:left;vertical-align:top}
+th{background:#e8f1ec;position:sticky;top:0}
+td.n{text-align:center;font-weight:800}
+.miss{color:#8a4b00;font-weight:800}.shown{background:#fff1bf;border-radius:6px;padding:0 4px;font-weight:800}
+.muted{color:var(--muted)}.op{color:#2d4a6b}
+.wcell{min-width:320px}.cl{margin:0 0 8px;padding-bottom:6px;border-bottom:1px dashed #cfd6d1}.cl:last-child{border-bottom:0}.cl b{display:block}
+.pen{display:inline-block;background:#fff1bf;border:1px solid #d4a017;border-radius:6px;padding:0 5px;font-weight:900;margin-left:4px}
+.thumb{width:110px;border:2px solid var(--ink);border-radius:8px;display:block;margin-bottom:4px}
+#gate{position:fixed;inset:0;background:rgba(27,67,50,.96);display:flex;align-items:center;justify-content:center;z-index:100}
+#gate .gb{background:#fff;border:3px solid var(--ink);border-radius:14px;padding:22px;width:300px;text-align:center}
+#gateErr{color:#b5451b;font-weight:800;min-height:1.2em}
+a{color:var(--pine2);font-weight:800}
+</style>
+<script src="/readings/thanksgiving-103/content.js"></script>
+<script src="/readings/marks.js"></script>
+</head>
+<body>
+<div id="gate"><div class="gb"><h2 style="margin:0 0 10px">Teacher</h2>
+ <input id="pw" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')unlock()" style="width:100%">
+ <button onclick="unlock()" style="width:100%;margin-top:10px">Open</button><div id="gateErr"></div></div></div>
+<header><h1>Thanksgiving in the United States · ELD 103</h1><p>Look · 10 word checks · read 4 parts (16 checks) · 3 “why” sentences · 3 pieces of writing · talk to a classmate (extra) · student page: <a href="./">thanksgiving-103/</a> · ELD 101 version: <a href="../thanksgiving/dashboard.html">dashboard</a></p></header>
+<main>
+ <div class="box"><div class="row">
+  <label>Period <select id="per" onchange="draw()"><option value="">All</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select></label>
+  <label><input type="checkbox" id="onlyPen" onchange="draw()"> only students with ✎ to read</label>
+  <button class="ghost" onclick="load()">↻ Reload</button>
+  <span id="sum" class="muted"></span></div></div>
+ <div class="box"><h2>Hardest check questions</h2><div id="hard" class="muted">…</div></div>
+ <div class="box wrap"><table><thead><tr><th>Student</th><th>Per.</th><th>Done</th><th>0–4</th><th>Look</th><th>Words · checks (misses)</th>
+  <th class="wcell">Writing — ✓ / ✗ + note</th><th class="wcell">Talk ⭐ extra</th><th>Saved</th><th></th></tr></thead><tbody id="tb"><tr><td colspan="10">Loading…</td></tr></tbody></table>
+ <p class="muted" style="font-size:.85rem">Misses are wrong taps before the right one; <span class="shown">shown</span> = the page pointed at the answer after the misses, still a full point (fair scores). A ✗ needs a note; the student sees a soft “Mr. Toby: try this again ✏️” box and gets the point back when they change the answer. Talk is extra: it can fill a missing point, never lower a score.</p></div>
+ <div class="box"><h2>🌐 Pre-translate</h2><div id="pt"></div></div>
+</main>
+<script>
+var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobXd0ZnljZWlsZ25kcHlnaXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzk5MDIsImV4cCI6MjA5MTcxNTkwMn0.0uIXyctHMfTN4doWYn2JJ260swD5b-t0T-oDMSIPtBU';
+var PW='galileo2026',ROWS=[],T=window.TG,MARKCOL=true;
+function $(i){return document.getElementById(i);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function key(e){return window.GAL04&&GAL04.key?GAL04.key(e):String(e||'').trim().toLowerCase().split('@')[0];}
+function band(pct){return window.GAL04&&GAL04.band?GAL04.band(pct):'';}
+function H(x){var h={apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY};if(x)for(var k in x)h[k]=x[k];return h;}
+function unlock(){if($('pw').value===PW){try{sessionStorage.setItem('tg103_pw','1');}catch(e){}$('gate').style.display='none';start();}else $('gateErr').textContent='Not the right password.';}
+function start(){load();pre();}
+function off(m,k,a){return window.GALMARK?GALMARK.off(m,k,a):false;}
+function scoreOf(r){return T.score(r.payload||{},r.marks||{},off);}
+function load(){var sel='email,name,period,score,max_score,turned_in,payload,updated_at'+(MARKCOL?',marks':'');
+ fetch(SUPA_URL+'/rest/v1/eld103_donow?unit=eq.'+T.UNIT+'&select='+sel+'&order=updated_at.desc',{headers:H()})
+ .then(function(r){if(!r.ok&&MARKCOL){MARKCOL=false;throw 'retry';}return r.json();}).then(function(rows){
+  var by={};(rows||[]).forEach(function(r){var k=key(r.email);if(!by[k]||(r.score||0)>(by[k].score||0))by[k]=r;});
+  ROWS=Object.keys(by).map(function(k){return by[k];});ROWS.sort(function(a,b){return String(a.period).localeCompare(String(b.period))||String(a.name).localeCompare(String(b.name));});draw();
+ }).catch(function(e){if(e==='retry'){$('sum').textContent='⚠ The marks column is missing on eld103_donow, so ✓/✗ can’t save.';load();return;}$('tb').innerHTML='<tr><td colspan="10">Could not load.</td></tr>';});}
+function items(R,ids){R=R||{};var t=0,s=0,d=0;ids.forEach(function(i){var x=R[i];if(!x)return;if(x.done)d++;t+=x.tries||0;if(x.shown)s++;});
+ return d+'/'+ids.length+(t?' <span class="miss">'+t+' miss'+(t>1?'es':'')+'</span>':'')+(s?' <span class="shown">'+s+' shown</span>':'');}
+function written(r){var P=r.payload||{},out=[];T.ALLW.forEach(function(q){var a=String((P.qa||{})[q.k]||'').trim();if(a)out.push({key:q.k,a:a,q:q});});return out;}
+function pens(r){return window.GALMARK?GALMARK.unmarked(r.marks||{},written(r)):0;}
+function ctl(r,k,a){return a&&window.GALMARK&&MARKCOL?GALMARK.controls(r.marks||{},k,a):'';}
+function writeCell(r){var p=pens(r),w=written(r),by={};w.forEach(function(x){by[x.key]=x;});
+ return (p?'<span class="pen">✎ '+p+'</span>':'')+T.ALLW.map(function(q,i){var x=by[q.k];
+  return '<div class="cl"><span class="muted">'+(i+1)+'. '+esc(q.q)+'</span>'+(x?'<b>'+esc(x.a)+'</b>'+(T.qOk(q,x.a)?'':' <span class="miss">(not counted yet: '+(/_{2,}/.test(x.a)?'has ___':'under '+q.min+' words')+')</span>')+ctl(r,q.k,x.a):'<b class="muted">—</b>')+'</div>';}).join('');}
+function ivCell(r){var P=r.payload||{},iv=P.iv||[];if(!iv.some(function(x){return x&&x.a;}))return '<span class="muted">—</span>';
+ return '<b>'+esc(P.ivWho||'')+'</b> said:'+T.IV.map(function(q,i){var x=iv[i]||{};return '<div class="cl"><span class="muted">'+esc(q)+'</span>'+(x.a?esc(x.a):'—')+'</div>';}).join('');}
+function draw(){if(!ROWS)return;var p=$('per').value,only=$('onlyPen').checked,list=ROWS.filter(function(r){return (!p||String(r.period)===p)&&(!only||pens(r)>0);});
+ var done=list.filter(function(r){var s=scoreOf(r);return s.core>=s.max;}).length;
+ if(MARKCOL)$('sum').textContent=list.length+' students · '+done+' finished';
+ $('tb').innerHTML=list.length?list.map(function(r){var P=r.payload||{},R=P.R||{},L=P.look||{},s=scoreOf(r),pct=s.max?Math.round(100*s.score/s.max):0;
+  return '<tr data-email="'+esc(r.email)+'"><td><b>'+esc(r.name)+'</b><br><span class="muted" style="font-size:.8rem">'+esc(key(r.email))+'</span></td><td class="n">'+esc(r.period)+'</td>'+
+   '<td class="n">'+s.score+'/'+s.max+'</td><td class="n">'+band(pct)+'</td>'+
+   '<td>'+(L.see?'I see <b>'+esc(L.see)+'</b>':'<span class="muted">—</span>')+'<br>'+(L.won?'I wonder why <span class="op">'+esc(L.won)+'</span>':'')+'</td>'+
+   '<td>Words '+items(R.m,T.W_IDS)+'<br>'+['p1','p2','p3','p4'].map(function(pp,n){return ['Thanksgiving','Mark','Lees','Andre'][n]+' '+items(R.m,T.MC[pp].map(function(_,i){return pp+'.'+i;}));}).join('<br>')+'</td>'+
+   '<td class="wcell">'+writeCell(r)+'</td><td class="wcell">'+ivCell(r)+'</td>'+
+   '<td class="muted" style="font-size:.8rem">'+esc(new Date(r.updated_at).toLocaleString())+(P.lion?'<br>🦁 found the lion':'')+(P.browserTranslated?'<br>⚠ Chrome translate was on':'')+'</td>'+
+   '<td><a href="./?view=teacher&email='+encodeURIComponent(r.email)+'" target="_blank">👀 view</a></td></tr>';}).join(''):'<tr><td colspan="10">No work yet.</td></tr>';
+ drawHard(list);}
+function drawHard(list){var st=T.MC_IDS.map(function(id){var n=0,miss=0,first=0;list.forEach(function(r){var x=((r.payload||{}).R||{}).m;x=x&&x[id];if(!x||!x.done)return;n++;miss+=x.tries||0;if(x.first)first++;});
+  var a=id.split('.'),q=T.MC[a[0]][+a[1]];return {q:q.q,n:n,miss:miss,pct:n?Math.round(100*first/n):null};}).filter(function(x){return x.n;});
+ st.sort(function(a,b){return a.pct-b.pct;});
+ $('hard').innerHTML=st.length?st.slice(0,6).map(function(x){return '<div><b>'+x.pct+'%</b> right first try · '+esc(x.q)+' <span class="muted">('+x.n+' students, '+x.miss+' misses)</span></div>';}).join(''):'No answers yet.';}
+/* ✓ / ✗ / note: marks.js saves the mark; then the row's score is recounted (a ✗ answer does not count) */
+GALMARK.bind(document.body,function(k,c){var tr=c.closest('tr'),email=tr&&tr.getAttribute('data-email');var r=ROWS.filter(function(x){return x.email===email;})[0];if(!r)return null;
+ var it=written(r).filter(function(x){return x.key===k;})[0];if(!it)return null;
+ return {table:'eld103_donow',filter:'email=eq.'+encodeURIComponent(r.email)+'&unit=eq.'+T.UNIT,ans:it.a,after:function(m){r.marks=m;var s=scoreOf(r);r.score=s.score;
+  fetch(SUPA_URL+'/rest/v1/eld103_donow?email=eq.'+encodeURIComponent(r.email)+'&unit=eq.'+T.UNIT,{method:'PATCH',headers:H({'Content-Type':'application/json',Prefer:'return=minimal'}),body:JSON.stringify({score:s.score})}).catch(function(){});
+  GALMARK.setScore(r.email,'thanksgiving-103',s.score,s.max).catch(function(){});setTimeout(draw,50);}};});
+/* 🌐 Pre-translate: every line of the page, saved where the student page looks first (song_tr slug 'thanksgiving') */
+function pre(){if(!window.GAL||!GAL.pretr)return;
+ GAL.pretr({host:'#pt',title:'Pre-translate the Thanksgiving reading (ELD 103)',
+  items:[{key:'thanksgiving-103',title:'Thanksgiving ELD 103 · every word, sentence, question and direction',lines:function(){return T.lines().map(function(s){return {src:s,slug:'thanksgiving-103',mode:s.split(/\s+/).length<=3?'word':'sentence'};});}}],
+  langs:[['Spanish','Spanish'],['Chinese (Simplified)','Mandarin'],['Cantonese','Cantonese'],['Arabic','Arabic'],['Vietnamese','Vietnamese'],['Thai','Thai'],['Nepali','Nepali'],['Russian','Russian'],
+   ['Darija','Darija'],['Urdu','Urdu'],['Tagalog','Tagalog'],['French','French'],['Korean','Korean'],['Hindi','Hindi'],['Somali','Somali']],
+  ticked:['Spanish','Chinese (Simplified)','Arabic','Vietnamese']});}
+try{if(sessionStorage.getItem('tg103_pw')){$('gate').style.display='none';load();}}catch(e){}
+</script>
+<script src="/readings/pretr.js"></script>
+<script>try{if(sessionStorage.getItem('tg103_pw'))pre();}catch(e){}</script>
+<script src="/readings/grade04.js" data-slugs="thanksgiving-103"></script>
+</body>
+</html>
