@@ -78,6 +78,7 @@
  "teachme",
  "telltale",
  "thanks",
+ "thanksgiving",
  "this-is-how",
  "thoughts",
  "thoughts-chain",
