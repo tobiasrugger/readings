@@ -6,9 +6,16 @@
 (function () {
   var T = window.TG = { TABLE: 'eld103_donow', UNIT: 'thanksgiving-103', SLUG: 'thanksgiving-103', LEVEL: 103 };
 
+  /* Look and think (ELD 103 norm, T-501): fill-in-the-blank, TYPED. The word bank is a box of plain words to read
+     and copy, never buttons. Opinion: any answer counts (see = 1+ word, wonder = 3+ words). */
   T.LOOK = {
-    see: ['a family dinner', 'a big turkey', 'a grandmother with glasses', 'a “thank you” sign', 'autumn trees'],
-    won: ['everyone is smiling.', 'some people look tired.', 'nobody is on their phone.'],
+    bank: {
+      'People': ['a grandmother', 'a grandfather', 'a mother', 'a father', 'a family', 'relatives'],
+      'Food': ['a turkey', 'a pumpkin pie', 'mashed potatoes', 'cranberry sauce', 'vegetables'],
+      'Things and places': ['a table', 'a window', 'a sign', 'candles', 'plates', 'autumn trees', 'a dining room'],
+      'Ideas for “I wonder”': ['celebrating', 'grateful', 'hungry', 'tired', 'arguing', 'traveled', 'cooked', 'all day']
+    },
+    seeMin: 1, wonMin: 3,
     think: 'Is a big family dinner always happy? What can make it stressful?'
   };
 
@@ -112,7 +119,7 @@
   T.IV = ['What is an important holiday in your country?', 'What do you like to do on this holiday?', 'Do people in your family ever argue at holiday dinners? About what?'];
 
   T.DIR = {
-    l1: 'Look at the picture. Finish the two sentences. There is no wrong answer.',
+    l1: 'Look at the picture. Type the missing words to finish the two sentences. Use the word bank, or your own words. There is no wrong answer.',
     w1: 'Read each word card. Tap 🔊 to hear it. Then answer the 10 questions.',
     r1: 'Read the story. Tap 🔊 to listen. Tap any word to see it in your language.',
     r2: 'Answer the questions. Look back at the story.',
@@ -130,7 +137,7 @@
   T.MAX = 2 + T.W_IDS.length + T.MC_IDS.length + T.ALLW.length;
   T.score = function (p, marks, off) {
     p = p || {}; marks = marks || {}; off = off || function () { return false; };
-    var L = p.look || {}, R = p.R || {}, M = R.m || {}, look = (L.see ? 1 : 0) + (L.won ? 1 : 0), w = 0, m = 0, b = 0, c = 0;
+    var L = p.look || {}, R = p.R || {}, M = R.m || {}, look = (words(L.see).length >= T.LOOK.seeMin ? 1 : 0) + (words(L.won).length >= T.LOOK.wonMin ? 1 : 0), w = 0, m = 0, b = 0, c = 0;
     T.W_IDS.forEach(function (id) { if (M[id] && M[id].done) w++; });
     T.MC_IDS.forEach(function (id) { if (M[id] && M[id].done) m++; });
     T.ALLW.forEach(function (q) { var a = (p.qa || {})[q.k]; if (T.qOk(q, a) && !off(marks, q.k, a)) b++; });
@@ -147,7 +154,7 @@
     Object.keys(T.MC).forEach(function (k) { T.MC[k].forEach(function (x) { add(x.q); x.o.forEach(add); x.h.forEach(add); }); });
     T.ALLW.forEach(function (q) { add(q.q); add(q.st); });
     T.IV.forEach(add); Object.keys(T.DIR).forEach(function (k) { add(T.DIR[k]); });
-    T.LOOK.see.forEach(add); T.LOOK.won.forEach(add); add(T.LOOK.think);
+    Object.keys(T.LOOK.bank).forEach(function (k) { add(k); T.LOOK.bank[k].forEach(add); }); add(T.LOOK.think); add('I see'); add('I wonder why');
     return out;
   };
 })();

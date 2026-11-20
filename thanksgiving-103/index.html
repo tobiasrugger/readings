@@ -133,6 +133,13 @@ body.wt [translate="no"] , body.wt .dir{cursor:help}
 .opts.five{grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
 .fdlist{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.fdone{border:2px solid #2f7d4f;background:#e8f7ee;border-radius:20px;padding:4px 10px;font-weight:800}
 @media (max-width:560px){.opts.five{grid-template-columns:repeat(3,minmax(0,1fr))}}
+/* ELD 103 see/wonder: typed blanks + a word bank of plain words (not buttons) */
+.wbank{border:2px solid var(--ink);border-radius:12px;background:#fffbea;padding:10px 14px;margin:0 0 14px;line-height:1.9}
+.wbt{font-weight:900;color:var(--pine);margin-bottom:2px}.wbn{font-weight:700;font-size:.82rem;color:var(--muted);margin-left:6px}
+.wbg b{display:inline-block;min-width:9em;color:#5c4a12;font-size:.92rem}.wbw{font-weight:700;font-size:1.05rem;cursor:help;user-select:text;white-space:nowrap}.wbs{color:#b9a76a}
+.blankin{font-family:inherit;font-size:1.15rem;font-weight:800;border:0;border-bottom:3px solid var(--ink);background:#f7f9fb;padding:4px 8px;width:14em;max-width:100%;color:var(--pine)}
+.blankin.wide{width:24em}.blankin:focus{outline:3px solid var(--gold);background:#fff}
+@media (max-width:560px){.wbg b{display:block}.blankin,.blankin.wide{width:100%}}
 /* ELD 103: a miss stays red with ✗ beside the green ✓ */
 .opt.gone{opacity:1;background:#fdecea;border-color:#c0392b;color:#7a1f16;box-shadow:none}
 .opt.gone::after{content:' ✗';color:#c0392b;font-weight:900}
@@ -386,21 +393,25 @@ function fixing(){return document.body.classList.contains('gm-fixing');}
 /* ===================== DIRECTIONS (text from content.js) ===================== */
 function fillDirs(root){(root||document).querySelectorAll('p.dir[data-dir]').forEach(function(p){var k=p.getAttribute('data-dir');if(T.DIR[k]&&!p.getAttribute('data-en')){p.setAttribute('data-en',T.DIR[k]);p.textContent=T.DIR[k];}});}
 
-/* ===================== 1 · LOOK (opinion: never wrong) ===================== */
-function renderLook(){var L=ST.look||{},D=T.LOOK;
- $('qSee').innerHTML='<div class="qline" translate="no">I see <span class="said">'+(L.see?esc(L.see)+'.':'___.')+'</span>'+spk('I see '+(L.see||'blank')+'.')+'</div>'+
-  '<p class="dir" data-dir="sA" data-en="Tap a word. What do you see in the picture?">Tap a word. What do you see in the picture?</p>'+
-  '<div class="chips" translate="no">'+D.see.map(function(w){return '<button type="button" class="chip'+(L.see===w?' on':'')+'" onclick="pickLook(\'see\',\''+q1(w)+'\')">'+esc(w)+'</button>';}).join('')+'</div>'+
-  (L.see?'<div class="good"><b class="g">✓ Good guess!</b> Nice eyes.</div>':'');
- $('qWon').innerHTML='<div class="qline" translate="no">I wonder why <span class="said">'+(L.won?esc(L.won):'___.')+'</span>'+spk('I wonder why '+(L.won||'blank.'))+'</div>'+
-  '<p class="dir" data-dir="wA" data-en="Choose one, or write your own idea.">Choose one, or write your own idea.</p>'+
-  '<div class="chips" translate="no">'+D.won.map(function(w){return '<button type="button" class="chip'+(L.won===w?' on':'')+'" onclick="pickLook(\'won\',\''+q1(w)+'\')">'+esc(w)+'</button>';}).join('')+'</div>'+
-  '<div class="own"><input id="ownA" placeholder="I wonder why…" maxlength="140" value="'+esc(L.own||'')+'" translate="no"><button type="button" class="btn ghost" style="margin:0" onclick="ownLook()">Use my idea</button></div>'+
-  (L.won?'<div class="good"><b class="g">✓ Good guess!</b> Great question.<br>🤔 <span translate="no">'+esc(D.think)+'</span> '+spk(D.think)+'</div>':'');
+/* ===================== 1 · LOOK — ELD 103: fill in the blank, TYPED; word bank = plain words, not buttons (T-501). Opinion: never wrong. ===================== */
+function bankHTML(){var B=T.LOOK.bank;return '<div class="wbank" translate="no"><div class="wbt">Word bank <span class="wbn">type these words in the blanks · tap one to see it in your language</span></div>'+
+ Object.keys(B).map(function(k){return '<div class="wbg"><b>'+esc(k)+'</b> '+B[k].map(function(w){return '<span class="wbw">'+esc(w)+'</span>';}).join('<span class="wbs"> · </span>')+'</div>';}).join('')+'</div>';}
+function lookOk(part){var L=ST.look||{};return T.words(L[part]).length>=(part==='see'?T.LOOK.seeMin:T.LOOK.wonMin);}
+function renderLook(){var L=ST.look||{};
+ $('qSee').innerHTML=bankHTML()+
+  '<div class="qline" translate="no"><label for="seeIn">I see</label> <input id="seeIn" class="blankin" maxlength="80" autocomplete="off" spellcheck="true" value="'+esc(L.see||'')+'" oninput="typeLook(\'see\',this.value)" onblur="lookCheck(\'see\')"'+(TV?' readonly':'')+'> .'+spk('I see '+(L.see||'blank')+'.')+'</div>'+
+  '<div id="goodSee">'+(lookOk('see')?'<div class="good"><b class="g">✓ Good!</b> Nice eyes.</div>':'')+'</div>';
+ $('qWon').innerHTML='<div class="qline" translate="no"><label for="wonIn">I wonder why</label> <input id="wonIn" class="blankin wide" maxlength="160" autocomplete="off" spellcheck="true" value="'+esc(L.won||'')+'" oninput="typeLook(\'won\',this.value)" onblur="lookCheck(\'won\')"'+(TV?' readonly':'')+'> .'+spk('I wonder why '+(L.won||'blank')+'.')+'</div>'+
+  '<p class="dir" data-dir="wA" data-en="Write at least 3 words. Any idea is OK.">Write at least 3 words. Any idea is OK.</p>'+
+  '<div id="goodWon">'+(lookOk('won')?goodWon():'')+'</div>';
  showDirections();drawTools();updateNext();}
-function pickLook(part,w){if(TV)return;ST.look[part]=w;if(part==='won')ST.look.own='';speak(part==='see'?'I see '+w+'.':'I wonder why '+w);renderLook();save();push(true);}
-function ownLook(){if(TV)return;var v=($('ownA').value||'').trim();if(v.length<3){$('ownA').focus();return;}
- v=v.replace(/^i wonder why\s*/i,'');if(!/[.?!]$/.test(v))v+='.';ST.look.won=v;ST.look.own=v;speak('I wonder why '+v);renderLook();save();push(true);}
+function goodWon(){return '<div class="good"><b class="g">✓ Good question!</b><br>🤔 <span translate="no">'+esc(T.LOOK.think)+'</span> '+spk(T.LOOK.think)+'</div>';}
+var lookT=null;
+function typeLook(part,v){if(TV)return;dirty=true;ST.look=ST.look||{};ST.look[part]=String(v).replace(/^\s*i (see|wonder why)\s*/i,'').replace(/[.]\s*$/,'');
+ clearTimeout(lookT);lookT=setTimeout(function(){lookCheck(part,true);},900);}
+function lookCheck(part,quiet){if(TV)return;var ok=lookOk(part),host=$(part==='see'?'goodSee':'goodWon');
+ if(host){var had=!!host.innerHTML;host.innerHTML=ok?(part==='see'?'<div class="good"><b class="g">✓ Good!</b> Nice eyes.</div>':goodWon()):'';if(ok&&!had&&!quiet)speak((part==='see'?'I see ':'I wonder why ')+ST.look[part]);}
+ save();}
 
 /* ===================== TOOLS STRIP (learn the controls first) ===================== */
 function toolUsed(t){if(!ST.tools||ST.tools[t])return;ST.tools[t]=true;drawTools();if(LOADED)save();}
@@ -408,7 +419,7 @@ function drawTools(){var s=ST.tools||{};var a=$('tkSpk'),b=$('tkTap');if(!a)retu
  a.className='tk'+(s.spk?' done':'');a.textContent=(s.spk?'✓ ':'')+'🔊 Tap a speaker to listen.';
  b.className='tk'+(s.tap?' done':'');b.textContent=(s.tap?'✓ ':'')+'👆 Tap a word to see it in your language.';
  document.querySelectorAll('.shim').forEach(function(e){e.classList.remove('shim');});
- if(!s.spk){var m=document.querySelector('#qSee .mini');if(m)m.classList.add('shim');}
+ if(!s.spk){var m=document.querySelector('#qSee .qline .mini');if(m)m.classList.add('shim');}
  else if(!s.tap){var d=document.querySelector('#a1 .dir');if(d)d.classList.add('shim');}
  if(s.spk&&s.tap)$('tools').style.display='none';}
 
@@ -470,7 +481,7 @@ function qByK(k){return T.ALLW.filter(function(q){return q.k===k;})[0];}
 function qStatus(k){var q=qByK(k),a=String(ST.qa[k]||''),el=$('bs_'+k);if(!el)return;var n=T.words(a.replace(/___/g,'')).length;
  if(T.qOk(q,a)){el.className='bst ok';el.textContent='✓ '+n+' words. Done!';return;}
  el.className='bst';el.textContent=/_{2,}/.test(a)?'Fill in every ___ with your own words.':n+' / '+q.min+' words';}
-var qT=null;function typeQ(k,v){if(TV)return;ST.qa[k]=v;qStatus(k);clearTimeout(qT);qT=setTimeout(function(){save();},400);}
+var qT=null;function typeQ(k,v){if(TV)return;ST.qa[k]=v;dirty=true;qStatus(k);clearTimeout(qT);qT=setTimeout(function(){save();},400);}
 function useStarter(k){if(TV)return;var q=qByK(k),ta=$('ta_'+k);if(String(ta.value).trim()&&!confirm('Change your answer to the starter?'))return;ta.value=q.st;ST.qa[k]=q.st;qStatus(k);save();ta.focus();
  var at=q.st.indexOf('___');if(at>=0)try{ta.setSelectionRange(at,at+3);}catch(e){}}
 function qDone(){var n=0;T.QS.forEach(function(q){var a=ST.qa[q.k];if(T.qOk(q,a)&&!offK(MARKS,q.k,a))n++;});return n;}
@@ -481,7 +492,7 @@ function renderIV(){$('ivWho').value=ST.ivWho||'';if(TV)$('ivWho').readOnly=true
   '<div style="font-weight:800;margin-top:6px" translate="no"><span class="ivn">'+esc(ST.ivWho||'___')+'</span> said:</div>'+
   '<textarea id="iv_'+i+'" translate="no" maxlength="300" oninput="typeIV('+i+',this.value)"'+(TV?' readonly':'')+'>'+esc(x.a||'')+'</textarea></div>';}).join('');showDirections();}
 function ivWho(v){if(TV)return;ST.ivWho=v;ST.iv=T.IV.map(function(_,i){var x=ST.iv[i]||{};return {who:v,a:x.a||''};});document.querySelectorAll('.ivn').forEach(function(e){e.textContent=v||'___';});save();}
-function typeIV(i,v){if(TV)return;ST.iv=T.IV.map(function(_,j){var x=ST.iv[j]||{};return {who:ST.ivWho,a:j===i?v:(x.a||'')};});clearTimeout(qT);qT=setTimeout(function(){save();},400);}
+function typeIV(i,v){if(TV)return;dirty=true;ST.iv=T.IV.map(function(_,j){var x=ST.iv[j]||{};return {who:ST.ivWho,a:j===i?v:(x.a||'')};});clearTimeout(qT);qT=setTimeout(function(){save();},400);}
 
 /* ===================== 9 · DONE ===================== */
 function renderGo(){var s=SC();
@@ -508,14 +519,14 @@ function drawProg(){$('progI').style.width=Math.round(100*doneAll()/MAXALL)+'%';
 function q(sel){return document.querySelector(sel);}
 function nextTarget(){var a=ST.act;
  if(fixing())return {t:'Mr. Toby wants you to look again. Fix your answer.',el:null};
- if(a===1){var L=ST.look||{};if(!L.see)return {t:'Start here. Tap a word: what do you see?',el:q('#qSee .chip')};
-  if(!L.won)return {t:'Now tap one idea: I wonder why…',el:q('#qWon .chip')};
+ if(a===1){if(!lookOk('see'))return {t:'Start here. Look at the picture and the word bank. Type what you see.',el:q('#seeIn')};
+  if(!lookOk('won'))return {t:'Now type your question: I wonder why…',el:q('#wonIn')};
   return {t:'Next: learn the words.',el:q('#a1 .nextrow .btn')};}
  if(a===2){if(wDone()>=WORDS.length)return {t:'Next: read the stories.',el:q('#a2 .nextrow .btn:last-child')};
-  for(var wi=0;wi<WORDS.length;wi++)if(!ST.R.m['w.'+wi].done)return {t:(wi?'':'Read the word cards. Then ')+'answer word check '+(wi+1)+'.',el:q('#mcq_w_'+wi+' .opts')};}
+  for(var wi=0;wi<WORDS.length;wi++)if(!ST.R.m['w.'+wi].done)return {t:(wi?'':'Read the word cards. Then ')+'answer word check '+(wi+1)+'.',el:q('#mcq_w_'+wi+' .gsent')};}
  if(a>=3&&a<=6){var Pt=PARTS[a-3];for(var j=0;j<T.MC[Pt.id].length;j++)if(!ST.R.m[Pt.id+'.'+j].done){
    if(j===0&&!ST.tools.spk)return {t:'Read the story. Tap 🔊 to listen.',el:q('#a'+a+' .pbtn')};
-   return {t:'Answer question '+(j+1)+'. Look back at the story.',el:q('#mcq_'+Pt.id+'_'+j+' .opts')};}
+   return {t:'Answer question '+(j+1)+'. Look back at the story.',el:q('#mcq_'+Pt.id+'_'+j+' .gsent')};}
   var yq=T.WHY[Pt.id];if(yq&&!T.qOk(yq,ST.qa[yq.k]))return {t:'Write one or two sentences: '+yq.q,el:q('#ta_'+yq.k)};
   return {t:a<6?'Next: read about the next family.':'Next: write.',el:q('#a'+a+' .nextrow .btn:last-child')};}
  if(a===7){for(var b=0;b<T.QS.length;b++){var qq=T.QS[b];if(!T.qOk(qq,ST.qa[qq.k]))return {t:'Write your answer to number '+(b+1)+' (at least '+qq.min+' words).',el:q('#ta_'+qq.k)};}
@@ -624,7 +635,7 @@ function boot(){
  if(!ST.email||!L)askName();else loadServer(ST.email,function(){go(ST.act||1);});
  setTimeout(checkCanary,2500);setInterval(checkCanary,20000);setInterval(function(){push(false);},20000);
  /* leaving sends the whole snapshot NOW with keepalive, even if an earlier save is still in flight (T-455) */
- function leaveSave(){clearTimeout(saveT);clearTimeout(qT);if(dirty){pushing=false;push(true);}}
+ function leaveSave(){clearTimeout(saveT);clearTimeout(qT);if(typeof lookT!=='undefined')clearTimeout(lookT);setGal();if(dirty){pushing=false;push(true);}}
  document.addEventListener('visibilitychange',function(){if(document.hidden)leaveSave();else refreshMarks();});
  window.addEventListener('pagehide',leaveSave);
 }

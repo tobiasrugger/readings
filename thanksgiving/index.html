@@ -521,7 +521,7 @@ function qByK(k){return T.QS.filter(function(q){return q.k===k;})[0];}
 function qStatus(k){var q=qByK(k),a=String(ST.qa[k]||''),el=$('bs_'+k);if(!el)return;var n=T.words(a.replace(/___/g,'')).length;
  if(T.qOk(q,a)){el.className='bst ok';el.textContent='✓ '+n+' words. Good sentence!';return;}
  el.className='bst';el.textContent=a.indexOf('___')>=0?'Fill in every ___ with your own words.':(n<4?n+' / 4 words':(q.hint||'Write a complete sentence.'));}
-var qT=null;function typeQ(k,v){if(TV)return;ST.qa[k]=v;qStatus(k);clearTimeout(qT);qT=setTimeout(function(){save();},400);}
+var qT=null;function typeQ(k,v){if(TV)return;ST.qa[k]=v;dirty=true;qStatus(k);clearTimeout(qT);qT=setTimeout(function(){save();},400);}
 function useStarter(k){if(TV)return;var q=qByK(k),ta=$('ta_'+k);if(String(ta.value).trim()&&!confirm('Change your answer to the starter?'))return;ta.value=q.st;ST.qa[k]=q.st;qStatus(k);save();ta.focus();
  var at=q.st.indexOf('___');if(at>=0)try{ta.setSelectionRange(at,at+3);}catch(e){}}
 function qDone(){return SC().b;}
@@ -532,7 +532,7 @@ function renderIV(){$('ivWho').value=ST.ivWho||'';if(TV)$('ivWho').readOnly=true
   '<div style="font-weight:800;margin-top:6px" translate="no"><span class="ivn">'+esc(ST.ivWho||'___')+'</span> said:</div>'+
   '<textarea id="iv_'+i+'" translate="no" maxlength="300" oninput="typeIV('+i+',this.value)"'+(TV?' readonly':'')+'>'+esc(x.a||'')+'</textarea></div>';}).join('');showDirections();}
 function ivWho(v){if(TV)return;ST.ivWho=v;ST.iv=T.IV.map(function(_,i){var x=ST.iv[i]||{};return {who:v,a:x.a||''};});document.querySelectorAll('.ivn').forEach(function(e){e.textContent=v||'___';});save();}
-function typeIV(i,v){if(TV)return;ST.iv=T.IV.map(function(_,j){var x=ST.iv[j]||{};return {who:ST.ivWho,a:j===i?v:(x.a||'')};});clearTimeout(qT);qT=setTimeout(function(){save();},400);}
+function typeIV(i,v){if(TV)return;dirty=true;ST.iv=T.IV.map(function(_,j){var x=ST.iv[j]||{};return {who:ST.ivWho,a:j===i?v:(x.a||'')};});clearTimeout(qT);qT=setTimeout(function(){save();},400);}
 
 /* ===================== 9 · MORE WORDS (cards, then listen-and-tap; the word is not written before it is solved) ===================== */
 function vCard(w){return '<div class="wc"><div class="pic">'+ART[w.art]()+'</div><div class="tx">'+
@@ -623,10 +623,10 @@ function nextTarget(){var a=ST.act;
  if(a===2){if(wDone()>=WORDS.length)return {t:'Next: read the story.',el:q('#a2 .nextrow .btn:last-child')};
   if(!ST.wCheck)return {t:'Look at each picture and tap 🔊. Then tap “I’m ready”.',el:q('#readyRow .btn')};
   var i=nextW();if(!ST.R.w[i].heard)return {t:'Tap the big 🔊 and listen.',el:q('#bigHear')};
-  return {t:'Tap the picture you heard.',el:q('#hearQ .opts')};}
+  return {t:'Tap the picture you heard.',el:q('#hearQ .qnum')};}
  if(a>=3&&a<=6){var Pt=PARTS[a-3];for(var j=0;j<T.MC[Pt.id].length;j++)if(!ST.R.m[Pt.id+'.'+j].done){
    if(j===0&&!ST.tools.spk)return {t:'Read the story. Tap 🔊 to listen.',el:q('#a'+a+' .pbtn')};
-   return {t:'Answer question '+(j+1)+'. Look back at the story.',el:q('#mcq_'+Pt.id+'_'+j+' .opts')};}
+   return {t:'Answer question '+(j+1)+'. Look back at the story.',el:q('#mcq_'+Pt.id+'_'+j+' .gsent')};}
   return {t:a<6?'Next: read about the next family.':'Next: answer the questions.',el:q('#a'+a+' .nextrow .btn:last-child')};}
  if(a===7){for(var b=0;b<T.QS.length;b++){var qq=T.QS[b];if(!T.qOk(qq,ST.qa[qq.k]))return {t:'Write your answer to question '+(b+1)+'.',el:q('#ta_'+qq.k)};}
   return {t:'Next: talk to a classmate (extra).',el:q('#a7 .nextrow .btn:last-child')};}
@@ -636,7 +636,7 @@ function nextTarget(){var a=ST.act;
  if(a===9){if(SC().v>=VW.length)return {t:'Next: the word search.',el:q('#a9 .nextrow .btn:last-child')};
   if(!ST.vCheck)return {t:'Look at each picture and tap 🔊. Then tap “I’m ready”.',el:q('#vReadyRow .btn')};
   var iv=nextV();if(!ST.R.v[iv].heard)return {t:'Tap the big 🔊 and listen.',el:q('#bigHearV')};
-  return {t:'Tap the picture you heard.',el:q('#hearV .opts')};}
+  return {t:'Tap the picture you heard.',el:q('#hearV .qnum')};}
  if(a===10){if(SC().f>=T.WS_WORDS.length)return {t:'Next: finish.',el:q('#a10 .nextrow .btn:last-child')};
   if(WSA)return {t:'Now tap the last letter of the word.',el:null};
   return {t:'Find a word. Tap its first letter.',el:q('#wsGrid')};}
@@ -741,7 +741,7 @@ function boot(){
  if(!ST.email||!L)askName();else loadServer(ST.email,function(){go(ST.act||1);});
  setTimeout(checkCanary,2500);setInterval(checkCanary,20000);setInterval(function(){push(false);},20000);
  /* leaving sends the whole snapshot NOW with keepalive, even if an earlier save is still in flight (T-455) */
- function leaveSave(){clearTimeout(saveT);clearTimeout(qT);if(dirty){pushing=false;push(true);}}
+ function leaveSave(){clearTimeout(saveT);clearTimeout(qT);if(typeof lookT!=='undefined')clearTimeout(lookT);setGal();if(dirty){pushing=false;push(true);}}
  document.addEventListener('visibilitychange',function(){if(document.hidden)leaveSave();else refreshMarks();});
  window.addEventListener('pagehide',leaveSave);
 }
