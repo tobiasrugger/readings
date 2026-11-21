@@ -140,12 +140,12 @@
 
   T.DIR = {
     l1: 'Look at the picture. Finish the two sentences. Any answer is OK!',
-    w1: 'Look at each picture. Tap 🔊 and listen. Say the word.',
+    w1: 'Read the word and its meaning. Tap 🔊 and listen. Then tap the right picture.',
     w2: 'Tap the big 🔊. Then tap the picture you heard.',
     r1: 'Read the story. Tap 🔊 to listen. Tap a word to see it in your language.',
     r2: 'Answer the questions. Look back at the story.',
     b1: 'Answer in complete sentences. Write at least 4 words.',
-    v1: 'More Thanksgiving words. Look at each picture. Tap 🔊 and listen.',
+    v1: 'More Thanksgiving words. Read the word and tap 🔊. Then tap the right picture.',
     v2: 'Tap the big 🔊. Then tap the picture you heard.',
     s1: 'Find the words in the puzzle. Tap the first letter, then tap the last letter. Words go across → or down ↓.',
     c1: 'Find somebody who speaks a different language and comes from a different country. Ask the questions. Write what they said.',

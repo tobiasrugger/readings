@@ -151,6 +151,14 @@ body.wt [translate="no"] , body.wt .dir{cursor:help}
 details.st{margin-top:6px}details.st summary{cursor:pointer;font-weight:800;color:var(--pine2)}
 details.st .frame{border:2px dashed var(--pine2);border-radius:10px;padding:6px 10px;margin-top:6px;font-weight:700;background:#f1faf4}
 .extra{display:inline-block;background:#e9f0ff;border:2px solid #2f6aa8;color:#2f6aa8;border-radius:16px;padding:2px 10px;font-weight:900;font-size:.85rem;margin-left:6px}
+/* T-502 word rows: one row per word, pick 1 of 3 pictures (the vocab-set layout) */
+.wrow{display:grid;grid-template-columns:minmax(180px,1fr) minmax(0,1.6fr);gap:12px;align-items:center;border:2px solid var(--ink);border-radius:12px;box-shadow:0 3px 0 var(--ink);padding:10px 12px;margin:0 0 12px;background:#fff}
+.wrow.done{border-color:#2f7d4f;background:#f2fbf5}
+.wrow .w{font-size:1.4rem;font-weight:900;display:flex;align-items:center;gap:6px;flex-wrap:wrap}.wrow .def{font-size:1rem;font-weight:600}
+.wrow .opts{margin-top:0;grid-template-columns:repeat(3,minmax(0,1fr))}.wrow .opt.pic{min-height:0}
+.wrow .fb{grid-column:1/-1;margin-top:0;min-height:0}.wrow .fb:empty{display:none}
+@media (max-width:620px){.wrow{grid-template-columns:1fr}}
+.ivname{width:15ch!important;max-width:100%}
 /* word search */
 .wsw{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}
 .wsg{display:grid;gap:3px;touch-action:none;user-select:none;-webkit-user-select:none;flex:0 1 auto;max-width:100%}
@@ -213,17 +221,10 @@ details.st .frame{border:2px dashed var(--pine2);border-radius:10px;padding:6px 
 
 <!-- 2 · WORDS -->
 <section class="act" id="a2">
-  <div class="box" id="cardsBox">
+  <div class="box">
     <h2>2 · Ten words for the story</h2>
     <p class="dir" data-dir="w1"></p>
-    <div class="words" id="wordCards" translate="no"></div>
-    <div id="readyRow"><button class="btn" onclick="startHear()">I'm ready: listen and tap →</button></div>
-  </div>
-  <div class="box" id="hearBox">
-    <h2>Listen and tap</h2>
-    <p class="dir" data-dir="w2"></p>
-    <div id="hearQ" translate="no"></div>
-    <p style="margin:10px 0 0"><button class="btn ghost" onclick="ST.wCheck=false;renderWords();save();">👀 Look at the word cards again</button></p>
+    <div id="wRows" translate="no"></div>
   </div>
   <div class="nextrow"><button class="btn ghost" onclick="go(1)">← Back</button><button class="btn" onclick="go(3)">Next: read →</button></div>
 </section>
@@ -250,7 +251,7 @@ details.st .frame{border:2px dashed var(--pine2);border-radius:10px;padding:6px 
     <h2>8 · Talk to a classmate <span class="extra">⭐ extra</span></h2>
     <p class="dir" data-dir="c1"></p>
     <label style="font-weight:800" for="ivWho">My classmate's name</label>
-    <input id="ivWho" maxlength="40" oninput="ivWho(this.value)" translate="no">
+    <input id="ivWho" class="ivname" maxlength="20" oninput="ivWho(this.value)" translate="no" placeholder="Name">
     <div id="ivQs"></div>
   </div>
   <div class="nextrow"><button class="btn ghost" onclick="go(7)">← Back</button><button class="btn" onclick="go(9)">Next: more words →</button></div>
@@ -258,17 +259,10 @@ details.st .frame{border:2px dashed var(--pine2);border-radius:10px;padding:6px 
 
 <!-- 9 · MORE WORDS (before the word search) -->
 <section class="act" id="a9">
-  <div class="box" id="vCardsBox">
+  <div class="box">
     <h2>9 · More Thanksgiving words</h2>
     <p class="dir" data-dir="v1"></p>
-    <div class="words" id="vCards" translate="no"></div>
-    <div id="vReadyRow"><button class="btn" onclick="startHearV()">I'm ready: listen and tap →</button></div>
-  </div>
-  <div class="box" id="vHearBox">
-    <h2>Listen and tap</h2>
-    <p class="dir" data-dir="v2"></p>
-    <div id="hearV" translate="no"></div>
-    <p style="margin:10px 0 0"><button class="btn ghost" onclick="ST.vCheck=false;renderVWords();save();">👀 Look at the word cards again</button></p>
+    <div id="vRows" translate="no"></div>
   </div>
   <div class="nextrow"><button class="btn ghost" onclick="go(8)">← Back</button><button class="btn" onclick="go(10)">Next: word search →</button></div>
 </section>
@@ -319,6 +313,7 @@ details.st .frame{border:2px dashed var(--pine2);border-radius:10px;padding:6px 
 
 <script src="content.js"></script>
 <script src="art.js"></script>
+<script src="rail.js"></script>
 <script>
 /* ===================== CONFIG ===================== */
 var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
@@ -446,37 +441,27 @@ function drawTools(){var s=ST.tools||{};var a=$('tkSpk'),b=$('tkTap');if(!a)retu
  else if(!s.tap){var d=document.querySelector('#a1 .dir');if(d)d.classList.add('shim');}
  if(s.spk&&s.tap)$('tools').style.display='none';}
 
-/* ===================== 2 · WORDS ===================== */
-function wordCard(w){return '<div class="wc"><div class="pic">'+ART[w.art]()+'</div><div class="tx">'+
- '<div class="w">'+esc(w.w)+spk(w.w,'spk')+'</div><div class="def">'+esc(w.d)+' '+spk(w.d)+'</div>'+
- '<span class="trn" data-tw="'+esc(w.w)+'"></span>'+
- '<div class="sent">'+esc(w.s)+' '+spk(w.s)+'</div></div></div>';}
+/* ===================== 2 · WORDS (T-502: one row per word — word, 🔊, meaning, translation, pick 1 of 3 pictures) ===================== */
 function fillTrans(root){var lg=lang();Array.prototype.forEach.call(root.querySelectorAll('[data-tw]'),function(el){var w=el.getAttribute('data-tw');if(!lg){el.textContent='';return;}
  el.textContent='…';tr(w,lg,function(t){if(lang()!==lg)return;el.className='trn'+(t?'':' none');el.textContent=t||w;});});}
-function renderWords(){var all=wDone()>=WORDS.length,chk=!!ST.wCheck&&!all;
- $('cardsBox').style.display=chk?'none':'';$('hearBox').style.display=(chk||all)?'':'none';$('readyRow').style.display=(chk||all)?'none':'';
- $('wordCards').innerHTML=WORDS.map(wordCard).join('');fillTrans($('wordCards'));renderHear();showDirections();updateNext();}
-function startHear(){ST.wCheck=true;renderWords();save();var i=nextW();if(i>=0)setTimeout(function(){speak(WORDS[i].w,.85);},300);}
-function nextW(){for(var i=0;i<WORDS.length;i++)if(!ST.R.w[i].done)return i;return -1;}
 function quip(n){var c=CAST[(n+doneAll())%CAST.length];return '<span class="quip" style="--qc:'+c[1]+'"><b style="color:'+c[1]+'">'+c[0]+':</b> '+QUIPS[(n*3+doneAll())%QUIPS.length]+'</span>';}
-/* listening: the word is never written on this card before it is solved */
-function renderHear(){var host=$('hearQ'),i=nextW();
- if(i<0){host.innerHTML='<p class="ok">✓ All '+WORDS.length+' words. Great listening!</p>';return;}
- var st=ST.R.w[i];
- host.innerHTML='<div class="qnum">Word '+(wDone()+1)+' of '+WORDS.length+'</div>'+
-  '<div class="heardrow"><button type="button" class="heardbtn" id="bigHear" onclick="heard('+i+',.85)" aria-label="Listen">🔊</button><button type="button" class="slow" onclick="heard('+i+',.55)">🐢 Slow</button></div>'+
-  '<div class="opts three">'+st.ord.map(function(k,slot){var gone=st.gone.indexOf(k)>=0;
-   return '<button type="button" class="opt pic'+(gone?' gone':'')+(st.shown&&k===0?' point':'')+'" data-k="'+k+'" aria-label="picture '+(slot+1)+'" onclick="pickW('+i+','+k+',this)">'+ART[WORDS[st.opts[k]].art]()+'</button>';}).join('')+'</div><div class="fb" id="fbW"></div>';
- if(st.shown)$('fbW').innerHTML='<div class="hint">👉 This one. Listen again 🔊 and tap it.</div>';}
-function heard(i,r){ST.R.w[i].heard=true;speak(WORDS[i].w,r);updateNext();}
-function pickW(i,k,btn){if(TV)return;var st=ST.R.w[i];if(st.done||btn.classList.contains('gone'))return;var fb=$('fbW');st.heard=true;
- if(k===0){st.done=true;if(st.first===null)st.first=(st.tries===0);btn.classList.add('right');btn.classList.remove('point');
-  fb.innerHTML='<span class="ok">✓ '+esc(WORDS[i].w)+'</span> '+spk(WORDS[i].w);speak(WORDS[i].w);burst(btn,8);save();push(true);
-  setTimeout(function(){if(ST.act===2){renderWords();var n=nextW();if(n>=0)setTimeout(function(){speak(WORDS[n].w,.85);},300);updateNext();}},1200);return;}
- st.tries++;if(st.first===null)st.first=false;if(st.gone.indexOf(k)<0)st.gone.push(k);btn.classList.add('gone');ST.log.push(['w',i,WORDS[st.opts[k]].w,Date.now()]);
+function rowSet(key){return key==='w'?{list:WORDS,R:ST.R.w,act:2}:{list:VW,R:ST.R.v,act:9};}
+function rowHTML(key,i){var S=rowSet(key),w=S.list[i],st=S.R[i];
+ return '<div class="wrow'+(st.done?' done':'')+'" id="wr_'+key+'_'+i+'"><div class="wtx"><div class="w">'+esc(w.w)+spk(w.w,'spk')+(st.done?' <span class="ok">✓</span>':'')+'</div>'+
+  '<div class="def">'+esc(w.d)+' '+spk(w.d)+'</div><span class="trn" data-tw="'+esc(w.w)+'"></span></div>'+
+  '<div class="opts three">'+st.ord.map(function(k,slot){var gone=st.gone.indexOf(k)>=0&&!(st.done&&k===0);
+   return '<button type="button" class="opt pic'+(gone||(st.done&&k!==0)?' gone':'')+(st.done&&k===0?' right':'')+(st.shown&&!st.done&&k===0?' point':'')+'" data-k="'+k+'" aria-label="picture '+(slot+1)+'" onclick="pickRow(\''+key+'\','+i+','+k+',this)">'+ART[S.list[st.opts[k]].art]()+'</button>';}).join('')+'</div>'+
+  '<div class="fb" id="fbr_'+key+'_'+i+'"></div></div>';}
+function renderRows(key){var S=rowSet(key),host=$(key==='w'?'wRows':'vRows');host.innerHTML=S.list.map(function(_,i){return rowHTML(key,i);}).join('');fillTrans(host);showDirections();updateNext();}
+function renderWords(){renderRows('w');}
+function nextRow(key){var S=rowSet(key);for(var i=0;i<S.list.length;i++)if(!S.R[i].done)return i;return -1;}
+function pickRow(key,i,k,btn){if(TV)return;var S=rowSet(key),w=S.list[i],st=S.R[i];if(st.done||btn.classList.contains('gone'))return;var fb=$('fbr_'+key+'_'+i);
+ if(k===0){st.done=true;if(st.first===null)st.first=(st.tries===0);speak(w.w);burst(btn,8);
+  var row=$('wr_'+key+'_'+i),tmp=document.createElement('div');tmp.innerHTML=rowHTML(key,i);row.parentNode.replaceChild(tmp.firstChild,row);fillTrans($('wr_'+key+'_'+i));save();push(true);return;}
+ st.tries++;if(st.first===null)st.first=false;if(st.gone.indexOf(k)<0)st.gone.push(k);btn.classList.add('gone');ST.log.push([key,i,S.list[st.opts[k]].w,Date.now()]);
  if(st.tries>=2&&!st.shown){st.shown=true;var r=btn.parentNode.querySelector('[data-k="0"]');if(r)r.classList.add('point');
-  fb.innerHTML=quip(st.tries)+'<div class="hint">👉 This one: <b>'+esc(WORDS[i].w)+'</b>. Listen 🔊, then tap it.</div>';speak(WORDS[i].w,.7);}
- else{fb.innerHTML=quip(st.tries)+'<div class="hint">Listen again, slowly. 🐢</div>';setTimeout(function(){speak(WORDS[i].w,.55);},300);}
+  fb.innerHTML=quip(st.tries)+'<div class="hint">👉 This one is <b>'+esc(w.w)+'</b>. Tap it.</div>';speak(w.w,.7);}
+ else{fb.innerHTML=quip(st.tries)+'<div class="hint">Read the meaning again. Tap 🔊 and listen. 🐢</div>';setTimeout(function(){speak(w.w,.6);},300);}
  save();}
 
 /* ===================== 3–6 · READ ===================== */
@@ -492,7 +477,8 @@ function renderPart(n){var Pt=PARTS[n],sec=$('a'+(n+3)),last=n===PARTS.length-1;
  h+='</div><div class="box" id="mc_'+Pt.id+'"><h2>Check: '+partDone(Pt.id)+' / '+T.MC[Pt.id].length+'</h2><p class="dir" data-dir="r2"></p>'+
   T.MC[Pt.id].map(function(_,i){return '<div class="mcq" id="mcq_'+Pt.id+'_'+i+'"></div>';}).join('')+'</div>'+
   '<div class="nextrow"><button class="btn ghost" onclick="go('+(n+2)+')">← Back</button><button class="btn" onclick="go('+(n+4)+')">'+(last?'Next: questions →':'Next: '+esc(PARTS[n+1].title.replace(/^Family #\d: /,''))+' →')+'</button></div>';
- sec.innerHTML=h;fillDirs(sec);T.MC[Pt.id].forEach(function(_,i){renderMC(Pt.id,i);});showDirections();}
+ sec.innerHTML=h;fillDirs(sec);T.MC[Pt.id].forEach(function(_,i){renderMC(Pt.id,i);});
+ if(window.TGRAIL)TGRAIL.mark(sec,WORDS,{spk:function(t){return spk(t);},fill:fillTrans});showDirections();}
 function renderMC(p,i){var id=p+'.'+i,x=T.MC[p][i],st=ST.R.m[id],host=$('mcq_'+p+'_'+i);if(!host)return;
  var stem=st.done?x.q.replace('___','<u>'+esc(x.o[0])+'</u>'):esc(x.q).replace('___','<span class="blank">___</span>');
  host.innerHTML='<div class="gsent" translate="no"><span><span class="qnum">'+(i+1)+'.</span> '+stem+'</span>'+spk(st.done?x.q.replace('___',x.o[0]):x.q,'spk')+'</div>'+
@@ -529,38 +515,14 @@ function qDone(){return SC().b;}
 /* ===================== 8 · TALK (part C, extra) ===================== */
 function renderIV(){$('ivWho').value=ST.ivWho||'';if(TV)$('ivWho').readOnly=true;
  $('ivQs').innerHTML=T.IV.map(function(q,i){var x=ST.iv[i]||{};return '<div class="bq"><p class="qt dir" data-dir="iv'+i+'" data-en="'+esc(q)+'" translate="no">'+esc(q)+'</p>'+
-  '<div style="font-weight:800;margin-top:6px" translate="no"><span class="ivn">'+esc(ST.ivWho||'___')+'</span> said:</div>'+
-  '<textarea id="iv_'+i+'" translate="no" maxlength="300" oninput="typeIV('+i+',this.value)"'+(TV?' readonly':'')+'>'+esc(x.a||'')+'</textarea></div>';}).join('');showDirections();}
-function ivWho(v){if(TV)return;ST.ivWho=v;ST.iv=T.IV.map(function(_,i){var x=ST.iv[i]||{};return {who:v,a:x.a||''};});document.querySelectorAll('.ivn').forEach(function(e){e.textContent=v||'___';});save();}
+  '<textarea id="iv_'+i+'" class="ivta" translate="no" maxlength="300" placeholder="'+esc(ivSaid())+'" oninput="typeIV('+i+',this.value)"'+(TV?' readonly':'')+'>'+esc(x.a||'')+'</textarea></div>';}).join('');showDirections();}
+function ivSaid(){var n=String(ST.ivWho||'').trim();return (n||'My classmate')+' said…';}
+function ivWho(v){if(TV)return;ST.ivWho=v;ST.iv=T.IV.map(function(_,i){var x=ST.iv[i]||{};return {who:v,a:x.a||''};});document.querySelectorAll('.ivta').forEach(function(e){e.placeholder=ivSaid();});save();}
 function typeIV(i,v){if(TV)return;dirty=true;ST.iv=T.IV.map(function(_,j){var x=ST.iv[j]||{};return {who:ST.ivWho,a:j===i?v:(x.a||'')};});clearTimeout(qT);qT=setTimeout(function(){save();},400);}
 
-/* ===================== 9 · MORE WORDS (cards, then listen-and-tap; the word is not written before it is solved) ===================== */
-function vCard(w){return '<div class="wc"><div class="pic">'+ART[w.art]()+'</div><div class="tx">'+
- '<div class="w">'+esc(w.w)+spk(w.w,'spk')+'</div><div class="def">'+esc(w.d)+' '+spk(w.d)+'</div><span class="trn" data-tw="'+esc(w.w)+'"></span></div></div>';}
+/* ===================== 9 · MORE WORDS (T-502: rows, same as Words) ===================== */
 function vDone(){return SC().v;}
-function nextV(){for(var i=0;i<VW.length;i++)if(!ST.R.v[i].done)return i;return -1;}
-function renderVWords(){var all=vDone()>=VW.length,chk=!!ST.vCheck&&!all;
- $('vCardsBox').style.display=chk?'none':'';$('vHearBox').style.display=(chk||all)?'':'none';$('vReadyRow').style.display=(chk||all)?'none':'';
- $('vCards').innerHTML=VW.map(vCard).join('');fillTrans($('vCards'));renderHearV();showDirections();updateNext();}
-function startHearV(){ST.vCheck=true;renderVWords();save();var i=nextV();if(i>=0)setTimeout(function(){speak(VW[i].w,.85);},300);}
-function renderHearV(){var host=$('hearV'),i=nextV();
- if(i<0){host.innerHTML='<p class="ok">✓ All '+VW.length+' words. Now find them in the word search!</p>';return;}
- var st=ST.R.v[i];
- host.innerHTML='<div class="qnum">Word '+(vDone()+1)+' of '+VW.length+'</div>'+
-  '<div class="heardrow"><button type="button" class="heardbtn" id="bigHearV" onclick="heardV('+i+',.85)" aria-label="Listen">🔊</button><button type="button" class="slow" onclick="heardV('+i+',.55)">🐢 Slow</button></div>'+
-  '<div class="opts three">'+st.ord.map(function(k,slot){var gone=st.gone.indexOf(k)>=0;
-   return '<button type="button" class="opt pic'+(gone?' gone':'')+(st.shown&&k===0?' point':'')+'" data-k="'+k+'" aria-label="picture '+(slot+1)+'" onclick="pickV('+i+','+k+',this)">'+ART[VW[st.opts[k]].art]()+'</button>';}).join('')+'</div><div class="fb" id="fbV"></div>';
- if(st.shown)$('fbV').innerHTML='<div class="hint">👉 This one. Listen again 🔊 and tap it.</div>';}
-function heardV(i,r){ST.R.v[i].heard=true;speak(VW[i].w,r);updateNext();}
-function pickV(i,k,btn){if(TV)return;var st=ST.R.v[i];if(st.done||btn.classList.contains('gone'))return;var fb=$('fbV');st.heard=true;
- if(k===0){st.done=true;if(st.first===null)st.first=(st.tries===0);btn.classList.add('right');btn.classList.remove('point');
-  fb.innerHTML='<span class="ok">✓ '+esc(VW[i].w)+'</span> '+spk(VW[i].w);speak(VW[i].w);burst(btn,8);save();push(true);
-  setTimeout(function(){if(ST.act===9){renderVWords();var n=nextV();if(n>=0)setTimeout(function(){speak(VW[n].w,.85);},300);updateNext();}},1200);return;}
- st.tries++;if(st.first===null)st.first=false;if(st.gone.indexOf(k)<0)st.gone.push(k);btn.classList.add('gone');ST.log.push(['v',i,VW[st.opts[k]].w,Date.now()]);
- if(st.tries>=2&&!st.shown){st.shown=true;var r=btn.parentNode.querySelector('[data-k="0"]');if(r)r.classList.add('point');
-  fb.innerHTML=quip(st.tries)+'<div class="hint">👉 This one: <b>'+esc(VW[i].w)+'</b>. Listen 🔊, then tap it.</div>';speak(VW[i].w,.7);}
- else{fb.innerHTML=quip(st.tries)+'<div class="hint">Listen again, slowly. 🐢</div>';setTimeout(function(){speak(VW[i].w,.55);},300);}
- save();}
+function renderVWords(){renderRows('v');}
 
 /* ===================== 10 · WORD SEARCH (tap the first letter, then the last; across or down; same grid for everyone) ===================== */
 var WSA=null,WSCOL=['#ffe0b3','#d8f0e2','#dbe9ff','#f8d7e3','#efe3ff','#fff1bf','#d4f1f4','#ffd9cc'];
@@ -606,7 +568,7 @@ var NACT=11;
 var STEPS=[[1,'1 · Look',function(){return [lookDone(),2];}],[2,'2 · Words',function(){return [wDone(),WORDS.length];}]]
  .concat(PARTS.map(function(Pt,n){return [n+3,(n+3)+' · '+['Thanksgiving','Mark','The Lees','Andre'][n],function(){return [partDone(Pt.id),T.MC[Pt.id].length];}];}))
  .concat([[7,'7 · Questions',function(){return [qDone(),T.QS.length];}],[8,'8 · Talk ⭐',function(){return [SC().iv,3];}],[9,'9 · More words',function(){return [SC().v,VW.length];}],[10,'10 · Word search',function(){return [SC().f,T.WS_WORDS.length];}],[11,'Finish',function(){return [SC().core>=MAXALL?1:0,1];}]]);
-function go(n){stopRead();try{speechSynthesis.cancel();}catch(e){}ST.act=n;for(var i=1;i<=NACT;i++)$('a'+i).classList.toggle('show',i===n);
+function go(n){stopRead();try{speechSynthesis.cancel();}catch(e){}ST.act=n;if(window.TGRAIL&&!(n>=3&&n<=6))TGRAIL.clear();for(var i=1;i<=NACT;i++)$('a'+i).classList.toggle('show',i===n);
  if(n===1)renderLook();else if(n===2)renderWords();else if(n>=3&&n<=6)renderPart(n-3);else if(n===7)renderQs();else if(n===8)renderIV();else if(n===9)renderVWords();else if(n===10)renderWS();else renderGo();
  drawSteps();drawProg();showDirections();updateNext();if(LOADED&&!TV)save();window.scrollTo(0,0);}
 function drawSteps(){var nextSet=false;$('steps').innerHTML=STEPS.map(function(s){var c=s[2](),full=c[0]>=c[1],nx=false;if(s[0]!==8){if(!full&&!nextSet&&ST.act!==s[0]){nx=true;nextSet=true;}if(!full&&ST.act===s[0])nextSet=true;}
@@ -621,9 +583,7 @@ function nextTarget(){var a=ST.act;
   if(!L.won)return {t:'Now tap one idea: I wonder why…',el:q('#qWon .chip')};
   return {t:'Next: learn the words.',el:q('#a1 .nextrow .btn')};}
  if(a===2){if(wDone()>=WORDS.length)return {t:'Next: read the story.',el:q('#a2 .nextrow .btn:last-child')};
-  if(!ST.wCheck)return {t:'Look at each picture and tap 🔊. Then tap “I’m ready”.',el:q('#readyRow .btn')};
-  var i=nextW();if(!ST.R.w[i].heard)return {t:'Tap the big 🔊 and listen.',el:q('#bigHear')};
-  return {t:'Tap the picture you heard.',el:q('#hearQ .qnum')};}
+  var r2=nextRow('w');return {t:(r2?'':'Start here. ')+'Tap 🔊. Then tap the picture for “'+WORDS[r2].w+'”.',el:q('#wr_w_'+r2+' .w')};}
  if(a>=3&&a<=6){var Pt=PARTS[a-3];for(var j=0;j<T.MC[Pt.id].length;j++)if(!ST.R.m[Pt.id+'.'+j].done){
    if(j===0&&!ST.tools.spk)return {t:'Read the story. Tap 🔊 to listen.',el:q('#a'+a+' .pbtn')};
    return {t:'Answer question '+(j+1)+'. Look back at the story.',el:q('#mcq_'+Pt.id+'_'+j+' .gsent')};}
@@ -634,9 +594,7 @@ function nextTarget(){var a=ST.act;
   for(var v=0;v<T.IV.length;v++)if(!T.ivOk(ST.iv[v]))return {t:'Ask question '+(v+1)+'. Write what they said.',el:q('#iv_'+v)};
   return {t:'Next: more words.',el:q('#a8 .nextrow .btn:last-child')};}
  if(a===9){if(SC().v>=VW.length)return {t:'Next: the word search.',el:q('#a9 .nextrow .btn:last-child')};
-  if(!ST.vCheck)return {t:'Look at each picture and tap 🔊. Then tap “I’m ready”.',el:q('#vReadyRow .btn')};
-  var iv=nextV();if(!ST.R.v[iv].heard)return {t:'Tap the big 🔊 and listen.',el:q('#bigHearV')};
-  return {t:'Tap the picture you heard.',el:q('#hearV .qnum')};}
+  var r9=nextRow('v');return {t:'Tap 🔊. Then tap the picture for “'+VW[r9].w+'”.',el:q('#wr_v_'+r9+' .w')};}
  if(a===10){if(SC().f>=T.WS_WORDS.length)return {t:'Next: finish.',el:q('#a10 .nextrow .btn:last-child')};
   if(WSA)return {t:'Now tap the last letter of the word.',el:null};
   return {t:'Find a word. Tap its first letter.',el:q('#wsGrid')};}
@@ -707,7 +665,7 @@ function showDirections(){var lg=lang();document.querySelectorAll('[data-dir]').
  tr(p.getAttribute('data-en'),lg,function(t){if(lang()!==lg)return;out.textContent=t;});});}
 function toggleDir(){if(!DIR_ON&&!lang()){alert('First choose your language in the green bar.');$('lang').focus();return;}DIR_ON=!DIR_ON;$('dirBtn').classList.toggle('on',DIR_ON);showDirections();NX_EN='';updateNext();}
 function setLang(v){try{localStorage.setItem('eld103_lang',v);localStorage.setItem('vocab_lang',v);}catch(e){}DIR_ON=!!v;$('dirBtn').classList.toggle('on',DIR_ON);
- document.querySelectorAll('.dirtr').forEach(function(o){o.removeAttribute('data-l');});showDirections();if(ST.act===2)fillTrans($('wordCards'));NX_EN='';updateNext();}
+ document.querySelectorAll('.dirtr').forEach(function(o){o.removeAttribute('data-l');});showDirections();if(ST.act===2)fillTrans($('wRows'));if(ST.act===9)fillTrans($('vRows'));if(ST.act>=3&&ST.act<=6)fillTrans($('a'+ST.act));NX_EN='';updateNext();}
 function savedLang(){try{return localStorage.getItem('vocab_lang')||localStorage.getItem('eld103_lang')||'';}catch(e){return '';}}
 var WT=true;
 function toggleWT(){WT=!WT;$('wtBtn').classList.toggle('on',WT);document.body.classList.toggle('wt',WT);hideTip();}

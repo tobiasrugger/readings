@@ -133,6 +133,21 @@ body.wt [translate="no"] , body.wt .dir{cursor:help}
 .opts.five{grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
 .fdlist{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.fdone{border:2px solid #2f7d4f;background:#e8f7ee;border-radius:20px;padding:4px 10px;font-weight:800}
 @media (max-width:560px){.opts.five{grid-template-columns:repeat(3,minmax(0,1fr))}}
+/* T-502 word rows: pick 1 of 3 pictures, then "use it" */
+.wrow{border:2px solid var(--ink);border-radius:12px;box-shadow:0 3px 0 var(--ink);padding:10px 12px;margin:0 0 14px;background:#fff;display:flow-root}
+.wrow.done{border-color:#2f7d4f;background:#f6fcf8}
+.wtop{display:grid;grid-template-columns:minmax(190px,1fr) minmax(0,1.5fr);gap:12px;align-items:center}
+.wrow .w{font-size:1.4rem;font-weight:900;display:flex;align-items:center;gap:6px;flex-wrap:wrap}.wrow .def{font-size:1rem;font-weight:600}
+.wrow .also{font-size:.95rem;color:var(--muted);font-weight:700}.wrow .opts.three{margin-top:0}
+.wrow .opt.pic::after{content:none}.wrow .opt.pic.gone{opacity:.45}.wrow .opt.pic.dim{opacity:.22;box-shadow:none;pointer-events:none}
+.wrow .mcq{border-top:2px dashed #c9d3cc;margin-top:10px;padding-top:8px}.wrow .fb:empty{display:none}
+.pestbox{border:2px solid #b8860b;background:#fffbea;border-radius:10px;padding:8px 12px;margin-top:10px;font-size:.98rem}
+.pestbox a{font-weight:900;color:#2f6fbd}
+@media (max-width:620px){.wtop{grid-template-columns:1fr}}
+.hist2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:6px 0 10px}.hist2>div{border:2px solid var(--ink);border-radius:10px;overflow:hidden;line-height:0}.hist2 svg{width:100%;height:auto}
+@media (max-width:620px){.hist2{grid-template-columns:1fr}}
+.famw{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}.famw .wc .who{font-size:.88rem;color:var(--muted);font-weight:700}
+.ivname{width:15ch!important;max-width:100%}
 /* ELD 103 see/wonder: typed blanks + a word bank of plain words (not buttons) */
 .wbank{border:2px solid var(--ink);border-radius:12px;background:#fffbea;padding:10px 14px;margin:0 0 14px;line-height:1.9}
 .wbt{font-weight:900;color:var(--pine);margin-bottom:2px}.wbn{font-weight:700;font-size:.82rem;color:var(--muted);margin-left:6px}
@@ -225,12 +240,11 @@ details.st .frame{border:2px dashed var(--pine2);border-radius:10px;padding:6px 
 
 <!-- 2 · WORDS -->
 <section class="act" id="a2">
-  <div class="box" id="cardsBox">
+  <div class="box" id="mc_w">
     <h2>2 · Ten words for the stories</h2>
     <p class="dir" data-dir="w1"></p>
-    <div class="words" id="wordCards" translate="no"></div>
+    <div id="wRows"></div>
   </div>
-  <div class="box" id="mc_w"><h2>Word check</h2><p class="dir" data-dir="r2"></p><div id="wChecks"></div></div>
   <div class="nextrow"><button class="btn ghost" onclick="go(1)">← Back</button><button class="btn" onclick="go(3)">Next: read →</button></div>
 </section>
 
@@ -256,7 +270,7 @@ details.st .frame{border:2px dashed var(--pine2);border-radius:10px;padding:6px 
     <h2>8 · Talk to a classmate <span class="extra">⭐ extra</span></h2>
     <p class="dir" data-dir="c1"></p>
     <label style="font-weight:800" for="ivWho">My classmate's name</label>
-    <input id="ivWho" maxlength="40" oninput="ivWho(this.value)" translate="no">
+    <input id="ivWho" class="ivname" maxlength="20" oninput="ivWho(this.value)" translate="no" placeholder="Name">
     <div id="ivQs"></div>
   </div>
   <div class="nextrow"><button class="btn ghost" onclick="go(7)">← Back</button><button class="btn" onclick="go(9)">Next: finish →</button></div>
@@ -297,6 +311,7 @@ details.st .frame{border:2px dashed var(--pine2);border-radius:10px;padding:6px 
 <script src="content.js"></script>
 <script src="/readings/thanksgiving/art.js"></script>
 <script src="art103.js"></script>
+<script src="/readings/thanksgiving/rail.js"></script>
 <script>
 /* ===================== CONFIG ===================== */
 var SUPA_URL='https://lhmwtfyceilgndpygivj.supabase.co';
@@ -309,7 +324,7 @@ var CAST=[['Linh','#d9567f'],['Mateo','#2f6fbd'],['Amira','#1f8a7e'],['Jun','#6f
 var QUIPS=['Almost! Look again.','Hmm, not that one. Try again.','Good try. Here is a clue.','So close! Read it one more time.','Keep going. You can do it.'];
 var WORDS=T.WORDS,PARTS=T.PARTS,MARKS={};
 /* ===================== STATE ===================== */
-var ST={name:'',email:'',period:'',act:1,look:{},R:{m:{}},qa:{},iv:[],ivWho:'',tools:{spk:false,tap:false},lion:false,finished:null,log:[],browserTranslated:false};
+var ST={name:'',email:'',period:'',act:1,look:{},hist:{},R:{m:{},p:{}},qa:{},iv:[],ivWho:'',tools:{spk:false,tap:false},lion:false,finished:null,log:[],browserTranslated:false};
 var LOADED=false,ROW_EMAIL='';
 function $(i){return document.getElementById(i);}
 function clean(s){return String(s||'').trim().toLowerCase();}
@@ -340,7 +355,10 @@ function orders(n,k){var out=[],last=-1,run=0;for(var i=0;i<n;i++){var o,pos,g=0
  run=(pos===last)?run+1:1;last=pos;out.push(o);}return out;}
 function blankR(){return {tries:0,first:null,done:false,shown:false,gone:[],ord:null};}
 
-function ensureOrders(){var ids=T.W_IDS.concat(T.MC_IDS),om=orders(ids.length,3);ST.R.m=ST.R.m||{};ids.forEach(function(id,j){ST.R.m[id]=ST.R.m[id]||blankR();if(!ST.R.m[id].ord)ST.R.m[id].ord=om[j];});}
+function ensureOrders(){var ids=T.W_IDS.concat(T.MC_IDS).concat(T.F_IDS),i;ST.R.m=ST.R.m||{};ST.R.p=ST.R.p||{};
+ var miss=ids.filter(function(id){return !ST.R.m[id]||!ST.R.m[id].ord;}),om=orders(miss.length,3);miss.forEach(function(id,j){ST.R.m[id]=ST.R.m[id]||blankR();ST.R.m[id].ord=om[j];});
+ if(!ST.R.p[0]||!ST.R.p[0].ord){var op=orders(WORDS.length,3);for(i=0;i<WORDS.length;i++){ST.R.p[i]=ST.R.p[i]||blankR();ST.R.p[i].ord=op[i];
+   var oth=shuffle(WORDS.map(function(_,k){return k;}).filter(function(k){return k!==i;})).slice(0,2);ST.R.p[i].opts=[i].concat(oth);}}}
 
 /* ===================== SCORE (fair: shared rule in content.js) ===================== */
 function offK(m,k,a){return !!(window.GALMARK&&GALMARK.off(m,k,a));}
@@ -368,7 +386,7 @@ function push(force){
  .catch(function(){pushing=false;dirty=true;dot('err');});}
 function getJSON(path){return fetch(SUPA_URL+'/rest/v1/'+path,{headers:hdr()}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();});}
 function workOf(p){try{return T.score(p,{},null).score;}catch(e){return 0;}}
-function resetState(){ST.look={};ST.R={m:{}};ST.qa={};ST.iv=[];ST.ivWho='';ST.wCheck=false;ST.tools={spk:false,tap:false};ST.lion=false;ST.finished=null;ST.log=[];ST.act=1;MARKS={};}
+function resetState(){ST.look={};ST.R={m:{},p:{}};ST.hist={};ST.qa={};ST.iv=[];ST.ivWho='';ST.wCheck=false;ST.tools={spk:false,tap:false};ST.lion=false;ST.finished=null;ST.log=[];ST.act=1;MARKS={};}
 function loadServer(email,then){
  LOADED=false;ROW_EMAIL='';var gone=false,t=setTimeout(fail,12000);
  function fail(){if(gone)return;gone=true;srvBar(true);dot('err');}
@@ -376,8 +394,8 @@ function loadServer(email,then){
  .then(function(rows){if(gone)return;clearTimeout(t);gone=true;
   var best=null;(rows||[]).forEach(function(r){if(r.payload&&(!best||workOf(r.payload)>workOf(best.payload)))best=r;});
   resetState();
-  if(best){var p=best.payload;ROW_EMAIL=best.email;['look','qa','iv','ivWho','tools','log'].forEach(function(k){if(p[k]!=null)ST[k]=p[k];});
-   ST.R={m:(p.R&&p.R.m)||{}};ST.lion=!!p.lion;ST.finished=p.finished||null;ST.act=p.act||1;ST.browserTranslated=!!p.browserTranslated;}
+  if(best){var p=best.payload;ROW_EMAIL=best.email;['look','qa','iv','ivWho','tools','log','hist'].forEach(function(k){if(p[k]!=null)ST[k]=p[k];});
+   ST.R={m:(p.R&&p.R.m)||{},p:(p.R&&p.R.p)||{}};ST.lion=!!p.lion;ST.finished=p.finished||null;ST.act=p.act||1;ST.browserTranslated=!!p.browserTranslated;}
   ensureOrders();LOADED=true;srvBar(false);dot('on');setGal();if(then)then();refreshMarks();
  }).catch(fail);}
 
@@ -385,7 +403,7 @@ function loadServer(email,then){
 function refreshMarks(){if(!window.GALMARK||!ST.email||TV&&!ST.email)return;
  GALMARK.fetch(TABLE,'unit=eq.'+UNIT,ST.email).then(function(m){if(m==null)return;MARKS=m;setGal();drawSteps();drawProg();paintMarks();updateNext();});}
 function paintMarks(){if(!window.GALMARK||ST.act<3||ST.act>7)return;var items=[];
- T.ALLW.forEach(function(q){var b=$('bq_'+q.k),f=$('ta_'+q.k);if(b&&f)items.push({key:q.k,box:b,field:f});});
+ T.ALLW.concat(T.EXW).forEach(function(q){var b=$('bq_'+q.k),f=$('ta_'+q.k);if(b&&f)items.push({key:q.k,box:b,field:f});});
  GALMARK.paint101(items,MARKS,{say:function(t){speak(t);},dir:function(){showDirections();}});
  if(!fixing())GALMARK.pointAt(null);updateNext();}
 function fixing(){return document.body.classList.contains('gm-fixing');}
@@ -394,7 +412,7 @@ function fixing(){return document.body.classList.contains('gm-fixing');}
 function fillDirs(root){(root||document).querySelectorAll('p.dir[data-dir]').forEach(function(p){var k=p.getAttribute('data-dir');if(T.DIR[k]&&!p.getAttribute('data-en')){p.setAttribute('data-en',T.DIR[k]);p.textContent=T.DIR[k];}});}
 
 /* ===================== 1 · LOOK — ELD 103: fill in the blank, TYPED; word bank = plain words, not buttons (T-501). Opinion: never wrong. ===================== */
-function bankHTML(){var B=T.LOOK.bank;return '<div class="wbank" translate="no"><div class="wbt">Word bank <span class="wbn">type these words in the blanks · tap one to see it in your language</span></div>'+
+function bankHTML(B){B=B||T.LOOK.bank;return '<div class="wbank" translate="no"><div class="wbt">Word bank <span class="wbn">type these words in the blanks · tap one to see it in your language</span></div>'+
  Object.keys(B).map(function(k){return '<div class="wbg"><b>'+esc(k)+'</b> '+B[k].map(function(w){return '<span class="wbw">'+esc(w)+'</span>';}).join('<span class="wbs"> · </span>')+'</div>';}).join('')+'</div>';}
 function lookOk(part){var L=ST.look||{};return T.words(L[part]).length>=(part==='see'?T.LOOK.seeMin:T.LOOK.wonMin);}
 function renderLook(){var L=ST.look||{};
@@ -430,10 +448,26 @@ function wordCard(w){return '<div class="wc"><div class="pic">'+ART[w.art]()+'</
  '<div class="sent">'+esc(w.s)+' '+spk(w.s)+'</div></div></div>';}
 function fillTrans(root){var lg=lang();Array.prototype.forEach.call(root.querySelectorAll('[data-tw]'),function(el){var w=el.getAttribute('data-tw');if(!lg){el.textContent='';return;}
  el.textContent='…';tr(w,lg,function(t){if(lang()!==lg)return;el.className='trn'+(t?'':' none');el.textContent=t||w;});});}
-function renderWords(){$('wordCards').innerHTML=WORDS.map(wordCard).join('');fillTrans($('wordCards'));
- $('wChecks').innerHTML=WORDS.map(function(_,i){return '<div class="mcq" id="mcq_w_'+i+'"></div>';}).join('');
- var hh=document.querySelector('#mc_w h2');if(hh)hh.textContent='Word check: '+partDone('w')+' / '+WORDS.length;
- WORDS.forEach(function(_,i){renderMC('w',i);});showDirections();updateNext();}
+function renderWords(){var host=$('wRows');host.innerHTML=WORDS.map(function(_,i){return '<div class="wrow" id="wr_'+i+'"></div>';}).join('');
+ WORDS.forEach(function(_,i){renderRow(i);});showDirections();updateNext();}
+/* T-502: one row per word. Step 1 = pick 1 of 3 pictures (ST.R.p). Step 2 = "use it" (T.MC.w, scored as w.i).
+   A student who finished the old word check (w.i done) has the row open and done. */
+function rowPicDone(i){return !!(ST.R.p[i]&&ST.R.p[i].done)||!!(ST.R.m['w.'+i]&&ST.R.m['w.'+i].done);}
+function renderRow(i){var w=WORDS[i],st=ST.R.p[i],pd=rowPicDone(i),row=$('wr_'+i),wd=ST.R.m['w.'+i].done;if(!row)return;
+ row.className='wrow'+(wd?' done':'');
+ row.innerHTML='<div class="wtop"><div class="wtx" translate="no"><div class="w">'+esc(w.w)+spk(w.w,'spk')+(wd?' <span class="ok">✓</span>':'')+'</div>'+
+  '<div class="def">'+esc(w.d)+' '+spk(w.d)+'</div>'+(w.also?'<div class="also">also: '+esc(w.also)+'</div>':'')+'<span class="trn" data-tw="'+esc(w.w)+'"></span></div>'+
+  '<div class="opts three" translate="no">'+st.ord.map(function(k,slot){var right=pd&&k===0,miss=st.gone.indexOf(k)>=0,dim=pd&&k!==0&&!miss;
+   return '<button type="button" class="opt pic'+(right?' right':'')+(miss&&!right?' gone':'')+(dim?' dim':'')+(st.shown&&!pd&&k===0?' point':'')+'" data-k="'+k+'" aria-label="picture '+(slot+1)+'" onclick="pickPic('+i+','+k+',this)">'+ART[WORDS[st.opts[k]].art]()+'</button>';}).join('')+'</div></div>'+
+  '<div class="fb" id="fbp_'+i+'"></div>'+(pd?'<div class="mcq" id="mcq_w_'+i+'"></div>':'')+
+  (w.pest&&pd?'<div class="pestbox" translate="no"><b>Word family: pest → pester</b><br>'+T.PEST.map(function(t){return esc(t)+' '+spk(t);}).join('<br>')+
+   '<br>🧩 Want to learn more idioms and expressions? <a href="'+T.IDIOMS_URL+'" target="_blank" rel="noopener">Idioms Illustrated ↗</a></div>':'');
+ fillTrans(row);if(pd)renderMC('w',i);}
+function pickPic(i,k,btn){if(TV)return;var st=ST.R.p[i];if(rowPicDone(i)||btn.classList.contains('gone'))return;var fb=$('fbp_'+i),w=WORDS[i];
+ if(k===0){st.done=true;if(st.first===null)st.first=(st.tries===0);speak(w.w);burst(btn,8);renderRow(i);save();push(true);updateNext();return;}
+ st.tries++;if(st.first===null)st.first=false;if(st.gone.indexOf(k)<0)st.gone.push(k);btn.classList.add('gone');ST.log.push(['p',i,WORDS[st.opts[k]].w,Date.now()]);
+ if(st.tries>=2&&!st.shown){st.shown=true;var r=btn.parentNode.querySelector('[data-k="0"]');if(r)r.classList.add('point');}
+ fb.innerHTML=quip(st.tries)+'<div class="hint" translate="no">'+(st.shown?'👉 This picture shows <b>'+esc(w.w)+'</b>. Tap it.':'Read the meaning again: '+esc(w.d))+'</div>';save();}
 function quip(n){var c=CAST[(n+doneAll())%CAST.length];return '<span class="quip" style="--qc:'+c[1]+'"><b style="color:'+c[1]+'">'+c[0]+':</b> '+QUIPS[(n*3+doneAll())%QUIPS.length]+'</span>';}
 
 /* ===================== 3–6 · READ ===================== */
@@ -442,14 +476,29 @@ function paraHTML(pid,sents){return '<button type="button" class="pbtn" onclick=
 function renderPart(n){var Pt=PARTS[n],sec=$('a'+(n+3)),last=n===PARTS.length-1;
  var h='<div class="box scene"><div>'+ART[Pt.art]()+'</div></div>'+
   '<div class="box"><h2 translate="no">'+(n+3)+' · '+esc(Pt.title)+' '+spk(Pt.title)+'</h2><p class="dir" data-dir="r1"></p>';
- Pt.paras.forEach(function(pp,j){h+=paraHTML(Pt.id+'_'+j,pp);});
+ Pt.paras.forEach(function(pp,j){h+=pp.history?histHTML():paraHTML(Pt.id+'_'+j,pp);});
  if(Pt.foods){h+='<div class="foods" translate="no">'+[['turkey','turkey'],['cranberry sauce','cranberry'],['potatoes','potatoes'],['pumpkin pie','pie']].map(function(f){
    return '<div class="food"><div class="pic">'+ART[f[1]]()+'</div><div class="l">'+esc(f[0])+' '+spk(f[0])+'</div></div>';}).join('')+'</div>';}
  if(Pt.after)h+=paraHTML(Pt.id+'_x',Pt.after);
  h+='</div><div class="box" id="mc_'+Pt.id+'"><h2>Check: '+partDone(Pt.id)+' / '+T.MC[Pt.id].length+'</h2><p class="dir" data-dir="r2"></p>'+
-  T.MC[Pt.id].map(function(_,i){return '<div class="mcq" id="mcq_'+Pt.id+'_'+i+'"></div>';}).join('')+(T.WHY[Pt.id]?whyHTML(T.WHY[Pt.id]):'')+'</div>'+
+  T.MC[Pt.id].map(function(_,i){return '<div class="mcq" id="mcq_'+Pt.id+'_'+i+'"></div>';}).join('')+(T.WHY[Pt.id]?whyHTML(T.WHY[Pt.id]):'')+'</div>'+(Pt.id==='p2'?famHTML():'')+
   '<div class="nextrow"><button class="btn ghost" onclick="go('+(n+2)+')">← Back</button><button class="btn" onclick="go('+(n+4)+')">'+(last?'Next: questions →':'Next: '+esc(PARTS[n+1].title.replace(/^Family #\d: /,''))+' →')+'</button></div>';
- sec.innerHTML=h;fillDirs(sec);T.MC[Pt.id].forEach(function(_,i){renderMC(Pt.id,i);});if(T.WHY[Pt.id])qStatus(T.WHY[Pt.id].k);showDirections();paintMarks();}
+ sec.innerHTML=h;fillDirs(sec);T.MC[Pt.id].forEach(function(_,i){renderMC(Pt.id,i);});if(T.WHY[Pt.id])qStatus(T.WHY[Pt.id].k);
+ if(Pt.id==='p2'){T.FAM.mc.forEach(function(_,i){renderMC('f',i);});qStatus('fam');fillTrans(sec);}
+ if(window.TGRAIL)TGRAIL.mark(sec,WORDS,{spk:function(t){return spk(t);},fill:fillTrans});showDirections();paintMarks();}
+function histHTML(){var H=ST.hist||{};return '<div class="box" style="margin:6px 0 14px;box-shadow:none"><h3 style="margin:0 0 4px">Where Thanksgiving comes from ⭐</h3>'+
+ '<div class="hist2"><div>'+ART.histMeal()+'</div><div>'+ART.histWar()+'</div></div>'+bankHTML(T.HIST.bank)+
+ '<div class="qline" translate="no"><label for="hSee">I see</label> <input id="hSee" class="blankin" maxlength="80" value="'+esc(H.see||'')+'" oninput="typeHist(\'see\',this.value)"'+(TV?' readonly':'')+'> .'+spk('I see '+(H.see||'blank')+'.')+'</div>'+
+ '<div class="qline" translate="no"><label for="hWon">I wonder why</label> <input id="hWon" class="blankin wide" maxlength="160" value="'+esc(H.won||'')+'" oninput="typeHist(\'won\',this.value)"'+(TV?' readonly':'')+'> .'+spk('I wonder why '+(H.won||'blank')+'.')+'</div>'+
+ '<div id="hGood">'+histGood()+'</div></div>';}
+function histOk(part){var H=ST.hist||{};return T.words(H[part]).length>=(part==='see'?1:3);}
+function histGood(){return histOk('see')&&histOk('won')?'<div class="good"><b class="g">✓ Good question!</b><br>🤔 <span translate="no">'+esc(T.HIST.think)+'</span> '+spk(T.HIST.think)+'</div>':'';}
+var histT=null;function typeHist(part,v){if(TV)return;dirty=true;ST.hist=ST.hist||{};ST.hist[part]=String(v).replace(/^\s*i (see|wonder why)\s*/i,'');clearTimeout(histT);histT=setTimeout(function(){var g=$('hGood');if(g)g.innerHTML=histGood();save();},800);}
+function famHTML(){return '<div class="box" id="famBox"><h2>⭐ What families do <span class="extra">extra</span></h2>'+
+ '<p class="dir" data-dir="f1" data-en="Some words for what family members do. Read each card and tap 🔊. Then answer the questions.">Some words for what family members do. Read each card and tap 🔊. Then answer the questions.</p>'+
+ '<div class="famw" translate="no">'+T.FAM.words.map(function(x){return '<div class="wc"><div class="pic">'+ART[x.art]()+'</div><div class="tx"><div class="w">'+esc(x.w)+spk(x.w,'spk')+'</div>'+
+  '<div class="def">'+esc(x.d)+' '+spk(x.d)+'</div><span class="trn" data-tw="'+esc(x.w)+'"></span><div class="who">👥 '+esc(x.who)+'</div><div class="sent">'+esc(x.s)+' '+spk(x.s)+'</div></div></div>';}).join('')+'</div>'+
+ '<h3>Which word?</h3>'+T.FAM.mc.map(function(_,i){return '<div class="mcq" id="mcq_f_'+i+'"></div>';}).join('')+whyHTML(T.FAM.write)+'</div>';}
 function whyHTML(q){var a=ST.qa[q.k]||'';return '<div class="why bq" id="bq_'+q.k+'"><p class="qt dir" data-dir="y_'+q.k+'" data-en="'+esc(q.q)+'" translate="no">'+esc(q.q)+'</p>'+
  '<textarea id="ta_'+q.k+'" translate="no" maxlength="500" oninput="typeQ(\''+q.k+'\',this.value)"'+(TV?' readonly':'')+'>'+esc(a)+'</textarea><div class="bst" id="bs_'+q.k+'"></div>'+
  '<details class="st"><summary>💡 Sentence starter</summary><div class="frame" translate="no">'+esc(q.st)+' '+spk(q.st)+'</div></details></div>';}
@@ -461,7 +510,7 @@ function renderMC(p,i){var id=p+'.'+i,x=T.MC[p][i],st=ST.R.m[id],host=$('mcq_'+p
   '<div class="fb" id="fbM_'+p+'_'+i+'">'+(st.done?'<span class="ok">✓ '+esc(x.o[0])+'</span> '+spk(x.o[0]):'')+'</div>';}
 function pickM(p,i,k,btn){if(TV)return;var id=p+'.'+i,x=T.MC[p][i],st=ST.R.m[id];if(st.done||btn.classList.contains('gone'))return;var fb=$('fbM_'+p+'_'+i);
  if(k===0){st.done=true;if(st.first===null)st.first=(st.tries===0);speak(x.o[0]);renderMC(p,i);burst(btn,8);
-  var hh=document.querySelector('#mc_'+p+' h2');if(hh)hh.textContent=(p==='w'?'Word check: ':'Check: ')+partDone(p)+' / '+T.MC[p].length;save();push(true);return;}
+  if(p==='w'){renderRow(i);updateNext();}else if(p!=='f'){var hh=document.querySelector('#mc_'+p+' h2');if(hh)hh.textContent='Check: '+partDone(p)+' / '+T.MC[p].length;}save();push(true);return;}
  st.tries++;if(st.first===null)st.first=false;if(st.gone.indexOf(k)<0)st.gone.push(k);btn.classList.add('gone');ST.log.push(['m',id,x.o[k],Date.now()]);
  if((st.tries>=3||x.o.length-st.gone.length<=1)&&!st.shown)st.shown=true;
  var h=x.h[Math.min(st.tries-1,x.h.length-1)];fb.innerHTML=quip(st.tries)+'<div class="hint" translate="no">'+esc(h)+' '+spk(h)+'</div>';
@@ -477,7 +526,7 @@ function renderQs(){var host=$('bqs');
    '<details class="st"><summary>💡 Sentence starter</summary><div class="frame" translate="no">'+esc(q.st)+' '+spk(q.st)+'</div>'+
    '<button type="button" class="btn ghost" style="margin-top:6px" onclick="useStarter(\''+q.k+'\')">Use the starter</button></details></div>';}).join('');
  T.QS.forEach(function(q){qStatus(q.k);});showDirections();paintMarks();}
-function qByK(k){return T.ALLW.filter(function(q){return q.k===k;})[0];}
+function qByK(k){return T.ALLW.concat(T.EXW).filter(function(q){return q.k===k;})[0];}
 function qStatus(k){var q=qByK(k),a=String(ST.qa[k]||''),el=$('bs_'+k);if(!el)return;var n=T.words(a.replace(/___/g,'')).length;
  if(T.qOk(q,a)){el.className='bst ok';el.textContent='✓ '+n+' words. Done!';return;}
  el.className='bst';el.textContent=/_{2,}/.test(a)?'Fill in every ___ with your own words.':n+' / '+q.min+' words';}
@@ -489,9 +538,9 @@ function qDone(){var n=0;T.QS.forEach(function(q){var a=ST.qa[q.k];if(T.qOk(q,a)
 /* ===================== 8 · TALK (part C, extra) ===================== */
 function renderIV(){$('ivWho').value=ST.ivWho||'';if(TV)$('ivWho').readOnly=true;
  $('ivQs').innerHTML=T.IV.map(function(q,i){var x=ST.iv[i]||{};return '<div class="bq"><p class="qt dir" data-dir="iv'+i+'" data-en="'+esc(q)+'" translate="no">'+esc(q)+'</p>'+
-  '<div style="font-weight:800;margin-top:6px" translate="no"><span class="ivn">'+esc(ST.ivWho||'___')+'</span> said:</div>'+
-  '<textarea id="iv_'+i+'" translate="no" maxlength="300" oninput="typeIV('+i+',this.value)"'+(TV?' readonly':'')+'>'+esc(x.a||'')+'</textarea></div>';}).join('');showDirections();}
-function ivWho(v){if(TV)return;ST.ivWho=v;ST.iv=T.IV.map(function(_,i){var x=ST.iv[i]||{};return {who:v,a:x.a||''};});document.querySelectorAll('.ivn').forEach(function(e){e.textContent=v||'___';});save();}
+  '<textarea id="iv_'+i+'" class="ivta" translate="no" maxlength="300" placeholder="'+esc(ivSaid())+'" oninput="typeIV('+i+',this.value)"'+(TV?' readonly':'')+'>'+esc(x.a||'')+'</textarea></div>';}).join('');showDirections();}
+function ivSaid(){var n=String(ST.ivWho||'').trim();return (n||'My classmate')+' said…';}
+function ivWho(v){if(TV)return;ST.ivWho=v;ST.iv=T.IV.map(function(_,i){var x=ST.iv[i]||{};return {who:v,a:x.a||''};});document.querySelectorAll('.ivta').forEach(function(e){e.placeholder=ivSaid();});save();}
 function typeIV(i,v){if(TV)return;dirty=true;ST.iv=T.IV.map(function(_,j){var x=ST.iv[j]||{};return {who:ST.ivWho,a:j===i?v:(x.a||'')};});clearTimeout(qT);qT=setTimeout(function(){save();},400);}
 
 /* ===================== 9 · DONE ===================== */
@@ -508,7 +557,7 @@ var NACT=9;
 var STEPS=[[1,'1 · Look',function(){return [lookDone(),2];}],[2,'2 · Words',function(){return [wDone(),WORDS.length];}]]
  .concat(PARTS.map(function(Pt,n){return [n+3,(n+3)+' · '+['Thanksgiving','Mark','The Lees','Andre'][n],function(){var y=T.WHY[Pt.id],ok=y&&T.qOk(y,ST.qa[y.k])?1:0;return [partDone(Pt.id)+ok,T.MC[Pt.id].length+(y?1:0)];}];}))
  .concat([[7,'7 · Write',function(){return [qDone(),T.QS.length];}],[8,'8 · Talk ⭐',function(){return [SC().iv,3];}],[9,'Finish',function(){return [SC().core>=MAXALL?1:0,1];}]]);
-function go(n){stopRead();try{speechSynthesis.cancel();}catch(e){}ST.act=n;for(var i=1;i<=NACT;i++)$('a'+i).classList.toggle('show',i===n);
+function go(n){stopRead();try{speechSynthesis.cancel();}catch(e){}ST.act=n;if(window.TGRAIL&&!(n>=3&&n<=6))TGRAIL.clear();for(var i=1;i<=NACT;i++)$('a'+i).classList.toggle('show',i===n);
  if(n===1)renderLook();else if(n===2)renderWords();else if(n>=3&&n<=6)renderPart(n-3);else if(n===7)renderQs();else if(n===8)renderIV();else renderGo();
  drawSteps();drawProg();showDirections();updateNext();if(LOADED&&!TV)save();window.scrollTo(0,0);}
 function drawSteps(){var nextSet=false;$('steps').innerHTML=STEPS.map(function(s){var c=s[2](),full=c[0]>=c[1],nx=false;if(s[0]!==8){if(!full&&!nextSet&&ST.act!==s[0]){nx=true;nextSet=true;}if(!full&&ST.act===s[0])nextSet=true;}
@@ -523,7 +572,8 @@ function nextTarget(){var a=ST.act;
   if(!lookOk('won'))return {t:'Now type your question: I wonder why…',el:q('#wonIn')};
   return {t:'Next: learn the words.',el:q('#a1 .nextrow .btn')};}
  if(a===2){if(wDone()>=WORDS.length)return {t:'Next: read the stories.',el:q('#a2 .nextrow .btn:last-child')};
-  for(var wi=0;wi<WORDS.length;wi++)if(!ST.R.m['w.'+wi].done)return {t:(wi?'':'Read the word cards. Then ')+'answer word check '+(wi+1)+'.',el:q('#mcq_w_'+wi+' .gsent')};}
+  for(var wi=0;wi<WORDS.length;wi++){if(!rowPicDone(wi))return {t:(wi?'':'Start here. ')+'Read “'+WORDS[wi].w+'” and its meaning. Tap the right picture.',el:q('#wr_'+wi+' .w')};
+   if(!ST.R.m['w.'+wi].done)return {t:'Now: which sentence uses “'+WORDS[wi].w+'” the right way?',el:q('#mcq_w_'+wi+' .gsent')};}}
  if(a>=3&&a<=6){var Pt=PARTS[a-3];for(var j=0;j<T.MC[Pt.id].length;j++)if(!ST.R.m[Pt.id+'.'+j].done){
    if(j===0&&!ST.tools.spk)return {t:'Read the story. Tap 🔊 to listen.',el:q('#a'+a+' .pbtn')};
    return {t:'Answer question '+(j+1)+'. Look back at the story.',el:q('#mcq_'+Pt.id+'_'+j+' .gsent')};}
@@ -601,7 +651,7 @@ function showDirections(){var lg=lang();document.querySelectorAll('[data-dir]').
  tr(p.getAttribute('data-en'),lg,function(t){if(lang()!==lg)return;out.textContent=t;});});}
 function toggleDir(){if(!DIR_ON&&!lang()){alert('First choose your language in the green bar.');$('lang').focus();return;}DIR_ON=!DIR_ON;$('dirBtn').classList.toggle('on',DIR_ON);showDirections();NX_EN='';updateNext();}
 function setLang(v){try{localStorage.setItem('eld103_lang',v);localStorage.setItem('vocab_lang',v);}catch(e){}DIR_ON=!!v;$('dirBtn').classList.toggle('on',DIR_ON);
- document.querySelectorAll('.dirtr').forEach(function(o){o.removeAttribute('data-l');});showDirections();if(ST.act===2)fillTrans($('wordCards'));NX_EN='';updateNext();}
+ document.querySelectorAll('.dirtr').forEach(function(o){o.removeAttribute('data-l');});showDirections();if(ST.act===2)fillTrans($('wRows'));if(ST.act>=3&&ST.act<=6)fillTrans($('a'+ST.act));if(ST.act>=3&&ST.act<=6)fillTrans($('a'+ST.act));NX_EN='';updateNext();}
 function savedLang(){try{return localStorage.getItem('vocab_lang')||localStorage.getItem('eld103_lang')||'';}catch(e){return '';}}
 var WT=true;
 function toggleWT(){WT=!WT;$('wtBtn').classList.toggle('on',WT);document.body.classList.toggle('wt',WT);hideTip();}
@@ -635,7 +685,7 @@ function boot(){
  if(!ST.email||!L)askName();else loadServer(ST.email,function(){go(ST.act||1);});
  setTimeout(checkCanary,2500);setInterval(checkCanary,20000);setInterval(function(){push(false);},20000);
  /* leaving sends the whole snapshot NOW with keepalive, even if an earlier save is still in flight (T-455) */
- function leaveSave(){clearTimeout(saveT);clearTimeout(qT);if(typeof lookT!=='undefined')clearTimeout(lookT);setGal();if(dirty){pushing=false;push(true);}}
+ function leaveSave(){clearTimeout(saveT);clearTimeout(qT);if(typeof lookT!=='undefined')clearTimeout(lookT);if(typeof histT!=='undefined')clearTimeout(histT);setGal();if(dirty){pushing=false;push(true);}}
  document.addEventListener('visibilitychange',function(){if(document.hidden)leaveSave();else refreshMarks();});
  window.addEventListener('pagehide',leaveSave);
 }

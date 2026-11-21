@@ -174,7 +174,7 @@
     '<text x="100" y="44" text-anchor="middle" font-family="Nunito,Arial" font-weight="900" font-size="16" fill="#fff">NOVEMBER</text>' +
     (function () { var s = ''; for (var r = 0; r < 4; r++) for (var c = 0; c < 7; c++) { var x = 40 + c * 18.5, y = 62 + r * 20; s += '<rect x="' + x + '" y="' + y + '" width="14" height="14" fill="' + (r === 3 && c === 4 ? '#f2c94c' : '#e8edf2') + '"/>'; } return s; })() +
     '<circle cx="121" cy="129" r="13" fill="none" stroke="#c9412e" stroke-width="3"/><path d="M8 10 L40 30" stroke="#2f7d4f" stroke-width="0"/>' +
-    '<g transform="translate(150 20)"><rect x="-26" y="-12" width="52" height="24" rx="5" fill="#2f7d4f"/><text y="5" text-anchor="middle" font-family="Nunito,Arial" font-weight="900" font-size="11" fill="#fff">NO SCHOOL</text></g>', 'a calendar: Thursday in November, no school'); };
+    '<g transform="translate(160 14)"><rect x="-36" y="-10" width="72" height="20" rx="5" fill="#2f7d4f"/><text y="4" text-anchor="middle" font-family="Nunito,Arial" font-weight="900" font-size="10" fill="#fff">NO SCHOOL</text></g>', 'a calendar: Thursday in November, no school'); };
   A.turkey = function () { return pic('#fff6e6', turkey(100, 86, 0.95), 'a cooked turkey'); };
   A.cranberry = function () { return pic('#fdeef0', cran(100, 92, 1.3) + '<circle cx="34" cy="132" r="7" fill="#b0213a"/><circle cx="48" cy="140" r="7" fill="#c22a42"/><circle cx="160" cy="136" r="7" fill="#b0213a"/>', 'a bowl of cranberry sauce'); };
   A.potatoes = function () { return pic('#f7f1e1', pot(100, 90, 1.15), 'mashed potatoes and two potatoes'); };

@@ -19,11 +19,19 @@
     think: 'Is a big family dinner always happy? What can make it stressful?'
   };
 
+  /* history pictures: extra "I see / I wonder" (typed, word bank; never wrong; extra points only) */
+  T.HIST = {
+    bank: { 'People': ['the Wampanoag', 'English settlers', 'the Pilgrims', 'men', 'a leader'],
+            'Things': ['a table', 'food', 'corn', 'guns', 'bows', 'smoke', 'houses', 'a field'],
+            'Ideas for “I wonder”': ['peace', 'war', 'land', 'friends', 'enemies', 'fighting', 'changed'] },
+    think: 'The same two groups ate together in 1621 and fought a war in 1675. What do you think changed?'
+  };
+
   T.WORDS = [
     { w: 'grateful', d: 'thankful; happy for what you have', s: 'Thanksgiving is a day to say what you are grateful for.', art: 'grateful' },
     { w: 'relatives', d: 'people in your family: aunts, uncles, cousins, grandparents', s: 'Many relatives travel to be together.', art: 'grandparents' },
     { w: 'tradition', d: 'something a family or group does again every year', s: 'Spicy pikliz on the turkey is now a family tradition.', art: 'tradition' },
-    { w: 'nag', d: 'ask or tell someone the same thing again and again, in an annoying way', s: 'Every year, Aunt Rosa nags Mark about girlfriends.', art: 'nag' },
+    { w: 'nag', d: 'ask or tell someone the same thing again and again, in an annoying way', also: 'pester, ask again and again', s: 'Every year, Aunt Rosa nags Mark about girlfriends.', art: 'nag', pest: true },
     { w: 'awkward', d: 'uncomfortable; you do not know what to say', s: 'The table goes quiet. It is very awkward.', art: 'awkward' },
     { w: 'argue', d: 'talk in an angry way because you do not agree', s: 'Grandpa and Uncle Dave argue about politics.', art: 'argue' },
     { w: 'change the subject', d: 'start talking about something different', s: 'Mark changes the subject to football.', art: 'subject' },
@@ -37,7 +45,9 @@
       paras: [
         ['There is no school next week because of Thanksgiving.', 'Thanksgiving is on the fourth Thursday of November.', 'It is one of the most important holidays in the United States, and the day before it is one of the busiest travel days of the year.', 'Millions of people take planes, trains and cars to be with their relatives.'],
         ['The center of the day is a big dinner.', 'Many families eat turkey, cranberry sauce, mashed potatoes and pumpkin pie.', 'Before they eat, some families go around the table, and each person says one thing they are grateful for.'],
-        ['The holiday started with a harvest meal in 1621, when English settlers (the Pilgrims) and Wampanoag people ate together in what is now Massachusetts.', 'But the story is not simple.', 'For many Native Americans, Thanksgiving is also a sad day, a day to remember the land and the lives their people lost.'],
+        { history: true },
+        ['In 1620, a group of English people sailed to America on a ship called the Mayflower.', 'Today we call them the Pilgrims.', 'They built a town called Plymouth, on land where the Wampanoag people had lived for thousands of years.', 'The first winter was very hard, and about half of the Pilgrims died.', 'The Wampanoag showed the settlers how to grow corn and where to fish.', 'In the autumn of 1621, about 50 Pilgrims and about 90 Wampanoag men ate a harvest meal together for three days.', 'Many Americans remember this meal as the first Thanksgiving.'],
+        ['But peace did not last.', 'Diseases from Europe had already killed many Wampanoag people, and more and more settlers came and took their land.', 'In 1675, a war began between the settlers and the Wampanoag, led by a Wampanoag leader named Metacom.', 'Thousands of people died, and the Wampanoag lost most of their land.', 'Because of this history, many Native Americans see Thanksgiving as a sad day.', 'Since 1970, some meet in Plymouth on Thanksgiving for a National Day of Mourning.'],
         ['Thanksgiving is about being grateful, but it can also be stressful.', 'Relatives ask personal questions.', 'People argue about politics.', 'Parents are tired.', 'Today you will read about three families and what really happens at their Thanksgiving.']
       ] },
     { id: 'p2', title: 'Family #1: Mark’s family', art: 'mark',
@@ -68,7 +78,7 @@
     p1: [
       { q: 'When is Thanksgiving?', o: ['the fourth Thursday of November', 'the last Friday of November', 'the first Monday of December'], h: ['Look at the first paragraph.'] },
       { q: 'Why is the day before Thanksgiving so busy?', o: ['Millions of people travel to see their relatives.', 'Everyone goes shopping for presents.', 'Schools have their final tests.'], h: ['Look for the word travel.'] },
-      { q: 'Why is Thanksgiving also a sad day for many Native Americans?', o: ['They remember the land and lives their people lost.', 'They do not like turkey.', 'They have to work on that day.'], h: ['Read the third paragraph again.'] },
+      { q: 'Why is Thanksgiving also a sad day for many Native Americans?', o: ['They remember the war, the diseases and the land their people lost.', 'They do not like turkey.', 'They have to work on that day.'], h: ['Read the paragraph that starts “But peace did not last.”'] },
       { q: 'What does the writer say about Thanksgiving in the last paragraph?', o: ['It is about being grateful, but it can also be stressful.', 'It is always relaxing and easy.', 'It is only for children.'], h: ['Find the word but.'] }
     ],
     p2: [
@@ -93,14 +103,43 @@
   T.MC_IDS = [];
   ['p1', 'p2', 'p3', 'p4'].forEach(function (p) { T.MC[p].forEach(function (_, i) { T.MC_IDS.push(p + '.' + i); }); });
 
-  /* word meanings: read the word, tap its meaning (built from WORDS) */
-  T.MC.w = T.WORDS.map(function (w, i) {
-    var others = T.WORDS.filter(function (_, k) { return k !== i; });
-    var a = others[(i * 3 + 1) % others.length].d, b = others[(i * 7 + 4) % others.length].d;
-    if (a === b) b = others[(i + 2) % others.length].d;
-    return { q: 'What does “' + w.w + '” mean?', o: [w.d, a, b], h: ['Read the sentence on the word card: ' + w.s] };
-  });
+  /* Words, step 2 "Use it": which sentence uses the word the right way? o[0] is right (shuffled per student). */
+  var USE = {
+    grateful: ['I am grateful for my friends because they help me.', 'I am grateful because I lost my phone.', 'The grateful is on the table.'],
+    relatives: ['My relatives came from Mexico to eat dinner with us.', 'My relatives are the people in my class.', 'I relatives my homework every day.'],
+    tradition: ['Eating dumplings together every New Year is our family tradition.', 'I ate a sandwich once, so it is a tradition.', 'The tradition is very fast today.'],
+    nag: ['My mom nags me to clean my room every single day.', 'My mom nagged me one time, very quietly.', 'I nag my sandwich for lunch.'],
+    awkward: ['When nobody knew what to say, the room felt awkward.', 'The party was awkward because everyone was relaxed and happy.', 'I awkward my bike to school.'],
+    argue: ['My brothers argue about who gets the last piece of pie.', 'We argue when we agree about everything.', 'I argue a glass of water.'],
+    'change the subject': ['When my aunt asked about my grades, I changed the subject to sports.', 'I changed the subject from math to science class at school.', 'Please change the subject of the turkey.'],
+    exhausted: ['After working for twelve hours, my father was exhausted.', 'I slept ten hours, so I am exhausted and full of energy.', 'The exhausted is in the kitchen.'],
+    immigrate: ['My grandparents immigrated from China to the United States.', 'I immigrated from my bedroom to the kitchen.', 'We immigrate pizza every Friday.'],
+    leftovers: ['We ate the leftovers from Thanksgiving dinner the next day.', 'Leftovers are the people who leave a party early.', 'I leftovers my coat at school.']
+  };
+  T.MC.w = T.WORDS.map(function (w) { var u = USE[w.w]; return { q: 'Which sentence uses “' + w.w + '” the right way?', o: u, h: ['Read the meaning again: ' + w.d, 'One sentence matches the meaning. The others use the word in a strange way.'] }; });
   T.W_IDS = T.WORDS.map(function (_, i) { return 'w.' + i; });
+
+  /* ⭐ What families do: a mini-lesson after Mark's story (extra points only) */
+  T.FAM = {
+    words: [
+      { w: 'nag', d: 'ask or tell someone the same thing again and again', who: 'often an aunt, uncle or parent → a young person', s: 'Aunt Rosa nags Mark about girlfriends every year.', art: 'nag' },
+      { w: 'pester', d: 'annoy someone again and again until they do what you want (also: bother)', who: 'often a little kid → an older brother or sister', s: 'My little sister pesters me to play video games with her.', art: 'pester' },
+      { w: 'tease', d: 'make jokes about someone; sometimes kind and funny, sometimes mean', who: 'anyone → anyone', s: 'My cousins tease me about my funny haircut.', art: 'tease' },
+      { w: 'scold', d: 'talk angrily to someone because they did something wrong', who: 'usually a parent or adult → a child', s: 'My mother scolded my brother for breaking the plate.', art: 'scold' },
+      { w: 'punish', d: 'make someone lose something because they did something wrong', who: 'usually a parent → a child', s: 'My dad punished me: no phone for a week.', art: 'punish' }
+    ],
+    mc: [
+      { q: 'Your mom takes your phone for a week because you came home late. She ___ you.', o: ['punished', 'teased', 'pestered'] },
+      { q: 'Your little brother asks you “Can I play? Can I play? Can I play?” for an hour. He ___ you.', o: ['pesters', 'scolds', 'punishes'] },
+      { q: 'Your uncle asks you every year, “When are you going to get a job?” He ___ you.', o: ['nags', 'punishes', 'teases'] },
+      { q: 'Your cousins laugh and call you “Mr. Fashion” because of your new shoes. They ___ you.', o: ['tease', 'scold', 'nag'] },
+      { q: 'You break a glass. Your grandmother says angrily, “Why weren’t you careful?” She ___ you.', o: ['scolds', 'teases', 'pesters'] }
+    ],
+    write: { k: 'fam', q: 'Who in your family nags, pesters, teases, scolds or punishes? Write one or two sentences.', st: 'My ___ always ___ me about ___.', min: 6 }
+  };
+  T.FAM.mc.forEach(function (x) { x.h = ['Read the word cards above: who does it, and how?', 'Think: is it a joke, a question again and again, angry words, or losing something?']; });
+  T.MC.f = T.FAM.mc;
+  T.F_IDS = T.FAM.mc.map(function (_, i) { return 'f.' + i; });
 
   /* one "why" sentence after each family part (Mr. Toby marks them) */
   T.WHY = {
@@ -110,17 +149,21 @@
   };
   /* Part B: writing */
   T.QS = [
-    { k: 'q1', q: 'Which family is most like your family? Explain with two details from the story.', st: 'My family is most like ___’s family because ___. For example, ___. Also, ___.', min: 25 },
+    { k: 'q1', q: 'You read about three different families. Which family is most like your family? Explain with two details from the story.', st: 'My family is most like ___’s family because ___. For example, ___. Also, ___.', min: 25 },
     { k: 'q2', q: 'Write a paragraph about an important holiday in your country. What is it? What do people do and eat? How do you feel on that day?', st: 'An important holiday in my country is ___. On this day, people ___. We eat ___. I feel ___ because ___.', min: 40 },
     { k: 'q3', q: 'A relative asks you a personal question at dinner, like Aunt Rosa. What do you say or do? Why?', st: 'If a relative asks me ___, I would ___ because ___.', min: 12 }
   ];
   T.ALLW = T.QS.concat([T.WHY.p2, T.WHY.p3, T.WHY.p4]);
+  T.EXW = [T.FAM.write];
+
+  T.PEST = ['A pest is a small animal or bug that makes problems, like mice or cockroaches.', 'We also call an annoying person a pest: “My little brother is a pest!”', 'That is a metaphor: we say a person IS a pest, because he annoys us like a bug.', 'Pester comes from pest: to pester someone is to annoy them again and again.'];
+  T.IDIOMS_URL = 'https://tobiasrugger.github.io/IdiomsIllustrated/';
 
   T.IV = ['What is an important holiday in your country?', 'What do you like to do on this holiday?', 'Do people in your family ever argue at holiday dinners? About what?'];
 
   T.DIR = {
     l1: 'Look at the picture. Type the missing words to finish the two sentences. Use the word bank, or your own words. There is no wrong answer.',
-    w1: 'Read each word card. Tap 🔊 to hear it. Then answer the 10 questions.',
+    w1: 'For each word: read it, tap 🔊, and tap the right picture. Then choose the sentence that uses the word the right way.',
     r1: 'Read the story. Tap 🔊 to listen. Tap any word to see it in your language.',
     r2: 'Answer the questions. Look back at the story.',
     r3: 'Answer in one or two complete sentences.',
@@ -142,15 +185,21 @@
     T.MC_IDS.forEach(function (id) { if (M[id] && M[id].done) m++; });
     T.ALLW.forEach(function (q) { var a = (p.qa || {})[q.k]; if (T.qOk(q, a) && !off(marks, q.k, a)) b++; });
     (p.iv || []).forEach(function (x) { if (T.ivOk(x)) c++; });
-    var core = look + w + m + b;
-    return { look: look, w: w, m: m, b: b, iv: Math.min(3, c), core: core, max: T.MAX, score: Math.min(T.MAX, core + Math.min(3, c)) };
+    var H = p.hist || {}, hist = (words(H.see).length >= 1 ? 1 : 0) + (words(H.won).length >= 3 ? 1 : 0), fam = 0;
+    T.F_IDS.forEach(function (id) { if (M[id] && M[id].done) fam++; });
+    var fw = (p.qa || {}).fam; if (T.qOk(T.FAM.write, fw) && !off(marks, 'fam', fw)) fam++;
+    var core = look + w + m + b, extra = Math.min(3, c) + hist + fam;
+    return { look: look, w: w, m: m, b: b, iv: Math.min(3, c), hist: hist, fam: fam, core: core, max: T.MAX, score: Math.min(T.MAX, core + extra) };
   };
 
   T.lines = function () {
     var out = [];
     function add(s) { s = String(s || '').trim(); if (s && out.indexOf(s) < 0) out.push(s); }
     T.WORDS.forEach(function (w) { add(w.w); add(w.d); add(w.s); });
-    T.PARTS.forEach(function (P) { add(P.title); P.paras.forEach(function (pp) { pp.forEach(add); }); });
+    T.PARTS.forEach(function (P) { add(P.title); P.paras.forEach(function (pp) { if (pp.forEach) pp.forEach(add); }); });
+    T.FAM.words.forEach(function (x) { add(x.w); add(x.d); add(x.who); add(x.s); }); add(T.FAM.write.q); add(T.FAM.write.st);
+    Object.keys(T.HIST.bank).forEach(function (k) { add(k); T.HIST.bank[k].forEach(add); }); add(T.HIST.think);
+    add('also: pester, ask again and again'); T.PEST.forEach(add); add('What families do');
     Object.keys(T.MC).forEach(function (k) { T.MC[k].forEach(function (x) { add(x.q); x.o.forEach(add); x.h.forEach(add); }); });
     T.ALLW.forEach(function (q) { add(q.q); add(q.st); });
     T.IV.forEach(add); Object.keys(T.DIR).forEach(function (k) { add(T.DIR[k]); });

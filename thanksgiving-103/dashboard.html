@@ -75,11 +75,11 @@ function load(){var sel='email,name,period,score,max_score,turned_in,payload,upd
  }).catch(function(e){if(e==='retry'){$('sum').textContent='⚠ The marks column is missing on eld103_donow, so ✓/✗ can’t save.';load();return;}$('tb').innerHTML='<tr><td colspan="10">Could not load.</td></tr>';});}
 function items(R,ids){R=R||{};var t=0,s=0,d=0;ids.forEach(function(i){var x=R[i];if(!x)return;if(x.done)d++;t+=x.tries||0;if(x.shown)s++;});
  return d+'/'+ids.length+(t?' <span class="miss">'+t+' miss'+(t>1?'es':'')+'</span>':'')+(s?' <span class="shown">'+s+' shown</span>':'');}
-function written(r){var P=r.payload||{},out=[];T.ALLW.forEach(function(q){var a=String((P.qa||{})[q.k]||'').trim();if(a)out.push({key:q.k,a:a,q:q});});return out;}
+function written(r){var P=r.payload||{},out=[];T.ALLW.concat(T.EXW).forEach(function(q){var a=String((P.qa||{})[q.k]||'').trim();if(a)out.push({key:q.k,a:a,q:q});});return out;}
 function pens(r){return window.GALMARK?GALMARK.unmarked(r.marks||{},written(r)):0;}
 function ctl(r,k,a){return a&&window.GALMARK&&MARKCOL?GALMARK.controls(r.marks||{},k,a):'';}
 function writeCell(r){var p=pens(r),w=written(r),by={};w.forEach(function(x){by[x.key]=x;});
- return (p?'<span class="pen">✎ '+p+'</span>':'')+T.ALLW.map(function(q,i){var x=by[q.k];
+ return (p?'<span class="pen">✎ '+p+'</span>':'')+T.ALLW.concat(T.EXW).map(function(q,i){var x=by[q.k];
   return '<div class="cl"><span class="muted">'+(i+1)+'. '+esc(q.q)+'</span>'+(x?'<b>'+esc(x.a)+'</b>'+(T.qOk(q,x.a)?'':' <span class="miss">(not counted yet: '+(/_{2,}/.test(x.a)?'has ___':'under '+q.min+' words')+')</span>')+ctl(r,q.k,x.a):'<b class="muted">—</b>')+'</div>';}).join('');}
 function ivCell(r){var P=r.payload||{},iv=P.iv||[];if(!iv.some(function(x){return x&&x.a;}))return '<span class="muted">—</span>';
  return '<b>'+esc(P.ivWho||'')+'</b> said:'+T.IV.map(function(q,i){var x=iv[i]||{};return '<div class="cl"><span class="muted">'+esc(q)+'</span>'+(x.a?esc(x.a):'—')+'</div>';}).join('');}
@@ -90,7 +90,7 @@ function draw(){if(!ROWS)return;var p=$('per').value,only=$('onlyPen').checked,l
   return '<tr data-email="'+esc(r.email)+'"><td><b>'+esc(r.name)+'</b><br><span class="muted" style="font-size:.8rem">'+esc(key(r.email))+'</span></td><td class="n">'+esc(r.period)+'</td>'+
    '<td class="n">'+s.score+'/'+s.max+'</td><td class="n">'+band(pct)+'</td>'+
    '<td>'+(L.see?'I see <b>'+esc(L.see)+'</b>':'<span class="muted">—</span>')+'<br>'+(L.won?'I wonder why <span class="op">'+esc(L.won)+'</span>':'')+'</td>'+
-   '<td>Words '+items(R.m,T.W_IDS)+'<br>'+['p1','p2','p3','p4'].map(function(pp,n){return ['Thanksgiving','Mark','Lees','Andre'][n]+' '+items(R.m,T.MC[pp].map(function(_,i){return pp+'.'+i;}));}).join('<br>')+'</td>'+
+   '<td>Pictures '+items(R.p,T.WORDS.map(function(_,i){return i;}))+'<br>Use it '+items(R.m,T.W_IDS)+'<br>'+['p1','p2','p3','p4'].map(function(pp,n){return ['Thanksgiving','Mark','Lees','Andre'][n]+' '+items(R.m,T.MC[pp].map(function(_,i){return pp+'.'+i;}));}).join('<br>')+'<br>⭐ History see/wonder '+s.hist+'/2'+(P.hist&&P.hist.won?' <span class="op">“'+esc(P.hist.won)+'”</span>':'')+'<br>⭐ Family words '+items(R.m,T.F_IDS)+'</td>'+
    '<td class="wcell">'+writeCell(r)+'</td><td class="wcell">'+ivCell(r)+'</td>'+
    '<td class="muted" style="font-size:.8rem">'+esc(new Date(r.updated_at).toLocaleString())+(P.lion?'<br>🦁 found the lion':'')+(P.browserTranslated?'<br>⚠ Chrome translate was on':'')+'</td>'+
    '<td><a href="./?view=teacher&email='+encodeURIComponent(r.email)+'" target="_blank">👀 view</a></td></tr>';}).join(''):'<tr><td colspan="10">No work yet.</td></tr>';

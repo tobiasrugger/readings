@@ -157,4 +157,46 @@
     '<rect x="34" y="40" width="64" height="34" rx="6" fill="#dbe9ff" opacity=".7" stroke="#6a8fb8" stroke-width="2"/><ellipse cx="66" cy="60" rx="20" ry="8" fill="#b8692c"/>' +
     '<rect x="110" y="44" width="56" height="30" rx="6" fill="#dbe9ff" opacity=".7" stroke="#6a8fb8" stroke-width="2"/><path d="M118 70 Q138 50 158 70Z" fill="#e08a2c"/>' +
     '<g transform="translate(100 112)"><path d="M-44 10 H44 L36 -4 H-36Z" fill="#e9c27a" stroke="#a8743f" stroke-width="2"/><path d="M-40 -4 H40" stroke="#6aa84f" stroke-width="5"/><path d="M-38 -9 H38" stroke="#c98a3d" stroke-width="7"/><path d="M-36 -16 H36 L44 -22 H-44Z" fill="#e9c27a" stroke="#a8743f" stroke-width="2"/></g>', 'leftover turkey and pie in the fridge and a turkey sandwich'); };
+  /* T-502: family words */
+  var KID = { skin: '#e0ac85', shirt: '#e08a2c', hair: '#7a4a24' }, SIB = { skin: '#c98d63', shirt: '#3a9e8f', hair: '#2b211b', style: 'long' };
+  function o(base, extra) { var r = {}, k; for (k in base) r[k] = base[k]; for (k in (extra || {})) r[k] = extra[k]; return r; }
+  A.pester = function () { return pic('#eef7ee', person(132, 52, 0.85, o(SIB, { arms: 'hold' })) +
+    '<rect x="106" y="96" width="52" height="30" rx="5" fill="#2b2b33"/><rect x="110" y="100" width="44" height="22" fill="#5aa0d8"/>' +
+    person(58, 92, 0.55, o(KID, { arms: 'up' })) + '<path d="M78 92 Q96 96 108 104" stroke="#e08a2c" stroke-width="8" stroke-linecap="round" fill="none"/>' +
+    bubble(8, 6, 92, 26, 'play with me!', '#fff', 40).replace('font-size="15"', 'font-size="12"') + bubble(14, 36, 70, 20, 'please?', '#fff', 40).replace('font-size="15"', 'font-size="11"') +
+    '<text x="158" y="28" font-family="Nunito,Arial" font-weight="900" font-size="20" fill="#7d8a94">😩</text>', 'a little brother pulls his big sister: play with me, please'); };
+  A.tease = function () { return pic('#fff6e6', person(56, 60, 0.85, o(KID, { shirt: '#4f7a4a', arms: 'up' })) + person(144, 62, 0.85, o(SIB, { shirt: '#b5476b', style: 'short', hair: '#2b211b' })) +
+    '<path d="M126 34 L162 34 L152 14 Z" fill="#c9412e" stroke="#7a1f16" stroke-width="2"/><circle cx="152" cy="12" r="5" fill="#f2c94c"/>' +
+    '<text x="40" y="22" font-family="Nunito,Arial" font-weight="900" font-size="15" fill="#c9412e">ha ha!</text><path d="M78 44 L118 54" stroke="#4f7a4a" stroke-width="5" stroke-linecap="round"/>' +
+    '<path d="M136 74 Q144 70 152 74" stroke="#8a3d2a" stroke-width="2.5" fill="none"/>', 'a boy laughs and points at his sister’s funny hat'); };
+  A.scold = function () { return pic('#f3eefb', person(62, 50, 0.95, o({ skin: '#e0ac85', shirt: '#7d5ba6', hair: '#5a3a22', style: 'bun' }, { arms: 'up' })) +
+    person(146, 92, 0.6, o(KID, { shirt: '#2f6fbd' })) + '<path d="M146 98 l-6 -4 m12 0 l6 -4" stroke="#333" stroke-width="2"/>' +
+    '<path d="M110 150 l10 -10 l8 6 l6 -12 l10 14 z" fill="#d7dde3" stroke="#8a99a6" stroke-width="2"/><path d="M168 150 l8 -8 l6 8z" fill="#d7dde3" stroke="#8a99a6" stroke-width="2"/>' +
+    '<path d="M18 22 l10 6 l-10 6 M8 28 h18" stroke="#c9412e" stroke-width="3" fill="none"/>' + bubble(80, 6, 110, 26, 'Why did you…?!', '#ffe4de', 92).replace('font-size="15"', 'font-size="13"'), 'a mother talks angrily; her son looks down at a broken plate'); };
+  A.punish = function () { return pic('#eef5ff', person(58, 52, 0.9, { skin: '#c98d63', shirt: '#3d6fa8', hair: '#2b211b', arms: 'up' }) +
+    '<rect x="8" y="2" width="22" height="36" rx="4" fill="#2b2b33" transform="rotate(-12 19 20)"/><rect x="11" y="6" width="16" height="26" fill="#5aa0d8" transform="rotate(-12 19 20)"/>' +
+    person(148, 92, 0.6, o(KID)) + '<path d="M140 100 q8 -4 16 0" stroke="#8a3d2a" stroke-width="2" fill="none" transform="rotate(180 148 100)"/><path d="M158 82 q3 6 0 9" stroke="#4a8ad4" stroke-width="2" fill="none"/>' +
+    '<g transform="translate(98 104)"><rect width="48" height="44" rx="4" fill="#fff" stroke="#3c4a5a" stroke-width="2"/><rect width="48" height="12" rx="4" fill="#c9412e"/>' +
+    '<text x="24" y="28" text-anchor="middle" font-family="Nunito,Arial" font-weight="900" font-size="10" fill="#1c2640">NO PHONE</text><text x="24" y="40" text-anchor="middle" font-family="Nunito,Arial" font-weight="800" font-size="9" fill="#5c6b62">7 days</text></g>', 'a father holds the phone up high; no phone for 7 days'); };
+
+  /* T-502: history scenes, 400×250 each, labelled; the war picture shows fighting but no blood or bodies */
+  function lab(x, y, t, col) { return '<g><rect x="' + (x - t.length * 4.2 - 8) + '" y="' + (y - 15) + '" width="' + (t.length * 8.4 + 16) + '" height="22" rx="6" fill="#fff" stroke="' + col + '" stroke-width="2.5"/><text x="' + x + '" y="' + (y + 1) + '" text-anchor="middle" font-family="Nunito,Arial" font-weight="900" font-size="14" fill="' + col + '">' + t + '</text></g>'; }
+  var WAMP = { skin: '#a8694a', shirt: '#9a6a3c', hair: '#1a120c', style: 'long' }, PIL = { skin: '#efc9a6', shirt: '#2b2b33', hair: '#6b4a2b' };
+  function pilgrim(x, y, s, arms) { return person(x, y, s, o(PIL, { arms: arms || 'down' })) + '<g transform="translate(' + x + ' ' + y + ') scale(' + s + ')"><path d="M-14 36 L0 52 L14 36 Z" fill="#fff"/><rect x="-24" y="-40" width="48" height="8" rx="3" fill="#1a1a1a"/><path d="M-15 -38 L-12 -66 L12 -66 L15 -38Z" fill="#1a1a1a"/><rect x="-6" y="-48" width="12" height="9" fill="none" stroke="#d4a017" stroke-width="3"/></g>'; }
+  function wamp(x, y, s, arms) { return person(x, y, s, o(WAMP, { arms: arms || 'down' })) + '<g transform="translate(' + x + ' ' + y + ') scale(' + s + ')"><path d="M-24 -10 Q0 -2 24 -10" stroke="#c9412e" stroke-width="4" fill="none"/><path d="M14 -24 L22 -56 L26 -24Z" fill="#e8e2d0" stroke="#7a6a4a" stroke-width="1.5"/><path d="M-30 50 Q0 64 30 50" stroke="#e0b13a" stroke-width="4" stroke-dasharray="4 4" fill="none"/></g>'; }
+  A.histMeal = function () { var s = '<rect width="400" height="250" fill="#f6e2b8"/><rect y="150" width="400" height="100" fill="#a8b860"/>';
+    [[30, 60], [90, 40], [330, 50], [370, 70]].forEach(function (t) { s += '<rect x="' + (t[0] - 5) + '" y="' + (t[1] + 40) + '" width="10" height="60" fill="#6b4325"/><circle cx="' + t[0] + '" cy="' + (t[1] + 30) + '" r="30" fill="' + (t[0] % 60 ? '#d9822b' : '#c9412e') + '"/>'; });
+    s += wamp(90, 120, 0.62, 'eat') + wamp(150, 112, 0.62, 'hold') + pilgrim(250, 112, 0.62, 'eat') + pilgrim(310, 120, 0.62, 'hold');
+    s += '<rect x="60" y="164" width="290" height="12" rx="3" fill="#8a5a33"/><path d="M70 176 V214 M340 176 V214" stroke="#6b4325" stroke-width="8"/>';
+    s += '<ellipse cx="150" cy="160" rx="26" ry="9" fill="#b8692c"/><ellipse cx="205" cy="160" rx="18" ry="6" fill="#f2c94c"/><ellipse cx="250" cy="160" rx="22" ry="8" fill="#9a6a3c"/><circle cx="110" cy="158" r="7" fill="#e08a2c"/><circle cx="290" cy="158" r="7" fill="#6aa84f"/>';
+    s += lab(105, 238, 'Wampanoag', '#7a3d14') + lab(290, 238, 'English settlers', '#1c2640') + '<text x="200" y="26" text-anchor="middle" font-family="Nunito,Arial" font-weight="900" font-size="20" fill="#7a3d14">1621: a harvest meal</text>';
+    return svg(400, 250, s, '1621: Wampanoag men and English settlers eat a harvest meal together'); };
+  A.histWar = function () { var s = '<rect width="400" height="250" fill="#c9c3b8"/><rect y="0" width="400" height="140" fill="#b8b2a8"/><rect y="150" width="400" height="100" fill="#8a9a5a"/>';
+    s += '<g transform="translate(330 96)"><rect x="-22" y="0" width="44" height="40" fill="#8a6a44"/><path d="M-28 2 L0 -24 L28 2Z" fill="#6b4a2b"/><path d="M-10 -20 Q-4 -34 4 -26 Q10 -40 16 -28" fill="#e0662c"/><path d="M-6 -26 Q-30 -70 6 -90 Q40 -110 20 -140" stroke="#7d7d7d" stroke-width="18" fill="none" opacity=".55" stroke-linecap="round"/></g>';
+    s += pilgrim(70, 120, 0.6, 'hold') + '<path d="M58 160 L112 140" stroke="#4a3a2a" stroke-width="5" stroke-linecap="round"/><circle cx="120" cy="137" r="8" fill="#e6e6e6" opacity=".8"/><circle cx="130" cy="133" r="6" fill="#e6e6e6" opacity=".6"/>';
+    s += pilgrim(130, 128, 0.55, 'hold') + '<path d="M118 166 L166 150" stroke="#4a3a2a" stroke-width="5" stroke-linecap="round"/>';
+    s += wamp(250, 122, 0.6, 'hold') + '<path d="M222 140 Q206 160 222 180" stroke="#6b4325" stroke-width="4" fill="none"/><path d="M222 140 V180" stroke="#555" stroke-width="1.5"/><path d="M222 160 H196" stroke="#4a3a2a" stroke-width="2.5"/><path d="M196 160 l6 -4 v8z" fill="#4a3a2a"/>';
+    s += wamp(300, 130, 0.55, 'hold') + '<path d="M276 148 Q262 166 276 184" stroke="#6b4325" stroke-width="4" fill="none"/><path d="M276 148 V184" stroke="#555" stroke-width="1.5"/>';
+    s += lab(100, 238, 'English settlers', '#1c2640') + lab(280, 238, 'Wampanoag', '#7a3d14') + '<text x="200" y="26" text-anchor="middle" font-family="Nunito,Arial" font-weight="900" font-size="20" fill="#5a1f10">1675: war</text>';
+    return svg(400, 250, s, '1675: English settlers with guns and Wampanoag with bows face each other; a house burns'); };
 })();
