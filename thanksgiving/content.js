@@ -51,6 +51,28 @@
       ] }
   ];
 
+
+  /* T-503 · key phrases in the reading (curved orange underline + a box beside the paragraph).
+     [text|k] = this chunk matches English word k of the phrase (0 = first word); several words: [text|1,2].
+     Plain text = no clean match, so it never turns blue. Other languages come from the translator, without matching.
+     "wash the dishes" and "play cards" are left out on purpose: they are Words-step words and already have a word box. */
+  T.PHRASES = [
+    { p: 'no school', es: '[no hay|0] [clases|1]', zh: '[不|0][上学|1]', ar: '[لا|0] [مدرسة|1]', vi: '[nghỉ học|0,1]', th: '[ไม่มี|0][เรียน|1]', ne: '[विद्यालय|1] [बिदा|0]' },
+    { p: 'next week', es: '[la próxima|0] [semana|1]', zh: '[下|0][周|1]', ar: '[الأسبوع|1] [القادم|0]', vi: '[tuần|1] [sau|0]', th: '[สัปดาห์|1][หน้า|0]', ne: '[अर्को|0] [हप्ता|1]' },
+    { p: 'grandparents, parents, brothers, sisters', es: '[abuelos|0], [padres|1], [hermanos|2], [hermanas|3]', zh: '[祖父母|0]、[父母|1]、[兄弟|2]、[姐妹|3]', ar: '[الأجداد|0]، [الوالدان|1]، [الإخوة|2]، [الأخوات|3]', vi: '[ông bà|0], [bố mẹ|1], [anh em trai|2], [chị em gái|3]', th: '[ปู่ย่าตายาย|0] [พ่อแม่|1] [พี่ชายน้องชาย|2] [พี่สาวน้องสาว|3]', ne: '[हजुरबुबा-हजुरआमा|0], [आमाबुबा|1], [दाजुभाइ|2], [दिदीबहिनी|3]' },
+    { p: 'school, work, and sports', es: '[la escuela|0], [el trabajo|1] [y|2] [los deportes|3]', zh: '[学校|0]、[工作|1][和|2][体育|3]', ar: '[المدرسة|0] و[العمل|1] [و|2][الرياضة|3]', vi: '[trường học|0], [công việc|1] [và|2] [thể thao|3]', th: '[โรงเรียน|0] [งาน|1] [และ|2][กีฬา|3]', ne: '[विद्यालय|0], [काम|1] [र|2] [खेलकुद|3]' },
+    { p: 'dining room', es: '[el comedor|0,1]', zh: '[餐|0][厅|1]', ar: '[غرفة|1] [الطعام|0]', vi: '[phòng|1] [ăn|0]', th: '[ห้อง|1][อาหาร|0]', ne: '[भोजन|0] [कोठा|1]' },
+    { p: 'do not like', es: '[no|1] me [gusta|2]', zh: '[不|1][喜欢|2]', ar: '[لا|1] [أحب|2]', vi: '[không|1] [thích|2]', th: '[ไม่|1][ชอบ|2]', ne: '[मन पर्दैन|1,2]' },
+    { p: 'after dinner', es: '[después de|0] [la cena|1]', zh: '[晚饭|1][后|0]', ar: '[بعد|0] [العشاء|1]', vi: '[sau|0] [bữa tối|1]', th: '[หลัง|0][อาหารเย็น|1]', ne: '[बेलुकीको खाना|1] [पछि|0]' },
+    { p: 'talk on the phone', es: '[hablar|0] [por|1] [teléfono|3]', zh: '[讲|0][电话|3]', ar: '[التحدث|0] [عبر|1] [الهاتف|3]', vi: '[nói chuyện|0] [qua|1] [điện thoại|3]', th: '[คุย|0][โทรศัพท์|3]', ne: '[फोन|3][मा|1] [कुरा गर्नु|0]' },
+    { p: 'watch football', es: '[ver|0] [fútbol americano|1]', zh: '[看|0][美式足球|1]', ar: '[مشاهدة|0] [كرة القدم الأمريكية|1]', vi: '[xem|0] [bóng bầu dục|1]', th: '[ดู|0][อเมริกันฟุตบอล|1]', ne: '[अमेरिकी फुटबल|1] [हेर्नु|0]' },
+    { p: 'in the living room', es: '[en|0] [la|1] [sala|2,3]', zh: '[在|0][客厅|2,3]', ar: '[في|0] [غرفة|3] [المعيشة|2]', vi: '[trong|0] [phòng khách|2,3]', th: '[ใน|0][ห้องนั่งเล่น|2,3]', ne: '[बैठक कोठा|2,3][मा|0]' },
+    { p: 'play video games', es: '[jugar|0] [videojuegos|1,2]', zh: '[玩|0][电子游戏|1,2]', ar: '[لعب|0] [ألعاب|2] [الفيديو|1]', vi: '[chơi|0] [trò chơi|2] [điện tử|1]', th: '[เล่น|0][วิดีโอเกม|1,2]', ne: '[भिडियो गेम|1,2] [खेल्नु|0]' },
+    { p: '3 months old', es: '[3|0] [meses|1] [de edad|2]', zh: '[3|0][个月|1][大|2]', ar: '[عمرها|2] [3|0] [أشهر|1]', vi: '[3|0] [tháng|1] [tuổi|2]', th: '[อายุ|2] [3|0] [เดือน|1]', ne: '[3|0] [महिनाकी|1,2]' },
+    { p: 'kind and funny', es: '[amables|0] [y|1] [divertidos|2]', zh: '[善良|0][又|1][有趣|2]', ar: '[لطيفان|0] [و|1][مضحكان|2]', vi: '[tốt bụng|0] [và|1] [vui tính|2]', th: '[ใจดี|0][และ|1][ตลก|2]', ne: '[दयालु|0] [र|1] [रमाइला|2]' },
+    { p: 'the next day', es: '[el|0] [día|2] [siguiente|1]', zh: '[第二|1][天|2]', ar: '[اليوم|2] [التالي|1]', vi: '[ngày|2] [hôm sau|1]', th: '[วัน|2][รุ่งขึ้น|1]', ne: '[भोलिपल्ट|1,2]' }
+  ];
+
   /* Check questions after each part. a = the right answer (options are shuffled per student). h = two hints. */
   T.MC = {
     p1: [
@@ -177,7 +199,7 @@
     var out = [];
     function add(s) { s = String(s || '').trim(); if (s && out.indexOf(s) < 0) out.push(s); }
     T.WORDS.forEach(function (w) { add(w.w); add(w.d); add(w.s); });
-    T.PARTS.forEach(function (P) { add(P.title); P.paras.forEach(function (pp) { pp.forEach(add); }); (P.after || []).forEach(add); });
+    (T.PHRASES || []).forEach(function (x) { add(x.p); }); T.PARTS.forEach(function (P) { add(P.title); P.paras.forEach(function (pp) { pp.forEach(add); }); (P.after || []).forEach(add); });
     Object.keys(T.MC).forEach(function (k) { T.MC[k].forEach(function (x) { add(x.q); x.o.forEach(add); x.h.forEach(add); }); });
     T.QS.forEach(function (q) { add(q.q); add(q.st); if (q.hint) add(q.hint); });
     T.VWORDS.forEach(function (x) { add(x.w); add(x.d); }); T.IV.forEach(add); Object.keys(T.DIR).forEach(function (k) { add(T.DIR[k]); });
